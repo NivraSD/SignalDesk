@@ -70,7 +70,7 @@ const AutomatedOrganizationSetup = ({ onSetupComplete }) => {
     
     try {
       // Call backend API to analyze organization using AI
-      const response = await fetch('http://localhost:5001/api/intelligence/analyze-organization', {
+      const response = await fetch('https://signal-desk-ep6ckndvc-nivra-sd.vercel.app/api/intelligence/analyze-organization', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -365,7 +365,7 @@ const AutomatedOrganizationSetup = ({ onSetupComplete }) => {
     
     try {
       // Step 1: Create the organization in the database
-      const orgResponse = await fetch('http://localhost:5001/api/organizations/create', {
+      const orgResponse = await fetch('https://signal-desk-ep6ckndvc-nivra-sd.vercel.app/api/organizations/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -400,7 +400,7 @@ const AutomatedOrganizationSetup = ({ onSetupComplete }) => {
         .filter(c => selectedItems.competitors.includes(c.id))
         .forEach(competitor => {
           targetPromises.push(
-            fetch('http://localhost:5001/api/organizations/targets', {
+            fetch('https://signal-desk-ep6ckndvc-nivra-sd.vercel.app/api/organizations/targets', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -426,7 +426,7 @@ const AutomatedOrganizationSetup = ({ onSetupComplete }) => {
         .filter(t => selectedItems.topics.includes(t.id))
         .forEach(topic => {
           targetPromises.push(
-            fetch('http://localhost:5001/api/organizations/targets', {
+            fetch('https://signal-desk-ep6ckndvc-nivra-sd.vercel.app/api/organizations/targets', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -456,7 +456,7 @@ const AutomatedOrganizationSetup = ({ onSetupComplete }) => {
       setActivationStep('Configuring monitoring sources...');
       
       // Step 3: Configure organization-specific monitoring sources
-      const sourceResponse = await fetch('http://localhost:5001/api/source-config/configure-sources', {
+      const sourceResponse = await fetch('https://signal-desk-ep6ckndvc-nivra-sd.vercel.app/api/source-config/configure-sources', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

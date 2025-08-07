@@ -136,7 +136,7 @@ const IntelligenceSummaryDashboard = ({ organizationId, organizationName }) => {
     
     try {
       // Try to fetch real data from backend (V2 endpoint with Claude analysis)
-      const response = await fetch(`http://localhost:5001/api/monitoring/v2/intelligence-summary/${organizationId}`, {
+      const response = await fetch(`https://signal-desk-ep6ckndvc-nivra-sd.vercel.app/api/monitoring/v2/intelligence-summary/${organizationId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

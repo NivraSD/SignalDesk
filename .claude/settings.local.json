@@ -62,7 +62,9 @@
       "Bash(vercel:*)",
       "Bash(git rm:*)",
       "Bash(git reset:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(git branch:*)",
+      "Bash(PGPASSWORD=MUmjKBxTiecMPpYVgwGsZEKyFfyFbxqV psql -h crossover.proxy.rlwy.net -p 56706 -U postgres -d railway -f /Users/jonathanliebowitz/Desktop/SignalDesk/backend/scripts/create-demo-user.sql)"
     ],
     "deny": []
   }
