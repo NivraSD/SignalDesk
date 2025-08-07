@@ -15675,3 +15675,30 @@ Error storing batch: duplicate key value violates unique constraint "idx_finding
   Total Fetches: 0
   Successful: 0
   Articles Collected: 0
+  Progress: 154/154 feeds processed
+📰 RSS Results: 93 successful, 61 failed, 1474 articles
+
+🔍 Fetching 192 Google News queries...
+
+📊 Status Update: 2025-08-07T23:07:05.508Z
+  Active: true
+  Total Fetches: 0
+  Successful: 0
+  Articles Collected: 0
+  Progress: 30/192 queries processed
+
+📊 Status Update: 2025-08-07T23:07:35.508Z
+  Active: true
+  Total Fetches: 0
+  Successful: 0
+  Articles Collected: 0
+  Progress: 60/192 queries processed
+  Progress: 90/192 queries processed
+
+📊 Status Update: 2025-08-07T23:08:05.509Z
+  Active: true
+  Total Fetches: 0
+  Successful: 0
+  Articles Collected: 0
+  Progress: 120/192 queries processed
+  Progress: 150/192 queries processed
