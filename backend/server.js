@@ -173,7 +173,7 @@ app.use((err, req, res, next) => {
 
 // Start server only if not in Vercel environment
 if (!process.env.VERCEL) {
-  app.listen(PORT, '0.0.0.0', () => {
+  const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`\n🚀 SignalDesk Backend running on port ${PORT}`);
     console.log(`📱 Frontend expected at http://localhost:3000`);
     console.log("\n✅ Available endpoints:");
@@ -190,6 +190,10 @@ if (!process.env.VERCEL) {
     console.log("   - /api/ai/*");
     console.log("   - ... and more");
   });
+  
+  // Export server for testing
+  module.exports = server;
+} else {
+  // Export app for Vercel
+  module.exports = app;
 }
-
-module.exports = app;
