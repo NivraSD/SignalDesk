@@ -8,7 +8,7 @@
 - **Auto-deploy**: Yes (from GitHub)
 
 ### Backend API  
-- **URL**: https://signal-desk-hm9q013au-nivra-sd.vercel.app
+- **URL**: https://signal-desk.vercel.app (Stable Production URL)
 - **Platform**: Vercel (Serverless Functions)
 - **Auto-deploy**: Yes (from GitHub)
 
@@ -23,10 +23,9 @@
 
 ## How to Update Deployments
 
-### Update Backend API URL
-1. When backend redeploys, get new URL from Vercel
-2. Update `/frontend/src/config/api.js`
-3. Push to GitHub - frontend auto-redeploys
+### Backend API URL (STABLE)
+The backend now uses the stable production URL: `https://signal-desk.vercel.app`
+This URL never changes, even with new deployments!
 
 ### Deploy Backend Manually
 ```bash
@@ -101,10 +100,10 @@ npm start
 
 ```bash
 # Check backend status
-curl https://signal-desk-hm9q013au-nivra-sd.vercel.app/api/health
+curl https://signal-desk.vercel.app/api/health
 
 # Test login
-curl -X POST https://signal-desk-hm9q013au-nivra-sd.vercel.app/api/auth/login \
+curl -X POST https://signal-desk.vercel.app/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"demo@signaldesk.com","password":"demo123"}'
 
