@@ -16135,3 +16135,99 @@ Error storing batch: duplicate key value violates unique constraint "idx_finding
   Articles Collected: 0
   Progress: 60/192 queries processed
   Progress: 90/192 queries processed
+
+📊 Status Update: 2025-08-07T23:23:05.533Z
+  Active: true
+  Total Fetches: 0
+  Successful: 0
+  Articles Collected: 0
+  Progress: 120/192 queries processed
+  Progress: 150/192 queries processed
+
+📊 Status Update: 2025-08-07T23:23:35.536Z
+  Active: true
+  Total Fetches: 0
+  Successful: 0
+  Articles Collected: 0
+  Progress: 180/192 queries processed
+  Progress: 192/192 queries processed
+🔍 Google News Results: 192 successful, 3830 articles
+
+💾 Storing 5304 articles in database...
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: (article.title || "Untitled").replace is not a function
+Error storing batch: (article.title || "Untitled").replace is not a function
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: (article.title || "Untitled").replace is not a function
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+Error storing batch: duplicate key value violates unique constraint "idx_findings_url"
+  ✅ Successfully stored 0 new articles
+💾 Stored 0 articles in database
+
+🎯 Triggering opportunity detection...
+  Analyzing 0 recent articles for opportunities...
+  ✅ Opportunity detection triggered
+
+📊 Monitoring statistics updated
+
+✅ MONITORING CYCLE COMPLETE in 174.4 seconds
+📊 Total articles collected: 5304
+
+📊 Status Update: 2025-08-07T23:24:05.537Z
+  Active: true
+  Total Fetches: 0
+  Successful: 0
+  Articles Collected: 0
+
+📊 Status Update: 2025-08-07T23:24:35.537Z
+  Active: true
+  Total Fetches: 0
+  Successful: 0
+  Articles Collected: 0
