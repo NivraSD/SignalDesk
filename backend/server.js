@@ -172,7 +172,7 @@ app.use((err, req, res, next) => {
 });
 
 // Start server only if not in Vercel environment
-if (process.env.VERCEL !== '1') {
+if (!process.env.VERCEL) {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`\n🚀 SignalDesk Backend running on port ${PORT}`);
     console.log(`📱 Frontend expected at http://localhost:3000`);
