@@ -1,7 +1,7 @@
 // Complete fixed version of api.js
 // File: /frontend/src/services/api.js
 
-const API_BASE_URL = "https://signal-desk-ep6ckndvc-nivra-sd.vercel.app/api";
+const API_BASE_URL = "https://signal-desk-kg56559f6-nivra-sd.vercel.app/api";
 console.log("API URL:", API_BASE_URL);
 
 // Helper function to get auth headers
