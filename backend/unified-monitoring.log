@@ -1,0 +1,344 @@
+🚀 UNIFIED MONITORING SYSTEM STARTUP
+============================================================
+This service will:
+  ✓ Monitor 154 RSS feeds across 25 industries
+  ✓ Query 192 Google News searches
+  ✓ Process data every 5 minutes
+  ✓ Store all articles in database
+  ✓ Detect opportunities in real-time
+============================================================
+
+🚀 STARTING CONTINUOUS MONITORING SERVICE
+📊 Interval: Every 5 minutes
+📡 Total sources to monitor: 352+
+
+============================================================
+🔄 MONITORING CYCLE STARTED at 2025-08-07T05:18:25.819Z
+============================================================
+Successfully connected to PostgreSQL database
+📚 Retrieved 25 source configurations from database
+
+📡 Fetching 154 RSS feeds...
+  Progress: 100/154 feeds processed
+  Progress: 154/154 feeds processed
+📰 RSS Results: 91 successful, 63 failed, 1431 articles
+
+🔍 Fetching 192 Google News queries...
+  Progress: 30/192 queries processed
+  Progress: 60/192 queries processed
+  Progress: 90/192 queries processed
+  Progress: 120/192 queries processed
+  Progress: 150/192 queries processed
+  Progress: 180/192 queries processed
+  Progress: 192/192 queries processed
+🔍 Google News Results: 192 successful, 3830 articles
+
+💾 Storing 5261 articles in database...
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: article.title.replace is not a function
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: article.title.replace is not a function
+Error storing batch: article.title.replace is not a function
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+Error storing batch: column "metadata" of relation "intelligence_findings" does not exist
+  ✅ Successfully stored 0 new articles
+💾 Stored 0 articles in database
+
+🎯 Triggering opportunity detection...
+  Analyzing 0 recent articles for opportunities...
+  ✅ Opportunity detection triggered
+Error updating stats: error: column "metadata" of relation "monitoring_status" does not exist
+    at /Users/jonathanliebowitz/Desktop/SignalDesk/backend/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async UnifiedMonitoringService.updateMonitoringStats (/Users/jonathanliebowitz/Desktop/SignalDesk/backend/src/services/UnifiedMonitoringService.js:383:7)
+    at async UnifiedMonitoringService.runMonitoringCycle (/Users/jonathanliebowitz/Desktop/SignalDesk/backend/src/services/UnifiedMonitoringService.js:101:7)
+    at async UnifiedMonitoringService.startContinuousMonitoring (/Users/jonathanliebowitz/Desktop/SignalDesk/backend/src/services/UnifiedMonitoringService.js:49:5)
+    at async startMonitoring (/Users/jonathanliebowitz/Desktop/SignalDesk/backend/start-unified-monitoring.js:23:3) {
+  length: 139,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '130',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_target.c',
+  line: '1070',
+  routine: 'checkInsertTargets'
+}
+
+✅ MONITORING CYCLE COMPLETE in 185.8 seconds
+📊 Total articles collected: 5261
+✅ Continuous monitoring started successfully
+
+✅ Monitoring service is running. Press Ctrl+C to stop.
+
+
+📊 Status Update: 2025-08-07T05:22:01.592Z
+  Active: true
+  Total Fetches: 0
+  Successful: 0
+  Articles Collected: 0
+
+📊 Status Update: 2025-08-07T05:22:31.594Z
+  Active: true
+  Total Fetches: 0
+  Successful: 0
+  Articles Collected: 0
+
+📊 Status Update: 2025-08-07T05:23:01.596Z
+  Active: true
+  Total Fetches: 0
+  Successful: 0
+  Articles Collected: 0
+
+📊 Status Update: 2025-08-07T05:23:31.597Z
+  Active: true
+  Total Fetches: 0
+  Successful: 0
+  Articles Collected: 0
+
+📊 Status Update: 2025-08-07T05:24:01.598Z
+  Active: true
+  Total Fetches: 0
+  Successful: 0
+  Articles Collected: 0
+
+📊 Status Update: 2025-08-07T05:24:31.599Z
+  Active: true
+  Total Fetches: 0
+  Successful: 0
+  Articles Collected: 0
+
+📊 Status Update: 2025-08-07T05:25:01.600Z
+  Active: true
+  Total Fetches: 0
+  Successful: 0
+  Articles Collected: 0
+
+📊 Status Update: 2025-08-07T05:25:31.600Z
+  Active: true
+  Total Fetches: 0
+  Successful: 0
+  Articles Collected: 0
+
+📊 Status Update: 2025-08-07T05:26:01.602Z
+  Active: true
+  Total Fetches: 0
+  Successful: 0
+  Articles Collected: 0
+
+============================================================
+🔄 MONITORING CYCLE STARTED at 2025-08-07T05:26:31.595Z
+============================================================
+
+📊 Status Update: 2025-08-07T05:26:31.603Z
+  Active: true
+  Total Fetches: 0
+  Successful: 0
+  Articles Collected: 0
+📚 Retrieved 25 source configurations from database
+
+📡 Fetching 154 RSS feeds...
+  Progress: 100/154 feeds processed
+
+📊 Status Update: 2025-08-07T05:27:01.604Z
+  Active: true
+  Total Fetches: 0
+  Successful: 0
+  Articles Collected: 0
+  Progress: 154/154 feeds processed
+📰 RSS Results: 93 successful, 61 failed, 1472 articles
+
+🔍 Fetching 192 Google News queries...
+
+📊 Status Update: 2025-08-07T05:27:31.604Z
+  Active: true
+  Total Fetches: 0
+  Successful: 0
+  Articles Collected: 0
+  Progress: 30/192 queries processed
+
+📊 Status Update: 2025-08-07T05:28:01.605Z
+  Active: true
+  Total Fetches: 0
+  Successful: 0
+  Articles Collected: 0
+  Progress: 60/192 queries processed
+  Progress: 90/192 queries processed
+
+📊 Status Update: 2025-08-07T05:28:31.606Z
+  Active: true
+  Total Fetches: 0
+  Successful: 0
+  Articles Collected: 0
+  Progress: 120/192 queries processed
+  Progress: 150/192 queries processed
+
+📊 Status Update: 2025-08-07T05:29:01.607Z
+  Active: true
+  Total Fetches: 0
+  Successful: 0
+  Articles Collected: 0
+  Progress: 180/192 queries processed
+  Progress: 192/192 queries processed
+🔍 Google News Results: 192 successful, 3830 articles
+
+💾 Storing 5302 articles in database...
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: article.title.replace is not a function
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: article.title.replace is not a function
+Error storing batch: article.title.replace is not a function
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+Error storing batch: column "target_id" is of type uuid but expression is of type integer
+  ✅ Successfully stored 0 new articles
+💾 Stored 0 articles in database
+
+🎯 Triggering opportunity detection...
+  Analyzing 0 recent articles for opportunities...
+  ✅ Opportunity detection triggered
+Error updating stats: error: invalid input syntax for type integer: "excellent"
+    at /Users/jonathanliebowitz/Desktop/SignalDesk/backend/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async UnifiedMonitoringService.updateMonitoringStats (/Users/jonathanliebowitz/Desktop/SignalDesk/backend/src/services/UnifiedMonitoringService.js:383:7)
+    at async UnifiedMonitoringService.runMonitoringCycle (/Users/jonathanliebowitz/Desktop/SignalDesk/backend/src/services/UnifiedMonitoringService.js:101:7)
+    at async Timeout._onTimeout (/Users/jonathanliebowitz/Desktop/SignalDesk/backend/src/services/UnifiedMonitoringService.js:53:7) {
+  length: 120,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: '181',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'numutils.c',
+  line: '619',
+  routine: 'pg_strtoint32_safe'
+}
+
+✅ MONITORING CYCLE COMPLETE in 170.8 seconds
+📊 Total articles collected: 5302
+
+📊 Status Update: 2025-08-07T05:29:31.609Z
+  Active: true
+  Total Fetches: 0
+  Successful: 0
+  Articles Collected: 0
+
+📊 Status Update: 2025-08-07T05:30:01.610Z
+  Active: true
+  Total Fetches: 0
+  Successful: 0
+  Articles Collected: 0
+
+📊 Status Update: 2025-08-07T05:30:31.611Z
+  Active: true
+  Total Fetches: 0
+  Successful: 0
+  Articles Collected: 0

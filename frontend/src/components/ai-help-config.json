@@ -1,0 +1,19 @@
+{
+  "examples": [
+    "What should I do right now?",
+    "Who should I call first?",
+    "What do I tell worried employees?",
+    "Has this gone viral?",
+    "What are the legal requirements?"
+  ],
+  "scenarioPrompts": {
+    "cyber": [
+      "Have we isolated affected systems?",
+      "Do we need to notify customers?"
+    ],
+    "executive": [
+      "Should the board be notified?",
+      "Do we need outside counsel?"
+    ]
+  }
+}

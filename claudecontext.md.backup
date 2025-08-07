@@ -1,0 +1,925 @@
+
+## ✅ COMPLETED: AI Monitoring & Sentiment Analysis Feature
+
+### Feature Overview
+Successfully implemented a fully functional AI Monitoring & Sentiment Analysis system with sentiment detection, statistics, export capabilities, and auto-refresh functionality.
+
+### Current Working State
+- **Status**: ✅ FULLY FUNCTIONAL
+- **Location**: `/monitoring` route
+- **Access**: Dashboard card + Sidebar navigation
+- **Components**: `/src/components/Monitoring/AISentimentMonitor.js`
+
+### Implemented Features
+
+#### 1. Live Monitoring Tab
+- **Fetch Mentions**: Retrieves demo mentions with varied content
+- **Analyze All**: Batch sentiment analysis for all mentions
+- **Individual Analysis**: Analyze single mentions on demand
+- **Auto-refresh**: Toggle for automatic fetching every 30 seconds
+- **Export CSV**: Download all mentions and analysis data
+- **Real-time Statistics**: 
+  - Total mentions count
+  - Positive/Negative/Neutral breakdown
+  - Percentage calculations
+- **Visual Indicators**:
+  - Color-coded sentiment badges
+  - Left border indicators (green/red/gray)
+  - Loading states for analysis
+
+#### 2. Analytics Tab
+- Placeholder for future analytics features
+- Ready for charts and visualizations integration
+
+#### 3. Settings Tab
+- Keyword configuration interface
+- Modify monitoring keywords in real-time
+- Comma-separated keyword input
+
+### Technical Implementation
+
+#### State Management
+```javascript
+- activeTab: Tab navigation control
+- monitoringFeed: Array of mentions
+- loading: Fetch state management
+- analyzingItems: Set of items being analyzed
+- dataSourceConfig: Keywords and source configuration
+- autoRefresh: Toggle state
+- refreshInterval: 30-second default
+
+## Project Overview
+SignalDesk is a comprehensive PR platform with Claude AI integration, built with React frontend and Node.js/Express backend.
+
+## Current Working State (July 13, 2025)
+
+### ✅ Fully Functional Features
+- **Authentication**: PostgreSQL-based auth with JWT tokens (demo@signaldesk.com / password)
+- **AI Assistant**: Chat interface with Claude API (backend integration)
+- **Campaign Intelligence**: PR strategy and materials generation
+- **Content Generator**: 9 content types with AI assistance
+- **Crisis Command Center**: Crisis planning and real-time management
+  - Crisis plan generation with real Claude AI data (healthcare, technology, finance, etc.)
+  - War room with real-time crisis management
+  - AI Crisis Advisor
+  - Stakeholder communication drafting
+  - Event logging and tracking
+- **Backend Claude Integration**: All window.claude calls replaced with backend API calls
+
+### 🔧 Recent Fixes (July 13, 2025 Session)
+- Fixed all `window.claude.complete()` calls - replaced with backend API endpoints
+- Fixed Crisis Command Center to work in any browser (not just Claude.ai)
+- Resolved numerous syntax errors in crisisController.js
+- Fixed backend response format to match frontend expectations
+- Fixed variable scope issues in crisis plan generation
+- Provided complete working crisisController.js implementation
+- Crisis plan generation now uses real Claude AI data (no more fallback/template data)
+
+## Technology Stack
+
+### Frontend
+- React 18 with React Router v6
+- No TypeScript
+- Icons: Lucide React
+- Styling: Custom CSS
+- State Management: Context API (AuthContext, ProjectContext)
+- API Service: Generic HTTP client (`/src/services/api.js`)
+
+### Backend
+- Node.js with Express
+- PostgreSQL database
+- Authentication: JWT with bcrypt
+- Claude AI: @anthropic-ai/sdk
+- Model: claude-3-5-sonnet-20241022
+- Middleware: authMiddleware for protected routes
+- File uploads: Multer
+
+## API Endpoints
+
+### Crisis Management (All Working with Claude AI)
+- `POST /api/crisis/generate-plan` - Generate crisis plan with Claude AI
+- `GET /api/crisis/plan` - Get saved plan
+- `PUT /api/crisis/plan` - Update plan
+- `DELETE /api/crisis/plan` - Delete plan
+- `POST /api/crisis/advisor` - AI crisis advice
+- `POST /api/crisis/draft-response` - Draft communications
+- `POST /api/crisis/event-log` - Save event
+- `GET /api/crisis/event-logs` - Get event history
+
+### Other Endpoints
+- Authentication: `/api/auth/*`
+- Projects: `/api/projects/*`
+- AI Assistant: `/api/assistant/chat`
+- Campaigns: `/api/campaigns/*`
+- Content: `/api/content/*`
+
+## Database Schema
+
+Key tables:
+- `users` - User authentication
+- `campaigns` - PR campaigns
+- `content` - Generated content
+- `templates` - Content templates
+- `crisis_plans` - User crisis plans (JSONB)
+- `crisis_event_logs` - Crisis event history
+
+## Claude Integration Details
+
+### ClaudeService Configuration
+```javascript
+// config/claude.js
+- sendMessage() - For general chat
+- sendConversation() - For multi-turn conversations
+- generateContent() - For content generation (used by Crisis Command Center)
+```
+
+### Crisis Plan Generation Flow
+1. Frontend sends industry selection to `/api/crisis/generate-plan`
+2. Backend makes 3 Claude API calls:
+   - Generate industry-specific crisis scenarios
+   - Identify key stakeholders
+   - Create communication plans
+3. Responses are parsed and combined with universal scenarios
+4. Complete plan saved to PostgreSQL
+5. Frontend receives formatted response: `{ success: true, plan: { plan_data: {...}, id: ... } }`
+
+## Current Issues & Next Steps
+
+### Issues Resolved ✅
+- ~~Crisis plan generation uses fallback data~~ → Now uses real Claude AI
+- ~~Frontend/backend response format mismatch~~ → Fixed
+- ~~Syntax errors in crisisController.js~~ → Fixed
+- ~~Variable scope issues~~ → Fixed
+
+### Next Features to Build
+1. Media List Builder
+2. MemoryVault (document management)
+3. Analytics/Monitoring Dashboard
+4. Enhanced reporting features
+5. Team collaboration features
+
+## Development Commands
+
+```bash
+# Backend (Port 5001)
+cd ~/Desktop/SignalDesk/backend
+npm run dev
+
+# Frontend (Port 3000)
+cd ~/Desktop/SignalDesk/frontend
+npm start
+
+# Database
+psql -d signaldesk
+
+# Kill processes if needed
+lsof -ti :5001 | xargs kill -9
+lsof -ti :3000 | xargs kill -9
+```
+
+## Key Files Modified Today
+
+### Frontend
+- `/src/components/CrisisCommandCenter.js` - Fixed API calls to remove double `/api` prefix
+
+### Backend
+- `/config/claude.js` - Complete rewrite with proper structure and methods
+- `/src/controllers/crisisController.js` - Complete rewrite with proper error handling and response format
+- `/src/routes/crisisRoutes.js` - Added route-level debugging
+- `/server.js` - Added request logging middleware
+
+## Testing Checklist
+
+✅ Crisis plan generation works with real Claude AI data
+✅ AI Crisis Advisor responds correctly
+✅ Stakeholder communication drafting works
+✅ All crisis features work across all browsers
+✅ No more "template data" messages
+✅ Each generation produces unique, industry-specific content
+
+## Debug Commands Used
+
+```bash
+# Check Claude API responses
+grep -n "generateContent" config/claude.js
+
+# Monitor backend logs for Claude calls
+# Look for: "=== generateContent called ==="
+# And: "✅ Claude API responded successfully"
+
+# Test Claude service directly
+node test-claude-simple.js
+```
+
+## Notes
+
+- The window.claude API only works inside Claude.ai interface
+- Backend Claude integration allows the app to work in any browser
+- All Claude API calls include detailed logging for debugging
+- Response format must match frontend expectations exactly
+- Crisis plans now include industry-specific scenarios + universal scenarios
+
+## Environment Variables Required
+
+```
+CLAUDE_API_KEY=sk-ant-api03-...
+CLAUDE_MODEL=claude-3-5-sonnet-20241022
+DATABASE_URL=postgresql://...
+JWT_SECRET=...
+```
+
+Last Updated: July 13, 2025 - Crisis Command Center fully integrated with Claude AI
+# SignalDesk Project Context
+## Last Updated: July 13, 2025 - Evening Session
+
+## Project Overview
+SignalDesk is a comprehensive PR platform with Claude AI integration, built with React frontend and Node.js/Express backend.
+
+## Current Working State (July 13, 2025 - Evening)
+
+### ✅ Fully Functional Features
+- **Authentication**: PostgreSQL-based auth with JWT tokens (demo@signaldesk.com / password)
+- **AI Assistant**: Chat interface with Claude API (backend integration)
+- **Campaign Intelligence**: PR strategy and materials generation
+- **Content Generator**: 9 content types with AI assistance
+- **Crisis Command Center**: Crisis planning and real-time management
+  - Crisis plan generation with real Claude AI data (healthcare, technology, finance, etc.)
+  - War room with real-time crisis management
+  - **AI Crisis Advisor** (FIXED in evening session):
+    - Now properly connects to user's crisis plan
+    - References specific scenarios, stakeholders, and communication plans
+    - Provides industry-specific advice based on crisis plan
+    - Properly formatted responses with line breaks and paragraphs
+  - Stakeholder communication drafting
+  - Event logging and tracking
+- **Backend Claude Integration**: All window.claude calls replaced with backend API calls
+
+### 🔧 Recent Fixes (July 13, 2025 Evening Session)
+- **Fixed AI Crisis Advisor Integration**:
+  - Added missing `advisor`/`getAIAdvice` function to crisisController.js
+  - Fixed case mismatch: `ClaudeService` → `claudeService`
+  - Advisor now retrieves user's crisis plan from database
+  - Includes plan context (scenarios, stakeholders, communication plans) in Claude prompts
+  - Returns plan summary with advice
+- **Fixed Frontend Display**:
+  - Added `whitespace-pre-wrap` CSS class for proper formatting
+  - Fixed JSX syntax errors from orphaned code
+  - AI responses now display with proper line breaks and paragraphs
+- **Cleaned Up Code**:
+  - Removed duplicate `handleAIChat` functions
+  - Removed orphaned code blocks causing syntax errors
+  - Fixed missing closing div tags
+
+## Technology Stack
+
+### Frontend
+- React 18 with React Router v6
+- No TypeScript
+- Icons: Lucide React
+- Styling: Custom CSS (with Tailwind-like classes)
+- State Management: Context API (AuthContext, ProjectContext)
+- API Service: Generic HTTP client (`/src/services/api.js`)
+
+### Backend
+- Node.js with Express
+- PostgreSQL database
+- Authentication: JWT with bcrypt
+- Claude AI: @anthropic-ai/sdk
+- Model: claude-3-5-sonnet-20241022
+- Middleware: authMiddleware for protected routes
+- File uploads: Multer
+
+## API Endpoints
+
+### Crisis Management (All Working with Claude AI)
+- `POST /api/crisis/generate-plan` - Generate crisis plan with Claude AI ✅
+- `GET /api/crisis/plan` - Get saved plan ✅
+- `PUT /api/crisis/plan` - Update plan ✅
+- `DELETE /api/crisis/plan` - Delete plan ✅
+- `POST /api/crisis/advisor` - AI crisis advice (FIXED) ✅
+- `POST /api/crisis/draft-response` - Draft communications ✅
+- `POST /api/crisis/event-log` - Save event ✅
+- `GET /api/crisis/event-logs` - Get event history ✅
+
+### Other Endpoints
+- Authentication: `/api/auth/*`
+- Projects: `/api/projects/*`
+- AI Assistant: `/api/assistant/chat`
+- Campaigns: `/api/campaigns/*`
+- Content: `/api/content/*`
+
+## Database Schema
+
+Key tables:
+- `users` - User authentication
+- `campaigns` - PR campaigns
+- `content` - Generated content
+- `templates` - Content templates
+- `crisis_plans` - User crisis plans (JSONB) - stores complete plan with scenarios, stakeholders, etc.
+- `crisis_event_logs` - Crisis event history
+
+## Claude Integration Details
+
+### ClaudeService Configuration
+```javascript
+// config/claude.js
+const claudeService = require('../../config/claude'); // Note: lowercase 'c'
+- sendMessage() - For general chat
+- sendConversation() - For multi-turn conversations
+- generateContent() - For content generation (used by Crisis Command Center)
+```
+
+### Crisis Advisor Flow (FIXED)
+1. Frontend sends query to `/api/crisis/advisor`
+2. Backend (`getAIAdvice` function):
+   - Retrieves user's crisis plan from PostgreSQL
+   - Builds comprehensive prompt with plan context
+   - Calls `claudeService.generateContent(prompt)`
+   - Returns formatted response with plan summary
+3. Frontend displays formatted advice with proper line breaks
+
+### Crisis Plan Generation Flow (Working)
+1. Frontend sends industry selection to `/api/crisis/generate-plan`
+2. Backend makes 3 Claude API calls:
+   - Generate industry-specific crisis scenarios
+   - Identify key stakeholders
+   - Create communication plans
+3. Responses are parsed and combined with universal scenarios
+4. Complete plan saved to PostgreSQL
+5. Frontend receives formatted response
+
+## Key Code Fixes Applied
+
+### Backend - crisisController.js
+```javascript
+// Added the missing advisor function
+exports.getAIAdvice = async (req, res) => {
+  // Retrieves crisis plan
+  // Builds context-aware prompt
+  // Returns AI advice with plan summary
+};
+
+// Fixed import case sensitivity
+const claudeService = require('../../config/claude'); // lowercase
+```
+
+### Frontend - CrisisCommandCenter.js
+```javascript
+// Updated handleAIChat to call backend API
+const response = await api.post('/crisis/advisor', {
+  query: chatInput,
+  context: selectedScenario ? 
+    `Active Crisis Scenario: ${selectedScenario.title}` : 
+    'General crisis management inquiry'
+});
+
+// Fixed message display formatting
+<p className="text-sm whitespace-pre-wrap">{message.content}</p>
+```
+
+## Current Issues & Next Steps
+
+### Issues Resolved ✅
+- ~~AI Crisis Advisor not connecting to crisis plan~~ → Fixed
+- ~~Frontend calling window.claude instead of backend~~ → Fixed
+- ~~AI responses displayed as long string~~ → Fixed with formatting
+- ~~Case sensitivity issues with imports~~ → Fixed
+
+### Next Features to Build
+1. Media List Builder
+2. MemoryVault (document management)
+3. Analytics/Monitoring Dashboard
+4. Enhanced reporting features
+5. Team collaboration features
+6. Email integration for crisis communications
+
+## Development Commands
+
+```bash
+# Backend (Port 5001)
+cd ~/Desktop/SignalDesk/backend
+npm run dev
+
+# Frontend (Port 3000)
+cd ~/Desktop/SignalDesk/frontend
+npm start
+
+# Database
+psql -d signaldesk
+
+# Kill processes if needed
+lsof -ti :5001 | xargs kill -9
+lsof -ti :3000 | xargs kill -9
+```
+
+## Testing Checklist
+
+✅ Crisis plan generation works with real Claude AI data
+✅ AI Crisis Advisor responds with plan context
+✅ AI advice references specific industry, scenarios, and stakeholders
+✅ Responses are properly formatted with line breaks
+✅ Stakeholder communication drafting works
+✅ All crisis features work across all browsers
+✅ No more "template data" messages
+✅ Each generation produces unique, industry-specific content
+
+## Debug Commands Used
+
+```bash
+# Check Claude API responses
+grep -n "generateContent" config/claude.js
+
+# Monitor backend logs for AI Advisor
+# Look for: "=== AI Crisis Advisor called ==="
+# And: "✅ Crisis plan found for user"
+
+# Check imports and case sensitivity
+grep -n "ClaudeService\|claudeService" src/controllers/crisisController.js
+
+# Verify crisis plan exists for user
+psql -d signaldesk -c "SELECT COUNT(*) FROM crisis_plans WHERE user_id = (SELECT id FROM users WHERE email = 'demo@signaldesk.com');"
+```
+
+## Environment Variables Required
+
+```
+CLAUDE_API_KEY=sk-ant-api03-...
+CLAUDE_MODEL=claude-3-5-sonnet-20241022
+DATABASE_URL=postgresql://...
+JWT_SECRET=...
+PORT=5001
+```
+
+## Important Notes
+
+- The window.claude API only works inside Claude.ai interface
+- Backend Claude integration allows the app to work in any browser
+- All Claude API calls include detailed logging for debugging
+- Response format must match frontend expectations exactly
+- Crisis plans include industry-specific scenarios + universal scenarios
+- AI Advisor now provides context-aware advice based on stored crisis plans
+- Case sensitivity matters in JavaScript imports (claudeService vs ClaudeService)
+
+## Backup Locations
+- `frontend/src/components/CrisisCommandCenter.js.backup`
+- `backups/july13/CrisisCommandCenter.js`
+- `backend/src/controllers/crisisController.old`
+
+Last Updated: July 13, 2025 - AI Crisis Advisor fully integrated with crisis plan context
+
+## 🚀 Project Overview
+**SignalDesk** is an AI-powered PR platform with Claude AI integration. Built with React frontend and Node.js backend. Currently has working AI Assistant, Campaign Intelligence, Content Generator, Crisis Command Center, and PostgreSQL authentication.
+
+## ✅ Current Working State
+- **Frontend**: ✅ Running on http://localhost:3000
+- **Backend**: ✅ Running on http://localhost:5001  
+- **Navigation**: ✅ All routing working, sidebar functional
+- **AI Assistant**: ✅ FULLY WORKING with Claude API
+- **Campaign Intelligence**: ✅ FULLY WORKING with strategy and PR materials generation
+- **Content Generator**: ✅ FULLY WORKING with 9 content types and AI writing assistant
+- **Crisis Command Center**: ✅ FULLY WORKING with real-time crisis management
+- **Claude API**: ✅ Integrated and responding correctly
+- **Authentication**: ✅ PostgreSQL authentication (demo@signaldesk.com / password)
+- **Projects API**: ✅ CRUD operations working (mock data)
+- **Database**: ✅ PostgreSQL connected with users, campaigns, content, templates, crisis_plans, and crisis_event_logs tables
+
+## 🛠️ Technology Stack
+Frontend:
+
+React 18 with React Router v6
+No TypeScript
+Icons: Lucide React
+Styling: Custom CSS (Tailwind removed due to config issues)
+Contexts: AuthContext (useAuth hook), ProjectContext
+Protected routes with auth checks
+API: Generic HTTP methods (get, post, put, delete)
+
+Backend:
+
+Node.js with Express
+PostgreSQL database (pg package)
+Bcrypt for password hashing
+Claude AI: claude-3-5-sonnet-20241022
+@anthropic-ai/sdk package
+Routes: /api/auth, /api/projects, /api/assistant, /api/campaigns, /api/content, /api/crisis
+CORS enabled for localhost:3000
+JWT for authentication
+Middleware: authMiddleware for protected routes
+Multer for file uploads (templates)
+
+
+## 📁 Project Structure
+SignalDesk/
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── Layout.js          ✅ (Sidebar with navigation)
+│   │   │   ├── Dashboard.js       ✅ (Feature cards grid)
+│   │   │   ├── Login.js           ✅ (Real login with PostgreSQL)
+│   │   │   ├── Login.css          ✅ (Styled login page)
+│   │   │   ├── Layout.css         ✅ (Updated with user info styles)
+│   │   │   ├── AIAssistant.js     ✅ (FULLY FUNCTIONAL CHAT)
+│   │   │   ├── CampaignIntelligence.js ✅ (FULLY FUNCTIONAL)
+│   │   │   ├── CampaignIntelligence.css ✅ (Complete styles)
+│   │   │   ├── ContentGenerator.js ✅ (FULLY FUNCTIONAL - 9 content types)
+│   │   │   ├── ContentGenerator.css ✅ (Complete styles)
+│   │   │   ├── CrisisCommandCenter.js ✅ (FULLY FUNCTIONAL)
+│   │   │   ├── CrisisCommandCenter.css ✅ (Complete styles)
+│   │   │   ├── MediaListBuilder.js ⏳ (Placeholder)
+│   │   │   ├── ProjectList.js     ⏳ (Placeholder)
+│   │   │   └── [Other placeholders...]
+│   │   ├── contexts/
+│   │   │   ├── AuthContext.js     ✅ (useAuth hook)
+│   │   │   └── ProjectContext.js  ✅ (Project management)
+│   │   ├── services/
+│   │   │   └── api.js            ✅ (Generic HTTP methods)
+│   │   └── App.js                ✅ (All routes configured)
+│   └── package.json
+│
+└── backend/
+├── src/
+│   ├── routes/
+│   │   ├── authRoutes.js      ✅ (PostgreSQL auth)
+│   │   ├── projectRoutes.js   ✅ (CRUD with mock data)
+│   │   ├── assistantRoutes.js ✅ (Claude chat working)
+│   │   ├── campaignRoutes.js  ✅ (Strategy & materials generation)
+│   │   ├── contentRoutes.js   ✅ (Content generation, templates)
+│   │   └── crisisRoutes.js    ✅ (Crisis management)
+│   ├── controllers/
+│   │   ├── assistantController.js ✅ (Claude integration)
+│   │   ├── contentController.js   ✅ (Content & template management)
+│   │   └── crisisController.js    ✅ (Crisis plan & advisor)
+│   ├── middleware/
+│   │   └── auth.js            ✅ (JWT authentication)
+│   └── config/
+│       └── db.js              ✅ (PostgreSQL connection pool)
+├── config/
+│   └── claude.js              ✅ (ClaudeService class with generateContent)
+├── server.js                  ✅ (All routes registered)
+└── .env                       ✅ (All env vars configured)
+
+## 🗄️ Database Schema
+```sql
+-- Users table (implemented)
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    name VARCHAR(255),
+    company VARCHAR(255),
+    role VARCHAR(50) DEFAULT 'user',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Campaigns table (implemented)
+CREATE TABLE campaigns (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    brief TEXT NOT NULL,
+    strategy JSONB,
+    materials JSONB,
+    status VARCHAR(50) DEFAULT 'draft',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Content table (implemented)
+CREATE TABLE content (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    project_id INTEGER REFERENCES projects(id) ON DELETE SET NULL,
+    title VARCHAR(255) NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    content TEXT NOT NULL,
+    form_data JSONB,
+    status VARCHAR(50) DEFAULT 'draft',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Templates table (implemented)
+CREATE TABLE templates (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    content_type VARCHAR(50) DEFAULT 'universal',
+    file_type VARCHAR(100),
+    size INTEGER,
+    placeholders JSONB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Crisis Plans table (implemented)
+CREATE TABLE crisis_plans (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    industry VARCHAR(255) NOT NULL,
+    plan_data JSONB NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id)
+);
+
+-- Crisis Event Logs table (implemented)
+CREATE TABLE crisis_event_logs (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    event_data JSONB NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes
+CREATE INDEX idx_campaigns_user_id ON campaigns(user_id);
+CREATE INDEX idx_campaigns_created_at ON campaigns(created_at DESC);
+CREATE INDEX idx_content_user_id ON content(user_id);
+CREATE INDEX idx_content_project_id ON content(project_id);
+CREATE INDEX idx_content_type ON content(type);
+CREATE INDEX idx_content_created_at ON content(created_at DESC);
+CREATE INDEX idx_templates_user_id ON templates(user_id);
+CREATE INDEX idx_templates_content_type ON templates(content_type);
+CREATE INDEX idx_crisis_plans_user_id ON crisis_plans(user_id);
+CREATE INDEX idx_crisis_event_logs_user_id ON crisis_event_logs(user_id);
+CREATE INDEX idx_crisis_event_logs_created_at ON crisis_event_logs(created_at DESC);
+🔑 Key Working Components
+Authentication System (Fully Functional)
+
+PostgreSQL-based user authentication
+Bcrypt password hashing
+JWT token generation and validation
+Protected routes with automatic redirects
+User info display in sidebar
+Login/logout functionality
+Demo user: demo@signaldesk.com / password
+
+AI Assistant (Fully Functional)
+
+Real-time chat interface with Claude
+Maintains conversation history
+Professional PR assistance
+Located at: /ai-assistant
+Uses: POST /api/assistant/chat
+
+Campaign Intelligence (Fully Functional)
+
+Comprehensive PR strategy generation
+Company information extraction
+Market research and positioning
+7 types of PR materials generation
+Campaign saving and history
+Export functionality (download/copy)
+Located at: /campaign-intelligence
+Uses: POST /api/campaigns/generate-strategy
+Uses: POST /api/campaigns/generate-material
+
+Content Generator (Fully Functional)
+
+9 content types available:
+
+Press Releases
+Crisis Response Statements
+Social Media Posts
+Media Pitches
+Executive Statements
+Q&A Documents
+Messaging Frameworks
+Thought Leadership Articles
+Presentation Decks
+
+
+AI Writing Assistant with natural language input
+Form-based generation with best practices
+Template management system (upload/apply)
+Content history and library
+Export to multiple formats
+Writing guides and frameworks
+Located at: /content-generator
+Uses: POST /api/content/generate
+Uses: POST /api/content/ai-generate
+Uses: POST /api/content/save
+
+Crisis Command Center (Fully Functional)
+
+Industry-specific crisis plan generation
+Real-time crisis war room
+Crisis team management with contact tracking
+Task assignment and status tracking
+Stakeholder communication drafting
+AI Crisis Advisor chat interface
+Decision logging system
+Notification system
+Editable plan sections (objectives, team, scenarios, stakeholders, communications)
+Crisis timer and status tracking
+Universal and industry-specific scenarios
+Emergency resource hub
+Located at: /crisis-command
+Uses: POST /api/crisis/generate-plan
+Uses: GET/PUT /api/crisis/plan
+Uses: POST /api/crisis/advisor
+Uses: POST /api/crisis/draft-response
+
+API Endpoints (All Working)
+POST   /api/auth/login         ✅ PostgreSQL authentication
+GET    /api/auth/verify        ✅ Token verification
+POST   /api/auth/register      ✅ User registration (ready but no UI)
+GET    /api/projects           ✅ List projects (mock data)
+POST   /api/projects           ✅ Create project (mock data)
+PUT    /api/projects/:id       ✅ Update project (mock data)
+DELETE /api/projects/:id       ✅ Delete project (mock data)
+POST   /api/assistant/chat     ✅ Claude AI chat
+GET    /api/campaigns          ✅ List user campaigns
+POST   /api/campaigns          ✅ Save campaign
+POST   /api/campaigns/generate-strategy ✅ Generate PR strategy
+POST   /api/campaigns/generate-material ✅ Generate PR materials
+PUT    /api/campaigns/:id/materials ✅ Update campaign materials
+DELETE /api/campaigns/:id      ✅ Delete campaign
+POST   /api/content/generate   ✅ Generate content with form data
+POST   /api/content/ai-generate ✅ Generate with AI assistant
+POST   /api/content/save       ✅ Save generated content
+GET    /api/content/history    ✅ Get content history
+GET    /api/content/:id        ✅ Get single content
+PUT    /api/content/:id        ✅ Update content
+DELETE /api/content/:id        ✅ Delete content
+GET    /api/content/templates  ✅ Get templates
+POST   /api/content/templates/upload ✅ Upload templates
+DELETE /api/content/templates/:id ✅ Delete template
+POST   /api/content/export     ✅ Export content
+POST   /api/crisis/generate-plan ✅ Generate crisis plan
+GET    /api/crisis/plan        ✅ Get saved crisis plan
+PUT    /api/crisis/plan        ✅ Update crisis plan
+DELETE /api/crisis/plan        ✅ Delete crisis plan
+POST   /api/crisis/advisor     ✅ AI crisis advice
+POST   /api/crisis/draft-response ✅ Draft stakeholder response
+POST   /api/crisis/event-log   ✅ Save crisis event
+GET    /api/crisis/event-logs  ✅ Get event logs
+Environment Variables (.env)
+PORT=5001                      ✅ Set
+CLAUDE_API_KEY=sk-ant-api03... ✅ Valid and working
+CLAUDE_MODEL=claude-3-5-sonnet-20241022 ✅ Set
+JWT_SECRET=signaldesk-jwt-secret-2024 ✅ Set
+NODE_ENV=development           ✅ Set
+DB_HOST=localhost              ✅ Set
+DB_PORT=5432                   ✅ Set
+DB_NAME=signaldesk            ✅ Set
+DB_USER=postgres              ✅ Set
+DB_PASSWORD=***               ✅ Set
+🎯 Features Status
+Implemented & Working ✅
+
+Navigation System - Full sidebar with all routes
+Dashboard - Feature cards with navigation
+AI Assistant - Complete chat interface with Claude
+Campaign Intelligence - Full PR strategy and materials generation
+Content Generator - AI-powered content creation with 9 types
+Crisis Command Center - Real-time crisis management and planning
+Authentication - PostgreSQL authentication with JWT
+User Display - Shows user info and logout in sidebar
+Protected Routes - Auto-redirect to login if not authenticated
+Claude Integration - Fully functional via ClaudeService
+Database Connection - PostgreSQL with all required tables
+API Service - Generic HTTP methods for flexible API calls
+Template System - Upload and apply content templates
+Content Library - Save and retrieve generated content
+Crisis Planning - Industry-specific crisis management plans
+Crisis War Room - Real-time crisis coordination
+
+Ready to Build 🏗️
+
+Media List Builder - Contact management system
+MemoryVault - Document upload and AI training
+Monitoring - Analytics and tracking
+Reports - Advanced export functionality
+Projects UI - Frontend for projects (API ready)
+
+Partially Implemented 🔄
+
+Projects API - Backend ready, needs PostgreSQL integration
+User Registration - API ready, needs UI
+
+Not Started ❌
+
+File Upload - For MemoryVault (documents)
+External Integrations - Slack, social media
+Email Notifications
+Advanced User Roles/Permissions
+
+🐛 Recent Fixes (Current Session)
+
+✅ Fixed CrisisCommandCenter import mismatch
+✅ Created crisis routes and controller
+✅ Added crisis_plans and crisis_event_logs tables
+✅ Fixed macOS sed command issues
+✅ Integrated Crisis Command Center into navigation
+✅ Added full crisis management functionality
+✅ Implemented crisis plan generation with fallback
+✅ Added AI crisis advisor with chat interface
+✅ Created stakeholder communication drafting
+✅ Added crisis war room with real-time coordination
+
+💻 Common Commands
+bash# Start Backend
+cd ~/Desktop/SignalDesk/backend
+npm run dev  # Runs on port 5001
+
+# Start Frontend  
+cd ~/Desktop/SignalDesk/frontend
+npm start    # Runs on port 3000
+
+# PostgreSQL
+psql -d signaldesk  # Connect to database
+
+# Test API
+curl -X POST http://localhost:5001/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"demo@signaldesk.com","password":"password"}'
+
+# Kill processes
+lsof -ti :5001 | xargs kill -9  # Backend
+lsof -ti :3000 | xargs kill -9  # Frontend
+
+# Check crisis plans
+psql -d signaldesk -c "SELECT id, industry, created_at FROM crisis_plans ORDER BY created_at DESC LIMIT 5;"
+📝 Current Session Accomplishments
+
+Successfully integrated Crisis Command Center feature
+Created database schema for crisis plans and event logs
+Implemented industry-specific crisis plan generation
+Added real-time crisis war room functionality
+Built AI Crisis Advisor with chat interface
+Created stakeholder communication drafting system
+Added crisis team management with contact tracking
+Implemented task assignment and tracking
+Added decision logging and notification systems
+Created editable crisis plan sections
+
+🚀 Next Steps
+
+Build Media List Builder - Contact and journalist management
+Implement MemoryVault - Document upload and AI training
+Update Projects API - Connect to PostgreSQL with user associations
+Add User Registration UI - Frontend for the existing API endpoint
+Build Monitoring Dashboard - Analytics and performance tracking
+Create Reports Module - Advanced reporting and exports
+
+💡 Important Context
+
+Authentication uses PostgreSQL with bcrypt hashing
+JWT tokens stored in localStorage
+Claude integration via ClaudeService singleton instance
+API uses generic HTTP methods (get, post, put, delete)
+All features respect user authentication boundaries
+Content Generator supports 9 different content types
+Template system supports Word, PowerPoint, HTML, and text files
+Crisis Command Center includes both planning and active crisis management
+Crisis plans are user-specific and stored in JSONB format
+Response handling: API service returns data directly (use response.content, not response.data.content)
+
+🎨 UI/UX Patterns
+
+Sidebar: Black (#1a1a1a) with white text
+Main content: Gray background (#f5f5f5)
+Cards: White with shadows and hover effects
+Primary color: Blue (#007bff)
+Gradient buttons: Blue to purple (#007bff to #6610f2)
+Progress bars with shimmer animation
+Material selection grid with checkboxes
+Export buttons for download/copy functionality
+Modal system for templates, exports, and scenario selection
+Responsive grid layouts
+Crisis status indicators (green/yellow/red)
+Real-time timer displays
+Notification badges and alerts
+
+🔧 Technical Notes
+
+Using fetch API with generic methods in frontend
+JWT tokens in Authorization header
+JSONB columns for flexible data storage
+ClaudeService is a singleton (don't use 'new')
+Route ordering matters (specific routes before :id params)
+Multer for file uploads with 5MB limit
+Template placeholders support multiple formats ({{var}}, [var], ${var})
+Content history sidebar with sticky positioning
+CSS classes namespaced to avoid conflicts (content-sidebar vs sidebar)
+Crisis plans stored as JSONB with industry-specific and universal scenarios
+Real-time updates using React state and intervals
+Modal system for crisis scenario selection
+
+🌟 Platform Highlights
+
+4 major AI features fully operational (Assistant, Campaign Intelligence, Content Generator, Crisis Command)
+Comprehensive PR content generation across all formats
+Professional writing guides based on industry best practices
+Template system for branded content exports
+Real-time Claude AI integration with error handling
+Secure user-scoped data management
+Crisis management with industry-specific planning
+Real-time crisis coordination and communication
+Decision logging and audit trails
+
+
+Last Updated: Current session - Crisis Command Center fully integrated
+Current Focus: Ready to build Media List Builder or MemoryVault
+Session Achievement: Complete Crisis Command Center with plan generation, war room, AI advisor, and stakeholder communication management

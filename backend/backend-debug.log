@@ -1,0 +1,118 @@
+
+> signaldesk-backend@1.0.0 dev
+> nodemon server.js
+
+[33m[nodemon] 3.1.10[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching path(s): *.*[39m
+[33m[nodemon] watching extensions: js,mjs,cjs,json[39m
+[32m[nodemon] starting `node server.js`[39m
+All routes registered successfully
+
+🚀 SignalDesk Backend running on http://localhost:5001
+📱 Frontend expected at http://localhost:3000
+
+✅ Available endpoints:
+  Public:
+   - POST /api/auth/login
+   - POST /api/auth/register
+   - GET  /api/auth/verify
+  Protected (requires token):
+   - /api/projects/*
+   - /api/todos/*
+   - /api/assistant/*
+   - /api/content/*
+   - /api/media/*
+   - /api/ai/*
+   - ... and more
+Successfully connected to PostgreSQL database
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server.js`[39m
+All routes registered successfully
+
+🚀 SignalDesk Backend running on http://localhost:5001
+📱 Frontend expected at http://localhost:3000
+
+✅ Available endpoints:
+  Public:
+   - POST /api/auth/login
+   - POST /api/auth/register
+   - GET  /api/auth/verify
+  Protected (requires token):
+   - /api/projects/*
+   - /api/todos/*
+   - /api/assistant/*
+   - /api/content/*
+   - /api/media/*
+   - /api/ai/*
+   - ... and more
+Successfully connected to PostgreSQL database
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server.js`[39m
+All routes registered successfully
+
+🚀 SignalDesk Backend running on http://localhost:5001
+📱 Frontend expected at http://localhost:3000
+
+✅ Available endpoints:
+  Public:
+   - POST /api/auth/login
+   - POST /api/auth/register
+   - GET  /api/auth/verify
+  Protected (requires token):
+   - /api/projects/*
+   - /api/todos/*
+   - /api/assistant/*
+   - /api/content/*
+   - /api/media/*
+   - /api/ai/*
+   - ... and more
+Successfully connected to PostgreSQL database
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server.js`[39m
+All routes registered successfully
+
+🚀 SignalDesk Backend running on http://localhost:5001
+📱 Frontend expected at http://localhost:3000
+
+✅ Available endpoints:
+  Public:
+   - POST /api/auth/login
+   - POST /api/auth/register
+   - GET  /api/auth/verify
+  Protected (requires token):
+   - /api/projects/*
+   - /api/todos/*
+   - /api/assistant/*
+   - /api/content/*
+   - /api/media/*
+   - /api/ai/*
+   - ... and more
+Successfully connected to PostgreSQL database
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server.js`[39m
+Initializing Claude service...
+API Key found: true
+API Key length: 108
+Claude service initialized with model: claude-3-5-sonnet-20241022
+All routes registered successfully
+
+🚀 SignalDesk Backend running on http://localhost:5001
+📱 Frontend expected at http://localhost:3000
+
+✅ Available endpoints:
+  Public:
+   - POST /api/auth/login
+   - POST /api/auth/register
+   - GET  /api/auth/verify
+  Protected (requires token):
+   - /api/projects/*
+   - /api/todos/*
+   - /api/assistant/*
+   - /api/content/*
+   - /api/media/*
+   - /api/ai/*
+   - ... and more
+Successfully connected to PostgreSQL database

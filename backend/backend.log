@@ -1,0 +1,59 @@
+Initializing Claude service...
+API Key found: true
+API Key length: 108
+Claude service initialized with model: claude-3-5-sonnet-20241022
+All routes registered successfully
+
+🚀 SignalDesk Backend running on http://localhost:5001
+📱 Frontend expected at http://localhost:3000
+
+✅ Available endpoints:
+  Public:
+   - POST /api/auth/login
+   - POST /api/auth/register
+   - GET  /api/auth/verify
+  Protected (requires token):
+   - /api/projects/*
+   - /api/todos/*
+   - /api/assistant/*
+   - /api/content/*
+   - /api/media/*
+   - /api/ai/*
+   - ... and more
+Successfully connected to PostgreSQL database
+Loaded 6 opportunity patterns
+[2025-08-07T14:15:37.889Z] GET /api/projects
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Fetching projects for user: 1
+[2025-08-07T14:15:37.894Z] GET /api/auth/verify
+Auth middleware - dev mode bypass
+[2025-08-07T14:15:37.896Z] GET /api/auth/verify
+Auth middleware - dev mode bypass
+Found projects: 2
+[2025-08-07T14:15:37.930Z] GET /api/projects
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Fetching projects for user: 1
+Found projects: 2
+[2025-08-07T15:49:27.005Z] GET /
+404 Not Found: GET /
+[2025-08-07T15:49:27.197Z] GET /favicon.ico
+404 Not Found: GET /favicon.ico
+[2025-08-07T15:49:46.625Z] GET /
+404 Not Found: GET /
+[2025-08-07T15:50:40.725Z] GET /
+404 Not Found: GET /
+[2025-08-07T15:51:20.464Z] GET /
+404 Not Found: GET /
+[2025-08-07T15:51:20.537Z] GET /favicon.ico
+404 Not Found: GET /favicon.ico
+[2025-08-07T15:52:19.702Z] POST /api/auth/login
+Login attempt for: demo@signaldesk.com
+Login successful for demo user
+[2025-08-07T15:52:24.704Z] GET /
+404 Not Found: GET /
+[2025-08-07T15:52:41.717Z] GET /
+404 Not Found: GET /
+[2025-08-07T15:52:41.852Z] GET /favicon.ico
+404 Not Found: GET /favicon.ico

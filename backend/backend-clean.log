@@ -1,0 +1,36 @@
+Initializing Claude service...
+API Key found: true
+API Key length: 108
+Claude service initialized with model: claude-3-5-sonnet-20241022
+All routes registered successfully
+
+🚀 SignalDesk Backend running on http://localhost:5001
+📱 Frontend expected at http://localhost:3000
+
+✅ Available endpoints:
+  Public:
+   - POST /api/auth/login
+   - POST /api/auth/register
+   - GET  /api/auth/verify
+  Protected (requires token):
+   - /api/projects/*
+   - /api/todos/*
+   - /api/assistant/*
+   - /api/content/*
+   - /api/media/*
+   - /api/ai/*
+   - ... and more
+Successfully connected to PostgreSQL database
+Loaded 6 opportunity patterns
+[2025-08-07T14:12:36.063Z] POST /api/auth/login
+Login attempt for: demo@signaldesk.com
+Login successful for demo user
+[2025-08-07T14:12:42.881Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities

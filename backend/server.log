@@ -1,0 +1,2307 @@
+Database configuration: {
+  DATABASE_URL: 'Not set',
+  PGHOST: 'Not set',
+  PGDATABASE: 'Not set',
+  NODE_ENV: 'development'
+}
+Initializing Claude service...
+API Key found: true
+API Key length: 108
+Claude service initialized with model: claude-3-5-sonnet-20241022
+All routes registered successfully
+
+🚀 SignalDesk Backend running on port 5001
+📱 Frontend expected at http://localhost:3000
+
+✅ Available endpoints:
+  Public:
+   - POST /api/auth/login
+   - POST /api/auth/register
+   - GET  /api/auth/verify
+  Protected (requires token):
+   - /api/projects/*
+   - /api/todos/*
+   - /api/assistant/*
+   - /api/content/*
+   - /api/media/*
+   - /api/ai/*
+   - ... and more
+Successfully connected to PostgreSQL database
+Loaded 6 opportunity patterns
+[2025-08-07T15:55:04.144Z] GET /api/projects
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Fetching projects for user: 1
+[2025-08-07T15:55:04.145Z] GET /api/auth/verify
+Auth middleware - dev mode bypass
+[2025-08-07T15:55:04.147Z] GET /api/auth/verify
+Auth middleware - dev mode bypass
+Found projects: 2
+[2025-08-07T15:55:04.186Z] GET /api/projects
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Fetching projects for user: 1
+Found projects: 2
+[2025-08-07T15:57:07.781Z] GET /api/projects
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Fetching projects for user: 1
+[2025-08-07T15:57:07.783Z] GET /api/auth/verify
+Auth middleware - dev mode bypass
+[2025-08-07T15:57:07.784Z] GET /api/auth/verify
+Auth middleware - dev mode bypass
+Found projects: 2
+[2025-08-07T15:57:07.821Z] GET /api/projects
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Fetching projects for user: 1
+Found projects: 2
+[2025-08-07T15:57:11.610Z] GET /api/projects
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Fetching projects for user: 1
+Found projects: 2
+[2025-08-07T15:57:11.613Z] GET /api/projects
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Fetching projects for user: 1
+Found projects: 2
+[2025-08-07T15:57:11.619Z] GET /api/todos
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Fetching todos for user: 1
+Found todos: 3
+[2025-08-07T15:57:11.626Z] GET /api/todos
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Fetching todos for user: 1
+Found todos: 3
+[2025-08-07T15:57:27.239Z] GET /api/projects/1/memoryvault
+Auth middleware - dev mode bypass
+Auth middleware - dev mode bypass
+>>> GET MemoryVault - Project ID: 1
+[2025-08-07T15:57:27.294Z] GET /api/projects/1/memoryvault
+Auth middleware - dev mode bypass
+Auth middleware - dev mode bypass
+>>> GET MemoryVault - Project ID: 1
+[2025-08-07T15:57:31.751Z] POST /api/intelligence/analyze-organization
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== ANALYZE ORGANIZATION ===
+Company: Nike
+URL: 
+Request Type: discover
+Claude sendMessage called
+Prompt length: 1474
+Conversation history length: 0
+Sending to Claude: 1 messages
+Using model: claude-3-5-sonnet-20241022
+Claude response received, length: 2574
+Claude response received, length: 2574
+Successfully parsed Claude response
+Analysis complete: {
+  industry: 'Athletic Footwear and Apparel Manufacturing',
+  competitorCount: 4,
+  topicCount: 4
+}
+[2025-08-07T15:57:56.661Z] POST /api/intelligence/targets
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+[2025-08-07T15:57:56.665Z] POST /api/intelligence/targets
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+[2025-08-07T15:57:56.668Z] POST /api/intelligence/targets
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+[2025-08-07T15:57:56.669Z] POST /api/intelligence/targets
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+[2025-08-07T15:57:56.673Z] POST /api/intelligence/targets
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+[2025-08-07T15:57:56.674Z] POST /api/intelligence/targets
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+[2025-08-07T15:57:56.779Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T15:57:56.781Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T15:57:57.932Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T15:57:58.158Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T15:57:58.614Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T15:57:59.046Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T15:57:59.551Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T15:57:59.822Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T15:58:00.445Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T15:58:00.449Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T15:58:00.632Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T15:58:00.640Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T15:58:28.348Z] GET /api/monitoring/v2/intelligence-summary/org-1754582276148
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== NEWS ROUNDUP GENERATION ===
+Organization ID: org-1754582276148
+Gathering news from all available sources
+🔧 Ensuring intelligence targets for: org-1754582276148
+✅ Found 6 existing intelligence targets
+🔧 Checking organization name for: org-1754582276148
+📝 Organization not found. Creating with inferred data...
+✅ Created organization: Your Organization / Technology
+=== GETTING ORGANIZATION CONFIG ===
+Requested Organization ID: org-1754582276148
+Competitors found: 2
+Organization query result: 0 rows
+Topics query result: 4 rows
+=== USER CONFIGURATION ===
+Organization: Technology Company
+Competitors: Puma, Adidas
+Topics: Supply Chain Ethics, Direct-to-Consumer Sales, Sustainable Manufacturing, Athlete Sponsorships
+
+=== GENERATING NEWS ROUNDUP ===
+✅ FINAL KEYWORDS FOR NEWS SEARCH: [
+  'Technology Company',
+  'Technology',
+  'Company',
+  'Puma',
+  'Adidas',
+  'Supply Chain Ethics',
+  'Supply',
+  'Chain',
+  'Ethics',
+  'Direct-to-Consumer Sales',
+  'Direct-to-Consumer',
+  'Sales',
+  'Sustainable Manufacturing',
+  'Sustainable',
+  'Manufacturing',
+  'Athlete Sponsorships',
+  'Athlete',
+  'Sponsorships'
+]
+📰 GENERATING NEWS ROUNDUP
+📡 Using 45 news sources
+📌 Extracted keywords: [
+  'Technology Company',
+  'Technology',
+  'Puma',
+  'Adidas',
+  'Supply Chain Ethics',
+  'Supply',
+  'Chain',
+  'Ethics',
+  'Direct-to-Consumer Sales',
+  'Direct-to-Consumer',
+  'Sales',
+  'Sustainable Manufacturing',
+  'Sustainable',
+  'Manufacturing',
+  'Athlete Sponsorships',
+  'Athlete',
+  'Sponsorships'
+]
+📥 Fetching news from 45 sources...
+🔍 Keywords: Technology Company, Technology, Puma, Adidas, Supply Chain Ethics, Supply, Chain, Ethics, Direct-to-Consumer Sales, Direct-to-Consumer, Sales, Sustainable Manufacturing, Sustainable, Manufacturing, Athlete Sponsorships, Athlete, Sponsorships
+❌ Failed to fetch Reuters Business: getaddrinfo ENOTFOUND feeds.reuters.com
+❌ Failed to fetch Reuters Top News: getaddrinfo ENOTFOUND feeds.reuters.com
+❌ Failed to fetch HBR: Client network socket disconnected before secure TLS connection was established
+✅ Fast Company: 1 relevant articles
+✅ Inc.: 1 relevant articles
+✅ Engadget: 1 relevant articles
+✅ Google News - Technology Company: 20 relevant articles
+✅ Google News - Puma: 20 relevant articles
+✅ Google News - Adidas: 20 relevant articles
+✅ Hacker News: 1 relevant articles
+✅ Google News - Supply Chain Ethics: 15 relevant articles
+✅ Google News - Athlete Sponsorships: 14 relevant articles
+✅ Google News - Sustainable Manufacturing: 20 relevant articles
+✅ Google News - Direct-to-Consumer Sales: 16 relevant articles
+✅ Google News - Technology: 17 relevant articles
+✅ The Register: 1 relevant articles
+✅ Business Insider: 1 relevant articles
+✅ Reddit - Technology Company: 3 relevant articles
+❌ Failed to fetch AnandTech: Invalid character in entity name
+Line: 230
+Column: 118
+Char: =
+📊 Collected 151 total articles
+
+=== NEWS ROUNDUP COMPLETE ===
+Total articles: 49
+Sources used: 45
+[2025-08-07T15:58:31.597Z] GET /api/monitoring/v2/intelligence-summary/org-1754582276148
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== NEWS ROUNDUP GENERATION ===
+Organization ID: org-1754582276148
+Gathering news from all available sources
+🔧 Ensuring intelligence targets for: org-1754582276148
+✅ Found 6 existing intelligence targets
+🔧 Checking organization name for: org-1754582276148
+📝 Organization not found. Creating with inferred data...
+✅ Created organization: Your Organization / Technology
+=== GETTING ORGANIZATION CONFIG ===
+Requested Organization ID: org-1754582276148
+Competitors found: 2
+Organization query result: 0 rows
+Topics query result: 4 rows
+=== USER CONFIGURATION ===
+Organization: Technology Company
+Competitors: Puma, Adidas
+Topics: Supply Chain Ethics, Direct-to-Consumer Sales, Sustainable Manufacturing, Athlete Sponsorships
+
+=== GENERATING NEWS ROUNDUP ===
+✅ FINAL KEYWORDS FOR NEWS SEARCH: [
+  'Technology Company',
+  'Technology',
+  'Company',
+  'Puma',
+  'Adidas',
+  'Supply Chain Ethics',
+  'Supply',
+  'Chain',
+  'Ethics',
+  'Direct-to-Consumer Sales',
+  'Direct-to-Consumer',
+  'Sales',
+  'Sustainable Manufacturing',
+  'Sustainable',
+  'Manufacturing',
+  'Athlete Sponsorships',
+  'Athlete',
+  'Sponsorships'
+]
+📰 GENERATING NEWS ROUNDUP
+📡 Using 45 news sources
+📌 Extracted keywords: [
+  'Technology Company',
+  'Technology',
+  'Puma',
+  'Adidas',
+  'Supply Chain Ethics',
+  'Supply',
+  'Chain',
+  'Ethics',
+  'Direct-to-Consumer Sales',
+  'Direct-to-Consumer',
+  'Sales',
+  'Sustainable Manufacturing',
+  'Sustainable',
+  'Manufacturing',
+  'Athlete Sponsorships',
+  'Athlete',
+  'Sponsorships'
+]
+📥 Fetching news from 45 sources...
+🔍 Keywords: Technology Company, Technology, Puma, Adidas, Supply Chain Ethics, Supply, Chain, Ethics, Direct-to-Consumer Sales, Direct-to-Consumer, Sales, Sustainable Manufacturing, Sustainable, Manufacturing, Athlete Sponsorships, Athlete, Sponsorships
+❌ Failed to fetch Reuters Business: getaddrinfo ENOTFOUND feeds.reuters.com
+❌ Failed to fetch Reuters Top News: getaddrinfo ENOTFOUND feeds.reuters.com
+✅ Google News - Technology Company: 20 relevant articles
+✅ Google News - Puma: 20 relevant articles
+✅ Google News - Adidas: 20 relevant articles
+✅ Fast Company: 1 relevant articles
+❌ Failed to fetch HBR: Client network socket disconnected before secure TLS connection was established
+✅ Inc.: 1 relevant articles
+✅ Engadget: 1 relevant articles
+✅ Google News - Direct-to-Consumer Sales: 16 relevant articles
+✅ Google News - Supply Chain Ethics: 15 relevant articles
+✅ Google News - Athlete Sponsorships: 14 relevant articles
+✅ Google News - Sustainable Manufacturing: 20 relevant articles
+✅ Google News - Technology: 17 relevant articles
+✅ Hacker News: 1 relevant articles
+✅ The Register: 1 relevant articles
+✅ Business Insider: 1 relevant articles
+✅ Reddit - Technology Company: 3 relevant articles
+❌ Failed to fetch AnandTech: Invalid character in entity name
+Line: 230
+Column: 118
+Char: =
+📊 Collected 151 total articles
+
+=== NEWS ROUNDUP COMPLETE ===
+Total articles: 49
+Sources used: 45
+[2025-08-07T15:58:42.020Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T15:58:42.065Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T15:58:44.415Z] GET /api/monitoring/v2/intelligence-summary/org-1754582276148
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== NEWS ROUNDUP GENERATION ===
+Organization ID: org-1754582276148
+Gathering news from all available sources
+🔧 Ensuring intelligence targets for: org-1754582276148
+✅ Found 6 existing intelligence targets
+🔧 Checking organization name for: org-1754582276148
+📝 Organization not found. Creating with inferred data...
+✅ Created organization: Your Organization / Technology
+=== GETTING ORGANIZATION CONFIG ===
+Requested Organization ID: org-1754582276148
+Competitors found: 2
+Organization query result: 0 rows
+Topics query result: 4 rows
+=== USER CONFIGURATION ===
+Organization: Technology Company
+Competitors: Puma, Adidas
+Topics: Supply Chain Ethics, Direct-to-Consumer Sales, Sustainable Manufacturing, Athlete Sponsorships
+
+=== GENERATING NEWS ROUNDUP ===
+✅ FINAL KEYWORDS FOR NEWS SEARCH: [
+  'Technology Company',
+  'Technology',
+  'Company',
+  'Puma',
+  'Adidas',
+  'Supply Chain Ethics',
+  'Supply',
+  'Chain',
+  'Ethics',
+  'Direct-to-Consumer Sales',
+  'Direct-to-Consumer',
+  'Sales',
+  'Sustainable Manufacturing',
+  'Sustainable',
+  'Manufacturing',
+  'Athlete Sponsorships',
+  'Athlete',
+  'Sponsorships'
+]
+📰 GENERATING NEWS ROUNDUP
+📡 Using 45 news sources
+📌 Extracted keywords: [
+  'Technology Company',
+  'Technology',
+  'Puma',
+  'Adidas',
+  'Supply Chain Ethics',
+  'Supply',
+  'Chain',
+  'Ethics',
+  'Direct-to-Consumer Sales',
+  'Direct-to-Consumer',
+  'Sales',
+  'Sustainable Manufacturing',
+  'Sustainable',
+  'Manufacturing',
+  'Athlete Sponsorships',
+  'Athlete',
+  'Sponsorships'
+]
+📥 Fetching news from 45 sources...
+🔍 Keywords: Technology Company, Technology, Puma, Adidas, Supply Chain Ethics, Supply, Chain, Ethics, Direct-to-Consumer Sales, Direct-to-Consumer, Sales, Sustainable Manufacturing, Sustainable, Manufacturing, Athlete Sponsorships, Athlete, Sponsorships
+❌ Failed to fetch Reuters Business: getaddrinfo ENOTFOUND feeds.reuters.com
+❌ Failed to fetch Reuters Top News: getaddrinfo ENOTFOUND feeds.reuters.com
+❌ Failed to fetch HBR: Client network socket disconnected before secure TLS connection was established
+✅ Google News - Adidas: 20 relevant articles
+✅ Inc.: 1 relevant articles
+✅ Google News - Technology Company: 20 relevant articles
+✅ Fast Company: 1 relevant articles
+✅ Google News - Puma: 20 relevant articles
+✅ Engadget: 1 relevant articles
+✅ Google News - Supply Chain Ethics: 15 relevant articles
+✅ Google News - Sustainable Manufacturing: 20 relevant articles
+✅ Google News - Direct-to-Consumer Sales: 16 relevant articles
+✅ Hacker News: 1 relevant articles
+✅ Google News - Athlete Sponsorships: 14 relevant articles
+✅ Google News - Technology: 17 relevant articles
+✅ The Register: 1 relevant articles
+✅ Business Insider: 1 relevant articles
+✅ Reddit - Technology Company: 3 relevant articles
+❌ Failed to fetch AnandTech: Invalid character in entity name
+Line: 230
+Column: 118
+Char: =
+📊 Collected 151 total articles
+
+=== NEWS ROUNDUP COMPLETE ===
+Total articles: 49
+Sources used: 45
+[2025-08-07T15:58:46.848Z] GET /api/monitoring/v2/intelligence-summary/org-1754582276148
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== NEWS ROUNDUP GENERATION ===
+Organization ID: org-1754582276148
+Gathering news from all available sources
+🔧 Ensuring intelligence targets for: org-1754582276148
+✅ Found 6 existing intelligence targets
+🔧 Checking organization name for: org-1754582276148
+📝 Organization not found. Creating with inferred data...
+✅ Created organization: Your Organization / Technology
+=== GETTING ORGANIZATION CONFIG ===
+Requested Organization ID: org-1754582276148
+Competitors found: 2
+Organization query result: 0 rows
+Topics query result: 4 rows
+=== USER CONFIGURATION ===
+Organization: Technology Company
+Competitors: Puma, Adidas
+Topics: Supply Chain Ethics, Direct-to-Consumer Sales, Sustainable Manufacturing, Athlete Sponsorships
+
+=== GENERATING NEWS ROUNDUP ===
+✅ FINAL KEYWORDS FOR NEWS SEARCH: [
+  'Technology Company',
+  'Technology',
+  'Company',
+  'Puma',
+  'Adidas',
+  'Supply Chain Ethics',
+  'Supply',
+  'Chain',
+  'Ethics',
+  'Direct-to-Consumer Sales',
+  'Direct-to-Consumer',
+  'Sales',
+  'Sustainable Manufacturing',
+  'Sustainable',
+  'Manufacturing',
+  'Athlete Sponsorships',
+  'Athlete',
+  'Sponsorships'
+]
+📰 GENERATING NEWS ROUNDUP
+📡 Using 45 news sources
+📌 Extracted keywords: [
+  'Technology Company',
+  'Technology',
+  'Puma',
+  'Adidas',
+  'Supply Chain Ethics',
+  'Supply',
+  'Chain',
+  'Ethics',
+  'Direct-to-Consumer Sales',
+  'Direct-to-Consumer',
+  'Sales',
+  'Sustainable Manufacturing',
+  'Sustainable',
+  'Manufacturing',
+  'Athlete Sponsorships',
+  'Athlete',
+  'Sponsorships'
+]
+📥 Fetching news from 45 sources...
+🔍 Keywords: Technology Company, Technology, Puma, Adidas, Supply Chain Ethics, Supply, Chain, Ethics, Direct-to-Consumer Sales, Direct-to-Consumer, Sales, Sustainable Manufacturing, Sustainable, Manufacturing, Athlete Sponsorships, Athlete, Sponsorships
+❌ Failed to fetch Reuters Business: getaddrinfo ENOTFOUND feeds.reuters.com
+❌ Failed to fetch Reuters Top News: getaddrinfo ENOTFOUND feeds.reuters.com
+✅ Google News - Adidas: 20 relevant articles
+✅ Google News - Technology Company: 20 relevant articles
+✅ Google News - Puma: 20 relevant articles
+❌ Failed to fetch HBR: Client network socket disconnected before secure TLS connection was established
+✅ Fast Company: 1 relevant articles
+✅ Inc.: 1 relevant articles
+✅ Engadget: 1 relevant articles
+✅ Google News - Sustainable Manufacturing: 20 relevant articles
+✅ Google News - Direct-to-Consumer Sales: 16 relevant articles
+✅ Google News - Supply Chain Ethics: 15 relevant articles
+✅ Google News - Athlete Sponsorships: 14 relevant articles
+✅ Hacker News: 1 relevant articles
+✅ Google News - Technology: 17 relevant articles
+✅ The Register: 1 relevant articles
+✅ Business Insider: 1 relevant articles
+✅ Reddit - Technology Company: 3 relevant articles
+❌ Failed to fetch AnandTech: Invalid character in entity name
+Line: 230
+Column: 118
+Char: =
+📊 Collected 151 total articles
+
+=== NEWS ROUNDUP COMPLETE ===
+Total articles: 49
+Sources used: 45
+[2025-08-07T16:00:22.506Z] POST /api/monitoring/v2/trigger
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode bypass
+404 Not Found: POST /api/monitoring/v2/trigger
+[2025-08-07T16:00:30.142Z] GET /api/monitoring/v2/status
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode bypass
+404 Not Found: GET /api/monitoring/v2/status
+[2025-08-07T16:00:43.683Z] GET /api/auth/verify
+Auth middleware - dev mode bypass
+[2025-08-07T16:00:43.684Z] GET /api/projects
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Fetching projects for user: 1
+[2025-08-07T16:00:43.686Z] GET /api/auth/verify
+Auth middleware - dev mode bypass
+Found projects: 2
+[2025-08-07T16:00:43.729Z] GET /api/projects
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Fetching projects for user: 1
+Found projects: 2
+[2025-08-07T16:00:47.711Z] POST /api/intelligence/analyze-organization
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== ANALYZE ORGANIZATION ===
+Company: Nike
+URL: 
+Request Type: discover
+Claude sendMessage called
+Prompt length: 1474
+Conversation history length: 0
+Sending to Claude: 1 messages
+Using model: claude-3-5-sonnet-20241022
+Claude response received, length: 2585
+Claude response received, length: 2585
+Successfully parsed Claude response
+Analysis complete: {
+  industry: 'Athletic Footwear and Apparel Manufacturing',
+  competitorCount: 4,
+  topicCount: 4
+}
+[2025-08-07T16:01:04.942Z] POST /api/intelligence/targets
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+[2025-08-07T16:01:04.943Z] POST /api/intelligence/targets
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+[2025-08-07T16:01:04.944Z] POST /api/intelligence/targets
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+[2025-08-07T16:01:04.944Z] POST /api/intelligence/targets
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+[2025-08-07T16:01:04.944Z] POST /api/intelligence/targets
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+[2025-08-07T16:01:04.946Z] POST /api/intelligence/targets
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+[2025-08-07T16:01:05.043Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:01:05.044Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:01:05.053Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:01:05.054Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:01:05.056Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:01:05.059Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:01:05.063Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:01:05.068Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:01:05.069Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:01:05.076Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:01:05.949Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:01:06.132Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:01:09.112Z] GET /api/monitoring/v2/intelligence-summary/org-1754582464431
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== NEWS ROUNDUP GENERATION ===
+Organization ID: org-1754582464431
+Gathering news from all available sources
+🔧 Ensuring intelligence targets for: org-1754582464431
+✅ Found 6 existing intelligence targets
+🔧 Checking organization name for: org-1754582464431
+📝 Organization not found. Creating with inferred data...
+✅ Created organization: Your Organization / Technology
+=== GETTING ORGANIZATION CONFIG ===
+Requested Organization ID: org-1754582464431
+Competitors found: 2
+Organization query result: 0 rows
+Topics query result: 4 rows
+=== USER CONFIGURATION ===
+Organization: Technology Company
+Competitors: Adidas, Puma
+Topics: Sustainable Manufacturing, Athletic Sponsorships, Supply Chain Ethics, Direct-to-Consumer Sales
+
+=== GENERATING NEWS ROUNDUP ===
+✅ FINAL KEYWORDS FOR NEWS SEARCH: [
+  'Technology Company',
+  'Technology',
+  'Company',
+  'Adidas',
+  'Puma',
+  'Sustainable Manufacturing',
+  'Sustainable',
+  'Manufacturing',
+  'Athletic Sponsorships',
+  'Athletic',
+  'Sponsorships',
+  'Supply Chain Ethics',
+  'Supply',
+  'Chain',
+  'Ethics',
+  'Direct-to-Consumer Sales',
+  'Direct-to-Consumer',
+  'Sales'
+]
+📰 GENERATING NEWS ROUNDUP
+📡 Using 45 news sources
+📌 Extracted keywords: [
+  'Technology Company',
+  'Technology',
+  'Adidas',
+  'Puma',
+  'Sustainable Manufacturing',
+  'Sustainable',
+  'Manufacturing',
+  'Athletic Sponsorships',
+  'Athletic',
+  'Sponsorships',
+  'Supply Chain Ethics',
+  'Supply',
+  'Chain',
+  'Ethics',
+  'Direct-to-Consumer Sales',
+  'Direct-to-Consumer',
+  'Sales'
+]
+📥 Fetching news from 45 sources...
+🔍 Keywords: Technology Company, Technology, Adidas, Puma, Sustainable Manufacturing, Sustainable, Manufacturing, Athletic Sponsorships, Athletic, Sponsorships, Supply Chain Ethics, Supply, Chain, Ethics, Direct-to-Consumer Sales, Direct-to-Consumer, Sales
+❌ Failed to fetch Reuters Business: getaddrinfo ENOTFOUND feeds.reuters.com
+❌ Failed to fetch Reuters Top News: getaddrinfo ENOTFOUND feeds.reuters.com
+❌ Failed to fetch HBR: Client network socket disconnected before secure TLS connection was established
+✅ Inc.: 1 relevant articles
+✅ Fast Company: 1 relevant articles
+✅ Engadget: 1 relevant articles
+✅ Google News - Technology Company: 20 relevant articles
+✅ Google News - Adidas: 20 relevant articles
+✅ Google News - Puma: 20 relevant articles
+✅ Hacker News: 1 relevant articles
+✅ Google News - Supply Chain Ethics: 16 relevant articles
+✅ Google News - Athletic Sponsorships: 8 relevant articles
+✅ Google News - Sustainable Manufacturing: 20 relevant articles
+✅ Google News - Direct-to-Consumer Sales: 16 relevant articles
+✅ Google News - Technology: 17 relevant articles
+✅ The Register: 1 relevant articles
+✅ Business Insider: 1 relevant articles
+✅ Reddit - Technology Company: 3 relevant articles
+❌ Failed to fetch AnandTech: Invalid character in entity name
+Line: 230
+Column: 118
+Char: =
+📊 Collected 146 total articles
+
+=== NEWS ROUNDUP COMPLETE ===
+Total articles: 49
+Sources used: 45
+[2025-08-07T16:01:12.082Z] GET /api/monitoring/v2/intelligence-summary/org-1754582464431
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== NEWS ROUNDUP GENERATION ===
+Organization ID: org-1754582464431
+Gathering news from all available sources
+🔧 Ensuring intelligence targets for: org-1754582464431
+✅ Found 6 existing intelligence targets
+🔧 Checking organization name for: org-1754582464431
+📝 Organization not found. Creating with inferred data...
+✅ Created organization: Your Organization / Technology
+=== GETTING ORGANIZATION CONFIG ===
+Requested Organization ID: org-1754582464431
+Competitors found: 2
+Organization query result: 0 rows
+Topics query result: 4 rows
+=== USER CONFIGURATION ===
+Organization: Technology Company
+Competitors: Adidas, Puma
+Topics: Sustainable Manufacturing, Athletic Sponsorships, Supply Chain Ethics, Direct-to-Consumer Sales
+
+=== GENERATING NEWS ROUNDUP ===
+✅ FINAL KEYWORDS FOR NEWS SEARCH: [
+  'Technology Company',
+  'Technology',
+  'Company',
+  'Adidas',
+  'Puma',
+  'Sustainable Manufacturing',
+  'Sustainable',
+  'Manufacturing',
+  'Athletic Sponsorships',
+  'Athletic',
+  'Sponsorships',
+  'Supply Chain Ethics',
+  'Supply',
+  'Chain',
+  'Ethics',
+  'Direct-to-Consumer Sales',
+  'Direct-to-Consumer',
+  'Sales'
+]
+📰 GENERATING NEWS ROUNDUP
+📡 Using 45 news sources
+📌 Extracted keywords: [
+  'Technology Company',
+  'Technology',
+  'Adidas',
+  'Puma',
+  'Sustainable Manufacturing',
+  'Sustainable',
+  'Manufacturing',
+  'Athletic Sponsorships',
+  'Athletic',
+  'Sponsorships',
+  'Supply Chain Ethics',
+  'Supply',
+  'Chain',
+  'Ethics',
+  'Direct-to-Consumer Sales',
+  'Direct-to-Consumer',
+  'Sales'
+]
+📥 Fetching news from 45 sources...
+🔍 Keywords: Technology Company, Technology, Adidas, Puma, Sustainable Manufacturing, Sustainable, Manufacturing, Athletic Sponsorships, Athletic, Sponsorships, Supply Chain Ethics, Supply, Chain, Ethics, Direct-to-Consumer Sales, Direct-to-Consumer, Sales
+❌ Failed to fetch Reuters Business: getaddrinfo ENOTFOUND feeds.reuters.com
+❌ Failed to fetch Reuters Top News: getaddrinfo ENOTFOUND feeds.reuters.com
+✅ Google News - Puma: 20 relevant articles
+✅ Google News - Technology Company: 20 relevant articles
+✅ Google News - Adidas: 20 relevant articles
+❌ Failed to fetch HBR: Client network socket disconnected before secure TLS connection was established
+✅ Fast Company: 1 relevant articles
+✅ Inc.: 1 relevant articles
+✅ Engadget: 1 relevant articles
+✅ Google News - Athletic Sponsorships: 8 relevant articles
+✅ Google News - Sustainable Manufacturing: 20 relevant articles
+✅ Google News - Technology: 17 relevant articles
+❌ Failed to fetch Hacker News: Status code 429
+✅ Google News - Supply Chain Ethics: 16 relevant articles
+✅ Google News - Direct-to-Consumer Sales: 16 relevant articles
+✅ The Register: 1 relevant articles
+✅ Business Insider: 1 relevant articles
+✅ Reddit - Technology Company: 3 relevant articles
+❌ Failed to fetch AnandTech: Invalid character in entity name
+Line: 230
+Column: 118
+Char: =
+📊 Collected 145 total articles
+
+=== NEWS ROUNDUP COMPLETE ===
+Total articles: 49
+Sources used: 45
+[2025-08-07T16:01:45.418Z] GET /api/projects
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Fetching projects for user: 1
+Found projects: 2
+[2025-08-07T16:01:45.458Z] GET /api/projects
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Fetching projects for user: 1
+Found projects: 2
+[2025-08-07T16:01:45.460Z] GET /api/todos
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Fetching todos for user: 1
+Found todos: 3
+[2025-08-07T16:01:45.464Z] GET /api/todos
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Fetching todos for user: 1
+Found todos: 3
+[2025-08-07T16:01:46.594Z] GET /api/projects/1/memoryvault
+Auth middleware - dev mode bypass
+Auth middleware - dev mode bypass
+>>> GET MemoryVault - Project ID: 1
+[2025-08-07T16:01:46.608Z] GET /api/projects/1/memoryvault
+Auth middleware - dev mode bypass
+Auth middleware - dev mode bypass
+>>> GET MemoryVault - Project ID: 1
+[2025-08-07T16:01:48.394Z] GET /api/projects
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Fetching projects for user: 1
+[2025-08-07T16:01:48.396Z] GET /api/auth/verify
+Auth middleware - dev mode bypass
+Found projects: 2
+[2025-08-07T16:01:48.400Z] GET /api/auth/verify
+Auth middleware - dev mode bypass
+[2025-08-07T16:01:48.405Z] GET /api/projects
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Fetching projects for user: 1
+Found projects: 2
+[2025-08-07T16:01:48.417Z] GET /api/projects/1/memoryvault
+Auth middleware - dev mode bypass
+Auth middleware - dev mode bypass
+>>> GET MemoryVault - Project ID: 1
+[2025-08-07T16:01:48.425Z] GET /api/projects/1/memoryvault
+Auth middleware - dev mode bypass
+Auth middleware - dev mode bypass
+>>> GET MemoryVault - Project ID: 1
+[2025-08-07T16:08:03.695Z] POST /api/intelligence/analyze-organization
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== ANALYZE ORGANIZATION ===
+Company: Nike
+URL: 
+Request Type: discover
+Claude sendMessage called
+Prompt length: 1474
+Conversation history length: 0
+Sending to Claude: 1 messages
+Using model: claude-3-5-sonnet-20241022
+Claude response received, length: 2561
+Claude response received, length: 2561
+Successfully parsed Claude response
+Analysis complete: {
+  industry: 'Athletic Footwear and Apparel Manufacturing',
+  competitorCount: 4,
+  topicCount: 4
+}
+[2025-08-07T16:08:30.558Z] POST /api/intelligence/targets
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+[2025-08-07T16:08:30.561Z] POST /api/intelligence/targets
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+[2025-08-07T16:08:30.562Z] POST /api/intelligence/targets
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+[2025-08-07T16:08:30.562Z] POST /api/intelligence/targets
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+[2025-08-07T16:08:30.563Z] POST /api/intelligence/targets
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+[2025-08-07T16:08:30.563Z] POST /api/intelligence/targets
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+[2025-08-07T16:08:30.674Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:08:30.675Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:08:30.685Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:08:30.686Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:08:30.690Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:08:30.691Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:08:30.694Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:08:30.695Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:08:30.699Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:08:30.700Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:08:31.673Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:08:31.858Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:08:34.917Z] GET /api/monitoring/v2/intelligence-summary/org-1754582910040
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== NEWS ROUNDUP GENERATION ===
+Organization ID: org-1754582910040
+Gathering news from all available sources
+🔧 Ensuring intelligence targets for: org-1754582910040
+✅ Found 6 existing intelligence targets
+🔧 Checking organization name for: org-1754582910040
+📝 Organization not found. Creating with inferred data...
+✅ Created organization: Your Organization / Technology
+=== GETTING ORGANIZATION CONFIG ===
+Requested Organization ID: org-1754582910040
+Competitors found: 2
+Organization query result: 0 rows
+Topics query result: 4 rows
+=== USER CONFIGURATION ===
+Organization: Technology Company
+Competitors: Puma, Adidas
+Topics: Athletic Endorsements, Direct-to-Consumer Sales, Sustainable Manufacturing, Supply Chain Ethics
+
+=== GENERATING NEWS ROUNDUP ===
+✅ FINAL KEYWORDS FOR NEWS SEARCH: [
+  'Technology Company',
+  'Technology',
+  'Company',
+  'Puma',
+  'Adidas',
+  'Athletic Endorsements',
+  'Athletic',
+  'Endorsements',
+  'Direct-to-Consumer Sales',
+  'Direct-to-Consumer',
+  'Sales',
+  'Sustainable Manufacturing',
+  'Sustainable',
+  'Manufacturing',
+  'Supply Chain Ethics',
+  'Supply',
+  'Chain',
+  'Ethics'
+]
+📰 GENERATING NEWS ROUNDUP
+📡 Using 45 news sources
+📌 Extracted keywords: [
+  'Technology Company',
+  'Technology',
+  'Puma',
+  'Adidas',
+  'Athletic Endorsements',
+  'Athletic',
+  'Endorsements',
+  'Direct-to-Consumer Sales',
+  'Direct-to-Consumer',
+  'Sales',
+  'Sustainable Manufacturing',
+  'Sustainable',
+  'Manufacturing',
+  'Supply Chain Ethics',
+  'Supply',
+  'Chain',
+  'Ethics'
+]
+📥 Fetching news from 45 sources...
+🔍 Keywords: Technology Company, Technology, Puma, Adidas, Athletic Endorsements, Athletic, Endorsements, Direct-to-Consumer Sales, Direct-to-Consumer, Sales, Sustainable Manufacturing, Sustainable, Manufacturing, Supply Chain Ethics, Supply, Chain, Ethics
+❌ Failed to fetch Reuters Business: getaddrinfo ENOTFOUND feeds.reuters.com
+❌ Failed to fetch Reuters Top News: getaddrinfo ENOTFOUND feeds.reuters.com
+❌ Failed to fetch HBR: Client network socket disconnected before secure TLS connection was established
+✅ Inc.: 1 relevant articles
+✅ Fast Company: 1 relevant articles
+✅ Engadget: 1 relevant articles
+✅ Google News - Technology Company: 20 relevant articles
+✅ Google News - Adidas: 20 relevant articles
+✅ Google News - Puma: 20 relevant articles
+✅ Hacker News: 1 relevant articles
+✅ Google News - Athletic Endorsements: 6 relevant articles
+✅ Google News - Supply Chain Ethics: 16 relevant articles
+✅ Google News - Direct-to-Consumer Sales: 16 relevant articles
+✅ Google News - Sustainable Manufacturing: 20 relevant articles
+✅ Google News - Technology: 17 relevant articles
+✅ The Register: 1 relevant articles
+✅ Business Insider: 1 relevant articles
+✅ Reddit - Technology Company: 3 relevant articles
+❌ Failed to fetch AnandTech: Invalid character in entity name
+Line: 230
+Column: 118
+Char: =
+📊 Collected 144 total articles
+
+=== NEWS ROUNDUP COMPLETE ===
+Total articles: 49
+Sources used: 45
+[2025-08-07T16:08:37.990Z] GET /api/monitoring/v2/intelligence-summary/org-1754582910040
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== NEWS ROUNDUP GENERATION ===
+Organization ID: org-1754582910040
+Gathering news from all available sources
+🔧 Ensuring intelligence targets for: org-1754582910040
+✅ Found 6 existing intelligence targets
+🔧 Checking organization name for: org-1754582910040
+📝 Organization not found. Creating with inferred data...
+✅ Created organization: Your Organization / Technology
+=== GETTING ORGANIZATION CONFIG ===
+Requested Organization ID: org-1754582910040
+Competitors found: 2
+Organization query result: 0 rows
+Topics query result: 4 rows
+=== USER CONFIGURATION ===
+Organization: Technology Company
+Competitors: Puma, Adidas
+Topics: Athletic Endorsements, Direct-to-Consumer Sales, Sustainable Manufacturing, Supply Chain Ethics
+
+=== GENERATING NEWS ROUNDUP ===
+✅ FINAL KEYWORDS FOR NEWS SEARCH: [
+  'Technology Company',
+  'Technology',
+  'Company',
+  'Puma',
+  'Adidas',
+  'Athletic Endorsements',
+  'Athletic',
+  'Endorsements',
+  'Direct-to-Consumer Sales',
+  'Direct-to-Consumer',
+  'Sales',
+  'Sustainable Manufacturing',
+  'Sustainable',
+  'Manufacturing',
+  'Supply Chain Ethics',
+  'Supply',
+  'Chain',
+  'Ethics'
+]
+📰 GENERATING NEWS ROUNDUP
+📡 Using 45 news sources
+📌 Extracted keywords: [
+  'Technology Company',
+  'Technology',
+  'Puma',
+  'Adidas',
+  'Athletic Endorsements',
+  'Athletic',
+  'Endorsements',
+  'Direct-to-Consumer Sales',
+  'Direct-to-Consumer',
+  'Sales',
+  'Sustainable Manufacturing',
+  'Sustainable',
+  'Manufacturing',
+  'Supply Chain Ethics',
+  'Supply',
+  'Chain',
+  'Ethics'
+]
+📥 Fetching news from 45 sources...
+🔍 Keywords: Technology Company, Technology, Puma, Adidas, Athletic Endorsements, Athletic, Endorsements, Direct-to-Consumer Sales, Direct-to-Consumer, Sales, Sustainable Manufacturing, Sustainable, Manufacturing, Supply Chain Ethics, Supply, Chain, Ethics
+❌ Failed to fetch Reuters Business: getaddrinfo ENOTFOUND feeds.reuters.com
+❌ Failed to fetch Reuters Top News: getaddrinfo ENOTFOUND feeds.reuters.com
+✅ Google News - Adidas: 20 relevant articles
+✅ Google News - Puma: 20 relevant articles
+✅ Google News - Technology Company: 20 relevant articles
+❌ Failed to fetch HBR: Client network socket disconnected before secure TLS connection was established
+✅ Fast Company: 1 relevant articles
+✅ Inc.: 1 relevant articles
+✅ Engadget: 1 relevant articles
+✅ Google News - Sustainable Manufacturing: 20 relevant articles
+✅ Hacker News: 1 relevant articles
+✅ Google News - Athletic Endorsements: 6 relevant articles
+✅ Google News - Direct-to-Consumer Sales: 16 relevant articles
+✅ Google News - Technology: 17 relevant articles
+✅ Google News - Supply Chain Ethics: 16 relevant articles
+✅ The Register: 1 relevant articles
+✅ Business Insider: 1 relevant articles
+✅ Reddit - Technology Company: 3 relevant articles
+❌ Failed to fetch AnandTech: Invalid character in entity name
+Line: 230
+Column: 118
+Char: =
+📊 Collected 144 total articles
+
+=== NEWS ROUNDUP COMPLETE ===
+Total articles: 49
+Sources used: 45
+[2025-08-07T16:09:05.568Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:13:34.942Z] GET /api/monitoring/v2/intelligence-summary/org-1754582910040
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== NEWS ROUNDUP GENERATION ===
+Organization ID: org-1754582910040
+Gathering news from all available sources
+🔧 Ensuring intelligence targets for: org-1754582910040
+✅ Found 6 existing intelligence targets
+🔧 Checking organization name for: org-1754582910040
+📝 Organization not found. Creating with inferred data...
+✅ Created organization: Your Organization / Technology
+=== GETTING ORGANIZATION CONFIG ===
+Requested Organization ID: org-1754582910040
+Competitors found: 2
+Organization query result: 0 rows
+Topics query result: 4 rows
+=== USER CONFIGURATION ===
+Organization: Technology Company
+Competitors: Puma, Adidas
+Topics: Athletic Endorsements, Direct-to-Consumer Sales, Sustainable Manufacturing, Supply Chain Ethics
+
+=== GENERATING NEWS ROUNDUP ===
+✅ FINAL KEYWORDS FOR NEWS SEARCH: [
+  'Technology Company',
+  'Technology',
+  'Company',
+  'Puma',
+  'Adidas',
+  'Athletic Endorsements',
+  'Athletic',
+  'Endorsements',
+  'Direct-to-Consumer Sales',
+  'Direct-to-Consumer',
+  'Sales',
+  'Sustainable Manufacturing',
+  'Sustainable',
+  'Manufacturing',
+  'Supply Chain Ethics',
+  'Supply',
+  'Chain',
+  'Ethics'
+]
+📰 GENERATING NEWS ROUNDUP
+📡 Using 45 news sources
+📌 Extracted keywords: [
+  'Technology Company',
+  'Technology',
+  'Puma',
+  'Adidas',
+  'Athletic Endorsements',
+  'Athletic',
+  'Endorsements',
+  'Direct-to-Consumer Sales',
+  'Direct-to-Consumer',
+  'Sales',
+  'Sustainable Manufacturing',
+  'Sustainable',
+  'Manufacturing',
+  'Supply Chain Ethics',
+  'Supply',
+  'Chain',
+  'Ethics'
+]
+📥 Fetching news from 45 sources...
+🔍 Keywords: Technology Company, Technology, Puma, Adidas, Athletic Endorsements, Athletic, Endorsements, Direct-to-Consumer Sales, Direct-to-Consumer, Sales, Sustainable Manufacturing, Sustainable, Manufacturing, Supply Chain Ethics, Supply, Chain, Ethics
+❌ Failed to fetch Reuters Business: getaddrinfo ENOTFOUND feeds.reuters.com
+❌ Failed to fetch Reuters Top News: getaddrinfo ENOTFOUND feeds.reuters.com
+❌ Failed to fetch HBR: Client network socket disconnected before secure TLS connection was established
+✅ Inc.: 1 relevant articles
+✅ Fast Company: 1 relevant articles
+✅ Engadget: 2 relevant articles
+✅ Google News - Technology Company: 20 relevant articles
+✅ Google News - Adidas: 20 relevant articles
+✅ Google News - Puma: 20 relevant articles
+✅ Hacker News: 1 relevant articles
+✅ Google News - Athletic Endorsements: 6 relevant articles
+✅ Google News - Supply Chain Ethics: 15 relevant articles
+✅ Google News - Sustainable Manufacturing: 20 relevant articles
+✅ Google News - Direct-to-Consumer Sales: 16 relevant articles
+✅ Google News - Technology: 17 relevant articles
+✅ The Register: 1 relevant articles
+✅ Business Insider: 1 relevant articles
+✅ Reddit - Technology Company: 3 relevant articles
+❌ Failed to fetch AnandTech: Invalid character in entity name
+Line: 230
+Column: 118
+Char: =
+📊 Collected 144 total articles
+
+=== NEWS ROUNDUP COMPLETE ===
+Total articles: 49
+Sources used: 45
+[2025-08-07T16:14:42.129Z] GET /api/projects
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Fetching projects for user: 1
+[2025-08-07T16:14:42.132Z] GET /api/auth/verify
+Auth middleware - dev mode bypass
+[2025-08-07T16:14:42.132Z] GET /api/auth/verify
+Auth middleware - dev mode bypass
+Found projects: 2
+[2025-08-07T16:14:42.170Z] GET /api/projects
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Fetching projects for user: 1
+Found projects: 2
+[2025-08-07T16:14:46.450Z] POST /api/intelligence/analyze-organization
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== ANALYZE ORGANIZATION ===
+Company: Nike
+URL: 
+Request Type: discover
+Claude sendMessage called
+Prompt length: 1474
+Conversation history length: 0
+Sending to Claude: 1 messages
+Using model: claude-3-5-sonnet-20241022
+Claude response received, length: 2623
+Claude response received, length: 2623
+Successfully parsed Claude response
+Analysis complete: {
+  industry: 'Athletic Footwear and Apparel Manufacturing',
+  competitorCount: 4,
+  topicCount: 4
+}
+[2025-08-07T16:15:20.944Z] POST /api/intelligence/targets
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+[2025-08-07T16:15:20.945Z] POST /api/intelligence/targets
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+[2025-08-07T16:15:20.946Z] POST /api/intelligence/targets
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+[2025-08-07T16:15:20.946Z] POST /api/intelligence/targets
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+[2025-08-07T16:15:20.947Z] POST /api/intelligence/targets
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+[2025-08-07T16:15:20.947Z] POST /api/intelligence/targets
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+[2025-08-07T16:15:21.048Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:15:21.048Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:15:21.057Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:15:21.058Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:15:21.070Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:15:21.070Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:15:21.074Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:15:21.074Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:15:21.077Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:15:21.077Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:15:22.102Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:15:22.289Z] POST /api/stakeholder-intelligence/discover-sources
+Auth middleware - dev mode bypass
+[2025-08-07T16:15:26.869Z] GET /api/monitoring/v2/intelligence-summary/org-1754583320434
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== NEWS ROUNDUP GENERATION ===
+Organization ID: org-1754583320434
+Gathering news from all available sources
+🔧 Ensuring intelligence targets for: org-1754583320434
+✅ Found 6 existing intelligence targets
+🔧 Checking organization name for: org-1754583320434
+📝 Organization not found. Creating with inferred data...
+✅ Created organization: Your Organization / Technology
+=== GETTING ORGANIZATION CONFIG ===
+Requested Organization ID: org-1754583320434
+Competitors found: 2
+Organization query result: 0 rows
+Topics query result: 4 rows
+=== USER CONFIGURATION ===
+Organization: Technology Company
+Competitors: Adidas, Puma
+Topics: Sustainable Manufacturing, Supply Chain Ethics, Athlete Sponsorships, Digital Commerce
+
+=== GENERATING NEWS ROUNDUP ===
+✅ FINAL KEYWORDS FOR NEWS SEARCH: [
+  'Technology Company',
+  'Technology',
+  'Company',
+  'Adidas',
+  'Puma',
+  'Sustainable Manufacturing',
+  'Sustainable',
+  'Manufacturing',
+  'Supply Chain Ethics',
+  'Supply',
+  'Chain',
+  'Ethics',
+  'Athlete Sponsorships',
+  'Athlete',
+  'Sponsorships',
+  'Digital Commerce',
+  'Digital',
+  'Commerce'
+]
+📰 GENERATING NEWS ROUNDUP
+📡 Using 45 news sources
+📌 Extracted keywords: [
+  'Technology Company',
+  'Technology',
+  'Adidas',
+  'Puma',
+  'Sustainable Manufacturing',
+  'Sustainable',
+  'Manufacturing',
+  'Supply Chain Ethics',
+  'Supply',
+  'Chain',
+  'Ethics',
+  'Athlete Sponsorships',
+  'Athlete',
+  'Sponsorships',
+  'Digital Commerce',
+  'Digital',
+  'Commerce'
+]
+📥 Fetching news from 45 sources...
+🔍 Keywords: Technology Company, Technology, Adidas, Puma, Sustainable Manufacturing, Sustainable, Manufacturing, Supply Chain Ethics, Supply, Chain, Ethics, Athlete Sponsorships, Athlete, Sponsorships, Digital Commerce, Digital, Commerce
+❌ Failed to fetch Reuters Business: getaddrinfo ENOTFOUND feeds.reuters.com
+❌ Failed to fetch Reuters Top News: getaddrinfo ENOTFOUND feeds.reuters.com
+✅ Forbes: 1 relevant articles
+❌ Failed to fetch HBR: Client network socket disconnected before secure TLS connection was established
+✅ Google News - Adidas: 20 relevant articles
+✅ Inc.: 1 relevant articles
+✅ Google News - Puma: 20 relevant articles
+✅ Google News - Technology Company: 20 relevant articles
+✅ Entrepreneur: 1 relevant articles
+✅ Engadget: 1 relevant articles
+✅ Google News - Supply Chain Ethics: 15 relevant articles
+✅ Google News - Sustainable Manufacturing: 20 relevant articles
+✅ Hacker News: 1 relevant articles
+✅ Google News - Technology: 17 relevant articles
+✅ Google News - Athlete Sponsorships: 14 relevant articles
+✅ Google News - Digital Commerce: 17 relevant articles
+✅ Slashdot: 1 relevant articles
+✅ The Register: 1 relevant articles
+✅ Business Insider: 2 relevant articles
+✅ Reddit - Technology Company: 3 relevant articles
+❌ Failed to fetch AnandTech: Invalid character in entity name
+Line: 230
+Column: 118
+Char: =
+📊 Collected 155 total articles
+
+=== NEWS ROUNDUP COMPLETE ===
+Total articles: 49
+Sources used: 45
+[2025-08-07T16:15:29.433Z] GET /api/monitoring/v2/intelligence-summary/org-1754583320434
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== NEWS ROUNDUP GENERATION ===
+Organization ID: org-1754583320434
+Gathering news from all available sources
+🔧 Ensuring intelligence targets for: org-1754583320434
+✅ Found 6 existing intelligence targets
+🔧 Checking organization name for: org-1754583320434
+📝 Organization not found. Creating with inferred data...
+✅ Created organization: Your Organization / Technology
+=== GETTING ORGANIZATION CONFIG ===
+Requested Organization ID: org-1754583320434
+Competitors found: 2
+Organization query result: 0 rows
+Topics query result: 4 rows
+=== USER CONFIGURATION ===
+Organization: Technology Company
+Competitors: Adidas, Puma
+Topics: Sustainable Manufacturing, Supply Chain Ethics, Athlete Sponsorships, Digital Commerce
+
+=== GENERATING NEWS ROUNDUP ===
+✅ FINAL KEYWORDS FOR NEWS SEARCH: [
+  'Technology Company',
+  'Technology',
+  'Company',
+  'Adidas',
+  'Puma',
+  'Sustainable Manufacturing',
+  'Sustainable',
+  'Manufacturing',
+  'Supply Chain Ethics',
+  'Supply',
+  'Chain',
+  'Ethics',
+  'Athlete Sponsorships',
+  'Athlete',
+  'Sponsorships',
+  'Digital Commerce',
+  'Digital',
+  'Commerce'
+]
+📰 GENERATING NEWS ROUNDUP
+📡 Using 45 news sources
+📌 Extracted keywords: [
+  'Technology Company',
+  'Technology',
+  'Adidas',
+  'Puma',
+  'Sustainable Manufacturing',
+  'Sustainable',
+  'Manufacturing',
+  'Supply Chain Ethics',
+  'Supply',
+  'Chain',
+  'Ethics',
+  'Athlete Sponsorships',
+  'Athlete',
+  'Sponsorships',
+  'Digital Commerce',
+  'Digital',
+  'Commerce'
+]
+📥 Fetching news from 45 sources...
+🔍 Keywords: Technology Company, Technology, Adidas, Puma, Sustainable Manufacturing, Sustainable, Manufacturing, Supply Chain Ethics, Supply, Chain, Ethics, Athlete Sponsorships, Athlete, Sponsorships, Digital Commerce, Digital, Commerce
+❌ Failed to fetch Reuters Business: getaddrinfo ENOTFOUND feeds.reuters.com
+❌ Failed to fetch Reuters Top News: getaddrinfo ENOTFOUND feeds.reuters.com
+✅ Forbes: 1 relevant articles
+✅ Entrepreneur: 1 relevant articles
+✅ Google News - Technology Company: 20 relevant articles
+✅ Google News - Puma: 20 relevant articles
+✅ Google News - Adidas: 20 relevant articles
+❌ Failed to fetch HBR: Client network socket disconnected before secure TLS connection was established
+✅ Inc.: 1 relevant articles
+✅ Engadget: 1 relevant articles
+✅ Google News - Athlete Sponsorships: 14 relevant articles
+✅ Google News - Supply Chain Ethics: 15 relevant articles
+✅ Google News - Sustainable Manufacturing: 20 relevant articles
+✅ Hacker News: 1 relevant articles
+✅ Google News - Digital Commerce: 17 relevant articles
+✅ Google News - Technology: 17 relevant articles
+✅ The Register: 1 relevant articles
+✅ Business Insider: 2 relevant articles
+✅ Slashdot: 1 relevant articles
+✅ Reddit - Technology Company: 3 relevant articles
+❌ Failed to fetch AnandTech: Invalid character in entity name
+Line: 230
+Column: 118
+Char: =
+📊 Collected 155 total articles
+
+=== NEWS ROUNDUP COMPLETE ===
+Total articles: 49
+Sources used: 45
+[2025-08-07T16:16:45.731Z] GET /api/monitoring/v2/intelligence-summary/demo-org-id
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== NEWS ROUNDUP GENERATION ===
+Organization ID: demo-org-id
+Gathering news from all available sources
+🔧 Ensuring intelligence targets for: demo-org-id
+✅ Found 5 existing intelligence targets
+🔧 Checking organization name for: demo-org-id
+⚠️ Organization has ID as name. Inferring from context...
+Error fixing organization name: error: invalid input syntax for type uuid: "demo-org-id"
+    at /Users/jonathanliebowitz/Desktop/SignalDesk/backend/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async fixOrganizationName (/Users/jonathanliebowitz/Desktop/SignalDesk/backend/src/utils/ensureIntelligenceTargets.js:205:9)
+    at async exports.getIntelligenceSummary (/Users/jonathanliebowitz/Desktop/SignalDesk/backend/src/controllers/monitoringControllerV2.js:634:5) {
+  length: 143,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "unnamed portal parameter $3 = '...'",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'uuid.c',
+  line: '141',
+  routine: 'string_to_uuid'
+}
+=== GETTING ORGANIZATION CONFIG ===
+Requested Organization ID: demo-org-id
+Competitors found: 3
+Organization query result: 0 rows
+Topics query result: 2 rows
+=== USER CONFIGURATION ===
+Organization: Technology Company
+Competitors: Microsoft, Google, Apple
+Topics: AI Regulation, Cloud Computing
+
+=== GENERATING NEWS ROUNDUP ===
+✅ FINAL KEYWORDS FOR NEWS SEARCH: [
+  'Technology Company',
+  'Technology',
+  'Company',
+  'Microsoft',
+  'Google',
+  'Apple',
+  'AI Regulation',
+  'Regulation',
+  'Cloud Computing',
+  'Cloud',
+  'Computing'
+]
+📰 GENERATING NEWS ROUNDUP
+📡 Using 44 news sources
+📌 Extracted keywords: [
+  'Technology Company',
+  'Technology',
+  'Microsoft',
+  'Google',
+  'Apple',
+  'AI Regulation',
+  'Regulation',
+  'Cloud Computing',
+  'Cloud',
+  'Computing'
+]
+📥 Fetching news from 44 sources...
+🔍 Keywords: Technology Company, Technology, Microsoft, Google, Apple, AI Regulation, Regulation, Cloud Computing, Cloud, Computing
+❌ Failed to fetch Reuters Business: getaddrinfo ENOTFOUND feeds.reuters.com
+❌ Failed to fetch Reuters Top News: getaddrinfo ENOTFOUND feeds.reuters.com
+✅ BBC Business: 1 relevant articles
+✅ WSJ Business: 1 relevant articles
+✅ BBC Technology: 2 relevant articles
+✅ NY Times Technology: 3 relevant articles
+✅ CNBC Top News: 2 relevant articles
+✅ TechCrunch: 4 relevant articles
+✅ The Verge: 3 relevant articles
+✅ Ars Technica: 4 relevant articles
+✅ Entrepreneur: 2 relevant articles
+❌ Failed to fetch HBR: Client network socket disconnected before secure TLS connection was established
+✅ Fast Company: 3 relevant articles
+✅ Inc.: 3 relevant articles
+✅ VentureBeat: 3 relevant articles
+✅ Engadget: 7 relevant articles
+✅ Google News - Technology Company: 20 relevant articles
+✅ Google News - Microsoft: 20 relevant articles
+✅ Google News - Google: 20 relevant articles
+✅ Business Insider: 2 relevant articles
+✅ Google News - AI Regulation: 13 relevant articles
+✅ Google News - Apple: 20 relevant articles
+✅ Google News - Cloud Computing: 13 relevant articles
+✅ Google News - Technology: 16 relevant articles
+✅ The Register: 3 relevant articles
+❌ Failed to fetch AnandTech: Invalid character in entity name
+Line: 230
+Column: 118
+Char: =
+✅ Reddit - Technology Company: 5 relevant articles
+📊 Collected 170 total articles
+
+=== NEWS ROUNDUP COMPLETE ===
+Total articles: 50
+Sources used: 44
+[2025-08-07T16:17:08.590Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:20:01.057Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:20:01.109Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:20:31.059Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:21:01.056Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:21:31.058Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:22:01.057Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:22:31.057Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:23:01.062Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:23:31.059Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:24:01.060Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:24:31.060Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:25:01.042Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:25:31.038Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:26:01.037Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:26:31.037Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:27:01.036Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:27:31.034Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:28:01.031Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:28:31.036Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:29:01.946Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:29:31.965Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:30:49.966Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:31:49.981Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:32:49.972Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:33:49.963Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:34:49.977Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:35:50.026Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:36:49.987Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:37:49.956Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:38:49.956Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:39:49.968Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:40:49.962Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:41:49.951Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:42:49.973Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:43:49.958Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:44:49.962Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:45:49.963Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:46:49.957Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:47:49.953Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:48:49.953Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:49:49.951Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:50:49.960Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:51:49.957Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:52:49.964Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:53:49.966Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:54:49.961Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:55:49.951Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:56:49.973Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:57:49.966Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:58:49.960Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T16:59:49.958Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T17:00:50.056Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T17:01:15.150Z] GET /api/monitoring/v2/opportunities
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== GET OPPORTUNITIES ===
+Organization: undefined
+Status: pending
+Found 50 opportunities
+[2025-08-07T17:01:23.085Z] GET /api/monitoring/v2/intelligence-summary/demo-org-id
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== NEWS ROUNDUP GENERATION ===
+Organization ID: demo-org-id
+Gathering news from all available sources
+🔧 Ensuring intelligence targets for: demo-org-id
+✅ Found 5 existing intelligence targets
+🔧 Checking organization name for: demo-org-id
+⚠️ Organization has ID as name. Inferring from context...
+Error fixing organization name: error: invalid input syntax for type uuid: "demo-org-id"
+    at /Users/jonathanliebowitz/Desktop/SignalDesk/backend/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async fixOrganizationName (/Users/jonathanliebowitz/Desktop/SignalDesk/backend/src/utils/ensureIntelligenceTargets.js:205:9)
+    at async exports.getIntelligenceSummary (/Users/jonathanliebowitz/Desktop/SignalDesk/backend/src/controllers/monitoringControllerV2.js:634:5) {
+  length: 143,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "unnamed portal parameter $3 = '...'",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'uuid.c',
+  line: '141',
+  routine: 'string_to_uuid'
+}
+=== GETTING ORGANIZATION CONFIG ===
+Requested Organization ID: demo-org-id
+Competitors found: 3
+Organization query result: 0 rows
+Topics query result: 2 rows
+=== USER CONFIGURATION ===
+Organization: Technology Company
+Competitors: Microsoft, Google, Apple
+Topics: AI Regulation, Cloud Computing
+
+=== GENERATING NEWS ROUNDUP ===
+✅ FINAL KEYWORDS FOR NEWS SEARCH: [
+  'Technology Company',
+  'Technology',
+  'Company',
+  'Microsoft',
+  'Google',
+  'Apple',
+  'AI Regulation',
+  'Regulation',
+  'Cloud Computing',
+  'Cloud',
+  'Computing'
+]
+📰 GENERATING NEWS ROUNDUP
+📡 Using 44 news sources
+📌 Extracted keywords: [
+  'Technology Company',
+  'Technology',
+  'Microsoft',
+  'Google',
+  'Apple',
+  'AI Regulation',
+  'Regulation',
+  'Cloud Computing',
+  'Cloud',
+  'Computing'
+]
+📥 Fetching news from 44 sources...
+🔍 Keywords: Technology Company, Technology, Microsoft, Google, Apple, AI Regulation, Regulation, Cloud Computing, Cloud, Computing
+❌ Failed to fetch Reuters Business: getaddrinfo ENOTFOUND feeds.reuters.com
+❌ Failed to fetch Reuters Top News: getaddrinfo ENOTFOUND feeds.reuters.com
+✅ BBC Technology: 2 relevant articles
+✅ NY Times Technology: 3 relevant articles
+✅ BBC Business: 1 relevant articles
+✅ WSJ Business: 1 relevant articles
+✅ CNBC Top News: 3 relevant articles
+✅ TechCrunch: 3 relevant articles
+✅ Ars Technica: 4 relevant articles
+✅ The Verge: 2 relevant articles
+✅ Inc.: 2 relevant articles
+✅ Fast Company: 4 relevant articles
+❌ Failed to fetch HBR: Client network socket disconnected before secure TLS connection was established
+✅ Entrepreneur: 2 relevant articles
+✅ VentureBeat: 3 relevant articles
+✅ Engadget: 7 relevant articles
+✅ Google News - Technology Company: 20 relevant articles
+✅ Google News - Google: 20 relevant articles
+✅ Google News - Microsoft: 20 relevant articles
+✅ Business Insider: 1 relevant articles
+✅ Yahoo Finance: 3 relevant articles
+✅ Google News - Cloud Computing: 14 relevant articles
+✅ Google News - AI Regulation: 13 relevant articles
+✅ Google News - Technology: 15 relevant articles
+✅ Google News - Apple: 20 relevant articles
+✅ The Register: 2 relevant articles
+✅ Reddit - Technology Company: 5 relevant articles
+❌ Failed to fetch AnandTech: Invalid character in entity name
+Line: 230
+Column: 118
+Char: =
+📊 Collected 170 total articles
+
+=== NEWS ROUNDUP COMPLETE ===
+Total articles: 50
+Sources used: 44
+[2025-08-07T17:01:26.210Z] GET /api/monitoring/v2/intelligence-summary/demo-org-id
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+Auth middleware - dev mode bypass
+Auth middleware - dev mode, auto-approving
+=== NEWS ROUNDUP GENERATION ===
+Organization ID: demo-org-id
+Gathering news from all available sources
+🔧 Ensuring intelligence targets for: demo-org-id
+✅ Found 5 existing intelligence targets
+🔧 Checking organization name for: demo-org-id
+⚠️ Organization has ID as name. Inferring from context...
+Error fixing organization name: error: invalid input syntax for type uuid: "demo-org-id"
+    at /Users/jonathanliebowitz/Desktop/SignalDesk/backend/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async fixOrganizationName (/Users/jonathanliebowitz/Desktop/SignalDesk/backend/src/utils/ensureIntelligenceTargets.js:205:9)
+    at async exports.getIntelligenceSummary (/Users/jonathanliebowitz/Desktop/SignalDesk/backend/src/controllers/monitoringControllerV2.js:634:5) {
+  length: 143,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "unnamed portal parameter $3 = '...'",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'uuid.c',
+  line: '141',
+  routine: 'string_to_uuid'
+}
+=== GETTING ORGANIZATION CONFIG ===
+Requested Organization ID: demo-org-id
+Competitors found: 3
+Organization query result: 0 rows
+Topics query result: 2 rows
+=== USER CONFIGURATION ===
+Organization: Technology Company
+Competitors: Microsoft, Google, Apple
+Topics: AI Regulation, Cloud Computing
+
+=== GENERATING NEWS ROUNDUP ===
+✅ FINAL KEYWORDS FOR NEWS SEARCH: [
+  'Technology Company',
+  'Technology',
+  'Company',
+  'Microsoft',
+  'Google',
+  'Apple',
+  'AI Regulation',
+  'Regulation',
+  'Cloud Computing',
+  'Cloud',
+  'Computing'
+]
+📰 GENERATING NEWS ROUNDUP
+📡 Using 44 news sources
+📌 Extracted keywords: [
+  'Technology Company',
+  'Technology',
+  'Microsoft',
+  'Google',
+  'Apple',
+  'AI Regulation',
+  'Regulation',
+  'Cloud Computing',
+  'Cloud',
+  'Computing'
+]
+📥 Fetching news from 44 sources...
+🔍 Keywords: Technology Company, Technology, Microsoft, Google, Apple, AI Regulation, Regulation, Cloud Computing, Cloud, Computing
+❌ Failed to fetch Reuters Business: getaddrinfo ENOTFOUND feeds.reuters.com
+❌ Failed to fetch Reuters Top News: getaddrinfo ENOTFOUND feeds.reuters.com
+✅ BBC Business: 1 relevant articles
+✅ NY Times Technology: 3 relevant articles
+✅ WSJ Business: 1 relevant articles
+✅ BBC Technology: 2 relevant articles
+✅ Ars Technica: 4 relevant articles
+✅ TechCrunch: 3 relevant articles
+✅ The Verge: 2 relevant articles
+✅ CNBC Top News: 3 relevant articles
+✅ Google News - Google: 20 relevant articles
+✅ Google News - Technology Company: 20 relevant articles
+✅ Google News - Microsoft: 20 relevant articles
+✅ Entrepreneur: 2 relevant articles
+✅ Fast Company: 4 relevant articles
+✅ Inc.: 2 relevant articles
+❌ Failed to fetch HBR: Client network socket disconnected before secure TLS connection was established
+✅ VentureBeat: 3 relevant articles
+✅ Engadget: 7 relevant articles
+✅ Google News - AI Regulation: 13 relevant articles
+✅ Google News - Cloud Computing: 14 relevant articles
+✅ Google News - Apple: 20 relevant articles
+✅ Google News - Technology: 15 relevant articles
+✅ Business Insider: 1 relevant articles
+✅ Yahoo Finance: 3 relevant articles
+✅ The Register: 2 relevant articles
+✅ Reddit - Technology Company: 5 relevant articles
+❌ Failed to fetch AnandTech: Invalid character in entity name
+Line: 230
+Column: 118
+Char: =
+📊 Collected 170 total articles
+
+=== NEWS ROUNDUP COMPLETE ===
+Total articles: 50
+Sources used: 44

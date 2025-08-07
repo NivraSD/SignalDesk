@@ -1,0 +1,11 @@
+        {activeTab === 'analytics' && (
+          <div className="analytics-container">
+            <MonitoringAnalytics />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default AISentimentMonitor;

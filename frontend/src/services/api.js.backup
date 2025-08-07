@@ -1,0 +1,181 @@
+// frontend/src/services/api.js
+const API_BASE_URL = 'http://localhost:5001/api';
+
+// Helper function to handle API responses
+const handleResponse = async (response) => {
+  const data = await response.json();
+  
+  if (!response.ok) {
+    throw new Error(data.message || 'API request failed');
+  }
+  
+  return data;
+};
+
+// Helper function to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` })
+  };
+};
+
+// API Service
+const api = {
+  // Health check
+  healthCheck: async () => {
+    const response = await fetch(`${API_BASE_URL}/health`);
+    return handleResponse(response);
+  },
+
+  // Authentication
+  auth: {
+    login: async (email, password) => {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await handleResponse(response);
+      
+      // Store token if login successful
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+      }
+      
+      return data;
+    },
+
+    register: async (userData) => {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData)
+      });
+      return handleResponse(response);
+    },
+
+    logout: async () => {
+      const response = await fetch(`${API_BASE_URL}/auth/logout`, {
+        method: 'POST',
+        headers: getAuthHeaders()
+      });
+      localStorage.removeItem('token');
+      return handleResponse(response);
+    }
+  },
+
+  // Projects
+  projects: {
+    getAll: async () => {
+      const response = await fetch(`${API_BASE_URL}/projects`, {
+        headers: getAuthHeaders()
+      });
+      return handleResponse(response);
+    },
+
+    getById: async (id) => {
+      const response = await fetch(`${API_BASE_URL}/projects/${id}`, {
+        headers: getAuthHeaders()
+      });
+      return handleResponse(response);
+    },
+
+    create: async (projectData) => {
+      const response = await fetch(`${API_BASE_URL}/projects`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(projectData)
+      });
+      return handleResponse(response);
+    },
+
+    update: async (id, projectData) => {
+      const response = await fetch(`${API_BASE_URL}/projects/${id}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(projectData)
+      });
+      return handleResponse(response);
+    },
+
+    delete: async (id) => {
+      const response = await fetch(`${API_BASE_URL}/projects/${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      return handleResponse(response);
+    }
+  },
+
+  // AI Assistant
+  assistant: {
+    chat: async (message, projectId = null) => {
+      const response = await fetch(`${API_BASE_URL}/assistant/chat`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ message, projectId })
+      });
+      return handleResponse(response);
+    },
+
+    getHistory: async (projectId = null) => {
+      const url = projectId 
+        ? `${API_BASE_URL}/assistant/history/${projectId}`
+        : `${API_BASE_URL}/assistant/history`;
+      
+      const response = await fetch(url, {
+        headers: getAuthHeaders()
+      });
+      return handleResponse(response);
+    },
+
+    clearHistory: async (projectId = null) => {
+      const url = projectId 
+        ? `${API_BASE_URL}/assistant/history/${projectId}`
+        : `${API_BASE_URL}/assistant/history`;
+      
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      return handleResponse(response);
+    }
+  }
+// Generic HTTP methods for new endpoints
+  get: async (endpoint) => {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      headers: getAuthHeaders()
+    });
+    return handleResponse(response);
+  },
+
+  post: async (endpoint, data) => {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(response);
+  },
+
+  put: async (endpoint, data) => {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(response);
+  },
+
+  delete: async (endpoint) => {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+    return handleResponse(response);
+  }
+};
+
+export default api;

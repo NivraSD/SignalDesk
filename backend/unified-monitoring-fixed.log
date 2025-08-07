@@ -1,0 +1,152 @@
+🚀 UNIFIED MONITORING SYSTEM STARTUP
+============================================================
+This service will:
+  ✓ Monitor 154 RSS feeds across 25 industries
+  ✓ Query 192 Google News searches
+  ✓ Process data every 5 minutes
+  ✓ Store all articles in database
+  ✓ Detect opportunities in real-time
+============================================================
+
+🚀 STARTING CONTINUOUS MONITORING SERVICE
+📊 Interval: Every 5 minutes
+📡 Total sources to monitor: 352+
+
+============================================================
+🔄 MONITORING CYCLE STARTED at 2025-08-07T05:30:42.062Z
+============================================================
+Successfully connected to PostgreSQL database
+📚 Retrieved 25 source configurations from database
+
+📡 Fetching 154 RSS feeds...
+  Progress: 100/154 feeds processed
+  Progress: 154/154 feeds processed
+📰 RSS Results: 93 successful, 61 failed, 1472 articles
+
+🔍 Fetching 192 Google News queries...
+  Progress: 30/192 queries processed
+  Progress: 60/192 queries processed
+  Progress: 90/192 queries processed
+  Progress: 120/192 queries processed
+  Progress: 150/192 queries processed
+  Progress: 180/192 queries processed
+  Progress: 192/192 queries processed
+🔍 Google News Results: 192 successful, 3830 articles
+
+💾 Storing 5302 articles in database...
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: (article.title || "Untitled").replace is not a function
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: (article.title || "Untitled").replace is not a function
+Error storing batch: (article.title || "Untitled").replace is not a function
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Error storing batch: there is no unique or exclusion constraint matching the ON CONFLICT specification
+  ✅ Successfully stored 0 new articles
+💾 Stored 0 articles in database
+
+🎯 Triggering opportunity detection...
+  Analyzing 0 recent articles for opportunities...
+  ✅ Opportunity detection triggered
+Error updating stats: error: invalid input syntax for type integer: "excellent"
+    at /Users/jonathanliebowitz/Desktop/SignalDesk/backend/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async UnifiedMonitoringService.updateMonitoringStats (/Users/jonathanliebowitz/Desktop/SignalDesk/backend/src/services/UnifiedMonitoringService.js:383:7)
+    at async UnifiedMonitoringService.runMonitoringCycle (/Users/jonathanliebowitz/Desktop/SignalDesk/backend/src/services/UnifiedMonitoringService.js:101:7)
+    at async UnifiedMonitoringService.startContinuousMonitoring (/Users/jonathanliebowitz/Desktop/SignalDesk/backend/src/services/UnifiedMonitoringService.js:49:5)
+    at async startMonitoring (/Users/jonathanliebowitz/Desktop/SignalDesk/backend/start-unified-monitoring.js:23:3) {
+  length: 120,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: '181',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'numutils.c',
+  line: '619',
+  routine: 'pg_strtoint32_safe'
+}
+
+✅ MONITORING CYCLE COMPLETE in 166.6 seconds
+📊 Total articles collected: 5302
+✅ Continuous monitoring started successfully
+
+✅ Monitoring service is running. Press Ctrl+C to stop.
+
+
+📊 Status Update: 2025-08-07T05:33:58.642Z
+  Active: true
+  Total Fetches: 0
+  Successful: 0
+  Articles Collected: 0
+
+📊 Status Update: 2025-08-07T05:34:28.643Z
+  Active: true
+  Total Fetches: 0
+  Successful: 0
+  Articles Collected: 0
+
+📊 Status Update: 2025-08-07T05:34:58.645Z
+  Active: true
+  Total Fetches: 0
+  Successful: 0
+  Articles Collected: 0
+
+📊 Status Update: 2025-08-07T05:35:28.646Z
+  Active: true
+  Total Fetches: 0
+  Successful: 0
+  Articles Collected: 0
