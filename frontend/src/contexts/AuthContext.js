@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 
 const AuthContext = createContext();
 
+// Use the same API URL as the rest of the app
+const API_BASE_URL = "https://signal-desk-9tvfqyj91-nivra-sd.vercel.app/api";
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -34,7 +37,7 @@ export const AuthProvider = ({ children }) => {
       // Set token state
       setToken(storedToken);
 
-      const response = await fetch("http://localhost:5001/api/auth/verify", {
+      const response = await fetch(`${API_BASE_URL}/auth/verify`, {
         headers: {
           Authorization: `Bearer ${storedToken}`,
         },
@@ -65,7 +68,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       setError(null);
-      const response = await fetch("http://localhost:5001/api/auth/login", {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

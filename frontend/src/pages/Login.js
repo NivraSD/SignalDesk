@@ -6,7 +6,7 @@ const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [email, setEmail] = useState('demo@signaldesk.com');
-  const [password, setPassword] = useState('password');
+  const [password, setPassword] = useState('demo123');
   const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
@@ -47,7 +47,7 @@ const Login = () => {
           </button>
         </form>
         <p className="text-center text-sm text-gray-600">
-          Demo: demo@signaldesk.com / password
+          Demo: demo@signaldesk.com / demo123
         </p>
       </div>
     </div>
