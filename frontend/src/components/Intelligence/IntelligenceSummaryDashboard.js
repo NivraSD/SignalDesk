@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import API_BASE_URL from '../../config/api';
 import { 
   Clock, TrendingUp, TrendingDown, AlertCircle, Building2, 
   Users, Hash, Globe, BarChart3, Activity, Filter,
@@ -136,7 +137,7 @@ const IntelligenceSummaryDashboard = ({ organizationId, organizationName }) => {
     
     try {
       // Try to fetch real data from backend (V2 endpoint with Claude analysis)
-      const response = await fetch(`https://signal-desk-ep6ckndvc-nivra-sd.vercel.app/api/monitoring/v2/intelligence-summary/${organizationId}`, {
+      const response = await fetch(`${API_BASE_URL}/monitoring/v2/intelligence-summary/${organizationId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

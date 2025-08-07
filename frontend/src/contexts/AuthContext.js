@@ -1,10 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import API_BASE_URL from '../config/api';
 
 const AuthContext = createContext();
-
-// Use the same API URL as the rest of the app
-const API_BASE_URL = "https://signal-desk-9tvfqyj91-nivra-sd.vercel.app/api";
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
