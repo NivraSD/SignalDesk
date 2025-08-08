@@ -87,7 +87,15 @@
       "Bash(docker build:*)",
       "Bash(git remote add:*)",
       "Bash(./verify-railway-deployment.sh:*)",
-      "Bash(./deploy-to-railway.sh:*)"
+      "Bash(./deploy-to-railway.sh:*)",
+      "WebFetch(domain:frontend-p0rvzi1f9-nivra-sd.vercel.app)",
+      "Bash(open test-frontend.html)",
+      "Bash(open /Users/jonathanliebowitz/Desktop/SignalDesk/test-frontend.html)",
+      "Bash(PGPASSWORD=MUmjKBxTiecMPpYVgwGsZEKyFfyFbxqV psql -h crossover.proxy.rlwy.net -p 56706 -U postgres -d railway -c \"\\d projects\")",
+      "Bash(PGPASSWORD=MUmjKBxTiecMPpYVgwGsZEKyFfyFbxqV psql -h crossover.proxy.rlwy.net -p 56706 -U postgres -d railway -c \"\\d users\")",
+      "Bash(open /Users/jonathanliebowitz/Desktop/SignalDesk/test-project-creation.html)",
+      "Bash(PGPASSWORD=MUmjKBxTiecMPpYVgwGsZEKyFfyFbxqV psql -h crossover.proxy.rlwy.net -p 56706 -U postgres -d railway -c \"\\d todos\")",
+      "Bash(open:*)"
     ],
     "deny": []
   }

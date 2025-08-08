@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SignalDesk Platform Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🚀 SignalDesk Platform Connection Test</h1>
+    
+    <div class="info">
+        <h3>Your Deployment URLs:</h3>
+        <ul>
+            <li><strong>Frontend:</strong> <a href="https://frontend-p0rvzi1f9-nivra-sd.vercel.app" target="_blank">https://frontend-p0rvzi1f9-nivra-sd.vercel.app</a></li>
+            <li><strong>Backend:</strong> <a href="https://signaldesk-production.up.railway.app" target="_blank">https://signaldesk-production.up.railway.app</a></li>
+        </ul>
+    </div>
+
+    <h2>Test Results:</h2>
+    <div id="results"></div>
+
+    <h2>Manual Login Test:</h2>
+    <button onclick="testLogin()">Test Login</button>
+    <button onclick="testAPI()">Test All APIs</button>
+
+    <script>
+        const BACKEND_URL = 'https://signaldesk-production.up.railway.app';
+        const results = document.getElementById('results');
+
+        async function addResult(title, success, details) {
+            const div = document.createElement('div');
+            div.className = success ? 'success' : 'error';
+            div.innerHTML = `<strong>${success ? '✅' : '❌'} ${title}:</strong> ${details}`;
+            results.appendChild(div);
+        }
+
+        async function testLogin() {
+            results.innerHTML = '<p>Testing login...</p>';
+            
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'demo@signaldesk.com',
+                        password: 'demo123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    localStorage.setItem('token', data.token);
+                    addResult('Login', true, `Logged in as ${data.user.email}`);
+                    addResult('Token', true, 'JWT token saved to localStorage');
+                    
+                    results.innerHTML += `
+                        <div class="info">
+                            <h3>✅ Backend is working!</h3>
+                            <p>Now go to your frontend and login with:</p>
+                            <ul>
+                                <li>Email: demo@signaldesk.com</li>
+                                <li>Password: demo123</li>
+                            </ul>
+                            <a href="https://frontend-p0rvzi1f9-nivra-sd.vercel.app" target="_blank">
+                                <button>Go to SignalDesk Frontend</button>
+                            </a>
+                        </div>
+                    `;
+                } else {
+                    addResult('Login', false, 'Invalid credentials');
+                }
+            } catch (error) {
+                addResult('Login', false, error.message);
+            }
+        }
+
+        async function testAPI() {
+            results.innerHTML = '<p>Testing all APIs...</p>';
+            
+            // Test health
+            try {
+                const health = await fetch(`${BACKEND_URL}/health`);
+                const data = await health.json();
+                addResult('Health Check', true, data.status);
+            } catch (e) {
+                addResult('Health Check', false, e.message);
+            }
+
+            // Test root
+            try {
+                const root = await fetch(`${BACKEND_URL}/`);
+                const data = await root.json();
+                addResult('API Root', true, `${data.message} - Database: ${data.database}`);
+            } catch (e) {
+                addResult('API Root', false, e.message);
+            }
+
+            // Test auth
+            try {
+                const auth = await fetch(`${BACKEND_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'demo@signaldesk.com',
+                        password: 'demo123'
+                    })
+                });
+                const data = await auth.json();
+                addResult('Authentication', data.success, data.success ? 'Login working' : 'Login failed');
+            } catch (e) {
+                addResult('Authentication', false, e.message);
+            }
+
+            // Test content generation
+            try {
+                const content = await fetch(`${BACKEND_URL}/api/content/ai-generate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: 'Test prompt',
+                        type: 'test'
+                    })
+                });
+                const data = await content.json();
+                addResult('Content Generation', data.success, 'AI endpoint working');
+            } catch (e) {
+                addResult('Content Generation', false, e.message);
+            }
+        }
+
+        // Auto-test on load
+        testAPI();
+    </script>
+</body>
+</html>
