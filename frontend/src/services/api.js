@@ -586,12 +586,19 @@ export const exportContent = async (exportData) => {
 
 // Analyze Content
 export const analyzeContent = async (analysisData) => {
-  const response = await fetch(`${API_BASE_URL}/content/analyze`, {
+  // Use the AI generate endpoint with analyze type
+  const response = await fetch(`${API_BASE_URL}/content/ai-generate`, {
     method: "POST",
     headers: getAuthHeaders(),
-    body: JSON.stringify(analysisData),
+    body: JSON.stringify({
+      prompt: `Analyze this content:\n\n${analysisData.content}\n\nContent Type: ${analysisData.contentType}\nTone: ${analysisData.tone}\nTarget Audience: ${analysisData.targetAudience}\n\nProvide a comprehensive analysis including:\n1. Strengths and weaknesses\n2. Tone effectiveness\n3. Audience appropriateness\n4. Suggestions for improvement\n5. Overall quality score (1-10)",
+      type: "analysis",
+      tone: "analytical",
+      context: analysisData.context
+    }),
   });
-  return handleResponse(response);
+  const data = await handleResponse(response);
+  return { analysis: data.content || data.response || data };
 };
 
 // Generic HTTP methods

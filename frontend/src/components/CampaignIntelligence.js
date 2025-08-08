@@ -382,6 +382,53 @@ export default function CampaignIntelligence() {
     }));
   };
 
+  // Helper function to parse Claude's response into structured sections
+  const parseReportSections = (content) => {
+    const sections = [];
+    const lines = content.split('\n');
+    let currentSection = null;
+    let currentContent = [];
+
+    lines.forEach(line => {
+      // Check if line is a section header (starts with number or is in caps)
+      if (/^\d+\.\s/.test(line) || /^[A-Z][A-Z\s]+:/.test(line)) {
+        // Save previous section if exists
+        if (currentSection) {
+          sections.push({
+            id: currentSection.toLowerCase().replace(/\s+/g, '-'),
+            title: currentSection,
+            content: currentContent.join('\n').trim()
+          });
+        }
+        // Start new section
+        currentSection = line.replace(/^\d+\.\s/, '').replace(/:$/, '').trim();
+        currentContent = [];
+      } else if (line.trim()) {
+        currentContent.push(line);
+      }
+    });
+
+    // Add last section
+    if (currentSection) {
+      sections.push({
+        id: currentSection.toLowerCase().replace(/\s+/g, '-'),
+        title: currentSection,
+        content: currentContent.join('\n').trim()
+      });
+    }
+
+    // If no sections were parsed, create a single section with all content
+    if (sections.length === 0) {
+      sections.push({
+        id: 'report',
+        title: 'Strategic Report',
+        content: content
+      });
+    }
+
+    return sections;
+  };
+
   const generateStrategicReport = async () => {
     if (!campaignBrief.trim() || !selectedType) {
       setError("Please select a campaign type and provide a detailed brief");
@@ -392,9 +439,9 @@ export default function CampaignIntelligence() {
     setError(null);
 
     try {
-      // Step 1: Generate comprehensive strategic report
+      // Step 1: Generate comprehensive strategic report using Claude
       const response = await fetch(
-        `${API_BASE_URL}/campaigns/generate-strategic-report`,
+        `${API_BASE_URL}/content/ai-generate`,
         {
           method: "POST",
           headers: {
@@ -402,27 +449,53 @@ export default function CampaignIntelligence() {
             Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
           },
           body: JSON.stringify({
-            campaignType: selectedType,
-            campaignCategory: selectedCategory,
-            brief: campaignBrief,
-            includeBrief: briefPrompts[selectedType] || "",
+            prompt: `Generate a comprehensive strategic campaign report for:
+            
+Campaign Type: ${selectedType}
+Category: ${selectedCategory}
+Brief: ${campaignBrief}
+${briefPrompts[selectedType] ? `Context: ${briefPrompts[selectedType]}` : ''}
+
+Please provide a detailed strategic report with the following sections:
+1. Executive Summary
+2. Campaign Objectives & KPIs
+3. Target Audience Analysis
+4. Key Messages & Positioning
+5. Strategic Recommendations
+6. Channel Strategy
+7. Timeline & Milestones
+8. Budget Considerations
+9. Risk Assessment
+10. Success Metrics
+
+Format the response as a structured report with clear sections and actionable insights.`,
+            type: "campaign-strategy",
+            tone: "strategic",
           }),
         }
       );
 
       const data = await response.json();
 
-      if (!response.ok || !data.success) {
+      if (!response.ok) {
         throw new Error(data.message || "Failed to generate report");
       }
 
+      // Parse the Claude response into a structured report
+      const reportContent = data.content || data.response || data;
+      const structuredReport = {
+        title: `Strategic Campaign Report - ${selectedType}`,
+        sections: parseReportSections(reportContent),
+        timestamp: new Date().toISOString()
+      };
+
       // Set the report and expand all sections
-      setStrategicReport(data.report);
+      setStrategicReport(structuredReport);
 
       // Auto-expand all sections for easy viewing
       const sections = {};
-      if (data.report && data.report.sections) {
-        data.report.sections.forEach((section) => {
+      if (structuredReport && structuredReport.sections) {
+        structuredReport.sections.forEach((section) => {
           sections[section.id] = true;
         });
       }

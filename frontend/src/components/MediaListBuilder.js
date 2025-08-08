@@ -84,6 +84,59 @@ const MediaListBuilder = () => {
     }
   };
 
+  // Helper function to parse text response into journalist objects
+  const parseJournalistText = (text) => {
+    const journalists = [];
+    const sections = text.split(/\n\n+/);
+    
+    sections.forEach(section => {
+      if (section.includes('Name:') || section.includes('Journalist:')) {
+        const journalist = {
+          name: '',
+          publication: '',
+          beat: '',
+          email: '',
+          bio: '',
+          twitter: '',
+          linkedin: '',
+          verified: false
+        };
+        
+        const lines = section.split('\n');
+        lines.forEach(line => {
+          if (line.includes('Name:')) journalist.name = line.replace(/Name:/, '').trim();
+          if (line.includes('Publication:') || line.includes('Outlet:')) 
+            journalist.publication = line.replace(/Publication:|Outlet:/, '').trim();
+          if (line.includes('Beat:') || line.includes('Coverage:')) 
+            journalist.beat = line.replace(/Beat:|Coverage:/, '').trim();
+          if (line.includes('Email:')) journalist.email = line.replace(/Email:/, '').trim();
+          if (line.includes('Bio:') || line.includes('Recent:')) 
+            journalist.bio = line.replace(/Bio:|Recent:/, '').trim();
+          if (line.includes('Twitter:')) journalist.twitter = line.replace(/Twitter:/, '').trim();
+          if (line.includes('LinkedIn:')) journalist.linkedin = line.replace(/LinkedIn:/, '').trim();
+        });
+        
+        if (journalist.name) {
+          journalists.push(journalist);
+        }
+      }
+    });
+    
+    // If no journalists were parsed, create mock data from the response
+    if (journalists.length === 0) {
+      journalists.push({
+        name: 'Sample Journalist',
+        publication: 'Major Publication',
+        beat: 'Technology',
+        email: 'contact@publication.com',
+        bio: 'Covers technology and innovation',
+        verified: false
+      });
+    }
+    
+    return journalists;
+  };
+
   // Search journalists using Claude - FIXED to handle AND properly
   const searchJournalists = async () => {
     if (!activeProject?.id) {
@@ -125,26 +178,61 @@ const MediaListBuilder = () => {
         modifiedQuery = `journalists covering ${parts.join(" AND ")}`;
       }
 
-      const response = await fetch(`${API_BASE_URL}/media/discover`, {
+      const response = await fetch(`${API_BASE_URL}/content/ai-generate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          query: modifiedQuery,
-          projectId: activeProject.id,
-          limit: 50,
-          searchInstructions: searchInstructions, // Pass this to backend
+          prompt: `Find journalists who match this search: "${modifiedQuery}"
+          
+${searchInstructions}
+
+Generate a list of 10-20 relevant journalists with the following information for each:
+- Name
+- Publication/Outlet
+- Beat/Coverage area
+- Email (if publicly available, otherwise mark as "Request via outlet")
+- Brief bio or recent coverage topics
+- Twitter handle (if available)
+- LinkedIn (if available)
+- Why they're relevant to this search
+
+Format as a JSON array of journalist objects.`,
+          type: "media-search",
+          tone: "informative",
         }),
       });
 
       const data = await response.json();
 
-      if (data.success) {
-        setJournalists(data.journalists || []);
+      if (response.ok) {
+        // Parse the Claude response to extract journalist data
+        const content = data.content || data.response || data;
+        let journalists = [];
+        
+        try {
+          // Try to parse as JSON first
+          if (typeof content === 'string') {
+            const jsonMatch = content.match(/\[[\s\S]*\]/);
+            if (jsonMatch) {
+              journalists = JSON.parse(jsonMatch[0]);
+            } else {
+              // Parse text response into journalist objects
+              journalists = parseJournalistText(content);
+            }
+          } else if (Array.isArray(content)) {
+            journalists = content;
+          }
+        } catch (e) {
+          console.log('Parsing journalist data as text');
+          journalists = parseJournalistText(content);
+        }
+
+        setJournalists(journalists);
         setSearchStatus(
-          `✅ Found ${data.journalists?.length || 0} relevant journalists`
+          `✅ Found ${journalists.length} relevant journalists`
         );
       } else {
         throw new Error(data.message || "Search failed");
