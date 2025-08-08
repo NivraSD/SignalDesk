@@ -1,5 +1,5 @@
 # Use the official Node.js runtime as base image
-FROM node:18-alpine
+FROM node:20-alpine
 
 # Set working directory
 WORKDIR /app
@@ -19,4 +19,4 @@ COPY . .
 # Don't specify EXPOSE as Railway manages this
 
 # Start the application
-CMD ["node", "index.js"]
+CMD ["node", "server.js"]

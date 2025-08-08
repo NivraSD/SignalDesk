@@ -2,9 +2,9 @@
   "name": "signaldesk-backend",
   "version": "1.0.0",
   "description": "SignalDesk PR Platform Backend",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "node server.js",
     "start-server": "node server.js",
     "dev": "nodemon index.js",
     "test": "jest",
@@ -33,6 +33,6 @@
     "nodemon": "^3.0.2"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   }
 }
