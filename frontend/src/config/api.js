@@ -4,9 +4,11 @@
 // PRODUCTION API - Railway deployment
 const PROD_API = 'https://signaldesk-production.up.railway.app/api';
 
-// FORCE correct URL - ignore any environment variables from Vercel
+// FORCE correct URL - Check window override FIRST
 // The old URL signaldesk-api-production is WRONG
-let API_BASE_URL = PROD_API;
+let API_BASE_URL = window?.FORCED_API_URL || 
+                   localStorage.getItem('API_URL_OVERRIDE') ||
+                   PROD_API;
 
 // Check if environment variable is set and if it's the WRONG URL
 if (process.env.REACT_APP_API_URL) {
