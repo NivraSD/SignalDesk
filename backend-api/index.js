@@ -57,8 +57,10 @@ app.get('/test-claude', async (req, res) => {
     }
     
     const { Anthropic } = require('@anthropic-ai/sdk');
+    const cleanApiKey = process.env.ANTHROPIC_API_KEY.trim().replace(/\n/g, '');
+    console.log('Clean API key length:', cleanApiKey.length);
     const anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY
+      apiKey: cleanApiKey
     });
     
     const response = await anthropic.messages.create({
@@ -163,8 +165,10 @@ app.post('/api/content/ai-generate', async (req, res) => {
     if (process.env.ANTHROPIC_API_KEY) {
       console.log('Attempting Claude API call...');
       const { Anthropic } = require('@anthropic-ai/sdk');
+      const cleanApiKey = process.env.ANTHROPIC_API_KEY.trim().replace(/\n/g, '');
+      console.log('Content generation - Clean API key length:', cleanApiKey.length);
       const anthropic = new Anthropic({
-        apiKey: process.env.ANTHROPIC_API_KEY
+        apiKey: cleanApiKey
       });
       
       const response = await anthropic.messages.create({
