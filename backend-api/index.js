@@ -45,6 +45,46 @@ app.get('/test', (req, res) => {
   res.send('OK');
 });
 
+// Claude API test endpoint
+app.get('/test-claude', async (req, res) => {
+  try {
+    console.log('Testing Claude API...');
+    console.log('API Key exists:', !!process.env.ANTHROPIC_API_KEY);
+    console.log('API Key length:', process.env.ANTHROPIC_API_KEY?.length);
+    
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return res.json({ error: 'No API key found' });
+    }
+    
+    const { Anthropic } = require('@anthropic-ai/sdk');
+    const anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY
+    });
+    
+    const response = await anthropic.messages.create({
+      model: 'claude-3-haiku-20240307',
+      max_tokens: 100,
+      messages: [{
+        role: 'user',
+        content: 'Say "Hello from Claude!" and nothing else.'
+      }]
+    });
+    
+    res.json({
+      success: true,
+      message: response.content[0].text,
+      model: 'claude-3-haiku-20240307'
+    });
+  } catch (error) {
+    console.error('Claude test error:', error);
+    res.json({
+      success: false,
+      error: error.message,
+      details: error.toString()
+    });
+  }
+});
+
 // ============= AUTHENTICATION =============
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
