@@ -232,15 +232,6 @@ app.use("/api/opportunity", authMiddleware, opportunityRoutes);
 const intelligenceIndexRoutes = require("./src/routes/intelligenceIndexRoutes");
 app.use("/api/intelligence-index", intelligenceIndexRoutes); // No auth middleware here - handled per route
 
-// 🌉 CLAUDE BRIDGE ROUTES - Maps frontend calls to Claude features
-// MUST come BEFORE other routes to properly intercept frontend API calls
-const claudeBridgeRoutes = require("./src/routes/claudeBridgeRoutes");
-app.use("/api", claudeBridgeRoutes);
-
-// 🚀 ENHANCED CLAUDE ROUTES - Comprehensive Claude AI integration for all features
-const enhancedClaudeRoutes = require("./src/routes/enhancedClaudeRoutes");
-app.use("/api/enhanced", authMiddleware, enhancedClaudeRoutes);
-
 // 🔧 MISSING ENDPOINTS ROUTES - Comprehensive solution for all 404 errors
 // Add ALL missing endpoints that frontend calls but don't exist in backend
 app.use("/api", missingEndpointsRoutes);

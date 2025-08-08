@@ -1,116 +1,62 @@
-// Test script for Claude API integration
-// Run this to verify all Claude features are working
+// test-claude-integration.js
+// Run this from your backend directory: node test-claude-integration.js
 
-const axios = require('axios');
+require('dotenv').config();
 
-// Configuration
-const API_BASE_URL = process.env.API_URL || 'http://localhost:5000/api';
-const TEST_TOKEN = process.env.TEST_TOKEN || 'your-test-token-here';
+console.log('=== SignalDesk Claude Integration Test ===\n');
 
-// Test data
-const testCases = [
-  {
-    name: 'Crisis Advisor',
-    endpoint: '/crisis/advisor',
-    method: 'POST',
-    data: {
-      query: 'Our company website has been hacked and customer data may be compromised. What should we do?',
-      conversationHistory: [],
-      context: {
-        company: 'TestCorp',
-        industry: 'Technology'
-      }
-    }
-  },
-  {
-    name: 'Campaign Strategy',
-    endpoint: '/campaigns/strategy',
-    method: 'POST',
-    data: {
-      campaignType: 'Product Launch',
-      objectives: 'Generate awareness for new AI tool',
-      targetAudience: 'Tech professionals and developers',
-      budget: '$50,000',
-      timeline: '3 months'
-    }
-  },
-  {
-    name: 'AI Reporter Discovery',
-    endpoint: '/media/ai-discover-reporters',
-    method: 'POST',
-    data: {
-      topic: 'AI and machine learning',
-      announcement: 'New AI tool for developers',
-      targetPublications: ['TechCrunch', 'Wired'],
-      geographic: 'National'
-    }
-  }
-];
+// Step 1: Check environment
+console.log('1. Environment Check:');
+console.log('   - API Key exists:', !!process.env.CLAUDE_API_KEY);
+console.log('   - Model:', process.env.CLAUDE_MODEL);
+console.log('   - Port:', process.env.PORT);
 
-// Test function
-async function testEndpoint(testCase) {
-  try {
-    console.log(`\n🧪 Testing: ${testCase.name}`);
-    console.log(`   Endpoint: ${testCase.endpoint}`);
-    
-    const config = {
-      method: testCase.method,
-      url: `${API_BASE_URL}${testCase.endpoint}`,
-      headers: {
-        'Authorization': `Bearer ${TEST_TOKEN}`,
-        'Content-Type': 'application/json'
-      },
-      data: testCase.data
-    };
-    
-    const response = await axios(config);
-    
-    if (response.data.success) {
-      console.log(`   ✅ SUCCESS`);
-      console.log(`   Response has:`, Object.keys(response.data).join(', '));
-    } else {
-      console.log(`   ❌ FAILED: Response not successful`);
-    }
-    
-    return { success: true, testCase: testCase.name };
-  } catch (error) {
-    console.log(`   ❌ FAILED: ${error.message}`);
-    if (error.response) {
-      console.log(`   Status: ${error.response.status}`);
-      console.log(`   Error:`, error.response.data);
-    }
-    return { success: false, testCase: testCase.name, error: error.message };
-  }
-}
+// Step 2: Test Claude service
+const claudeService = require('./config/claude');
 
-// Main test runner
 async function runTests() {
-  console.log('🚀 Starting Claude Integration Tests');
-  console.log('================================');
-  console.log(`API URL: ${API_BASE_URL}`);
-  
-  const results = [];
-  
-  for (const testCase of testCases) {
-    const result = await testEndpoint(testCase);
-    results.push(result);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+  console.log('\n2. Testing Basic Claude Connection:');
+  try {
+    const response = await claudeService.sendMessage('Say "Hello from SignalDesk!" in exactly 5 words.');
+    console.log('   ✅ Basic test passed:', response);
+  } catch (error) {
+    console.error('   ❌ Basic test failed:', error.message);
+    return;
   }
-  
-  // Summary
-  console.log('\n================================');
-  console.log('📊 Test Summary');
-  const successful = results.filter(r => r.success).length;
-  const failed = results.filter(r => \!r.success).length;
-  
-  console.log(`✅ Successful: ${successful}/${results.length}`);
-  console.log(`❌ Failed: ${failed}/${results.length}`);
+
+  console.log('\n3. Testing Long Content Generation:');
+  try {
+    const prompt = 'Write a 3-sentence executive summary about the importance of PR in modern business.';
+    const response = await claudeService.sendMessage(prompt);
+    console.log('   ✅ Content generation passed');
+    console.log('   Response length:', response.length, 'characters');
+    console.log('   Preview:', response.substring(0, 100) + '...');
+  } catch (error) {
+    console.error('   ❌ Content generation failed:', error.message);
+  }
+
+  console.log('\n4. Testing Campaign-Style Content:');
+  try {
+    const campaignPrompt = `Generate a brief PR campaign outline for a tech startup launching a new AI product. Include:
+    1. Campaign objective
+    2. Target audience
+    3. Key message
+    4. One main tactic
+    Keep it under 150 words.`;
+    
+    const response = await claudeService.sendMessage(campaignPrompt);
+    console.log('   ✅ Campaign content passed');
+    console.log('   Generated outline:\n');
+    console.log(response);
+  } catch (error) {
+    console.error('   ❌ Campaign content failed:', error.message);
+  }
+
+  console.log('\n=== Test Complete ===');
+  console.log('\nNext steps:');
+  console.log('1. If all tests passed, restart your server: npm run dev');
+  console.log('2. Test Campaign Intelligence in the browser');
+  console.log('3. Verify other features still work\n');
 }
 
-// Run tests if executed directly
-if (require.main === module) {
-  runTests().catch(console.error);
-}
-
-module.exports = { runTests, testEndpoint };
-EOF < /dev/null
+runTests().catch(console.error);
