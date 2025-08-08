@@ -87,7 +87,7 @@ app.post('/api/auth/login', async (req, res) => {
     // Demo user check
     if (email === 'demo@signaldesk.com' && password === 'demo123') {
       const token = jwt.sign(
-        { id: 1, email: 'demo@signaldesk.com' },
+        { id: '7f39af2e-933c-44e9-b67c-1f7e28b3a858', email: 'demo@signaldesk.com', organization_id: 'demo-org' },
         process.env.JWT_SECRET || 'signaldesk-jwt-secret-2024',
         { expiresIn: '24h' }
       );
@@ -96,9 +96,10 @@ app.post('/api/auth/login', async (req, res) => {
         success: true,
         token,
         user: {
-          id: 1,
+          id: '7f39af2e-933c-44e9-b67c-1f7e28b3a858',
           email: 'demo@signaldesk.com',
-          name: 'Demo User'
+          name: 'Demo User',
+          organization_id: 'demo-org'
         }
       });
     }
@@ -116,7 +117,7 @@ app.post('/api/auth/login', async (req, res) => {
         
         if (validPassword) {
           const token = jwt.sign(
-            { id: user.id, email: user.email },
+            { id: user.id, email: user.email, organization_id: user.organization_id },
             process.env.JWT_SECRET || 'signaldesk-jwt-secret-2024',
             { expiresIn: '24h' }
           );
@@ -127,7 +128,8 @@ app.post('/api/auth/login', async (req, res) => {
             user: {
               id: user.id,
               email: user.email,
-              name: user.name
+              name: user.name,
+              organization_id: user.organization_id
             }
           });
         }
@@ -170,33 +172,41 @@ app.get('/api/projects', async (req, res) => {
     const result = await pool.query('SELECT * FROM projects ORDER BY created_at DESC');
     res.json(result.rows);
   } catch (error) {
-    // Return demo data if database fails
-    res.json([
-      {
-        id: 1,
-        name: 'Demo Project',
-        description: 'Sample project for demonstration',
-        created_at: new Date()
-      }
-    ]);
+    console.error('Projects fetch error:', error);
+    // Return empty array if database fails
+    res.json([]);
   }
 });
 
 app.post('/api/projects', async (req, res) => {
   try {
     const { name, description } = req.body;
+    const token = req.headers.authorization?.split(' ')[1];
+    
+    let userId = '7f39af2e-933c-44e9-b67c-1f7e28b3a858'; // Default to demo user
+    let organizationId = 'demo-org';
+    
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'signaldesk-jwt-secret-2024');
+        userId = decoded.id;
+        organizationId = decoded.organization_id || 'demo-org';
+      } catch (e) {
+        console.log('Token decode error, using demo user');
+      }
+    }
+    
     const result = await pool.query(
-      'INSERT INTO projects (name, description) VALUES ($1, $2) RETURNING *',
-      [name, description]
+      'INSERT INTO projects (name, description, created_by, organization_id, status) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [name, description, userId, organizationId, 'active']
     );
     res.json(result.rows[0]);
   } catch (error) {
-    // Return demo response if database fails
-    res.json({
-      id: Date.now(),
-      name: req.body.name,
-      description: req.body.description,
-      created_at: new Date()
+    console.error('Project creation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create project',
+      error: error.message
     });
   }
 });
