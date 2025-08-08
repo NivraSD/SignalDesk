@@ -31,11 +31,7 @@
     "jest": "^29.7.0",
     "nodemon": "^3.0.2"
   },
-  "keywords": [
-    "pr",
-    "ai",
-    "signaldesk"
-  ],
-  "author": "SignalDesk",
-  "license": "ISC"
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }

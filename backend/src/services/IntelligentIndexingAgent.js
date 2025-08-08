@@ -9,7 +9,7 @@ const SourceDiscoveryService = require('./SourceDiscoveryService');
 const Parser = require('rss-parser');
 const axios = require('axios');
 const cheerio = require('cheerio');
-const puppeteer = require('puppeteer');
+// const puppeteer = require('puppeteer'); // Disabled for Railway deployment
 const pool = require('../config/db');
 
 class IntelligentIndexingAgent {

@@ -13,7 +13,7 @@ if (process.env.NODE_ENV !== 'production') {
 require("./src/config/db");
 
 const app = express();
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 3001; // Railway default
 
 // Middleware - configure CORS for both local and Railway
 const corsOptions = {

@@ -16,7 +16,11 @@ const pool = connectionString
       connectionString,
       ssl: process.env.NODE_ENV === 'production' 
         ? { rejectUnauthorized: false }
-        : false
+        : false,
+      // Full resources on $20 plan
+      max: 20, // Increased for better performance
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 5000,
     })
   : new Pool({
       user: process.env.PGUSER || process.env.DB_USER || 'postgres',
@@ -24,6 +28,9 @@ const pool = connectionString
       database: process.env.PGDATABASE || process.env.DB_NAME || 'signaldesk',
       password: process.env.PGPASSWORD || process.env.DB_PASSWORD || 'your_postgres_password_here',
       port: process.env.PGPORT || process.env.DB_PORT || 5432,
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 5000,
     });
 
 // Test the connection

@@ -1,8 +1,8 @@
 // Centralized API configuration
 // Change this ONE place to update the entire app
-// Using stable production URL that won't change with deployments
+// Now using Railway for 100% functionality!
 
-// Always use production URL (stable Vercel URL)
-const API_BASE_URL = 'https://signal-desk.vercel.app/api';
+// Railway backend - no more timeouts, all features work!
+const API_BASE_URL = 'https://signaldesk-production.up.railway.app/api';
 
 export default API_BASE_URL;
