@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Direct Vercel API Test</title>
+    <style>
+        body {
+            font-family: system-ui;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+        .success { background: #d4f4dd; }
+        .error { background: #fee; }
+    </style>
+</head>
+<body>
+    <h1>Direct Vercel API Test</h1>
+    <p>Testing Claude endpoints directly without authentication</p>
+    
+    <div class="test">
+        <h3>1. Content Generation</h3>
+        <button onclick="testContent()">Test Content API</button>
+        <div id="content-result" class="result"></div>
+    </div>
+    
+    <div class="test">
+        <h3>2. Crisis Command</h3>
+        <button onclick="testCrisis()">Test Crisis API</button>
+        <div id="crisis-result" class="result"></div>
+    </div>
+    
+    <div class="test">
+        <h3>3. AI Assistant</h3>
+        <button onclick="testAssistant()">Test Assistant API</button>
+        <div id="assistant-result" class="result"></div>
+    </div>
+    
+    <div class="test">
+        <h3>4. Campaign Intelligence</h3>
+        <button onclick="testCampaign()">Test Campaign API</button>
+        <div id="campaign-result" class="result"></div>
+    </div>
+    
+    <div class="test">
+        <h3>5. Media List Builder</h3>
+        <button onclick="testMedia()">Test Media API</button>
+        <div id="media-result" class="result"></div>
+    </div>
+    
+    <div class="test">
+        <h3>6. Organization Analysis</h3>
+        <button onclick="testOrg()">Test Org API</button>
+        <div id="org-result" class="result"></div>
+    </div>
+    
+    <script>
+        const API_BASE = 'https://signal-desk.vercel.app/api';
+        
+        async function testEndpoint(name, endpoint, body) {
+            const resultEl = document.getElementById(`${name}-result`);
+            resultEl.textContent = 'Testing...';
+            
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer test' // Some endpoints might need this
+                    },
+                    body: JSON.stringify(body)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultEl.className = 'result success';
+                    resultEl.textContent = `✅ SUCCESS
+Status: ${response.status}
+Powered by: ${data.metadata?.powered_by || 'Unknown'}
+Model: ${data.metadata?.model || data.metadata?.ai_model || 'N/A'}
+Response preview: ${JSON.stringify(data).substring(0, 200)}...`;
+                } else {
+                    resultEl.className = 'result error';
+                    resultEl.textContent = `❌ FAILED
+Status: ${response.status}
+Error: ${data.error || 'Unknown error'}`;
+                }
+            } catch (error) {
+                resultEl.className = 'result error';
+                resultEl.textContent = `❌ ERROR
+${error.message}`;
+            }
+        }
+        
+        function testContent() {
+            testEndpoint('content', '/content/ai-generate', {
+                type: 'press-release',
+                prompt: 'Test announcement',
+                tone: 'professional'
+            });
+        }
+        
+        function testCrisis() {
+            testEndpoint('crisis', '/crisis/command-center', {
+                scenario: 'Data breach test',
+                severity: 'high'
+            });
+        }
+        
+        function testAssistant() {
+            testEndpoint('assistant', '/assistant/chat', {
+                message: 'How to run a PR campaign?',
+                context: 'general'
+            });
+        }
+        
+        function testCampaign() {
+            testEndpoint('campaign', '/campaign/intelligence', {
+                campaignType: 'product-launch',
+                industry: 'Technology',
+                target: 'Executives'
+            });
+        }
+        
+        function testMedia() {
+            testEndpoint('media', '/media/list-builder', {
+                industry: 'Technology',
+                topic: 'AI innovation'
+            });
+        }
+        
+        function testOrg() {
+            testEndpoint('org', '/intelligence/analyze-organization', {
+                organization: 'OpenAI'
+            });
+        }
+        
+        // Test all on load
+        window.onload = () => {
+            console.log('Ready to test. Click buttons to test each endpoint.');
+        };
+    </script>
+</body>
+</html>

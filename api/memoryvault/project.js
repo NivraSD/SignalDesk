@@ -13,8 +13,9 @@ export default function handler(req, res) {
     return res.status(200).end();
   }
   
-  const { id } = req.query;
-  const projectId = parseInt(id);
+  // Get project ID from query parameter
+  const { projectId: projectIdParam } = req.query;
+  const projectId = parseInt(projectIdParam);
   
   if (!projectId || isNaN(projectId)) {
     return res.status(400).json({

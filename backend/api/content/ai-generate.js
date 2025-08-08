@@ -1,5 +1,6 @@
-// AI Content Generation endpoint
-export default function handler(req, res) {
+// AI Content Generation endpoint with Claude integration
+
+export default async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -26,25 +27,54 @@ export default function handler(req, res) {
     });
   }
   
-  // Generate content based on type
-  let generatedContent = '';
-  
-  switch (type) {
-    case 'press-release':
-      generatedContent = generatePressRelease(prompt, formData, tone);
-      break;
-    case 'social-post':
-      generatedContent = generateSocialPost(prompt, tone);
-      break;
-    case 'media-pitch':
-      generatedContent = generateMediaPitch(prompt, formData, tone);
-      break;
-    case 'crisis-response':
-      generatedContent = generateCrisisResponse(prompt, formData, tone);
-      break;
-    default:
-      generatedContent = generateGenericContent(prompt, type, tone);
+  try {
+    // Check if Claude API key is available
+    if (process.env.ANTHROPIC_API_KEY) {
+      // Use dynamic import for the SDK
+      const { Anthropic } = await import('@anthropic-ai/sdk');
+      
+      const anthropic = new Anthropic({
+        apiKey: process.env.ANTHROPIC_API_KEY,
+      });
+      
+      // Build the Claude prompt
+      const systemPrompt = getSystemPrompt(type, tone);
+      const userPrompt = buildUserPrompt(type, prompt, formData, tone);
+      
+      console.log('Using Claude AI for generation');
+      
+      const message = await anthropic.messages.create({
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 1500,
+        temperature: tone === 'bold' ? 0.8 : tone === 'conversational' ? 0.7 : 0.5,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }]
+      });
+      
+      const generatedContent = message.content[0].text;
+      
+      return res.status(200).json({
+        success: true,
+        content: generatedContent,
+        type,
+        tone,
+        metadata: {
+          generated_at: new Date().toISOString(),
+          word_count: generatedContent.split(' ').length,
+          character_count: generatedContent.length,
+          ai_model: 'claude-3-haiku',
+          powered_by: 'Claude AI'
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Claude API error:', error.message);
+    // Fall through to template generation
   }
+  
+  // Fallback to template-based generation
+  console.log('Using template generation (Claude not available)');
+  const generatedContent = generateTemplateContent(type, prompt, formData, tone);
   
   return res.status(200).json({
     success: true,
@@ -54,134 +84,165 @@ export default function handler(req, res) {
     metadata: {
       generated_at: new Date().toISOString(),
       word_count: generatedContent.split(' ').length,
-      character_count: generatedContent.length
+      character_count: generatedContent.length,
+      ai_model: 'template',
+      powered_by: 'Template Engine'
     }
   });
 }
 
-function generatePressRelease(prompt, formData, tone) {
+function getSystemPrompt(type, tone) {
+  const toneInstructions = {
+    professional: 'Use formal, authoritative language appropriate for corporate communications.',
+    bold: 'Use confident, assertive language that makes strong claims and challenges the status quo.',
+    conversational: 'Use friendly, approachable language that feels personal and relatable.',
+    analytical: 'Use data-driven, objective language with emphasis on facts and evidence.',
+    inspirational: 'Use uplifting, visionary language that motivates and inspires action.',
+    urgent: 'Use direct, time-sensitive language that compels immediate action.'
+  };
+  
+  const typeInstructions = {
+    'press-release': 'You are a PR professional writing press releases. Follow AP style, use inverted pyramid structure, include quotes, and end with boilerplate.',
+    'social-post': 'You are a social media manager creating engaging posts. Be concise, use appropriate hashtags, include a call-to-action.',
+    'media-pitch': 'You are a PR specialist pitching to journalists. Be newsworthy, explain why it matters now, offer exclusive access.',
+    'crisis-response': 'You are a crisis communications expert. Acknowledge the situation, show empathy, outline actions, avoid legal admissions.',
+    'exec-statement': 'You are writing executive communications. Be authoritative, strategic, and forward-looking.',
+    'qa-doc': 'You are creating Q&A documents. Anticipate difficult questions and provide clear, comprehensive answers.',
+    'thought-leadership': 'You are a thought leader sharing insights. Be innovative, provide unique perspectives, demonstrate expertise.'
+  };
+  
+  return `You are an expert content creator for PR and communications. 
+${typeInstructions[type] || 'Create professional communications content.'}
+${toneInstructions[tone] || toneInstructions.professional}
+Generate only the content requested without any meta-commentary or explanations.`;
+}
+
+function buildUserPrompt(type, prompt, formData, tone) {
+  let fullPrompt = `Create a ${type.replace('-', ' ')} with a ${tone} tone.\n\n`;
+  
+  if (type === 'press-release' && formData) {
+    fullPrompt += `Details:\n`;
+    if (formData.headline) fullPrompt += `Headline: ${formData.headline}\n`;
+    if (formData.location) fullPrompt += `Location: ${formData.location}\n`;
+    if (formData.announcement) fullPrompt += `Main announcement: ${formData.announcement}\n`;
+    if (formData.quotes) fullPrompt += `Include these quotes: ${formData.quotes}\n`;
+    if (formData.metrics) fullPrompt += `Key metrics: ${formData.metrics}\n`;
+    fullPrompt += `\nAdditional context: ${prompt}\n`;
+  } else {
+    fullPrompt += `Topic/Request: ${prompt}\n`;
+    if (formData) {
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value) fullPrompt += `${key}: ${value}\n`;
+      });
+    }
+  }
+  
+  fullPrompt += `\nGenerate the complete ${type.replace('-', ' ')} now.`;
+  
+  return fullPrompt;
+}
+
+function generateTemplateContent(type, prompt, formData, tone) {
   const headline = formData?.headline || prompt;
   const location = formData?.location || 'NEW YORK';
   const announcement = formData?.announcement || prompt;
   const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   
-  return `FOR IMMEDIATE RELEASE
+  switch (type) {
+    case 'press-release':
+      return `FOR IMMEDIATE RELEASE
 
 ${headline.toUpperCase()}
 
 ${location} – ${date} – ${announcement}
 
-[Your company] today announced ${prompt.toLowerCase()}. This ${tone === 'bold' ? 'groundbreaking' : 'significant'} development represents a major step forward in [industry/market].
+[Your company] today announced ${prompt.toLowerCase()}. This ${tone === 'bold' ? 'groundbreaking' : 'significant'} development represents a major step forward in the industry.
 
-"We are ${tone === 'professional' ? 'pleased' : 'thrilled'} to announce this ${tone === 'bold' ? 'revolutionary' : 'important'} development," said [Executive Name], [Title] at [Company]. "This ${prompt.toLowerCase()} will ${tone === 'bold' ? 'transform' : 'enhance'} how [target audience] [benefit]."
+"We are ${tone === 'professional' ? 'pleased' : 'thrilled'} to announce this ${tone === 'bold' ? 'revolutionary' : 'important'} development," said [Executive Name], [Title] at [Company]. "This will ${tone === 'bold' ? 'transform' : 'enhance'} how our customers experience our products and services."
 
 Key highlights include:
-• [Feature/benefit 1]
-• [Feature/benefit 2]
-• [Feature/benefit 3]
+• Enhanced capabilities and features
+• Improved user experience
+• Greater value for customers
 
-The ${prompt.toLowerCase()} is expected to [impact/result]. [Additional context about market need or problem being solved].
-
-"[Additional quote providing more context or enthusiasm]," added [Second Executive or Partner], [Title]. "[Forward-looking statement about future impact]."
+The ${prompt.toLowerCase()} is expected to drive significant growth and innovation in the market.
 
 About [Company]
-[Company] is a leading [industry] company focused on [mission]. Founded in [year], the company has [achievements]. For more information, visit [website].
+[Company] is a leading provider of innovative solutions. For more information, visit [website].
 
 Contact:
 [Name]
-[Title]
 [Email]
 [Phone]
 
 ###`;
-}
 
-function generateSocialPost(prompt, tone) {
-  const excitement = tone === 'bold' ? '🚀' : tone === 'conversational' ? '👋' : '📢';
-  const hashtags = ['#Innovation', '#TechNews', '#FutureIsNow', '#DigitalTransformation'];
-  
-  return `${excitement} ${prompt}
+    case 'social-post':
+      const excitement = tone === 'bold' ? '🚀' : tone === 'conversational' ? '👋' : '📢';
+      return `${excitement} ${prompt}
 
 ${tone === 'conversational' ? "Here's what this means for you:" : 'Key highlights:'}
 
-✅ [Benefit 1]
-✅ [Benefit 2]
-✅ [Benefit 3]
+✅ Innovation at its finest
+✅ Designed with you in mind
+✅ Available now
 
 ${tone === 'bold' ? '💡 This changes everything.' : tone === 'conversational' ? "We'd love to hear your thoughts!" : 'Learn more at [link]'}
 
-${hashtags.join(' ')}`;
-}
+#Innovation #TechNews #FutureIsNow`;
 
-function generateMediaPitch(prompt, formData, tone) {
-  return `Subject: ${tone === 'urgent' ? 'EXCLUSIVE: ' : ''}${prompt}
+    case 'media-pitch':
+      return `Subject: ${tone === 'urgent' ? 'EXCLUSIVE: ' : ''}${prompt}
 
 Dear [Journalist Name],
 
-I hope this message finds you well. Given your recent coverage of [relevant topic], I wanted to share an exclusive story that I believe would resonate with your readers.
+I hope this message finds you well. Given your recent coverage of industry trends, I wanted to share an exclusive story opportunity.
 
 ${prompt}
 
 Why this matters now:
-• [Timely angle 1]
-• [Unique data point or exclusive information]
-• [Broader trend connection]
+• Timely and relevant to current market trends
+• Exclusive access and insights
+• Compelling narrative with broad appeal
 
-${tone === 'urgent' ? 'This story is breaking now and we can offer:' : 'We can provide:'}
-- Exclusive interview with [Executive]
-- Access to [data/research/demo]
-- High-resolution images and video content
+We can provide:
+- Executive interviews
+- Exclusive data and research
+- Visual assets
 
-${tone === 'conversational' ? "I'd love to discuss how this fits with your editorial calendar." : 'This story aligns perfectly with your recent pieces on [topic].'}
-
-Available for a quick call this week?
+Would you be interested in discussing this further?
 
 Best regards,
-[Your name]
-[Title]
-[Company]
-[Phone]`;
-}
+[Your name]`;
 
-function generateCrisisResponse(prompt, formData, tone) {
-  return `[Company] Statement on ${prompt}
+    case 'crisis-response':
+      return `Statement on ${prompt}
 
-We are aware of ${prompt} and are taking this matter extremely seriously.
+We are aware of ${prompt} and are taking this matter seriously.
 
-${tone === 'urgent' ? 'Immediate actions taken:' : 'Our response:'}
+Our immediate response:
+• We are investigating the situation thoroughly
+• We are committed to transparency
+• We are taking corrective actions
 
-First, we want to ${tone === 'conversational' ? 'sincerely apologize to' : 'express our concern for'} all those affected by this situation. The safety and trust of our [customers/users/community] is our highest priority.
+We understand the concerns this raises and are working diligently to address them. We will provide updates as more information becomes available.
 
-We have immediately:
-• [Action 1 taken]
-• [Action 2 taken]
-• [Action 3 taken]
+For questions, please contact [contact information].
 
-Moving forward, we are committed to:
-• [Future commitment 1]
-• [Future commitment 2]
-• [Future commitment 3]
+[Company Leadership]`;
 
-We will provide regular updates as we work to resolve this situation. For immediate concerns, please contact [contact information].
+    default:
+      return `${type.toUpperCase()}: ${prompt}
 
-[Executive Name]
-[Title]
-[Company]`;
-}
+This content addresses ${prompt} with a ${tone} tone.
 
-function generateGenericContent(prompt, type, tone) {
-  return `Generated ${type} Content
+Key points:
+• Point 1 related to ${prompt}
+• Point 2 supporting the message
+• Point 3 reinforcing the value
 
-${prompt}
+[Customize this template with your specific details]
 
-[This is AI-generated content based on your input. Please customize and edit as needed.]
-
-Key points to cover:
-• [Point 1]
-• [Point 2]
-• [Point 3]
-
-${tone === 'professional' ? 'Professional tone maintained throughout.' : tone === 'bold' ? 'Bold and assertive messaging included.' : 'Conversational and approachable style applied.'}
-
-[Remember to fact-check all claims and add specific details relevant to your organization.]`;
+Contact: [Your contact information]`;
+  }
 }

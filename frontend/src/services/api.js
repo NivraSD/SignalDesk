@@ -172,7 +172,7 @@ export const deleteTodo = async (todoId) => {
 // MemoryVault API
 export const getMemoryVaultItems = async (projectId) => {
   const response = await fetch(
-    `${API_BASE_URL}/projects/${projectId}/memoryvault`,
+    `${API_BASE_URL}/memoryvault/project?projectId=${projectId}`,
     {
       headers: getAuthHeaders(),
     }
@@ -182,7 +182,7 @@ export const getMemoryVaultItems = async (projectId) => {
 
 export const saveToMemoryVault = async (projectId, itemData) => {
   const response = await fetch(
-    `${API_BASE_URL}/projects/${projectId}/memoryvault`,
+    `${API_BASE_URL}/memoryvault/project?projectId=${projectId}`,
     {
       method: "POST",
       headers: getAuthHeaders(),

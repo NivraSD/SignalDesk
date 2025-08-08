@@ -64,7 +64,14 @@
       "Bash(git reset:*)",
       "Bash(git checkout:*)",
       "Bash(git branch:*)",
-      "Bash(PGPASSWORD=MUmjKBxTiecMPpYVgwGsZEKyFfyFbxqV psql -h crossover.proxy.rlwy.net -p 56706 -U postgres -d railway -f /Users/jonathanliebowitz/Desktop/SignalDesk/backend/scripts/create-demo-user.sql)"
+      "Bash(PGPASSWORD=MUmjKBxTiecMPpYVgwGsZEKyFfyFbxqV psql -h crossover.proxy.rlwy.net -p 56706 -U postgres -d railway -f /Users/jonathanliebowitz/Desktop/SignalDesk/backend/scripts/create-demo-user.sql)",
+      "Bash(open /Users/jonathanliebowitz/Desktop/SignalDesk/test-login-debug.html)",
+      "Bash(open /Users/jonathanliebowitz/Desktop/SignalDesk/test-claude-content.html)",
+      "Bash(open /Users/jonathanliebowitz/Desktop/SignalDesk/test-full-system.html)",
+      "Bash(open /Users/jonathanliebowitz/Desktop/SignalDesk/test-all-claude-features.html)",
+      "Bash(open /Users/jonathanliebowitz/Desktop/SignalDesk/test-all-claude-features-complete.html)",
+      "Bash(open /Users/jonathanliebowitz/Desktop/SignalDesk/test-vercel-direct.html)",
+      "Bash(mv:*)"
     ],
     "deny": []
   }

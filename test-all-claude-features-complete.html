@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SignalDesk - Complete Claude AI Test Suite</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, system-ui, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        .auth-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .test-all-btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            margin: 20px auto;
+            display: block;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 20px;
+        }
+        
+        .test-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .test-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+        
+        .test-card.working::before {
+            background: linear-gradient(90deg, #28a745, #20c997);
+        }
+        
+        .test-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 1.1rem;
+        }
+        
+        .test-card .icon {
+            font-size: 1.5rem;
+            margin-right: 8px;
+        }
+        
+        .input-group {
+            margin-bottom: 12px;
+        }
+        
+        .input-group label {
+            display: block;
+            color: #666;
+            margin-bottom: 4px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: opacity 0.3s;
+            font-weight: 500;
+        }
+        
+        button:hover {
+            opacity: 0.9;
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .result-box {
+            margin-top: 12px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            min-height: 80px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-size: 12px;
+            border: 1px solid #e0e0e0;
+            font-family: 'Monaco', 'Menlo', monospace;
+        }
+        
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .status.success {
+            background: #d4f4dd;
+            color: #1e7e34;
+        }
+        
+        .status.claude {
+            background: linear-gradient(135deg, #d4f4dd, #c3e6fc);
+            color: #0d6832;
+            font-weight: 700;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .meta-info {
+            margin-top: 8px;
+            padding: 8px;
+            background: #e8f4f8;
+            border-radius: 6px;
+            font-size: 11px;
+            color: #555;
+        }
+        
+        .summary-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .summary-item {
+            text-align: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .summary-item.claude {
+            background: linear-gradient(135deg, #d4f4dd, #c3e6fc);
+        }
+        
+        .summary-item .count {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .summary-item .label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 SignalDesk Complete Claude AI Test Suite</h1>
+        <p>Test ALL Claude-powered features across the platform</p>
+    </div>
+    
+    <div class="container">
+        <!-- Authentication -->
+        <div class="auth-section">
+            <h3>🔐 Authentication</h3>
+            <div style="display: flex; gap: 10px; align-items: flex-end;">
+                <div style="flex: 1;">
+                    <label>Email</label>
+                    <input type="email" id="email" value="demo@signaldesk.com">
+                </div>
+                <div style="flex: 1;">
+                    <label>Password</label>
+                    <input type="password" id="password" value="demo123">
+                </div>
+                <button onclick="login()">Login</button>
+                <span id="authStatus" style="margin-left: 10px;"></span>
+            </div>
+        </div>
+        
+        <!-- Summary Dashboard -->
+        <div class="summary-section">
+            <h3>📊 Test Summary Dashboard</h3>
+            <div class="summary-grid">
+                <div class="summary-item" id="total-tests">
+                    <div class="count">10</div>
+                    <div class="label">Total Tests</div>
+                </div>
+                <div class="summary-item" id="claude-working">
+                    <div class="count">0</div>
+                    <div class="label">Claude Working</div>
+                </div>
+                <div class="summary-item" id="template-fallback">
+                    <div class="count">0</div>
+                    <div class="label">Template Fallback</div>
+                </div>
+                <div class="summary-item" id="failed-tests">
+                    <div class="count">0</div>
+                    <div class="label">Failed</div>
+                </div>
+            </div>
+        </div>
+        
+        <button class="test-all-btn" onclick="testAllFeatures()">🧪 Run All Claude Tests</button>
+        
+        <div class="test-grid">
+            <!-- 1. Content Generation -->
+            <div class="test-card" id="card-content">
+                <h3>
+                    <span><span class="icon">📝</span> Content Generation</span>
+                    <span class="status pending" id="content-status">Ready</span>
+                </h3>
+                <div class="input-group">
+                    <label>Type</label>
+                    <select id="content-type">
+                        <option value="press-release">Press Release</option>
+                        <option value="social-post">Social Post</option>
+                        <option value="thought-leadership">Thought Leadership</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Prompt</label>
+                    <textarea id="content-prompt">Launch of revolutionary AI platform</textarea>
+                </div>
+                <button onclick="testContentGeneration()">Test</button>
+                <div class="result-box" id="content-result">Ready to test...</div>
+                <div class="meta-info" id="content-meta" style="display:none;"></div>
+            </div>
+            
+            <!-- 2. Organization Intelligence -->
+            <div class="test-card" id="card-org">
+                <h3>
+                    <span><span class="icon">🏢</span> Organization Intel</span>
+                    <span class="status pending" id="org-status">Ready</span>
+                </h3>
+                <div class="input-group">
+                    <label>Organization</label>
+                    <input type="text" id="org-name" value="OpenAI">
+                </div>
+                <button onclick="testOrganizationAnalysis()">Test</button>
+                <div class="result-box" id="org-result">Ready to test...</div>
+                <div class="meta-info" id="org-meta" style="display:none;"></div>
+            </div>
+            
+            <!-- 3. Crisis Command Center -->
+            <div class="test-card" id="card-crisis">
+                <h3>
+                    <span><span class="icon">🚨</span> Crisis Command</span>
+                    <span class="status pending" id="crisis-status">Ready</span>
+                </h3>
+                <div class="input-group">
+                    <label>Scenario</label>
+                    <textarea id="crisis-scenario">Product recall due to safety concerns</textarea>
+                </div>
+                <div class="input-group">
+                    <label>Severity</label>
+                    <select id="crisis-severity">
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+                </div>
+                <button onclick="testCrisisResponse()">Test</button>
+                <div class="result-box" id="crisis-result">Ready to test...</div>
+                <div class="meta-info" id="crisis-meta" style="display:none;"></div>
+            </div>
+            
+            <!-- 4. AI Assistant -->
+            <div class="test-card" id="card-assistant">
+                <h3>
+                    <span><span class="icon">🤖</span> AI Assistant</span>
+                    <span class="status pending" id="assistant-status">Ready</span>
+                </h3>
+                <div class="input-group">
+                    <label>Message</label>
+                    <textarea id="assistant-message">How do I create an effective PR campaign?</textarea>
+                </div>
+                <div class="input-group">
+                    <label>Context</label>
+                    <select id="assistant-context">
+                        <option value="campaign">Campaign</option>
+                        <option value="crisis">Crisis</option>
+                        <option value="media">Media</option>
+                        <option value="general">General</option>
+                    </select>
+                </div>
+                <button onclick="testAIAssistant()">Test</button>
+                <div class="result-box" id="assistant-result">Ready to test...</div>
+                <div class="meta-info" id="assistant-meta" style="display:none;"></div>
+            </div>
+            
+            <!-- 5. Campaign Intelligence -->
+            <div class="test-card" id="card-campaign">
+                <h3>
+                    <span><span class="icon">📊</span> Campaign Intel</span>
+                    <span class="status pending" id="campaign-status">Ready</span>
+                </h3>
+                <div class="input-group">
+                    <label>Campaign Type</label>
+                    <select id="campaign-type">
+                        <option value="product-launch">Product Launch</option>
+                        <option value="brand-awareness">Brand Awareness</option>
+                        <option value="thought-leadership">Thought Leadership</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Industry</label>
+                    <input type="text" id="campaign-industry" value="Technology">
+                </div>
+                <div class="input-group">
+                    <label>Target</label>
+                    <input type="text" id="campaign-target" value="Enterprise executives">
+                </div>
+                <button onclick="testCampaignIntelligence()">Test</button>
+                <div class="result-box" id="campaign-result">Ready to test...</div>
+                <div class="meta-info" id="campaign-meta" style="display:none;"></div>
+            </div>
+            
+            <!-- 6. Media List Builder -->
+            <div class="test-card" id="card-media">
+                <h3>
+                    <span><span class="icon">📰</span> Media List Builder</span>
+                    <span class="status pending" id="media-status">Ready</span>
+                </h3>
+                <div class="input-group">
+                    <label>Industry</label>
+                    <input type="text" id="media-industry" value="AI/Technology">
+                </div>
+                <div class="input-group">
+                    <label>Topic</label>
+                    <input type="text" id="media-topic" value="AI breakthrough innovation">
+                </div>
+                <div class="input-group">
+                    <label>Geographic</label>
+                    <select id="media-geo">
+                        <option value="National">National</option>
+                        <option value="International">International</option>
+                        <option value="Local">Local</option>
+                    </select>
+                </div>
+                <button onclick="testMediaListBuilder()">Test</button>
+                <div class="result-box" id="media-result">Ready to test...</div>
+                <div class="meta-info" id="media-meta" style="display:none;"></div>
+            </div>
+            
+            <!-- 7. Memory Vault Analysis -->
+            <div class="test-card" id="card-memory">
+                <h3>
+                    <span><span class="icon">🧠</span> Memory Vault AI</span>
+                    <span class="status pending" id="memory-status">Ready</span>
+                </h3>
+                <div class="input-group">
+                    <label>Query</label>
+                    <textarea id="memory-query">What strategic insights from our research?</textarea>
+                </div>
+                <div class="input-group">
+                    <label>Analysis Type</label>
+                    <select id="memory-type">
+                        <option value="strategic">Strategic</option>
+                        <option value="competitive">Competitive</option>
+                        <option value="opportunity">Opportunity</option>
+                    </select>
+                </div>
+                <button onclick="testMemoryVaultAnalysis()">Test</button>
+                <div class="result-box" id="memory-result">Ready to test...</div>
+                <div class="meta-info" id="memory-meta" style="display:none;"></div>
+            </div>
+            
+            <!-- 8. Sentiment Analysis (Placeholder) -->
+            <div class="test-card" id="card-sentiment">
+                <h3>
+                    <span><span class="icon">💭</span> Sentiment Analysis</span>
+                    <span class="status pending" id="sentiment-status">Ready</span>
+                </h3>
+                <div class="input-group">
+                    <label>Text</label>
+                    <textarea id="sentiment-text">Product launch exceeded expectations with positive feedback</textarea>
+                </div>
+                <button onclick="testSentimentAnalysis()">Test</button>
+                <div class="result-box" id="sentiment-result">Ready to test...</div>
+                <div class="meta-info" id="sentiment-meta" style="display:none;"></div>
+            </div>
+            
+            <!-- 9. Opportunity Detection (Placeholder) -->
+            <div class="test-card" id="card-opportunity">
+                <h3>
+                    <span><span class="icon">💡</span> Opportunity Detection</span>
+                    <span class="status pending" id="opportunity-status">Ready</span>
+                </h3>
+                <div class="input-group">
+                    <label>Signal</label>
+                    <textarea id="opportunity-signal">Competitor facing delays, market gap emerging</textarea>
+                </div>
+                <button onclick="testOpportunityDetection()">Test</button>
+                <div class="result-box" id="opportunity-result">Ready to test...</div>
+                <div class="meta-info" id="opportunity-meta" style="display:none;"></div>
+            </div>
+            
+            <!-- 10. Monitoring Strategy (Placeholder) -->
+            <div class="test-card" id="card-monitoring">
+                <h3>
+                    <span><span class="icon">📡</span> Monitoring Strategy</span>
+                    <span class="status pending" id="monitoring-status">Ready</span>
+                </h3>
+                <div class="input-group">
+                    <label>Focus Area</label>
+                    <input type="text" id="monitoring-focus" value="Brand reputation">
+                </div>
+                <button onclick="testMonitoringStrategy()">Test</button>
+                <div class="result-box" id="monitoring-result">Ready to test...</div>
+                <div class="meta-info" id="monitoring-meta" style="display:none;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let authToken = null;
+        const API_BASE = 'https://signal-desk.vercel.app/api';
+        let testResults = {
+            claude: 0,
+            template: 0,
+            failed: 0
+        };
+        
+        // Authentication
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const statusEl = document.getElementById('authStatus');
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    authToken = data.token;
+                    statusEl.innerHTML = '✅ Authenticated';
+                    statusEl.style.color = 'green';
+                } else {
+                    statusEl.innerHTML = '❌ Login failed';
+                    statusEl.style.color = 'red';
+                }
+            } catch (error) {
+                statusEl.innerHTML = '❌ Error: ' + error.message;
+                statusEl.style.color = 'red';
+            }
+        }
+        
+        // Update summary dashboard
+        function updateSummary() {
+            document.querySelector('#claude-working .count').textContent = testResults.claude;
+            document.querySelector('#template-fallback .count').textContent = testResults.template;
+            document.querySelector('#failed-tests .count').textContent = testResults.failed;
+            
+            // Update card colors
+            if (testResults.claude > 0) {
+                document.getElementById('claude-working').classList.add('claude');
+            }
+        }
+        
+        // Generic test function
+        async function testEndpoint(feature, endpoint, body, processResponse) {
+            if (!authToken) {
+                alert('Please login first');
+                return;
+            }
+            
+            updateStatus(feature, 'pending', 'Testing...');
+            const resultEl = document.getElementById(`${feature}-result`);
+            const metaEl = document.getElementById(`${feature}-meta`);
+            const cardEl = document.getElementById(`card-${feature}`);
+            
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(body)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const result = processResponse(data);
+                    resultEl.textContent = result.text;
+                    
+                    if (data.metadata) {
+                        metaEl.style.display = 'block';
+                        metaEl.innerHTML = result.meta || `
+                            <strong>Powered by:</strong> ${data.metadata.powered_by}<br>
+                            ${data.metadata.model ? `<strong>Model:</strong> ${data.metadata.model}` : ''}
+                        `;
+                        
+                        if (data.metadata.powered_by === 'Claude AI') {
+                            updateStatus(feature, 'claude', 'Claude AI ✓');
+                            cardEl.classList.add('working');
+                            testResults.claude++;
+                        } else {
+                            updateStatus(feature, 'success', 'Template');
+                            testResults.template++;
+                        }
+                    } else {
+                        updateStatus(feature, 'success', 'Complete');
+                        testResults.template++;
+                    }
+                } else {
+                    throw new Error(data.error || 'Test failed');
+                }
+            } catch (error) {
+                resultEl.textContent = 'Error: ' + error.message;
+                updateStatus(feature, 'error', 'Failed');
+                testResults.failed++;
+            }
+            
+            updateSummary();
+        }
+        
+        // Test functions for each feature
+        async function testContentGeneration() {
+            await testEndpoint('content', '/content/ai-generate', {
+                type: document.getElementById('content-type').value,
+                prompt: document.getElementById('content-prompt').value,
+                tone: 'professional'
+            }, (data) => ({
+                text: data.content,
+                meta: `<strong>Powered by:</strong> ${data.metadata.powered_by}<br>
+                       <strong>Model:</strong> ${data.metadata.ai_model}<br>
+                       <strong>Words:</strong> ${data.metadata.word_count}`
+            }));
+        }
+        
+        async function testOrganizationAnalysis() {
+            await testEndpoint('org', '/intelligence/analyze-organization', {
+                organization: document.getElementById('org-name').value
+            }, (data) => ({
+                text: JSON.stringify(data.analysis, null, 2),
+                meta: data.metadata ? `<strong>Powered by:</strong> ${data.metadata.powered_by}<br>
+                       <strong>Industry:</strong> ${data.analysis.industry}` : null
+            }));
+        }
+        
+        async function testCrisisResponse() {
+            await testEndpoint('crisis', '/crisis/command-center', {
+                scenario: document.getElementById('crisis-scenario').value,
+                severity: document.getElementById('crisis-severity').value,
+                type: 'general'
+            }, (data) => ({
+                text: data.response
+            }));
+        }
+        
+        async function testAIAssistant() {
+            await testEndpoint('assistant', '/assistant/chat', {
+                message: document.getElementById('assistant-message').value,
+                context: document.getElementById('assistant-context').value
+            }, (data) => ({
+                text: data.message + '\n\nSuggestions:\n' + (data.suggestions || []).join('\n')
+            }));
+        }
+        
+        async function testCampaignIntelligence() {
+            await testEndpoint('campaign', '/campaign/intelligence', {
+                campaignType: document.getElementById('campaign-type').value,
+                industry: document.getElementById('campaign-industry').value,
+                target: document.getElementById('campaign-target').value,
+                goals: 'Increase awareness and drive adoption'
+            }, (data) => ({
+                text: data.intelligence
+            }));
+        }
+        
+        async function testMediaListBuilder() {
+            await testEndpoint('media', '/media/list-builder', {
+                industry: document.getElementById('media-industry').value,
+                topic: document.getElementById('media-topic').value,
+                geographic: document.getElementById('media-geo').value
+            }, (data) => ({
+                text: data.mediaList
+            }));
+        }
+        
+        async function testMemoryVaultAnalysis() {
+            await testEndpoint('memory', '/memoryvault/analyze-with-context', {
+                query: document.getElementById('memory-query').value,
+                analysis_type: document.getElementById('memory-type').value,
+                context_items: [
+                    { title: 'Market Research', content: 'AI sector growth opportunities' },
+                    { title: 'Competitor Analysis', content: 'Competitors focusing on cloud' }
+                ]
+            }, (data) => ({
+                text: data.analysis
+            }));
+        }
+        
+        // Placeholder tests
+        async function testSentimentAnalysis() {
+            updateStatus('sentiment', 'pending', 'Testing...');
+            setTimeout(() => {
+                document.getElementById('sentiment-result').textContent = 
+                    'Sentiment: Positive (0.85)\nKey phrases: "exceeded expectations", "positive feedback"';
+                updateStatus('sentiment', 'success', 'Template');
+                testResults.template++;
+                updateSummary();
+            }, 1000);
+        }
+        
+        async function testOpportunityDetection() {
+            updateStatus('opportunity', 'pending', 'Testing...');
+            setTimeout(() => {
+                document.getElementById('opportunity-result').textContent = 
+                    'Opportunity: Competitive advantage\nUrgency: High\nAction: Launch targeted campaign';
+                updateStatus('opportunity', 'success', 'Template');
+                testResults.template++;
+                updateSummary();
+            }, 1000);
+        }
+        
+        async function testMonitoringStrategy() {
+            updateStatus('monitoring', 'pending', 'Testing...');
+            setTimeout(() => {
+                document.getElementById('monitoring-result').textContent = 
+                    'Strategy: Multi-channel monitoring\nFocus: Brand mentions, sentiment, competitors';
+                updateStatus('monitoring', 'success', 'Template');
+                testResults.template++;
+                updateSummary();
+            }, 1000);
+        }
+        
+        // Test all features
+        async function testAllFeatures() {
+            if (!authToken) {
+                alert('Please login first');
+                return;
+            }
+            
+            // Reset counters
+            testResults = { claude: 0, template: 0, failed: 0 };
+            
+            const tests = [
+                testContentGeneration,
+                testOrganizationAnalysis,
+                testCrisisResponse,
+                testAIAssistant,
+                testCampaignIntelligence,
+                testMediaListBuilder,
+                testMemoryVaultAnalysis,
+                testSentimentAnalysis,
+                testOpportunityDetection,
+                testMonitoringStrategy
+            ];
+            
+            for (const test of tests) {
+                await test();
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+        }
+        
+        // Update status indicator
+        function updateStatus(feature, status, text) {
+            const statusEl = document.getElementById(`${feature}-status`);
+            statusEl.className = `status ${status}`;
+            statusEl.textContent = text;
+            if (status === 'pending') {
+                statusEl.innerHTML = `<span class="loading"></span> ${text}`;
+            }
+        }
+        
+        // Auto-login on load
+        window.onload = () => {
+            login();
+        };
+    </script>
+</body>
+</html>
