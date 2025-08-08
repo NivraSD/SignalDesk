@@ -8,15 +8,30 @@
     "dev": "nodemon server.js",
     "test": "node -e \"console.log('Server test passed')\""
   },
-  "keywords": ["api", "express", "signaldesk"],
+  "keywords": [
+    "api",
+    "express",
+    "signaldesk"
+  ],
   "author": "",
   "license": "ISC",
   "engines": {
     "node": ">=16.0.0"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.59.0",
+    "axios": "^1.11.0",
+    "bcryptjs": "^3.0.2",
+    "cheerio": "^1.1.2",
     "cors": "^2.8.5",
-    "express": "^4.21.2"
+    "dotenv": "^17.2.1",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.2",
+    "pg": "^8.16.3",
+    "sequelize": "^6.37.7",
+    "uuid": "^11.1.0",
+    "winston": "^3.17.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"
