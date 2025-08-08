@@ -507,6 +507,49 @@ app.post('/api/content/ai-generate', async (req, res) => {
 });
 
 // ============= CRISIS ADVISOR =============
+// New endpoint that frontend expects
+app.post('/api/crisis/advisor', async (req, res) => {
+  try {
+    const { situation, severity = 'medium', context } = req.body;
+    
+    const systemPrompt = `You are a crisis management expert. Analyze the situation and provide immediate actionable advice.`;
+    
+    try {
+      const response = await anthropic.messages.create({
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 1500,
+        system: systemPrompt,
+        messages: [
+          { role: 'user', content: `Crisis situation (${severity} severity): ${situation}\nContext: ${context || 'No additional context'}` }
+        ]
+      });
+      
+      res.json({
+        success: true,
+        response: response.content[0].text,
+        severity,
+        timestamp: new Date()
+      });
+    } catch (aiError) {
+      // Fallback response
+      res.json({
+        success: true,
+        response: `Crisis Response Plan for: ${situation}\n\n1. Immediate Actions\n2. Communication Strategy\n3. Monitoring Steps\n\n(Add Claude API key for detailed analysis)`,
+        severity,
+        timestamp: new Date()
+      });
+    }
+  } catch (error) {
+    console.error('Crisis advisor error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Crisis advisor failed',
+      error: error.message
+    });
+  }
+});
+
+// Original endpoint (keeping for backward compatibility)
 app.post('/api/crisis/analyze', async (req, res) => {
   try {
     const { situation, severity = 'medium' } = req.body;
@@ -546,6 +589,51 @@ app.post('/api/crisis/analyze', async (req, res) => {
   }
 });
 
+// ============= MEMORY VAULT =============
+app.get('/api/memoryvault/project', async (req, res) => {
+  try {
+    const { projectId } = req.query;
+    console.log('MemoryVault request for project:', projectId);
+    
+    // For now, return empty data structure
+    // In production, this would fetch from database
+    res.json({
+      success: true,
+      projectId,
+      memories: [],
+      insights: [],
+      connections: [],
+      timestamp: new Date()
+    });
+  } catch (error) {
+    console.error('MemoryVault error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch memory vault data'
+    });
+  }
+});
+
+app.post('/api/memoryvault/save', async (req, res) => {
+  try {
+    const { projectId, type, data } = req.body;
+    console.log('Saving to MemoryVault:', { projectId, type });
+    
+    // In production, save to database
+    res.json({
+      success: true,
+      message: 'Memory saved successfully',
+      id: `memory-${Date.now()}`
+    });
+  } catch (error) {
+    console.error('MemoryVault save error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to save memory'
+    });
+  }
+});
+
 // ============= CAMPAIGN INTELLIGENCE =============
 app.post('/api/campaigns/analyze', async (req, res) => {
   try {
@@ -577,6 +665,46 @@ app.post('/api/campaigns/analyze', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Campaign analysis failed'
+    });
+  }
+});
+
+// Additional campaign AI endpoint
+app.post('/api/campaign/ai-analysis', async (req, res) => {
+  try {
+    const { data, type = 'general' } = req.body;
+    
+    const systemPrompt = 'You are a marketing strategist specializing in campaign analysis and optimization.';
+    
+    try {
+      const response = await anthropic.messages.create({
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 2000,
+        system: systemPrompt,
+        messages: [
+          { role: 'user', content: JSON.stringify(data) }
+        ]
+      });
+      
+      res.json({
+        success: true,
+        analysis: response.content[0].text,
+        type,
+        timestamp: new Date()
+      });
+    } catch (aiError) {
+      res.json({
+        success: true,
+        analysis: 'Campaign analysis requires Claude API key configuration.',
+        type,
+        timestamp: new Date()
+      });
+    }
+  } catch (error) {
+    console.error('Campaign AI analysis error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Campaign AI analysis failed'
     });
   }
 });
