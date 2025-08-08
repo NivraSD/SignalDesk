@@ -3,6 +3,7 @@
 console.log('🚀🚀🚀 STARTING SIGNALDESK SERVER v2.0 🚀🚀🚀');
 console.log('📍 This is index.js with FULL server implementation');
 console.log('⏰ Deploy time:', new Date().toISOString());
+console.log('🔄 Redeployed with database configuration');
 
 const express = require("express");
 const cors = require("cors");
