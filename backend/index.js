@@ -134,6 +134,7 @@ const intelligenceRoutes = require("./src/routes/intelligenceRoutes");
 const stakeholderIntelligenceRoutes = require("./src/routes/stakeholderIntelligenceRoutes");
 const opportunitiesRoutes = require("./src/routes/opportunitiesRoutes");
 const opportunityRoutes = require("./src/routes/opportunityRoutes");
+const enhancedClaudeRoutes = require("./src/routes/enhancedClaudeRoutes");
 const proxyRoutes = require("./src/routes/proxy");
 const organizationRoutes = require("./src/routes/organizationRoutes");
 const sourceConfigRoutes = require("./src/routes/sourceConfigRoutes");
@@ -227,6 +228,9 @@ app.use("/api/stakeholder-intelligence", authMiddleware, stakeholderIntelligence
 app.use("/api/opportunities", authMiddleware, opportunitiesRoutes);
 app.use("/api/opportunity", authMiddleware, opportunityRoutes);
 
+// Enhanced Claude Integration Routes - ALL AI Features
+app.use("/api/enhanced", authMiddleware, enhancedClaudeRoutes);
+
 // Intelligence Index Routes (pre-indexed data) - Public access for browsing
 // MUST come before the catch-all memoryvault route
 const intelligenceIndexRoutes = require("./src/routes/intelligenceIndexRoutes");
@@ -288,6 +292,7 @@ if (!process.env.VERCEL) {
     console.log("   - /api/assistant/*");
     console.log("   - /api/content/*");
     console.log("   - /api/media/*");
+    console.log("   - /api/enhanced/* (Claude AI endpoints)");
     console.log("   - /api/ai/*");
     console.log("   - ... and more");
   });
