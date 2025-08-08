@@ -1,4 +1,9 @@
-// backend/server.js
+// SIGNALDESK MAIN SERVER - index.js
+// Version 2.0 - With ALL routes including Campaign, Opportunity, Media
+console.log('🚀🚀🚀 STARTING SIGNALDESK SERVER v2.0 🚀🚀🚀');
+console.log('📍 This is index.js with FULL server implementation');
+console.log('⏰ Deploy time:', new Date().toISOString());
+
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
@@ -55,9 +60,11 @@ const authMiddleware = require("./src/middleware/authMiddleware");
 // Root route
 app.get('/', (req, res) => {
   res.json({
-    message: "🚀 SignalDesk Platform API",
-    version: "1.0.0",
+    message: "🚀 SignalDesk Platform API v2.0 - FULL SERVER",
+    version: "2.0.0",
     status: "operational",
+    serverFile: "index.js",
+    deployTime: new Date().toISOString(),
     endpoints: {
       health: "/api/health",
       auth: {
