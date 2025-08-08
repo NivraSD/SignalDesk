@@ -3,6 +3,7 @@
 
 const express = require("express");
 const router = express.Router();
+const authMiddleware = require("../middleware/auth");
 const claudeService = require("../../config/claude");
 const pool = require("../../config/database");
 
@@ -13,7 +14,7 @@ console.log("🚀 Loading Enhanced Claude Routes - Full Feature Implementation")
 // ========================================
 
 // Enhanced Crisis Scenario Analysis
-router.post("/crisis/analyze-scenario", async (req, res) => {
+router.post("/crisis/analyze-scenario", authMiddleware, async (req, res) => {
   try {
     const { scenario, industry, companySize, currentStatus, elapsedTime } = req.body;
     
@@ -76,7 +77,7 @@ Format as detailed, actionable advice that a crisis team can immediately impleme
 });
 
 // Real-time Crisis Decision Support
-router.post("/crisis/decision-support", async (req, res) => {
+router.post("/crisis/decision-support", authMiddleware, async (req, res) => {
   try {
     const { decision, context, options, constraints, urgency } = req.body;
     
@@ -1075,7 +1076,7 @@ Provide specific examples, templates, and scripts where applicable.`;
 // ========================================
 
 // Master Intelligence Query - Can answer any strategic question
-router.post("/intelligence/query", async (req, res) => {
+router.post("/intelligence/query", authMiddleware, async (req, res) => {
   try {
     const { query, context, dataPoints, constraints } = req.body;
     

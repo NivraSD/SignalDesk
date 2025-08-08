@@ -3,7 +3,6 @@ const router = express.Router();
 const authMiddleware = require("../middleware/authMiddleware");
 const claudeService = require("../../config/claude");
 const db = require("../../config/database");
-const { callClaude, successResponse, errorResponse } = require("../middleware/claudeResponseHandler");
 
 // All routes require authentication
 router.use(authMiddleware);
@@ -424,11 +423,9 @@ Respond in a conversational but professional tone. Focus on practical, immediate
       immediateActions.push(...actionPhrases.map((action) => action.trim()));
     }
 
-    // Use 'response' field for frontend compatibility
     res.json({
       success: true,
-      response: claudeResponse,  // Changed from 'advice' to 'response'
-      advice: claudeResponse,     // Keep both for backward compatibility
+      advice: claudeResponse,
       detectedCrisisType,
       detectedCrisisName,
       immediateActions: immediateActions.slice(0, 5),
