@@ -1,13 +1,23 @@
 // Centralized API configuration
-// Change this ONE place to update the entire app
-// Now using microservices architecture!
-// Updated: Using new Railway deployment URL
+// CRITICAL: This is the ONLY place to change the API URL
 
-// New API Gateway - clean, fast, reliable!
-const API_BASE_URL = 'https://signaldesk-production.up.railway.app/api';
+// PRODUCTION API - Railway deployment
+const PROD_API = 'https://signaldesk-production.up.railway.app/api';
 
-// Original backend (backup)
-const BACKUP_URL = 'https://signaldesk-production.up.railway.app/api';
+// Check for environment variable first, then use production URL
+const API_BASE_URL = process.env.REACT_APP_API_URL || PROD_API;
 
-export default API_BASE_URL;
-export { BACKUP_URL };
+// Log the URL being used (helpful for debugging)
+if (typeof window !== 'undefined') {
+  console.log('API URL:', API_BASE_URL);
+  
+  // Override any cached or incorrect URLs
+  if (API_BASE_URL.includes('signaldesk-api-production')) {
+    console.warn('⚠️ Old API URL detected, using correct URL:', PROD_API);
+    window.API_BASE_URL = PROD_API;
+  }
+}
+
+// Export the correct URL
+export default window?.API_BASE_URL || API_BASE_URL || PROD_API;
+export const BACKUP_URL = PROD_API;

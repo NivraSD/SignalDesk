@@ -2,6 +2,14 @@
   "buildCommand": "npm run build",
   "outputDirectory": "build",
   "framework": "create-react-app",
+  "env": {
+    "REACT_APP_API_URL": "https://signaldesk-production.up.railway.app/api"
+  },
+  "build": {
+    "env": {
+      "REACT_APP_API_URL": "https://signaldesk-production.up.railway.app/api"
+    }
+  },
   "rewrites": [
     {
       "source": "/(.*)",
