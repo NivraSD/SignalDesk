@@ -1,10 +1,7 @@
 // Content Generation API - Main endpoint that ContentGenerator uses
-// This endpoint wraps the ai-generate endpoint for consistency
+const aiGenerate = require('./ai-generate.js');
 
-export default async function handler(req, res) {
-  // Import the actual AI generation handler
-  const aiGenerateHandler = (await import('./ai-generate.js')).default;
-  
+module.exports = function handler(req, res) {
   // Pass through to the AI generation handler
-  return aiGenerateHandler(req, res);
-}
+  return aiGenerate(req, res);
+};
