@@ -1,6 +1,7 @@
 # SignalDesk API Documentation
 
 ## 🌐 API Overview
+
 - **Base URL**: `http://localhost:5001`
 - **Authentication**: JWT Bearer token (demo mode currently)
 - **Content-Type**: `application/json`
@@ -9,6 +10,7 @@
 ## 🔑 Authentication
 
 ### Login
+
 ```http
 POST /auth/login
 Content-Type: application/json
@@ -30,6 +32,7 @@ Response:
 ```
 
 ### Verify Token
+
 ```http
 GET /auth/verify
 Authorization: Bearer {token}
@@ -47,6 +50,7 @@ Response:
 ## 📁 Projects
 
 ### Get All Projects
+
 ```http
 GET /projects
 Authorization: Bearer {token}
@@ -70,6 +74,7 @@ Response:
 ```
 
 ### Create Project
+
 ```http
 POST /projects
 Authorization: Bearer {token}
@@ -98,6 +103,7 @@ Response:
 ```
 
 ### Update Project
+
 ```http
 PUT /projects/:id
 Authorization: Bearer {token}
@@ -120,6 +126,7 @@ Response:
 ```
 
 ### Delete Project
+
 ```http
 DELETE /projects/:id
 Authorization: Bearer {token}
@@ -133,6 +140,7 @@ Response:
 ## 🤖 AI Assistant
 
 ### Send Message
+
 ```http
 POST /assistant/chat
 Authorization: Bearer {token}
@@ -156,6 +164,7 @@ Response:
 ```
 
 ### Get Conversation History
+
 ```http
 GET /assistant/conversations/:projectId
 Authorization: Bearer {token}
@@ -185,6 +194,7 @@ Response:
 ## 📝 Content Management
 
 ### Get Project Content
+
 ```http
 GET /content/project/:projectId
 Authorization: Bearer {token}
@@ -210,6 +220,7 @@ Response:
 ```
 
 ### Create Content
+
 ```http
 POST /content
 Authorization: Bearer {token}
@@ -247,6 +258,7 @@ Response:
 ```
 
 ### Update Content
+
 ```http
 PUT /content/:id
 Authorization: Bearer {token}
@@ -266,6 +278,7 @@ Response:
 ```
 
 ### Delete Content
+
 ```http
 DELETE /content/:id
 Authorization: Bearer {token}
@@ -277,6 +290,7 @@ Response:
 ```
 
 ### Search Content
+
 ```http
 GET /content/search/:projectId?q=launch
 Authorization: Bearer {token}
@@ -292,6 +306,7 @@ Response:
 ## 👥 Media Contacts (To Be Implemented)
 
 ### Get Contacts
+
 ```http
 GET /media/contacts/:projectId
 Authorization: Bearer {token}
@@ -313,6 +328,7 @@ Response:
 ```
 
 ### Import Contacts (CSV)
+
 ```http
 POST /media/import
 Authorization: Bearer {token}
@@ -338,6 +354,7 @@ Response:
 ## 📊 Campaign Intelligence (To Be Implemented)
 
 ### Create Campaign
+
 ```http
 POST /campaigns
 Authorization: Bearer {token}
@@ -359,6 +376,7 @@ Content-Type: application/json
 ## 🧠 MemoryVault (To Be Implemented)
 
 ### Upload Document
+
 ```http
 POST /memory/upload
 Authorization: Bearer {token}
@@ -382,6 +400,7 @@ Response:
 ```
 
 ### Train AI on Documents
+
 ```http
 POST /memory/train/:projectId
 Authorization: Bearer {token}
@@ -397,6 +416,7 @@ Response:
 ## 📈 Monitoring & Analytics (To Be Implemented)
 
 ### Get Media Mentions
+
 ```http
 GET /monitoring/mentions/:projectId
 Authorization: Bearer {token}
@@ -420,6 +440,7 @@ Response:
 ## 🚨 Crisis Management (To Be Implemented)
 
 ### Create Crisis Alert
+
 ```http
 POST /crisis/alerts
 Authorization: Bearer {token}
@@ -437,6 +458,7 @@ Content-Type: application/json
 ## 📄 Export & Reports (To Be Implemented)
 
 ### Generate Report
+
 ```http
 POST /reports/generate
 Authorization: Bearer {token}
@@ -461,6 +483,7 @@ Response:
 ```
 
 ### Export to Google Docs
+
 ```http
 POST /export/google-docs
 Authorization: Bearer {token}
@@ -482,6 +505,7 @@ Response:
 ## 🔧 Error Responses
 
 ### Standard Error Format
+
 ```json
 {
   "error": true,
@@ -492,6 +516,7 @@ Response:
 ```
 
 ### Common Error Codes
+
 - `401` - Unauthorized (invalid/missing token)
 - `403` - Forbidden (no access to resource)
 - `404` - Resource not found
@@ -501,6 +526,7 @@ Response:
 ## 🛠️ Development Tips
 
 ### Testing with cURL
+
 ```bash
 # Login
 curl -X POST http://localhost:5001/auth/login \
@@ -513,22 +539,25 @@ curl -X GET http://localhost:5001/projects \
 ```
 
 ### Testing with Postman
+
 1. Import this documentation
 2. Set environment variable `{{baseUrl}}` = `http://localhost:5001`
 3. Set `{{token}}` after login
 4. Use Bearer Token authentication
 
 ### Frontend Integration
+
 ```javascript
 // Using the api service
-import api from '../services/api';
+import api from "../services/api";
 
 // Make API call
-const response = await api.post('/assistant/chat', {
-  message: 'Hello',
-  projectId: '1'
+const response = await api.post("/assistant/chat", {
+  message: "Hello",
+  projectId: "1",
 });
 ```
 
 ---
+
 **Note**: Endpoints marked "To Be Implemented" are planned features. Currently working endpoints are Authentication, Projects, AI Assistant, and Content Management.

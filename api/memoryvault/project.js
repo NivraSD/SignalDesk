@@ -28,9 +28,26 @@ export default function handler(req, res) {
   if (req.method === 'GET') {
     const projectItems = memoryVaultItems.filter(item => item.project_id === projectId);
     
+    // Define default folders structure
+    const folders = [
+      { id: 1, name: 'Campaign Intelligence', folder_type: 'campaign-intelligence', count: 0 },
+      { id: 2, name: 'Crisis Management', folder_type: 'crisis-management', count: 0 },
+      { id: 3, name: 'Media Relations', folder_type: 'media-relations', count: 0 },
+      { id: 4, name: 'Content Library', folder_type: 'content-library', count: 0 },
+      { id: 5, name: 'Analytics', folder_type: 'analytics', count: 0 },
+      { id: 6, name: 'Research', folder_type: 'research', count: 0 }
+    ];
+    
+    // Count items per folder
+    projectItems.forEach(item => {
+      const folder = folders.find(f => f.folder_type === item.folder_type);
+      if (folder) folder.count++;
+    });
+    
     return res.status(200).json({
       success: true,
       items: projectItems,
+      folders: folders,
       count: projectItems.length
     });
   }
