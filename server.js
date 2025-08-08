@@ -151,6 +151,21 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+app.get('/api/auth/verify', (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({ valid: false });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'signaldesk-jwt-secret-2024');
+    res.json({ valid: true, user: decoded });
+  } catch (error) {
+    res.status(401).json({ valid: false });
+  }
+});
+
 app.post('/api/auth/verify', (req, res) => {
   const token = req.headers.authorization?.split(' ')[1];
   
@@ -206,6 +221,109 @@ app.post('/api/projects', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to create project',
+      error: error.message
+    });
+  }
+});
+
+// ============= TODOS =============
+app.get('/api/todos', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    let userId = '7f39af2e-933c-44e9-b67c-1f7e28b3a858'; // Default to demo user
+    
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'signaldesk-jwt-secret-2024');
+        userId = decoded.id;
+      } catch (e) {
+        console.log('Token decode error, using demo user');
+      }
+    }
+    
+    const result = await pool.query(
+      'SELECT * FROM todos WHERE created_by = $1 OR assigned_to = $1 ORDER BY created_at DESC',
+      [userId]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Todos fetch error:', error);
+    res.json([]);
+  }
+});
+
+app.post('/api/todos', async (req, res) => {
+  try {
+    const { title, description, project_id, status = 'pending', priority = 'medium' } = req.body;
+    const token = req.headers.authorization?.split(' ')[1];
+    
+    let userId = '7f39af2e-933c-44e9-b67c-1f7e28b3a858';
+    
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'signaldesk-jwt-secret-2024');
+        userId = decoded.id;
+      } catch (e) {
+        console.log('Token decode error, using demo user');
+      }
+    }
+    
+    const result = await pool.query(
+      'INSERT INTO todos (title, description, project_id, status, priority, created_by) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [title, description, project_id, status, priority, userId]
+    );
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Todo creation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create todo',
+      error: error.message
+    });
+  }
+});
+
+app.put('/api/todos/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description, status, priority } = req.body;
+    
+    const result = await pool.query(
+      'UPDATE todos SET title = COALESCE($1, title), description = COALESCE($2, description), status = COALESCE($3, status), priority = COALESCE($4, priority), updated_at = NOW() WHERE id = $5 RETURNING *',
+      [title, description, status, priority, id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Todo not found' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Todo update error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update todo',
+      error: error.message
+    });
+  }
+});
+
+app.delete('/api/todos/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await pool.query('DELETE FROM todos WHERE id = $1 RETURNING *', [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Todo not found' });
+    }
+    
+    res.json({ success: true, deleted: result.rows[0] });
+  } catch (error) {
+    console.error('Todo delete error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete todo',
       error: error.message
     });
   }
