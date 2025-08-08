@@ -7,16 +7,16 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Debug and install dependencies (avoiding npm ci)
-RUN node --version && npm --version
-RUN npm cache clean --force
-RUN npm install --production --no-optional --verbose
+# Install dependencies with legacy peer deps flag
+ENV NPM_CONFIG_LEGACY_PEER_DEPS=true
+ENV CI=false
+RUN npm install --production
 
 # Copy application code
 COPY . .
 
-# Expose port (Railway will override this)
-EXPOSE 8080
+# Railway will set the PORT automatically
+# Don't specify EXPOSE as Railway manages this
 
 # Start the application
 CMD ["node", "index.js"]
