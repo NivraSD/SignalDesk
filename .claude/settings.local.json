@@ -95,7 +95,8 @@
       "Bash(PGPASSWORD=MUmjKBxTiecMPpYVgwGsZEKyFfyFbxqV psql -h crossover.proxy.rlwy.net -p 56706 -U postgres -d railway -c \"\\d users\")",
       "Bash(open /Users/jonathanliebowitz/Desktop/SignalDesk/test-project-creation.html)",
       "Bash(PGPASSWORD=MUmjKBxTiecMPpYVgwGsZEKyFfyFbxqV psql -h crossover.proxy.rlwy.net -p 56706 -U postgres -d railway -c \"\\d todos\")",
-      "Bash(open:*)"
+      "Bash(open:*)",
+      "Bash(git revert:*)"
     ],
     "deny": []
   }

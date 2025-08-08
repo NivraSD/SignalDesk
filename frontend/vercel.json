@@ -1,5 +1,38 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "build",
-  "framework": "create-react-app"
+  "framework": "create-react-app",
+  "env": {
+    "REACT_APP_API_URL": "https://signaldesk-production.up.railway.app/api"
+  },
+  "build": {
+    "env": {
+      "REACT_APP_API_URL": "https://signaldesk-production.up.railway.app/api"
+    }
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }

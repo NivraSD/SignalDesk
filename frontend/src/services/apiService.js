@@ -3,29 +3,17 @@
  * Handles all communication with the backend intelligence monitoring system
  */
 
-import API_BASE_URL, { BACKUP_URL } from '../config/api';
+import API_BASE_URL from '../config/api';
 
-// CRITICAL: Force correct URL if wrong one is detected
-const CORRECT_API_URL = 'https://signaldesk-production.up.railway.app/api';
-let FINAL_API_URL = API_BASE_URL;
-
-// Double-check the URL and force correction if needed
-if (FINAL_API_URL && FINAL_API_URL.includes('signaldesk-api-production')) {
-  console.error('❌ WRONG API URL detected in apiService, forcing correct URL');
-  FINAL_API_URL = CORRECT_API_URL;
-} else if (!FINAL_API_URL) {
-  console.warn('⚠️ No API URL found, using correct production URL');
-  FINAL_API_URL = CORRECT_API_URL;
-}
-
-console.log('✅ API_BASE_URL in apiService:', FINAL_API_URL);
-console.log('Original import was:', API_BASE_URL);
+// Use the configured API URL
+console.log('✅ API Service initialized with URL:', API_BASE_URL);
 
 class ApiService {
   constructor() {
     this.updateToken();
-    // Store the correct URL
-    this.apiUrl = FINAL_API_URL;
+    // Store the API URL from config
+    this.apiUrl = API_BASE_URL;
+    console.log('API Service using URL:', this.apiUrl);
   }
 
   updateToken() {
@@ -37,19 +25,9 @@ class ApiService {
    * Make authenticated API request
    */
   async request(endpoint, options = {}) {
-    // Use the verified correct URL stored in constructor
-    const baseUrl = this.apiUrl || FINAL_API_URL || CORRECT_API_URL;
-    
-    // Final safety check
-    if (baseUrl.includes('signaldesk-api-production')) {
-      console.error('❌ CRITICAL: Wrong URL still present, forcing correction');
-      this.apiUrl = CORRECT_API_URL;
-    }
-    
-    console.log('API_BASE_URL at request time:', this.apiUrl);
-    console.log('Endpoint:', endpoint);
+    // Build the full URL
     const url = `${this.apiUrl}${endpoint}`;
-    console.log('Full URL:', url);
+    console.log('API Request URL:', url);
     
     // Always get the latest token
     this.updateToken();
