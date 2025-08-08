@@ -526,7 +526,9 @@ app.post('/api/crisis/advisor', async (req, res) => {
       
       res.json({
         success: true,
-        response: response.content[0].text,
+        advice: response.content[0].text,  // Frontend expects 'advice'
+        response: response.content[0].text,  // Keep for compatibility
+        content: response.content[0].text,  // Keep for compatibility
         severity,
         timestamp: new Date()
       });
@@ -534,6 +536,7 @@ app.post('/api/crisis/advisor', async (req, res) => {
       // Fallback response
       res.json({
         success: true,
+        advice: `Crisis Response Plan for: ${situation}\n\n1. Immediate Actions\n2. Communication Strategy\n3. Monitoring Steps\n\n(Add Claude API key for detailed analysis)`,
         response: `Crisis Response Plan for: ${situation}\n\n1. Immediate Actions\n2. Communication Strategy\n3. Monitoring Steps\n\n(Add Claude API key for detailed analysis)`,
         severity,
         timestamp: new Date()
