@@ -1,7 +1,7 @@
 import axios from 'axios';
-import STAKEHOLDER_API_BASE from '../config/api';
+import API_BASE_URL from '../config/api';
 
-const STAKEHOLDER_API_BASE = `${STAKEHOLDER_API_BASE}/stakeholder-intelligence`;
+const STAKEHOLDER_API_BASE = `${API_BASE_URL}/stakeholder-intelligence`;
 
 // Get auth token from localStorage
 const getAuthHeaders = () => {
