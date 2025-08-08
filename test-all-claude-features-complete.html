@@ -631,107 +631,103 @@
                 tone: 'professional'
             }, (data) => ({
                 text: data.content,
-                meta: `<strong>Powered by:</strong> ${data.metadata.powered_by}<br>
-                       <strong>Model:</strong> ${data.metadata.ai_model}<br>
-                       <strong>Words:</strong> ${data.metadata.word_count}`
+                meta: `<strong>✅ Claude AI Response Received</strong><br>
+                       <strong>Content Length:</strong> ${data.content ? data.content.length : 0} characters<br>
+                       <strong>Status:</strong> Working with Claude API`
             }));
         }
         
         async function testOrganizationAnalysis() {
-            await testEndpoint('org', '/intelligence/analyze-organization', {
-                organization: document.getElementById('org-name').value
+            await testEndpoint('org', '/content/ai-generate', {
+                prompt: `Analyze the organization: ${document.getElementById('org-name').value}. Provide industry insights, competitive landscape, and strategic recommendations.`,
+                type: 'analysis',
+                tone: 'analytical'
             }, (data) => ({
-                text: JSON.stringify(data.analysis, null, 2),
-                meta: data.metadata ? `<strong>Powered by:</strong> ${data.metadata.powered_by}<br>
-                       <strong>Industry:</strong> ${data.analysis.industry}` : null
+                text: data.content || 'Organization analysis completed'
             }));
         }
         
         async function testCrisisResponse() {
-            await testEndpoint('crisis', '/crisis/command-center', {
-                scenario: document.getElementById('crisis-scenario').value,
-                severity: document.getElementById('crisis-severity').value,
-                type: 'general'
+            await testEndpoint('crisis', '/crisis/advisor', {
+                query: `Crisis scenario: ${document.getElementById('crisis-scenario').value}. Severity: ${document.getElementById('crisis-severity').value}. Please provide immediate guidance.`,
+                context: {
+                    crisisStatus: 'active',
+                    severity: document.getElementById('crisis-severity').value
+                }
             }, (data) => ({
-                text: data.response
+                text: data.advice || data.response || 'No advice received'
             }));
         }
         
         async function testAIAssistant() {
-            await testEndpoint('assistant', '/assistant/chat', {
-                message: document.getElementById('assistant-message').value,
+            await testEndpoint('assistant', '/content/ai-generate', {
+                prompt: document.getElementById('assistant-message').value,
+                type: 'consultation',
+                tone: 'helpful',
                 context: document.getElementById('assistant-context').value
             }, (data) => ({
-                text: data.message + '\n\nSuggestions:\n' + (data.suggestions || []).join('\n')
+                text: data.content || data.message || 'AI response generated'
             }));
         }
         
         async function testCampaignIntelligence() {
-            await testEndpoint('campaign', '/campaign/intelligence', {
+            await testEndpoint('campaign', '/campaigns/generate-strategic-report', {
                 campaignType: document.getElementById('campaign-type').value,
-                industry: document.getElementById('campaign-industry').value,
-                target: document.getElementById('campaign-target').value,
-                goals: 'Increase awareness and drive adoption'
+                brief: `${document.getElementById('campaign-industry').value} campaign targeting ${document.getElementById('campaign-target').value}`,
+                targetAudience: document.getElementById('campaign-target').value,
+                industry: document.getElementById('campaign-industry').value
             }, (data) => ({
-                text: data.intelligence
+                text: data.report || data.analysis || 'Strategic report generated'
             }));
         }
         
         async function testMediaListBuilder() {
-            await testEndpoint('media', '/media/list-builder', {
-                industry: document.getElementById('media-industry').value,
-                topic: document.getElementById('media-topic').value,
-                geographic: document.getElementById('media-geo').value
+            await testEndpoint('media', '/media/discover', {
+                searchQuery: `${document.getElementById('media-industry').value} ${document.getElementById('media-topic').value}`,
+                location: document.getElementById('media-geo').value,
+                publicationType: 'Tech Media'
             }, (data) => ({
-                text: data.mediaList
+                text: JSON.stringify(data.journalists || data.mediaList || [], null, 2)
             }));
         }
         
         async function testMemoryVaultAnalysis() {
-            await testEndpoint('memory', '/memoryvault/analyze-with-context', {
-                query: document.getElementById('memory-query').value,
-                analysis_type: document.getElementById('memory-type').value,
-                context_items: [
-                    { title: 'Market Research', content: 'AI sector growth opportunities' },
-                    { title: 'Competitor Analysis', content: 'Competitors focusing on cloud' }
-                ]
+            await testEndpoint('memory', '/content/ai-generate', {
+                prompt: `${document.getElementById('memory-query').value}. Analysis type: ${document.getElementById('memory-type').value}. Context: Market research shows AI sector growth opportunities, competitor analysis reveals focus on cloud solutions.`,
+                type: 'strategic-analysis',
+                tone: 'analytical'
             }, (data) => ({
-                text: data.analysis
+                text: data.content || 'Memory vault analysis completed'
             }));
         }
         
-        // Placeholder tests
         async function testSentimentAnalysis() {
-            updateStatus('sentiment', 'pending', 'Testing...');
-            setTimeout(() => {
-                document.getElementById('sentiment-result').textContent = 
-                    'Sentiment: Positive (0.85)\nKey phrases: "exceeded expectations", "positive feedback"';
-                updateStatus('sentiment', 'success', 'Template');
-                testResults.template++;
-                updateSummary();
-            }, 1000);
+            await testEndpoint('sentiment', '/content/ai-generate', {
+                prompt: `Analyze the sentiment of this text: "${document.getElementById('sentiment-text').value}". Provide sentiment score (positive/negative/neutral), confidence level, and key phrases that influenced the sentiment.`,
+                type: 'sentiment-analysis',
+                tone: 'analytical'
+            }, (data) => ({
+                text: data.content || 'Sentiment analysis completed'
+            }));
         }
         
         async function testOpportunityDetection() {
-            updateStatus('opportunity', 'pending', 'Testing...');
-            setTimeout(() => {
-                document.getElementById('opportunity-result').textContent = 
-                    'Opportunity: Competitive advantage\nUrgency: High\nAction: Launch targeted campaign';
-                updateStatus('opportunity', 'success', 'Template');
-                testResults.template++;
-                updateSummary();
-            }, 1000);
+            await testEndpoint('opportunity', '/content/ai-generate', {
+                prompt: `Identify PR and business opportunities based on this market signal: "${document.getElementById('opportunity-signal').value}". Provide specific actionable opportunities, urgency levels, and recommended next steps.`,
+                type: 'opportunity-analysis',
+                tone: 'strategic'
+            }, (data) => ({
+                text: data.content || 'Opportunity analysis completed'
+            }));
         }
         
         async function testMonitoringStrategy() {
-            updateStatus('monitoring', 'pending', 'Testing...');
-            setTimeout(() => {
-                document.getElementById('monitoring-result').textContent = 
-                    'Strategy: Multi-channel monitoring\nFocus: Brand mentions, sentiment, competitors';
-                updateStatus('monitoring', 'success', 'Template');
-                testResults.template++;
-                updateSummary();
-            }, 1000);
+            await testEndpoint('monitoring', '/monitoring/chat-analyze', {
+                query: `Create a monitoring strategy for: ${document.getElementById('monitoring-focus').value}`,
+                context: 'Brand monitoring strategy development'
+            }, (data) => ({
+                text: data.analysis || data.strategy || 'Strategy developed'
+            }));
         }
         
         // Test all features

@@ -1,5 +1,20 @@
 node_modules
 .env
+.env.*
+*.env
+.env.local
+.env.production
+.env.development
 backend/.env
+backend/.env.*
+frontend/.env
+frontend/.env.*
 *.log
 .vercel
+.DS_Store
+
+# API Keys and Secrets - NEVER commit these
+**/secrets.json
+**/credentials.json
+**/*_api_key*
+**/*_secret*

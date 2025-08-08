@@ -30,14 +30,16 @@ const AIAssistant = () => {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/assistant/chat`, {
+      const res = await fetch(`${API_BASE_URL}/content/ai-generate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
         },
         body: JSON.stringify({
-          message: message,
+          prompt: message,
+          type: "consultation",
+          tone: "helpful",
           projectId: "1",
         }),
       });
@@ -47,7 +49,7 @@ const AIAssistant = () => {
       // Add AI response to chat
       const aiMessage = {
         role: "assistant",
-        content: data.response || "No response received",
+        content: data.content || "No response received",
       };
       setMessages((prev) => [...prev, aiMessage]);
     } catch (error) {

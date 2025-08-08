@@ -837,7 +837,7 @@ The AI Monitoring system saves important findings to MemoryVault:
 ```bash
 # Backend (.env)
 PORT=5001
-CLAUDE_API_KEY=sk-ant-api03-...
+CLAUDE_API_KEY=[REDACTED - Use GitHub Secrets]
 JWT_SECRET=signaldesk-jwt-secret-2024
 DB_HOST=localhost
 DB_NAME=signaldesk

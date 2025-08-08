@@ -8,9 +8,22 @@ class ClaudeService {
     console.log('API Key found:', !!apiKey);
     console.log('API Key length:', apiKey ? apiKey.length : 0);
     
-    if (!apiKey) {
-      console.error('No Claude API key found in environment variables!');
-      throw new Error('Claude API key not configured');
+    // Check for placeholder values
+    if (!apiKey || apiKey === 'YOUR_NEW_CLAUDE_API_KEY_HERE' || apiKey === 'YOUR_API_KEY_HERE') {
+      console.error('⚠️ CLAUDE_API_KEY not properly configured!');
+      console.error('Please add your API key to:');
+      console.error('1. GitHub Secrets (for automated deployment)');
+      console.error('2. Railway Environment Variables (for production)');
+      console.error('3. Local .env file (for development)');
+      
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('CLAUDE_API_KEY is required in production. Please set it in Railway dashboard.');
+      } else {
+        console.log('Running in development mode - API calls will fail without a valid key');
+        this.client = null;
+        this.model = process.env.CLAUDE_MODEL || "claude-3-5-sonnet-20241022";
+        return;
+      }
     }
     
     this.client = new Anthropic({
@@ -26,9 +39,10 @@ class ClaudeService {
       console.log("Prompt length:", prompt.length);
       console.log("Conversation history length:", conversationHistory.length);
       
-      // Check if API key exists
-      if (!this.client.apiKey) {
-        throw new Error('Claude API key not configured');
+      // Check if client is initialized
+      if (!this.client) {
+        console.error('Claude client not initialized - API key missing or invalid');
+        throw new Error('Claude API key not configured. Please check Railway environment variables.');
       }
 
       // Build messages array
