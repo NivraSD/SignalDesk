@@ -1,4 +1,10 @@
 // Railway-compatible Express server
+// IMPORTANT: This file redirects to server.js which has all routes
+console.log('⚠️  index.js called - redirecting to server.js');
+console.log('📍 All routes are in server.js');
+require('./server.js');
+return; // Exit to prevent duplicate server
+
 const express = require('express');
 const cors = require('cors');
 

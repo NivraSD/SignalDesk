@@ -2,4 +2,4 @@
 nixPkgs = ["nodejs-18_x", "npm-9_x"]
 
 [start]
-cmd = "NODE_OPTIONS='--max-old-space-size=400' npm start"
+cmd = "NODE_OPTIONS='--max-old-space-size=400' node server.js"
