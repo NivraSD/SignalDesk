@@ -113,8 +113,13 @@ app.post('/api/auth/login', async (req, res) => {
 app.post('/api/content/ai-generate', async (req, res) => {
   const { type, prompt, tone } = req.body;
   
+  console.log('Content generation request:', { type, prompt, tone });
+  console.log('ANTHROPIC_API_KEY exists:', !!process.env.ANTHROPIC_API_KEY);
+  console.log('API key length:', process.env.ANTHROPIC_API_KEY ? process.env.ANTHROPIC_API_KEY.length : 0);
+  
   try {
     if (process.env.ANTHROPIC_API_KEY) {
+      console.log('Attempting Claude API call...');
       const { Anthropic } = require('@anthropic-ai/sdk');
       const anthropic = new Anthropic({
         apiKey: process.env.ANTHROPIC_API_KEY
@@ -129,6 +134,7 @@ app.post('/api/content/ai-generate', async (req, res) => {
         }]
       });
       
+      console.log('Claude response received successfully');
       return res.json({
         success: true,
         content: response.content[0].text,
@@ -139,9 +145,12 @@ app.post('/api/content/ai-generate', async (req, res) => {
           powered_by: 'Anthropic Claude'
         }
       });
+    } else {
+      console.log('No ANTHROPIC_API_KEY found, using fallback');
     }
   } catch (error) {
-    console.error('Claude error:', error);
+    console.error('Claude error:', error.message);
+    console.error('Error details:', error);
   }
   
   // Fallback template
