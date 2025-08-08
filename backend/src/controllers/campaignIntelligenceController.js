@@ -16,13 +16,7 @@ const generateMarketAnalysis = async (req, res) => {
     }
 
     // Parse out key information from the master prompt
-    const analysisPrompt = `
-
-    console.log('Calling Claude service...');
-    const analysisResponse = await claudeService.sendMessage(analysisPrompt);
-    console.log('Claude response received, length:', analysisResponse?.length);
-
-      You are a McKinsey senior partner creating a comprehensive market intelligence report.
+    const analysisPrompt = `You are a McKinsey senior partner creating a comprehensive market intelligence report.
       
       Campaign Type: ${campaignType}
       Campaign Details: ${brief}
@@ -87,7 +81,9 @@ const generateMarketAnalysis = async (req, res) => {
       Format as a detailed JSON object with rich, specific content. Include data points, percentages, and concrete examples throughout. Make it feel like a real McKinsey report with depth and insight.
     `;
 
+    console.log('Calling Claude service for market analysis...');
     const analysisResponse = await claudeService.sendMessage(analysisPrompt);
+    console.log('Claude response received, length:', analysisResponse?.length);
 
     // Parse the response
     let analysis;

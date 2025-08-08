@@ -80,6 +80,7 @@ const authRoutes = require("./routes/authRoutes");
 const projectRoutes = require("./routes/projectRoutes");
 const todoRoutes = require("./routes/todoRoutes");
 const assistantRoutes = require("./src/routes/assistantRoutes");
+const claudeDiagnosticsRoutes = require("./src/routes/claudeDiagnosticsRoutes");
 const campaignRoutes = require("./src/routes/campaignRoutes");
 const contentRoutes = require("./src/routes/contentRoutes");
 const crisisRoutes = require("./src/routes/crisisRoutes");
@@ -115,6 +116,7 @@ app.use((req, res, next) => {
 // ⚡ Public routes (NO auth required)
 app.use("/api/auth", authRoutes);
 app.use("/api/proxy", proxyRoutes); // Proxy routes for external APIs (CORS avoidance)
+app.use("/api/claude-diagnostics", claudeDiagnosticsRoutes); // Claude diagnostics for debugging
 
 // ⚡ Protected routes (auth REQUIRED)
 app.use("/api/organizations", authMiddleware, organizationRoutes);
