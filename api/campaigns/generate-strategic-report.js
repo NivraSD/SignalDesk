@@ -17,15 +17,28 @@ module.exports = async function handler(req, res) {
   }
   
   const { 
+    campaignType,
+    campaignCategory,
+    brief,
+    includeBrief,
     campaignData,
     reportType = 'strategic',
     format = 'detailed'
   } = req.body;
   
-  if (!campaignData) {
+  // Accept either campaignData or individual fields
+  const campaign = campaignData || {
+    campaignName: campaignType || 'Campaign',
+    type: campaignType,
+    category: campaignCategory,
+    brief: brief,
+    includeBrief: includeBrief
+  };
+  
+  if (!campaign && !campaignType && !brief) {
     return res.status(400).json({
       success: false,
-      error: 'Campaign data is required'
+      error: 'Campaign information is required'
     });
   }
   
@@ -42,7 +55,7 @@ module.exports = async function handler(req, res) {
       const systemPrompt = `You are a strategic communications expert creating comprehensive campaign reports. Generate detailed, data-driven reports with actionable insights, competitive analysis, and strategic recommendations. Focus on measurable outcomes and ROI.`;
       
       const userPrompt = `Generate a ${reportType} campaign report based on this data:
-${JSON.stringify(campaignData, null, 2)}
+${JSON.stringify(campaign, null, 2)}
 
 Create a comprehensive report including:
 1. Executive Summary
@@ -90,7 +103,7 @@ Format: ${format === 'detailed' ? 'Provide detailed analysis for each section' :
   
   // Fallback template-based report
   console.log('Using template report generation');
-  const templateReport = generateTemplateReport(campaignData, reportType, format);
+  const templateReport = generateTemplateReport(campaign, reportType, format);
   
   return res.status(200).json({
     success: true,

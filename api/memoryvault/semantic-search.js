@@ -24,7 +24,7 @@ function extractKeywords(text) {
     .filter(word => word.length > 3 && !stopWords.includes(word));
 }
 
-export default function handler(req, res) {
+module.exports = function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');

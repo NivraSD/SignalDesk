@@ -3,7 +3,7 @@ let projects = [
   { id: 1, name: 'Demo Project', description: 'Your first SignalDesk project', user_id: 1, created_at: new Date().toISOString() }
 ];
 
-export default function handler(req, res) {
+module.exports = function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, DELETE, OPTIONS');

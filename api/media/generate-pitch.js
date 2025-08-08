@@ -1,5 +1,5 @@
 // Pitch Generation with Claude AI
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -21,7 +21,7 @@ export default async function handler(req, res) {
   
   try {
     if (process.env.ANTHROPIC_API_KEY) {
-      const { Anthropic } = await import('@anthropic-ai/sdk');
+      const { Anthropic } = require('@anthropic-ai/sdk');
       const anthropic = new Anthropic({
         apiKey: process.env.ANTHROPIC_API_KEY,
       });

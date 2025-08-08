@@ -1,5 +1,5 @@
 // Media List Builder with Claude AI
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -34,7 +34,7 @@ export default async function handler(req, res) {
     if (process.env.ANTHROPIC_API_KEY) {
       console.log('Using Claude AI for media list building...');
       
-      const { Anthropic } = await import('@anthropic-ai/sdk');
+      const { Anthropic } = require('@anthropic-ai/sdk');
       const anthropic = new Anthropic({
         apiKey: process.env.ANTHROPIC_API_KEY,
       });

@@ -71,7 +71,14 @@
       "Bash(open /Users/jonathanliebowitz/Desktop/SignalDesk/test-all-claude-features.html)",
       "Bash(open /Users/jonathanliebowitz/Desktop/SignalDesk/test-all-claude-features-complete.html)",
       "Bash(open /Users/jonathanliebowitz/Desktop/SignalDesk/test-vercel-direct.html)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(for file in api/**/*.js)",
+      "Bash(do)",
+      "Bash(if grep -q \"^export default\" \"$file\")",
+      "Bash(then)",
+      "Bash(fi)",
+      "Bash(done)",
+      "Bash(for:*)"
     ],
     "deny": []
   }
