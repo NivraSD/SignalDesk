@@ -176,7 +176,7 @@ const MemoryVault = () => {
       try {
         console.log("Loading MemoryVault data for project:", projectId);
         const response = await fetch(
-          `${API_BASE_URL}/projects/${projectId}/memoryvault`,
+          `${API_BASE_URL}/memoryvault/project?projectId=${projectId}`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
