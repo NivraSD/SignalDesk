@@ -1,8 +1,12 @@
 // Centralized API configuration
 // Change this ONE place to update the entire app
-// Now using Railway for 100% functionality!
+// Now using microservices architecture!
 
-// Railway backend - no more timeouts, all features work!
-const API_BASE_URL = 'https://signaldesk-production.up.railway.app/api';
+// New API Gateway - clean, fast, reliable!
+const API_BASE_URL = 'https://signaldesk-api-production.up.railway.app/api';
+
+// Original backend (backup)
+const BACKUP_URL = 'https://signaldesk-production.up.railway.app/api';
 
 export default API_BASE_URL;
+export { BACKUP_URL };

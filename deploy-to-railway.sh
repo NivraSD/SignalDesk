@@ -1,52 +1,43 @@
-#!/bin/bash
+#\!/bin/bash
 
-# SignalDesk Railway Deployment Script
-# This moves your backend from Vercel to Railway for full functionality
+echo "========================================="
+echo "🚀 Railway Deployment Script for SignalDesk"
+echo "========================================="
+echo ""
 
-echo "🚂 SignalDesk Railway Deployment"
-echo "================================"
+# Color codes for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
 
-# Check if railway CLI is installed
-if ! command -v railway &> /dev/null; then
-    echo "❌ Railway CLI not installed"
-    echo "Install with: npm install -g @railway/cli"
+# Step 1: Check if we're in the right directory
+if [ \! -f "backend/server.js" ]; then
+    echo -e "${RED}❌ Error: backend/server.js not found${NC}"
+    echo "Please run this script from the SignalDesk root directory"
     exit 1
 fi
 
-# Login to Railway
-echo "📝 Logging into Railway..."
-railway login
+echo -e "${GREEN}✅ Step 1: Directory structure verified${NC}"
 
-# Initialize Railway project
-echo "🎯 Initializing Railway project..."
-railway init --name signaldesk-backend
+# Step 2: Use Railway-optimized server
+cp backend/server-railway.js backend/server.js
+echo -e "${GREEN}✅ Step 2: Railway-optimized server.js in place${NC}"
 
-# Link to existing database
-echo "🔗 Linking PostgreSQL database..."
-railway add --database postgresql
+# Step 3: Test the build
+echo -e "${YELLOW}Step 3: Testing Docker build...${NC}"
+docker build -f Dockerfile.railway -t signaldesk-test . 
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}✅ Docker build successful\!${NC}"
+else
+    echo -e "${RED}❌ Docker build failed${NC}"
+    exit 1
+fi
 
-# Set environment variables
-echo "🔐 Setting environment variables..."
-railway variables set NODE_ENV=production
-railway variables set PORT=3001
-railway variables set ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY
-railway variables set JWT_SECRET=$(openssl rand -hex 32)
-
-# Copy database URL from existing Railway database
-echo "📋 Copy your DATABASE_URL from Railway dashboard"
-echo "Run: railway variables set DATABASE_URL=<your-database-url>"
-read -p "Press enter when done..."
-
-# Deploy backend
-echo "🚀 Deploying backend to Railway..."
-cd backend
-railway up
-
-# Get deployment URL
-echo "✅ Deployment complete!"
-echo "Your backend URL: $(railway open --json | jq -r '.url')"
+echo ""
+echo -e "${GREEN}✅ Railway deployment prepared successfully\!${NC}"
 echo ""
 echo "Next steps:"
-echo "1. Update frontend/src/config/api.js with new Railway URL"
-echo "2. Test all endpoints with: node test-critical-endpoints.js"
-echo "3. Your platform now has 100% functionality restored!"
+echo "1. Push to GitHub: git add -A && git commit -m 'Railway deployment' && git push"
+echo "2. Check Railway dashboard for deployment status"
+echo "3. Verify environment variables are set in Railway"

@@ -20,7 +20,7 @@ const Parser = require('rss-parser');
 const axios = require('axios');
 const cheerio = require('cheerio');
 const puppeteer = require('puppeteer');
-const pool = require('../config/db');
+const pool = require('../config/db.js');
 
 class UltimateMonitoringAgent {
   constructor() {

@@ -1,0 +1,40 @@
+# Railway-optimized Dockerfile for SignalDesk
+FROM node:20-slim
+
+# Install essential dependencies for production
+RUN apt-get update && apt-get install -y \
+    curl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files first for better caching
+COPY backend/package*.json ./backend/
+COPY package*.json ./
+
+# Install backend dependencies
+WORKDIR /app/backend
+RUN npm ci --only=production --silent || npm install --production --silent
+
+# Copy backend code
+WORKDIR /app
+COPY backend ./backend
+
+# Ensure server.js exists and is executable
+RUN test -f backend/server.js || (echo "ERROR: backend/server.js not found!" && exit 1)
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV PORT=3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD curl -f http://localhost:3000/api/health || exit 1
+
+# Expose port (Railway will override this)
+EXPOSE 3000
+
+# Start the application
+CMD ["node", "backend/server.js"]

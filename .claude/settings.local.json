@@ -82,7 +82,12 @@
       "Bash(railway whoami:*)",
       "Bash(railway list:*)",
       "Bash(railway link:*)",
-      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/wait-and-test.sh:*)"
+      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/wait-and-test.sh:*)",
+      "Bash(./verify-deployment.sh:*)",
+      "Bash(docker build:*)",
+      "Bash(git remote add:*)",
+      "Bash(./verify-railway-deployment.sh:*)",
+      "Bash(./deploy-to-railway.sh:*)"
     ],
     "deny": []
   }

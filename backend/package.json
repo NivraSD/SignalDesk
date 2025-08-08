@@ -23,6 +23,7 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
     "pg": "^8.16.3",
+    "puppeteer": "24.16.0",
     "rss-parser": "^3.13.0",
     "sequelize": "^6.35.1",
     "uuid": "^11.1.0",
