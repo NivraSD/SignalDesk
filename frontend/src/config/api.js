@@ -3,7 +3,7 @@
 // Now using microservices architecture!
 
 // New API Gateway - clean, fast, reliable!
-const API_BASE_URL = 'https://signaldesk-api-production.up.railway.app/api';
+const API_BASE_URL = 'https://signaldesk-production.up.railway.app/api';
 
 // Original backend (backup)
 const BACKUP_URL = 'https://signaldesk-production.up.railway.app/api';
