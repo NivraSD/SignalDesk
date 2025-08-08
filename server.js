@@ -27,10 +27,18 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY || 'dummy-key-for-now'
 });
 
-// Middleware
-app.use(cors());
+// Middleware - Fixed CORS for all origins
+app.use(cors({
+  origin: true,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Handle preflight requests
+app.options('*', cors());
 
 // Health check
 app.get('/health', (req, res) => {
