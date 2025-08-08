@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import apiService from '../../services/api';
+import API_BASE_URL from '../../config/api';
 import './AIMonitoringAdvisor.css';
 import {
   MessageSquare,
@@ -201,7 +202,7 @@ const AIMonitoringAdvisor = () => {
   const saveMonitoringStrategy = async (strategy) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5001/api/monitoring/save-strategy', {
+      const response = await fetch(`${API_BASE_URL}/monitoring/save-strategy`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -227,7 +228,7 @@ const AIMonitoringAdvisor = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5001/api/monitoring/fetch-enhanced', {
+      const response = await fetch(`${API_BASE_URL}/monitoring/fetch-enhanced`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

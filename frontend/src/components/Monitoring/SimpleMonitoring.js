@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Activity, Search, BarChart3, AlertCircle, TrendingUp, TrendingDown, Minus, RefreshCw, TestTube2 } from 'lucide-react';
 import { testStrategy } from './TestStrategy';
+import API_BASE_URL from '../../config/api';
 
 const SimpleMonitoring = ({ strategy, onDataUpdate }) => {
   const [mentions, setMentions] = useState([]);
@@ -39,7 +40,7 @@ const SimpleMonitoring = ({ strategy, onDataUpdate }) => {
       
       console.log('Sending payload:', payload);
 
-      const response = await fetch('http://localhost:5001/api/monitoring/fetch-rss', {
+      const response = await fetch(`${API_BASE_URL}/monitoring/fetch-rss`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -107,7 +108,7 @@ const SimpleMonitoring = ({ strategy, onDataUpdate }) => {
             }
           };
 
-          const response = await fetch('http://localhost:5001/api/monitoring/analyze-sentiment', {
+          const response = await fetch(`${API_BASE_URL}/monitoring/analyze-sentiment`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('token')}`,

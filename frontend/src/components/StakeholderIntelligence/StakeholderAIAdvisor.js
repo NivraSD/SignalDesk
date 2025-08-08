@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { MessageCircle, HelpCircle, Send, X, Sparkles, Users, TrendingUp, Shield, AlertCircle } from 'lucide-react';
+import API_BASE_URL from '../../config/api';
 
 const StakeholderAIAdvisor = ({ stakeholderStrategy, priorityStakeholders, intelligenceFindings, context = 'insights', onSourceSuggestion }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -114,7 +115,7 @@ const StakeholderAIAdvisor = ({ stakeholderStrategy, priorityStakeholders, intel
         }, {})
       };
 
-      const response = await fetch('http://localhost:5001/api/ai/advisor', {
+      const response = await fetch(`${API_BASE_URL}/ai/advisor`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,

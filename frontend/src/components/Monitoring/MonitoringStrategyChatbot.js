@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Bot, Sparkles, Target, TrendingUp, Eye, AlertTriangle, Send, HelpCircle } from "lucide-react";
+import API_BASE_URL from '../../config/api';
 
 const MonitoringStrategyChatbot = ({ onStrategyCreated }) => {
   const [input, setInput] = useState("");
@@ -51,17 +52,15 @@ What would you like to start monitoring today?`,
     setIsAIResponding(true);
 
     try {
-      const response = await fetch("http://localhost:5001/api/monitoring/chat-analyze", {
+      const response = await fetch(`${API_BASE_URL}/monitoring/chat-analyze`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify({
-          prompt: buildStrategyPrompt(currentMessage, messages),
-          userInput: currentMessage,
-          context: messages.map(m => `${m.role}: ${m.content}`).join('\n'),
-          currentProfile: null
+          query: currentMessage,
+          context: messages.map(m => `${m.type}: ${m.content}`).join('\n')
         }),
       });
 

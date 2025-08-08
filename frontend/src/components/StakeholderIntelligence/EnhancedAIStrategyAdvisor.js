@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import API_BASE_URL from '../../config/api';
 import { 
   Sparkles, Bot, Building2, Users, Target, 
   TrendingUp, Shield, Globe, CheckCircle, 
@@ -956,12 +957,12 @@ const EnhancedAIStrategyAdvisor = ({ onStrategyComplete, mode = 'stakeholders' }
       
       // Fetch competitors and topics in parallel
       const [competitorsResponse, topicsResponse] = await Promise.all([
-        fetch('http://localhost:5001/api/intelligence/discover-competitors', {
+        fetch(`${API_BASE_URL}/intelligence/discover-competitors`, {
           method: 'POST',
           headers,
           body: JSON.stringify({ company: orgData.company, industry: orgData.url || 'technology' })
         }),
-        fetch('http://localhost:5001/api/intelligence/discover-topics', {
+        fetch(`${API_BASE_URL}/intelligence/discover-topics`, {
           method: 'POST',
           headers,
           body: JSON.stringify({ company: orgData.company, industry: orgData.url || 'technology' })

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import API_BASE_URL from '../../config/api';
 import { 
   Bot, Activity, Search, Globe, FileText, Twitter, 
   TrendingUp, AlertCircle, Eye, ChevronDown, ChevronRight,
@@ -145,7 +146,7 @@ const AgenticMonitoring = ({ stakeholderStrategy, customSources = [], onFindings
         fears: stakeholder.fears || ''
       };
       
-      const response = await fetch('http://localhost:5001/api/ai/analyze', {
+      const response = await fetch(`${API_BASE_URL}/ai/analyze`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,

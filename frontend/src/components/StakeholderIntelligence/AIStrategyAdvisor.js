@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Send, Sparkles, Users, Building, Target, CheckCircle, Loader } from 'lucide-react';
+import API_BASE_URL from '../../config/api';
 
 const AIStrategyAdvisor = ({ onStrategyComplete, existingStrategy }) => {
   const [messages, setMessages] = useState([]);
@@ -48,7 +49,7 @@ For example: "We're TechCorp, a SaaS company. Our key stakeholders include enter
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5001/api/ai/stakeholder-discovery', {
+      const response = await fetch(`${API_BASE_URL}/ai/stakeholder-discovery`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
