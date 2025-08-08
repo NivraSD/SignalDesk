@@ -3,10 +3,11 @@ const express = require('express');
 const cors = require('cors');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5001; // Match existing setup
 
-console.log('Starting server...');
-console.log('PORT:', port);
+console.log('Starting SignalDesk server...');
+console.log('PORT from env:', process.env.PORT);
+console.log('Using port:', port);
 console.log('NODE_ENV:', process.env.NODE_ENV);
 
 // Middleware
@@ -37,7 +38,22 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Test endpoint that always works
+app.get('/test', (req, res) => {
+  res.send('OK');
+});
+
 // Start server exactly as Railway expects
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+const server = app.listen(port, () => {
+  console.log(`✅ Server is running on port ${port}`);
+  console.log(`Test URL: http://localhost:${port}/test`);
+  console.log('Ready for connections...');
+});
+
+// Handle shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM signal received: closing HTTP server');
+  server.close(() => {
+    console.log('HTTP server closed');
+  });
 });
