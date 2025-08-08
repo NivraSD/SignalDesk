@@ -394,16 +394,26 @@ class UnifiedMonitoringService {
       try {
         // Use UPSERT to avoid duplicates
         const values = batch.map(article => {
+          // Ensure all values are strings before calling replace
+          const safeLink = String(article.link || '').replace(/'/g, "''");
+          const safeTitle = String(article.title || 'Untitled').replace(/'/g, "''");
+          const safeSource = String(article.source || 'Unknown').replace(/'/g, "''");
+          const safeIndustry = String(article.industry || 'general').replace(/'/g, "''");
+          const safeCategory = String(article.category || 'general').replace(/'/g, "''");
+          const safeDescription = String(article.description || '').replace(/'/g, "''");
+          const safePubDate = String(article.pubDate || new Date().toISOString()).replace(/'/g, "''");
+          const safePriority = String(article.priority || 'medium').replace(/'/g, "''");
+          
           return `(
-            '${(article.link || '').replace(/'/g, "''")}',
-            '${(article.title || 'Untitled').replace(/'/g, "''")}',
-            '${(article.source || 'Unknown').replace(/'/g, "''")}',
-            '${article.industry}',
-            '${article.category || 'general'}',
-            '${(article.description || '').replace(/'/g, "''")}',
-            '${article.pubDate}',
+            '${safeLink}',
+            '${safeTitle}',
+            '${safeSource}',
+            '${safeIndustry}',
+            '${safeCategory}',
+            '${safeDescription}',
+            '${safePubDate}',
             ${article.source_id || 'NULL'},
-            '${article.priority || 'medium'}'
+            '${safePriority}'
           )`;
         }).join(',');
         

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useProject } from "../contexts/ProjectContext";
+import API_BASE_URL from '../config/api';
 import {
   Bot,
   FileText,
@@ -46,7 +47,7 @@ const ProjectWorkspace = () => {
   const fetchProjectStats = async () => {
     try {
       const response = await fetch(
-        `http://localhost:5001/api/projects/${projectId}/stats`,
+        `${API_BASE_URL}/projects/${projectId}/stats`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,

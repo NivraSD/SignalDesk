@@ -4,6 +4,7 @@
  */
 
 import industryKeywordService from './industryKeywordDatabase';
+import API_BASE_URL from '../config/api';
 
 class SimplifiedMonitoringService {
   constructor() {
@@ -81,7 +82,7 @@ class SimplifiedMonitoringService {
     // Fetch from Google News for each search query
     for (const query of config.searchQueries.slice(0, 3)) {
       try {
-        const response = await fetch('http://localhost:5001/api/proxy/google-news', {
+        const response = await fetch(`${API_BASE_URL}/proxy/google-news`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ query })
@@ -132,7 +133,7 @@ class SimplifiedMonitoringService {
     // Fetch news for each competitor
     for (const competitor of config.competitors.slice(0, 3)) {
       try {
-        const response = await fetch('http://localhost:5001/api/proxy/google-news', {
+        const response = await fetch(`${API_BASE_URL}/proxy/google-news`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ query: `${competitor} latest news` })

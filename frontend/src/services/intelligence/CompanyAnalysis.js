@@ -1,5 +1,6 @@
 import DataSourceIntegration from './DataSourceIntegration';
 import WebIntelligenceAgent from './WebIntelligenceAgent';
+import API_BASE_URL from '../../config/api';
 
 class CompanyAnalysis {
   constructor() {
@@ -107,7 +108,7 @@ class CompanyAnalysis {
     try {
       // Use backend AI to analyze the company with sophisticated prompting
       console.log('🤖 Requesting AI analysis for company profile...');
-      const response = await fetch('http://localhost:5001/api/ai/analyze', {
+      const response = await fetch(`${API_BASE_URL}/ai/analyze`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -1268,7 +1269,7 @@ Provide specific, factual information where available. For publicly-traded compa
     // Use AI to identify specific stakeholders for this company with sophisticated analysis
     try {
       console.log('🤖 Using AI to identify key stakeholders...');
-      const response = await fetch('http://localhost:5001/api/ai/analyze', {
+      const response = await fetch(`${API_BASE_URL}/ai/analyze`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,

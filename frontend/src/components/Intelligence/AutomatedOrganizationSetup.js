@@ -366,7 +366,7 @@ const AutomatedOrganizationSetup = ({ onSetupComplete }) => {
     
     try {
       // Step 1: Create the organization in the database
-      const orgResponse = await fetch('${API_BASE_URL}/organizations/create', {
+      const orgResponse = await fetch(`${API_BASE_URL}/organizations/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -401,7 +401,7 @@ const AutomatedOrganizationSetup = ({ onSetupComplete }) => {
         .filter(c => selectedItems.competitors.includes(c.id))
         .forEach(competitor => {
           targetPromises.push(
-            fetch('${API_BASE_URL}/organizations/targets', {
+            fetch(`${API_BASE_URL}/organizations/targets`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -427,7 +427,7 @@ const AutomatedOrganizationSetup = ({ onSetupComplete }) => {
         .filter(t => selectedItems.topics.includes(t.id))
         .forEach(topic => {
           targetPromises.push(
-            fetch('${API_BASE_URL}/organizations/targets', {
+            fetch(`${API_BASE_URL}/organizations/targets`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -457,7 +457,7 @@ const AutomatedOrganizationSetup = ({ onSetupComplete }) => {
       setActivationStep('Configuring monitoring sources...');
       
       // Step 3: Configure organization-specific monitoring sources
-      const sourceResponse = await fetch('${API_BASE_URL}/source-config/configure-sources', {
+      const sourceResponse = await fetch(`${API_BASE_URL}/source-config/configure-sources`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

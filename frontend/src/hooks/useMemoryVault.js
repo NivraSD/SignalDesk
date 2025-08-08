@@ -2,6 +2,7 @@
 import { useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useProject } from "../contexts/ProjectContext";
+import API_BASE_URL from '../config/api';
 
 /**
  * Custom hook for saving content to MemoryVault
@@ -177,11 +178,11 @@ export const useMemoryVault = () => {
         console.log("10. Request body prepared:", requestBody);
         console.log(
           "11. Making API call to:",
-          `http://localhost:5001/api/projects/${currentProjectId}/memoryvault`
+          `${API_BASE_URL}/projects/${currentProjectId}/memoryvault`
         );
 
         const response = await fetch(
-          `http://localhost:5001/api/projects/${currentProjectId}/memoryvault`,
+          `${API_BASE_URL}/projects/${currentProjectId}/memoryvault`,
           {
             method: "POST",
             headers: {

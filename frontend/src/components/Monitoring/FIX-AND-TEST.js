@@ -1,13 +1,15 @@
 // COMPREHENSIVE FIX AND TEST SCRIPT
 // Run this in browser console to fix and test the monitoring system
 
+import API_BASE_URL from '../../config/api';
+
 (async function fixAndTest() {
   console.clear();
   console.log('🔧 FIXING AND TESTING MONITORING SYSTEM');
   console.log('=====================================\n');
   
   const token = localStorage.getItem('token');
-  const API_URL = 'http://localhost:5001/api';
+  const API_URL = API_BASE_URL;
   
   // Step 1: Clear and set proper configuration
   console.log('1️⃣ SETTING UP PROPER CONFIGURATION...');

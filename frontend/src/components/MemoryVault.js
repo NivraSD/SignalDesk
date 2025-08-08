@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo, useEffect } from "react";
+import API_BASE_URL from '../config/api';
 import {
   Search,
   Filter,
@@ -175,7 +176,7 @@ const MemoryVault = () => {
       try {
         console.log("Loading MemoryVault data for project:", projectId);
         const response = await fetch(
-          `http://localhost:5001/api/projects/${projectId}/memoryvault`,
+          `${API_BASE_URL}/projects/${projectId}/memoryvault`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,

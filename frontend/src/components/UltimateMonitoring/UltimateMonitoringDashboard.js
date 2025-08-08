@@ -12,6 +12,7 @@ import {
   Zap
 } from 'lucide-react';
 import axios from 'axios';
+import API_BASE_URL from '../../config/api';
 
 const UltimateMonitoringDashboard = () => {
   const [monitoringStatus, setMonitoringStatus] = useState(null);
@@ -41,7 +42,7 @@ const UltimateMonitoringDashboard = () => {
     
     try {
       const response = await axios.post(
-        'http://localhost:5001/api/ultimate-monitoring/analyze',
+        `${API_BASE_URL}/ultimate-monitoring/analyze`,
         { organizationId: getOrgId() },
         {
           headers: {
@@ -67,7 +68,7 @@ const UltimateMonitoringDashboard = () => {
     
     try {
       const response = await axios.post(
-        'http://localhost:5001/api/ultimate-monitoring/start',
+        `${API_BASE_URL}/ultimate-monitoring/start`,
         { 
           organizationId: getOrgId(),
           options: {
@@ -102,7 +103,7 @@ const UltimateMonitoringDashboard = () => {
     setLoading(true);
     try {
       await axios.post(
-        `http://localhost:5001/api/ultimate-monitoring/stop/${monitoringId}`,
+        `${API_BASE_URL}/ultimate-monitoring/stop/${monitoringId}`,
         {},
         {
           headers: {
@@ -139,7 +140,7 @@ const UltimateMonitoringDashboard = () => {
       };
       
       const response = await axios.post(
-        'http://localhost:5001/api/ultimate-monitoring/test-capability',
+        `${API_BASE_URL}/ultimate-monitoring/test-capability`,
         { 
           capability, 
           testData 

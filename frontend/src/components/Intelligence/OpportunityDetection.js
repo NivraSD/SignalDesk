@@ -6,6 +6,7 @@ import {
   ChevronDown, ChevronUp, GitBranch, Target, BarChart,
   Sparkles, Bell, Timer
 } from 'lucide-react';
+import API_BASE_URL from '../../config/api';
 
 const OpportunityDetection = ({ organizationId, organizationName }) => {
   const [isMonitoring, setIsMonitoring] = useState(true);
@@ -30,7 +31,7 @@ const OpportunityDetection = ({ organizationId, organizationName }) => {
     console.log('Fetching opportunities...');
     try {
       // First try to get existing opportunities (no organizationId required)
-      const response = await fetch(`http://localhost:5001/api/monitoring/v2/opportunities?status=pending&limit=50`, {
+      const response = await fetch(`${API_BASE_URL}/monitoring/v2/opportunities?status=pending&limit=50`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -43,7 +44,7 @@ const OpportunityDetection = ({ organizationId, organizationName }) => {
         // If no existing opportunities, trigger a scan
         if (!data.opportunities || data.opportunities.length === 0) {
           console.log('No existing opportunities, triggering scan...');
-          const scanResponse = await fetch(`http://localhost:5001/api/monitoring/v2/scan-opportunities`, {
+          const scanResponse = await fetch(`${API_BASE_URL}/monitoring/v2/scan-opportunities`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

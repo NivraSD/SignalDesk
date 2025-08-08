@@ -15,6 +15,30 @@ export default function handler(req, res) {
   
   const { email, password } = req.body;
   
+  // Input validation
+  if (!email || !password) {
+    return res.status(400).json({ 
+      success: false,
+      error: 'Email and password are required' 
+    });
+  }
+  
+  if (typeof email !== 'string' || typeof password !== 'string') {
+    return res.status(400).json({ 
+      success: false,
+      error: 'Invalid input format' 
+    });
+  }
+  
+  // Basic email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ 
+      success: false,
+      error: 'Invalid email format' 
+    });
+  }
+  
   // Demo login
   if (email === 'demo@signaldesk.com' && password === 'demo123') {
     return res.status(200).json({

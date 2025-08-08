@@ -4,6 +4,7 @@
  */
 
 import stakeholderIntelligenceService from './stakeholderIntelligenceService';
+import API_BASE_URL from '../config/api';
 
 class IntelligentMonitoringAgent {
   constructor() {
@@ -134,7 +135,7 @@ class IntelligentMonitoringAgent {
     try {
       // Google News
       console.log(`  Fetching from Google News for "${stakeholder.name}"...`);
-      const newsResponse = await fetch('http://localhost:5001/api/proxy/google-news', {
+      const newsResponse = await fetch(`${API_BASE_URL}/proxy/google-news`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: stakeholder.name })
@@ -159,7 +160,7 @@ class IntelligentMonitoringAgent {
 
       // Reddit discussions
       console.log(`  Fetching from Reddit for "${stakeholder.name}"...`);
-      const redditResponse = await fetch('http://localhost:5001/api/proxy/reddit', {
+      const redditResponse = await fetch(`${API_BASE_URL}/proxy/reddit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: stakeholder.name })

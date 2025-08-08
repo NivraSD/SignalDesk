@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import CompanyAnalysis from '../../services/intelligence/CompanyAnalysis';
 import CompanyInputForm from './CompanyInputForm';
+import API_BASE_URL from '../../config/api';
 
 const StakeholderStrategyBuilder = ({ onStrategyComplete }) => {
   const [currentStep, setCurrentStep] = useState('input'); // input, analyzing, questionnaire, generating, complete
@@ -127,7 +128,7 @@ const StakeholderStrategyBuilder = ({ onStrategyComplete }) => {
 
       // Use AI to generate final strategy recommendations
       try {
-        const response = await fetch('http://localhost:5001/api/ai/analyze', {
+        const response = await fetch(`${API_BASE_URL}/ai/analyze`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`,

@@ -1,6 +1,7 @@
 import axios from 'axios';
+import STAKEHOLDER_API_BASE from '../config/api';
 
-const API_BASE_URL = 'http://localhost:5001/api/stakeholder-intelligence';
+const STAKEHOLDER_API_BASE = `${STAKEHOLDER_API_BASE}/stakeholder-intelligence`;
 
 // Get auth token from localStorage
 const getAuthHeaders = () => {
@@ -16,7 +17,7 @@ class StakeholderIntelligenceService {
   async createOrUpdateOrganization(orgData) {
     try {
       const response = await axios.post(
-        `${API_BASE_URL}/organization`,
+        `${STAKEHOLDER_API_BASE}/organization`,
         orgData,
         { headers: getAuthHeaders() }
       );
@@ -31,7 +32,7 @@ class StakeholderIntelligenceService {
   async generateStakeholderSuggestions(orgData) {
     try {
       const response = await axios.post(
-        `${API_BASE_URL}/suggestions`,
+        `${STAKEHOLDER_API_BASE}/suggestions`,
         {
           company: orgData.company,
           url: orgData.url,
@@ -52,7 +53,7 @@ class StakeholderIntelligenceService {
   async discoverStakeholderSources(stakeholderName, stakeholderType) {
     try {
       const response = await axios.post(
-        `${API_BASE_URL}/discover-sources`,
+        `${STAKEHOLDER_API_BASE}/discover-sources`,
         {
           stakeholderName,
           stakeholderType
@@ -70,7 +71,7 @@ class StakeholderIntelligenceService {
   async validateSource(url) {
     try {
       const response = await axios.post(
-        `${API_BASE_URL}/validate-source`,
+        `${STAKEHOLDER_API_BASE}/validate-source`,
         { url },
         { headers: getAuthHeaders() }
       );
@@ -85,7 +86,7 @@ class StakeholderIntelligenceService {
   async saveStakeholderConfiguration(organizationId, stakeholders) {
     try {
       const response = await axios.post(
-        `${API_BASE_URL}/configure`,
+        `${STAKEHOLDER_API_BASE}/configure`,
         {
           organizationId,
           stakeholders
@@ -103,7 +104,7 @@ class StakeholderIntelligenceService {
   async getStakeholderMonitoring(organizationId) {
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/monitoring/${organizationId}`,
+        `${STAKEHOLDER_API_BASE}/monitoring/${organizationId}`,
         { headers: getAuthHeaders() }
       );
       return response.data;
@@ -117,7 +118,7 @@ class StakeholderIntelligenceService {
   async runMonitoringScan(organizationId) {
     try {
       const response = await axios.post(
-        `${API_BASE_URL}/scan`,
+        `${STAKEHOLDER_API_BASE}/scan`,
         { organizationId },
         { headers: getAuthHeaders() }
       );
@@ -137,7 +138,7 @@ class StakeholderIntelligenceService {
       if (options.unreadOnly) params.append('unreadOnly', options.unreadOnly);
 
       const response = await axios.get(
-        `${API_BASE_URL}/findings/${organizationId}?${params.toString()}`,
+        `${STAKEHOLDER_API_BASE}/findings/${organizationId}?${params.toString()}`,
         { headers: getAuthHeaders() }
       );
       return response.data.findings;
@@ -156,10 +157,10 @@ class StakeholderIntelligenceService {
         stakeholderType: stakeholder.type 
       };
       console.log('Request data:', requestData);
-      console.log('API URL:', `${API_BASE_URL}/discover-sources`);
+      console.log('API URL:', `${STAKEHOLDER_API_BASE}/discover-sources`);
       
       const response = await axios.post(
-        `${API_BASE_URL}/discover-sources`,
+        `${STAKEHOLDER_API_BASE}/discover-sources`,
         requestData,
         { headers: getAuthHeaders() }
       );
@@ -183,7 +184,7 @@ class StakeholderIntelligenceService {
   async validateSource(url) {
     try {
       const response = await axios.post(
-        `${API_BASE_URL}/validate-source`,
+        `${STAKEHOLDER_API_BASE}/validate-source`,
         { url },
         { headers: getAuthHeaders() }
       );
@@ -208,7 +209,7 @@ class StakeholderIntelligenceService {
   async markFindingAsRead(findingId) {
     try {
       const response = await axios.put(
-        `${API_BASE_URL}/findings/${findingId}/read`,
+        `${STAKEHOLDER_API_BASE}/findings/${findingId}/read`,
         {},
         { headers: getAuthHeaders() }
       );
@@ -223,7 +224,7 @@ class StakeholderIntelligenceService {
   async archiveFinding(findingId) {
     try {
       const response = await axios.put(
-        `${API_BASE_URL}/findings/${findingId}/archive`,
+        `${STAKEHOLDER_API_BASE}/findings/${findingId}/archive`,
         {},
         { headers: getAuthHeaders() }
       );
@@ -238,7 +239,7 @@ class StakeholderIntelligenceService {
   async getPredictions(organizationId) {
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/predictions/${organizationId}`,
+        `${STAKEHOLDER_API_BASE}/predictions/${organizationId}`,
         { headers: getAuthHeaders() }
       );
       return response.data.predictions;
@@ -252,7 +253,7 @@ class StakeholderIntelligenceService {
   async getRecommendedActions(organizationId, status = 'pending') {
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/actions/${organizationId}?status=${status}`,
+        `${STAKEHOLDER_API_BASE}/actions/${organizationId}?status=${status}`,
         { headers: getAuthHeaders() }
       );
       return response.data.actions;
@@ -266,7 +267,7 @@ class StakeholderIntelligenceService {
   async updateAction(actionId, updates) {
     try {
       const response = await axios.put(
-        `${API_BASE_URL}/actions/${actionId}`,
+        `${STAKEHOLDER_API_BASE}/actions/${actionId}`,
         updates,
         { headers: getAuthHeaders() }
       );
@@ -281,7 +282,7 @@ class StakeholderIntelligenceService {
   async getDashboardSummary(organizationId) {
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/dashboard/${organizationId}`,
+        `${STAKEHOLDER_API_BASE}/dashboard/${organizationId}`,
         { headers: getAuthHeaders() }
       );
       return response.data.summary;
@@ -299,7 +300,7 @@ class StakeholderIntelligenceService {
   async checkPreIndexedStakeholder(name) {
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/pre-indexed/${encodeURIComponent(name)}`,
+        `${STAKEHOLDER_API_BASE}/pre-indexed/${encodeURIComponent(name)}`,
         { headers: getAuthHeaders() }
       );
       return response.data.stakeholders;

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Loader, CheckCircle, XCircle } from 'lucide-react';
+import API_BASE_URL from '../config/api';
 
 const TestRealTimeMonitor = () => {
   const [testResults, setTestResults] = useState({});
@@ -11,7 +12,7 @@ const TestRealTimeMonitor = () => {
 
     // Test 1: Google News Proxy
     try {
-      const response = await fetch('http://localhost:5001/api/proxy/google-news', {
+      const response = await fetch(`${API_BASE_URL}/proxy/google-news`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: 'Microsoft' })
@@ -28,7 +29,7 @@ const TestRealTimeMonitor = () => {
 
     // Test 2: Reddit Proxy
     try {
-      const response = await fetch('http://localhost:5001/api/proxy/reddit', {
+      const response = await fetch(`${API_BASE_URL}/proxy/reddit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: 'technology' })
@@ -45,7 +46,7 @@ const TestRealTimeMonitor = () => {
 
     // Test 3: PR Newswire
     try {
-      const response = await fetch('http://localhost:5001/api/proxy/pr-newswire', {
+      const response = await fetch(`${API_BASE_URL}/proxy/pr-newswire`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ category: 'news-releases' })

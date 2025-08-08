@@ -4,6 +4,7 @@
  */
 
 import stakeholderIntelligenceService from './stakeholderIntelligenceService';
+import API_BASE_URL from '../config/api';
 
 class RealTimeMonitoringService {
   constructor() {
@@ -108,7 +109,7 @@ class RealTimeMonitoringService {
   async fetchRSSFeed(feedUrl, stakeholderName) {
     try {
       // Use backend proxy to fetch RSS
-      const response = await fetch('http://localhost:5001/api/proxy/rss', {
+      const response = await fetch(`${API_BASE_URL}/proxy/rss`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: feedUrl })
@@ -303,7 +304,7 @@ class RealTimeMonitoringService {
   async fetchGoogleNews(stakeholderName) {
     try {
       // Use backend proxy to fetch Google News
-      const response = await fetch('http://localhost:5001/api/proxy/google-news', {
+      const response = await fetch(`${API_BASE_URL}/proxy/google-news`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: stakeholderName })

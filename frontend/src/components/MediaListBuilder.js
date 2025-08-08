@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useProject } from "../contexts/ProjectContext";
 import SaveToMemoryVaultButton from "./MemoryVault/SaveToMemoryVaultButton";
+import API_BASE_URL from '../config/api';
 import {
   Search,
   Users,
@@ -66,7 +67,7 @@ const MediaListBuilder = () => {
   const loadSavedLists = async () => {
     try {
       const response = await fetch(
-        `http://localhost:5001/api/media/lists/${activeProject.id}`,
+        `${API_BASE_URL}/media/lists/${activeProject.id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -124,7 +125,7 @@ const MediaListBuilder = () => {
         modifiedQuery = `journalists covering ${parts.join(" AND ")}`;
       }
 
-      const response = await fetch("http://localhost:5001/api/media/discover", {
+      const response = await fetch(`${API_BASE_URL}/media/discover`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -216,7 +217,7 @@ const MediaListBuilder = () => {
 
     try {
       const response = await fetch(
-        "http://localhost:5001/api/media/generate-pitch-angles",
+        `${API_BASE_URL}/media/generate-pitch-angles`,
         {
           method: "POST",
           headers: {

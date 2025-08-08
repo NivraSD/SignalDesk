@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Sparkles, TrendingUp, Eye, Zap, AlertTriangle } from 'lucide-react';
+import API_BASE_URL from '../../config/api';
 
 const MonitoringChatbot = () => {
   const [messages, setMessages] = useState([
@@ -145,7 +146,7 @@ Response format (JSON):
 
 Important: Always return valid JSON. If you can't determine much about the company/topic, ask clarifying questions while still providing your best analysis.`;
 
-    const response = await fetch('http://localhost:5001/api/monitoring/chat-analyze', {
+    const response = await fetch(`${API_BASE_URL}/monitoring/chat-analyze`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,

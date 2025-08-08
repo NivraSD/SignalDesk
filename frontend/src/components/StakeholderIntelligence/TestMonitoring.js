@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import API_BASE_URL from '../../config/api';
 
 const TestMonitoring = () => {
   const [results, setResults] = useState(null);
@@ -8,7 +9,7 @@ const TestMonitoring = () => {
     setLoading(true);
     try {
       // Test Google News
-      const response = await fetch('http://localhost:5001/api/proxy/google-news', {
+      const response = await fetch(`${API_BASE_URL}/proxy/google-news`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: 'Apple' })

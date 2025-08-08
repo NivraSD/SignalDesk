@@ -3,8 +3,7 @@
  * Handles all communication with the backend intelligence monitoring system
  */
 
-// Force the correct API URL
-const API_BASE_URL = 'http://localhost:5001/api';
+import API_BASE_URL from '../config/api';
 console.log('API_BASE_URL in apiService:', API_BASE_URL);
 
 class ApiService {

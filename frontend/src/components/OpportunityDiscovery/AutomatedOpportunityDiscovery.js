@@ -7,6 +7,7 @@ import {
 import narrativeVacuumService from '../../services/narrativeVacuumService';
 import intelligentMonitoringAgent from '../../services/intelligentMonitoringAgent';
 import prDetectionService from '../../services/prDetectionService';
+import API_BASE_URL from '../../config/api';
 
 const AutomatedOpportunityDiscovery = () => {
   const [step, setStep] = useState('setup');
@@ -38,7 +39,7 @@ const AutomatedOpportunityDiscovery = () => {
     setIsAnalyzing(true);
     try {
       // Fetch and analyze the website
-      const response = await fetch('http://localhost:5001/api/proxy/analyze-website', {
+      const response = await fetch(`${API_BASE_URL}/proxy/analyze-website`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: profile.url })
@@ -145,7 +146,7 @@ const AutomatedOpportunityDiscovery = () => {
     
     try {
       // Fetch from Google News
-      const newsResponse = await fetch('http://localhost:5001/api/proxy/google-news', {
+      const newsResponse = await fetch(`${API_BASE_URL}/proxy/google-news`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -171,7 +172,7 @@ const AutomatedOpportunityDiscovery = () => {
       }
 
       // Fetch from Reddit
-      const redditResponse = await fetch('http://localhost:5001/api/proxy/reddit', {
+      const redditResponse = await fetch(`${API_BASE_URL}/proxy/reddit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

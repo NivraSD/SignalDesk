@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import SaveToMemoryVaultButton from "./MemoryVault/SaveToMemoryVaultButton";
 import { useProject } from "../contexts/ProjectContext";
+import API_BASE_URL from '../config/api';
 
 const AIAssistant = () => {
   const [message, setMessage] = useState("");
@@ -29,7 +30,7 @@ const AIAssistant = () => {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:5001/api/assistant/chat", {
+      const res = await fetch(`${API_BASE_URL}/assistant/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

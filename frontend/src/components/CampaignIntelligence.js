@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useProject } from "../contexts/ProjectContext";
 import SaveToMemoryVaultButton from "./MemoryVault/SaveToMemoryVaultButton";
+import API_BASE_URL from '../config/api';
 import {
   Brain,
   FileText,
@@ -393,7 +394,7 @@ export default function CampaignIntelligence() {
     try {
       // Step 1: Generate comprehensive strategic report
       const response = await fetch(
-        "http://localhost:5001/api/campaigns/generate-strategic-report",
+        `${API_BASE_URL}/campaigns/generate-strategic-report`,
         {
           method: "POST",
           headers: {
@@ -568,7 +569,7 @@ export default function CampaignIntelligence() {
 
     try {
       const response = await fetch(
-        "http://localhost:5001/api/campaigns/expand-report",
+        `${API_BASE_URL}/campaigns/expand-report`,
         {
           method: "POST",
           headers: {

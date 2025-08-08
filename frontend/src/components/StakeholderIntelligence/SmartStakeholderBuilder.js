@@ -4,6 +4,7 @@ import {
   CheckCircle, Users, X, Plus, Eye, EyeOff,
   Lightbulb
 } from 'lucide-react';
+import API_BASE_URL from '../../config/api';
 
 const SmartStakeholderBuilder = ({ onComplete }) => {
   const [stage, setStage] = useState('initial'); // initial, loading, review, complete
@@ -84,7 +85,7 @@ const SmartStakeholderBuilder = ({ onComplete }) => {
 
     try {
       // First, get company overview
-      const overviewResponse = await fetch('http://localhost:5001/api/ai/analyze', {
+      const overviewResponse = await fetch(`${API_BASE_URL}/ai/analyze`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -112,7 +113,7 @@ STRATEGIC CONTEXT: [1-2 sentences about the most important stakeholder considera
       }
 
       // Then get stakeholder suggestions
-      const response = await fetch('http://localhost:5001/api/ai/analyze', {
+      const response = await fetch(`${API_BASE_URL}/ai/analyze`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,

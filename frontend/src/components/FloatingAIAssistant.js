@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { useProject } from "../contexts/ProjectContext";
 import { useMemoryVault } from "../hooks/useMemoryVault";
+import API_BASE_URL from '../config/api';
 import {
   Bot,
   X,
@@ -92,7 +93,7 @@ const FloatingAIAssistant = () => {
 
     try {
       // Make API call to your backend
-      const response = await fetch("http://localhost:5001/api/ai/assistant", {
+      const response = await fetch(`${API_BASE_URL}/ai/assistant`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
