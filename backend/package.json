@@ -2,10 +2,10 @@
   "name": "signaldesk-backend",
   "version": "1.0.0",
   "description": "SignalDesk PR Platform Backend",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node index.js",
-    "start-full": "node server.js",
+    "start": "node server.js",
+    "start-simple": "node index.js",
     "dev": "nodemon server.js",
     "test": "jest",
     "vercel-build": "echo 'Skipping build step'"
