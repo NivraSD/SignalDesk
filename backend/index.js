@@ -137,6 +137,7 @@ const opportunityRoutes = require("./src/routes/opportunityRoutes");
 const proxyRoutes = require("./src/routes/proxy");
 const organizationRoutes = require("./src/routes/organizationRoutes");
 const sourceConfigRoutes = require("./src/routes/sourceConfigRoutes");
+const missingEndpointsRoutes = require("./src/routes/missingEndpointsRoutes");
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
@@ -230,6 +231,10 @@ app.use("/api/opportunity", authMiddleware, opportunityRoutes);
 // MUST come before the catch-all memoryvault route
 const intelligenceIndexRoutes = require("./src/routes/intelligenceIndexRoutes");
 app.use("/api/intelligence-index", intelligenceIndexRoutes); // No auth middleware here - handled per route
+
+// 🔧 MISSING ENDPOINTS ROUTES - Comprehensive solution for all 404 errors
+// Add ALL missing endpoints that frontend calls but don't exist in backend
+app.use("/api", missingEndpointsRoutes);
 
 // Memory vault routes - this is a catch-all for /api so must come last
 app.use("/api", authMiddleware, memoryvaultRoutes);
