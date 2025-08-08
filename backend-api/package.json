@@ -15,4 +15,3 @@
     "bcryptjs": "^2.4.3"
   }
 }
-EOF < /dev/null
