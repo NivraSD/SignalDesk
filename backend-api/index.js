@@ -34,7 +34,9 @@ app.get('/api/health', (req, res) => {
     environment: process.env.NODE_ENV || 'development',
     hasDatabase: !!process.env.DATABASE_URL,
     hasJWT: !!process.env.JWT_SECRET,
-    hasAnthropic: !!process.env.ANTHROPIC_API_KEY
+    hasAnthropic: !!process.env.ANTHROPIC_API_KEY,
+    anthropicKeyLength: process.env.ANTHROPIC_API_KEY ? process.env.ANTHROPIC_API_KEY.length : 0,
+    anthropicKeyPrefix: process.env.ANTHROPIC_API_KEY ? process.env.ANTHROPIC_API_KEY.substring(0, 20) + '...' : 'none'
   });
 });
 
