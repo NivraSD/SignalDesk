@@ -76,19 +76,6 @@
       ]
     },
     {
-      "source": "/version.json",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-cache, no-store, must-revalidate"
-        },
-        {
-          "key": "Content-Type",
-          "value": "application/json"
-        }
-      ]
-    },
-    {
       "source": "/(.*).js",
       "headers": [
         {
@@ -142,7 +129,7 @@
   ],
   "rewrites": [
     {
-      "source": "/((?!api|_next|static|favicon.ico|manifest.json|version.json|.*\\.).*)",
+      "source": "/((?!api|_next|static|favicon.ico|manifest.json|.*\\.).*)",
       "destination": "/index.html"
     }
   ],
