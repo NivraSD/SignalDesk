@@ -33,12 +33,28 @@ const pool = connectionString
       connectionTimeoutMillis: 5000,
     });
 
-// Test the connection
+// Test the connection - CRITICAL FOR DEBUGGING
+console.log('🔍 ATTEMPTING POSTGRES CONNECTION...');
+console.log('DATABASE_URL starts with:', process.env.DATABASE_URL ? process.env.DATABASE_URL.substring(0, 40) + '...' : 'NOT SET!!!');
+
 pool.connect((err, client, release) => {
   if (err) {
-    console.error('Error connecting to PostgreSQL:', err.stack);
+    console.error('❌❌❌ POSTGRES CONNECTION FAILED ❌❌❌');
+    console.error('Error message:', err.message);
+    console.error('Error code:', err.code);
+    console.error('Connection details:', {
+      host: err.host || 'unknown',
+      port: err.port || 'unknown'
+    });
+    // Don't crash - let the app run with mock data
+    console.log('⚠️ WARNING: Running without database - using mock data only');
   } else {
-    console.log('Successfully connected to PostgreSQL database');
+    console.log('✅✅✅ POSTGRES CONNECTED SUCCESSFULLY ✅✅✅');
+    console.log('Connected to:', {
+      host: client.host,
+      database: client.database,
+      port: client.port
+    });
     release();
   }
 });
