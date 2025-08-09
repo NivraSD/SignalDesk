@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import API_BASE_URL from '../config/api';
+import API_BASE_URL, { apiRequest } from '../config/api';
 
 const AuthContext = createContext();
 
@@ -35,7 +35,8 @@ export const AuthProvider = ({ children }) => {
       // Set token state
       setToken(storedToken);
 
-      const response = await fetch(`${API_BASE_URL}/auth/verify`, {
+      console.log('[Auth] Verifying stored token...');
+      const response = await apiRequest('/auth/verify', {
         headers: {
           Authorization: `Bearer ${storedToken}`,
         },
@@ -44,20 +45,27 @@ export const AuthProvider = ({ children }) => {
       if (response.ok) {
         const data = await response.json();
         setUser(data.user);
+        console.log('[Auth] Token verified successfully');
       } else {
         // Token is invalid, clear it
+        console.warn('[Auth] Token verification failed, clearing stored credentials');
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         setToken(null);
         setUser(null);
       }
     } catch (err) {
-      console.error("Auth check failed:", err);
-      // Clear invalid token
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      setToken(null);
-      setUser(null);
+      console.error("[Auth] Auth check failed:", err.message);
+      // Don't clear token on network errors - might be temporary
+      if (err.message.includes('Failed to fetch') || err.message.includes('Network')) {
+        console.log('[Auth] Network error during auth check, keeping token for retry');
+      } else {
+        // Clear invalid token for other errors
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        setToken(null);
+        setUser(null);
+      }
     } finally {
       setLoading(false);
     }
@@ -66,7 +74,9 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       setError(null);
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      console.log('[Auth] Attempting login for:', email);
+      
+      const response = await apiRequest('/auth/login', {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -77,7 +87,19 @@ export const AuthProvider = ({ children }) => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Login failed");
+        const errorMessage = data.error || `Login failed (Status: ${response.status})`;
+        console.error('[Auth] Login failed:', errorMessage);
+        
+        // Provide more helpful error messages
+        if (response.status === 500) {
+          throw new Error("Server error. Please try again in a moment.");
+        } else if (response.status === 401) {
+          throw new Error("Invalid email or password");
+        } else if (response.status === 0 || !response.status) {
+          throw new Error("Cannot connect to server. Please check your connection.");
+        } else {
+          throw new Error(errorMessage);
+        }
       }
 
       // Store token and user info
@@ -87,14 +109,18 @@ export const AuthProvider = ({ children }) => {
       // Update state
       setToken(data.token);
       setUser(data.user);
+      
+      console.log('[Auth] Login successful for:', data.user.email);
 
       // Navigate to dashboard
       navigate("/dashboard");
 
       return { success: true };
     } catch (err) {
-      setError(err.message);
-      return { success: false, error: err.message };
+      const errorMessage = err.message || "An unexpected error occurred";
+      console.error('[Auth] Login error:', errorMessage);
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
     }
   };
 
