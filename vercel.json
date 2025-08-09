@@ -86,5 +86,8 @@
       "destination": "/index.html"
     }
   ],
-  "regions": ["iad1"]
+  "regions": ["iad1"],
+  "github": {
+    "silent": false
+  }
 }
