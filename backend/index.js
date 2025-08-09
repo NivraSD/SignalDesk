@@ -276,30 +276,25 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server only if not in Vercel environment
-if (!process.env.VERCEL) {
-  const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`\n🚀 SignalDesk Backend running on port ${PORT}`);
-    console.log(`📱 Frontend expected at http://localhost:3000`);
-    console.log("\n✅ Available endpoints:");
-    console.log("  Public:");
-    console.log("   - POST /api/auth/login");
-    console.log("   - POST /api/auth/register");
-    console.log("   - GET  /api/auth/verify");
-    console.log("  Protected (requires token):");
-    console.log("   - /api/projects/*");
-    console.log("   - /api/todos/*");
-    console.log("   - /api/assistant/*");
-    console.log("   - /api/content/*");
-    console.log("   - /api/media/*");
-    console.log("   - /api/ai/*");
-    console.log("   - ... and more");
-  });
-  
-  // Export server for testing
-  module.exports = server;
-} else {
-  // Export app for Vercel
-  module.exports = app;
-}
+// Start server - Always start for Railway
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`\n🚀 SignalDesk Backend running on port ${PORT}`);
+  console.log(`📱 Frontend expected at http://localhost:3000`);
+  console.log("\n✅ Available endpoints:");
+  console.log("  Public:");
+  console.log("   - POST /api/auth/login");
+  console.log("   - POST /api/auth/register");
+  console.log("   - GET  /api/auth/verify");
+  console.log("  Protected (requires token):");
+  console.log("   - /api/projects/*");
+  console.log("   - /api/todos/*");
+  console.log("   - /api/assistant/*");
+  console.log("   - /api/content/*");
+  console.log("   - /api/media/*");
+  console.log("   - /api/ai/*");
+  console.log("   - ... and more");
+});
+
+// Export app for compatibility
+module.exports = app;
 // Force rebuild at Fri Aug  8 20:21:00 EDT 2025
