@@ -201,9 +201,13 @@ app.use((req, res, next) => {
 });
 
 // API Routes
-// 🚨 WORKING CLAUDE FIX - Simplified version that works
-const workingClaudeFix = require("./src/routes/workingClaudeFix");
-app.use("/api", workingClaudeFix);
+// ⚡ ENHANCED CLAUDE ROUTES - Load FIRST for highest priority
+// This ensures Claude AI integration takes precedence over mock data
+app.use("/api", enhancedClaudeRoutes); // Comprehensive Claude integration
+
+// CLAUDE TEST ROUTES - For verifying Claude integration
+const claudeTestRoute = require("./src/routes/claudeTestRoute");
+app.use("/api", claudeTestRoute);
 
 // TEST ENDPOINT - Verify deployment
 const testEndpoint = require("./testEndpoint");
@@ -214,8 +218,9 @@ app.use("/api/auth", authRoutes);
 app.use("/api/proxy", proxyRoutes); // Proxy routes for external APIs (CORS avoidance)
 app.use("/api/claude-diagnostics", claudeDiagnosticsRoutes); // Claude diagnostics for debugging
 
-// ⚡ ENHANCED CLAUDE ROUTES - High priority for all Claude-powered features
-app.use("/api", enhancedClaudeRoutes); // Comprehensive Claude integration with fallbacks
+// DISABLED: Mock data routes - now handled by enhanced Claude routes with fallbacks
+// const workingClaudeFix = require("./src/routes/workingClaudeFix");
+// app.use("/api", workingClaudeFix);
 
 // ⚡ Protected routes (auth REQUIRED)
 app.use("/api/organizations", authMiddleware, organizationRoutes);

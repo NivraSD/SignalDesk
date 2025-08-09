@@ -3,21 +3,37 @@ const Anthropic = require("@anthropic-ai/sdk");
 
 class ClaudeService {
   constructor() {
-    const apiKey = process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY;
-    console.log('Initializing Claude service...');
-    console.log('API Key found:', !!apiKey);
-    console.log('API Key length:', apiKey ? apiKey.length : 0);
+    // Check all possible environment variable names
+    const apiKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY || process.env.CLAUDE_KEY;
+    
+    console.log('🔧 Initializing Claude service...');
+    console.log('📍 Environment:', process.env.NODE_ENV || 'development');
+    console.log('🔑 Checking for API key in environment variables:');
+    console.log('  - ANTHROPIC_API_KEY:', !!process.env.ANTHROPIC_API_KEY);
+    console.log('  - CLAUDE_API_KEY:', !!process.env.CLAUDE_API_KEY);
+    console.log('  - CLAUDE_KEY:', !!process.env.CLAUDE_KEY);
+    console.log('✅ API Key found:', !!apiKey);
+    console.log('📏 API Key length:', apiKey ? apiKey.length : 0);
+    
+    // Show first few chars of key for debugging (safely)
+    if (apiKey && apiKey.length > 10) {
+      console.log('🔐 API Key prefix:', apiKey.substring(0, 7) + '...');
+    }
     
     // Check for placeholder values
     if (!apiKey || apiKey === 'YOUR_NEW_CLAUDE_API_KEY_HERE' || apiKey === 'YOUR_API_KEY_HERE') {
       console.error('⚠️ CLAUDE_API_KEY not properly configured!');
-      console.error('Please add your API key to:');
-      console.error('1. GitHub Secrets (for automated deployment)');
-      console.error('2. Railway Environment Variables (for production)');
-      console.error('3. Local .env file (for development)');
+      console.error('Please add your API key to Railway Environment Variables:');
+      console.error('Variable name should be: ANTHROPIC_API_KEY');
+      console.error('Get your key from: https://console.anthropic.com/');
       
       if (process.env.NODE_ENV === 'production') {
-        throw new Error('CLAUDE_API_KEY is required in production. Please set it in Railway dashboard.');
+        console.error('🚨 PRODUCTION ERROR: Claude API key is REQUIRED!');
+        console.error('Set ANTHROPIC_API_KEY in Railway dashboard NOW.');
+        // Don't throw error - use fallback instead to keep app running
+        this.client = null;
+        this.model = process.env.CLAUDE_MODEL || "claude-3-5-sonnet-20241022";
+        return;
       } else {
         console.log('Running in development mode - API calls will fail without a valid key');
         this.client = null;

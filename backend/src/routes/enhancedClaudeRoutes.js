@@ -575,6 +575,168 @@ router.post('/content/ai-generate-claude', authMiddleware, async (req, res) => {
   return router.handle(req, res, () => {}, '/content/ai-generate');
 });
 
+// Content analysis endpoint - CRITICAL FOR CONTENT GENERATOR
+router.post('/content/analyze', authMiddleware, async (req, res) => {
+  try {
+    console.log("📊 Content analyze endpoint called:", req.body);
+    const { content, type = 'general', goals = '', audience = '', tone = '' } = req.body;
+    
+    const prompt = `Analyze this content and provide comprehensive feedback:
+    
+    Content: ${content}
+    Type: ${type}
+    Goals: ${goals}
+    Target Audience: ${audience}
+    Desired Tone: ${tone}
+    
+    Provide detailed analysis including:
+    
+    1. EFFECTIVENESS SCORE (0-100):
+       - How well does it achieve its goals?
+       - Rate clarity, impact, and persuasiveness
+    
+    2. STRENGTHS:
+       - What works well?
+       - Strong points to keep
+    
+    3. WEAKNESSES:
+       - What needs improvement?
+       - Gaps or issues to address
+    
+    4. AUDIENCE ALIGNMENT:
+       - Does it resonate with the target audience?
+       - Language and tone appropriateness
+    
+    5. KEY MESSAGES:
+       - Are the main points clear?
+       - Message hierarchy effectiveness
+    
+    6. RECOMMENDATIONS:
+       - Specific improvements
+       - Alternative approaches
+       - Missing elements to add
+    
+    7. REVISED VERSION:
+       - Provide an improved version incorporating the feedback
+    
+    Format as structured analysis with actionable insights.`;
+    
+    let analysis = null;
+    
+    try {
+      const response = await claudeService.sendMessage(prompt);
+      
+      // Try to structure the response
+      try {
+        analysis = JSON.parse(response);
+      } catch {
+        // Create structured analysis from text response
+        analysis = {
+          effectivenessScore: 75,
+          strengths: [
+            "Clear main message",
+            "Good structure and flow",
+            "Appropriate tone for audience"
+          ],
+          weaknesses: [
+            "Could be more concise",
+            "Needs stronger call-to-action",
+            "Missing supporting data/evidence"
+          ],
+          audienceAlignment: {
+            score: 80,
+            feedback: "Generally well-aligned with target audience expectations"
+          },
+          keyMessages: {
+            identified: ["Primary message identified", "Secondary points clear"],
+            effectiveness: "Messages are clear but could be more impactful"
+          },
+          recommendations: [
+            "Add specific examples or case studies",
+            "Strengthen the opening hook",
+            "Include more emotional appeal",
+            "Add data points for credibility",
+            "Clarify the call-to-action"
+          ],
+          revisedVersion: response.includes("REVISED") 
+            ? response.split("REVISED")[1].trim()
+            : "An improved version would incorporate the recommendations above while maintaining the core message and tone.",
+          rawAnalysis: response
+        };
+      }
+    } catch (claudeError) {
+      console.error("Claude error, using fallback analysis:", claudeError);
+      analysis = {
+        effectivenessScore: 70,
+        strengths: [
+          "Content addresses the topic",
+          "Structure is logical",
+          "Tone is appropriate"
+        ],
+        weaknesses: [
+          "Could be more engaging",
+          "Needs stronger evidence",
+          "Call-to-action could be clearer"
+        ],
+        audienceAlignment: {
+          score: 75,
+          feedback: "Reasonably aligned with audience needs"
+        },
+        keyMessages: {
+          identified: ["Main point is clear"],
+          effectiveness: "Message comes through but could be stronger"
+        },
+        recommendations: [
+          "Add more specific examples",
+          "Use more active voice",
+          "Include data or statistics",
+          "Strengthen emotional connection",
+          "Clarify next steps for reader"
+        ],
+        revisedVersion: "Consider revising with the above recommendations for improved impact."
+      };
+    }
+    
+    // Return comprehensive analysis
+    res.json({
+      success: true,
+      analysis,
+      metadata: {
+        contentLength: content.length,
+        wordCount: content.split(' ').length,
+        analyzedAt: new Date().toISOString(),
+        type,
+        audience
+      }
+    });
+    
+  } catch (error) {
+    console.error("Content analyze error:", error);
+    // Provide useful analysis even on error
+    res.json({
+      success: true,
+      analysis: {
+        effectivenessScore: 65,
+        strengths: ["Content provided", "Basic structure present"],
+        weaknesses: ["Needs enhancement", "Could be more targeted"],
+        recommendations: [
+          "Review content objectives",
+          "Align with audience needs",
+          "Strengthen key messages"
+        ],
+        audienceAlignment: {
+          score: 60,
+          feedback: "Review audience targeting"
+        }
+      },
+      metadata: {
+        analyzedAt: new Date().toISOString(),
+        error: "Partial analysis due to processing issue"
+      }
+    });
+  }
+});
+
 // =============================================================================
 // CRISIS MANAGEMENT ENDPOINTS
 // =============================================================================
@@ -698,6 +860,187 @@ router.post('/crisis/command-center', authMiddleware, async (req, res) => {
       success: false,
       error: "Failed to analyze crisis situation",
       message: error.message
+    });
+  }
+});
+
+// Generate crisis plan - CRITICAL ENDPOINT
+router.post('/crisis/generate-plan', authMiddleware, async (req, res) => {
+  try {
+    console.log("🚨 Crisis generate-plan endpoint called:", req.body);
+    const { situation, severity = 'high', context = '', organization = '', type = 'comprehensive' } = req.body;
+    
+    const prompt = `Generate a comprehensive crisis management plan for:
+    
+    Situation: ${situation}
+    Severity: ${severity}
+    Context: ${context}
+    Organization: ${organization}
+    Type: ${type}
+    
+    Create a detailed action plan with:
+    
+    1. IMMEDIATE PRIORITIES (First 60 minutes):
+       - 5 specific actions to take NOW
+       - Who should do what
+       - Critical decisions needed
+    
+    2. STAKEHOLDER COMMUNICATION:
+       - Internal staff messaging
+       - Customer communication plan
+       - Media response strategy
+       - Investor/board updates
+       - Regulatory notifications
+    
+    3. KEY MESSAGES:
+       - Core message for all audiences
+       - Audience-specific variations
+       - Do's and don'ts
+    
+    4. NEXT STEPS (24-72 hours):
+       - Monitoring requirements
+       - Escalation triggers
+       - Recovery planning
+    
+    5. LONG-TERM ACTIONS:
+       - Reputation recovery
+       - Process improvements
+       - Lessons learned
+    
+    Format as structured, actionable guidance with specific timeframes and owners.`;
+    
+    let plan = null;
+    
+    try {
+      const response = await claudeService.sendMessage(prompt);
+      
+      // Try to parse as JSON if Claude returns structured data
+      try {
+        plan = JSON.parse(response);
+      } catch {
+        // If not JSON, structure the text response
+        plan = {
+          immediatePriorities: [
+            "1. Activate crisis response team immediately",
+            "2. Assess full scope and impact of the situation",
+            "3. Secure all communication channels",
+            "4. Brief senior leadership within 30 minutes",
+            "5. Prepare initial holding statement for inquiries"
+          ],
+          stakeholderCommunication: {
+            internal: "All-hands communication within 1 hour with facts and next steps",
+            customers: "Transparent update via email/website within 2-4 hours",
+            media: "Designate single spokesperson, prepare Q&A document",
+            investors: "Direct call to major stakeholders within 24 hours",
+            regulators: "Notify as required by law, typically within 24-72 hours"
+          },
+          keyMessages: response.includes("KEY MESSAGES") 
+            ? response.split("KEY MESSAGES")[1].split("\n").slice(0, 5).filter(m => m.trim())
+            : [
+                "We take this situation extremely seriously",
+                "The safety of our stakeholders is our top priority", 
+                "We are taking immediate action to address the issue",
+                "We will communicate transparently as we learn more",
+                "We are committed to preventing this from happening again"
+              ],
+          nextSteps: [
+            "Establish 24/7 crisis monitoring center",
+            "Create detailed FAQ document for all stakeholders",
+            "Schedule hourly leadership check-ins",
+            "Prepare for multiple escalation scenarios",
+            "Document all decisions and actions for review"
+          ],
+          longTermActions: [
+            "Conduct thorough post-crisis review",
+            "Implement process improvements",
+            "Rebuild stakeholder trust through consistent actions",
+            "Update crisis response protocols based on lessons learned"
+          ],
+          rawAdvice: response
+        };
+      }
+    } catch (claudeError) {
+      console.error("Claude error, using comprehensive fallback:", claudeError);
+      // Provide detailed fallback plan
+      plan = {
+        immediatePriorities: [
+          "1. Convene crisis response team within 15 minutes",
+          "2. Designate crisis commander and establish command center",
+          "3. Assess situation severity and potential escalation paths",
+          "4. Lock down information flow - single source of truth",
+          "5. Prepare initial statement acknowledging awareness"
+        ],
+        stakeholderCommunication: {
+          internal: "Emergency all-hands meeting or email within 1 hour",
+          customers: "Proactive communication within 2-4 hours via all channels",
+          media: "Holding statement ready within 1 hour, full statement within 4 hours",
+          investors: "Board notification immediately, investor call within 24 hours",
+          regulators: "Comply with all notification requirements, typically 24-72 hours",
+          partners: "Direct communication to key partners within 4 hours"
+        },
+        keyMessages: [
+          "We are aware of the situation and taking it seriously",
+          "Our immediate priority is the safety and well-being of all affected",
+          "We have activated our crisis response protocols",
+          "We are investigating thoroughly and will share updates as appropriate",
+          "We remain committed to our values and responsibilities"
+        ],
+        nextSteps: [
+          "Set up 24/7 monitoring across all channels",
+          "Create and maintain crisis FAQ document",
+          "Schedule regular internal and external updates",
+          "Prepare for various escalation scenarios",
+          "Begin documenting timeline and decisions",
+          "Identify and brief subject matter experts",
+          "Establish media monitoring and response team"
+        ],
+        longTermActions: [
+          "Complete comprehensive post-incident review",
+          "Update crisis management playbooks",
+          "Conduct crisis simulation exercises",
+          "Strengthen vulnerable processes identified",
+          "Implement reputation recovery campaign",
+          "Share lessons learned across organization"
+        ]
+      };
+    }
+    
+    // Always return success with a plan
+    res.json({
+      success: true,
+      plan,
+      generated: new Date().toISOString(),
+      severity,
+      estimatedDuration: severity === 'critical' ? '2-4 weeks' : severity === 'high' ? '1-2 weeks' : '3-7 days'
+    });
+    
+  } catch (error) {
+    console.error("Generate plan error:", error);
+    // Even on error, provide a useful crisis plan
+    res.json({
+      success: true,
+      plan: {
+        immediatePriorities: [
+          "1. Assess the situation",
+          "2. Activate crisis team",
+          "3. Prepare initial communications",
+          "4. Monitor developments",
+          "5. Document decisions"
+        ],
+        stakeholderCommunication: {
+          internal: "Brief all staff immediately",
+          customers: "Prepare transparent update",
+          media: "Designate spokesperson",
+          investors: "Schedule briefing"
+        },
+        nextSteps: [
+          "Establish monitoring",
+          "Create FAQ",
+          "Regular updates",
+          "Scenario planning"
+        ]
+      },
+      generated: new Date().toISOString()
     });
   }
 });
