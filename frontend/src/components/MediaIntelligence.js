@@ -582,23 +582,29 @@ const MediaIntelligence = () => {
                     <Map size={16} />
                     Media Landscape
                   </h3>
-                  {mediaLandscape?.trendingTopics?.map((topic, idx) => (
-                    <div key={idx} style={styles.heatItem}>
-                      <span>{topic.topic}</span>
-                      <div style={styles.heatBar}>
-                        <div
-                          style={{
-                            ...styles.heatFill,
-                            width: `${topic.heat}%`,
-                            backgroundColor: topic.heat > 80 ? '#ff6b6b' : topic.heat > 60 ? '#ffd93d' : '#4ecdc4'
-                          }}
-                        />
+                  {mediaLandscape?.trendingTopics && mediaLandscape.trendingTopics.length > 0 ? (
+                    mediaLandscape.trendingTopics.map((topic, idx) => (
+                      <div key={idx} style={styles.heatItem}>
+                        <span>{topic.topic}</span>
+                        <div style={styles.heatBar}>
+                          <div
+                            style={{
+                              ...styles.heatFill,
+                              width: `${topic.heat}%`,
+                              backgroundColor: topic.heat > 80 ? '#ff6b6b' : topic.heat > 60 ? '#ffd93d' : '#4ecdc4'
+                            }}
+                          />
+                        </div>
+                        <span style={styles.trend}>
+                          {topic.trend === 'rising' ? '📈' : topic.trend === 'declining' ? '📉' : '➡️'}
+                        </span>
                       </div>
-                      <span style={styles.trend}>
-                        {topic.trend === 'rising' ? '📈' : topic.trend === 'declining' ? '📉' : '➡️'}
-                      </span>
+                    ))
+                  ) : (
+                    <div style={styles.heatItem}>
+                      <span style={{color: '#999'}}>No trending topics yet. Run a search to analyze the media landscape.</span>
                     </div>
-                  ))}
+                  )}
                 </div>
 
                 {/* Top Opportunities */}
@@ -607,7 +613,7 @@ const MediaIntelligence = () => {
                     <Zap size={16} />
                     Top Opportunities
                   </h3>
-                  {opportunities.slice(0, 3).map((opp, idx) => (
+                  {opportunities && opportunities.length > 0 ? opportunities.slice(0, 3).map((opp, idx) => (
                     <div key={idx} style={styles.oppItem}>
                       <div style={styles.oppHeader}>
                         <span style={styles.oppType}>{opp.type}</span>
@@ -621,7 +627,11 @@ const MediaIntelligence = () => {
                       <div style={styles.oppTitle}>{opp.title}</div>
                       <div style={styles.oppDesc}>{opp.description}</div>
                     </div>
-                  ))}
+                  )) : (
+                    <div style={styles.oppItem}>
+                      <div style={styles.oppDesc}>No opportunities detected yet. Run a search to discover opportunities.</div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Best Pitch Angles */}
@@ -630,7 +640,7 @@ const MediaIntelligence = () => {
                     <MessageSquare size={16} />
                     AI-Generated Pitch Angles
                   </h3>
-                  {pitchAngles.slice(0, 3).map((angle, idx) => (
+                  {pitchAngles && pitchAngles.length > 0 ? pitchAngles.slice(0, 3).map((angle, idx) => (
                     <div key={idx} style={styles.angleCard}>
                       <div style={styles.angleHeader}>
                         <span style={styles.angleTitle}>{angle.angle}</span>
@@ -638,7 +648,11 @@ const MediaIntelligence = () => {
                       </div>
                       <div style={styles.anglePitch}>{angle.pitch}</div>
                     </div>
-                  ))}
+                  )) : (
+                    <div style={styles.angleCard}>
+                      <div style={styles.anglePitch}>No pitch angles generated yet. Run a search to get AI-powered story angles.</div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
