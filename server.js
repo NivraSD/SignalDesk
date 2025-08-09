@@ -1,10 +1,9 @@
-#!/usr/bin/env node
-// THIS FILE SHOULD NOT BE USED - Railway should use app.js
-console.error('❌❌❌ ERROR: server.js is DEPRECATED! ❌❌❌');
-console.error('Railway should be running app.js per package.json');
-console.error('If you see this, Railway is using cached configuration');
-console.error('Please delete and recreate the Railway service');
-console.error('================================================');
+// Railway insists on running server.js, so let's make it work
+console.log('=====================================');
+console.log('🚀 Railway is running server.js');
+console.log('📍 Redirecting to backend/index.js...');
+console.log('⏰ Time:', new Date().toISOString());
+console.log('=====================================');
 
-// Force exit to make it obvious something is wrong
-process.exit(1);
+// Just load our fixed backend/index.js
+require('./backend/index.js');
