@@ -186,6 +186,7 @@ const MemoryVault = () => {
 
         const data = await response.json();
         console.log("MemoryVault API response:", data);
+        console.log("MemoryVault folders data:", data.folders); // Debug line
 
         if (data.success && data.items) {
           // Create a map of folder IDs to folder types
