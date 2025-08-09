@@ -30,8 +30,13 @@ router.post('/login', async (req, res) => {
 
     const user = result.rows[0];
 
-    // Verify password - note: using password_hash column
-    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+    // Verify password - handle both password_hash and password columns
+    const hashedPassword = user.password_hash || user.password;
+    if (!hashedPassword) {
+      console.error('No password column found for user:', email);
+      return res.status(500).json({ error: 'Database configuration error' });
+    }
+    const isPasswordValid = await bcrypt.compare(password, hashedPassword);
     if (!isPasswordValid) {
       return res.status(401).json({ 
         error: 'Invalid email or password' 
