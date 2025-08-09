@@ -201,6 +201,10 @@ app.use((req, res, next) => {
 });
 
 // API Routes
+// 🚨 COMPLETE CLAUDE FIX - MUST BE FIRST TO OVERRIDE ALL CONFLICTS
+const COMPLETE_CLAUDE_FIX = require("./src/routes/COMPLETE_CLAUDE_FIX");
+app.use("/api", COMPLETE_CLAUDE_FIX);
+
 // ⚡ Public routes (NO auth required)
 app.use("/api/auth", authRoutes);
 app.use("/api/proxy", proxyRoutes); // Proxy routes for external APIs (CORS avoidance)
