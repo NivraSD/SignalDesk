@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Media Intelligence Platform</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .loading {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .test-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .test-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #495057;
+        }
+        .result-box {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .feature-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+        .feature-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        .feature-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .feature-status {
+            font-size: 14px;
+            color: #666;
+        }
+        .deployment-info {
+            background: #e8f5e9;
+            border: 1px solid #4caf50;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧠 Media Intelligence Platform Test</h1>
+        <p class="subtitle">Testing the new AI-powered media discovery and intelligence features</p>
+        
+        <div class="deployment-info">
+            <strong>Deployment URL:</strong> https://signaldesk-frontend-23tc8mlwq-nivra-sd.vercel.app<br>
+            <strong>Backend API:</strong> https://signaldesk-production.up.railway.app/api<br>
+            <strong>Test Account:</strong> demo@signaldesk.com / demo123
+        </div>
+
+        <div id="status" class="status loading">
+            Initializing tests...
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">🔐 Authentication Test</div>
+            <button onclick="testLogin()">Test Login</button>
+            <button onclick="checkAuth()">Check Auth Status</button>
+            <div id="authResult" class="result-box" style="display:none;"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">🔍 Media Intelligence Features</div>
+            <button onclick="testJournalistSearch()">Test Smart Journalist Search</button>
+            <button onclick="testMediaLandscape()">Test Media Landscape Analysis</button>
+            <button onclick="testOpportunities()">Test Opportunity Finder</button>
+            <button onclick="testCompetitive()">Test Competitive Intel</button>
+            <button onclick="testPitchAngles()">Test Pitch Angle Generator</button>
+            <button onclick="testConversationStarters()">Test Conversation Starters</button>
+            <div id="mediaResult" class="result-box" style="display:none;"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">✨ New Features Status</div>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <div class="feature-name">Smart Search Builder</div>
+                    <div class="feature-status" id="smartSearchStatus">Not tested</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🗺️</div>
+                    <div class="feature-name">Media Landscape</div>
+                    <div class="feature-status" id="landscapeStatus">Not tested</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <div class="feature-name">Opportunity Scoring</div>
+                    <div class="feature-status" id="opportunityStatus">Not tested</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎲</div>
+                    <div class="feature-name">Competitive Intel</div>
+                    <div class="feature-status" id="competitiveStatus">Not tested</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💬</div>
+                    <div class="feature-name">Pitch Angles</div>
+                    <div class="feature-status" id="pitchStatus">Not tested</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">☕</div>
+                    <div class="feature-name">Conversation Starters</div>
+                    <div class="feature-status" id="conversationStatus">Not tested</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">🚀 Quick Test All Features</div>
+            <button onclick="testAllFeatures()" style="background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);">
+                Run Complete Test Suite
+            </button>
+            <div id="allResult" class="result-box" style="display:none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://signaldesk-production.up.railway.app/api';
+        const FRONTEND_URL = 'https://signaldesk-frontend-23tc8mlwq-nivra-sd.vercel.app';
+        let authToken = null;
+
+        // Update status
+        function updateStatus(message, type = 'loading') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+        }
+
+        // Show result
+        function showResult(elementId, content) {
+            const el = document.getElementById(elementId);
+            el.textContent = typeof content === 'object' ? JSON.stringify(content, null, 2) : content;
+            el.style.display = 'block';
+        }
+
+        // Test login
+        async function testLogin() {
+            updateStatus('Testing login...', 'loading');
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'demo@signaldesk.com',
+                        password: 'demo123'
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.token) {
+                    authToken = data.token;
+                    localStorage.setItem('token', authToken);
+                    updateStatus('✓ Login successful!', 'success');
+                    showResult('authResult', `Token obtained: ${authToken.substring(0, 20)}...`);
+                } else {
+                    updateStatus('✗ Login failed', 'error');
+                    showResult('authResult', data);
+                }
+            } catch (error) {
+                updateStatus('✗ Login error', 'error');
+                showResult('authResult', error.message);
+            }
+        }
+
+        // Check auth
+        async function checkAuth() {
+            const token = authToken || localStorage.getItem('token');
+            if (!token) {
+                updateStatus('No auth token found', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/verify`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                
+                if (data.valid) {
+                    updateStatus('✓ Auth token is valid', 'success');
+                    showResult('authResult', data);
+                } else {
+                    updateStatus('✗ Auth token invalid', 'error');
+                    showResult('authResult', data);
+                }
+            } catch (error) {
+                updateStatus('✗ Auth check failed', 'error');
+                showResult('authResult', error.message);
+            }
+        }
+
+        // Test journalist search
+        async function testJournalistSearch() {
+            await ensureAuth();
+            updateStatus('Testing smart journalist search...', 'loading');
+            
+            try {
+                const response = await fetch(`${API_BASE}/media/search-journalists`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        query: 'AI innovation in healthcare',
+                        context: {
+                            what: 'AI-powered diagnostic tool launch',
+                            why: 'First FDA-approved AI system for early cancer detection',
+                            who: 'Healthcare providers and patients',
+                            where: 'United States',
+                            goal: 'National media coverage'
+                        },
+                        includeAnalysis: true
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success && data.journalists?.length > 0) {
+                    updateStatus(`✓ Found ${data.journalists.length} journalists with intelligence`, 'success');
+                    document.getElementById('smartSearchStatus').textContent = '✅ Working';
+                    document.getElementById('smartSearchStatus').style.color = '#28a745';
+                    showResult('mediaResult', data);
+                } else {
+                    updateStatus('✗ Journalist search returned no results', 'error');
+                    document.getElementById('smartSearchStatus').textContent = '❌ Failed';
+                    showResult('mediaResult', data);
+                }
+            } catch (error) {
+                updateStatus('✗ Journalist search error', 'error');
+                showResult('mediaResult', error.message);
+            }
+        }
+
+        // Test media landscape
+        async function testMediaLandscape() {
+            await ensureAuth();
+            updateStatus('Testing media landscape analysis...', 'loading');
+            
+            try {
+                const response = await fetch(`${API_BASE}/media/landscape`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        industry: 'Healthcare Technology',
+                        topic: 'AI Diagnostics',
+                        competitors: 'IBM Watson Health, Google Health'
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success && data.landscape) {
+                    updateStatus('✓ Media landscape analysis complete', 'success');
+                    document.getElementById('landscapeStatus').textContent = '✅ Working';
+                    document.getElementById('landscapeStatus').style.color = '#28a745';
+                    showResult('mediaResult', data);
+                } else {
+                    updateStatus('✗ Landscape analysis failed', 'error');
+                    document.getElementById('landscapeStatus').textContent = '❌ Failed';
+                    showResult('mediaResult', data);
+                }
+            } catch (error) {
+                updateStatus('✗ Landscape analysis error', 'error');
+                showResult('mediaResult', error.message);
+            }
+        }
+
+        // Test opportunities
+        async function testOpportunities() {
+            await ensureAuth();
+            updateStatus('Testing opportunity finder...', 'loading');
+            
+            try {
+                const response = await fetch(`${API_BASE}/media/opportunities`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        context: {
+                            what: 'Healthcare AI breakthrough',
+                            industry: 'Healthcare',
+                            when: 'Next month',
+                            compete: 'IBM, Google'
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success && data.opportunities?.length > 0) {
+                    updateStatus(`✓ Found ${data.opportunities.length} media opportunities`, 'success');
+                    document.getElementById('opportunityStatus').textContent = '✅ Working';
+                    document.getElementById('opportunityStatus').style.color = '#28a745';
+                    showResult('mediaResult', data);
+                } else {
+                    updateStatus('✗ No opportunities found', 'error');
+                    document.getElementById('opportunityStatus').textContent = '❌ Failed';
+                    showResult('mediaResult', data);
+                }
+            } catch (error) {
+                updateStatus('✗ Opportunity finder error', 'error');
+                showResult('mediaResult', error.message);
+            }
+        }
+
+        // Test competitive intel
+        async function testCompetitive() {
+            await ensureAuth();
+            updateStatus('Testing competitive intelligence...', 'loading');
+            
+            try {
+                const response = await fetch(`${API_BASE}/media/competitive`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        competitors: 'OpenAI, Google DeepMind, Anthropic',
+                        industry: 'AI Technology'
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success && data.intelligence) {
+                    updateStatus('✓ Competitive intelligence gathered', 'success');
+                    document.getElementById('competitiveStatus').textContent = '✅ Working';
+                    document.getElementById('competitiveStatus').style.color = '#28a745';
+                    showResult('mediaResult', data);
+                } else {
+                    updateStatus('✗ Competitive intel failed', 'error');
+                    document.getElementById('competitiveStatus').textContent = '❌ Failed';
+                    showResult('mediaResult', data);
+                }
+            } catch (error) {
+                updateStatus('✗ Competitive intel error', 'error');
+                showResult('mediaResult', error.message);
+            }
+        }
+
+        // Test pitch angles
+        async function testPitchAngles() {
+            await ensureAuth();
+            updateStatus('Testing pitch angle generator...', 'loading');
+            
+            try {
+                const response = await fetch(`${API_BASE}/media/pitch-angles`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        story: 'AI breakthrough in cancer detection',
+                        journalist: {
+                            name: 'Sarah Chen',
+                            publication: 'TechCrunch',
+                            beat: 'Healthcare Tech',
+                            writingStyle: 'Data-driven'
+                        },
+                        context: {
+                            what: 'New AI diagnostic system',
+                            why: 'Revolutionary accuracy improvements'
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success && data.angles?.length > 0) {
+                    updateStatus(`✓ Generated ${data.angles.length} pitch angles`, 'success');
+                    document.getElementById('pitchStatus').textContent = '✅ Working';
+                    document.getElementById('pitchStatus').style.color = '#28a745';
+                    showResult('mediaResult', data);
+                } else {
+                    updateStatus('✗ Pitch angle generation failed', 'error');
+                    document.getElementById('pitchStatus').textContent = '❌ Failed';
+                    showResult('mediaResult', data);
+                }
+            } catch (error) {
+                updateStatus('✗ Pitch angle error', 'error');
+                showResult('mediaResult', error.message);
+            }
+        }
+
+        // Test conversation starters
+        async function testConversationStarters() {
+            await ensureAuth();
+            updateStatus('Testing conversation starter generator...', 'loading');
+            
+            try {
+                const response = await fetch(`${API_BASE}/media/conversation-starters`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        journalists: [
+                            { name: 'Sarah Chen', publication: 'TechCrunch', beat: 'AI' },
+                            { name: 'Michael Roberts', publication: 'Forbes', beat: 'Business' }
+                        ],
+                        context: {
+                            what: 'AI healthcare innovation',
+                            goal: 'Build relationships before pitch'
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success && data.starters?.length > 0) {
+                    updateStatus(`✓ Generated ${data.starters.length} conversation starters`, 'success');
+                    document.getElementById('conversationStatus').textContent = '✅ Working';
+                    document.getElementById('conversationStatus').style.color = '#28a745';
+                    showResult('mediaResult', data);
+                } else {
+                    updateStatus('✗ Conversation starter generation failed', 'error');
+                    document.getElementById('conversationStatus').textContent = '❌ Failed';
+                    showResult('mediaResult', data);
+                }
+            } catch (error) {
+                updateStatus('✗ Conversation starter error', 'error');
+                showResult('mediaResult', error.message);
+            }
+        }
+
+        // Test all features
+        async function testAllFeatures() {
+            updateStatus('Running complete test suite...', 'loading');
+            showResult('allResult', 'Starting comprehensive tests...\n');
+            
+            const tests = [
+                { name: 'Login', fn: testLogin },
+                { name: 'Journalist Search', fn: testJournalistSearch },
+                { name: 'Media Landscape', fn: testMediaLandscape },
+                { name: 'Opportunities', fn: testOpportunities },
+                { name: 'Competitive Intel', fn: testCompetitive },
+                { name: 'Pitch Angles', fn: testPitchAngles },
+                { name: 'Conversation Starters', fn: testConversationStarters }
+            ];
+            
+            let results = [];
+            for (const test of tests) {
+                try {
+                    showResult('allResult', `Testing ${test.name}...`);
+                    await test.fn();
+                    results.push(`✅ ${test.name}: PASSED`);
+                } catch (error) {
+                    results.push(`❌ ${test.name}: FAILED - ${error.message}`);
+                }
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Small delay between tests
+            }
+            
+            const passed = results.filter(r => r.includes('✅')).length;
+            const failed = results.filter(r => r.includes('❌')).length;
+            
+            updateStatus(`Test suite complete: ${passed} passed, ${failed} failed`, 
+                        failed === 0 ? 'success' : failed > passed ? 'error' : 'loading');
+            showResult('allResult', results.join('\n'));
+        }
+
+        // Ensure authenticated
+        async function ensureAuth() {
+            if (!authToken) {
+                authToken = localStorage.getItem('token');
+                if (!authToken) {
+                    await testLogin();
+                }
+            }
+        }
+
+        // Initialize
+        window.onload = () => {
+            updateStatus('Ready to test Media Intelligence Platform', 'success');
+        };
+    </script>
+</body>
+</html>
