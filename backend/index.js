@@ -205,6 +205,10 @@ app.use((req, res, next) => {
 const COMPLETE_CLAUDE_FIX = require("./src/routes/COMPLETE_CLAUDE_FIX");
 app.use("/api", COMPLETE_CLAUDE_FIX);
 
+// TEST ENDPOINT - Verify deployment
+const testEndpoint = require("./testEndpoint");
+app.use("/api", testEndpoint);
+
 // ⚡ Public routes (NO auth required)
 app.use("/api/auth", authRoutes);
 app.use("/api/proxy", proxyRoutes); // Proxy routes for external APIs (CORS avoidance)
