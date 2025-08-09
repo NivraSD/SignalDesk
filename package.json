@@ -4,6 +4,7 @@
   "description": "SignalDesk API Backend",
   "main": "backend/index.js",
   "scripts": {
+    "build": "echo 'Build timestamp:' && date && echo 'Force rebuild v2'",
     "start": "node backend/index.js",
     "dev": "nodemon backend/index.js",
     "test": "node -e \"console.log('Server test passed')\""
