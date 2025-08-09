@@ -4,7 +4,7 @@
  */
 
 const axios = require('axios');
-const OpportunityEngineOrchestrator = require('./src/agents/OpportunityEngineOrchestration');
+const OpportunityEngineOrchestrator = require('./src/agents/opportunity/OpportunityEngineOrchestration');
 
 const BASE_URL = 'http://localhost:5001/api';
 

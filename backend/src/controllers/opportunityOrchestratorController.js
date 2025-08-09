@@ -3,7 +3,7 @@
  * Integrates the research-optimizer agent with the Opportunity Engine frontend
  */
 
-const OpportunityEngineOrchestrator = require('../agents/OpportunityEngineOrchestration');
+const OpportunityEngineOrchestrator = require('../agents/opportunity/OpportunityEngineOrchestration');
 const pool = require('../config/db');
 const claudeService = require('../../config/claude');
 

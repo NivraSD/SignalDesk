@@ -103,7 +103,8 @@
       "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/monitor-deployment.sh)",
       "Bash(railway restart:*)",
       "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/test-login.sh:*)",
-      "Bash(./monitor-railway-deployment.sh)"
+      "Bash(./monitor-railway-deployment.sh)",
+      "Bash(PORT=5001 npm start)"
     ],
     "deny": []
   }

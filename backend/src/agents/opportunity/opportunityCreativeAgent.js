@@ -1,4 +1,4 @@
-const claudeService = require('../../config/claude');
+const claudeService = require('../../../config/claude');
 
 /**
  * Creative Opportunity Generation Agent

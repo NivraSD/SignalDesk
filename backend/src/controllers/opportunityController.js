@@ -1,7 +1,7 @@
 const claudeService = require('../../config/claude');
 const pool = require('../config/db');
-const OpportunityCreativeAgent = require('../agents/opportunityCreativeAgent');
-const { TopicMomentumCoordinator } = require('../agents/topicMomentumAgents');
+const OpportunityCreativeAgent = require('../agents/opportunity/opportunityCreativeAgent');
+const { TopicMomentumCoordinator } = require('../agents/opportunity/topicMomentumAgents');
 
 const analyzePosition = async (req, res) => {
   try {

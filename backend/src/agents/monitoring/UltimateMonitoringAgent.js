@@ -13,14 +13,14 @@
  * Research Orchestrator → Data Analyst → Report Generator
  */
 
-const claudeService = require('../../config/claude');
-const SourceDiscoveryService = require('./SourceDiscoveryService');
+const claudeService = require('../../../config/claude');
+const SourceDiscoveryService = require('../../services/SourceDiscoveryService');
 const IntelligentIndexingAgent = require('./IntelligentIndexingAgent');
 const Parser = require('rss-parser');
 const axios = require('axios');
 const cheerio = require('cheerio');
 const puppeteer = require('puppeteer');
-const pool = require('../config/db.js');
+const pool = require('../../config/db');
 
 class UltimateMonitoringAgent {
   constructor() {

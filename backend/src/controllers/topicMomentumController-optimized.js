@@ -1,5 +1,5 @@
 const pool = require('../config/db');
-const { TopicMomentumCoordinator } = require('../agents/topicMomentumAgents');
+const { TopicMomentumCoordinator } = require('../agents/opportunity/topicMomentumAgents');
 
 /**
  * Optimized Topic Momentum Controller with batching and caching
