@@ -5,7 +5,49 @@ const authMiddleware = require("../middleware/auth");
 const pool = require("../../config/database");
 const claudeService = require("../../config/claude");
 
-// Search Journalists endpoint - FIXED VERSION
+// Search Reporters endpoint (alias for search-journalists)
+router.post("/search-reporters", async (req, res) => {
+  console.log("📰 Media search-reporters request:", req.body);
+  
+  const mockJournalists = [
+    {
+      name: "Sarah Chen",
+      publication: "TechCrunch", 
+      beat: "AI and Machine Learning",
+      email: "sarah.chen@techcrunch.com",
+      bio: "Senior tech reporter covering artificial intelligence",
+      twitter: "@sarahchen_tech",
+      linkedin: "linkedin.com/in/sarahchen"
+    },
+    {
+      name: "Michael Rodriguez",
+      publication: "Wall Street Journal",
+      beat: "Technology and Business",
+      email: "m.rodriguez@wsj.com",
+      bio: "Technology correspondent focusing on enterprise software",
+      twitter: "@mrodriguez_wsj",
+      linkedin: "linkedin.com/in/michaelrodriguez"
+    },
+    {
+      name: "Emma Thompson",
+      publication: "Forbes",
+      beat: "Startups and Venture Capital",
+      email: "emma.thompson@forbes.com",
+      bio: "Contributor covering startup ecosystem",
+      twitter: "@emmathompson",
+      linkedin: "linkedin.com/in/ethompson"
+    }
+  ];
+  
+  res.json({
+    success: true,
+    journalists: mockJournalists,
+    count: mockJournalists.length,
+    query: req.body.query || "all"
+  });
+});
+
+// Search Journalists endpoint - FIXED VERSION (keeping both for compatibility)
 router.post("/search-journalists", async (req, res) => {
   console.log("📰 Media search-journalists request:", req.body);
   
