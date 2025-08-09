@@ -4,7 +4,7 @@ import { useProject } from '../contexts/ProjectContext';
 import API_BASE_URL from '../config/api';
 
 const MediaIntelligence = () => {
-  const { selectedProject: activeProject } = useProject();
+  const { activeProject } = useProject();
   // Search modes
   const [searchMode, setSearchMode] = useState('smart'); // smart, traditional, competitive, opportunity
   const [searchStep, setSearchStep] = useState(1);
