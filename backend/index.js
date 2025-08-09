@@ -201,9 +201,9 @@ app.use((req, res, next) => {
 });
 
 // API Routes
-// 🚨 COMPLETE CLAUDE FIX - MUST BE FIRST TO OVERRIDE ALL CONFLICTS
-const COMPLETE_CLAUDE_FIX = require("./src/routes/COMPLETE_CLAUDE_FIX");
-app.use("/api", COMPLETE_CLAUDE_FIX);
+// 🚨 WORKING CLAUDE FIX - Simplified version that works
+const workingClaudeFix = require("./src/routes/workingClaudeFix");
+app.use("/api", workingClaudeFix);
 
 // TEST ENDPOINT - Verify deployment
 const testEndpoint = require("./testEndpoint");
