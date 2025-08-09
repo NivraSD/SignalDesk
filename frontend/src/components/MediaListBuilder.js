@@ -981,16 +981,16 @@ const MediaListBuilder = () => {
               />
               <button
                 onClick={searchJournalists}
-                disabled={isSearching || !activeProject}
+                disabled={isSearching}
                 style={{
                   padding: "0.75rem 2rem",
                   backgroundColor:
-                    isSearching || !activeProject ? "#9ca3af" : "#2563eb",
+                    isSearching ? "#9ca3af" : "#2563eb",
                   color: "white",
                   borderRadius: "0.5rem",
                   border: "none",
                   cursor:
-                    isSearching || !activeProject ? "not-allowed" : "pointer",
+                    isSearching ? "not-allowed" : "pointer",
                   display: "flex",
                   alignItems: "center",
                   gap: "0.5rem",
