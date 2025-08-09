@@ -11,8 +11,8 @@ router.post("/login", async (req, res) => {
     const { email, password } = req.body;
     console.log("🔑 Login attempt for:", email, "with password:", password ? '[PROVIDED]' : '[MISSING]');
 
-    // BULLETPROOF demo user check - support both password variants
-    if (email === "demo@signaldesk.com" && (password === "demo123" || password === "password")) {
+    // BULLETPROOF demo user check - support multiple password variants
+    if (email === "demo@signaldesk.com" && (password === "demo123" || password === "Demo123" || password === "password")) {
       // Generate token with UUID-based ID for consistency
       const demoUser = {
         id: '7f39af2e-933c-44e9-b67c-1f7e28b3a858',

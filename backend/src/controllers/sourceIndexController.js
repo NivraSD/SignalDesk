@@ -3,7 +3,7 @@
  * Manages intelligent source discovery and indexing
  */
 
-const IntelligentIndexingAgent = require('../services/IntelligentIndexingAgent');
+const IntelligentIndexingAgent = require('../agents/monitoring/IntelligentIndexingAgent');
 const pool = require('../config/db');
 
 // Initialize the indexing agent

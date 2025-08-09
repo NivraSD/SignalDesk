@@ -8,7 +8,7 @@ const Parser = require('rss-parser');
 const axios = require('axios');
 const claudeService = require('../../config/claude');
 const EventEmitter = require('events');
-const IntelligentIndexingAgent = require('./IntelligentIndexingAgent');
+const IntelligentIndexingAgent = require('../agents/monitoring/IntelligentIndexingAgent');
 
 class OpportunityDetectionService extends EventEmitter {
   constructor() {

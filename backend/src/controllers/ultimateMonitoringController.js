@@ -3,7 +3,7 @@
  * Endpoints for the world's most advanced monitoring system
  */
 
-const UltimateMonitoringAgent = require('../services/UltimateMonitoringAgent');
+const UltimateMonitoringAgent = require('../agents/monitoring/UltimateMonitoringAgent');
 const pool = require('../config/db');
 
 // Initialize the ultimate monitoring agent

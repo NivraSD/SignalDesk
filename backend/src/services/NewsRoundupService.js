@@ -6,7 +6,7 @@
 const Parser = require('rss-parser');
 const axios = require('axios');
 const pool = require('../config/db');
-const IntelligentIndexingAgent = require('./IntelligentIndexingAgent');
+const IntelligentIndexingAgent = require('../agents/monitoring/IntelligentIndexingAgent');
 
 class NewsRoundupService {
   constructor() {
