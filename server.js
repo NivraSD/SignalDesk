@@ -1,10 +1,10 @@
-// FORCE REDIRECT - This file should NOT be used directly
-// Railway should be running backend/index.js per package.json
-console.log('=====================================');
-console.log('⚠️  WARNING: server.js is deprecated!');
-console.log('📍 Redirecting to backend/index.js...');
-console.log('⏰ Redirect time:', new Date().toISOString());
-console.log('=====================================');
+#!/usr/bin/env node
+// THIS FILE SHOULD NOT BE USED - Railway should use app.js
+console.error('❌❌❌ ERROR: server.js is DEPRECATED! ❌❌❌');
+console.error('Railway should be running app.js per package.json');
+console.error('If you see this, Railway is using cached configuration');
+console.error('Please delete and recreate the Railway service');
+console.error('================================================');
 
-// Load the actual server
-require('./backend/index.js');
+// Force exit to make it obvious something is wrong
+process.exit(1);
