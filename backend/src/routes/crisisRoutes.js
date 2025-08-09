@@ -153,19 +153,62 @@ Make the plan specific to the ${industry || projectIndustry} industry.
     // Parse the response
     let planData;
     try {
+      // First try to find JSON in the response
       const jsonMatch = claudeResponse.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         planData = JSON.parse(jsonMatch[0]);
       } else {
-        throw new Error("No JSON found in response");
+        // If no JSON found, create a structured response from the text
+        console.log("No JSON found, creating structured response from text");
+        planData = {
+          objectives: [
+            "Protect stakeholder safety and well-being",
+            "Maintain operational continuity",
+            "Preserve organizational reputation",
+            "Ensure regulatory compliance",
+            "Minimize financial impact"
+          ],
+          crisisTeam: [
+            {
+              role: "Crisis Team Leader",
+              title: "CEO/Executive Director",
+              responsibilities: ["Overall crisis response coordination", "External communications", "Board liaison"]
+            },
+            {
+              role: "Communications Lead",
+              title: "Head of Communications/PR",
+              responsibilities: ["Media relations", "Internal communications", "Social media management"]
+            }
+          ],
+          responseProcess: [
+            {
+              phase: "Immediate Response (0-24 hours)",
+              description: "Initial crisis containment and assessment",
+              actions: ["Activate crisis team", "Assess situation", "Initial communications"]
+            }
+          ],
+          scenarios: [],
+          stakeholders: []
+        };
+        
+        // Try to extract some content from Claude's response
+        if (claudeResponse && claudeResponse.length > 0) {
+          // Add the text response as additional context
+          planData.aiRecommendations = claudeResponse;
+        }
       }
     } catch (parseError) {
       console.error("Failed to parse Claude response:", parseError);
-      // Return a basic plan structure
-      return res.status(500).json({
-        success: false,
-        error: "Failed to parse crisis plan. Please try again.",
-      });
+      console.error("Raw response:", claudeResponse?.substring(0, 500));
+      // Return a basic plan structure with the raw response
+      planData = {
+        objectives: ["Contact SignalDesk support for assistance"],
+        crisisTeam: [],
+        responseProcess: [],
+        scenarios: [],
+        stakeholders: [],
+        rawResponse: claudeResponse
+      };
     }
 
     // Add universal scenarios if not included
