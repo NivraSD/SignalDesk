@@ -55,7 +55,9 @@ app.get("/", (req, res) => {
       campaigns: "/api/campaigns",
       crisis: "/api/crisis",
       opportunity: "/api/opportunity",
-      media: "/api/media"
+      media: "/api/media",
+      monitoring: "/api/monitoring",
+      intelligence: "/api/intelligence"
     },
     timestamp: new Date().toISOString()
   });
@@ -134,6 +136,15 @@ const loadRoutes = () => {
       console.log("✅ Claude diagnostics routes loaded");
     } catch (e) {
       console.warn("⚠️ Claude diagnostics routes not loaded:", e.message);
+    }
+
+    // ENHANCED CLAUDE ROUTES - Comprehensive integration with fallbacks
+    try {
+      const enhancedClaudeRoutes = require("./src/routes/enhancedClaudeRoutes");
+      app.use("/api", enhancedClaudeRoutes);
+      console.log("✅ Enhanced Claude routes loaded - All features restored with fallbacks");
+    } catch (e) {
+      console.warn("⚠️ Enhanced Claude routes not loaded:", e.message);
     }
   } catch (error) {
     console.error("Error loading routes:", error);
