@@ -89,5 +89,10 @@
   "regions": ["iad1"],
   "github": {
     "silent": false
+  },
+  "functions": {
+    "frontend/build/**": {
+      "maxDuration": 10
+    }
   }
 }
