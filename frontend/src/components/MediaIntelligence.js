@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Search, TrendingUp, Users, Target, Brain, Zap, Map, BarChart, MessageSquare, Lightbulb, Coffee, Globe, Award } from 'lucide-react';
+import { useProject } from '../contexts/ProjectContext';
 import API_BASE_URL from '../config/api';
 
-const MediaIntelligence = ({ activeProject }) => {
+const MediaIntelligence = () => {
+  const { selectedProject: activeProject } = useProject();
   // Search modes
   const [searchMode, setSearchMode] = useState('smart'); // smart, traditional, competitive, opportunity
   const [searchStep, setSearchStep] = useState(1);
