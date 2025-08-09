@@ -98,7 +98,8 @@
       "Bash(open:*)",
       "Bash(git revert:*)",
       "Bash(railway service:*)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/test-claude-endpoints.sh)"
     ],
     "deny": []
   }
