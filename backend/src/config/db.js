@@ -14,7 +14,7 @@ const connectionString = process.env.DATABASE_URL;
 const pool = connectionString 
   ? new Pool({
       connectionString,
-      ssl: process.env.NODE_ENV === 'production' 
+      ssl: process.env.NODE_ENV === 'production' || connectionString.includes('proxy.rlwy.net')
         ? { rejectUnauthorized: false }
         : false,
       // Full resources on $20 plan
