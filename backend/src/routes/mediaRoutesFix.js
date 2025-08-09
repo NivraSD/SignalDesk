@@ -9,7 +9,8 @@ const db = require("../../config/database");
 router.use(authMiddleware);
 
 // Search journalists - WORKING VERSION
-router.post("/search", async (req, res) => {
+// Also handle /search-journalists for backward compatibility
+router.post(["/search", "/search-journalists"], async (req, res) => {
   try {
     const { query, projectId, projectName, projectIndustry } = req.body;
     const userId = req.user?.userId || req.user?.id;
@@ -28,7 +29,7 @@ router.post("/search", async (req, res) => {
 ${projectIndustry ? `Industry: ${projectIndustry}` : ""}
 ${projectName ? `Company: ${projectName}` : ""}
 
-Return a JSON array of 5-8 relevant journalists with this exact structure:
+Return a JSON array of EXACTLY 10 relevant journalists with this exact structure:
 [
   {
     "name": "Full name",
