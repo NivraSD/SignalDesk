@@ -24,34 +24,8 @@ router.post("/generate-market-analysis", generateMarketAnalysis);
 router.post("/generate-campaign-concept", generateCampaignConcept);
 router.post("/generate-from-concept", generateFromConcept);
 
-// Campaign Analysis endpoint - FIXED VERSION
-router.post("/analyze", async (req, res) => {
-  console.log("📊 Campaign analysis request:", req.body);
-  
-  const mockStrategy = {
-    executiveSummary: "Comprehensive campaign strategy focused on maximizing reach and engagement",
-    objectives: [
-      "Increase brand awareness by 40%",
-      "Generate 500 qualified leads",
-      "Achieve 25% engagement rate on social media"
-    ],
-    targetAudience: {
-      primary: "Decision makers in technology companies",
-      secondary: "Industry influencers and thought leaders",
-      demographics: "25-45 years old, college-educated, urban/suburban"
-    },
-    channels: ["LinkedIn", "Email marketing", "Trade publications", "Webinars"],
-    timeline: "12 weeks",
-    budget: "$50,000 - $75,000",
-    metrics: ["Reach and impressions", "Engagement rate", "Lead quality", "ROI"]
-  };
-  
-  res.json({
-    success: true,
-    report: mockStrategy,
-    generated: new Date().toISOString()
-  });
-});
+// Campaign Analysis endpoint - DELEGATES TO CONTROLLER
+router.post("/analyze", campaignIntelligenceController.generateMarketAnalysis);
 
 // Campaign CRUD operations
 router.get("/", getCampaigns);

@@ -201,9 +201,43 @@ app.use((req, res, next) => {
 });
 
 // API Routes
-// ⚡ ENHANCED CLAUDE ROUTES - Load FIRST for highest priority
-// This ensures Claude AI integration takes precedence over mock data
-app.use("/api", enhancedClaudeRoutes); // Comprehensive Claude integration
+// ⚡ Public routes (NO auth required) - LOAD FIRST
+app.use("/api/auth", authRoutes);
+app.use("/api/proxy", proxyRoutes); // Proxy routes for external APIs (CORS avoidance)
+app.use("/api/claude-diagnostics", claudeDiagnosticsRoutes); // Claude diagnostics for debugging
+
+// ⚡ ORIGINAL SOPHISTICATED ROUTES - Load BEFORE generic Claude routes
+// These have industry-specific prompts and detailed implementations
+app.use("/api/organizations", authMiddleware, organizationRoutes);
+app.use("/api/assistant", authMiddleware, assistantRoutes);
+app.use("/api/projects", authMiddleware, projectRoutes);
+app.use("/api/todos", authMiddleware, todoRoutes);
+app.use("/api/content", authMiddleware, contentRoutes);  // Sophisticated content analysis
+app.use("/api/crisis", crisisRoutes);  // Detailed crisis plan structure
+app.use("/api/media", authMiddleware, mediaRoutes);  // Journalist discovery with Claude
+app.use("/api/campaigns", authMiddleware, campaignRoutes);  // Campaign strategy
+app.use("/api/monitoring", authMiddleware, monitoringRoutes);
+app.use("/api/source-config", authMiddleware, sourceConfigRoutes);
+const monitoringRoutesV2 = require("./src/routes/monitoringRoutesV2");
+app.use("/api/monitoring/v2", authMiddleware, monitoringRoutesV2);
+const ultimateMonitoringRoutes = require("./src/routes/ultimateMonitoringRoutes");
+app.use("/api/ultimate-monitoring", authMiddleware, ultimateMonitoringRoutes);
+const sourceIndexRoutes = require("./src/routes/sourceIndexRoutes");
+app.use("/api/source-index", authMiddleware, sourceIndexRoutes);
+app.use("/api/ai", authMiddleware, aiRoutes);
+app.use("/api/stakeholder", authMiddleware, stakeholderRoutes);  // Stakeholder analysis
+app.use("/api/intelligence", authMiddleware, intelligenceRoutes);
+app.use("/api/stakeholder-intelligence", authMiddleware, stakeholderIntelligenceRoutes);
+app.use("/api/opportunities", authMiddleware, opportunitiesRoutes);
+app.use("/api/opportunity", authMiddleware, opportunityRoutes);  // Opportunity finding
+
+// Intelligence Index Routes (pre-indexed data) - Public access for browsing
+const intelligenceIndexRoutes = require("./src/routes/intelligenceIndexRoutes");
+app.use("/api/intelligence-index", intelligenceIndexRoutes); // No auth middleware here - handled per route
+
+// ⚡ ENHANCED CLAUDE ROUTES - Load AFTER original routes
+// This now only handles endpoints that aren't already defined above
+app.use("/api", enhancedClaudeRoutes); // Generic Claude fallback for missing endpoints
 
 // CLAUDE TEST ROUTES - For verifying Claude integration
 const claudeTestRoute = require("./src/routes/claudeTestRoute");
@@ -213,52 +247,12 @@ app.use("/api", claudeTestRoute);
 const testEndpoint = require("./testEndpoint");
 app.use("/api", testEndpoint);
 
-// ⚡ Public routes (NO auth required)
-app.use("/api/auth", authRoutes);
-app.use("/api/proxy", proxyRoutes); // Proxy routes for external APIs (CORS avoidance)
-app.use("/api/claude-diagnostics", claudeDiagnosticsRoutes); // Claude diagnostics for debugging
-
-// DISABLED: Mock data routes - now handled by enhanced Claude routes with fallbacks
-// const workingClaudeFix = require("./src/routes/workingClaudeFix");
-// app.use("/api", workingClaudeFix);
-
-// ⚡ Protected routes (auth REQUIRED)
-app.use("/api/organizations", authMiddleware, organizationRoutes);
-app.use("/api/assistant", authMiddleware, assistantRoutes);
-app.use("/api/projects", authMiddleware, projectRoutes);
-app.use("/api/todos", authMiddleware, todoRoutes);
-app.use("/api/content", authMiddleware, contentRoutes);
-app.use("/api/crisis", crisisRoutes);
-app.use("/api/monitoring", authMiddleware, monitoringRoutes);
-app.use("/api/source-config", authMiddleware, sourceConfigRoutes);
-const monitoringRoutesV2 = require("./src/routes/monitoringRoutesV2");
-app.use("/api/monitoring/v2", authMiddleware, monitoringRoutesV2);
-const ultimateMonitoringRoutes = require("./src/routes/ultimateMonitoringRoutes");
-app.use("/api/ultimate-monitoring", authMiddleware, ultimateMonitoringRoutes);
-const sourceIndexRoutes = require("./src/routes/sourceIndexRoutes");
-app.use("/api/source-index", authMiddleware, sourceIndexRoutes);
-app.use("/api/campaigns", authMiddleware, campaignRoutes);
-app.use("/api/ai", authMiddleware, aiRoutes);
-app.use("/api/stakeholder", authMiddleware, stakeholderRoutes);
-app.use("/api/intelligence", authMiddleware, intelligenceRoutes);
-app.use("/api/stakeholder-intelligence", authMiddleware, stakeholderIntelligenceRoutes);
-app.use("/api/opportunities", authMiddleware, opportunitiesRoutes);
-app.use("/api/opportunity", authMiddleware, opportunityRoutes);
-
-// Intelligence Index Routes (pre-indexed data) - Public access for browsing
-// MUST come before the catch-all memoryvault route
-const intelligenceIndexRoutes = require("./src/routes/intelligenceIndexRoutes");
-app.use("/api/intelligence-index", intelligenceIndexRoutes); // No auth middleware here - handled per route
-
 // 🔧 MISSING ENDPOINTS ROUTES - Comprehensive solution for all 404 errors
 // Add ALL missing endpoints that frontend calls but don't exist in backend
 app.use("/api", missingEndpointsRoutes);
 
 // Memory vault routes - this is a catch-all for /api so must come last
 app.use("/api", authMiddleware, memoryvaultRoutes);
-
-// ONLY ONE media routes registration
-app.use("/api/media", authMiddleware, mediaRoutes);
 
 console.log("All routes registered successfully");
 

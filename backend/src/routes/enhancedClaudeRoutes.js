@@ -306,6 +306,10 @@ function parseClaudeResponse(response, fallbackValue = null) {
 // MEDIA & PR ENDPOINTS
 // =============================================================================
 
+// COMMENTED OUT: These endpoints are now handled by mediaRoutes.js with sophisticated prompts
+// Keeping code for reference but disabled to avoid overriding original routes
+
+/*
 // CRITICAL FIX: Media search endpoint that frontend expects
 router.post('/media/search-reporters', authMiddleware, async (req, res) => {
   try {
@@ -364,7 +368,9 @@ router.post('/media/search-reporters', authMiddleware, async (req, res) => {
     });
   }
 });
+*/
 
+/*
 // Generate pitch angles for media outreach
 router.post('/media/generate-pitch-angles', authMiddleware, async (req, res) => {
   try {
@@ -438,7 +444,9 @@ router.post('/media/generate-pitch-angles', authMiddleware, async (req, res) => 
     });
   }
 });
+*/
 
+/*
 // Generate media pitch
 router.post('/media/generate-pitch', authMiddleware, async (req, res) => {
   try {
@@ -507,11 +515,13 @@ Best regards,
     });
   }
 });
+*/
 
 // =============================================================================
-// CONTENT GENERATION ENDPOINTS
+// CONTENT GENERATION ENDPOINTS - COMMENTED OUT TO USE ORIGINAL ROUTES
 // =============================================================================
 
+/*
 // Main content generation endpoint with multiple format support
 router.post('/content/ai-generate', authMiddleware, async (req, res) => {
   try {
@@ -569,12 +579,18 @@ router.post('/content/ai-generate', authMiddleware, async (req, res) => {
   }
 });
 
+*/
+
+/*
 // Alias for Claude-specific generation
 router.post('/content/ai-generate-claude', authMiddleware, async (req, res) => {
   req.body.provider = 'claude';
   return router.handle(req, res, () => {}, '/content/ai-generate');
 });
 
+*/
+
+/*
 // Content analysis endpoint - CRITICAL FOR CONTENT GENERATOR
 router.post('/content/analyze', authMiddleware, async (req, res) => {
   try {
@@ -736,11 +752,13 @@ router.post('/content/analyze', authMiddleware, async (req, res) => {
     });
   }
 });
+*/
 
 // =============================================================================
-// CRISIS MANAGEMENT ENDPOINTS
+// CRISIS MANAGEMENT ENDPOINTS - COMMENTED OUT TO USE ORIGINAL ROUTES
 // =============================================================================
 
+/*
 // CRITICAL FIX: Crisis advisor with correct field names
 router.post('/crisis/advisor', authMiddleware, async (req, res) => {
   try {
@@ -814,6 +832,9 @@ router.post('/crisis/advisor', authMiddleware, async (req, res) => {
   }
 });
 
+*/
+
+/*
 // Crisis command center analysis
 router.post('/crisis/command-center', authMiddleware, async (req, res) => {
   try {
@@ -864,6 +885,9 @@ router.post('/crisis/command-center', authMiddleware, async (req, res) => {
   }
 });
 
+*/
+
+/*
 // Generate crisis plan - CRITICAL ENDPOINT
 router.post('/crisis/generate-plan', authMiddleware, async (req, res) => {
   try {
@@ -1045,6 +1069,9 @@ router.post('/crisis/generate-plan', authMiddleware, async (req, res) => {
   }
 });
 
+*/
+
+/*
 // Draft crisis response
 router.post('/crisis/draft-response', authMiddleware, async (req, res) => {
   try {
@@ -1222,6 +1249,9 @@ NEXT STEPS
   }
 });
 
+*/
+
+/*
 // Campaign intelligence
 router.post('/campaign/intelligence', authMiddleware, async (req, res) => {
   try {
@@ -1263,9 +1293,10 @@ router.post('/campaign/intelligence', authMiddleware, async (req, res) => {
     });
   }
 });
+*/
 
 // =============================================================================
-// MEMORYVAULT ENDPOINTS
+// MEMORYVAULT ENDPOINTS - KEEP THESE AS THEY MAY NOT HAVE ORIGINAL IMPLEMENTATIONS
 // =============================================================================
 
 // MemoryVault project context
