@@ -3,15 +3,13 @@
   "outputDirectory": "frontend/build",
   "framework": "create-react-app",
   "env": {
-    "REACT_APP_API_URL": "https://signaldesk-production.up.railway.app/api",
-    "REACT_APP_BUILD_TIMESTAMP": "@BUILD_TIMESTAMP"
+    "REACT_APP_API_URL": "https://signaldesk-production.up.railway.app/api"
   },
   "build": {
     "env": {
       "REACT_APP_API_URL": "https://signaldesk-production.up.railway.app/api",
       "CI": "false",
-      "GENERATE_SOURCEMAP": "false",
-      "REACT_APP_BUILD_TIMESTAMP": "@BUILD_TIMESTAMP"
+      "GENERATE_SOURCEMAP": "false"
     }
   },
   "headers": [
@@ -150,11 +148,7 @@
   "github": {
     "silent": false
   },
-  "functions": {
-    "frontend/build/**": {
-      "maxDuration": 10
-    }
-  },
+,
   "cleanUrls": false,
   "trailingSlash": false
 }

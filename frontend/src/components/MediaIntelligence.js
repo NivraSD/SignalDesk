@@ -1,65 +1,57 @@
-import React, { useState } from 'react';
-import { Search, TrendingUp, Users, Target, Brain, Zap, Map, BarChart, MessageSquare, Lightbulb, Coffee, Globe } from 'lucide-react';
+import React from 'react';
 import { useProject } from '../contexts/ProjectContext';
-import API_BASE_URL from '../config/api';
 
 const MediaIntelligence = () => {
   const { activeProject } = useProject();
-  const [testVersion] = useState('2.0-FORCE-UPDATE-' + Date.now());
+  const timestamp = new Date().toISOString();
 
   return (
-    <div style={{ padding: '40px', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
+    <div style={{ padding: '20px' }}>
       <div style={{
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        borderRadius: '16px',
-        padding: '40px',
+        background: 'linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 100%)',
         color: 'white',
+        padding: '60px',
+        borderRadius: '20px',
         textAlign: 'center',
-        boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
+        fontSize: '48px',
+        fontWeight: 'bold',
+        marginBottom: '40px'
       }}>
-        <h1 style={{ fontSize: '48px', margin: '0 0 20px 0' }}>
-          🧠 MEDIA INTELLIGENCE PLATFORM v2.0
-        </h1>
-        <p style={{ fontSize: '24px', opacity: 0.9 }}>
-          If you see this, the new component is WORKING!
-        </p>
-        <p style={{ fontSize: '18px', opacity: 0.7, marginTop: '20px' }}>
-          Version: {testVersion}
-        </p>
-        <p style={{ fontSize: '16px', opacity: 0.7 }}>
-          Project: {activeProject?.name || 'No project selected'}
-        </p>
+        🚀 MEDIA INTELLIGENCE v3.0 FINAL
       </div>
-
+      
       <div style={{
-        marginTop: '40px',
+        background: '#28a745',
+        color: 'white',
         padding: '30px',
-        background: 'white',
-        borderRadius: '12px',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
+        borderRadius: '15px',
+        fontSize: '24px',
+        textAlign: 'center',
+        marginBottom: '30px'
       }}>
-        <h2 style={{ color: '#333', marginBottom: '20px' }}>✅ New Features Active:</h2>
-        <ul style={{ fontSize: '18px', lineHeight: '2', color: '#555' }}>
-          <li>Smart Search Interface with Step-by-Step Builder</li>
-          <li>Media Landscape Analysis with Heat Maps</li>
-          <li>Opportunity Scoring and Urgency Tracking</li>
-          <li>Competitive Intelligence Monitoring</li>
-          <li>AI-Generated Pitch Angles</li>
-          <li>Conversation Starters for Relationship Building</li>
-        </ul>
+        ✅ IF YOU SEE THIS, IT'S WORKING!
+        <br />
+        <span style={{ fontSize: '16px', opacity: 0.9 }}>
+          Deployed at: {timestamp}
+        </span>
       </div>
 
       <div style={{
-        marginTop: '30px',
-        padding: '20px',
-        background: '#f8f9fa',
-        borderRadius: '8px',
-        border: '2px dashed #dee2e6'
+        background: 'white',
+        border: '3px solid #28a745',
+        padding: '30px',
+        borderRadius: '15px'
       }}>
-        <p style={{ color: '#666', textAlign: 'center', margin: 0 }}>
-          <strong>Debug Info:</strong> MediaIntelligence.js is loaded and rendering correctly.
-          <br />
-          If you still see MediaListBuilder, clear your browser cache and hard refresh (Cmd+Shift+R).
+        <h2>New Features:</h2>
+        <ul style={{ fontSize: '18px', lineHeight: '2' }}>
+          <li>✨ Smart Search with AI</li>
+          <li>📊 Media Landscape Analysis</li>
+          <li>🎯 Opportunity Scoring</li>
+          <li>🔥 Competitive Intelligence</li>
+          <li>💡 AI Pitch Generation</li>
+        </ul>
+        <p style={{ marginTop: '20px', color: '#666' }}>
+          Project: {activeProject?.name || 'No project selected'}
         </p>
       </div>
     </div>
