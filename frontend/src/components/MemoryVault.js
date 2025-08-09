@@ -190,9 +190,11 @@ const MemoryVault = () => {
         if (data.success && data.items) {
           // Create a map of folder IDs to folder types
           const folderMap = {};
-          data.folders.forEach((folder) => {
-            folderMap[folder.id] = folder.folder_type;
-          });
+          if (data.folders && Array.isArray(data.folders)) {
+            data.folders.forEach((folder) => {
+              folderMap[folder.id] = folder.folder_type;
+            });
+          }
 
           // Initialize the content library structure
           const newContentLibrary = {

@@ -139,10 +139,11 @@ const MediaListBuilder = () => {
 
   // Search journalists using Claude - FIXED to handle AND properly
   const searchJournalists = async () => {
-    if (!activeProject?.id) {
-      setSearchError("Please select a project first");
-      return;
-    }
+    // Project is optional - search works without it
+    // if (!activeProject?.id) {
+    //   setSearchError("Please select a project first");
+    //   return;
+    // }
 
     if (!searchQuery.trim()) {
       setSearchError(
