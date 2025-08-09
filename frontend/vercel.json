@@ -7,7 +7,8 @@
   },
   "build": {
     "env": {
-      "REACT_APP_API_URL": "https://signaldesk-production.up.railway.app/api"
+      "REACT_APP_API_URL": "https://signaldesk-production.up.railway.app/api",
+      "CI": "false"
     }
   },
   "headers": [
@@ -25,6 +26,22 @@
         {
           "key": "X-XSS-Protection",
           "value": "1; mode=block"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "https://signaldesk-production.up.railway.app"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
+        },
+        {
+          "key": "Access-Control-Allow-Credentials",
+          "value": "true"
         }
       ]
     }
@@ -34,5 +51,11 @@
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "functions": {
+    "api/proxy.js": {
+      "maxDuration": 30
+    }
+  },
+  "regions": ["iad1"]
 }

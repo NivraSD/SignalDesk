@@ -18,3 +18,4 @@ frontend/.env.*
 **/credentials.json
 **/*_api_key*
 **/*_secret*
+.env.local

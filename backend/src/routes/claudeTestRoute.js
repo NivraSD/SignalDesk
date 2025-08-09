@@ -1,199 +1,133 @@
-// Claude Integration Test Route
-// This file provides a simple endpoint to test if Claude API is working
-
-const express = require("express");
+// Claude Test Route - Direct test endpoint for verifying Claude integration
+const express = require('express');
 const router = express.Router();
 
 // Import Claude service
 let claudeService;
 try {
-  claudeService = require("../../config/claude");
+  claudeService = require('../../config/claude');
 } catch (error) {
-  console.error("Failed to load Claude service:", error);
-  claudeService = null;
+  console.error('Claude service import failed:', error);
 }
 
-// Test endpoint - no auth required for easy testing
+// Public test endpoint - no auth required for testing
 router.get('/claude-test', async (req, res) => {
-  console.log("🧪 Claude test endpoint called");
+  console.log('🧪 Claude test endpoint called');
   
-  const diagnostics = {
+  const testResult = {
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
+    environment: process.env.NODE_ENV,
     claudeServiceLoaded: !!claudeService,
     apiKeyStatus: {
-      ANTHROPIC_API_KEY: !!process.env.ANTHROPIC_API_KEY,
-      CLAUDE_API_KEY: !!process.env.CLAUDE_API_KEY,
-      CLAUDE_KEY: !!process.env.CLAUDE_KEY
-    }
+      ANTHROPIC_API_KEY: {
+        present: !!process.env.ANTHROPIC_API_KEY,
+        length: process.env.ANTHROPIC_API_KEY ? process.env.ANTHROPIC_API_KEY.length : 0,
+        isPlaceholder: process.env.ANTHROPIC_API_KEY === 'YOUR_NEW_CLAUDE_API_KEY_HERE',
+        prefix: process.env.ANTHROPIC_API_KEY ? 
+                process.env.ANTHROPIC_API_KEY.substring(0, 10) + '...' : 
+                'NOT SET'
+      }
+    },
+    test: null
   };
   
-  // Try to make a simple Claude API call
-  if (claudeService && claudeService.sendMessage) {
+  // Only test if service is available and API key is set
+  if (claudeService && claudeService.sendMessage && 
+      process.env.ANTHROPIC_API_KEY && 
+      process.env.ANTHROPIC_API_KEY !== 'YOUR_NEW_CLAUDE_API_KEY_HERE') {
+    
     try {
-      console.log("Attempting Claude API call...");
-      const testPrompt = "Say 'Claude is working!' in exactly 5 words.";
-      const response = await claudeService.sendMessage(testPrompt);
+      console.log('Testing Claude with simple prompt...');
+      const startTime = Date.now();
       
-      diagnostics.claudeApiTest = {
+      const response = await claudeService.sendMessage(
+        'Respond with exactly this text: "Claude is working correctly on SignalDesk"'
+      );
+      
+      const endTime = Date.now();
+      
+      testResult.test = {
         success: true,
-        response: response,
-        responseLength: response.length,
-        isRealClaude: !response.includes("fallback") && !response.includes("mock")
+        responseTime: `${endTime - startTime}ms`,
+        response: response.substring(0, 200),
+        isWorkingCorrectly: response.includes('Claude is working correctly'),
+        isMockData: response.includes('mock') || response.includes('fallback')
       };
       
-      console.log("Claude API call successful!");
+      console.log('✅ Claude test successful');
     } catch (error) {
-      console.error("Claude API call failed:", error);
-      diagnostics.claudeApiTest = {
+      console.error('❌ Claude test failed:', error.message);
+      testResult.test = {
         success: false,
         error: error.message,
         errorType: error.constructor.name,
-        status: error.status || 'unknown'
+        statusCode: error.status || null,
+        isAuthError: error.message.includes('API key') || 
+                     error.message.includes('authentication') ||
+                     error.message.includes('401')
       };
     }
   } else {
-    diagnostics.claudeApiTest = {
+    testResult.test = {
       success: false,
-      error: "Claude service not initialized",
-      reason: "Missing API key or service failed to load"
+      error: 'Claude service not available or API key not configured',
+      serviceLoaded: !!claudeService,
+      hasApiKey: !!process.env.ANTHROPIC_API_KEY,
+      keyIsPlaceholder: process.env.ANTHROPIC_API_KEY === 'YOUR_NEW_CLAUDE_API_KEY_HERE'
     };
   }
   
   // Determine overall status
-  const isWorking = diagnostics.claudeApiTest && diagnostics.claudeApiTest.success && diagnostics.claudeApiTest.isRealClaude;
+  if (testResult.test?.success && testResult.test?.isWorkingCorrectly) {
+    testResult.status = '✅ CLAUDE IS WORKING';
+    testResult.message = 'Claude AI is properly configured and responding with real AI-generated content.';
+  } else if (testResult.test?.success && testResult.test?.isMockData) {
+    testResult.status = '⚠️ MOCK DATA DETECTED';
+    testResult.message = 'Claude is responding but returning mock/fallback data instead of real AI responses.';
+  } else if (testResult.test?.isAuthError) {
+    testResult.status = '❌ AUTHENTICATION ERROR';
+    testResult.message = 'Claude API key is invalid or expired. Please check your ANTHROPIC_API_KEY.';
+  } else if (!testResult.apiKeyStatus.ANTHROPIC_API_KEY.present) {
+    testResult.status = '❌ API KEY MISSING';
+    testResult.message = 'ANTHROPIC_API_KEY is not set. Add it in Railway Dashboard > Variables.';
+  } else if (testResult.apiKeyStatus.ANTHROPIC_API_KEY.isPlaceholder) {
+    testResult.status = '❌ PLACEHOLDER KEY';
+    testResult.message = 'ANTHROPIC_API_KEY is still the placeholder value. Set the real key in Railway.';
+  } else {
+    testResult.status = '❌ CLAUDE NOT WORKING';
+    testResult.message = 'Claude service is not functioning. Check logs for details.';
+  }
   
-  res.json({
-    success: true,
-    claudeIntegrationWorking: isWorking,
-    message: isWorking 
-      ? "✅ Claude AI integration is WORKING! Real AI responses are being generated."
-      : "❌ Claude AI integration is NOT working. Check API key configuration.",
-    diagnostics,
-    nextSteps: isWorking ? [] : [
-      "1. Verify ANTHROPIC_API_KEY is set in Railway environment variables",
-      "2. Ensure the API key is valid and has credits",
-      "3. Check Railway logs for any error messages",
-      "4. Redeploy after setting the environment variable"
-    ]
-  });
+  res.json(testResult);
 });
 
-// Test specific endpoints
-router.post('/claude-test/crisis', async (req, res) => {
-  console.log("🧪 Testing Crisis endpoint with Claude");
+// Test with custom prompt
+router.post('/claude-test', async (req, res) => {
+  const { prompt = 'Say hello' } = req.body;
   
   if (!claudeService || !claudeService.sendMessage) {
-    return res.json({
+    return res.status(503).json({
       success: false,
-      message: "Claude service not available",
-      usingFallback: true,
-      response: "This would be mock crisis advice since Claude is not configured."
+      error: 'Claude service not available',
+      message: 'Check ANTHROPIC_API_KEY configuration'
     });
   }
   
   try {
-    const prompt = `Generate a brief crisis response plan for: "Product recall due to safety concerns"
-    
-    Provide 3 immediate actions and 2 communication priorities in a concise format.`;
-    
     const response = await claudeService.sendMessage(prompt);
-    
     res.json({
       success: true,
-      message: "Claude Crisis test successful",
-      usingClaude: true,
+      prompt,
       response,
-      isRealResponse: !response.includes("mock") && !response.includes("fallback")
+      isMockData: response.includes('mock') || response.includes('fallback'),
+      timestamp: new Date().toISOString()
     });
   } catch (error) {
-    res.json({
+    res.status(500).json({
       success: false,
-      message: "Claude API call failed",
       error: error.message,
-      usingFallback: true
-    });
-  }
-});
-
-router.post('/claude-test/content', async (req, res) => {
-  console.log("🧪 Testing Content endpoint with Claude");
-  
-  if (!claudeService || !claudeService.sendMessage) {
-    return res.json({
-      success: false,
-      message: "Claude service not available",
-      usingFallback: true,
-      response: "This would be mock content since Claude is not configured."
-    });
-  }
-  
-  try {
-    const prompt = "Write a 2-sentence press release headline about launching an AI-powered PR platform.";
-    
-    const response = await claudeService.sendMessage(prompt);
-    
-    res.json({
-      success: true,
-      message: "Claude Content test successful",
-      usingClaude: true,
-      response,
-      isRealResponse: !response.includes("mock") && !response.includes("fallback")
-    });
-  } catch (error) {
-    res.json({
-      success: false,
-      message: "Claude API call failed",
-      error: error.message,
-      usingFallback: true
-    });
-  }
-});
-
-router.post('/claude-test/media', async (req, res) => {
-  console.log("🧪 Testing Media endpoint with Claude");
-  
-  if (!claudeService || !claudeService.sendMessage) {
-    return res.json({
-      success: false,
-      message: "Claude service not available",
-      usingFallback: true,
-      response: "This would be mock journalist data since Claude is not configured."
-    });
-  }
-  
-  try {
-    const prompt = `Create ONE fictional journalist profile for tech reporting. Include:
-    - Name
-    - Publication  
-    - Beat
-    - Email
-    - Brief bio (1 sentence)
-    
-    Format as JSON.`;
-    
-    const response = await claudeService.sendMessage(prompt);
-    
-    let journalist;
-    try {
-      journalist = JSON.parse(response);
-    } catch {
-      journalist = { raw: response };
-    }
-    
-    res.json({
-      success: true,
-      message: "Claude Media test successful",
-      usingClaude: true,
-      response: journalist,
-      isRealResponse: !response.includes("mock") && !response.includes("fallback")
-    });
-  } catch (error) {
-    res.json({
-      success: false,
-      message: "Claude API call failed",
-      error: error.message,
-      usingFallback: true
+      prompt,
+      timestamp: new Date().toISOString()
     });
   }
 });

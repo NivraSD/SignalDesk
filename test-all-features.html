@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalDesk - Complete Feature Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .test-section h2 {
+            color: #667eea;
+            margin-top: 0;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 10px 10px 0;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            min-height: 50px;
+            white-space: pre-wrap;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            background: #f0fdf4;
+            border-color: #86efac;
+            color: #166534;
+        }
+        .error {
+            background: #fef2f2;
+            border-color: #fca5a5;
+            color: #991b1b;
+        }
+        .pending {
+            background: #fefce8;
+            border-color: #fde047;
+            color: #854d0e;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-left: 10px;
+        }
+        .status.working { background: #86efac; color: #166534; }
+        .status.failed { background: #fca5a5; color: #991b1b; }
+        .status.testing { background: #fde047; color: #854d0e; }
+        .input-group {
+            margin: 10px 0;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .metric {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+        .metric .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .metric .label {
+            font-size: 12px;
+            color: #64748b;
+            text-transform: uppercase;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 SignalDesk Complete Feature Test Suite</h1>
+        
+        <div class="dashboard">
+            <div class="metric">
+                <div class="value" id="total-tests">0</div>
+                <div class="label">Total Tests</div>
+            </div>
+            <div class="metric">
+                <div class="value" id="passed-tests">0</div>
+                <div class="label">Passed</div>
+            </div>
+            <div class="metric">
+                <div class="value" id="failed-tests">0</div>
+                <div class="label">Failed</div>
+            </div>
+            <div class="metric">
+                <div class="value" id="pending-tests">9</div>
+                <div class="label">Pending</div>
+            </div>
+        </div>
+
+        <!-- Authentication -->
+        <div class="test-section">
+            <h2>🔐 Authentication <span class="status testing" id="auth-status">TESTING</span></h2>
+            <div class="input-group">
+                <input type="email" id="email" placeholder="Email" value="demo@signaldesk.com">
+                <input type="password" id="password" placeholder="Password" value="demo123">
+            </div>
+            <button onclick="testLogin()">Test Login</button>
+            <div class="result" id="auth-result">Click to test authentication...</div>
+        </div>
+
+        <!-- Media List Builder -->
+        <div class="test-section">
+            <h2>📰 Media List Builder <span class="status testing" id="media-status">READY</span></h2>
+            <div class="input-group">
+                <input type="text" id="media-query" placeholder="Search query" value="AI technology reporters San Francisco">
+            </div>
+            <button onclick="testMediaSearch()" id="media-btn">Search Journalists</button>
+            <div class="result" id="media-result">Enter a search query and click to test...</div>
+        </div>
+
+        <!-- Content Generator -->
+        <div class="test-section">
+            <h2>✍️ Content Generator <span class="status testing" id="content-status">READY</span></h2>
+            <div class="input-group">
+                <textarea id="content-prompt" placeholder="Content prompt">Write a press release about our new AI-powered PR platform launch</textarea>
+            </div>
+            <button onclick="testContentGenerator()" id="content-btn">Generate Content</button>
+            <div class="result" id="content-result">Enter a prompt and click to generate...</div>
+        </div>
+
+        <!-- Crisis Command Center -->
+        <div class="test-section">
+            <h2>🚨 Crisis Command Center <span class="status testing" id="crisis-status">READY</span></h2>
+            <div class="input-group">
+                <input type="text" id="crisis-industry" placeholder="Industry" value="Technology">
+                <textarea id="crisis-concerns" placeholder="Key concerns (one per line)">Data breach
+Reputation damage
+Customer trust</textarea>
+            </div>
+            <button onclick="testCrisisPlanner()" id="crisis-btn">Generate Crisis Plan</button>
+            <div class="result" id="crisis-result">Enter details and click to generate plan...</div>
+        </div>
+
+        <!-- Campaign Intelligence -->
+        <div class="test-section">
+            <h2>📊 Campaign Intelligence <span class="status testing" id="campaign-status">READY</span></h2>
+            <div class="input-group">
+                <textarea id="campaign-data" placeholder="Campaign description">Product launch campaign for our revolutionary AI assistant targeting enterprise customers</textarea>
+            </div>
+            <button onclick="testCampaignAnalysis()" id="campaign-btn">Analyze Campaign</button>
+            <div class="result" id="campaign-result">Enter campaign details and click to analyze...</div>
+        </div>
+
+        <!-- Stakeholder Intelligence -->
+        <div class="test-section">
+            <h2>👥 Stakeholder Intelligence <span class="status testing" id="stakeholder-status">READY</span></h2>
+            <div class="input-group">
+                <textarea id="stakeholder-list" placeholder="Stakeholders (one per line)">Customers
+Investors
+Employees
+Media
+Regulators</textarea>
+            </div>
+            <button onclick="testStakeholderAnalysis()" id="stakeholder-btn">Analyze Stakeholders</button>
+            <div class="result" id="stakeholder-result">Enter stakeholders and click to analyze...</div>
+        </div>
+
+        <!-- PR Assistant -->
+        <div class="test-section">
+            <h2>🤖 PR Assistant <span class="status testing" id="pr-status">READY</span></h2>
+            <div class="input-group">
+                <textarea id="pr-query" placeholder="PR question">How should we handle a negative press story about our CEO?</textarea>
+            </div>
+            <button onclick="testPRAssistant()" id="pr-btn">Get PR Advice</button>
+            <div class="result" id="pr-result">Enter your question and click for advice...</div>
+        </div>
+
+        <!-- Memory Vault -->
+        <div class="test-section">
+            <h2>🧠 Memory Vault <span class="status testing" id="memory-status">READY</span></h2>
+            <button onclick="testMemoryVault()" id="memory-btn">Test Memory Vault</button>
+            <div class="result" id="memory-result">Click to test Memory Vault functionality...</div>
+        </div>
+
+        <!-- Opportunity Finder -->
+        <div class="test-section">
+            <h2>🎯 Opportunity Finder <span class="status testing" id="opportunity-status">READY</span></h2>
+            <div class="input-group">
+                <input type="text" id="opportunity-industry" placeholder="Industry" value="Technology">
+                <input type="text" id="opportunity-context" placeholder="Context" value="AI startup looking for PR opportunities">
+            </div>
+            <button onclick="testOpportunityFinder()" id="opportunity-btn">Find Opportunities</button>
+            <div class="result" id="opportunity-result">Enter context and click to find opportunities...</div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_URL = 'https://signaldesk-production.up.railway.app/api';
+        const FRONTEND_URL = 'https://signaldesk-frontend-nivra-sd.vercel.app';
+        let authToken = null;
+        let testResults = { total: 0, passed: 0, failed: 0, pending: 9 };
+
+        // Update dashboard
+        function updateDashboard() {
+            document.getElementById('total-tests').textContent = testResults.total;
+            document.getElementById('passed-tests').textContent = testResults.passed;
+            document.getElementById('failed-tests').textContent = testResults.failed;
+            document.getElementById('pending-tests').textContent = testResults.pending;
+        }
+
+        // Test Login
+        async function testLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('auth-result');
+            const statusSpan = document.getElementById('auth-status');
+            
+            resultDiv.className = 'result pending';
+            resultDiv.textContent = 'Testing authentication...';
+            statusSpan.className = 'status testing';
+            statusSpan.textContent = 'TESTING';
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.token) {
+                    authToken = data.token;
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ Login successful!\nToken: ${authToken.substring(0, 20)}...\nUser: ${data.user?.email || email}`;
+                    statusSpan.className = 'status working';
+                    statusSpan.textContent = 'WORKING';
+                    
+                    testResults.passed++;
+                    testResults.pending--;
+                    testResults.total++;
+                    
+                    // Enable other tests
+                    document.querySelectorAll('button').forEach(btn => {
+                        if (btn.textContent !== 'Test Login') {
+                            btn.disabled = false;
+                        }
+                    });
+                } else {
+                    throw new Error(data.error || 'Login failed');
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Authentication failed: ${error.message}`;
+                statusSpan.className = 'status failed';
+                statusSpan.textContent = 'FAILED';
+                testResults.failed++;
+                testResults.pending--;
+                testResults.total++;
+            }
+            updateDashboard();
+        }
+
+        // Test Media List Builder
+        async function testMediaSearch() {
+            if (!authToken) {
+                alert('Please login first!');
+                return;
+            }
+            
+            const query = document.getElementById('media-query').value;
+            const resultDiv = document.getElementById('media-result');
+            const statusSpan = document.getElementById('media-status');
+            const btn = document.getElementById('media-btn');
+            
+            btn.disabled = true;
+            resultDiv.className = 'result pending';
+            resultDiv.textContent = 'Searching for journalists with Claude AI...';
+            statusSpan.className = 'status testing';
+            statusSpan.textContent = 'TESTING';
+            
+            try {
+                const response = await fetch(`${API_URL}/media/search-journalists`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ query })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.journalists) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ Media search working!\n\nFound ${data.journalists.length} journalists\n\n${data.journalists.slice(0, 3).map(j => 
+                        `• ${j.name} - ${j.publication} (${j.beat})\n  Score: ${j.relevance_score}/100\n  ${j.insights || ''}`
+                    ).join('\n\n')}${data.journalists.length > 3 ? `\n\n...and ${data.journalists.length - 3} more` : ''}`;
+                    statusSpan.className = 'status working';
+                    statusSpan.textContent = 'WORKING';
+                    testResults.passed++;
+                } else {
+                    throw new Error(data.error || 'Search failed');
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Media search failed: ${error.message}`;
+                statusSpan.className = 'status failed';
+                statusSpan.textContent = 'FAILED';
+                testResults.failed++;
+            }
+            
+            btn.disabled = false;
+            testResults.pending--;
+            testResults.total++;
+            updateDashboard();
+        }
+
+        // Test Content Generator
+        async function testContentGenerator() {
+            if (!authToken) {
+                alert('Please login first!');
+                return;
+            }
+            
+            const prompt = document.getElementById('content-prompt').value;
+            const resultDiv = document.getElementById('content-result');
+            const statusSpan = document.getElementById('content-status');
+            const btn = document.getElementById('content-btn');
+            
+            btn.disabled = true;
+            resultDiv.className = 'result pending';
+            resultDiv.textContent = 'Generating content with Claude AI...';
+            statusSpan.className = 'status testing';
+            statusSpan.textContent = 'TESTING';
+            
+            try {
+                const response = await fetch(`${API_URL}/content/generate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ 
+                        prompt,
+                        contentType: 'press_release',
+                        tone: 'professional'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.content) {
+                    const preview = data.content.substring(0, 500);
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ Content generation working!\n\n${preview}${data.content.length > 500 ? '...\n\n[Content truncated - ' + data.content.length + ' total characters generated]' : ''}`;
+                    statusSpan.className = 'status working';
+                    statusSpan.textContent = 'WORKING';
+                    testResults.passed++;
+                } else {
+                    throw new Error(data.error || 'Generation failed');
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Content generation failed: ${error.message}`;
+                statusSpan.className = 'status failed';
+                statusSpan.textContent = 'FAILED';
+                testResults.failed++;
+            }
+            
+            btn.disabled = false;
+            testResults.pending--;
+            testResults.total++;
+            updateDashboard();
+        }
+
+        // Test Crisis Command Center
+        async function testCrisisPlanner() {
+            if (!authToken) {
+                alert('Please login first!');
+                return;
+            }
+            
+            const industry = document.getElementById('crisis-industry').value;
+            const concerns = document.getElementById('crisis-concerns').value.split('\n').filter(c => c.trim());
+            const resultDiv = document.getElementById('crisis-result');
+            const statusSpan = document.getElementById('crisis-status');
+            const btn = document.getElementById('crisis-btn');
+            
+            btn.disabled = true;
+            resultDiv.className = 'result pending';
+            resultDiv.textContent = 'Generating crisis plan with Claude AI...';
+            statusSpan.className = 'status testing';
+            statusSpan.textContent = 'TESTING';
+            
+            try {
+                const response = await fetch(`${API_URL}/crisis/generate-plan`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        industry,
+                        keyConcerns: concerns,
+                        companySize: 'Medium',
+                        additionalContext: 'Testing crisis planning capabilities'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.plan) {
+                    const plan = data.plan.plan_data;
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ Crisis planning working!\n\nPlan Generated:\n• ${plan.objectives?.length || 0} objectives defined\n• ${plan.crisisTeam?.length || 0} team roles identified\n• ${plan.scenarios?.length || 0} scenarios mapped\n• ${plan.responseProcess?.length || 0} response phases\n\nObjectives:\n${(plan.objectives || []).slice(0, 3).map(o => `• ${o}`).join('\n')}`;
+                    statusSpan.className = 'status working';
+                    statusSpan.textContent = 'WORKING';
+                    testResults.passed++;
+                } else {
+                    throw new Error(data.error || 'Plan generation failed');
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Crisis planning failed: ${error.message}`;
+                statusSpan.className = 'status failed';
+                statusSpan.textContent = 'FAILED';
+                testResults.failed++;
+            }
+            
+            btn.disabled = false;
+            testResults.pending--;
+            testResults.total++;
+            updateDashboard();
+        }
+
+        // Test Campaign Intelligence
+        async function testCampaignAnalysis() {
+            if (!authToken) {
+                alert('Please login first!');
+                return;
+            }
+            
+            const campaignData = document.getElementById('campaign-data').value;
+            const resultDiv = document.getElementById('campaign-result');
+            const statusSpan = document.getElementById('campaign-status');
+            const btn = document.getElementById('campaign-btn');
+            
+            btn.disabled = true;
+            resultDiv.className = 'result pending';
+            resultDiv.textContent = 'Analyzing campaign with Claude AI...';
+            statusSpan.className = 'status testing';
+            statusSpan.textContent = 'TESTING';
+            
+            try {
+                const response = await fetch(`${API_URL}/campaigns/analyze`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        campaign: {
+                            name: 'Test Campaign',
+                            description: campaignData,
+                            objectives: ['Increase brand awareness', 'Generate leads'],
+                            targetAudience: 'Enterprise customers'
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.analysis) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ Campaign analysis working!\n\n${data.analysis.substring(0, 500)}${data.analysis.length > 500 ? '...' : ''}`;
+                    statusSpan.className = 'status working';
+                    statusSpan.textContent = 'WORKING';
+                    testResults.passed++;
+                } else {
+                    throw new Error(data.error || 'Analysis failed');
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Campaign analysis failed: ${error.message}`;
+                statusSpan.className = 'status failed';
+                statusSpan.textContent = 'FAILED';
+                testResults.failed++;
+            }
+            
+            btn.disabled = false;
+            testResults.pending--;
+            testResults.total++;
+            updateDashboard();
+        }
+
+        // Test Stakeholder Intelligence
+        async function testStakeholderAnalysis() {
+            if (!authToken) {
+                alert('Please login first!');
+                return;
+            }
+            
+            const stakeholders = document.getElementById('stakeholder-list').value.split('\n').filter(s => s.trim());
+            const resultDiv = document.getElementById('stakeholder-result');
+            const statusSpan = document.getElementById('stakeholder-status');
+            const btn = document.getElementById('stakeholder-btn');
+            
+            btn.disabled = true;
+            resultDiv.className = 'result pending';
+            resultDiv.textContent = 'Analyzing stakeholders with Claude AI...';
+            statusSpan.className = 'status testing';
+            statusSpan.textContent = 'TESTING';
+            
+            try {
+                const response = await fetch(`${API_URL}/stakeholders/analyze`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        stakeholders: stakeholders.map(name => ({ name, type: 'External' })),
+                        context: 'Product launch campaign'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.analysis) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ Stakeholder analysis working!\n\n${data.analysis.substring(0, 500)}${data.analysis.length > 500 ? '...' : ''}`;
+                    statusSpan.className = 'status working';
+                    statusSpan.textContent = 'WORKING';
+                    testResults.passed++;
+                } else {
+                    throw new Error(data.error || 'Analysis failed');
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Stakeholder analysis failed: ${error.message}`;
+                statusSpan.className = 'status failed';
+                statusSpan.textContent = 'FAILED';
+                testResults.failed++;
+            }
+            
+            btn.disabled = false;
+            testResults.pending--;
+            testResults.total++;
+            updateDashboard();
+        }
+
+        // Test PR Assistant
+        async function testPRAssistant() {
+            if (!authToken) {
+                alert('Please login first!');
+                return;
+            }
+            
+            const query = document.getElementById('pr-query').value;
+            const resultDiv = document.getElementById('pr-result');
+            const statusSpan = document.getElementById('pr-status');
+            const btn = document.getElementById('pr-btn');
+            
+            btn.disabled = true;
+            resultDiv.className = 'result pending';
+            resultDiv.textContent = 'Getting PR advice from Claude AI...';
+            statusSpan.className = 'status testing';
+            statusSpan.textContent = 'TESTING';
+            
+            try {
+                const response = await fetch(`${API_URL}/ai/pr-assistant`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ query })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.advice) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ PR Assistant working!\n\n${data.advice.substring(0, 500)}${data.advice.length > 500 ? '...' : ''}`;
+                    statusSpan.className = 'status working';
+                    statusSpan.textContent = 'WORKING';
+                    testResults.passed++;
+                } else {
+                    throw new Error(data.error || 'Advice generation failed');
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ PR Assistant failed: ${error.message}`;
+                statusSpan.className = 'status failed';
+                statusSpan.textContent = 'FAILED';
+                testResults.failed++;
+            }
+            
+            btn.disabled = false;
+            testResults.pending--;
+            testResults.total++;
+            updateDashboard();
+        }
+
+        // Test Memory Vault
+        async function testMemoryVault() {
+            if (!authToken) {
+                alert('Please login first!');
+                return;
+            }
+            
+            const resultDiv = document.getElementById('memory-result');
+            const statusSpan = document.getElementById('memory-status');
+            const btn = document.getElementById('memory-btn');
+            
+            btn.disabled = true;
+            resultDiv.className = 'result pending';
+            resultDiv.textContent = 'Testing Memory Vault functionality...';
+            statusSpan.className = 'status testing';
+            statusSpan.textContent = 'TESTING';
+            
+            try {
+                const response = await fetch(`${API_URL}/memoryvault/items`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ Memory Vault working!\n\nItems: ${data.items?.length || 0}\nFolders: ${data.folders?.length || 0}\n\n${data.folders && data.folders.length > 0 ? 
+                        'Folder Types:\n' + data.folders.map(f => `• ${f.folder_type}`).join('\n') : 
+                        'No folders found (this is normal for new accounts)'}`;
+                    statusSpan.className = 'status working';
+                    statusSpan.textContent = 'WORKING';
+                    testResults.passed++;
+                } else {
+                    throw new Error(data.error || 'Failed to fetch Memory Vault data');
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Memory Vault failed: ${error.message}`;
+                statusSpan.className = 'status failed';
+                statusSpan.textContent = 'FAILED';
+                testResults.failed++;
+            }
+            
+            btn.disabled = false;
+            testResults.pending--;
+            testResults.total++;
+            updateDashboard();
+        }
+
+        // Test Opportunity Finder
+        async function testOpportunityFinder() {
+            if (!authToken) {
+                alert('Please login first!');
+                return;
+            }
+            
+            const industry = document.getElementById('opportunity-industry').value;
+            const context = document.getElementById('opportunity-context').value;
+            const resultDiv = document.getElementById('opportunity-result');
+            const statusSpan = document.getElementById('opportunity-status');
+            const btn = document.getElementById('opportunity-btn');
+            
+            btn.disabled = true;
+            resultDiv.className = 'result pending';
+            resultDiv.textContent = 'Finding opportunities with Claude AI...';
+            statusSpan.className = 'status testing';
+            statusSpan.textContent = 'TESTING';
+            
+            try {
+                const response = await fetch(`${API_URL}/opportunities/find`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ industry, context })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.opportunities) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ Opportunity Finder working!\n\n${data.opportunities.substring(0, 500)}${data.opportunities.length > 500 ? '...' : ''}`;
+                    statusSpan.className = 'status working';
+                    statusSpan.textContent = 'WORKING';
+                    testResults.passed++;
+                } else {
+                    throw new Error(data.error || 'Opportunity finding failed');
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Opportunity Finder failed: ${error.message}`;
+                statusSpan.className = 'status failed';
+                statusSpan.textContent = 'FAILED';
+                testResults.failed++;
+            }
+            
+            btn.disabled = false;
+            testResults.pending--;
+            testResults.total++;
+            updateDashboard();
+        }
+
+        // Disable all test buttons except login initially
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('button').forEach(btn => {
+                if (btn.textContent !== 'Test Login') {
+                    btn.disabled = true;
+                }
+            });
+            updateDashboard();
+        });
+    </script>
+</body>
+</html>

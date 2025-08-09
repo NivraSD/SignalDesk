@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalDesk API Testing Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .test-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .test-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+        
+        .test-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .test-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .status.pending {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+        
+        .status.testing {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .test-description {
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+        
+        .test-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5a67d8;
+        }
+        
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #4b5563;
+        }
+        
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+        
+        .result-box {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 0.85rem;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Monaco', 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        
+        .result-box.success {
+            background: #f0fdf4;
+            border-color: #86efac;
+        }
+        
+        .result-box.error {
+            background: #fef2f2;
+            border-color: #fca5a5;
+        }
+        
+        .config-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .config-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .config-label {
+            font-size: 0.9rem;
+            color: #6b7280;
+            margin-bottom: 5px;
+        }
+        
+        .config-input {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }
+        
+        .summary-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .summary-item {
+            text-align: center;
+            padding: 15px;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+        
+        .summary-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .summary-label {
+            font-size: 0.9rem;
+            color: #6b7280;
+            margin-top: 5px;
+        }
+        
+        .loader {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SignalDesk API Testing Dashboard</h1>
+        
+        <!-- Configuration Section -->
+        <div class="config-section">
+            <h2 class="test-title">Configuration</h2>
+            <div class="config-grid">
+                <div class="config-item">
+                    <label class="config-label">Frontend URL (Vercel)</label>
+                    <input type="text" id="frontendUrl" class="config-input" value="https://signaldesk-frontend.vercel.app" />
+                </div>
+                <div class="config-item">
+                    <label class="config-label">Backend URL (Railway)</label>
+                    <input type="text" id="backendUrl" class="config-input" value="https://signaldesk-production.up.railway.app" />
+                </div>
+                <div class="config-item">
+                    <label class="config-label">API Base Path</label>
+                    <input type="text" id="apiPath" class="config-input" value="/api" />
+                </div>
+                <div class="config-item">
+                    <label class="config-label">Auth Token (Optional)</label>
+                    <input type="text" id="authToken" class="config-input" placeholder="Bearer token if needed" />
+                </div>
+            </div>
+            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                <button class="btn btn-primary" onclick="runAllTests()">Run All Tests</button>
+                <button class="btn btn-secondary" onclick="clearResults()">Clear Results</button>
+                <button class="btn btn-secondary" onclick="exportResults()">Export Results</button>
+            </div>
+        </div>
+        
+        <!-- Summary Section -->
+        <div class="summary-section">
+            <h2 class="test-title">Test Summary</h2>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="summary-number" id="totalTests">0</div>
+                    <div class="summary-label">Total Tests</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-number" id="passedTests" style="color: #10b981;">0</div>
+                    <div class="summary-label">Passed</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-number" id="failedTests" style="color: #ef4444;">0</div>
+                    <div class="summary-label">Failed</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-number" id="pendingTests" style="color: #6b7280;">0</div>
+                    <div class="summary-label">Pending</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Test Cards -->
+        <div class="test-grid" id="testGrid">
+            <!-- Tests will be dynamically added here -->
+        </div>
+    </div>
+    
+    <script>
+        // Test definitions
+        const tests = [
+            {
+                id: 'health',
+                title: 'Health Check',
+                description: 'Verify backend server is running',
+                endpoint: '/health',
+                method: 'GET',
+                requiresAuth: false
+            },
+            {
+                id: 'cors',
+                title: 'CORS Configuration',
+                description: 'Check if CORS headers are properly set',
+                endpoint: '/health',
+                method: 'GET',
+                requiresAuth: false,
+                checkCors: true
+            },
+            {
+                id: 'env-vars',
+                title: 'Environment Variables',
+                description: 'Verify API URL environment variable',
+                custom: true,
+                testFunc: async () => {
+                    const frontendUrl = document.getElementById('frontendUrl').value;
+                    const response = await fetch(frontendUrl);
+                    const html = await response.text();
+                    const hasApiUrl = html.includes('REACT_APP_API_URL') || html.includes('signaldesk-production.up.railway.app');
+                    return {
+                        success: hasApiUrl,
+                        data: hasApiUrl ? 'Environment variables detected in build' : 'Environment variables not found in build'
+                    };
+                }
+            },
+            {
+                id: 'claude-test',
+                title: 'Claude AI Integration',
+                description: 'Test Claude AI response generation',
+                endpoint: '/claude-diagnostics/test',
+                method: 'GET',
+                requiresAuth: false
+            },
+            {
+                id: 'media-search',
+                title: 'Media Search (Journalists)',
+                description: 'Test journalist search functionality',
+                endpoint: '/media/search-reporters',
+                method: 'POST',
+                body: {
+                    beat: 'technology',
+                    publication: 'any',
+                    location: 'any'
+                },
+                requiresAuth: false
+            },
+            {
+                id: 'crisis-advisor',
+                title: 'Crisis Advisor',
+                description: 'Test crisis management AI advisor',
+                endpoint: '/crisis/advisor',
+                method: 'POST',
+                body: {
+                    scenario: 'test scenario',
+                    severity: 'medium'
+                },
+                requiresAuth: false
+            },
+            {
+                id: 'campaign-insights',
+                title: 'Campaign Intelligence',
+                description: 'Test campaign insights generation',
+                endpoint: '/campaign/insights/test',
+                method: 'GET',
+                requiresAuth: false
+            },
+            {
+                id: 'content-generation',
+                title: 'Content Generator',
+                description: 'Test AI content generation',
+                endpoint: '/content/ai-generate',
+                method: 'POST',
+                body: {
+                    prompt: 'Generate a test press release headline',
+                    type: 'headline'
+                },
+                requiresAuth: false
+            },
+            {
+                id: 'monitoring',
+                title: 'Monitoring System',
+                description: 'Test monitoring sentiment analysis',
+                endpoint: '/monitoring/analyze-sentiment',
+                method: 'POST',
+                body: {
+                    text: 'This is a great product!',
+                    source: 'test'
+                },
+                requiresAuth: false
+            },
+            {
+                id: 'auth-login',
+                title: 'Authentication',
+                description: 'Test login endpoint',
+                endpoint: '/auth/login',
+                method: 'POST',
+                body: {
+                    email: 'test@example.com',
+                    password: 'testpassword'
+                },
+                requiresAuth: false
+            },
+            {
+                id: 'projects',
+                title: 'Projects API',
+                description: 'Test projects endpoint',
+                endpoint: '/projects',
+                method: 'GET',
+                requiresAuth: true
+            },
+            {
+                id: 'opportunity',
+                title: 'Opportunity Detection',
+                description: 'Test opportunity detection system',
+                endpoint: '/opportunity/detect',
+                method: 'POST',
+                body: {
+                    industry: 'technology',
+                    keywords: ['AI', 'innovation']
+                },
+                requiresAuth: false
+            },
+            {
+                id: 'intelligence',
+                title: 'Intelligence System',
+                description: 'Test intelligence monitoring',
+                endpoint: '/intelligence/monitor',
+                method: 'POST',
+                body: {
+                    query: 'test query',
+                    sources: ['web']
+                },
+                requiresAuth: false
+            },
+            {
+                id: 'memory-vault',
+                title: 'Memory Vault',
+                description: 'Test memory vault storage',
+                endpoint: '/memoryvault/project',
+                method: 'GET',
+                params: '?projectId=test',
+                requiresAuth: false
+            },
+            {
+                id: 'enhanced-claude',
+                title: 'Enhanced Claude Routes',
+                description: 'Test enhanced Claude integration',
+                endpoint: '/enhanced/test',
+                method: 'GET',
+                requiresAuth: false
+            }
+        ];
+        
+        // Test state
+        let testResults = {};
+        
+        // Initialize tests on page load
+        window.onload = () => {
+            renderTests();
+            updateSummary();
+        };
+        
+        function renderTests() {
+            const grid = document.getElementById('testGrid');
+            grid.innerHTML = '';
+            
+            tests.forEach(test => {
+                const card = document.createElement('div');
+                card.className = 'test-card';
+                card.innerHTML = `
+                    <div class="test-header">
+                        <div class="test-title">${test.title}</div>
+                        <span class="status pending" id="status-${test.id}">Pending</span>
+                    </div>
+                    <div class="test-description">${test.description}</div>
+                    <div class="test-controls">
+                        <button class="btn btn-primary" onclick="runTest('${test.id}')">Run Test</button>
+                        <button class="btn btn-secondary" onclick="clearTest('${test.id}')">Clear</button>
+                    </div>
+                    <div class="result-box" id="result-${test.id}" style="display: none;"></div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+        
+        async function runTest(testId) {
+            const test = tests.find(t => t.id === testId);
+            if (!test) return;
+            
+            // Update status
+            updateTestStatus(testId, 'testing');
+            
+            try {
+                let result;
+                
+                if (test.custom && test.testFunc) {
+                    result = await test.testFunc();
+                } else {
+                    const baseUrl = document.getElementById('backendUrl').value;
+                    const apiPath = document.getElementById('apiPath').value;
+                    const token = document.getElementById('authToken').value;
+                    
+                    const url = `${baseUrl}${apiPath}${test.endpoint}${test.params || ''}`;
+                    
+                    const options = {
+                        method: test.method,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        }
+                    };
+                    
+                    if (token && test.requiresAuth) {
+                        options.headers['Authorization'] = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+                    }
+                    
+                    if (test.body && test.method !== 'GET') {
+                        options.body = JSON.stringify(test.body);
+                    }
+                    
+                    if (test.checkCors) {
+                        options.mode = 'cors';
+                        options.credentials = 'include';
+                    }
+                    
+                    const response = await fetch(url, options);
+                    const data = await response.json().catch(() => response.text());
+                    
+                    result = {
+                        success: response.ok,
+                        status: response.status,
+                        data: data,
+                        headers: {}
+                    };
+                    
+                    // Check for CORS headers if needed
+                    if (test.checkCors) {
+                        result.headers = {
+                            'access-control-allow-origin': response.headers.get('access-control-allow-origin'),
+                            'access-control-allow-credentials': response.headers.get('access-control-allow-credentials')
+                        };
+                    }
+                }
+                
+                testResults[testId] = result;
+                displayResult(testId, result);
+                updateTestStatus(testId, result.success ? 'success' : 'error');
+                
+            } catch (error) {
+                const result = {
+                    success: false,
+                    error: error.message
+                };
+                testResults[testId] = result;
+                displayResult(testId, result);
+                updateTestStatus(testId, 'error');
+            }
+            
+            updateSummary();
+        }
+        
+        async function runAllTests() {
+            for (const test of tests) {
+                await runTest(test.id);
+                // Add small delay between tests
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+        }
+        
+        function updateTestStatus(testId, status) {
+            const statusEl = document.getElementById(`status-${testId}`);
+            if (statusEl) {
+                statusEl.className = `status ${status}`;
+                statusEl.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+                
+                if (status === 'testing') {
+                    statusEl.innerHTML = 'Testing<span class="loader"></span>';
+                }
+            }
+        }
+        
+        function displayResult(testId, result) {
+            const resultBox = document.getElementById(`result-${testId}`);
+            if (resultBox) {
+                resultBox.style.display = 'block';
+                resultBox.className = `result-box ${result.success ? 'success' : 'error'}`;
+                
+                let content = '';
+                if (result.success) {
+                    content += `✓ Test Passed\n`;
+                    if (result.status) content += `Status: ${result.status}\n`;
+                    if (result.headers && Object.keys(result.headers).length > 0) {
+                        content += `\nHeaders:\n${JSON.stringify(result.headers, null, 2)}\n`;
+                    }
+                    content += `\nResponse:\n${typeof result.data === 'object' ? JSON.stringify(result.data, null, 2) : result.data}`;
+                } else {
+                    content += `✗ Test Failed\n`;
+                    if (result.status) content += `Status: ${result.status}\n`;
+                    if (result.error) content += `Error: ${result.error}\n`;
+                    if (result.data) content += `\nResponse:\n${typeof result.data === 'object' ? JSON.stringify(result.data, null, 2) : result.data}`;
+                }
+                
+                resultBox.textContent = content;
+            }
+        }
+        
+        function clearTest(testId) {
+            const resultBox = document.getElementById(`result-${testId}`);
+            if (resultBox) {
+                resultBox.style.display = 'none';
+                resultBox.textContent = '';
+            }
+            updateTestStatus(testId, 'pending');
+            delete testResults[testId];
+            updateSummary();
+        }
+        
+        function clearResults() {
+            tests.forEach(test => clearTest(test.id));
+        }
+        
+        function updateSummary() {
+            const total = tests.length;
+            const results = Object.values(testResults);
+            const passed = results.filter(r => r.success).length;
+            const failed = results.filter(r => !r.success).length;
+            const pending = total - passed - failed;
+            
+            document.getElementById('totalTests').textContent = total;
+            document.getElementById('passedTests').textContent = passed;
+            document.getElementById('failedTests').textContent = failed;
+            document.getElementById('pendingTests').textContent = pending;
+        }
+        
+        function exportResults() {
+            const results = {
+                timestamp: new Date().toISOString(),
+                configuration: {
+                    frontend: document.getElementById('frontendUrl').value,
+                    backend: document.getElementById('backendUrl').value,
+                    apiPath: document.getElementById('apiPath').value
+                },
+                tests: tests.map(test => ({
+                    id: test.id,
+                    title: test.title,
+                    result: testResults[test.id] || { status: 'not_run' }
+                }))
+            };
+            
+            const blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `signaldesk-test-results-${Date.now()}.json`;
+            a.click();
+        }
+    </script>
+</body>
+</html>

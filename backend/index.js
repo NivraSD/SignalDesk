@@ -15,6 +15,14 @@ if (process.env.NODE_ENV !== 'production') {
   dotenv.config({ path: path.join(__dirname, ".env") });
 }
 
+// Initialize Claude service IMMEDIATELY after environment setup
+const claudeInit = require('./src/utils/claudeInit');
+if (!claudeInit.isInitialized) {
+  console.error('⚠️  WARNING: Claude service not properly initialized!');
+  console.error('   SignalDesk will run but AI features will not work.');
+  console.error('   Fix: Set ANTHROPIC_API_KEY in Railway Dashboard');
+}
+
 // Add this near the top of server.js
 require("./src/config/db");
 
@@ -140,6 +148,7 @@ const organizationRoutes = require("./src/routes/organizationRoutes");
 const sourceConfigRoutes = require("./src/routes/sourceConfigRoutes");
 const missingEndpointsRoutes = require("./src/routes/missingEndpointsRoutes");
 const enhancedClaudeRoutes = require("./src/routes/enhancedClaudeRoutes");
+const healthCheckRoutes = require("./src/routes/healthCheckRoutes");
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
@@ -149,6 +158,10 @@ app.get("/api/health", (req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+// Add deployment monitoring
+const deploymentMonitor = require('./src/routes/deploymentMonitor');
+app.use('/api', deploymentMonitor);
 
 // Test endpoint for CORS and connectivity
 app.get("/api/test", (req, res) => {
@@ -202,20 +215,22 @@ app.use((req, res, next) => {
 
 // API Routes
 // ⚡ Public routes (NO auth required) - LOAD FIRST
+app.use("/api", healthCheckRoutes); // Health check and monitoring - MUST BE FIRST
 app.use("/api/auth", authRoutes);
 app.use("/api/proxy", proxyRoutes); // Proxy routes for external APIs (CORS avoidance)
 app.use("/api/claude-diagnostics", claudeDiagnosticsRoutes); // Claude diagnostics for debugging
 
 // ⚡ ORIGINAL SOPHISTICATED ROUTES - Load BEFORE generic Claude routes
+// CRITICAL: These MUST load before enhancedClaudeRoutes to prevent override
 // These have industry-specific prompts and detailed implementations
 app.use("/api/organizations", authMiddleware, organizationRoutes);
 app.use("/api/assistant", authMiddleware, assistantRoutes);
 app.use("/api/projects", authMiddleware, projectRoutes);
 app.use("/api/todos", authMiddleware, todoRoutes);
-app.use("/api/content", authMiddleware, contentRoutes);  // Sophisticated content analysis
-app.use("/api/crisis", crisisRoutes);  // Detailed crisis plan structure
-app.use("/api/media", authMiddleware, mediaRoutes);  // Journalist discovery with Claude
-app.use("/api/campaigns", authMiddleware, campaignRoutes);  // Campaign strategy
+app.use("/api/content", authMiddleware, contentRoutes);  // Sophisticated content analysis - MUST BE BEFORE generic
+app.use("/api/crisis", authMiddleware, crisisRoutes);  // Detailed crisis plan structure - MUST BE BEFORE generic
+app.use("/api/media", authMiddleware, mediaRoutes);  // Journalist discovery with Claude - MUST BE BEFORE generic
+app.use("/api/campaigns", authMiddleware, campaignRoutes);  // Campaign strategy - MUST BE BEFORE generic
 app.use("/api/monitoring", authMiddleware, monitoringRoutes);
 app.use("/api/source-config", authMiddleware, sourceConfigRoutes);
 const monitoringRoutesV2 = require("./src/routes/monitoringRoutesV2");
@@ -235,9 +250,11 @@ app.use("/api/opportunity", authMiddleware, opportunityRoutes);  // Opportunity 
 const intelligenceIndexRoutes = require("./src/routes/intelligenceIndexRoutes");
 app.use("/api/intelligence-index", intelligenceIndexRoutes); // No auth middleware here - handled per route
 
-// ⚡ ENHANCED CLAUDE ROUTES - Load AFTER original routes
-// This now only handles endpoints that aren't already defined above
-app.use("/api", enhancedClaudeRoutes); // Generic Claude fallback for missing endpoints
+// ⚡ ENHANCED CLAUDE ROUTES - PERMANENTLY DISABLED
+// WARNING: DO NOT ENABLE - These routes conflict with and override the sophisticated implementations
+// The original routes in contentRoutes.js, crisisRoutes.js, mediaRoutes.js, and campaignRoutes.js
+// have industry-specific prompts and detailed implementations that work correctly
+// app.use("/api", enhancedClaudeRoutes); // DISABLED - conflicts with specific routes
 
 // CLAUDE TEST ROUTES - For verifying Claude integration
 const claudeTestRoute = require("./src/routes/claudeTestRoute");
