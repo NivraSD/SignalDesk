@@ -2,10 +2,10 @@
   "name": "signaldesk-api",
   "version": "1.0.0",
   "description": "SignalDesk API Backend",
-  "main": "server.js",
+  "main": "backend/index.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
+    "start": "node backend/index.js",
+    "dev": "nodemon backend/index.js",
     "test": "node -e \"console.log('Server test passed')\""
   },
   "keywords": [
