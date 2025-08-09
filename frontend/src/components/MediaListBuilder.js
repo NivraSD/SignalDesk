@@ -178,58 +178,27 @@ const MediaListBuilder = () => {
         modifiedQuery = `journalists covering ${parts.join(" AND ")}`;
       }
 
-      const response = await fetch(`${API_BASE_URL}/content/ai-generate`, {
+      const response = await fetch(`${API_BASE_URL}/media/search-journalists`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          prompt: `Find journalists who match this search: "${modifiedQuery}"
-          
-${searchInstructions}
-
-Generate a list of 10-20 relevant journalists with the following information for each:
-- Name
-- Publication/Outlet
-- Beat/Coverage area
-- Email (if publicly available, otherwise mark as "Request via outlet")
-- Brief bio or recent coverage topics
-- Twitter handle (if available)
-- LinkedIn (if available)
-- Why they're relevant to this search
-
-Format as a JSON array of journalist objects.`,
-          type: "media-search",
-          tone: "informative",
+          query: modifiedQuery,
+          filters: {
+            instructions: searchInstructions
+          },
+          projectId: activeProject?.id
         }),
       });
 
       const data = await response.json();
 
-      if (response.ok) {
-        // Parse the Claude response to extract journalist data
-        const content = data.content || data.response || data;
-        let journalists = [];
+      if (response.ok && data.success) {
+        // Get journalists from the response
+        const journalists = data.journalists || [];
         
-        try {
-          // Try to parse as JSON first
-          if (typeof content === 'string') {
-            const jsonMatch = content.match(/\[[\s\S]*\]/);
-            if (jsonMatch) {
-              journalists = JSON.parse(jsonMatch[0]);
-            } else {
-              // Parse text response into journalist objects
-              journalists = parseJournalistText(content);
-            }
-          } else if (Array.isArray(content)) {
-            journalists = content;
-          }
-        } catch (e) {
-          console.log('Parsing journalist data as text');
-          journalists = parseJournalistText(content);
-        }
-
         setJournalists(journalists);
         setSearchStatus(
           `✅ Found ${journalists.length} relevant journalists`
