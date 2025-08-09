@@ -7,7 +7,8 @@ import Dashboard from "./components/Dashboard";
 import AIAssistant from "./components/AIAssistant";
 import ContentGenerator from "./components/ContentGenerator";
 import CrisisCommandCenter from "./components/CrisisCommandCenter";
-import MediaListBuilder from "./components/MediaListBuilder";
+// import MediaListBuilder from "./components/MediaListBuilder"; // OLD - Basic journalist search
+import MediaIntelligence from "./components/MediaIntelligence"; // NEW - Full intelligence platform
 import CampaignIntelligence from "./components/CampaignIntelligence";
 import Monitoring from "./components/Monitoring";
 import Reports from "./components/Reports";
@@ -91,7 +92,7 @@ function AppRoutes() {
         <Route index element={<MemoryVault />} />
         <Route path="ai-assistant" element={<AIAssistant />} />
         <Route path="content-generator" element={<ContentGenerator />} />
-        <Route path="media-list" element={<MediaListBuilder />} />
+        <Route path="media-list" element={<MediaIntelligence />} />
         <Route
           path="campaign-intelligence"
           element={<CampaignIntelligence />}
