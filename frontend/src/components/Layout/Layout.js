@@ -68,9 +68,9 @@ const Layout = () => {
     },
     {
       path: `/projects/${projectId}/media-list`,
-      label: "Media List Builder",
+      label: "Media Intelligence",
       icon: Users,
-      description: "Media contacts",
+      description: "AI-powered media discovery",
     },
     {
       path: `/projects/${projectId}/campaign-intelligence`,
