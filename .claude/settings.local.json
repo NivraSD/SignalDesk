@@ -100,7 +100,8 @@
       "Bash(railway service:*)",
       "Bash(git pull:*)",
       "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/test-claude-endpoints.sh)",
-      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/monitor-deployment.sh)"
+      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/monitor-deployment.sh)",
+      "Bash(railway restart:*)"
     ],
     "deny": []
   }

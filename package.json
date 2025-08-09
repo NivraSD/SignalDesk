@@ -4,10 +4,11 @@
   "description": "SignalDesk API Backend",
   "main": "app.js",
   "scripts": {
-    "build": "echo 'Build timestamp:' && date && echo 'Force rebuild v3 - using app.js'",
+    "build": "echo 'Build timestamp:' && date && echo 'Force rebuild v4 - CACHE BUST' && echo 'Build ID: '$(date +%s)",
     "start": "node app.js",
     "dev": "nodemon backend/index.js",
-    "test": "node -e \"console.log('Server test passed')\""
+    "test": "node -e \"console.log('Server test passed')\"",
+    "railway-deploy": "npm ci --production=false && node app.js"
   },
   "keywords": [
     "api",
