@@ -553,12 +553,45 @@ router.post("/unified-chat", async (req, res) => {
     const { message, mode, context } = req.body;
     const userId = req.user.id;
 
-    console.log("Unified chat request:", { mode, context, messageLength: message?.length });
+    console.log("Unified chat request:", { 
+      mode, 
+      messageLength: message?.length,
+      contentTypeId: context?.contentTypeId,
+      contentTypeName: context?.contentTypeName,
+      previousMessagesCount: context?.previousMessages?.length || 0
+    });
 
+    // Detect if this is an initial content type selection
+    const isInitialContentTypeSelection = context?.contentTypeId && 
+      (!context?.previousMessages || context.previousMessages.length <= 1) &&
+      message.toLowerCase().includes('i want to create');
+    
+    // Detect if user is explicitly requesting generation (after conversation)
+    const lowerMessage = message.toLowerCase();
+    const hasEnoughConversation = context?.previousMessages && context.previousMessages.length >= 4;
+    const isExplicitGenerationRequest = hasEnoughConversation && (
+      lowerMessage === 'yes' ||
+      lowerMessage === 'yes please' ||
+      lowerMessage === 'generate' ||
+      lowerMessage === 'generate it' ||
+      lowerMessage === 'create it' ||
+      lowerMessage === 'go ahead' ||
+      lowerMessage.includes('yes') && lowerMessage.includes('generate')
+    );
+
+    console.log("Generation detection:", { 
+      isInitialContentTypeSelection, 
+      isExplicitGenerationRequest,
+      hasEnoughConversation 
+    });
+    
     // Build context-aware prompt based on mode
     let systemPrompt = "";
+    let shouldGenerateContent = false;
     
     if (mode === 'content' && context?.folder === 'content-generator') {
+      if (isInitialContentTypeSelection) {
+        // Initial selection - start conversation
       systemPrompt = `You are Claude, a helpful writing assistant for PR content.
 
 CRITICAL CONVERSATION FLOW:
