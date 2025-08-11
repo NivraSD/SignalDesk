@@ -315,15 +315,36 @@ router.post("/chat", async (req, res) => {
     if (mode === 'content' && context?.folder === 'content-generator') {
       // Check for generation FIRST (takes priority over editing)
       if (isDirectGenerationRequest && !isEditingContent) {
-        // User wants NEW content - generate it directly
-        systemPrompt = `IMPORTANT: Generate actual PR/marketing content NOW based on the user's request. Do not ask questions or have a conversation. 
+        // Detect content type from the message
+        const msgLower = message.toLowerCase();
+        let contentTypeInstruction = "";
+        
+        if (msgLower.includes('press release') || msgLower.includes('announcement')) {
+          contentTypeInstruction = "Create a complete press release with FOR IMMEDIATE RELEASE header, headline, dateline, body paragraphs, boilerplate, and contact information.";
+        } else if (msgLower.includes('social') || msgLower.includes('tweet') || msgLower.includes('linkedin') || msgLower.includes('facebook')) {
+          contentTypeInstruction = "Create social media posts suitable for the platform mentioned (or multiple platforms if not specified). Include hashtags and keep within platform character limits.";
+        } else if (msgLower.includes('email') || msgLower.includes('newsletter')) {
+          contentTypeInstruction = "Create a complete email with subject line, greeting, body content, call-to-action, and signature.";
+        } else if (msgLower.includes('blog') || msgLower.includes('article')) {
+          contentTypeInstruction = "Create a complete blog post with title, introduction, main sections with headers, and conclusion.";
+        } else if (msgLower.includes('thought leadership') || msgLower.includes('opinion')) {
+          contentTypeInstruction = "Create a thought leadership piece with strategic insights, industry analysis, and forward-looking perspectives.";
+        } else if (msgLower.includes('q&a') || msgLower.includes('faq') || msgLower.includes('questions')) {
+          contentTypeInstruction = "Create a Q&A document with relevant questions and comprehensive answers.";
+        } else if (msgLower.includes('crisis') || msgLower.includes('response') || msgLower.includes('statement')) {
+          contentTypeInstruction = "Create a crisis response or official statement addressing the situation professionally.";
+        } else if (msgLower.includes('pitch') || msgLower.includes('media pitch')) {
+          contentTypeInstruction = "Create a media pitch email targeted at journalists with a compelling story angle.";
+        } else {
+          // Default to press release if type is unclear
+          contentTypeInstruction = "Create a complete press release with FOR IMMEDIATE RELEASE header, as the content type was not clearly specified.";
+        }
+        
+        systemPrompt = `IMPORTANT: Generate actual PR/marketing content NOW. Do not ask questions or have a conversation.
 
-If they ask for a press release, create a complete press release with FOR IMMEDIATE RELEASE header.
-If they ask for social media content, create actual social posts.
-If they ask for an email, create a complete email.
-If the type is unclear, default to creating a press release.
+${contentTypeInstruction}
 
-Create the ACTUAL CONTENT, not a description of what you would create.`;
+Create the ACTUAL CONTENT based on the user's request, not a description of what you would create.`;
       } else if (isEditingContent && context?.currentContent) {
         // User wants to EDIT existing content - we have the content in context
         systemPrompt = `You need to edit the following content based on the user's request. Here is the current content:
