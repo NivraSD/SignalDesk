@@ -454,15 +454,23 @@ Make the requested edits and return the COMPLETE edited version. Do not explain 
 
     // Include session history in the prompt for context
     let messagesForClaude = [];
+    let response;
+    
     if (session && session.messages.length > 1) {
+      // We have conversation history - use it
       // Include last 10 messages for context (excluding current message which is already added)
       messagesForClaude = session.messages.slice(-11, -1);
       // Add current message to the array
       messagesForClaude.push({ role: 'user', content: message });
+      
+      // Pass empty prompt since we're using messagesForClaude
+      // The claudeService will use the messages array directly when conversationHistory.length > 0
+      response = await claudeService.sendMessage('', messagesForClaude);
+    } else {
+      // First message in session - use the fullPrompt  
+      // Pass empty array so claudeService uses the prompt
+      response = await claudeService.sendMessage(fullPrompt, []);
     }
-    
-    // Send to Claude with conversation history
-    const response = await claudeService.sendMessage(fullPrompt, messagesForClaude);
     
     // Add AI response to session
     if (session) {
