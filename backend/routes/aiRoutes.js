@@ -342,14 +342,29 @@ router.post("/chat", async (req, res) => {
       lowerMessage.includes('tweet') ||
       lowerMessage.includes('share') ||
       lowerMessage.includes('publish') ||
-      context?.userRequestedGeneration ||
-      (mode === 'content' && context?.folder === 'content-generator'); // If in content generator, assume generation
+      context?.userRequestedGeneration;
+    
+    // Check if this is just a content type selection (start conversation, don't generate yet)
+    const isContentTypeSelection = lowerMessage.startsWith('i want to create a') && !lowerMessage.includes('about') && !lowerMessage.includes('for');
 
     // Determine system prompt based on mode
     let systemPrompt = "";
     if (mode === 'content' && context?.folder === 'content-generator') {
-      // Check for generation FIRST (takes priority over editing)
-      if (isDirectGenerationRequest && !isEditingContent) {
+      if (isContentTypeSelection) {
+        // User just selected a content type - start conversational flow
+        const contentType = context?.contentTypeName || 'content';
+        systemPrompt = `You are Claude, a helpful AI assistant for content creation. The user wants to create ${contentType}. 
+        
+Start a friendly conversation to gather the information needed. Ask one question at a time to understand:
+- What they want to announce/communicate
+- Key details about their company/product
+- Target audience
+- Any specific requirements
+
+Be conversational and helpful. Once you have enough information, you can generate the actual content.`;
+        
+      } else if (isDirectGenerationRequest && !isEditingContent) {
+        // User is explicitly requesting content generation
         // Use explicit content type if provided, otherwise detect from message
         const contentTypeId = context?.contentTypeId;
         const contentTypeName = context?.contentTypeName;
@@ -509,7 +524,8 @@ Make the requested edits and return the COMPLETE edited version. Do not explain 
     };
 
     // Mark as generated content if it's a direct generation request, edit request, or looks like content
-    const isGeneratedContent = (isDirectGenerationRequest || isGeneratingContent || isEditingContent || (context?.currentContent && detectGeneratedContent(response)));
+    // Don't mark conversational responses as generated content
+    const isGeneratedContent = (isDirectGenerationRequest || isGeneratingContent || isEditingContent || (context?.currentContent && detectGeneratedContent(response))) && !isContentTypeSelection;
 
     res.json({
       success: true,
