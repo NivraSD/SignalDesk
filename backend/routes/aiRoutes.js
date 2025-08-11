@@ -358,20 +358,26 @@ router.post("/chat", async (req, res) => {
         } else if (msgLower.includes('blog') || msgLower.includes('article')) {
           contentTypeInstruction = "Create a complete blog post with title, introduction, main sections with headers, and conclusion.";
         } else {
-          // Default to press release if type is unclear
-          contentTypeInstruction = "Create a complete press release with FOR IMMEDIATE RELEASE header, as the content type was not clearly specified.";
+          // If no content type specified, ask user to select one
+          console.log("[CONTENT GENERATION] No content type detected - asking user to select");
+          systemPrompt = "I'd be happy to generate content for you! Please select a content type from the options in the Content Generator panel (Press Release, Social Media Post, Thought Leadership, etc.) and I'll create the appropriate content for you.";
+          // Skip the generation instruction
+          contentTypeInstruction = "";
         }
         
         console.log("[CONTENT GENERATION] Type detected:", detectedType);
         console.log("[CONTENT GENERATION] Instruction:", contentTypeInstruction.substring(0, 100));
         
-        systemPrompt = `IMPORTANT: Generate actual PR/marketing content NOW. Do not ask questions or have a conversation.
+        if (contentTypeInstruction) {
+          systemPrompt = `IMPORTANT: Generate actual PR/marketing content NOW. Do not ask questions or have a conversation.
 
 ${contentTypeInstruction}
 
 The user said: "${message}"
 
 Create the ACTUAL CONTENT based on the user's request, not a description of what you would create.`;
+        }
+        // systemPrompt is already set if no content type (asks user to select)
       } else if (isEditingContent && context?.currentContent) {
         // User wants to EDIT existing content - we have the content in context
         systemPrompt = `You need to edit the following content based on the user's request. Here is the current content:

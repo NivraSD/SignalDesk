@@ -39,6 +39,8 @@ const RailwayDraggable = () => {
   // Content Generator state - PRESERVING ALL FUNCTIONALITY
   const [generatedContent, setGeneratedContent] = useState('');
   const [currentContentType, setCurrentContentType] = useState(null);
+  const [selectedContentTypeId, setSelectedContentTypeId] = useState(null);
+  const [selectedContentTypeName, setSelectedContentTypeName] = useState(null);
   
   // Drag and resize state
   const [draggedElement, setDraggedElement] = useState(null);
@@ -396,6 +398,11 @@ const RailwayDraggable = () => {
         timestamp: new Date()
       };
       setMessages(prev => [...prev, userMsg]);
+      // Store the content type for future use
+      if (msg.contentTypeId) {
+        setSelectedContentTypeId(msg.contentTypeId);
+        setSelectedContentTypeName(msg.contentTypeName);
+      }
       // Pass content type info if available from Content Generator
       sendMessage(msg.content, msg.contentTypeId, msg.contentTypeName);
     }
@@ -466,6 +473,10 @@ const RailwayDraggable = () => {
   // Enhanced AI message handling with natural conversation
   const sendMessage = async (text, contentTypeId = null, contentTypeName = null) => {
     if (!text?.trim()) return;
+    
+    // Use stored content type if not provided
+    const typeId = contentTypeId || selectedContentTypeId;
+    const typeName = contentTypeName || selectedContentTypeName;
 
     // Process message through adaptive AI service
     const hasContent = !!(generatedContent && generatedContent.trim());
@@ -581,8 +592,8 @@ const RailwayDraggable = () => {
         message: text,
         mode: selectedFeature?.id === 'content-generator' ? 'content' : 'general',
         folder: selectedFeature?.id,
-        contentTypeId,
-        contentTypeName,
+        contentTypeId: typeId,
+        contentTypeName: typeName,
         userRequestedGeneration,
         userRequestedEdit
       });
@@ -605,8 +616,8 @@ const RailwayDraggable = () => {
             currentContent: generatedContent,
             userRequestedGeneration: userRequestedGeneration,
             userRequestedEdit: userRequestedEdit,
-            contentTypeId: contentTypeId,
-            contentTypeName: contentTypeName
+            contentTypeId: typeId,
+            contentTypeName: typeName
           }
         })
       });
