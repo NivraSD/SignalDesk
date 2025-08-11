@@ -327,25 +327,26 @@ router.post("/chat", async (req, res) => {
       conversationContext += "\n";
     }
 
-    // Check if user is explicitly requesting content generation
+    // Check if this is just a content type selection (start conversation, don't generate yet)
     const lowerMessage = message.toLowerCase();
-    const isDirectGenerationRequest = 
+    const isContentTypeSelection = lowerMessage.startsWith('i want to create a') && !lowerMessage.includes('about') && !lowerMessage.includes('for');
+    
+    // Check if user is explicitly requesting content generation (but not if it's just type selection)
+    const isDirectGenerationRequest = !isContentTypeSelection && (
       lowerMessage.includes('generate') || 
-      lowerMessage.includes('create') || 
+      (lowerMessage.includes('create') && (lowerMessage.includes('about') || lowerMessage.includes('for'))) ||
       lowerMessage.includes('write') ||
       lowerMessage.includes('draft') ||
       lowerMessage.includes('make me') ||
       lowerMessage.includes('i need a') ||
-      lowerMessage.includes('i want a') ||
+      (lowerMessage.includes('i want a') && !lowerMessage.startsWith('i want to create a')) ||
       lowerMessage.includes('announce') ||
       lowerMessage.includes('post') ||
       lowerMessage.includes('tweet') ||
       lowerMessage.includes('share') ||
       lowerMessage.includes('publish') ||
-      context?.userRequestedGeneration;
-    
-    // Check if this is just a content type selection (start conversation, don't generate yet)
-    const isContentTypeSelection = lowerMessage.startsWith('i want to create a') && !lowerMessage.includes('about') && !lowerMessage.includes('for');
+      context?.userRequestedGeneration
+    );
 
     // Determine system prompt based on mode
     let systemPrompt = "";
