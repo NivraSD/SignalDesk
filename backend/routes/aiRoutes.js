@@ -282,7 +282,15 @@ router.post("/chat", async (req, res) => {
     const { message, mode, context, sessionId } = req.body;
     const userId = req.user.id;
 
-    console.log("AI chat request:", { mode, sessionId, messageLength: message?.length });
+    console.log("[AI CHAT] Request received:", { 
+      mode, 
+      sessionId, 
+      message: message,
+      folder: context?.folder,
+      hasCurrentContent: !!context?.currentContent,
+      userRequestedGeneration: context?.userRequestedGeneration,
+      userRequestedEdit: context?.userRequestedEdit
+    });
 
     // Check for content generation or edit requests
     const isGeneratingContent = context?.userRequestedGeneration;
@@ -317,13 +325,18 @@ router.post("/chat", async (req, res) => {
       if (isDirectGenerationRequest && !isEditingContent) {
         // Detect content type from the message
         const msgLower = message.toLowerCase();
+        console.log("[CONTENT GENERATION] Detecting type from message:", message);
         let contentTypeInstruction = "";
+        let detectedType = "unknown";
         
         if (msgLower.includes('press release')) {
+          detectedType = "press-release";
           contentTypeInstruction = "Create a complete press release with FOR IMMEDIATE RELEASE header, headline, dateline, body paragraphs, boilerplate, and contact information.";
         } else if (msgLower.includes('social media post')) {
+          detectedType = "social-media";
           contentTypeInstruction = "Create social media posts suitable for multiple platforms (Twitter/X, LinkedIn, Facebook). Include appropriate hashtags, emojis, and keep within platform character limits. Provide versions for different platforms.";
         } else if (msgLower.includes('thought leadership')) {
+          detectedType = "thought-leadership";
           contentTypeInstruction = "Create a thought leadership article with strategic insights, industry analysis, data-driven arguments, and forward-looking perspectives. Include a compelling headline and executive summary.";
         } else if (msgLower.includes('media pitch')) {
           contentTypeInstruction = "Create a media pitch email targeted at journalists. Include subject line, personalized greeting, news hook, story angle, supporting points, and contact information.";
@@ -342,9 +355,14 @@ router.post("/chat", async (req, res) => {
           contentTypeInstruction = "Create a complete press release with FOR IMMEDIATE RELEASE header, as the content type was not clearly specified.";
         }
         
+        console.log("[CONTENT GENERATION] Type detected:", detectedType);
+        console.log("[CONTENT GENERATION] Instruction:", contentTypeInstruction.substring(0, 100));
+        
         systemPrompt = `IMPORTANT: Generate actual PR/marketing content NOW. Do not ask questions or have a conversation.
 
 ${contentTypeInstruction}
+
+The user said: "${message}"
 
 Create the ACTUAL CONTENT based on the user's request, not a description of what you would create.`;
       } else if (isEditingContent && context?.currentContent) {

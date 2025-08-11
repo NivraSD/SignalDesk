@@ -576,6 +576,14 @@ const RailwayDraggable = () => {
         text.toLowerCase().includes(keyword)
       ) && !userRequestedGeneration; // Don't treat as edit if it's a generation request
       
+      console.log('[FRONTEND] Sending AI request:', {
+        message: text,
+        mode: selectedFeature?.id === 'content-generator' ? 'content' : 'general',
+        folder: selectedFeature?.id,
+        userRequestedGeneration,
+        userRequestedEdit
+      });
+      
       const response = await fetch(`${API_BASE_URL}/ai/chat`, {
         method: 'POST',
         headers: {
