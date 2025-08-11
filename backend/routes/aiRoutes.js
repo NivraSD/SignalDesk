@@ -276,6 +276,70 @@ The future belongs to organizations that view communication not as a support fun
   }
 });
 
+// Chat endpoint for Railway UI AI Assistant
+router.post("/chat", async (req, res) => {
+  try {
+    const { message, mode, context, sessionId } = req.body;
+    const userId = req.user.id;
+
+    console.log("AI chat request:", { mode, sessionId, messageLength: message?.length });
+
+    // Check for content generation or edit requests
+    const isGeneratingContent = context?.userRequestedGeneration;
+    const isEditingContent = context?.userRequestedEdit;
+    
+    // Build conversation history context
+    let conversationContext = "";
+    if (context?.previousMessages && Array.isArray(context.previousMessages)) {
+      conversationContext = "Previous conversation:\n";
+      context.previousMessages.forEach(msg => {
+        conversationContext += `${msg.type === 'user' ? 'User' : 'Assistant'}: ${msg.content}\n`;
+      });
+      conversationContext += "\n";
+    }
+
+    // Determine system prompt based on mode
+    let systemPrompt = "You are Claude, an AI assistant for the SignalDesk PR platform. ";
+    if (mode === 'content' && context?.folder === 'content-generator') {
+      systemPrompt += "You're helping with content creation. Ask one question at a time, be conversational.";
+    } else if (mode === 'campaign') {
+      systemPrompt += "You're a strategic campaign advisor.";
+    } else if (mode === 'media') {
+      systemPrompt += "You're a media relations expert.";
+    }
+
+    // Build full prompt
+    const fullPrompt = `${systemPrompt}\n\n${conversationContext}User: ${message}\n\nAssistant:`;
+
+    // Send to Claude
+    const response = await claudeService.sendMessage(fullPrompt);
+
+    // Check if this should be marked as generated content
+    const detectGeneratedContent = (text) => {
+      if (!text || text.length < 200) return false;
+      const indicators = ['FOR IMMEDIATE RELEASE', 'Subject:', 'Dear ', '###', 'Q:', 'A:'];
+      return indicators.some(ind => text.includes(ind));
+    };
+
+    const isGeneratedContent = (isGeneratingContent || isEditingContent) && detectGeneratedContent(response);
+
+    res.json({
+      success: true,
+      response: response,
+      isGeneratedContent: isGeneratedContent,
+      mode: mode,
+      sessionId: sessionId
+    });
+  } catch (error) {
+    console.error("Error in AI chat:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to process chat message",
+      error: error.message
+    });
+  }
+});
+
 // Unified chat endpoint for AI Assistant
 router.post("/unified-chat", async (req, res) => {
   try {
