@@ -327,44 +327,42 @@ router.post("/chat", async (req, res) => {
       conversationContext += "\n";
     }
 
-    // Check if this is just a content type selection (start conversation, don't generate yet)
     const lowerMessage = message.toLowerCase();
-    const isContentTypeSelection = lowerMessage.startsWith('i want to create a') && !lowerMessage.includes('about') && !lowerMessage.includes('for');
     
-    // Check if user is explicitly requesting content generation (but not if it's just type selection)
-    const isDirectGenerationRequest = !isContentTypeSelection && (
-      lowerMessage.includes('generate') || 
-      (lowerMessage.includes('create') && (lowerMessage.includes('about') || lowerMessage.includes('for'))) ||
-      lowerMessage.includes('write') ||
-      lowerMessage.includes('draft') ||
-      lowerMessage.includes('make me') ||
-      lowerMessage.includes('i need a') ||
-      (lowerMessage.includes('i want a') && !lowerMessage.startsWith('i want to create a')) ||
-      lowerMessage.includes('announce') ||
-      lowerMessage.includes('post') ||
-      lowerMessage.includes('tweet') ||
-      lowerMessage.includes('share') ||
-      lowerMessage.includes('publish') ||
-      context?.userRequestedGeneration
-    );
+    // Check if user is explicitly requesting content generation
+    // NEVER generate on first message, even if it contains trigger words
+    const isExplicitGenerationRequest = 
+      context?.userRequestedGeneration ||
+      (session && session.messages.length > 2 && (
+        lowerMessage.includes('generate') || 
+        lowerMessage.includes('create it') ||
+        lowerMessage.includes('make it') ||
+        lowerMessage.includes('go ahead') ||
+        lowerMessage.includes('yes, generate') ||
+        lowerMessage.includes('let\'s do it')
+      ));
+    
+    // Check if this is initial content type selection  
+    const isInitialContentTypeMessage = lowerMessage.startsWith('i want to create a') || 
+                                       lowerMessage.startsWith('i need a') ||
+                                       lowerMessage.startsWith('help me create');
 
     // Determine system prompt based on mode
     let systemPrompt = "";
     if (mode === 'content' && context?.folder === 'content-generator') {
-      if (isContentTypeSelection) {
-        // User just selected a content type - start conversational flow
-        const contentType = context?.contentTypeName || 'content';
-        systemPrompt = `You are Claude, a helpful AI assistant for content creation. The user wants to create ${contentType}. 
-        
-Start a friendly conversation to gather the information needed. Ask one question at a time to understand:
-- What they want to announce/communicate
-- Key details about their company/product
-- Target audience
-- Any specific requirements
+      if (isInitialContentTypeMessage) {
+        // User selected a content type - provide tips and start conversation
+        const contentType = context?.contentTypeName || context?.contentTypeId || 'content';
+        systemPrompt = `You are Claude, a helpful AI assistant for content creation. The user wants to create a ${contentType}.
 
-Be conversational and helpful. Once you have enough information, you can generate the actual content.`;
+First, provide 2-3 helpful tips for creating effective ${contentType}.
+Then ask ONE specific question to start gathering information.
+
+Be conversational and ask only one question at a time. Continue this conversation until you have enough details to create compelling content. When you feel you have enough information, ask the user if they'd like you to generate the content.
+
+Never generate content immediately - always have a conversation first.`;
         
-      } else if (isDirectGenerationRequest && !isEditingContent) {
+      } else if (isExplicitGenerationRequest && !isEditingContent) {
         // User is explicitly requesting content generation
         // Use explicit content type if provided, otherwise detect from message
         const contentTypeId = context?.contentTypeId;
@@ -439,12 +437,16 @@ Create the ACTUAL CONTENT based on the user's request, not a description of what
 ${context.currentContent}
 
 Make the requested edits and return the COMPLETE edited version. Do not explain what you're doing, just provide the edited content.`;
-      } else if (isDirectGenerationRequest && context?.contentContext) {
+      } else if (isExplicitGenerationRequest && context?.contentContext) {
         // User has provided context and wants content generated
         systemPrompt = `Generate the requested PR/marketing content immediately based on the context provided. Create actual, complete content - not a conversation about it. Be comprehensive and professional.`;
       } else {
-        // General conversation mode
-        systemPrompt = "You are Claude, an AI assistant for the SignalDesk PR platform. You're helping with content creation. Ask one question at a time, be conversational.";  
+        // General conversation mode - continue gathering information
+        systemPrompt = `You are Claude, an AI assistant for the SignalDesk PR platform. You're helping create ${context?.contentTypeName || 'content'}.
+
+Continue the conversation by asking ONE specific question at a time to gather more details. When you feel you have enough information to create compelling content, ask the user if they'd like you to generate it.
+
+Be conversational and helpful. Focus on gathering the key information needed to create excellent content.`;  
       }
     } else if (mode === 'campaign') {
       systemPrompt = "You are Claude, a strategic campaign advisor for the SignalDesk PR platform.";
@@ -452,7 +454,7 @@ Make the requested edits and return the COMPLETE edited version. Do not explain 
       systemPrompt = "You are Claude, a media relations expert for the SignalDesk PR platform.";
     } else {
       // Default mode - check if generation is requested
-      if (isDirectGenerationRequest) {
+      if (isExplicitGenerationRequest) {
         systemPrompt = `Generate the requested PR/marketing content immediately. Create a complete, professional piece of content. Default to a press release format with FOR IMMEDIATE RELEASE header if the type is unclear.`;
       } else {
         systemPrompt = "You are Claude, an AI assistant for the SignalDesk PR platform.";
@@ -461,8 +463,8 @@ Make the requested edits and return the COMPLETE edited version. Do not explain 
 
     // Build full prompt
     let fullPrompt;
-    if (isDirectGenerationRequest) {
-      // For direct generation requests, put the instruction at the end for emphasis
+    if (isExplicitGenerationRequest) {
+      // For explicit generation requests, put the instruction at the end for emphasis
       fullPrompt = `${conversationContext}User: ${message}\n\n${systemPrompt}\n\nGenerate the content now:`;
     } else {
       fullPrompt = `${systemPrompt}\n\n${conversationContext}User: ${message}\n\nAssistant:`;
@@ -524,9 +526,9 @@ Make the requested edits and return the COMPLETE edited version. Do not explain 
       return indicators.some(ind => text.includes(ind)) || hasStructure;
     };
 
-    // Mark as generated content if it's a direct generation request, edit request, or looks like content
-    // Don't mark conversational responses as generated content
-    const isGeneratedContent = (isDirectGenerationRequest || isGeneratingContent || isEditingContent || (context?.currentContent && detectGeneratedContent(response))) && !isContentTypeSelection;
+    // Mark as generated content ONLY when explicitly generating or editing
+    // Never mark conversational responses as generated content
+    const isGeneratedContent = (isExplicitGenerationRequest || isGeneratingContent || isEditingContent || (context?.currentContent && detectGeneratedContent(response)));
 
     res.json({
       success: true,
