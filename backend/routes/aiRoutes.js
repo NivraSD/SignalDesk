@@ -289,7 +289,9 @@ router.post("/chat", async (req, res) => {
       folder: context?.folder,
       hasCurrentContent: !!context?.currentContent,
       userRequestedGeneration: context?.userRequestedGeneration,
-      userRequestedEdit: context?.userRequestedEdit
+      userRequestedEdit: context?.userRequestedEdit,
+      contentTypeId: context?.contentTypeId,
+      contentTypeName: context?.contentTypeName
     });
 
     // Check for content generation or edit requests
@@ -323,28 +325,33 @@ router.post("/chat", async (req, res) => {
     if (mode === 'content' && context?.folder === 'content-generator') {
       // Check for generation FIRST (takes priority over editing)
       if (isDirectGenerationRequest && !isEditingContent) {
-        // Detect content type from the message
+        // Use explicit content type if provided, otherwise detect from message
+        const contentTypeId = context?.contentTypeId;
+        const contentTypeName = context?.contentTypeName;
         const msgLower = message.toLowerCase();
-        console.log("[CONTENT GENERATION] Detecting type from message:", message);
-        let contentTypeInstruction = "";
-        let detectedType = "unknown";
         
-        if (msgLower.includes('press release')) {
+        console.log("[CONTENT GENERATION] Content type info:", { contentTypeId, contentTypeName, message });
+        
+        let contentTypeInstruction = "";
+        let detectedType = contentTypeId || "unknown";
+        
+        // Use explicit content type ID if provided, otherwise fall back to message detection
+        if (contentTypeId === 'press-release' || (!contentTypeId && msgLower.includes('press release'))) {
           detectedType = "press-release";
           contentTypeInstruction = "Create a complete press release with FOR IMMEDIATE RELEASE header, headline, dateline, body paragraphs, boilerplate, and contact information.";
-        } else if (msgLower.includes('social media post')) {
+        } else if (contentTypeId === 'social-post' || (!contentTypeId && msgLower.includes('social media post'))) {
           detectedType = "social-media";
           contentTypeInstruction = "Create social media posts suitable for multiple platforms (Twitter/X, LinkedIn, Facebook). Include appropriate hashtags, emojis, and keep within platform character limits. Provide versions for different platforms.";
-        } else if (msgLower.includes('thought leadership')) {
+        } else if (contentTypeId === 'thought-leadership' || (!contentTypeId && msgLower.includes('thought leadership'))) {
           detectedType = "thought-leadership";
           contentTypeInstruction = "Create a thought leadership article with strategic insights, industry analysis, data-driven arguments, and forward-looking perspectives. Include a compelling headline and executive summary.";
-        } else if (msgLower.includes('media pitch')) {
+        } else if (contentTypeId === 'media-pitch' || (!contentTypeId && msgLower.includes('media pitch'))) {
           contentTypeInstruction = "Create a media pitch email targeted at journalists. Include subject line, personalized greeting, news hook, story angle, supporting points, and contact information.";
-        } else if (msgLower.includes('q&a document') || msgLower.includes('q and a document')) {
+        } else if (contentTypeId === 'qa-doc' || (!contentTypeId && (msgLower.includes('q&a document') || msgLower.includes('q and a document')))) {
           contentTypeInstruction = "Create a Q&A document with 5-7 relevant questions and comprehensive answers. Format with clear Q: and A: labels.";
-        } else if (msgLower.includes('crisis response')) {
+        } else if (contentTypeId === 'crisis-response' || (!contentTypeId && msgLower.includes('crisis response'))) {
           contentTypeInstruction = "Create a crisis response statement that acknowledges the situation, expresses appropriate concern, outlines actions being taken, and provides next steps. Keep tone professional and empathetic.";
-        } else if (msgLower.includes('corporate messaging')) {
+        } else if (contentTypeId === 'corporate-messaging' || (!contentTypeId && msgLower.includes('corporate messaging'))) {
           contentTypeInstruction = "Create corporate messaging that aligns with company values, speaks to multiple stakeholders, and reinforces key brand messages. Include main message and supporting points.";
         } else if (msgLower.includes('email') || msgLower.includes('newsletter')) {
           contentTypeInstruction = "Create a complete email with subject line, greeting, body content, call-to-action, and signature.";

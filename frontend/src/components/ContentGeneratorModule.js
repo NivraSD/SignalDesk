@@ -80,10 +80,12 @@ const ContentGeneratorModule = ({ onAIMessage, generatedContent, onContentUpdate
   // Handle content type selection - triggers AI assistant
   const handleContentTypeSelect = (contentType) => {
     if (onAIMessage) {
-      // Send message to AI assistant to trigger tips and conversation flow
+      // Send message to AI assistant with explicit content type
       onAIMessage({
         type: 'user',
-        content: `I want to create a ${contentType.name.toLowerCase()}`
+        content: `I want to create a ${contentType.name.toLowerCase()}`,
+        contentTypeId: contentType.id,  // Pass explicit type ID
+        contentTypeName: contentType.name // Pass exact name
       });
     }
   };

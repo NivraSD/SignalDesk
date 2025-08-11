@@ -396,7 +396,8 @@ const RailwayDraggable = () => {
         timestamp: new Date()
       };
       setMessages(prev => [...prev, userMsg]);
-      sendMessage(msg.content);
+      // Pass content type info if available from Content Generator
+      sendMessage(msg.content, msg.contentTypeId, msg.contentTypeName);
     }
   };
 
@@ -463,7 +464,7 @@ const RailwayDraggable = () => {
   };
 
   // Enhanced AI message handling with natural conversation
-  const sendMessage = async (text) => {
+  const sendMessage = async (text, contentTypeId = null, contentTypeName = null) => {
     if (!text?.trim()) return;
 
     // Process message through adaptive AI service
@@ -580,6 +581,8 @@ const RailwayDraggable = () => {
         message: text,
         mode: selectedFeature?.id === 'content-generator' ? 'content' : 'general',
         folder: selectedFeature?.id,
+        contentTypeId,
+        contentTypeName,
         userRequestedGeneration,
         userRequestedEdit
       });
@@ -601,7 +604,9 @@ const RailwayDraggable = () => {
             contentContext: adaptiveAI.conversationState.contentContext,
             currentContent: generatedContent,
             userRequestedGeneration: userRequestedGeneration,
-            userRequestedEdit: userRequestedEdit
+            userRequestedEdit: userRequestedEdit,
+            contentTypeId: contentTypeId,
+            contentTypeName: contentTypeName
           }
         })
       });
