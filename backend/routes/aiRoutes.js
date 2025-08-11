@@ -401,10 +401,6 @@ router.post("/chat", async (req, res) => {
             // Skip the generation instruction
             contentTypeInstruction = "";
           }
-          console.log("[CONTENT GENERATION] No content type detected - asking user to select");
-          systemPrompt = "I'd be happy to generate content for you! Please select a content type from the options in the Content Generator panel (Press Release, Social Media Post, Thought Leadership, etc.) and I'll create the appropriate content for you.";
-          // Skip the generation instruction
-          contentTypeInstruction = "";
         }
         
         console.log("[CONTENT GENERATION] Type detected:", detectedType);
@@ -456,8 +452,30 @@ Make the requested edits and return the COMPLETE edited version. Do not explain 
       fullPrompt = `${systemPrompt}\n\n${conversationContext}User: ${message}\n\nAssistant:`;
     }
 
-    // Send to Claude
-    const response = await claudeService.sendMessage(fullPrompt);
+    // Include session history in the prompt for context
+    let messagesForClaude = [];
+    if (session && session.messages.length > 1) {
+      // Include last 10 messages for context (excluding current message which is already added)
+      messagesForClaude = session.messages.slice(-11, -1);
+      // Add current message to the array
+      messagesForClaude.push({ role: 'user', content: message });
+    }
+    
+    // Send to Claude with conversation history
+    const response = await claudeService.sendMessage(fullPrompt, messagesForClaude);
+    
+    // Add AI response to session
+    if (session) {
+      session.messages.push({ role: 'assistant', content: response });
+      
+      // Clean up old sessions (older than 1 hour)
+      const oneHourAgo = Date.now() - (60 * 60 * 1000);
+      for (const [key, sess] of conversationSessions.entries()) {
+        if (sess.lastActivity < oneHourAgo) {
+          conversationSessions.delete(key);
+        }
+      }
+    }
 
     // Check if this should be marked as generated content
     const detectGeneratedContent = (text) => {
