@@ -63,7 +63,7 @@ app.use(async (req, res, next) => {
 // Import existing routes
 const authRoutes = require('./routes/authRoutes');
 const projectRoutes = require('./routes/projectRoutes');
-const aiRoutes = require('./routes/aiRoutesV2'); // World-class PR Consultant AI
+const aiRoutes = require('./routes/aiRoutes');
 
 // Import enhanced routes
 const memoryVaultEnhancedRoutes = require('./src/routes/memoryVaultEnhancedRoutes');
@@ -71,7 +71,7 @@ const memoryVaultEnhancedRoutes = require('./src/routes/memoryVaultEnhancedRoute
 // Mount routes  
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
-app.use('/api/ai', aiRoutes); // Mount AI routes
+app.use('/api/ai', aiRoutes);
 app.use('/api/memoryvault', memoryVaultEnhancedRoutes);
 
 // Enhanced campaign routes

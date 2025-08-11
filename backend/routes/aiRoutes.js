@@ -566,7 +566,7 @@ router.post("/unified-chat", async (req, res) => {
       (!context?.previousMessages || context.previousMessages.length <= 1) &&
       message.toLowerCase().includes('i want to create');
     
-    // Detect if user is explicitly requesting generation (after conversation)
+    // Detect if user is explicitly requesting generation (MUST have conversation history)
     const lowerMessage = message.toLowerCase();
     const hasEnoughConversation = context?.previousMessages && context.previousMessages.length >= 4;
     const isExplicitGenerationRequest = hasEnoughConversation && (
@@ -576,7 +576,8 @@ router.post("/unified-chat", async (req, res) => {
       lowerMessage === 'generate it' ||
       lowerMessage === 'create it' ||
       lowerMessage === 'go ahead' ||
-      lowerMessage.includes('yes') && lowerMessage.includes('generate')
+      lowerMessage === 'please generate' ||
+      lowerMessage === "let's do it"
     );
 
     console.log("Generation detection:", { 
@@ -587,33 +588,56 @@ router.post("/unified-chat", async (req, res) => {
     
     // Build context-aware prompt based on mode
     let systemPrompt = "";
-    let shouldGenerateContent = false;
+    let isGeneratedContent = false; // CRITICAL FLAG
     
     if (mode === 'content' && context?.folder === 'content-generator') {
+      const contentType = context?.contentTypeName || 'content';
+      
       if (isInitialContentTypeSelection) {
-        // Initial selection - start conversation
-      systemPrompt = `You are Claude, a helpful writing assistant for PR content.
+        // Initial selection - start conversation with tips and ONE question
+        systemPrompt = `You are a helpful PR consultant. The user wants to create a ${contentType}.
 
-CRITICAL CONVERSATION FLOW:
-1. When user first says "I need a press release" (or any content type):
-   - Give 2-3 helpful tips for writing that type of content
-   - Then ask ONE specific question to start gathering info
-   - Never ask multiple questions at once
+Provide 2-3 brief tips for creating effective ${contentType}, then ask ONE specific question to understand their needs.
 
-2. For follow-ups:
-   - Ask only ONE question at a time  
-   - Keep it conversational and natural
-   - No bullet points, no numbered lists, no overwhelming options
-   - Wait for their answer before asking the next question
+Example: "Great choice! A strong ${contentType} starts with a clear message, targets the right audience, and includes compelling details. 
 
-3. Generate content when you have enough information
+To help me create something impactful for you, what's the main topic or announcement you want to communicate?"
 
-Example response to "I need a press release":
-"Great! Here are the key elements of an effective press release: Start with a compelling headline, lead with your most newsworthy angle, and include a strong quote from leadership. 
+Be warm and conversational. ONE question only.`;
+      
+      } else if (isExplicitGenerationRequest) {
+        // User said YES to generate - ACTUALLY GENERATE CONTENT NOW
+        systemPrompt = `Generate a complete ${contentType} based on this conversation. Create actual, professional content - not a description of what you would create.
 
-What's the main announcement you're making?"
+Previous conversation context:
+${context.previousMessages?.map(m => `${m.type}: ${m.content}`).join('\n')}
 
-Be conversational like the real Claude - one question at a time, no lists!`;
+Create the ACTUAL ${contentType} now. Make it complete and ready to use.`;
+        
+        isGeneratedContent = true; // THIS MAKES IT GO TO WORKSPACE
+      
+      } else {
+        // Continue conversation - ask follow-up questions
+        const messageCount = context?.previousMessages?.length || 0;
+        
+        if (messageCount >= 4) {
+          // After enough conversation, offer to generate
+          systemPrompt = `You are a helpful PR consultant continuing a conversation about creating ${contentType}.
+
+Based on the conversation, provide a brief insight or acknowledgment, then ask: "I think I have enough information to create a great ${contentType} for you. Would you like me to generate it?"
+
+Be natural and conversational.`;
+        } else {
+          // Keep gathering information
+          systemPrompt = `You are a helpful PR consultant gathering information to create ${contentType}.
+
+Continue the conversation by acknowledging their response and asking ONE specific follow-up question to better understand their needs.
+
+Focus on learning about: their target audience, key messages, tone preferences, or specific goals.
+
+Be conversational and ask only ONE question.`;
+        }
+      }
     } else if (mode === 'campaign') {
       systemPrompt = "You are a strategic campaign advisor helping plan and analyze PR campaigns.";
     } else if (mode === 'media') {
