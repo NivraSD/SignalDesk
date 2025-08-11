@@ -311,26 +311,46 @@ router.post("/chat", async (req, res) => {
       context?.userRequestedGeneration;
 
     // Determine system prompt based on mode
-    let systemPrompt = "You are Claude, an AI assistant for the SignalDesk PR platform. ";
+    let systemPrompt = "";
     if (mode === 'content' && context?.folder === 'content-generator') {
       if (isDirectGenerationRequest && context?.contentContext) {
         // User has provided context and wants content generated
-        systemPrompt += `Generate the requested content based on the context provided. Be comprehensive and professional.`;
+        systemPrompt = `Generate the requested PR/marketing content immediately based on the context provided. Create actual, complete content - not a conversation about it. Be comprehensive and professional.`;
       } else if (isDirectGenerationRequest) {
-        // User wants content - generate it directly if we can detect the type
-        systemPrompt += "The user is requesting content generation. Generate the requested content immediately. If the content type is unclear, generate a press release by default. Format the content professionally with proper structure.";
+        // User wants content - generate it directly
+        systemPrompt = `IMPORTANT: Generate actual PR/marketing content NOW based on the user's request. Do not ask questions or have a conversation. 
+
+If they ask for a press release, create a complete press release with FOR IMMEDIATE RELEASE header.
+If they ask for social media content, create actual social posts.
+If they ask for an email, create a complete email.
+If the type is unclear, default to creating a press release.
+
+Create the ACTUAL CONTENT, not a description of what you would create.`;
       } else {
         // General conversation mode
-        systemPrompt += "You're helping with content creation. Ask one question at a time, be conversational.";  
+        systemPrompt = "You are Claude, an AI assistant for the SignalDesk PR platform. You're helping with content creation. Ask one question at a time, be conversational.";  
       }
     } else if (mode === 'campaign') {
-      systemPrompt += "You're a strategic campaign advisor.";
+      systemPrompt = "You are Claude, a strategic campaign advisor for the SignalDesk PR platform.";
     } else if (mode === 'media') {
-      systemPrompt += "You're a media relations expert.";
+      systemPrompt = "You are Claude, a media relations expert for the SignalDesk PR platform.";
+    } else {
+      // Default mode - check if generation is requested
+      if (isDirectGenerationRequest) {
+        systemPrompt = `Generate the requested PR/marketing content immediately. Create a complete, professional piece of content. Default to a press release format with FOR IMMEDIATE RELEASE header if the type is unclear.`;
+      } else {
+        systemPrompt = "You are Claude, an AI assistant for the SignalDesk PR platform.";
+      }
     }
 
     // Build full prompt
-    const fullPrompt = `${systemPrompt}\n\n${conversationContext}User: ${message}\n\nAssistant:`;
+    let fullPrompt;
+    if (isDirectGenerationRequest) {
+      // For direct generation requests, put the instruction at the end for emphasis
+      fullPrompt = `${conversationContext}User: ${message}\n\n${systemPrompt}\n\nGenerate the content now:`;
+    } else {
+      fullPrompt = `${systemPrompt}\n\n${conversationContext}User: ${message}\n\nAssistant:`;
+    }
 
     // Send to Claude
     const response = await claudeService.sendMessage(fullPrompt);
