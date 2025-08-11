@@ -122,7 +122,9 @@
       "WebFetch(domain:railway.com)",
       "Bash(PORT=3001 node server-complete.js)",
       "Bash(PORT=3001 node ../frontend/backend/server-complete.js)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "WebFetch(domain:signaldesk-production.up.railway.app)",
+      "WebFetch(domain:signaldesk-frontend.vercel.app)"
     ],
     "deny": []
   }

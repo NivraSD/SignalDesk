@@ -623,10 +623,19 @@ const RailwayDraggable = () => {
       });
 
       const data = await response.json();
+      console.log('[FRONTEND] AI Chat Response:', {
+        success: data.success,
+        hasResponse: !!data.response,
+        responseLength: data.response?.length,
+        isGeneratedContent: data.isGeneratedContent,
+        mode: data.mode,
+        responsePreview: data.response?.substring(0, 300)
+      });
       
       if (data.success && data.response) {
         // Check if this is generated content that should go to Content Generator
         if (data.isGeneratedContent) {
+          console.log('[FRONTEND] Detected generated content, setting in Content Generator');
           // Auto-open Content Generator if not already open
           if (selectedFeature?.id !== 'content-generator') {
             const contentGen = activities.find(a => a.id === 'content-generator');
@@ -634,8 +643,13 @@ const RailwayDraggable = () => {
           }
           
           // Set the generated content directly in the feature
+          console.log('[FRONTEND] Setting content in Content Generator:', {
+            contentLength: data.response?.length,
+            contentPreview: data.response?.substring(0, 200)
+          });
           setGeneratedContent(data.response);
           detectContentType(data.response);
+          console.log('[FRONTEND] Content set successfully');
           
           // Show success message in chat instead
           const successMsg = {

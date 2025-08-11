@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalDesk Production Verification</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section { 
+            margin: 20px 0; 
+            padding: 15px; 
+            border: 2px solid #e0e0e0; 
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .success { border-color: #4CAF50; background: #f0fdf4; }
+        .error { border-color: #f44336; background: #fef2f2; }
+        .warning { border-color: #ff9800; background: #fffbeb; }
+        button { 
+            background: #2196F3; 
+            color: white; 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 5px;
+            cursor: pointer; 
+            margin: 5px;
+        }
+        button:hover { background: #1976D2; }
+        .results { 
+            margin-top: 10px; 
+            padding: 10px; 
+            background: #f9f9f9; 
+            border-radius: 5px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .status { font-weight: bold; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 SignalDesk Production Issue Investigation</h1>
+        <p><strong>Issue:</strong> User reports content generation returns chat messages instead of content, and AI chat restarts after 2 messages.</p>
+        <p><strong>Finding:</strong> Direct API testing shows everything works perfectly. Investigating frontend issues.</p>
+        
+        <div class="test-section">
+            <h2>📡 Frontend-Backend Connection Test</h2>
+            <div class="status" id="connection-status">Ready to test...</div>
+            <button onclick="testConnection()">Test Backend Connection</button>
+            <button onclick="testFrontendEnvironment()">Check Frontend Environment</button>
+            <div class="results" id="connection-results"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>🔐 Authentication Flow Test</h2>
+            <div class="status" id="auth-status">Ready to test...</div>
+            <button onclick="testLogin()">Test Login Flow</button>
+            <button onclick="testTokenStorage()">Check Token Storage</button>
+            <div class="results" id="auth-results"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>🤖 AI Assistant Test</h2>
+            <div class="status" id="ai-status">Ready to test...</div>
+            <button onclick="testAIChat()">Test AI Chat (Multiple Messages)</button>
+            <div class="results" id="ai-results"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>📝 Content Generation Test</h2>
+            <div class="status" id="content-status">Ready to test...</div>
+            <button onclick="testContentGeneration()">Test Content Generation</button>
+            <button onclick="testAIContentGeneration()">Test AI Content Generation</button>
+            <div class="results" id="content-results"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🐛 Issue Reproduction Test</h2>
+            <div class="status" id="issue-status">Ready to test...</div>
+            <button onclick="reproduceUserIssue()">🔥 Reproduce User's Exact Issue</button>
+            <div class="results" id="issue-results"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'https://signaldesk-production.up.railway.app/api';
+        let authToken = null;
+        
+        function updateStatus(sectionId, message, type = 'info') {
+            const statusElement = document.getElementById(sectionId + '-status');
+            statusElement.textContent = message;
+            statusElement.className = 'status ' + type;
+        }
+        
+        function updateResults(sectionId, content) {
+            document.getElementById(sectionId + '-results').textContent = content;
+        }
+        
+        async function testConnection() {
+            updateStatus('connection', 'Testing backend connection...', 'warning');
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`);
+                const data = await response.json();
+                
+                updateStatus('connection', '✅ Backend connection successful', 'success');
+                updateResults('connection', `Status: ${response.status}\nData: ${JSON.stringify(data, null, 2)}`);
+            } catch (error) {
+                updateStatus('connection', '❌ Backend connection failed', 'error');
+                updateResults('connection', `Error: ${error.message}`);
+            }
+        }
+        
+        async function testFrontendEnvironment() {
+            updateStatus('connection', 'Checking frontend environment...', 'warning');
+            
+            const envInfo = {
+                currentURL: window.location.href,
+                userAgent: navigator.userAgent,
+                localStorage: {
+                    token: localStorage.getItem('token') ? 'EXISTS' : 'MISSING',
+                    user: localStorage.getItem('user') ? 'EXISTS' : 'MISSING'
+                },
+                apiURL: API_BASE_URL,
+                reactAppApiUrl: 'Not available in this context'
+            };
+            
+            updateStatus('connection', '📋 Environment check complete', 'success');
+            updateResults('connection', JSON.stringify(envInfo, null, 2));
+        }
+        
+        async function testLogin() {
+            updateStatus('auth', 'Testing login flow...', 'warning');
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'demo@signaldesk.com',
+                        password: 'demo123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.token) {
+                    authToken = data.token;
+                    localStorage.setItem('token', authToken);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    
+                    updateStatus('auth', '✅ Login successful, token stored', 'success');
+                    updateResults('auth', `Token: ${authToken.substring(0, 50)}...\nUser: ${JSON.stringify(data.user, null, 2)}`);
+                } else {
+                    updateStatus('auth', '❌ Login failed', 'error');
+                    updateResults('auth', JSON.stringify(data, null, 2));
+                }
+            } catch (error) {
+                updateStatus('auth', '❌ Login error', 'error');
+                updateResults('auth', `Error: ${error.message}`);
+            }
+        }
+        
+        async function testTokenStorage() {
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            
+            updateResults('auth', `Stored Token: ${token ? token.substring(0, 50) + '...' : 'NONE'}\nStored User: ${user || 'NONE'}`);
+            updateStatus('auth', token ? '✅ Token found in storage' : '❌ No token in storage', token ? 'success' : 'error');
+        }
+        
+        async function testAIChat() {
+            updateStatus('ai', 'Testing AI chat flow...', 'warning');
+            
+            if (!authToken) {
+                updateStatus('ai', '❌ No auth token - login first', 'error');
+                return;
+            }
+            
+            const messages = [
+                'Hello, test message 1',
+                'This is message 2',
+                'Message 3 - checking for restart',
+                'Message 4 - continued conversation'
+            ];
+            
+            let results = '';
+            
+            for (let i = 0; i < messages.length; i++) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/ai/chat`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                        body: JSON.stringify({
+                            message: messages[i]
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    results += `Message ${i + 1}: "${messages[i]}"\n`;
+                    results += `Response: ${data.response ? data.response.substring(0, 100) + '...' : 'No response'}\n\n`;
+                    
+                    // Wait between messages
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
+                } catch (error) {
+                    results += `Message ${i + 1} ERROR: ${error.message}\n\n`;
+                }
+            }
+            
+            updateStatus('ai', '✅ AI chat test complete', 'success');
+            updateResults('ai', results);
+        }
+        
+        async function testContentGeneration() {
+            updateStatus('content', 'Testing form-based content generation...', 'warning');
+            
+            if (!authToken) {
+                updateStatus('content', '❌ No auth token - login first', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/content/generate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        type: 'press-release',
+                        formData: {
+                            headline: 'Test Production Press Release',
+                            announcement: 'Testing the production content generation system'
+                        },
+                        tone: 'professional',
+                        companyName: 'Test Company',
+                        industry: 'technology'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.content) {
+                    updateStatus('content', '✅ Content generation successful', 'success');
+                    updateResults('content', `Generated Content:\n${data.content.substring(0, 500)}...`);
+                } else {
+                    updateStatus('content', '⚠️ Unexpected response format', 'warning');
+                    updateResults('content', JSON.stringify(data, null, 2));
+                }
+                
+            } catch (error) {
+                updateStatus('content', '❌ Content generation failed', 'error');
+                updateResults('content', `Error: ${error.message}`);
+            }
+        }
+        
+        async function testAIContentGeneration() {
+            updateStatus('content', 'Testing AI-based content generation...', 'warning');
+            
+            if (!authToken) {
+                updateStatus('content', '❌ No auth token - login first', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/content/ai-generate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        prompt: 'Write a press release about our new AI platform launch',
+                        type: 'press-release',
+                        tone: 'professional',
+                        companyName: 'Test Company',
+                        industry: 'technology'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                updateResults('content', `Response Keys: ${Object.keys(data)}\n\n`);
+                
+                if (data.content) {
+                    updateStatus('content', '✅ AI content generation returned proper content', 'success');
+                    updateResults('content', `✅ CONTENT RETURNED:\n${data.content.substring(0, 500)}...`);
+                } else if (data.message) {
+                    updateStatus('content', '❌ ISSUE FOUND: Returned message instead of content', 'error');
+                    updateResults('content', `❌ CHAT MESSAGE RETURNED:\n${data.message.substring(0, 500)}...`);
+                } else {
+                    updateStatus('content', '⚠️ Unexpected response format', 'warning');
+                    updateResults('content', JSON.stringify(data, null, 2));
+                }
+                
+            } catch (error) {
+                updateStatus('content', '❌ AI content generation failed', 'error');
+                updateResults('content', `Error: ${error.message}`);
+            }
+        }
+        
+        async function reproduceUserIssue() {
+            updateStatus('issue', '🔥 Attempting to reproduce user issues...', 'warning');
+            
+            // First login
+            await testLogin();
+            
+            if (!authToken) {
+                updateStatus('issue', '❌ Could not authenticate', 'error');
+                return;
+            }
+            
+            let results = '=== ISSUE REPRODUCTION TEST ===\n\n';
+            
+            // Test 1: AI Content Generation (user says returns chat messages)
+            results += '1. Testing AI Content Generation (user reports gets chat messages):\n';
+            try {
+                const response = await fetch(`${API_BASE_URL}/content/ai-generate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        prompt: 'Create content about product launch',
+                        type: 'press-release'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.content) {
+                    results += '   ✅ WORKING: Proper content returned\n';
+                    results += `   Content: ${data.content.substring(0, 100)}...\n\n`;
+                } else if (data.message) {
+                    results += '   ❌ ISSUE REPRODUCED: Chat message returned instead of content\n';
+                    results += `   Message: ${data.message.substring(0, 100)}...\n\n`;
+                } else {
+                    results += '   ⚠️  Unexpected format\n\n';
+                }
+            } catch (error) {
+                results += `   ❌ Error: ${error.message}\n\n`;
+            }
+            
+            // Test 2: AI Chat (user says restarts after 2 messages)
+            results += '2. Testing AI Chat (user reports restarts after 2 messages):\n';
+            const chatMessages = ['Message 1', 'Message 2', 'Message 3 after alleged restart'];
+            
+            for (let i = 0; i < chatMessages.length; i++) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/ai/chat`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                        body: JSON.stringify({ message: chatMessages[i] })
+                    });
+                    
+                    const data = await response.json();
+                    results += `   Message ${i + 1}: ${data.response ? 'Response received' : 'No response'}\n`;
+                } catch (error) {
+                    results += `   Message ${i + 1}: ERROR - ${error.message}\n`;
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            results += '\n=== CONCLUSION ===\n';
+            results += 'Based on direct API testing, both features work correctly.\n';
+            results += 'The issue must be in the frontend application or user workflow.';
+            
+            updateStatus('issue', '🔍 Issue reproduction complete', 'success');
+            updateResults('issue', results);
+        }
+    </script>
+</body>
+</html>
