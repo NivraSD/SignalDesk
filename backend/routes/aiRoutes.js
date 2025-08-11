@@ -85,12 +85,172 @@ router.post("/generate-with-context", async (req, res) => {
     const { prompt, projectId } = req.body;
     const userId = req.user.id;
 
-    // Get project context
+    console.log("Generate-with-context request:", { prompt: prompt?.substring(0, 100), projectId });
+
+    // Check if Claude service is initialized
+    if (!claudeService.client) {
+      console.log("Claude service not initialized - using fallback content");
+      
+      // Generate fallback content based on prompt
+      let fallbackContent = "";
+      
+      if (prompt.toLowerCase().includes("press release")) {
+        fallbackContent = `FOR IMMEDIATE RELEASE
+
+[Company Name] Announces Revolutionary Innovation in Technology Sector
+
+[City, Date] - [Company Name], a leader in innovative technology solutions, today announced the launch of its groundbreaking new platform that promises to transform how businesses operate in the digital age.
+
+This revolutionary solution addresses key challenges faced by modern enterprises, offering unprecedented efficiency gains and cost savings. Early adopters have reported up to 40% improvement in operational efficiency within the first month of implementation.
+
+"We're incredibly excited to bring this innovation to market," said [Executive Name], CEO of [Company Name]. "Our platform represents a paradigm shift in how technology can empower businesses to achieve their goals while reducing complexity and costs."
+
+Key features include:
+• Advanced AI-powered automation capabilities
+• Seamless integration with existing systems
+• Real-time analytics and insights
+• Enterprise-grade security and compliance
+• Scalable architecture for businesses of all sizes
+
+The platform is now available for enterprise customers, with plans to expand to small and medium businesses in Q2 2025.
+
+About [Company Name]:
+[Company Name] is a pioneering technology company dedicated to creating innovative solutions that drive business transformation. Founded in [Year], the company serves thousands of customers worldwide.
+
+Contact:
+[Contact Name]
+[Email]
+[Phone]`;
+      } else if (prompt.toLowerCase().includes("social media") || prompt.toLowerCase().includes("social post")) {
+        fallbackContent = `🚀 Exciting news! We're thrilled to announce our latest innovation that's set to revolutionize the industry! 
+
+💡 Key highlights:
+✅ Cutting-edge technology
+✅ User-friendly design
+✅ Proven results
+✅ Available now
+
+Join thousands of satisfied customers who are already experiencing the difference. Don't miss out on this game-changing opportunity!
+
+Learn more: [link]
+
+#Innovation #Technology #BusinessGrowth #DigitalTransformation #FutureOfWork`;
+      } else if (prompt.toLowerCase().includes("q&a") || prompt.toLowerCase().includes("q and a")) {
+        fallbackContent = `Q&A Document: Product Launch
+
+Q: What is being announced today?
+A: We're launching an innovative new platform designed to help businesses streamline their operations and achieve better results through advanced technology.
+
+Q: Who is the target audience?
+A: Our solution is designed for forward-thinking businesses of all sizes who want to leverage technology to gain a competitive advantage.
+
+Q: What makes this different from existing solutions?
+A: Our platform combines cutting-edge AI technology with intuitive design and seamless integration capabilities, offering a unique combination of power and ease of use.
+
+Q: When will it be available?
+A: The platform is available immediately for enterprise customers, with broader availability planned for Q2 2025.
+
+Q: What are the key benefits?
+A: Customers can expect improved efficiency, reduced costs, better insights, and enhanced scalability to support business growth.
+
+Q: How can interested parties learn more?
+A: Visit our website or contact our sales team for a personalized demonstration and consultation.`;
+      } else if (prompt.toLowerCase().includes("crisis")) {
+        fallbackContent = `Statement Regarding Recent Developments
+
+We are aware of recent concerns raised regarding [situation]. We take these matters extremely seriously and are committed to addressing them with transparency and accountability.
+
+Our immediate priorities are:
+1. Ensuring the safety and well-being of all stakeholders
+2. Conducting a thorough investigation of the circumstances
+3. Implementing corrective measures to prevent recurrence
+4. Maintaining open communication with all affected parties
+
+We have already taken the following actions:
+• Initiated a comprehensive internal review
+• Engaged independent experts to assist in our investigation
+• Established a dedicated response team
+• Implemented additional safeguards
+
+We understand the impact this situation has had and sincerely apologize for any concern or inconvenience caused. We are committed to learning from this experience and emerging stronger.
+
+We will provide regular updates as more information becomes available. In the meantime, please direct any questions to our dedicated response team.`;
+      } else if (prompt.toLowerCase().includes("thought leadership")) {
+        fallbackContent = `The Future of Business: Embracing Digital Transformation
+
+As we stand at the precipice of a new era in business innovation, leaders must recognize that digital transformation is no longer optional—it's imperative for survival and growth.
+
+The convergence of artificial intelligence, cloud computing, and data analytics has created unprecedented opportunities for organizations willing to embrace change. However, success requires more than just technology adoption; it demands a fundamental shift in mindset and culture.
+
+Key insights for modern leaders:
+
+1. **Customer-Centricity is Paramount**: Today's consumers expect personalized, seamless experiences across all touchpoints. Organizations must leverage data and AI to anticipate needs and deliver value proactively.
+
+2. **Agility Over Perfection**: The pace of change demands rapid iteration and continuous improvement. Leaders must foster cultures that embrace experimentation and learn from failure.
+
+3. **Ecosystem Thinking**: No organization operates in isolation. Success comes from building strategic partnerships and participating in broader innovation ecosystems.
+
+4. **Ethical Technology Use**: As technology becomes more powerful, responsible innovation becomes critical. Leaders must balance innovation with privacy, security, and societal impact.
+
+5. **Human-Machine Collaboration**: The future belongs to organizations that effectively combine human creativity and judgment with machine efficiency and scale.
+
+The path forward requires bold leadership, strategic vision, and unwavering commitment to continuous evolution. Organizations that successfully navigate this transformation will not just survive—they will define the future of their industries.`;
+      } else if (prompt.toLowerCase().includes("corporate messaging")) {
+        fallbackContent = `Our Vision for Tomorrow
+
+At [Company Name], we believe in the power of innovation to create positive change. Our mission extends beyond business success to encompass our responsibility to customers, employees, communities, and the planet.
+
+**Our Core Values:**
+• **Innovation**: We constantly push boundaries to deliver breakthrough solutions
+• **Integrity**: We operate with transparency and ethical excellence
+• **Impact**: We measure success by the positive change we create
+• **Inclusion**: We celebrate diversity and foster belonging
+• **Sustainability**: We're committed to a better future for all
+
+**Our Commitment:**
+We're dedicated to empowering our customers with tools and technologies that drive meaningful progress. Through strategic partnerships, continuous innovation, and unwavering focus on customer success, we're building a future where technology serves humanity's highest aspirations.
+
+**Moving Forward:**
+As we evolve and grow, our commitment to these principles remains steadfast. We invite all stakeholders to join us in creating a more innovative, equitable, and sustainable future.
+
+Together, we're not just adapting to change—we're driving it.`;
+      } else {
+        // Generic content
+        fallbackContent = `Strategic Communication: Driving Business Success
+
+In today's rapidly evolving business landscape, effective communication has become a critical differentiator for successful organizations. The ability to craft compelling narratives, engage stakeholders authentically, and respond dynamically to market changes determines whether companies thrive or merely survive.
+
+Modern communication strategies must embrace multiple channels, diverse audiences, and real-time engagement. Organizations that master this complex orchestration position themselves as industry leaders, building trust, driving engagement, and creating lasting value.
+
+Key elements of successful communication:
+• Clear, consistent messaging across all platforms
+• Authentic storytelling that resonates with audiences
+• Data-driven insights to inform strategy
+• Agile response capabilities for emerging opportunities
+• Measurable outcomes tied to business objectives
+
+The future belongs to organizations that view communication not as a support function, but as a strategic driver of business success. By investing in robust communication capabilities and embracing innovative approaches, companies can build stronger relationships, enhance reputation, and achieve sustainable growth.`;
+      }
+      
+      res.json({
+        success: true,
+        content: fallbackContent,
+        projectId: projectId,
+        note: "Generated using fallback templates - Claude API not configured"
+      });
+      return;
+    }
+
+    // Get project context - handle both numeric IDs and demo-project
     let projectContext = "";
-    if (projectId) {
+    if (projectId === 'demo-project') {
+      // For demo project, use generic context
+      projectContext = "Project: Demo Project, Industry: Technology. ";
+    } else if (projectId && !isNaN(projectId)) {
+      // Only query database if projectId is a valid number
       const projectResult = await pool.query(
         "SELECT * FROM projects WHERE id = $1 AND user_id = $2",
-        [projectId, userId]
+        [parseInt(projectId), userId]
       );
 
       if (projectResult.rows.length > 0) {
@@ -111,7 +271,88 @@ router.post("/generate-with-context", async (req, res) => {
     console.error("Error generating with context:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to generate content",
+      message: "Failed to generate content: " + error.message,
+    });
+  }
+});
+
+// Unified chat endpoint for AI Assistant
+router.post("/unified-chat", async (req, res) => {
+  try {
+    const { message, mode, context } = req.body;
+    const userId = req.user.id;
+
+    console.log("Unified chat request:", { mode, context, messageLength: message?.length });
+
+    // Build context-aware prompt based on mode
+    let systemPrompt = "";
+    
+    if (mode === 'content' && context?.folder === 'content-generator') {
+      systemPrompt = `You are Claude, a helpful writing assistant for PR content.
+
+CRITICAL CONVERSATION FLOW:
+1. When user first says "I need a press release" (or any content type):
+   - Give 2-3 helpful tips for writing that type of content
+   - Then ask ONE specific question to start gathering info
+   - Never ask multiple questions at once
+
+2. For follow-ups:
+   - Ask only ONE question at a time  
+   - Keep it conversational and natural
+   - No bullet points, no numbered lists, no overwhelming options
+   - Wait for their answer before asking the next question
+
+3. Generate content when you have enough information
+
+Example response to "I need a press release":
+"Great! Here are the key elements of an effective press release: Start with a compelling headline, lead with your most newsworthy angle, and include a strong quote from leadership. 
+
+What's the main announcement you're making?"
+
+Be conversational like the real Claude - one question at a time, no lists!`;
+    } else if (mode === 'campaign') {
+      systemPrompt = "You are a strategic campaign advisor helping plan and analyze PR campaigns.";
+    } else if (mode === 'media') {
+      systemPrompt = "You are a media relations expert helping identify journalists and media opportunities.";
+    } else if (mode === 'crisis') {
+      systemPrompt = "You are a crisis management advisor helping navigate challenging situations.";
+    } else {
+      systemPrompt = "You are an AI assistant for the SignalDesk PR platform.";
+    }
+
+    // Include previous messages for context if available
+    let fullPrompt = systemPrompt + "\n\n";
+    
+    if (context?.previousMessages && context.previousMessages.length > 0) {
+      fullPrompt += "Previous conversation:\n";
+      context.previousMessages.forEach(msg => {
+        fullPrompt += `${msg.type === 'user' ? 'User' : 'Assistant'}: ${msg.content}\n`;
+      });
+      fullPrompt += "\n";
+    }
+    
+    fullPrompt += `User: ${message}\n\nAssistant:`;
+
+    // Send to Claude with custom system prompt
+    const response = await claudeService.sendMessage(fullPrompt, [], {
+      systemPrompt: systemPrompt
+    });
+
+    // No suggestions - let Claude handle everything naturally
+    let suggestions = [];
+
+    res.json({
+      success: true,
+      response: response,
+      suggestions: suggestions,
+      mode: mode
+    });
+  } catch (error) {
+    console.error("Error in unified chat:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to process chat message",
+      error: error.message
     });
   }
 });

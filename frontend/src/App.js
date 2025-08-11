@@ -10,6 +10,8 @@ import CrisisCommandCenter from "./components/CrisisCommandCenter";
 // import MediaListBuilder from "./components/MediaListBuilder"; // OLD - Basic journalist search
 import MediaIntelligence from "./components/MediaIntelligence"; // NEW - Full intelligence platform
 import CampaignIntelligence from "./components/CampaignIntelligence";
+import EnhancedCampaignIntelligenceFixed from "./components/EnhancedCampaignIntelligenceFixed"; // Fixed enhanced version
+import UnifiedPlatform from "./components/UnifiedPlatform"; // Restored unified platform
 import Monitoring from "./components/Monitoring";
 import Reports from "./components/Reports";
 import ProjectList from "./components/ProjectList";
@@ -53,17 +55,27 @@ function AppRoutes() {
       {/* Login route - public */}
       <Route path="/login" element={<Login />} />
 
-      {/* Homepage route - standalone, not in Layout */}
+      {/* Homepage route - redirect to projects */}
       <Route
         path="/"
         element={
           <PrivateRoute>
-            <Homepage />
+            <Navigate to="/projects" replace />
           </PrivateRoute>
         }
       />
 
-      {/* Projects List - uses global Layout */}
+      {/* Projects route - redirect to demo project */}
+      <Route
+        path="/projects"
+        element={
+          <PrivateRoute>
+            <Navigate to="/projects/demo-project" replace />
+          </PrivateRoute>
+        }
+      />
+      
+      {/* Create new project - still uses Layout */}
       <Route
         element={
           <PrivateRoute>
@@ -71,16 +83,21 @@ function AppRoutes() {
           </PrivateRoute>
         }
       >
-        <Route path="/projects" element={<ProjectList />} />
         <Route path="/projects/new" element={<CreateProject />} />
         <Route path="/analytics" element={<Analytics />} />
-        <Route
-          path="/dashboard"
-          element={<Navigate to="/projects" replace />}
-        />
       </Route>
 
-      {/* Project-specific routes - uses ProjectLayout */}
+      {/* Use UnifiedPlatform for main project view */}
+      <Route
+        path="/projects/:projectId"
+        element={
+          <PrivateRoute>
+            <UnifiedPlatform />
+          </PrivateRoute>
+        }
+      />
+      
+      {/* Legacy routes with Layout */}
       <Route
         path="/projects/:projectId/*"
         element={
@@ -89,13 +106,18 @@ function AppRoutes() {
           </PrivateRoute>
         }
       >
-        <Route index element={<MemoryVault />} />
+        <Route path="unified" element={<UnifiedPlatform />} />
+        <Route path="memoryvault-old" element={<MemoryVault />} />
         <Route path="ai-assistant" element={<AIAssistant />} />
         <Route path="content-generator" element={<ContentGenerator />} />
         <Route path="media-list" element={<MediaIntelligence />} />
         <Route
           path="campaign-intelligence"
           element={<CampaignIntelligence />}
+        />
+        <Route
+          path="campaign-intelligence-enhanced"
+          element={<EnhancedCampaignIntelligenceFixed />}
         />
         <Route path="monitoring" element={<Monitoring />} />
         <Route path="stakeholder-intelligence" element={<StakeholderIntelligenceHub />} />

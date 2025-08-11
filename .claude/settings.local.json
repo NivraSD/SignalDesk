@@ -108,7 +108,14 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:signaldesk-frontend-23tc8mlwq-nivra-sd.vercel.app)",
       "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/force-vercel-rebuild.sh:*)",
-      "Bash(git ls-tree:*)"
+      "Bash(git ls-tree:*)",
+      "Bash(brew install:*)",
+      "Bash(brew services start:*)",
+      "Bash(redis-cli:*)",
+      "Bash(./start-enhanced.sh:*)",
+      "WebFetch(domain:localhost)",
+      "Bash(PORT=3002 npm start)",
+      "Bash(npm uninstall:*)"
     ],
     "deny": []
   }

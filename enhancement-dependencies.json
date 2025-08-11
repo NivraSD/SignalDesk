@@ -1,0 +1,39 @@
+{
+  "backend": {
+    "description": "Add these dependencies to backend/package.json",
+    "dependencies": {
+      "chromadb": "^1.7.3",
+      "@pinecone-database/pinecone": "^2.0.1",
+      "weaviate-ts-client": "^2.1.1",
+      "@xenova/transformers": "^2.6.0",
+      "natural": "^6.10.0",
+      "socket.io": "^4.7.2",
+      "redis": "^4.6.13",
+      "bull": "^4.12.2",
+      "node-cron": "^3.0.3",
+      "diff": "^5.2.0"
+    },
+    "devDependencies": {
+      "@types/diff": "^5.0.9"
+    }
+  },
+  "frontend": {
+    "description": "Add these dependencies to frontend/package.json",
+    "dependencies": {
+      "socket.io-client": "^4.7.2",
+      "react-draggable": "^4.4.6",
+      "react-resizable": "^3.0.5",
+      "framer-motion": "^11.0.3",
+      "@dnd-kit/core": "^6.1.0",
+      "@dnd-kit/sortable": "^8.0.0",
+      "react-hotkeys-hook": "^4.4.4",
+      "react-flow-renderer": "^10.3.17",
+      "d3": "^7.8.5",
+      "@visx/visx": "^3.8.0"
+    }
+  },
+  "installCommands": {
+    "backend": "cd backend && npm install chromadb @pinecone-database/pinecone weaviate-ts-client @xenova/transformers natural socket.io redis bull node-cron diff",
+    "frontend": "cd frontend && npm install socket.io-client react-draggable react-resizable framer-motion @dnd-kit/core @dnd-kit/sortable react-hotkeys-hook react-flow-renderer d3 @visx/visx"
+  }
+}

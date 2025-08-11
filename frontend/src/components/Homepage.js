@@ -362,6 +362,54 @@ const Homepage = () => {
           }
         }
       `}</style>
+      
+      {/* Enhanced Features Banner */}
+      <div style={{
+        background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)",
+        color: "white",
+        padding: "12px 20px",
+        textAlign: "center",
+        borderBottom: "1px solid rgba(255, 255, 255, 0.2)",
+        position: "sticky",
+        top: 0,
+        zIndex: 50,
+        animation: "pulse 2s ease-in-out infinite"
+      }}>
+        <div style={{ 
+          display: "flex", 
+          alignItems: "center", 
+          justifyContent: "center",
+          gap: "12px",
+          fontSize: "14px",
+          fontWeight: "500"
+        }}>
+          <Sparkles style={{ width: "18px", height: "18px" }} />
+          <span>
+            🚀 SignalDesk Enhanced Platform v2.0 is Live! 
+            Try the new <strong>Campaign Intelligence</strong> with Railway UI, MemoryVault, and Real-time Collaboration
+          </span>
+          <button
+            onClick={() => navigate("/projects")}
+            style={{
+              padding: "6px 12px",
+              background: "white",
+              color: "#7c3aed",
+              border: "none",
+              borderRadius: "6px",
+              fontWeight: "600",
+              cursor: "pointer",
+              fontSize: "13px",
+              marginLeft: "8px",
+              transition: "transform 0.2s"
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.05)"}
+            onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
+          >
+            Explore Now →
+          </button>
+        </div>
+      </div>
+      
       {/* Navigation Bar */}
       <nav
         style={{ backgroundColor: "#1a1d23", borderBottom: "1px solid #333" }}

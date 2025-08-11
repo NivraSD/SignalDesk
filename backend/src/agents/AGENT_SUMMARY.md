@@ -57,6 +57,13 @@ These agents handle workflow management and utility tasks:
 1. **`utility/agent-router.md`** - Routes tasks to appropriate specialized agents
 2. **`utility/file-organizer.md`** - Manages and organizes file structures
 
+### 📁 Development Team Agents (`/.claude/agents/`)
+
+These agents handle development planning and design tasks:
+
+1. **`project-planner.md`** - Creates comprehensive project plans with phases, timelines, and dependencies
+2. **`ui-ux-designer.md`** - Designs interfaces, wireframes, and design systems with user-centered approach
+
 ### 📁 Strategic Agents (`/strategic/`)
 
 These agents handle strategic planning and risk management:
@@ -93,6 +100,8 @@ These agents handle strategic planning and risk management:
 | **Web Intelligence**                  | Web data extraction             | Structured web intelligence             |
 | **Agent Router**                      | Task routing and delegation     | Agent selection recommendations         |
 | **File Organizer**                    | File system management          | Organized file structure                |
+| **Project Planner**                   | Project planning and breakdown  | Phased plans with timelines             |
+| **UI/UX Designer**                    | Interface and experience design | Wireframes and design systems           |
 | **Risk Manager**                      | Risk assessment and mitigation  | Risk analysis and strategies            |
 
 ## Agent Invocation Examples
@@ -120,18 +129,20 @@ const angles = await generateCreativeAngles(intelligenceData);
 
 ## Agent Capabilities Matrix
 
-| Capability           | Query | Brief | Orchestrator | Optimizer | Data | Report | Search | Decompose | Opportunity | Momentum | Indexing | Monitoring |
-| -------------------- | ----- | ----- | ------------ | --------- | ---- | ------ | ------ | --------- | ----------- | -------- | -------- | ---------- |
-| Research Planning    | ✓     | ✓     | ✓            | ✓         |      |        |        | ✓         |             |          |          |            |
-| Data Analysis        |       |       |              |           | ✓    |        | ✓      |           |             | ✓        | ✓        | ✓          |
-| Content Generation   |       |       |              |           |      | ✓      |        |           | ✓           |          |          |            |
-| Web Search           |       |       |              |           |      |        | ✓      |           |             |          |          | ✓          |
-| Workflow Design      |       |       | ✓            | ✓         |      |        |        | ✓         | ✓           |          |          |            |
-| Trend Analysis       |       |       |              |           | ✓    |        | ✓      |           |             | ✓        |          | ✓          |
-| Creative Ideation    |       |       |              |           |      |        |        |           | ✓           |          |          |            |
-| Task Planning        |       | ✓     | ✓            | ✓         |      |        |        | ✓         |             |          |          |            |
-| Real-time Monitoring |       |       |              |           |      |        |        |           |             |          |          | ✓          |
-| Source Discovery     |       |       |              |           |      |        | ✓      |           |             |          | ✓        |            |
+| Capability           | Query | Brief | Orchestrator | Optimizer | Data | Report | Search | Decompose | Opportunity | Momentum | Indexing | Monitoring | Project | UI/UX |
+| -------------------- | ----- | ----- | ------------ | --------- | ---- | ------ | ------ | --------- | ----------- | -------- | -------- | ---------- | ------- | ----- |
+| Research Planning    | ✓     | ✓     | ✓            | ✓         |      |        |        | ✓         |             |          |          |            |         |       |
+| Data Analysis        |       |       |              |           | ✓    |        | ✓      |           |             | ✓        | ✓        | ✓          |         |       |
+| Content Generation   |       |       |              |           |      | ✓      |        |           | ✓           |          |          |            |         |       |
+| Web Search           |       |       |              |           |      |        | ✓      |           |             |          |          | ✓          |         |       |
+| Workflow Design      |       |       | ✓            | ✓         |      |        |        | ✓         | ✓           |          |          |            | ✓       |       |
+| Trend Analysis       |       |       |              |           | ✓    |        | ✓      |           |             | ✓        |          | ✓          |         |       |
+| Creative Ideation    |       |       |              |           |      |        |        |           | ✓           |          |          |            |         | ✓     |
+| Task Planning        |       | ✓     | ✓            | ✓         |      |        |        | ✓         |             |          |          |            | ✓       |       |
+| Real-time Monitoring |       |       |              |           |      |        |        |           |             |          |          | ✓          |         |       |
+| Source Discovery     |       |       |              |           |      |        | ✓      |           |             |          | ✓        |            |         |       |
+| Project Planning     |       | ✓     | ✓            |           |      |        |        | ✓         |             |          |          |            | ✓       |       |
+| Design Systems       |       |       |              |           |      |        |        |           |             |          |          |            |         | ✓     |
 
 ## Integration Points
 
@@ -192,4 +203,4 @@ User Request → Task Decomposition → Agent Selection → Parallel Execution �
 ---
 
 _Last Updated: August 2025_
-_Total Agents: 20 (8 Research + 4 Opportunity/Creative + 5 Monitoring/Intelligence + 2 Utility + 1 Strategic)_
+_Total Agents: 22 (8 Research + 4 Opportunity/Creative + 5 Monitoring/Intelligence + 2 Utility + 2 Development Team + 1 Strategic)_
