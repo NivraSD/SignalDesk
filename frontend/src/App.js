@@ -12,6 +12,7 @@ import MediaIntelligence from "./components/MediaIntelligence"; // NEW - Full in
 import CampaignIntelligence from "./components/CampaignIntelligence";
 import EnhancedCampaignIntelligenceFixed from "./components/EnhancedCampaignIntelligenceFixed"; // Fixed enhanced version
 import UnifiedPlatform from "./components/UnifiedPlatform"; // Restored unified platform
+import RailwayPlatform from "./components/RailwayPlatform"; // New Railway UI with proper drag/resize
 import Monitoring from "./components/Monitoring";
 import Reports from "./components/Reports";
 import ProjectList from "./components/ProjectList";
@@ -87,9 +88,19 @@ function AppRoutes() {
         <Route path="/analytics" element={<Analytics />} />
       </Route>
 
-      {/* Use UnifiedPlatform for main project view */}
+      {/* Use RailwayPlatform for main project view */}
       <Route
         path="/projects/:projectId"
+        element={
+          <PrivateRoute>
+            <RailwayPlatform />
+          </PrivateRoute>
+        }
+      />
+      
+      {/* Legacy UnifiedPlatform route for testing */}
+      <Route
+        path="/projects/:projectId/unified-old"
         element={
           <PrivateRoute>
             <UnifiedPlatform />
