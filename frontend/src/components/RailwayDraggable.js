@@ -422,7 +422,7 @@ const RailwayDraggable = () => {
     
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/ai/chat`, {
+      const response = await fetch(`${API_BASE_URL}/ai/unified-chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -598,7 +598,7 @@ const RailwayDraggable = () => {
         userRequestedEdit
       });
       
-      const response = await fetch(`${API_BASE_URL}/ai/chat`, {
+      const response = await fetch(`${API_BASE_URL}/ai/unified-chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -701,7 +701,7 @@ const RailwayDraggable = () => {
       // Build prompt from guided flow context
       const prompt = `Create a ${params.type} about ${params.topic} for ${params.audience} audience with a ${params.tone} tone. ${params.keyPoints || ''}`;
       
-      const response = await fetch(`${API_BASE_URL}/ai/chat`, {
+      const response = await fetch(`${API_BASE_URL}/ai/unified-chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
