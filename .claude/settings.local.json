@@ -119,7 +119,9 @@
       "WebFetch(domain:dribbble.com)",
       "WebFetch(domain:docs.railway.com)",
       "WebFetch(domain:railway.app)",
-      "WebFetch(domain:railway.com)"
+      "WebFetch(domain:railway.com)",
+      "Bash(PORT=3001 node server-complete.js)",
+      "Bash(PORT=3001 node ../frontend/backend/server-complete.js)"
     ],
     "deny": []
   }

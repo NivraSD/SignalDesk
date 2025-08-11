@@ -14,6 +14,8 @@ import EnhancedCampaignIntelligenceFixed from "./components/EnhancedCampaignInte
 import UnifiedPlatform from "./components/UnifiedPlatform"; // Restored unified platform
 import RailwayPlatform from "./components/RailwayPlatform"; // New Railway UI with proper drag/resize
 import RailwayCanvas from "./components/RailwayCanvas"; // True Railway canvas with service nodes
+import RailwayActivity from "./components/RailwayActivity"; // Railway-style activity list
+import RailwayDraggable from "./components/RailwayDraggable"; // Draggable and resizable UI
 import Monitoring from "./components/Monitoring";
 import Reports from "./components/Reports";
 import ProjectList from "./components/ProjectList";
@@ -89,12 +91,12 @@ function AppRoutes() {
         <Route path="/analytics" element={<Analytics />} />
       </Route>
 
-      {/* Use RailwayCanvas for main project view - True Railway-style */}
+      {/* Use RailwayDraggable for main project view - Draggable and resizable UI */}
       <Route
         path="/projects/:projectId"
         element={
           <PrivateRoute>
-            <RailwayCanvas />
+            <RailwayDraggable />
           </PrivateRoute>
         }
       />

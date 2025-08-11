@@ -1,6 +1,6 @@
 // API Configuration with proper environment variable support
 // Uses React environment variables (REACT_APP_ prefix required)
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://signaldesk-production.up.railway.app/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 
 // Enhanced API configuration with retry logic and error handling
 const API_CONFIG = {
