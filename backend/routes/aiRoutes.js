@@ -305,6 +305,9 @@ router.post("/chat", async (req, res) => {
       lowerMessage.includes('create') || 
       lowerMessage.includes('write') ||
       lowerMessage.includes('draft') ||
+      lowerMessage.includes('make me') ||
+      lowerMessage.includes('i need a') ||
+      lowerMessage.includes('i want a') ||
       context?.userRequestedGeneration;
 
     // Determine system prompt based on mode
@@ -314,11 +317,11 @@ router.post("/chat", async (req, res) => {
         // User has provided context and wants content generated
         systemPrompt += `Generate the requested content based on the context provided. Be comprehensive and professional.`;
       } else if (isDirectGenerationRequest) {
-        // User wants content but hasn't provided full context
-        systemPrompt += "You're helping with content creation. The user wants to generate content. If they haven't specified the type or topic, ask for those details. Otherwise, generate the content they requested.";
+        // User wants content - generate it directly if we can detect the type
+        systemPrompt += "The user is requesting content generation. Generate the requested content immediately. If the content type is unclear, generate a press release by default. Format the content professionally with proper structure.";
       } else {
         // General conversation mode
-        systemPrompt += "You're helping with content creation. Ask one question at a time, be conversational.";
+        systemPrompt += "You're helping with content creation. Ask one question at a time, be conversational.";  
       }
     } else if (mode === 'campaign') {
       systemPrompt += "You're a strategic campaign advisor.";
@@ -334,12 +337,29 @@ router.post("/chat", async (req, res) => {
 
     // Check if this should be marked as generated content
     const detectGeneratedContent = (text) => {
-      if (!text || text.length < 200) return false;
-      const indicators = ['FOR IMMEDIATE RELEASE', 'Subject:', 'Dear ', '###', 'Q:', 'A:'];
-      return indicators.some(ind => text.includes(ind));
+      if (!text || text.length < 150) return false;
+      const indicators = [
+        'FOR IMMEDIATE RELEASE', 
+        'Subject:', 
+        'Dear ', 
+        '###', 
+        'Q:', 
+        'A:',
+        'Headline:',
+        'Title:',
+        'We are',
+        'I am writing',
+        '[Company',
+        'FOR IMMEDIATE',
+        'PRESS RELEASE'
+      ];
+      // Also check for structured content patterns
+      const hasStructure = text.includes('\n\n') && text.length > 300;
+      return indicators.some(ind => text.includes(ind)) || hasStructure;
     };
 
-    const isGeneratedContent = (isGeneratingContent || isEditingContent) && detectGeneratedContent(response);
+    // Mark as generated content if it's a direct generation request and looks like content
+    const isGeneratedContent = (isDirectGenerationRequest || isGeneratingContent || isEditingContent) && detectGeneratedContent(response);
 
     res.json({
       success: true,

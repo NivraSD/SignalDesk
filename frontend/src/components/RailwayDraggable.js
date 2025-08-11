@@ -599,15 +599,22 @@ const RailwayDraggable = () => {
       
       if (data.success && data.response) {
         // Check if this is generated content that should go to Content Generator
-        if (data.isGeneratedContent && selectedFeature?.id === 'content-generator') {
+        if (data.isGeneratedContent) {
+          // Auto-open Content Generator if not already open
+          if (selectedFeature?.id !== 'content-generator') {
+            const contentGen = activities.find(a => a.id === 'content-generator');
+            handleActivityClick(contentGen);
+          }
+          
           // Set the generated content directly in the feature
           setGeneratedContent(data.response);
+          detectContentType(data.response);
           
           // Show success message in chat instead
           const successMsg = {
             id: Date.now(),
             type: 'system',
-            content: '✨ Content generated successfully! You can see it in the Content Generator above.',
+            content: '✨ Content generated successfully! You can see it in the Content Generator panel.',
             timestamp: new Date()
           };
           setMessages(prev => [...prev, successMsg]);
