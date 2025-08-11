@@ -115,7 +115,11 @@
       "Bash(./start-enhanced.sh:*)",
       "WebFetch(domain:localhost)",
       "Bash(PORT=3002 npm start)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "WebFetch(domain:dribbble.com)",
+      "WebFetch(domain:docs.railway.com)",
+      "WebFetch(domain:railway.app)",
+      "WebFetch(domain:railway.com)"
     ],
     "deny": []
   }

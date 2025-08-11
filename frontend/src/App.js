@@ -13,6 +13,7 @@ import CampaignIntelligence from "./components/CampaignIntelligence";
 import EnhancedCampaignIntelligenceFixed from "./components/EnhancedCampaignIntelligenceFixed"; // Fixed enhanced version
 import UnifiedPlatform from "./components/UnifiedPlatform"; // Restored unified platform
 import RailwayPlatform from "./components/RailwayPlatform"; // New Railway UI with proper drag/resize
+import RailwayCanvas from "./components/RailwayCanvas"; // True Railway canvas with service nodes
 import Monitoring from "./components/Monitoring";
 import Reports from "./components/Reports";
 import ProjectList from "./components/ProjectList";
@@ -88,9 +89,28 @@ function AppRoutes() {
         <Route path="/analytics" element={<Analytics />} />
       </Route>
 
-      {/* Use RailwayPlatform for main project view */}
+      {/* Use RailwayCanvas for main project view - True Railway-style */}
       <Route
         path="/projects/:projectId"
+        element={
+          <PrivateRoute>
+            <RailwayCanvas />
+          </PrivateRoute>
+        }
+      />
+      
+      {/* Alternative UI versions for comparison */}
+      <Route
+        path="/projects/:projectId/unified"
+        element={
+          <PrivateRoute>
+            <UnifiedPlatform />
+          </PrivateRoute>
+        }
+      />
+      
+      <Route
+        path="/projects/:projectId/railway-panels"
         element={
           <PrivateRoute>
             <RailwayPlatform />
@@ -98,12 +118,11 @@ function AppRoutes() {
         }
       />
       
-      {/* Legacy UnifiedPlatform route for testing */}
       <Route
-        path="/projects/:projectId/unified-old"
+        path="/projects/:projectId/canvas"
         element={
           <PrivateRoute>
-            <UnifiedPlatform />
+            <RailwayCanvas />
           </PrivateRoute>
         }
       />
