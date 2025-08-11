@@ -298,10 +298,28 @@ router.post("/chat", async (req, res) => {
       conversationContext += "\n";
     }
 
+    // Check if user is explicitly requesting content generation
+    const lowerMessage = message.toLowerCase();
+    const isDirectGenerationRequest = 
+      lowerMessage.includes('generate') || 
+      lowerMessage.includes('create') || 
+      lowerMessage.includes('write') ||
+      lowerMessage.includes('draft') ||
+      context?.userRequestedGeneration;
+
     // Determine system prompt based on mode
     let systemPrompt = "You are Claude, an AI assistant for the SignalDesk PR platform. ";
     if (mode === 'content' && context?.folder === 'content-generator') {
-      systemPrompt += "You're helping with content creation. Ask one question at a time, be conversational.";
+      if (isDirectGenerationRequest && context?.contentContext) {
+        // User has provided context and wants content generated
+        systemPrompt += `Generate the requested content based on the context provided. Be comprehensive and professional.`;
+      } else if (isDirectGenerationRequest) {
+        // User wants content but hasn't provided full context
+        systemPrompt += "You're helping with content creation. The user wants to generate content. If they haven't specified the type or topic, ask for those details. Otherwise, generate the content they requested.";
+      } else {
+        // General conversation mode
+        systemPrompt += "You're helping with content creation. Ask one question at a time, be conversational.";
+      }
     } else if (mode === 'campaign') {
       systemPrompt += "You're a strategic campaign advisor.";
     } else if (mode === 'media') {
