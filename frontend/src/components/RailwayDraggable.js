@@ -564,16 +564,17 @@ const RailwayDraggable = () => {
         text.toLowerCase().includes(keyword)
       );
 
-      // Detect if user is requesting an edit to existing content - be very specific
+      // Detect if user is requesting an edit to existing content - ONLY when content exists
       const editKeywords = [
-        'edit', 'change', 'update', 'revise', 'modify', 
-        'make it shorter', 'make it longer', 'fix', 'improve',
-        'shorten', 'lengthen', 'expand', 'reduce', 'rewrite',
-        'adjust', 'tweak', 'polish', 'refine', 'enhance'
+        'edit this', 'change this', 'update this', 'revise this', 'modify this',
+        'edit it', 'change it', 'update it', 'revise it', 'modify it',
+        'make it shorter', 'make it longer', 'fix it', 'improve it',
+        'shorten this', 'expand this', 'rewrite this'
       ];
-      const userRequestedEdit = hasContent && editKeywords.some(keyword => 
+      // CRITICAL: Only mark as edit if we HAVE content AND user uses edit keywords
+      const userRequestedEdit = hasContent && generatedContent && editKeywords.some(keyword => 
         text.toLowerCase().includes(keyword)
-      );
+      ) && !userRequestedGeneration; // Don't treat as edit if it's a generation request
       
       const response = await fetch(`${API_BASE_URL}/ai/chat`, {
         method: 'POST',

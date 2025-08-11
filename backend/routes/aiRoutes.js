@@ -313,18 +313,9 @@ router.post("/chat", async (req, res) => {
     // Determine system prompt based on mode
     let systemPrompt = "";
     if (mode === 'content' && context?.folder === 'content-generator') {
-      if (isEditingContent && context?.currentContent) {
-        // User wants to edit existing content - we have the content in context
-        systemPrompt = `You need to edit the following content based on the user's request. Here is the current content:
-
-${context.currentContent}
-
-Make the requested edits and return the COMPLETE edited version. Do not explain what you're doing, just provide the edited content.`;
-      } else if (isDirectGenerationRequest && context?.contentContext) {
-        // User has provided context and wants content generated
-        systemPrompt = `Generate the requested PR/marketing content immediately based on the context provided. Create actual, complete content - not a conversation about it. Be comprehensive and professional.`;
-      } else if (isDirectGenerationRequest) {
-        // User wants content - generate it directly
+      // Check for generation FIRST (takes priority over editing)
+      if (isDirectGenerationRequest && !isEditingContent) {
+        // User wants NEW content - generate it directly
         systemPrompt = `IMPORTANT: Generate actual PR/marketing content NOW based on the user's request. Do not ask questions or have a conversation. 
 
 If they ask for a press release, create a complete press release with FOR IMMEDIATE RELEASE header.
@@ -333,6 +324,16 @@ If they ask for an email, create a complete email.
 If the type is unclear, default to creating a press release.
 
 Create the ACTUAL CONTENT, not a description of what you would create.`;
+      } else if (isEditingContent && context?.currentContent) {
+        // User wants to EDIT existing content - we have the content in context
+        systemPrompt = `You need to edit the following content based on the user's request. Here is the current content:
+
+${context.currentContent}
+
+Make the requested edits and return the COMPLETE edited version. Do not explain what you're doing, just provide the edited content.`;
+      } else if (isDirectGenerationRequest && context?.contentContext) {
+        // User has provided context and wants content generated
+        systemPrompt = `Generate the requested PR/marketing content immediately based on the context provided. Create actual, complete content - not a conversation about it. Be comprehensive and professional.`;
       } else {
         // General conversation mode
         systemPrompt = "You are Claude, an AI assistant for the SignalDesk PR platform. You're helping with content creation. Ask one question at a time, be conversational.";  
