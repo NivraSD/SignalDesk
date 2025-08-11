@@ -313,7 +313,14 @@ router.post("/chat", async (req, res) => {
     // Determine system prompt based on mode
     let systemPrompt = "";
     if (mode === 'content' && context?.folder === 'content-generator') {
-      if (isDirectGenerationRequest && context?.contentContext) {
+      if (isEditingContent && context?.currentContent) {
+        // User wants to edit existing content - we have the content in context
+        systemPrompt = `You need to edit the following content based on the user's request. Here is the current content:
+
+${context.currentContent}
+
+Make the requested edits and return the COMPLETE edited version. Do not explain what you're doing, just provide the edited content.`;
+      } else if (isDirectGenerationRequest && context?.contentContext) {
         // User has provided context and wants content generated
         systemPrompt = `Generate the requested PR/marketing content immediately based on the context provided. Create actual, complete content - not a conversation about it. Be comprehensive and professional.`;
       } else if (isDirectGenerationRequest) {
@@ -378,8 +385,8 @@ Create the ACTUAL CONTENT, not a description of what you would create.`;
       return indicators.some(ind => text.includes(ind)) || hasStructure;
     };
 
-    // Mark as generated content if it's a direct generation request and looks like content
-    const isGeneratedContent = (isDirectGenerationRequest || isGeneratingContent || isEditingContent) && detectGeneratedContent(response);
+    // Mark as generated content if it's a direct generation request, edit request, or looks like content
+    const isGeneratedContent = (isDirectGenerationRequest || isGeneratingContent || isEditingContent || (context?.currentContent && detectGeneratedContent(response)));
 
     res.json({
       success: true,

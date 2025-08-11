@@ -566,8 +566,10 @@ const RailwayDraggable = () => {
 
       // Detect if user is requesting an edit to existing content - be very specific
       const editKeywords = [
-        'edit it', 'change it', 'update it', 'revise it', 'modify it', 
-        'make it shorter', 'make it longer', 'fix it', 'improve it'
+        'edit', 'change', 'update', 'revise', 'modify', 
+        'make it shorter', 'make it longer', 'fix', 'improve',
+        'shorten', 'lengthen', 'expand', 'reduce', 'rewrite',
+        'adjust', 'tweak', 'polish', 'refine', 'enhance'
       ];
       const userRequestedEdit = hasContent && editKeywords.some(keyword => 
         text.toLowerCase().includes(keyword)

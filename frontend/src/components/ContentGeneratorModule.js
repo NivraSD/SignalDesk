@@ -8,7 +8,8 @@ import {
 
 const ContentGeneratorModule = ({ onAIMessage, generatedContent, onContentUpdate, currentContentType }) => {
   const [content, setContent] = useState(generatedContent || '');
-  const [editMode, setEditMode] = useState(false);
+  // Start in edit mode when there's content
+  const [editMode, setEditMode] = useState(!!generatedContent || false);
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
   const [aiEditPrompt, setAiEditPrompt] = useState('');
@@ -71,6 +72,8 @@ const ContentGeneratorModule = ({ onAIMessage, generatedContent, onContentUpdate
   useEffect(() => {
     if (generatedContent && generatedContent.trim()) {
       setContent(generatedContent);
+      // Automatically enable edit mode when new content is received
+      setEditMode(true);
     }
   }, [generatedContent]);
 
