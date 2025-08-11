@@ -277,10 +277,29 @@ The future belongs to organizations that view communication not as a support fun
 });
 
 // Chat endpoint for Railway UI AI Assistant
+// Store conversation sessions in memory (in production, use Redis or database)
+const conversationSessions = new Map();
+
 router.post("/chat", async (req, res) => {
   try {
     const { message, mode, context, sessionId } = req.body;
     const userId = req.user.id;
+    
+    // Get or create session
+    const sessionKey = `${userId}-${sessionId || 'default'}`;
+    if (!conversationSessions.has(sessionKey)) {
+      conversationSessions.set(sessionKey, {
+        messages: [],
+        createdAt: Date.now(),
+        lastActivity: Date.now()
+      });
+    }
+    
+    const session = conversationSessions.get(sessionKey);
+    session.lastActivity = Date.now();
+    
+    // Add current message to session history
+    session.messages.push({ role: 'user', content: message });
 
     console.log("[AI CHAT] Request received:", { 
       mode, 
@@ -318,7 +337,13 @@ router.post("/chat", async (req, res) => {
       lowerMessage.includes('make me') ||
       lowerMessage.includes('i need a') ||
       lowerMessage.includes('i want a') ||
-      context?.userRequestedGeneration;
+      lowerMessage.includes('announce') ||
+      lowerMessage.includes('post') ||
+      lowerMessage.includes('tweet') ||
+      lowerMessage.includes('share') ||
+      lowerMessage.includes('publish') ||
+      context?.userRequestedGeneration ||
+      (mode === 'content' && context?.folder === 'content-generator'); // If in content generator, assume generation
 
     // Determine system prompt based on mode
     let systemPrompt = "";
@@ -361,8 +386,21 @@ router.post("/chat", async (req, res) => {
           // Generic content type handling - use the contentTypeId as a guide
           console.log("[CONTENT GENERATION] Using generic handler for type:", contentTypeId);
           contentTypeInstruction = `Create professional ${contentTypeId} content based on the user's request. Make it complete, well-structured, and ready to use.`;
+        } else if (msgLower.includes('announce') || msgLower.includes('announcement')) {
+          // Default to social media post for announcements without specific type
+          detectedType = "social-media";
+          contentTypeInstruction = "Create a professional social media announcement post for X/Twitter. Keep it concise, engaging, and include relevant hashtags.";
         } else {
-          // If no content type specified, ask user to select one
+          // If no content type specified but we're in content generator mode, default to social post
+          if (mode === 'content' && context?.folder === 'content-generator') {
+            detectedType = "social-media";
+            contentTypeInstruction = "Create professional social media content based on the user's request. Make it engaging and suitable for LinkedIn or Twitter/X.";
+          } else {
+            console.log("[CONTENT GENERATION] No content type detected - asking user to select");
+            systemPrompt = "I'd be happy to generate content for you! Please select a content type from the options in the Content Generator panel (Press Release, Social Media Post, Thought Leadership, etc.) and I'll create the appropriate content for you.";
+            // Skip the generation instruction
+            contentTypeInstruction = "";
+          }
           console.log("[CONTENT GENERATION] No content type detected - asking user to select");
           systemPrompt = "I'd be happy to generate content for you! Please select a content type from the options in the Content Generator panel (Press Release, Social Media Post, Thought Leadership, etc.) and I'll create the appropriate content for you.";
           // Skip the generation instruction
