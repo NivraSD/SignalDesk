@@ -700,7 +700,10 @@ const RailwayDraggable = () => {
           context: {
             folder: 'content-generator',
             contentType: params.type,
-            generateDirectly: true
+            contentTypeId: params.type,  // CRITICAL: Backend expects contentTypeId
+            contentTypeName: params.type,
+            generateDirectly: true,
+            userRequestedGeneration: true
           }
         })
       });
