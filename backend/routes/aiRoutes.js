@@ -319,22 +319,24 @@ router.post("/chat", async (req, res) => {
         const msgLower = message.toLowerCase();
         let contentTypeInstruction = "";
         
-        if (msgLower.includes('press release') || msgLower.includes('announcement')) {
+        if (msgLower.includes('press release')) {
           contentTypeInstruction = "Create a complete press release with FOR IMMEDIATE RELEASE header, headline, dateline, body paragraphs, boilerplate, and contact information.";
-        } else if (msgLower.includes('social') || msgLower.includes('tweet') || msgLower.includes('linkedin') || msgLower.includes('facebook')) {
-          contentTypeInstruction = "Create social media posts suitable for the platform mentioned (or multiple platforms if not specified). Include hashtags and keep within platform character limits.";
+        } else if (msgLower.includes('social media post')) {
+          contentTypeInstruction = "Create social media posts suitable for multiple platforms (Twitter/X, LinkedIn, Facebook). Include appropriate hashtags, emojis, and keep within platform character limits. Provide versions for different platforms.";
+        } else if (msgLower.includes('thought leadership')) {
+          contentTypeInstruction = "Create a thought leadership article with strategic insights, industry analysis, data-driven arguments, and forward-looking perspectives. Include a compelling headline and executive summary.";
+        } else if (msgLower.includes('media pitch')) {
+          contentTypeInstruction = "Create a media pitch email targeted at journalists. Include subject line, personalized greeting, news hook, story angle, supporting points, and contact information.";
+        } else if (msgLower.includes('q&a document') || msgLower.includes('q and a document')) {
+          contentTypeInstruction = "Create a Q&A document with 5-7 relevant questions and comprehensive answers. Format with clear Q: and A: labels.";
+        } else if (msgLower.includes('crisis response')) {
+          contentTypeInstruction = "Create a crisis response statement that acknowledges the situation, expresses appropriate concern, outlines actions being taken, and provides next steps. Keep tone professional and empathetic.";
+        } else if (msgLower.includes('corporate messaging')) {
+          contentTypeInstruction = "Create corporate messaging that aligns with company values, speaks to multiple stakeholders, and reinforces key brand messages. Include main message and supporting points.";
         } else if (msgLower.includes('email') || msgLower.includes('newsletter')) {
           contentTypeInstruction = "Create a complete email with subject line, greeting, body content, call-to-action, and signature.";
         } else if (msgLower.includes('blog') || msgLower.includes('article')) {
           contentTypeInstruction = "Create a complete blog post with title, introduction, main sections with headers, and conclusion.";
-        } else if (msgLower.includes('thought leadership') || msgLower.includes('opinion')) {
-          contentTypeInstruction = "Create a thought leadership piece with strategic insights, industry analysis, and forward-looking perspectives.";
-        } else if (msgLower.includes('q&a') || msgLower.includes('faq') || msgLower.includes('questions')) {
-          contentTypeInstruction = "Create a Q&A document with relevant questions and comprehensive answers.";
-        } else if (msgLower.includes('crisis') || msgLower.includes('response') || msgLower.includes('statement')) {
-          contentTypeInstruction = "Create a crisis response or official statement addressing the situation professionally.";
-        } else if (msgLower.includes('pitch') || msgLower.includes('media pitch')) {
-          contentTypeInstruction = "Create a media pitch email targeted at journalists with a compelling story angle.";
         } else {
           // Default to press release if type is unclear
           contentTypeInstruction = "Create a complete press release with FOR IMMEDIATE RELEASE header, as the content type was not clearly specified.";
