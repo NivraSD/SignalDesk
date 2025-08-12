@@ -1,7 +1,8 @@
 {
   "name": "signaldesk-backend",
   "version": "1.0.0",
-  "rebuild_timestamp": "1754997042",
+  "rebuild_timestamp": "1754997342",
+  "cache_buster": "2025-08-12-critical-fix",
   "description": "SignalDesk PR Platform Backend",
   "main": "index.js",
   "scripts": {
