@@ -1023,7 +1023,7 @@ const RailwayDraggable = () => {
             )}
             {selectedFeature?.id === 'opportunity-engine' && (
               <OpportunityEngine
-                onAIMessage={handleSendMessage}
+                onAIMessage={sendMessage}
                 isDragging={draggedElement === 'feature-view'}
               />
             )}
