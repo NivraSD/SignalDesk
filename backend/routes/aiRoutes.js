@@ -646,12 +646,19 @@ Bad response: Any response with tips, multiple questions, or over 30 words.`;
       
       } else if (isExplicitGenerationRequest) {
         // User said YES to generate - ACTUALLY GENERATE CONTENT NOW
-        systemPrompt = `Generate a complete ${contentType} based on this conversation. Create actual, professional content - not a description of what you would create.
+        const collectedContext = Object.values(conversationState.collectedInfo).join('\n');
+        systemPrompt = `Generate a complete professional ${contentType}.
 
-Previous conversation context:
-${context.previousMessages?.map(m => `${m.type}: ${m.content}`).join('\n')}
+Information gathered from conversation:
+${collectedContext}
 
-Create the ACTUAL ${contentType} now. Make it complete and ready to use.`;
+User just confirmed: "${message}"
+
+NOW CREATE THE ACTUAL ${contentType}:
+- Professional, complete, ready-to-use content
+- NOT a description or outline
+- The ACTUAL ${contentType} content
+- Include all standard sections for a ${contentType}`;
         
         isGeneratedContent = true; // THIS MAKES IT GO TO WORKSPACE
       
