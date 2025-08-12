@@ -220,16 +220,18 @@ const ContentGeneratorModule = ({ onAIMessage, generatedContent, onContentUpdate
               <button
                 onClick={() => setEditMode(!editMode)}
                 style={{
-                  padding: '0.4rem 0.8rem',
-                  background: editMode ? 'rgba(124, 58, 237, 0.2)' : 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  padding: '0.5rem 1rem',
+                  background: editMode ? '#7c3aed' : '#10b981',
+                  border: 'none',
                   borderRadius: '6px',
-                  color: editMode ? '#a78bfa' : '#9ca3af',
+                  color: 'white',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.5rem',
-                  fontSize: '12px'
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  transition: 'all 0.2s'
                 }}
               >
                 <Edit3 size={14} />
@@ -350,19 +352,22 @@ const ContentGeneratorModule = ({ onAIMessage, generatedContent, onContentUpdate
               <textarea
                 value={content}
                 onChange={(e) => handleContentEdit(e.target.value)}
+                placeholder="Start typing or paste your content here..."
                 style={{
                   width: '100%',
                   height: '100%',
-                  background: 'rgba(0, 0, 0, 0.3)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  background: 'rgba(0, 0, 0, 0.5)',
+                  border: '2px solid #10b981',
                   borderRadius: '8px',
                   padding: '1rem',
                   color: '#e8e8e8',
                   fontSize: '14px',
                   lineHeight: '1.6',
-                  fontFamily: 'monospace',
+                  fontFamily: 'system-ui, -apple-system, sans-serif',
                   resize: 'none',
-                  minHeight: '300px'
+                  minHeight: '300px',
+                  outline: 'none',
+                  boxShadow: '0 0 0 3px rgba(16, 185, 129, 0.1)'
                 }}
               />
             ) : (
