@@ -158,6 +158,7 @@ const sourceConfigRoutes = require("./src/routes/sourceConfigRoutes");
 const missingEndpointsRoutes = require("./src/routes/missingEndpointsRoutes");
 const enhancedClaudeRoutes = require("./src/routes/enhancedClaudeRoutes");
 const healthCheckRoutes = require("./src/routes/healthCheckRoutes");
+const mcpRoutes = require("./src/routes/mcpRoutes");
 
 // Database initialization routes (MUST BE BEFORE AUTH FOR PUBLIC ACCESS)
 const databaseInitRoutes = require("./src/routes/databaseInit");
@@ -270,6 +271,7 @@ app.use("/api/intelligence", authMiddleware, intelligenceRoutes);
 app.use("/api/stakeholder-intelligence", authMiddleware, stakeholderIntelligenceRoutes);
 app.use("/api/opportunities", authMiddleware, opportunitiesRoutes);
 app.use("/api/opportunity", authMiddleware, opportunityRoutes);  // Opportunity finding
+app.use("/api/mcp", authMiddleware, mcpRoutes);  // MCP integration routes
 
 // Intelligence Index Routes (pre-indexed data) - Public access for browsing
 const intelligenceIndexRoutes = require("./src/routes/intelligenceIndexRoutes");
