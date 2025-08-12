@@ -490,6 +490,10 @@ const RailwayDraggable = () => {
         const contentGen = activities.find(a => a.id === 'content-generator');
         handleActivityClick(contentGen);
         
+        // Set the content type for the backend
+        setSelectedContentTypeId(aiResponse.contentType || 'thought-leadership');
+        setSelectedContentTypeName(aiResponse.contentType?.replace('-', ' ') || 'thought leadership');
+        
         // Only show tips if they exist, otherwise let backend handle it
         if (aiResponse.response.type === 'tips_and_natural_conversation') {
           const tipsMsg = {
@@ -518,6 +522,9 @@ const RailwayDraggable = () => {
         if (aiResponse.response.type === 'tips_and_natural_conversation') {
           return;
         }
+        
+        // Wait a moment for the feature to be set before continuing
+        await new Promise(resolve => setTimeout(resolve, 100));
       } else {
         // Handle other feature activation
         const otherFeature = activities.find(a => a.id === aiResponse.feature);
@@ -603,6 +610,10 @@ const RailwayDraggable = () => {
         userRequestedEdit
       });
       
+      // Force content-generator mode if we just activated it
+      const isContentGenerator = aiResponse?.feature === 'content-generator' || selectedFeature?.id === 'content-generator';
+      const effectiveFolder = isContentGenerator ? 'content-generator' : selectedFeature?.id;
+      
       const response = await fetch(`${API_BASE_URL}/ai/unified-chat`, {
         method: 'POST',
         headers: {
@@ -611,10 +622,10 @@ const RailwayDraggable = () => {
         },
         body: JSON.stringify({
           message: text,
-          mode: selectedFeature?.id === 'content-generator' ? 'content' : 'general',
+          mode: isContentGenerator ? 'content' : 'general',
           sessionId: sessionId,
           context: {
-            folder: selectedFeature?.id,
+            folder: effectiveFolder,
             editing: isEditing,
             hasGeneratedContent: hasContent,
             contentContext: adaptiveAI.conversationState.contentContext,
