@@ -1,11 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const intelligenceMonitoringController = require('../controllers/intelligenceMonitoringController');
-const authMiddleware = require('../middleware/auth');
 const pool = require('../config/db');
 
-// Apply auth middleware to all routes
-router.use(authMiddleware);
+// Auth middleware is applied at app level in index.js
 
 // Legacy endpoints (keep for compatibility)
 router.get('/organization/:organizationId', intelligenceMonitoringController.getOpportunities);
