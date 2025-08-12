@@ -490,14 +490,16 @@ const RailwayDraggable = () => {
         const contentGen = activities.find(a => a.id === 'content-generator');
         handleActivityClick(contentGen);
         
-        // Show tips first, then follow-up question
-        const tipsMsg = {
-          id: `tips-${Date.now()}`,
-          type: 'assistant',
-          content: `${aiResponse.response.message}\n\n${adaptiveAI.formatTipsMessage(aiResponse.response)}`,
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, tipsMsg]);
+        // Only show tips if they exist, otherwise let backend handle it
+        if (aiResponse.response.type === 'tips_and_natural_conversation') {
+          const tipsMsg = {
+            id: `tips-${Date.now()}`,
+            type: 'assistant',
+            content: `${aiResponse.response.message}\n\n${adaptiveAI.formatTipsMessage(aiResponse.response)}`,
+            timestamp: new Date()
+          };
+          setMessages(prev => [...prev, tipsMsg]);
+        }
         
         // Add follow-up question if it exists
         if (aiResponse.response.followUp) {
@@ -512,7 +514,10 @@ const RailwayDraggable = () => {
           }, 1000);
         }
         
-        return;
+        // Only return early if we showed tips, otherwise continue to backend
+        if (aiResponse.response.type === 'tips_and_natural_conversation') {
+          return;
+        }
       } else {
         // Handle other feature activation
         const otherFeature = activities.find(a => a.id === aiResponse.feature);

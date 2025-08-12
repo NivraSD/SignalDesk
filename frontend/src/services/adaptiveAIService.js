@@ -230,18 +230,14 @@ class AdaptiveAIService {
       // User mentioned a content type - activate Content Generator and set context
       this.conversationState.contentContext.type = contentType;
       
-      // Show tips briefly, then let Claude take over the conversation
-      const tips = this.contentTips[contentType];
+      // Let the backend handle the conversation - no local tips
       return {
         action: 'activate_feature',
         feature: 'content-generator',
         contentType: contentType,
         response: {
-          type: 'tips_and_natural_conversation',
-          title: tips.title,
-          tips: tips.tips,
-          message: `I'll help you create a ${contentType.replace('-', ' ')}. Here are some quick tips:`,
-          followUp: null
+          type: 'natural',
+          message: null // Let backend handle this completely
         }
       };
     }
