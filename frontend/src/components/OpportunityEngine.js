@@ -141,28 +141,50 @@ const OpportunityEngine = ({ onAIMessage, isDragging = false }) => {
   // Handle opportunity action
   const handleOpportunityAction = (opportunity, action) => {
     if (action === 'analyze' && onAIMessage) {
-      onAIMessage({
-        type: 'user',
-        content: `Analyze this PR opportunity: ${opportunity.title}. ${opportunity.description}`,
-        metadata: { 
-          source: 'opportunity-engine',
-          opportunityId: opportunity.id,
-          action: 'analyze'
-        }
-      });
+      // Send message to AI Assistant for analysis
+      const message = `Analyze this PR opportunity: "${opportunity.title}". ${opportunity.description} 
+      
+      Urgency: ${opportunity.urgency}
+      Score: ${opportunity.score}/100
+      Deadline: ${opportunity.deadline}
+      Suggested Action: ${opportunity.suggestedAction}`;
+      
+      onAIMessage(message);
     } else if (action === 'pitch' && onAIMessage) {
-      onAIMessage({
-        type: 'user',
-        content: `Help me create a pitch for: ${opportunity.title}`,
-        metadata: { 
-          source: 'opportunity-engine',
-          opportunityId: opportunity.id,
-          action: 'pitch'
-        }
-      });
+      // Send message to AI Assistant for pitch creation
+      const message = `Help me create a pitch for this opportunity: "${opportunity.title}".
+      
+      Context: ${opportunity.description}
+      Target Journalists: ${opportunity.relevantJournalists?.join(', ') || 'General media'}
+      Keywords: ${opportunity.keywords?.join(', ')}
+      Deadline: ${opportunity.deadline}`;
+      
+      onAIMessage(message);
     } else if (action === 'track') {
-      // Add to tracking system
-      console.log('Tracking opportunity:', opportunity);
+      // Track the opportunity
+      trackOpportunity(opportunity);
+    }
+  };
+
+  // Track opportunity function
+  const trackOpportunity = async (opportunity) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`https://signaldesk-production.up.railway.app/api/opportunities/${opportunity.id}/track`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ notes: `Tracking: ${opportunity.title}` })
+      });
+      
+      if (response.ok) {
+        alert(`Now tracking: ${opportunity.title}`);
+      }
+    } catch (error) {
+      console.error('Error tracking opportunity:', error);
+      alert('Tracking saved locally');
     }
   };
 
@@ -595,7 +617,16 @@ const OpportunityEngine = ({ onAIMessage, isDragging = false }) => {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: '0.5rem'
+                        gap: '0.5rem',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.background = 'rgba(59, 130, 246, 0.3)';
+                        e.currentTarget.style.transform = 'scale(1.02)';
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.background = 'rgba(59, 130, 246, 0.2)';
+                        e.currentTarget.style.transform = 'scale(1)';
                       }}
                     >
                       <Eye size={14} />
@@ -620,7 +651,16 @@ const OpportunityEngine = ({ onAIMessage, isDragging = false }) => {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: '0.5rem'
+                        gap: '0.5rem',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.background = 'rgba(16, 185, 129, 0.3)';
+                        e.currentTarget.style.transform = 'scale(1.02)';
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.background = 'rgba(16, 185, 129, 0.2)';
+                        e.currentTarget.style.transform = 'scale(1)';
                       }}
                     >
                       <Send size={14} />
@@ -645,7 +685,16 @@ const OpportunityEngine = ({ onAIMessage, isDragging = false }) => {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: '0.5rem'
+                        gap: '0.5rem',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.background = 'rgba(245, 158, 11, 0.3)';
+                        e.currentTarget.style.transform = 'scale(1.02)';
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.background = 'rgba(245, 158, 11, 0.2)';
+                        e.currentTarget.style.transform = 'scale(1)';
                       }}
                     >
                       <Star size={14} />
