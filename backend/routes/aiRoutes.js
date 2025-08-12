@@ -617,7 +617,9 @@ router.post("/unified-chat", async (req, res) => {
     console.log("Generation detection:", { 
       isInitialContentTypeSelection, 
       isExplicitGenerationRequest,
-      hasEnoughConversation 
+      hasEnoughConversation,
+      serverMessageCount: conversationState.messageCount,
+      userId: userId
     });
     
     // Build context-aware prompt based on mode
@@ -629,15 +631,18 @@ router.post("/unified-chat", async (req, res) => {
       
       if (isInitialContentTypeSelection) {
         // Initial selection - STRICT ONE QUESTION ONLY
-        systemPrompt = `You are a PR consultant. The user selected "${contentType}".
+        systemPrompt = `You are a PR consultant helping create ${contentType}.
 
-STRICT RULES:
-1. Ask ONE question about their topic/goal
-2. Keep response under 30 words total
-3. NO tips, NO comprehensive information
-4. Just acknowledge and ask ONE question
+The user just said: "${message}"
 
-Example: "Great! What's the main topic you'd like to cover in your ${contentType}?"`;
+CRITICAL RULES - YOU MUST FOLLOW:
+1. Ask ONLY ONE question
+2. Maximum 30 words total response
+3. NO tips, NO lists, NO comprehensive information
+4. Just ONE targeted question about their topic
+
+Good response: "Great! What's the main topic you'd like to cover?"
+Bad response: Any response with tips, multiple questions, or over 30 words.`;
       
       } else if (isExplicitGenerationRequest) {
         // User said YES to generate - ACTUALLY GENERATE CONTENT NOW
@@ -663,18 +668,20 @@ Based on the conversation, provide a brief insight or acknowledgment, then ask: 
 Be natural and conversational.`;
         } else {
           // Keep gathering information - STRICT ONE QUESTION
+          const prevInfo = Object.values(conversationState.collectedInfo).join('. ');
           systemPrompt = `You are gathering info for ${contentType}.
 
-STRICT RULES:
-1. Ask ONE follow-up question
-2. 20 words maximum response
-3. NO comprehensive breakdowns
-4. NO lists or multiple points
-5. Just ONE targeted question
+User's message: "${message}"
+What you know so far: ${prevInfo || 'Starting conversation'}
 
-Previous: ${context?.previousMessages?.slice(-1)[0]?.content || ''}
+CRITICAL - YOU MUST:
+1. Ask ONE follow-up question ONLY
+2. Maximum 20 words response
+3. NO lists, NO breakdowns, NO multiple points
+4. Just ONE question
 
-Ask about audience, angle, or key message.`;
+Example: "Who's your target audience?"
+NEVER: Give tips, lists, or comprehensive information`;
         }
       }
     } else if (mode === 'campaign') {
@@ -700,11 +707,12 @@ Ask about audience, angle, or key message.`;
     
     fullPrompt += `User: ${message}\n\nAssistant:`;
 
-    // Send to Claude with custom system prompt (with fallback for testing)
+    // Send to Claude - ONLY send user message, not the full prompt with instructions
     let response;
     try {
-      response = await claudeService.sendMessage(fullPrompt, [], {
-        systemPrompt: systemPrompt
+      // Send ONLY the user's message, with all instructions in systemPrompt
+      response = await claudeService.sendMessage(message, [], {
+        systemPrompt: systemPrompt  // ALL instructions go here
       });
     } catch (apiError) {
       // Fallback response when Claude API is not available (for testing)
