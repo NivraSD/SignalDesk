@@ -5,6 +5,7 @@ console.log('📍 This is index.js with FULL server implementation');
 console.log('⏰ Deploy time:', new Date().toISOString());
 console.log('🔄 Redeployed with CONVERSATION STATE FIX - ', new Date().toISOString());
 console.log('✅ Persistent conversation state management active');
+console.log('🔄 DEPLOYMENT TRIGGER:', Date.now());
 
 const express = require("express");
 const cors = require("cors");
