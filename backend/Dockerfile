@@ -29,8 +29,11 @@ RUN npm ci --production --silent
 # Copy application code
 COPY . .
 
-# Railway will set the PORT automatically
-# Don't specify EXPOSE as Railway manages this
+# Ensure PORT is available
+ENV PORT=3000
+
+# Expose the port for Railway
+EXPOSE 3000
 
 # Start the application
 CMD ["node", "server.js"]
