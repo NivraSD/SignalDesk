@@ -3,10 +3,7 @@
 console.log('🚀🚀🚀 STARTING SIGNALDESK SERVER v2.0 🚀🚀🚀');
 console.log('📍 This is index.js with FULL server implementation');
 console.log('⏰ Deploy time:', new Date().toISOString());
-console.log('🔄 Redeployed with CONVERSATION STATE FIX - ', new Date().toISOString());
-console.log('✅ Persistent conversation state management active');
-console.log('🔄 DEPLOYMENT TRIGGER:', Date.now());
-console.log('🚨 CRITICAL FIXES APPLIED - BUILD ID:', Math.random());
+console.log('🔄 Redeployed with COMPLETE CLAUDE FIX - ', new Date().toISOString());
 
 const express = require("express");
 const cors = require("cors");
@@ -163,18 +160,6 @@ app.get("/api/health", (req, res) => {
     status: "ok",
     message: "SignalDesk API is running",
     timestamp: new Date().toISOString(),
-  });
-});
-
-// Version endpoint for deployment verification
-app.get('/api/version', (req, res) => {
-  res.json({
-    version: process.env.RAILWAY_DEPLOYMENT_ID || 'local',
-    commit: process.env.RAILWAY_GIT_COMMIT_SHA || 'unknown',
-    timestamp: new Date().toISOString(),
-    cache_buster: Date.now(),
-    build_id: process.env.BUILD_ID || Math.random().toString(36).substring(7),
-    deployment_time: process.env.DEPLOYMENT_TIME || new Date().toISOString()
   });
 });
 
