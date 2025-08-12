@@ -1,9 +1,0 @@
-[build]
-builder = "nixpacks"
-buildCommand = "npm ci --production"
-
-[deploy]
-startCommand = "node server.js"
-healthcheckPath = "/api/health"
-healthcheckTimeout = 30
-restartPolicyType = "always"
