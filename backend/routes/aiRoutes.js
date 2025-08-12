@@ -611,7 +611,12 @@ router.post("/unified-chat", async (req, res) => {
       lowerMessage === 'create it' ||
       lowerMessage === 'go ahead' ||
       lowerMessage === 'please generate' ||
-      lowerMessage === "let's do it"
+      lowerMessage === "let's do it" ||
+      lowerMessage === 'generate post' ||
+      lowerMessage === 'create post' ||
+      lowerMessage === 'make it' ||
+      lowerMessage === 'do it' ||
+      lowerMessage.includes('generate')
     );
 
     console.log("Generation detection:", { 
@@ -647,18 +652,20 @@ Bad response: Any response with tips, multiple questions, or over 30 words.`;
       } else if (isExplicitGenerationRequest) {
         // User said YES to generate - ACTUALLY GENERATE CONTENT NOW
         const collectedContext = Object.values(conversationState.collectedInfo).join('\n');
-        systemPrompt = `Generate a complete professional ${contentType}.
+        // Use stored content type to ensure we generate the right type
+        const actualContentType = conversationState.contentTypeName || contentType;
+        systemPrompt = `Generate a complete professional ${actualContentType}.
 
 Information gathered from conversation:
 ${collectedContext}
 
 User just confirmed: "${message}"
 
-NOW CREATE THE ACTUAL ${contentType}:
+NOW CREATE THE ACTUAL ${actualContentType}:
 - Professional, complete, ready-to-use content
 - NOT a description or outline
-- The ACTUAL ${contentType} content
-- Include all standard sections for a ${contentType}`;
+- The ACTUAL ${actualContentType} content
+- Include all standard sections for a ${actualContentType}`;
         
         isGeneratedContent = true; // THIS MAKES IT GO TO WORKSPACE
       
@@ -749,7 +756,7 @@ About [Company]
 
 Contact: [Contact information]`;
       } else if (isInitialContentTypeSelection) {
-        response = "Great choice! Thought leadership content helps establish your expertise and build trust with your audience. To create something impactful for you, what's the main topic or industry insight you'd like to explore?";
+        response = "Great! What's the main topic you'd like to cover?";
       } else if (hasEnoughConversation && !isExplicitGenerationRequest) {
         response = "Perfect! Based on what you've shared, I can create a compelling thought leadership piece for you. Would you like me to generate it?";
       } else {
@@ -762,10 +769,14 @@ Contact: [Contact information]`;
       conversationState.messageCount++;
       conversationState.collectedInfo[`msg_${conversationState.messageCount}`] = message;
     } else {
-      // Reset conversation state after generation
+      // Reset conversation state after generation but keep content type
+      const currentContentType = conversationState.contentType;
+      const currentContentTypeName = conversationState.contentTypeName;
       conversationState.messageCount = 0;
       conversationState.collectedInfo = {};
-      conversationState.contentType = null;
+      // Preserve content type for next generation in same session
+      conversationState.contentType = currentContentType;
+      conversationState.contentTypeName = currentContentTypeName;
     }
 
     // No suggestions - let Claude handle everything naturally
