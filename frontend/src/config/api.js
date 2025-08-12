@@ -1,9 +1,8 @@
-// API Configuration with proper environment variable support
-// Uses React environment variables (REACT_APP_ prefix required)
-const API_BASE_URL = process.env.REACT_APP_API_URL || 
-  (process.env.NODE_ENV === 'production' 
-    ? 'https://signaldesk-production.up.railway.app/api'
-    : 'http://localhost:3001/api');
+// Import emergency hardcoded URL
+import FORCE_API_URL from './apiUrl';
+
+// API Configuration - Using EMERGENCY hardcoded URL
+const API_BASE_URL = FORCE_API_URL;
 
 // Enhanced API configuration with retry logic and error handling
 const API_CONFIG = {
