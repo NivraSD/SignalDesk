@@ -157,6 +157,10 @@ const missingEndpointsRoutes = require("./src/routes/missingEndpointsRoutes");
 const enhancedClaudeRoutes = require("./src/routes/enhancedClaudeRoutes");
 const healthCheckRoutes = require("./src/routes/healthCheckRoutes");
 
+// Database initialization routes (MUST BE BEFORE AUTH FOR PUBLIC ACCESS)
+const databaseInitRoutes = require("./src/routes/databaseInit");
+app.use("/api", databaseInitRoutes);
+
 // Health check endpoint
 app.get("/api/health", (req, res) => {
   res.json({
