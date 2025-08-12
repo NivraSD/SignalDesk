@@ -478,141 +478,11 @@ const RailwayDraggable = () => {
     const typeId = contentTypeId || selectedContentTypeId;
     const typeName = contentTypeName || selectedContentTypeName;
 
-    // Process message through adaptive AI service
-    const hasContent = !!(generatedContent && generatedContent.trim());
-    const aiResponse = adaptiveAI.processMessage(text, hasContent);
-    
-    // Handle different actions
-    if (aiResponse.action === 'activate_feature') {
-      // Auto-open feature and show tips
-      if (aiResponse.feature === 'content-generator') {
-        // Open Content Generator
-        const contentGen = activities.find(a => a.id === 'content-generator');
-        handleActivityClick(contentGen);
-        
-        // Set the content type for the backend
-        setSelectedContentTypeId(aiResponse.contentType || 'thought-leadership');
-        setSelectedContentTypeName(aiResponse.contentType?.replace('-', ' ') || 'thought leadership');
-        
-        // Only show tips if they exist, otherwise let backend handle it
-        if (aiResponse.response.type === 'tips_and_natural_conversation') {
-          const tipsMsg = {
-            id: `tips-${Date.now()}`,
-            type: 'assistant',
-            content: `${aiResponse.response.message}\n\n${adaptiveAI.formatTipsMessage(aiResponse.response)}`,
-            timestamp: new Date()
-          };
-          setMessages(prev => [...prev, tipsMsg]);
-        }
-        
-        // Add follow-up question if it exists
-        if (aiResponse.response.followUp) {
-          setTimeout(() => {
-            const followUpMsg = {
-              id: `followup-${Date.now()}`,
-              type: 'assistant',
-              content: aiResponse.response.followUp,
-              timestamp: new Date()
-            };
-            setMessages(prev => [...prev, followUpMsg]);
-          }, 1000);
-        }
-        
-        // Only return early if we showed tips, otherwise continue to backend
-        if (aiResponse.response.type === 'tips_and_natural_conversation') {
-          return;
-        }
-        
-        // Wait a moment for the feature to be set before continuing
-        await new Promise(resolve => setTimeout(resolve, 100));
-      } else {
-        // Handle other feature activation
-        const otherFeature = activities.find(a => a.id === aiResponse.feature);
-        if (otherFeature) {
-          handleActivityClick(otherFeature);
-        }
-        
-        const aiMsg = {
-          id: `feature-${Date.now()}`,
-          type: 'assistant',
-          content: aiResponse.response.message,
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, aiMsg]);
-        return;
-      }
-    }
-    
-    if (aiResponse.action === 'generate_content') {
-      // Generate content in feature
-      const generatingMsg = {
-        id: `generating-${Date.now()}`,
-        type: 'assistant',
-        content: aiResponse.response.message,
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, generatingMsg]);
-      
-      await generateContentInFeature(aiResponse.params);
-      return;
-    }
-    
-    if (aiResponse.action === 'chat') {
-      // If AI service has a message, show it; otherwise let Claude handle naturally
-      if (aiResponse.response.message) {
-        const aiMsg = {
-          id: `guided-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          type: 'assistant',
-          content: aiResponse.response.message,
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, aiMsg]);
-        return;
-      }
-      // If no message, fall through to let Claude handle it naturally
-    }
-    
-    // Default: Send to Claude for general conversation
+    // Always default to simple message processing
     setLoading(true);
     
     try {
-      const isEditing = isEditingMode && generatedContent;
-      
-      // Detect if user is explicitly requesting content generation
-      const generationKeywords = [
-        'generate', 'create it', 'write it', 'go ahead', 'make it',
-        'create the', 'write the', 'generate the', 'draft it',
-        'please create', 'please write', 'please generate'
-      ];
-      const userRequestedGeneration = generationKeywords.some(keyword => 
-        text.toLowerCase().includes(keyword)
-      );
-
-      // Detect if user is requesting an edit to existing content - ONLY when content exists
-      const editKeywords = [
-        'edit this', 'change this', 'update this', 'revise this', 'modify this',
-        'edit it', 'change it', 'update it', 'revise it', 'modify it',
-        'make it shorter', 'make it longer', 'fix it', 'improve it',
-        'shorten this', 'expand this', 'rewrite this'
-      ];
-      // CRITICAL: Only mark as edit if we HAVE content AND user uses edit keywords
-      const userRequestedEdit = hasContent && generatedContent && editKeywords.some(keyword => 
-        text.toLowerCase().includes(keyword)
-      ) && !userRequestedGeneration; // Don't treat as edit if it's a generation request
-      
-      console.log('[FRONTEND] Sending AI request:', {
-        message: text,
-        mode: selectedFeature?.id === 'content-generator' ? 'content' : 'general',
-        folder: selectedFeature?.id,
-        contentTypeId: typeId,
-        contentTypeName: typeName,
-        userRequestedGeneration,
-        userRequestedEdit
-      });
-      
-      // Force content-generator mode if we just activated it
-      const isContentGenerator = aiResponse?.feature === 'content-generator' || selectedFeature?.id === 'content-generator';
-      const effectiveFolder = isContentGenerator ? 'content-generator' : selectedFeature?.id;
+      const hasContent = !!(generatedContent && generatedContent.trim());
       
       const response = await fetch(`${API_BASE_URL}/ai/unified-chat`, {
         method: 'POST',
@@ -622,52 +492,31 @@ const RailwayDraggable = () => {
         },
         body: JSON.stringify({
           message: text,
-          mode: isContentGenerator ? 'content' : 'general',
+          mode: selectedFeature?.id === 'content-generator' ? 'content' : 'general',
           sessionId: sessionId,
           context: {
-            folder: effectiveFolder,
-            editing: isEditing,
-            hasGeneratedContent: hasContent,
-            contentContext: adaptiveAI.conversationState.contentContext,
-            currentContent: generatedContent,
-            userRequestedGeneration: userRequestedGeneration,
-            userRequestedEdit: userRequestedEdit,
+            folder: selectedFeature?.id || 'general',
             contentTypeId: typeId,
-            contentTypeName: typeName
+            contentTypeName: typeName,
+            hasGeneratedContent: hasContent,
+            currentContent: generatedContent
           }
         })
       });
 
       const data = await response.json();
-      console.log('[FRONTEND] AI Chat Response:', {
-        success: data.success,
-        hasResponse: !!data.response,
-        responseLength: data.response?.length,
-        isGeneratedContent: data.isGeneratedContent,
-        mode: data.mode,
-        responsePreview: data.response?.substring(0, 300)
-      });
       
       if (data.success && data.response) {
-        // Check if this is generated content that should go to Content Generator
         if (data.isGeneratedContent) {
-          console.log('[FRONTEND] Detected generated content, setting in Content Generator');
           // Auto-open Content Generator if not already open
           if (selectedFeature?.id !== 'content-generator') {
             const contentGen = activities.find(a => a.id === 'content-generator');
             handleActivityClick(contentGen);
           }
           
-          // Set the generated content directly in the feature
-          console.log('[FRONTEND] Setting content in Content Generator:', {
-            contentLength: data.response?.length,
-            contentPreview: data.response?.substring(0, 200)
-          });
           setGeneratedContent(data.response);
           detectContentType(data.response);
-          console.log('[FRONTEND] Content set successfully');
           
-          // Show success message in chat instead
           const successMsg = {
             id: Date.now(),
             type: 'system',
@@ -676,7 +525,6 @@ const RailwayDraggable = () => {
           };
           setMessages(prev => [...prev, successMsg]);
         } else {
-          // Regular chat message
           const aiMsg = {
             id: Date.now(),
             type: 'assistant',
