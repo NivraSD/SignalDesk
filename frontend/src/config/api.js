@@ -18,11 +18,11 @@ const API_CONFIG = {
 
 // Log the current configuration
 console.log('SignalDesk API Configuration:');
-console.log('- Environment API URL:', process.env.REACT_APP_API_URL);
-console.log('- Using API URL:', API_BASE_URL);
+console.log('- HARDCODED API URL:', API_BASE_URL);
 console.log('- NODE_ENV:', process.env.NODE_ENV);
 console.log('- Timeout:', API_CONFIG.timeout, 'ms');
 console.log('- Retry Attempts:', API_CONFIG.retryAttempts);
+console.log('✅ API configuration loaded from hardcoded source');
 
 // Debug log
 if (!API_BASE_URL.startsWith('http')) {

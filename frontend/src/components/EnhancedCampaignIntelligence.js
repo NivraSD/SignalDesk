@@ -29,7 +29,7 @@ const EnhancedCampaignIntelligence = () => {
   // Initialize WebSocket connection
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const socketInstance = io(process.env.REACT_APP_API_URL || 'http://localhost:3001', {
+    const socketInstance = io('https://signaldesk-production.up.railway.app', {
       auth: { token },
       transports: ['websocket', 'polling']
     });
