@@ -2,3 +2,4 @@
 console.log('🚀 Railway is running server.js');
 console.log('📍 Redirecting to backend/index.js (full server with all routes)...');
 require('./index.js');
+// REBUILD TRIGGER: 1754997042

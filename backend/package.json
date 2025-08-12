@@ -1,6 +1,7 @@
 {
   "name": "signaldesk-backend",
   "version": "1.0.0",
+  "rebuild_timestamp": "1754997042",
   "description": "SignalDesk PR Platform Backend",
   "main": "index.js",
   "scripts": {
