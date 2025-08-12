@@ -572,6 +572,21 @@ Be conversational and helpful. Focus on gathering the key information needed to 
   }
 });
 
+// Version check for debugging deployment issues
+router.get("/conversation-version", (req, res) => {
+  res.json({
+    version: "2025-08-12-fix-v3",
+    timestamp: new Date().toISOString(),
+    features: {
+      oneQuestionOnly: true,
+      noTips: true,
+      generatePostTrigger: true,
+      contentTypePersistence: true
+    },
+    deploymentId: process.env.RAILWAY_DEPLOYMENT_ID || 'local'
+  });
+});
+
 // Unified chat endpoint for AI Assistant
 router.post("/unified-chat", async (req, res) => {
   try {
@@ -588,13 +603,16 @@ router.post("/unified-chat", async (req, res) => {
       conversationState.contentTypeName = context?.contentTypeName || context?.contentTypeId;
     }
 
-    console.log("Unified chat request:", { 
+    console.log("[CRITICAL DEBUG] Unified chat request:", { 
       mode, 
       messageLength: message?.length,
       contentTypeId: context?.contentTypeId,
       contentTypeName: context?.contentTypeName,
+      folder: context?.folder,
       previousMessagesCount: context?.previousMessages?.length || 0,
-      serverMessageCount: conversationState.messageCount
+      serverMessageCount: conversationState.messageCount,
+      isInitialSelection: conversationState.messageCount === 0 && context?.contentTypeId,
+      deploymentVersion: "2025-08-12-fix-v3"
     });
 
     // Detect if this is an initial content type selection
