@@ -126,7 +126,8 @@
       "WebFetch(domain:signaldesk-production.up.railway.app)",
       "WebFetch(domain:signaldesk-frontend.vercel.app)",
       "Bash(PORT=3001 node server-enhanced.js)",
-      "Bash(./deploy-emergency.sh)"
+      "Bash(./deploy-emergency.sh)",
+      "Bash(./force-railway-rebuild.sh:*)"
     ],
     "deny": []
   }
