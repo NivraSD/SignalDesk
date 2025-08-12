@@ -1,6 +1,9 @@
 // API Configuration with proper environment variable support
 // Uses React environment variables (REACT_APP_ prefix required)
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 
+  (process.env.NODE_ENV === 'production' 
+    ? 'https://signaldesk-production.up.railway.app/api'
+    : 'http://localhost:3001/api');
 
 // Enhanced API configuration with retry logic and error handling
 const API_CONFIG = {
@@ -21,6 +24,12 @@ console.log('- Using API URL:', API_BASE_URL);
 console.log('- NODE_ENV:', process.env.NODE_ENV);
 console.log('- Timeout:', API_CONFIG.timeout, 'ms');
 console.log('- Retry Attempts:', API_CONFIG.retryAttempts);
+
+// Debug log
+if (!API_BASE_URL.startsWith('http')) {
+  console.error('⚠️ WARNING: API_BASE_URL is missing protocol:', API_BASE_URL);
+  console.error('This will cause requests to fail. Check environment variables.');
+}
 
 // API request helper with retry logic
 export async function apiRequest(url, options = {}) {
