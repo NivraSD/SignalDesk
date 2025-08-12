@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useProject } from '../contexts/ProjectContext';
 import { useAuth } from '../contexts/AuthContext';
 import ContentGeneratorModule from './ContentGeneratorModule';
+import OpportunityEngine from './OpportunityEngine';
 import API_BASE_URL from '../config/api';
 // import adaptiveAI from '../services/adaptiveAIService'; // REMOVED - backend handles everything
 import {
@@ -96,6 +97,17 @@ const RailwayDraggable = () => {
       stats: '3 active campaigns',
       path: `/projects/${projectId}/campaign-intelligence-enhanced`,
       lastUsed: '3 hours ago'
+    },
+    {
+      id: 'opportunity-engine',
+      name: 'Opportunity Engine',
+      icon: Zap,
+      color: '#f59e0b',
+      description: 'AI-powered PR opportunity discovery',
+      status: 'ready',
+      stats: '5 active opportunities',
+      component: 'OpportunityEngine',
+      lastUsed: 'Just now'
     },
     {
       id: 'memory-vault',
@@ -1007,6 +1019,12 @@ const RailwayDraggable = () => {
                 generatedContent={generatedContent}
                 onContentUpdate={handleContentUpdate}
                 currentContentType={currentContentType}
+              />
+            )}
+            {selectedFeature?.id === 'opportunity-engine' && (
+              <OpportunityEngine
+                onAIMessage={handleSendMessage}
+                isDragging={draggedElement === 'feature-view'}
               />
             )}
           </div>
