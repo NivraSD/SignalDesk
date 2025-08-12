@@ -44,8 +44,19 @@ router.post("/unified-chat", authMiddleware, async (req, res) => {
       message.toLowerCase().includes('email') ||
       context?.folder === 'content-generator';
     
-    if (isContentRequest && !state.contentType) {
-      state.contentType = context?.contentTypeName || detectContentType(message);
+    // Check if switching to a new content type
+    if (isContentRequest) {
+      const newContentType = context?.contentTypeName || detectContentType(message);
+      
+      // If switching content types, reset the conversation
+      if (state.contentType && state.contentType !== newContentType) {
+        console.log("[CLAUDE FIX] Switching content type from", state.contentType, "to", newContentType);
+        state.history = [];
+        state.messageCount = 0;
+        state.contentType = newContentType;
+      } else if (!state.contentType) {
+        state.contentType = newContentType;
+      }
     }
     
     // Check if user wants to generate
@@ -121,9 +132,22 @@ Ask ONE natural question (max 30 words):`;
         
         response = completion.content[0].text.trim();
         
-        // Validate response
+        // Validate response - prevent loops
         if (response.length > 150 || !response.includes('?')) {
           response = "What specific aspect would you like me to focus on?";
+        }
+        
+        // Check for stuck conversation (same response repeating)
+        if (state.history.length > 2) {
+          const lastResponse = state.history[state.history.length - 1]?.content;
+          if (lastResponse === response) {
+            // Stuck in a loop, provide different question
+            if (state.messageCount === 3) {
+              response = "Would you like me to generate the content now?";
+            } else {
+              response = "Can you tell me more about your specific goals?";
+            }
+          }
         }
         
       } catch (error) {
@@ -138,12 +162,22 @@ Ask ONE natural question (max 30 words):`;
         }
       }
       
-      // Add to history
+      // Add to history (limit to prevent memory issues)
       state.history.push(
         { role: 'user', content: message },
         { role: 'assistant', content: response }
       );
       state.messageCount++;
+      
+      // Keep history reasonable (last 10 exchanges)
+      if (state.history.length > 20) {
+        state.history = state.history.slice(-20);
+      }
+      
+      // After 5 exchanges, suggest generation
+      if (state.messageCount >= 5) {
+        response = "I have enough information. Would you like me to generate the content now?";
+      }
       
     } else {
       // Non-content request - general help

@@ -128,7 +128,8 @@
       "Bash(PORT=3001 node server-enhanced.js)",
       "Bash(./deploy-emergency.sh)",
       "Bash(./force-railway-rebuild.sh:*)",
-      "Bash(git fetch:*)"
+      "Bash(git fetch:*)",
+      "Bash(true)"
     ],
     "deny": []
   }
