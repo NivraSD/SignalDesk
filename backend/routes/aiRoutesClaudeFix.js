@@ -44,18 +44,25 @@ router.post("/unified-chat", authMiddleware, async (req, res) => {
       message.toLowerCase().includes('email') ||
       context?.folder === 'content-generator';
     
-    // Check if switching to a new content type
-    if (isContentRequest) {
+    // Check if switching to a new content type or feature
+    const isFeatureSwitch = context?.folder && state.lastFolder && context.folder !== state.lastFolder;
+    
+    if (isContentRequest || isFeatureSwitch) {
       const newContentType = context?.contentTypeName || detectContentType(message);
       
-      // If switching content types, reset the conversation
-      if (state.contentType && state.contentType !== newContentType) {
-        console.log("[CLAUDE FIX] Switching content type from", state.contentType, "to", newContentType);
+      // If switching content types or features, reset the conversation
+      if ((state.contentType && state.contentType !== newContentType) || isFeatureSwitch) {
+        console.log("[CLAUDE FIX] Context switch detected:", {
+          from: state.contentType || state.lastFolder,
+          to: newContentType || context?.folder
+        });
         state.history = [];
         state.messageCount = 0;
         state.contentType = newContentType;
+        state.lastFolder = context?.folder;
       } else if (!state.contentType) {
         state.contentType = newContentType;
+        state.lastFolder = context?.folder;
       }
     }
     
@@ -106,46 +113,47 @@ Create the actual ${state.contentType} content now. Be professional and complete
       // Natural conversation with Claude - but STRICT constraints
       const conversationContext = state.history.map(h => `${h.role}: ${h.content}`).join('\n');
       
-      const prompt = `You are helping create ${state.contentType || 'content'}. Have a NATURAL conversation.
+      const prompt = `You are helping create ${state.contentType || 'content'}. Have a natural, helpful conversation.
 
-CRITICAL RULES:
-1. Ask exactly ONE question
-2. Maximum 30 words
+Guidelines:
+1. Ask relevant follow-up questions to understand the user's needs
+2. Keep responses concise but complete (aim for 1-2 sentences)
 3. Be specific and contextual to what the user just said
-4. Natural, conversational tone
-5. NO tips, lists, or explanations
+4. Natural, professional tone
+5. Focus on gathering necessary information for content creation
 
 Previous conversation:
 ${conversationContext}
 
 User: "${message}"
 
-Ask ONE natural question (max 30 words):`;
+Provide a helpful, contextual response:`;
 
       try {
         const completion = await anthropic.messages.create({
           model: 'claude-3-haiku-20240307', // Fast model
-          max_tokens: 60,
+          max_tokens: 150, // Increased from 60
           temperature: 0.7,
           messages: [{ role: 'user', content: prompt }]
         });
         
         response = completion.content[0].text.trim();
         
-        // Validate response - prevent loops
-        if (response.length > 150 || !response.includes('?')) {
-          response = "What specific aspect would you like me to focus on?";
+        // Only validate for excessive length
+        if (response.length > 300) {
+          response = response.substring(0, 300) + "...";
         }
         
-        // Check for stuck conversation (same response repeating)
-        if (state.history.length > 2) {
-          const lastResponse = state.history[state.history.length - 1]?.content;
-          if (lastResponse === response) {
-            // Stuck in a loop, provide different question
-            if (state.messageCount === 3) {
-              response = "Would you like me to generate the content now?";
+        // Check for stuck conversation (same response repeating 3+ times)
+        if (state.history.length > 4) {
+          const recentResponses = state.history.slice(-4).filter((_, i) => i % 2 === 1).map(h => h.content);
+          const uniqueResponses = new Set(recentResponses);
+          if (uniqueResponses.size === 1) {
+            // Actually stuck in a loop after multiple attempts
+            if (state.messageCount >= 4) {
+              response = "I have a good understanding now. Would you like me to generate the content?";
             } else {
-              response = "Can you tell me more about your specific goals?";
+              response = "Let me approach this differently. What's the key message you want to convey?";
             }
           }
         }
@@ -174,9 +182,9 @@ Ask ONE natural question (max 30 words):`;
         state.history = state.history.slice(-20);
       }
       
-      // After 5 exchanges, suggest generation
-      if (state.messageCount >= 5) {
-        response = "I have enough information. Would you like me to generate the content now?";
+      // After 7 exchanges, gently suggest generation (but don't force it)
+      if (state.messageCount >= 7 && !response.toLowerCase().includes('generate')) {
+        response += " Feel free to let me know when you're ready to generate the content.";
       }
       
     } else {
