@@ -5,7 +5,7 @@ import { useProject } from '../contexts/ProjectContext';
 import { useAuth } from '../contexts/AuthContext';
 import ContentGeneratorModule from './ContentGeneratorModule';
 import API_BASE_URL from '../config/api';
-import adaptiveAI from '../services/adaptiveAIService';
+// import adaptiveAI from '../services/adaptiveAIService'; // REMOVED - backend handles everything
 import {
   Bot, Brain, FileText, Users, TrendingUp, AlertTriangle, 
   BarChart3, Archive, Send, ChevronLeft, ChevronRight, X,
@@ -289,8 +289,8 @@ const RailwayDraggable = () => {
       setCurrentView('feature');
       setIsTransitioning(false);
       
-      // Update AI Assistant context
-      adaptiveAI.setActiveFeature(activity.id);
+      // AI context handled by backend now
+      // adaptiveAI.setActiveFeature(activity.id);
     }, 300);
   };
 
@@ -304,8 +304,8 @@ const RailwayDraggable = () => {
       setGeneratedContent('');
       setIsTransitioning(false);
       
-      // Reset AI to general mode
-      adaptiveAI.reset();
+      // AI reset handled by backend now
+      // adaptiveAI.reset();
     }, 300);
   };
 
@@ -381,8 +381,8 @@ const RailwayDraggable = () => {
       setIsEditingMode(true);
       handleEditRequest(msg);
     } else if (msg.type === 'content_saved') {
-      // Content was saved - reset conversation state and show success message
-      adaptiveAI.reset();
+      // Content was saved - reset handled by backend
+      // adaptiveAI.reset();
       const successMsg = {
         id: `save-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         type: 'system',
@@ -470,15 +470,31 @@ const RailwayDraggable = () => {
     }
   };
 
-  // Enhanced AI message handling with natural conversation
+  // FIXED AI message handling - direct backend call, no local processing
   const sendMessage = async (text, contentTypeId = null, contentTypeName = null) => {
     if (!text?.trim()) return;
+    
+    console.log('[FIXED] Sending message:', text);
     
     // Use stored content type if not provided
     const typeId = contentTypeId || selectedContentTypeId;
     const typeName = contentTypeName || selectedContentTypeName;
 
-    // Always default to simple message processing
+    // Check if this is a content-related message
+    const isContentMessage = 
+      text.toLowerCase().includes('thought leadership') ||
+      text.toLowerCase().includes('press release') ||
+      text.toLowerCase().includes('social media') ||
+      text.toLowerCase().includes('blog') ||
+      text.toLowerCase().includes('email') ||
+      selectedFeature?.id === 'content-generator';
+    
+    // If it's a content message, ensure Content Generator is open
+    if (isContentMessage && selectedFeature?.id !== 'content-generator') {
+      const contentGen = activities.find(a => a.id === 'content-generator');
+      handleActivityClick(contentGen);
+    }
+
     setLoading(true);
     
     try {
@@ -492,12 +508,12 @@ const RailwayDraggable = () => {
         },
         body: JSON.stringify({
           message: text,
-          mode: selectedFeature?.id === 'content-generator' ? 'content' : 'general',
+          mode: isContentMessage ? 'content' : 'general',
           sessionId: sessionId,
           context: {
-            folder: selectedFeature?.id || 'general',
+            folder: isContentMessage ? 'content-generator' : 'general',
             contentTypeId: typeId,
-            contentTypeName: typeName,
+            contentTypeName: typeName || text, // Use message as content type if not specified
             hasGeneratedContent: hasContent,
             currentContent: generatedContent
           }
