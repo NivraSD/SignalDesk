@@ -1023,7 +1023,22 @@ const RailwayDraggable = () => {
             )}
             {selectedFeature?.id === 'opportunity-engine' && (
               <OpportunityEngine
-                onAIMessage={sendMessage}
+                onAIMessage={(message, featureId, contentType) => {
+                  // If featureId is specified, switch to that feature
+                  if (featureId === 'content-generator') {
+                    const contentGenActivity = activities.find(a => a.id === 'content-generator');
+                    if (contentGenActivity) {
+                      handleActivityClick(contentGenActivity);
+                      // Send message after switching to Content Generator
+                      setTimeout(() => {
+                        sendMessage(message, null, contentType);
+                      }, 500);
+                    }
+                  } else {
+                    // Just send the message normally
+                    sendMessage(message);
+                  }
+                }}
                 isDragging={draggedElement === 'feature-view'}
               />
             )}

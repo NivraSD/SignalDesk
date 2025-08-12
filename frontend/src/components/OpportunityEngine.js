@@ -4,7 +4,7 @@ import {
   TrendingUp, Target, Award, Calendar, Users, AlertCircle,
   Zap, BarChart3, Search, Filter, ChevronRight, Star,
   MessageSquare, Send, Eye, Clock, Sparkles, Activity,
-  Trophy, Megaphone, Globe, Hash, ArrowUp, RefreshCw
+  Trophy, Megaphone, Globe, Hash, ArrowUp, RefreshCw, FileText
 } from 'lucide-react';
 
 const OpportunityEngine = ({ onAIMessage, isDragging = false }) => {
@@ -141,27 +141,42 @@ const OpportunityEngine = ({ onAIMessage, isDragging = false }) => {
   // Handle opportunity action
   const handleOpportunityAction = (opportunity, action) => {
     if (action === 'analyze' && onAIMessage) {
-      // Send message to AI Assistant for analysis
-      const message = `Analyze this PR opportunity: "${opportunity.title}". ${opportunity.description} 
-      
-      Urgency: ${opportunity.urgency}
-      Score: ${opportunity.score}/100
-      Deadline: ${opportunity.deadline}
-      Suggested Action: ${opportunity.suggestedAction}`;
+      // Send comprehensive analysis request to AI Assistant
+      const message = `Provide a comprehensive strategic analysis of this PR opportunity:
+
+"${opportunity.title}"
+
+Context: ${opportunity.description}
+Score: ${opportunity.score}/100 | Urgency: ${opportunity.urgency} | Deadline: ${opportunity.deadline}
+
+Please analyze:
+1. Why this opportunity matters now
+2. Key angles and messaging strategies  
+3. Target audience and stakeholders
+4. Potential risks and mitigation
+5. Success metrics and expected outcomes
+6. Tactical execution plan
+7. Required resources and timeline
+
+Relevant Journalists: ${opportunity.relevantJournalists?.join(', ') || 'Not specified'}
+Keywords: ${opportunity.keywords?.join(', ') || 'Not specified'}
+Suggested Action: ${opportunity.suggestedAction || 'Develop strategic approach'}`;
       
       onAIMessage(message);
-    } else if (action === 'pitch' && onAIMessage) {
-      // Send message to AI Assistant for pitch creation
-      const message = `Help me create a pitch for this opportunity: "${opportunity.title}".
+    } else if (action === 'generate' && onAIMessage) {
+      // Open Content Generator with opportunity context
+      const message = `I want to create content for this PR opportunity: "${opportunity.title}". ${opportunity.description}
+
+Please help me create a press release, pitch, or other content.
+
+Target Journalists: ${opportunity.relevantJournalists?.join(', ') || 'General media'}
+Keywords to include: ${opportunity.keywords?.join(', ')}
+Deadline: ${opportunity.deadline}`;
       
-      Context: ${opportunity.description}
-      Target Journalists: ${opportunity.relevantJournalists?.join(', ') || 'General media'}
-      Keywords: ${opportunity.keywords?.join(', ')}
-      Deadline: ${opportunity.deadline}`;
-      
-      onAIMessage(message);
+      // Send message that will trigger Content Generator
+      onAIMessage(message, 'content-generator', 'Press Release');
     } else if (action === 'track') {
-      // Track the opportunity
+      // Track the opportunity for monitoring
       trackOpportunity(opportunity);
     }
   };
@@ -636,7 +651,7 @@ const OpportunityEngine = ({ onAIMessage, isDragging = false }) => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleOpportunityAction(opportunity, 'pitch');
+                        handleOpportunityAction(opportunity, 'generate');
                       }}
                       style={{
                         flex: 1,
@@ -663,8 +678,8 @@ const OpportunityEngine = ({ onAIMessage, isDragging = false }) => {
                         e.currentTarget.style.transform = 'scale(1)';
                       }}
                     >
-                      <Send size={14} />
-                      Create Pitch
+                      <FileText size={14} />
+                      Generate Content
                     </button>
                     
                     <button
