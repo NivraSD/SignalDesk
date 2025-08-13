@@ -725,7 +725,7 @@ const RailwayDraggable = () => {
         <div className="header-left">
           <div className="signaldesk-brand">
             <span className="brand-text">SignalDesk</span>
-            <span style={{ fontSize: '10px', opacity: 0.5, marginLeft: '8px' }}>v3.1</span>
+            <span style={{ fontSize: '12px', color: '#8b5cf6', fontWeight: 'bold', marginLeft: '8px' }}>v3.2-FIXED</span>
           </div>
           
           <div className="project-selector">
@@ -751,7 +751,9 @@ const RailwayDraggable = () => {
                       }}
                       title="Refresh projects"
                     >
-                      <RefreshCw size={14} />
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                      </svg>
                     </button>
                     <button 
                       className="new-project-button"

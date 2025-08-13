@@ -1,0 +1,12 @@
+# Railway Deploy Trigger
+# This file forces Railway to rebuild and redeploy
+# Last updated: 2025-08-12 15:30:00
+# Deployment ID: deploy-fix-ai-assistant-2025-08-12
+# 
+# CRITICAL FIXES INCLUDED:
+# - AI Assistant conversation state management
+# - Content generation with proper type handling
+# - Session persistence fixes
+# - Unified chat endpoint implementation
+#
+# Force rebuild trigger: v1.0.1

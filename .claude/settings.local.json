@@ -130,7 +130,8 @@
       "Bash(./force-railway-rebuild.sh:*)",
       "Bash(git fetch:*)",
       "Bash(true)",
-      "Bash(gh api:*)"
+      "Bash(gh api:*)",
+      "Bash(railway:*)"
     ],
     "deny": []
   }
