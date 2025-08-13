@@ -69,6 +69,7 @@ const RailwayDraggable = () => {
     {
       id: 'niv-strategist',
       name: 'Niv PR Strategist',
+      isNew: true,
       icon: Brain,
       color: '#f59e0b',
       description: 'Senior AI PR Strategist',
