@@ -1,31 +1,23 @@
-# Nixpacks configuration for Railway - FORCE DOCKER BYPASS
-# This configuration ensures Railway uses Nixpacks instead of Docker
-
 [phases.setup]
-# Use Node.js 20 LTS
-nixPkgs = ["nodejs-20_x", "npm-9_x"]
+nixPkgs = ["nodejs-18_x", "npm-9_x"]
 
 [phases.install]
-# Force complete cache clean and fresh install
 cmds = [
-    "echo 'FORCING NIXPACKS BUILD - BYPASSING DOCKER'",
-    "rm -rf node_modules package-lock.json .npm .cache",
-    "npm cache clean --force",
-    "npm install --no-cache --verbose --loglevel verbose",
-    "echo 'Build completed at:' && date"
+  "echo 'FORCE CACHE BUST: $(date +%s)'",
+  "rm -rf node_modules .npm package-lock.json",
+  "npm cache clean --force",
+  "npm install --verbose --no-cache"
 ]
 
 [phases.build]
-# Optional build phase if needed
 cmds = [
-    "echo 'Skipping build phase - no compilation needed'"
+  "echo 'Building SignalDesk Backend'",
+  "echo 'Cache Bust Token: FORCE_REBUILD_2025_01_13_V1'",
+  "ls -la"
 ]
 
 [start]
-# Start command
 cmd = "node server.js"
 
-[variables]
-NODE_ENV = "production"
-NPM_CONFIG_CACHE = "/tmp/.npm"
-NPM_CONFIG_LOGLEVEL = "verbose"
+[providers]
+node = false

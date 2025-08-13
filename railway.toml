@@ -1,9 +1,8 @@
-# Railway TOML configuration - takes precedence over railway.json
-# Forces use of our custom Dockerfile without cache mounts
-
 [build]
-builder = "DOCKERFILE"
-dockerfilePath = "./Dockerfile"
+builder = "NIXPACKS"
+nixpacksConfigPath = "./nixpacks.toml"
+buildCommand = "echo 'FORCE REBUILD $(date)' && npm ci"
+watchPatterns = ["!Dockerfile*", "!dockerfile*", "!DOCKERFILE*"]
 
 [deploy]
 startCommand = "node server.js"
@@ -11,3 +10,7 @@ healthcheckPath = "/api/health"
 healthcheckTimeout = 45
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 5
+
+[[services]]
+name = "backend"
+builder = "NIXPACKS"

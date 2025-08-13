@@ -1,0 +1,6 @@
+Dockerfile*
+dockerfile*
+DOCKERFILE*
+*.Dockerfile
+.dockerignore
+docker-compose*

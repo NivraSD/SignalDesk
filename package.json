@@ -1,6 +1,6 @@
 {
   "name": "signaldesk-api",
-  "version": "1.0.0",
+  "version": "1.0.0-force-rebuild-20250113",
   "description": "SignalDesk API Backend",
   "main": "app.js",
   "scripts": {
