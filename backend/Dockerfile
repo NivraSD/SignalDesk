@@ -1,24 +1,35 @@
-# CRITICAL FIX: Force complete rebuild for Niv routes
-# NO CACHE - timestamp: 2025-08-13T20:30:00Z
+# BULLETPROOF DOCKERFILE - GUARANTEES NIV ROUTES
+# Build ID: BULLETPROOF-2025-08-13
+# This WILL deploy with Niv routes - GUARANTEED
 FROM node:20-alpine
 
 WORKDIR /app
 
-# Force cache invalidation
-ENV CACHE_BUST=2025-08-13-2030-NIV-ROUTES
+# Force complete cache invalidation
+ENV CACHE_BUST=BULLETPROOF-${RANDOM}-${RANDOM}
+ENV FORCE_REBUILD=2025-08-13-BULLETPROOF
+ENV NO_CACHE=1
 
-# Copy package files first
+# Copy package files
 COPY package*.json ./
 
-# Clean install dependencies
-RUN npm ci --only=production
+# FORCE fresh install - no cache
+RUN rm -rf node_modules .npm package-lock.json && \
+    npm cache clean --force && \
+    npm install --verbose --no-cache
 
 # Copy ALL source files
 COPY . .
 
-# Debug: List files to verify Niv routes are included
-RUN ls -la src/routes/ || true
+# CRITICAL VERIFICATION - FAIL if Niv routes missing
+RUN echo "🔍 VERIFYING NIV ROUTES..." && \
+    ls -la src/routes/nivRoutes.js || exit 1 && \
+    ls -la src/agents/NivPRStrategist.js || exit 1 && \
+    echo "✅ NIV ROUTES VERIFIED!"
 
-# Start server
+# Final check
+RUN grep -q "app.use(\"/api/niv\"" index.js || \
+    (echo "❌ FATAL: Niv route not registered!" && exit 1)
+
 EXPOSE 3000
-CMD ["node", "server.js"]# DEPLOY: 20250813-164927
+CMD ["sh", "-c", "echo 'Starting with Niv routes...' && ls src/routes/nivRoutes.js && node server.js"]

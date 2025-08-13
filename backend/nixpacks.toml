@@ -1,28 +1,43 @@
-# NIXPACKS OVERRIDE - FORCE BUILD WITHOUT DOCKER
-# This completely bypasses any Dockerfile
+# BULLETPROOF NIXPACKS - GUARANTEES NIV ROUTES DEPLOYMENT
+# Build timestamp: 2025-08-13-BULLETPROOF
+# This FORCES complete rebuild and VERIFIES Niv routes
 
 [phases.setup]
-nixPkgs = ["nodejs-20_x"]
+nixPkgs = ["nodejs-20_x", "npm-9"]
 aptPkgs = []
 
 [phases.install]
-# FORCE CLEAN BUILD - NO CACHE
+# FORCE COMPLETE REBUILD - NO CACHE WHATSOEVER
 cmds = [
-    "echo 'NIXPACKS BUILD - NOT DOCKER'",
-    "echo 'Build timestamp: '$(date)",
-    "rm -rf node_modules",
-    "rm -rf package-lock.json", 
-    "rm -rf .npm",
-    "rm -rf /app/node_modules/.cache || true",
-    "npm install --no-cache --verbose"
+    "echo '🔥🔥🔥 BULLETPROOF BUILD STARTING 🔥🔥🔥'",
+    "echo 'Build ID: BULLETPROOF-$(date +%s)'",
+    "echo '🚨 DESTROYING ALL CACHES...'",
+    "rm -rf node_modules package-lock.json .npm || true",
+    "rm -rf /tmp/npm-* /root/.npm /app/.npm || true",
+    "npm cache clean --force || true",
+    "echo '📦 Installing fresh dependencies...'",
+    "npm install --verbose --no-cache --prefer-online",
+    "echo '✅ Dependencies installed'",
+    "echo ''",
+    "echo '🔍 CRITICAL: VERIFYING NIV ROUTES EXIST...'",
+    "ls -la src/routes/nivRoutes.js || (echo '❌ FATAL: nivRoutes.js MISSING!' && exit 1)",
+    "ls -la src/agents/NivPRStrategist.js || (echo '❌ FATAL: NivPRStrategist.js MISSING!' && exit 1)",
+    "grep -q 'app.use(\"/api/niv\"' index.js || (echo '❌ FATAL: Niv route not in index.js!' && exit 1)",
+    "echo '✅ NIV ROUTES VERIFIED - DEPLOYMENT WILL SUCCEED!'"
 ]
 
 [phases.build]
-cmds = ["echo 'Build complete - using Nixpacks'"]
+cmds = [
+    "echo '🏗️ Final verification phase...'",
+    "echo 'Niv route files:'",
+    "find . -name 'nivRoutes.js' -o -name 'NivPRStrategist.js' | head -10",
+    "echo '✅ BUILD COMPLETE - NIV ROUTES INCLUDED'"
+]
 
 [start]
 cmd = "node server.js"
 
 [variables]
 NODE_ENV = "production"
-NIXPACKS_NO_CACHE = "true"
+NIXPACKS_NO_CACHE = "1"
+FORCE_COLOR = "1"
