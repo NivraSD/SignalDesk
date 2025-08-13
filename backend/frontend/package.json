@@ -31,7 +31,11 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "post-build": "node scripts/verify-deployment.js",
+    "build-prod": "GENERATE_SOURCEMAP=false CI=false npm run build",
+    "verify-deployment": "node scripts/verify-deployment.js",
+    "health-check": "curl -f https://signaldesk-frontend.vercel.app/ || exit 1"
   },
   "eslintConfig": {
     "extends": [

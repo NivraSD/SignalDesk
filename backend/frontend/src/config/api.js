@@ -1,8 +1,15 @@
-// Import emergency hardcoded URL
-import FORCE_API_URL from './apiUrl';
+// Smart API URL resolution with fallback
+const getAPIBaseURL = () => {
+  // Primary: Environment variable from build
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  
+  // Fallback: Production Railway URL
+  return 'https://signaldesk-production.up.railway.app/api';
+};
 
-// API Configuration - Using EMERGENCY hardcoded URL
-const API_BASE_URL = FORCE_API_URL;
+const API_BASE_URL = getAPIBaseURL();
 
 // Enhanced API configuration with retry logic and error handling
 const API_CONFIG = {
@@ -18,11 +25,13 @@ const API_CONFIG = {
 
 // Log the current configuration
 console.log('SignalDesk API Configuration:');
-console.log('- HARDCODED API URL:', API_BASE_URL);
-console.log('- NODE_ENV:', process.env.NODE_ENV);
+console.log('- API URL Source:', process.env.REACT_APP_API_URL ? 'Environment Variable' : 'Fallback');
+console.log('- API URL:', API_BASE_URL);
+console.log('- Environment:', process.env.REACT_APP_ENVIRONMENT || process.env.NODE_ENV);
+console.log('- Build ID:', process.env.REACT_APP_BUILD_ID || 'unknown');
 console.log('- Timeout:', API_CONFIG.timeout, 'ms');
 console.log('- Retry Attempts:', API_CONFIG.retryAttempts);
-console.log('✅ API configuration loaded from hardcoded source');
+console.log('✅ API configuration loaded successfully');
 
 // Debug log
 if (!API_BASE_URL.startsWith('http')) {

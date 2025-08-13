@@ -1,0 +1,17 @@
+# Nixpacks configuration for Railway
+[phases.setup]
+nixPkgs = ["nodejs-20_x"]
+
+[phases.install]
+# Clean install without cache
+cmds = [
+    "rm -rf node_modules",
+    "rm -rf .npm",
+    "npm install --verbose"
+]
+
+[start]
+cmd = "node server.js"
+
+[variables]
+NODE_ENV = "production"
