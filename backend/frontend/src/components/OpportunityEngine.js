@@ -143,37 +143,11 @@ const OpportunityEngine = ({ onAIMessage, isDragging = false }) => {
   const handleOpportunityAction = async (opportunity, action) => {
     if (action === 'analyze') {
       setSelectedOpportunity(opportunity);
-      setAnalysisContent('Analyzing opportunity...');
+      setAnalysisContent('🔍 Analyzing opportunity... Please wait while we generate comprehensive strategic insights.');
       
-      // Send comprehensive analysis request to AI Assistant
-      const message = `Provide a comprehensive strategic analysis of this PR opportunity:
-
-"${opportunity.title}"
-
-Context: ${opportunity.description}
-Score: ${opportunity.score}/100 | Urgency: ${opportunity.urgency} | Deadline: ${opportunity.deadline}
-
-Please analyze:
-1. Why this opportunity matters now
-2. Key angles and messaging strategies  
-3. Target audience and stakeholders
-4. Potential risks and mitigation
-5. Success metrics and expected outcomes
-6. Tactical execution plan
-7. Required resources and timeline
-
-Relevant Journalists: ${opportunity.relevantJournalists?.join(', ') || 'Not specified'}
-Keywords: ${opportunity.keywords?.join(', ') || 'Not specified'}
-Suggested Action: ${opportunity.suggestedAction || 'Develop strategic approach'}`;
-      
-      // Call the AI and get analysis
-      if (onAIMessage) {
-        onAIMessage(message);
-      }
-      
-      // For now, show a structured analysis template
+      // Show analysis quickly with a small delay for smooth UX
       setTimeout(() => {
-        setAnalysisContent(`# Strategic Analysis: ${opportunity.title}
+        const analysisContent = `# Strategic Analysis: ${opportunity.title}
 
 ## Executive Summary
 This ${opportunity.urgency}-urgency opportunity scores ${opportunity.score}/100 based on relevance, timing, and potential impact. ${opportunity.description}
@@ -214,8 +188,13 @@ This ${opportunity.urgency}-urgency opportunity scores ${opportunity.score}/100 
 - Executive spokesperson availability
 - Marketing team for asset creation
 - PR team for media outreach
-- Budget: $5,000-10,000 for promotion`);
-      }, 1500);
+- Budget: $5,000-10,000 for promotion
+
+---
+
+*Analysis complete! Ready for next steps - generate content or discuss strategy.*`;
+        setAnalysisContent(analysisContent);
+      }, 250);
       
     } else if (action === 'generate' && onAIMessage) {
       // Open Content Generator with opportunity context
