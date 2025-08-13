@@ -145,8 +145,9 @@ const OpportunityEngine = ({ onAIMessage, isDragging = false }) => {
       setSelectedOpportunity(opportunity);
       setAnalysisContent('🔍 Analyzing opportunity... Please wait while we generate comprehensive strategic insights.');
       
-      // Show analysis immediately without waiting for AI - make it fast and responsive
-      const analysisContent = `# Strategic Analysis: ${opportunity.title}
+      // Show analysis quickly with a small delay for smooth UX
+      setTimeout(() => {
+        const analysisContent = `# Strategic Analysis: ${opportunity.title}
 
 ## Executive Summary
 This ${opportunity.urgency}-urgency opportunity scores ${opportunity.score}/100 based on relevance, timing, and potential impact. ${opportunity.description}
