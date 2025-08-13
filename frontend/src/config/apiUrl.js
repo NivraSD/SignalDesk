@@ -1,7 +1,7 @@
 // CRITICAL: Hardcoded API URL - Bypasses all environment variables
 // This is the ONLY source of truth for the API URL
 
-const FORCE_API_URL = 'http://localhost:3001/api';
+const FORCE_API_URL = 'https://signaldesk-production.up.railway.app/api';
 
 // Validate the URL format
 if (!FORCE_API_URL.startsWith('http://') && !FORCE_API_URL.startsWith('https://')) {

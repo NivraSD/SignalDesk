@@ -13,7 +13,7 @@ import {
   Sparkles, MessageSquare, Shield, Target, Menu, GripVertical,
   Maximize2, Minimize2, Move, GitBranch, Activity, Database,
   Circle, Square, ArrowLeft, Clock, Zap, Globe, Settings,
-  User, Plus, ChevronDown, LogOut, Folder, StickyNote
+  User, Plus, ChevronDown, LogOut, Folder, StickyNote, RefreshCw
 } from 'lucide-react';
 import './RailwayDraggable.css';
 
@@ -170,7 +170,7 @@ const RailwayDraggable = () => {
     
     setSizes(savedSizes ? JSON.parse(savedSizes) : {
       'ai-assistant': { width: 400, height: 400 },
-      'activity-list': { width: 500, height: 600 },
+      'activity-list': { width: 500, height: 400 },
       'feature-view': { width: 800, height: 600 },
       'notepad': { width: 350, height: 400 }
     });
@@ -741,15 +741,28 @@ const RailwayDraggable = () => {
               <div className="dropdown-menu project-menu">
                 <div className="dropdown-header">
                   <span>Projects</span>
-                  <button 
-                    className="new-project-button"
-                    onClick={() => {
-                      setShowProjectMenu(false);
-                      setShowNewProjectModal(true);
-                    }}
-                  >
-                    <Plus size={14} />
-                  </button>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    <button 
+                      className="new-project-button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        fetchProjects();
+                      }}
+                      title="Refresh projects"
+                    >
+                      <RefreshCw size={14} />
+                    </button>
+                    <button 
+                      className="new-project-button"
+                      onClick={() => {
+                        setShowProjectMenu(false);
+                        setShowNewProjectModal(true);
+                      }}
+                      title="New project"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
                 </div>
                 {projects?.map(project => (
                   <button
@@ -923,7 +936,7 @@ const RailwayDraggable = () => {
             left: `${positions['activity-list']?.x || 420}px`,
             top: `${positions['activity-list']?.y || 80}px`,
             width: `${sizes['activity-list']?.width || 500}px`,
-            height: `${sizes['activity-list']?.height || 450}px`
+            height: `${sizes['activity-list']?.height || 400}px`
           }}
         >
           <div 
