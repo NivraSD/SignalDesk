@@ -923,7 +923,7 @@ const RailwayDraggable = () => {
             left: `${positions['activity-list']?.x || 420}px`,
             top: `${positions['activity-list']?.y || 80}px`,
             width: `${sizes['activity-list']?.width || 500}px`,
-            height: `${sizes['activity-list']?.height || 600}px`
+            height: `${sizes['activity-list']?.height || 450}px`
           }}
         >
           <div 

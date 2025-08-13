@@ -342,6 +342,7 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  min-height: 0; /* Critical for flex overflow to work */
 }
 
 /* AI Messages */
@@ -483,6 +484,7 @@
 /* Activity List Panel */
 .activity-list-panel {
   background: rgba(15, 15, 15, 0.95);
+  min-height: 0; /* Important for flex children with overflow */
 }
 
 .activity-list {
@@ -490,6 +492,9 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .activity-item {
