@@ -1,5 +1,5 @@
-const claudeService = require('../../config/claude');
-const pool = require('../config/db');
+const claudeService = require('../../../config/claude');
+const pool = require('../../config/db');
 const Parser = require('rss-parser');
 
 /**

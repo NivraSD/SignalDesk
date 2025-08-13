@@ -4,7 +4,7 @@
  * for efficient opportunity discovery and analysis
  */
 
-const claudeService = require('../../config/claude');
+const claudeService = require('../../../config/claude');
 
 class OpportunityEngineOrchestrator {
   constructor() {

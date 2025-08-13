@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vercel Deployment Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            border-left: 4px solid #2196F3;
+        }
+        .success {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        .error {
+            color: #f44336;
+            font-weight: bold;
+        }
+        .warning {
+            color: #ff9800;
+            font-weight: bold;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .url-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .url-item {
+            margin: 5px 0;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Vercel Deployment Verification</h1>
+        
+        <div class="url-info">
+            <h3>URLs Being Tested:</h3>
+            <div class="url-item"><strong>Vercel App:</strong> https://signaldesk-frontend.vercel.app</div>
+            <div class="url-item"><strong>API Backend:</strong> https://signaldesk-production.up.railway.app/api</div>
+            <div class="url-item"><strong>Expected Login:</strong> demo@signaldesk.com / demo123</div>
+        </div>
+
+        <div class="test-section">
+            <h2>1. Check What API URL the Frontend is Using</h2>
+            <button onclick="checkFrontendConfig()">Check Frontend Config</button>
+            <div id="frontend-config" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. Test Backend API Directly</h2>
+            <button onclick="testBackendHealth()">Test Backend Health</button>
+            <button onclick="testBackendLogin()">Test Backend Login</button>
+            <div id="backend-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>3. Live Vercel App</h2>
+            <button onclick="loadVercelApp()">Load Vercel App in iFrame</button>
+            <button onclick="window.open('https://signaldesk-frontend.vercel.app', '_blank')">Open in New Tab</button>
+            <div id="iframe-container"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Console Output</h2>
+            <div id="console-output" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        const VERCEL_URL = 'https://signaldesk-frontend.vercel.app';
+        const API_URL = 'https://signaldesk-production.up.railway.app/api';
+        
+        function log(message, type = 'info') {
+            const consoleDiv = document.getElementById('console-output');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'success' ? 'success' : type === 'error' ? 'error' : 'warning';
+            consoleDiv.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+        }
+
+        async function checkFrontendConfig() {
+            const resultDiv = document.getElementById('frontend-config');
+            resultDiv.innerHTML = 'Checking frontend configuration...';
+            
+            try {
+                // Fetch the deployed app HTML
+                const response = await fetch(VERCEL_URL);
+                const html = await response.text();
+                
+                // Check for the main JS bundle
+                const jsMatch = html.match(/src="(\/static\/js\/main\.[a-f0-9]+\.js)"/);
+                
+                if (jsMatch) {
+                    const jsUrl = `${VERCEL_URL}${jsMatch[1]}`;
+                    log(`Found main.js bundle: ${jsMatch[1]}`, 'success');
+                    
+                    // Fetch the JS bundle
+                    const jsResponse = await fetch(jsUrl);
+                    const jsContent = await jsResponse.text();
+                    
+                    // Check for API URLs in the bundle
+                    const correctUrl = 'https://signaldesk-production.up.railway.app/api';
+                    const hasCorrectUrl = jsContent.includes(correctUrl);
+                    const hasPartialUrl = jsContent.includes('signaldesk-production.up.railway.app');
+                    
+                    let configStatus = '';
+                    if (hasCorrectUrl) {
+                        configStatus = `<span class="success">✅ CORRECT API URL FOUND!</span>\nThe frontend is using: ${correctUrl}`;
+                        log('Frontend has correct API URL!', 'success');
+                    } else if (hasPartialUrl) {
+                        configStatus = `<span class="warning">⚠️ Partial URL found</span>\nRailway URL exists but might be incomplete`;
+                        log('Partial API URL found - may be missing https:// or /api', 'warning');
+                        
+                        // Try to find what URL is actually being used
+                        const apiUrlPattern = /REACT_APP_API_URL['"]:['"]([^'"]+)['"]/;
+                        const match = jsContent.match(apiUrlPattern);
+                        if (match) {
+                            configStatus += `\nFound environment variable: ${match[1]}`;
+                        }
+                    } else {
+                        configStatus = `<span class="error">❌ API URL NOT FOUND</span>\nThe hardcoded URL is not in the bundle`;
+                        log('API URL not found in bundle!', 'error');
+                    }
+                    
+                    resultDiv.innerHTML = configStatus;
+                    
+                    // Check for console.log statements
+                    if (jsContent.includes('HARDCODED API CONFIG ACTIVE')) {
+                        resultDiv.innerHTML += '\n\n<span class="success">✅ Hardcoded config module is included</span>';
+                    }
+                    
+                } else {
+                    resultDiv.innerHTML = '<span class="error">Could not find main.js bundle in HTML</span>';
+                    log('Could not locate main.js bundle', 'error');
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">Error checking frontend: ${error.message}</span>`;
+                log(`Frontend check error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testBackendHealth() {
+            const resultDiv = document.getElementById('backend-result');
+            resultDiv.innerHTML = 'Testing backend health...';
+            
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const text = await response.text();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<span class="success">✅ Backend is healthy!</span>\nStatus: ${response.status}\nResponse: ${text}`;
+                    log('Backend health check passed', 'success');
+                } else {
+                    resultDiv.innerHTML = `<span class="warning">⚠️ Backend responded with status ${response.status}</span>\nResponse: ${text}`;
+                    log(`Backend health check: status ${response.status}`, 'warning');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">❌ Cannot reach backend!</span>\nError: ${error.message}`;
+                log(`Backend unreachable: ${error.message}`, 'error');
+            }
+        }
+
+        async function testBackendLogin() {
+            const resultDiv = document.getElementById('backend-result');
+            resultDiv.innerHTML = 'Testing backend login...';
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'demo@signaldesk.com',
+                        password: 'demo123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.token) {
+                    resultDiv.innerHTML = `<span class="success">✅ Login successful!</span>\nUser: ${data.user.email}\nToken received: Yes`;
+                    log('Backend login successful', 'success');
+                } else {
+                    resultDiv.innerHTML = `<span class="error">❌ Login failed!</span>\nStatus: ${response.status}\nError: ${JSON.stringify(data, null, 2)}`;
+                    log(`Backend login failed: ${data.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">❌ Login request failed!</span>\nError: ${error.message}`;
+                log(`Backend login error: ${error.message}`, 'error');
+            }
+        }
+
+        function loadVercelApp() {
+            const container = document.getElementById('iframe-container');
+            container.innerHTML = `
+                <h3>Live Vercel App:</h3>
+                <p>Check the browser console (F12) when interacting with the app below to see what API URL it's using.</p>
+                <iframe src="${VERCEL_URL}" title="Vercel App"></iframe>
+            `;
+            log('Vercel app loaded in iframe', 'info');
+        }
+
+        // Auto-run checks on load
+        window.onload = () => {
+            log('Starting deployment verification...', 'info');
+            checkFrontendConfig();
+            testBackendHealth();
+        };
+    </script>
+</body>
+</html>

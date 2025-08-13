@@ -2,22 +2,62 @@
   "buildCommand": "cd frontend && npm install && npm run build",
   "outputDirectory": "frontend/build",
   "framework": "create-react-app",
-  "env": {
-    "REACT_APP_API_URL": "https://signaldesk-production.up.railway.app/api"
-  },
   "build": {
     "env": {
-      "REACT_APP_API_URL": "https://signaldesk-production.up.railway.app/api",
-      "CI": "false"
+      "CI": "false",
+      "GENERATE_SOURCEMAP": "false"
     }
   },
   "headers": [
+    {
+      "source": "/static/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, immutable, max-age=31536000"
+        }
+      ]
+    },
+    {
+      "source": "/(.*).html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        },
+        {
+          "key": "Pragma",
+          "value": "no-cache"
+        },
+        {
+          "key": "Expires",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/index.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate, max-age=0"
+        },
+        {
+          "key": "Pragma",
+          "value": "no-cache"
+        },
+        {
+          "key": "Expires",
+          "value": "0"
+        }
+      ]
+    },
     {
       "source": "/manifest.json",
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
+          "value": "no-cache, no-store, must-revalidate"
         },
         {
           "key": "Content-Type",
@@ -30,19 +70,33 @@
       ]
     },
     {
-      "source": "/(.*).json",
+      "source": "/version.json",
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
+          "value": "no-cache, no-store, must-revalidate"
         },
         {
           "key": "Content-Type",
           "value": "application/json"
-        },
+        }
+      ]
+    },
+    {
+      "source": "/(.*).js",
+      "headers": [
         {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/(.*).css",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
         }
       ]
     },
@@ -60,31 +114,20 @@
         {
           "key": "X-XSS-Protection",
           "value": "1; mode=block"
-        },
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization, X-Requested-With, Accept, Origin"
-        },
-        {
-          "key": "Access-Control-Allow-Credentials",
-          "value": "true"
         }
       ]
     }
   ],
   "rewrites": [
     {
-      "source": "/((?!api|_next|static|favicon.ico|manifest.json|.*\\.).*)",
+      "source": "/((?!api|_next|static|favicon.ico|manifest.json|version.json|.*\\.).*)",
       "destination": "/index.html"
     }
   ],
-  "regions": ["iad1"]
+  "regions": ["iad1"],
+  "github": {
+    "silent": false
+  },
+  "cleanUrls": false,
+  "trailingSlash": false
 }

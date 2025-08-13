@@ -4,13 +4,13 @@
  * Uses all available agents to build comprehensive, continuously updated source indexes
  */
 
-const claudeService = require('../../config/claude');
-const SourceDiscoveryService = require('./SourceDiscoveryService');
+const claudeService = require('../../../config/claude');
+const SourceDiscoveryService = require('../../services/SourceDiscoveryService');
 const Parser = require('rss-parser');
 const axios = require('axios');
 const cheerio = require('cheerio');
 // const puppeteer = require('puppeteer'); // Disabled for Railway deployment
-const pool = require('../config/db');
+const pool = require('../../config/db');
 
 class IntelligentIndexingAgent {
   constructor() {

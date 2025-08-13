@@ -1,6 +1,8 @@
-// API Configuration with proper environment variable support
-// Uses React environment variables (REACT_APP_ prefix required)
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://signaldesk-production.up.railway.app/api';
+// Import emergency hardcoded URL
+import FORCE_API_URL from './apiUrl';
+
+// API Configuration - Using EMERGENCY hardcoded URL
+const API_BASE_URL = FORCE_API_URL;
 
 // Enhanced API configuration with retry logic and error handling
 const API_CONFIG = {
@@ -16,11 +18,17 @@ const API_CONFIG = {
 
 // Log the current configuration
 console.log('SignalDesk API Configuration:');
-console.log('- Environment API URL:', process.env.REACT_APP_API_URL);
-console.log('- Using API URL:', API_BASE_URL);
+console.log('- HARDCODED API URL:', API_BASE_URL);
 console.log('- NODE_ENV:', process.env.NODE_ENV);
 console.log('- Timeout:', API_CONFIG.timeout, 'ms');
 console.log('- Retry Attempts:', API_CONFIG.retryAttempts);
+console.log('✅ API configuration loaded from hardcoded source');
+
+// Debug log
+if (!API_BASE_URL.startsWith('http')) {
+  console.error('⚠️ WARNING: API_BASE_URL is missing protocol:', API_BASE_URL);
+  console.error('This will cause requests to fail. Check environment variables.');
+}
 
 // API request helper with retry logic
 export async function apiRequest(url, options = {}) {

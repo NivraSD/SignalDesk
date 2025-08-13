@@ -1,6 +1,8 @@
 {
   "name": "signaldesk-backend",
   "version": "1.0.0",
+  "rebuild_timestamp": "1755009900",
+  "cache_buster": "2025-08-12-fix-v3-force",
   "description": "SignalDesk PR Platform Backend",
   "main": "index.js",
   "scripts": {
@@ -8,7 +10,8 @@
     "start-server": "node index.js",
     "dev": "nodemon index.js",
     "test": "jest",
-    "vercel-build": "echo 'Skipping build step'"
+    "vercel-build": "echo 'Skipping build step'",
+    "db:init": "node initDatabase.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.56.0",

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalDesk Railway Test - Complete</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0,0,0,.1);
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .token-display {
+            word-break: break-all;
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status-badge.active {
+            background: #28a745;
+            color: white;
+        }
+        .status-badge.error {
+            background: #dc3545;
+            color: white;
+        }
+        .demo-info {
+            background: #e8f4ff;
+            border: 2px solid #0066cc;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 SignalDesk Railway Deployment Test</h1>
+        
+        <div class="demo-info">
+            <strong>Demo Credentials:</strong><br>
+            Email: demo@signaldesk.com<br>
+            Password: Demo123
+        </div>
+
+        <div class="test-section">
+            <h2>1. Backend Health Check <span id="health-status" class="status-badge"></span></h2>
+            <button onclick="testHealth()">Test Health Endpoint</button>
+            <div id="health-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. Authentication Test <span id="auth-status" class="status-badge"></span></h2>
+            <button onclick="testLogin()">Test Demo Login</button>
+            <button onclick="testInvalidLogin()">Test Invalid Login</button>
+            <div id="auth-result"></div>
+            <div id="token-container" style="display:none;">
+                <strong>Auth Token:</strong>
+                <div class="token-display" id="token-display"></div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>3. Token Verification <span id="verify-status" class="status-badge"></span></h2>
+            <button onclick="testVerify()" id="verify-btn" disabled>Verify Token</button>
+            <div id="verify-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>4. Frontend Connection Test</h2>
+            <button onclick="testFrontend()">Open Frontend (Vercel)</button>
+            <div id="frontend-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>5. Full System Test</h2>
+            <button onclick="runAllTests()">Run All Tests</button>
+            <div id="all-tests-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Summary</h2>
+            <div id="summary"></div>
+        </div>
+    </div>
+
+    <script>
+        const RAILWAY_URL = 'https://signaldesk-production.up.railway.app';
+        const FRONTEND_URL = 'https://signaldesk.vercel.app';
+        let authToken = null;
+
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            element.appendChild(div);
+        }
+
+        function updateStatus(badgeId, status) {
+            const badge = document.getElementById(badgeId);
+            badge.className = 'status-badge ' + (status ? 'active' : 'error');
+            badge.textContent = status ? '✓ PASS' : '✗ FAIL';
+        }
+
+        async function testHealth() {
+            const resultDiv = document.getElementById('health-result');
+            resultDiv.innerHTML = '<div class="spinner"></div> Testing health endpoint...';
+            
+            try {
+                const response = await fetch(`${RAILWAY_URL}/api/health`);
+                const data = await response.json();
+                
+                resultDiv.innerHTML = '';
+                if (response.ok) {
+                    log('health-result', `✅ Backend is healthy! Environment: ${data.environment}`, 'success');
+                    log('health-result', `Server Info: Port ${data.port}, Node ${data.nodeVersion}`, 'info');
+                    updateStatus('health-status', true);
+                } else {
+                    log('health-result', `❌ Health check failed: ${response.status}`, 'error');
+                    updateStatus('health-status', false);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = '';
+                log('health-result', `❌ Network error: ${error.message}`, 'error');
+                updateStatus('health-status', false);
+            }
+        }
+
+        async function testLogin() {
+            const resultDiv = document.getElementById('auth-result');
+            resultDiv.innerHTML = '<div class="spinner"></div> Testing login...';
+            
+            try {
+                const response = await fetch(`${RAILWAY_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'demo@signaldesk.com',
+                        password: 'Demo123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                resultDiv.innerHTML = '';
+                if (response.ok && data.token) {
+                    authToken = data.token;
+                    log('auth-result', `✅ Login successful! User: ${data.user.email}`, 'success');
+                    log('auth-result', `User Details: ${data.user.name} (${data.user.role})`, 'info');
+                    
+                    document.getElementById('token-container').style.display = 'block';
+                    document.getElementById('token-display').textContent = authToken.substring(0, 50) + '...';
+                    document.getElementById('verify-btn').disabled = false;
+                    
+                    updateStatus('auth-status', true);
+                } else {
+                    log('auth-result', `❌ Login failed: ${data.error || 'Unknown error'}`, 'error');
+                    updateStatus('auth-status', false);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = '';
+                log('auth-result', `❌ Network error: ${error.message}`, 'error');
+                updateStatus('auth-status', false);
+            }
+        }
+
+        async function testInvalidLogin() {
+            const resultDiv = document.getElementById('auth-result');
+            resultDiv.innerHTML = '<div class="spinner"></div> Testing invalid login...';
+            
+            try {
+                const response = await fetch(`${RAILWAY_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'invalid@test.com',
+                        password: 'wrongpassword'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                resultDiv.innerHTML = '';
+                if (response.status === 401) {
+                    log('auth-result', `✅ Invalid login correctly rejected (401)`, 'success');
+                    log('auth-result', `Error message: ${data.error}`, 'info');
+                } else {
+                    log('auth-result', `⚠️ Unexpected response: ${response.status}`, 'warning');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = '';
+                log('auth-result', `❌ Network error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testVerify() {
+            if (!authToken) {
+                log('verify-result', '⚠️ No auth token available. Please login first.', 'warning');
+                return;
+            }
+
+            const resultDiv = document.getElementById('verify-result');
+            resultDiv.innerHTML = '<div class="spinner"></div> Verifying token...';
+            
+            try {
+                const response = await fetch(`${RAILWAY_URL}/api/auth/verify`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                resultDiv.innerHTML = '';
+                if (response.ok && data.valid) {
+                    log('verify-result', `✅ Token is valid! User: ${data.user.email}`, 'success');
+                    updateStatus('verify-status', true);
+                } else {
+                    log('verify-result', `❌ Token verification failed: ${data.error || 'Invalid token'}`, 'error');
+                    updateStatus('verify-status', false);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = '';
+                log('verify-result', `❌ Network error: ${error.message}`, 'error');
+                updateStatus('verify-status', false);
+            }
+        }
+
+        function testFrontend() {
+            log('frontend-result', `Opening frontend at ${FRONTEND_URL}...`, 'info');
+            window.open(FRONTEND_URL, '_blank');
+            log('frontend-result', 'Frontend opened in new tab. Use demo credentials to login.', 'success');
+        }
+
+        async function runAllTests() {
+            const resultDiv = document.getElementById('all-tests-result');
+            resultDiv.innerHTML = '<div class="spinner"></div> Running all tests...';
+            
+            // Clear previous results
+            document.getElementById('health-result').innerHTML = '';
+            document.getElementById('auth-result').innerHTML = '';
+            document.getElementById('verify-result').innerHTML = '';
+            
+            // Run tests in sequence
+            await testHealth();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testLogin();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testVerify();
+            
+            resultDiv.innerHTML = '';
+            log('all-tests-result', '✅ All tests completed!', 'success');
+            
+            // Generate summary
+            generateSummary();
+        }
+
+        function generateSummary() {
+            const summaryDiv = document.getElementById('summary');
+            const healthPass = document.querySelector('#health-status.active') !== null;
+            const authPass = document.querySelector('#auth-status.active') !== null;
+            const verifyPass = document.querySelector('#verify-status.active') !== null;
+            
+            let summary = '<h3>Test Results:</h3><ul>';
+            summary += `<li>Health Check: ${healthPass ? '✅ PASS' : '❌ FAIL'}</li>`;
+            summary += `<li>Authentication: ${authPass ? '✅ PASS' : '❌ FAIL'}</li>`;
+            summary += `<li>Token Verification: ${verifyPass ? '✅ PASS' : '❌ FAIL'}</li>`;
+            summary += '</ul>';
+            
+            if (healthPass && authPass && verifyPass) {
+                summary += '<div class="success test-result"><strong>🎉 All tests passed! SignalDesk is operational.</strong></div>';
+                summary += '<div class="info test-result">Next steps:<br>';
+                summary += '1. Add demo user to PostgreSQL database using add-demo-user.sql<br>';
+                summary += '2. Verify ANTHROPIC_API_KEY is set in Railway for Claude AI features<br>';
+                summary += '3. Test the frontend at ' + FRONTEND_URL + '</div>';
+            } else {
+                summary += '<div class="error test-result"><strong>⚠️ Some tests failed. Check the results above.</strong></div>';
+            }
+            
+            summaryDiv.innerHTML = summary;
+        }
+
+        // Run health check on page load
+        window.onload = () => {
+            testHealth();
+        };
+    </script>
+</body>
+</html>

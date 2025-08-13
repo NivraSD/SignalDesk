@@ -1,5 +1,5 @@
 const pool = require('../config/db');
-const { TopicMomentumCoordinator } = require('../agents/topicMomentumAgents');
+const { TopicMomentumCoordinator } = require('../agents/opportunity/topicMomentumAgents');
 
 /**
  * Get topic momentum analysis using dedicated agent network

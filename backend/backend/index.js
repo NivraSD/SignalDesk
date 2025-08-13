@@ -3,7 +3,10 @@
 console.log('🚀🚀🚀 STARTING SIGNALDESK SERVER v2.0 🚀🚀🚀');
 console.log('📍 This is index.js with FULL server implementation');
 console.log('⏰ Deploy time:', new Date().toISOString());
-console.log('🔄 Redeployed with COMPLETE CLAUDE FIX - ', new Date().toISOString());
+console.log('🔄 Redeployed with CONVERSATION STATE FIX - ', new Date().toISOString());
+console.log('✅ Persistent conversation state management active');
+console.log('🔄 DEPLOYMENT TRIGGER:', Date.now());
+console.log('🚨 CRITICAL FIXES APPLIED - BUILD ID:', Math.random());
 
 const express = require("express");
 const cors = require("cors");
@@ -133,10 +136,16 @@ const assistantRoutes = require("./src/routes/assistantRoutes");
 const claudeDiagnosticsRoutes = require("./src/routes/claudeDiagnosticsRoutes");
 const campaignRoutes = require("./src/routes/campaignRoutes");
 const contentRoutes = require("./src/routes/contentRoutes");
-const crisisRoutes = require("./src/routes/crisisRoutes");
+// const crisisRoutes = require("./src/routes/crisisRoutes"); // OLD - doesn't parse Claude responses properly
+// const crisisRoutes = require("./src/routes/crisisRoutesFix"); // FIXED but incomplete
+const crisisRoutes = require("./src/routes/crisisRoutesComplete"); // COMPLETE - full crisis plans with all sections
 const monitoringRoutes = require("./src/routes/monitoringRoutes");
-const mediaRoutes = require("./src/routes/mediaRoutes");
-const aiRoutes = require("./routes/aiRoutes");
+// const mediaRoutes = require("./src/routes/mediaRoutes"); // OLD - doesn't work with Claude
+// const mediaRoutes = require("./src/routes/mediaRoutesFix"); // FIXED - but basic
+const mediaRoutes = require("./src/routes/mediaIntelligenceRoutes"); // NEW - Full Media Intelligence Platform with agents
+// const aiRoutes = require("./routes/aiRoutes"); // OLD BROKEN VERSION
+// const aiRoutes = require("./routes/aiRoutesFixed"); // HARDCODED VERSION
+const aiRoutes = require("./routes/aiRoutesClaudeFix"); // CLAUDE NATURAL - Proper AI with constraints
 const memoryvaultRoutes = require("./routes/memoryvaultRoutes");
 const stakeholderRoutes = require("./src/routes/stakeholderRoutes");
 const intelligenceRoutes = require("./src/routes/intelligenceRoutes");
@@ -149,6 +158,11 @@ const sourceConfigRoutes = require("./src/routes/sourceConfigRoutes");
 const missingEndpointsRoutes = require("./src/routes/missingEndpointsRoutes");
 const enhancedClaudeRoutes = require("./src/routes/enhancedClaudeRoutes");
 const healthCheckRoutes = require("./src/routes/healthCheckRoutes");
+const mcpRoutes = require("./src/routes/mcpRoutes");
+
+// Database initialization routes (MUST BE BEFORE AUTH FOR PUBLIC ACCESS)
+const databaseInitRoutes = require("./src/routes/databaseInit");
+app.use("/api", databaseInitRoutes);
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
@@ -156,6 +170,18 @@ app.get("/api/health", (req, res) => {
     status: "ok",
     message: "SignalDesk API is running",
     timestamp: new Date().toISOString(),
+  });
+});
+
+// Version endpoint for deployment verification
+app.get('/api/version', (req, res) => {
+  res.json({
+    version: process.env.RAILWAY_DEPLOYMENT_ID || 'local',
+    commit: process.env.RAILWAY_GIT_COMMIT_SHA || 'unknown',
+    timestamp: new Date().toISOString(),
+    cache_buster: Date.now(),
+    build_id: process.env.BUILD_ID || Math.random().toString(36).substring(7),
+    deployment_time: process.env.DEPLOYMENT_TIME || new Date().toISOString()
   });
 });
 
@@ -245,6 +271,7 @@ app.use("/api/intelligence", authMiddleware, intelligenceRoutes);
 app.use("/api/stakeholder-intelligence", authMiddleware, stakeholderIntelligenceRoutes);
 app.use("/api/opportunities", authMiddleware, opportunitiesRoutes);
 app.use("/api/opportunity", authMiddleware, opportunityRoutes);  // Opportunity finding
+app.use("/api/mcp", authMiddleware, mcpRoutes);  // MCP integration routes
 
 // Intelligence Index Routes (pre-indexed data) - Public access for browsing
 const intelligenceIndexRoutes = require("./src/routes/intelligenceIndexRoutes");

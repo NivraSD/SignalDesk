@@ -7,8 +7,15 @@ import Dashboard from "./components/Dashboard";
 import AIAssistant from "./components/AIAssistant";
 import ContentGenerator from "./components/ContentGenerator";
 import CrisisCommandCenter from "./components/CrisisCommandCenter";
-import MediaListBuilder from "./components/MediaListBuilder";
+// import MediaListBuilder from "./components/MediaListBuilder"; // OLD - Basic journalist search
+import MediaIntelligence from "./components/MediaIntelligence"; // NEW - Full intelligence platform
 import CampaignIntelligence from "./components/CampaignIntelligence";
+import EnhancedCampaignIntelligenceFixed from "./components/EnhancedCampaignIntelligenceFixed"; // Fixed enhanced version
+import UnifiedPlatform from "./components/UnifiedPlatform"; // Restored unified platform
+import RailwayPlatform from "./components/RailwayPlatform"; // New Railway UI with proper drag/resize
+import RailwayCanvas from "./components/RailwayCanvas"; // True Railway canvas with service nodes
+import RailwayActivity from "./components/RailwayActivity"; // Railway-style activity list
+import RailwayDraggable from "./components/RailwayDraggable"; // Draggable and resizable UI
 import Monitoring from "./components/Monitoring";
 import Reports from "./components/Reports";
 import ProjectList from "./components/ProjectList";
@@ -52,17 +59,27 @@ function AppRoutes() {
       {/* Login route - public */}
       <Route path="/login" element={<Login />} />
 
-      {/* Homepage route - standalone, not in Layout */}
+      {/* Homepage route - redirect to projects */}
       <Route
         path="/"
         element={
           <PrivateRoute>
-            <Homepage />
+            <Navigate to="/projects" replace />
           </PrivateRoute>
         }
       />
 
-      {/* Projects List - uses global Layout */}
+      {/* Projects route - redirect to demo project */}
+      <Route
+        path="/projects"
+        element={
+          <PrivateRoute>
+            <Navigate to="/projects/demo-project" replace />
+          </PrivateRoute>
+        }
+      />
+      
+      {/* Create new project - still uses Layout */}
       <Route
         element={
           <PrivateRoute>
@@ -70,16 +87,49 @@ function AppRoutes() {
           </PrivateRoute>
         }
       >
-        <Route path="/projects" element={<ProjectList />} />
         <Route path="/projects/new" element={<CreateProject />} />
         <Route path="/analytics" element={<Analytics />} />
-        <Route
-          path="/dashboard"
-          element={<Navigate to="/projects" replace />}
-        />
       </Route>
 
-      {/* Project-specific routes - uses ProjectLayout */}
+      {/* Use RailwayDraggable for main project view - Draggable and resizable UI */}
+      <Route
+        path="/projects/:projectId"
+        element={
+          <PrivateRoute>
+            <RailwayDraggable />
+          </PrivateRoute>
+        }
+      />
+      
+      {/* Alternative UI versions for comparison */}
+      <Route
+        path="/projects/:projectId/unified"
+        element={
+          <PrivateRoute>
+            <UnifiedPlatform />
+          </PrivateRoute>
+        }
+      />
+      
+      <Route
+        path="/projects/:projectId/railway-panels"
+        element={
+          <PrivateRoute>
+            <RailwayPlatform />
+          </PrivateRoute>
+        }
+      />
+      
+      <Route
+        path="/projects/:projectId/canvas"
+        element={
+          <PrivateRoute>
+            <RailwayCanvas />
+          </PrivateRoute>
+        }
+      />
+      
+      {/* Legacy routes with Layout */}
       <Route
         path="/projects/:projectId/*"
         element={
@@ -88,13 +138,18 @@ function AppRoutes() {
           </PrivateRoute>
         }
       >
-        <Route index element={<MemoryVault />} />
+        <Route path="unified" element={<UnifiedPlatform />} />
+        <Route path="memoryvault-old" element={<MemoryVault />} />
         <Route path="ai-assistant" element={<AIAssistant />} />
         <Route path="content-generator" element={<ContentGenerator />} />
-        <Route path="media-list" element={<MediaListBuilder />} />
+        <Route path="media-list" element={<MediaIntelligence />} />
         <Route
           path="campaign-intelligence"
           element={<CampaignIntelligence />}
+        />
+        <Route
+          path="campaign-intelligence-enhanced"
+          element={<EnhancedCampaignIntelligenceFixed />}
         />
         <Route path="monitoring" element={<Monitoring />} />
         <Route path="stakeholder-intelligence" element={<StakeholderIntelligenceHub />} />
@@ -124,3 +179,4 @@ function App() {
 }
 
 export default App;
+// Force Vercel rebuild - Media Intelligence Platform deployed Sat Aug  9 14:27:00 EDT 2025

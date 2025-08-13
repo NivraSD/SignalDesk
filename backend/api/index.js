@@ -1,5 +1,5 @@
 // Simple API handler for Vercel
-export default function handler(req, res) {
+module.exports = function handler(req, res) {
   const { method, url, body } = req;
   
   // Enable CORS

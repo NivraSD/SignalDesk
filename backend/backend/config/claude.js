@@ -49,7 +49,7 @@ class ClaudeService {
     console.log('Claude service initialized with model:', this.model);
   }
 
-  async sendMessage(prompt, conversationHistory = []) {
+  async sendMessage(prompt, conversationHistory = [], options = {}) {
     try {
       console.log("Claude sendMessage called");
       console.log("Prompt length:", prompt.length);
@@ -75,10 +75,13 @@ class ClaudeService {
       console.log("Sending to Claude:", messages.length, "messages");
       console.log("Using model:", this.model);
 
+      // Use custom system prompt if provided, otherwise use default
+      const systemPrompt = options.systemPrompt || this.getDefaultSystemPrompt();
+
       const response = await this.client.messages.create({
         model: this.model,
         max_tokens: 4096,
-        system: this.getDefaultSystemPrompt(),
+        system: systemPrompt,
         messages: messages,
       });
 

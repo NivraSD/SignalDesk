@@ -1,0 +1,94 @@
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import { ProjectProvider } from './contexts/ProjectContext';
+import Login from './pages/Login';
+import ProjectList from './components/Projects/ProjectList';
+import ProjectDashboard from './components/Projects/ProjectDashboard';
+import AIAssistant from './components/AIAssistant/AIAssistant';
+import PrivateRoute from './components/common/PrivateRoute';
+import Navigation from './components/Navigation/Navigation';
+
+// Layout component that includes navigation
+const AppLayout = ({ children }) => (
+  <div className="flex h-screen">
+    <Navigation />
+    <div className="flex-1 overflow-auto">
+      {children}
+    </div>
+  </div>
+);
+
+function App() {
+  return (
+    <AuthProvider>
+      <ProjectProvider>
+        <Router>
+          <div className="min-h-screen bg-gray-50">
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              
+              {/* Protected routes */}
+              <Route
+                path="/"
+                element={
+                  <PrivateRoute>
+                    <AppLayout>
+                      <Navigate to="/projects" />
+                    </AppLayout>
+                  </PrivateRoute>
+                }
+              />
+              
+              <Route
+                path="/dashboard"
+                element={
+                  <PrivateRoute>
+                    <AppLayout>
+                      <Navigate to="/projects" />
+                    </AppLayout>
+                  </PrivateRoute>
+                }
+              />
+              
+              <Route
+                path="/projects"
+                element={
+                  <PrivateRoute>
+                    <AppLayout>
+                      <ProjectList />
+                    </AppLayout>
+                  </PrivateRoute>
+                }
+              />
+              
+              <Route
+                path="/projects/:projectId"
+                element={
+                  <PrivateRoute>
+                    <AppLayout>
+                      <ProjectDashboard />
+                    </AppLayout>
+                  </PrivateRoute>
+                }
+              />
+              
+              <Route
+                path="/ai-assistant"
+                element={
+                  <PrivateRoute>
+                    <AppLayout>
+                      <AIAssistant />
+                    </AppLayout>
+                  </PrivateRoute>
+                }
+              />
+            </Routes>
+          </div>
+        </Router>
+      </ProjectProvider>
+    </AuthProvider>
+  );
+}
+
+export default App;

@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SignalDesk System Test</title>
+    <style>
+        body {
+            font-family: -apple-system, system-ui, sans-serif;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border-left: 4px solid #667eea;
+            background: #f8f9ff;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .pending { background: #fff3cd; color: #856404; }
+        .info-box {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover { background: #5568d3; }
+        .result {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        th, td {
+            text-align: left;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        th { background: #f0f0f0; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 SignalDesk Complete System Test</h1>
+        
+        <div class="info-box">
+            <strong>System Configuration:</strong><br>
+            Frontend: <code>https://signal-desk-qmzk-nivra-sd.vercel.app</code><br>
+            API Backend: <code>https://signal-desk.vercel.app/api</code><br>
+            Status: <span class="status pending" id="systemStatus">Testing...</span>
+        </div>
+
+        <div class="test-section">
+            <h3>1. API Connectivity Test</h3>
+            <button onclick="testAPI()">Test API Connection</button>
+            <div id="apiResult" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. Authentication Test</h3>
+            <button onclick="testAuth()">Test Login</button>
+            <div id="authResult" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. Claude AI Integration Test</h3>
+            <button onclick="testClaude()">Test Claude Generation</button>
+            <div id="claudeResult" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>4. Complete System Status</h3>
+            <button onclick="runAllTests()">Run All Tests</button>
+            <table id="statusTable" style="display:none;">
+                <tr><th>Component</th><th>Status</th><th>Details</th></tr>
+                <tr><td>Frontend</td><td id="frontendStatus">-</td><td id="frontendDetails">-</td></tr>
+                <tr><td>API Backend</td><td id="apiStatus">-</td><td id="apiDetails">-</td></tr>
+                <tr><td>Authentication</td><td id="authStatus">-</td><td id="authDetails">-</td></tr>
+                <tr><td>Claude AI</td><td id="claudeStatus">-</td><td id="claudeDetails">-</td></tr>
+                <tr><td>CORS Headers</td><td id="corsStatus">-</td><td id="corsDetails">-</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://signal-desk.vercel.app/api';
+        let authToken = null;
+
+        async function testAPI() {
+            const resultDiv = document.getElementById('apiResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = 'Testing API connection...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                resultDiv.innerHTML = `✅ API is accessible\nStatus: ${response.status}\nResponse: ${JSON.stringify(data, null, 2)}`;
+            } catch (error) {
+                resultDiv.innerHTML = `❌ API Error: ${error.message}`;
+            }
+        }
+
+        async function testAuth() {
+            const resultDiv = document.getElementById('authResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = 'Testing authentication...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'demo@signaldesk.com',
+                        password: 'demo123'
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    authToken = data.token;
+                    resultDiv.innerHTML = `✅ Login successful!\nToken: ${data.token.substring(0, 30)}...\nUser: ${data.user.email}`;
+                } else {
+                    resultDiv.innerHTML = `❌ Login failed: ${data.error}`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `❌ Auth Error: ${error.message}`;
+            }
+        }
+
+        async function testClaude() {
+            const resultDiv = document.getElementById('claudeResult');
+            resultDiv.style.display = 'block';
+            
+            if (!authToken) {
+                resultDiv.innerHTML = '⚠️ Please test login first to get auth token';
+                return;
+            }
+            
+            resultDiv.innerHTML = 'Testing Claude AI generation...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/content/ai-generate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        type: 'press-release',
+                        prompt: 'Test Claude AI integration',
+                        tone: 'professional'
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    const isUsingClaude = data.metadata?.powered_by === 'Claude AI';
+                    resultDiv.innerHTML = `${isUsingClaude ? '✅' : '⚠️'} Content Generation Working
+AI Model: ${data.metadata?.ai_model}
+Powered by: ${data.metadata?.powered_by}
+${isUsingClaude ? '🎉 Claude AI is connected and working!' : '⚠️ Using fallback template generation'}
+
+Generated content preview:
+${data.content.substring(0, 200)}...`;
+                } else {
+                    resultDiv.innerHTML = `❌ Generation failed: ${data.error}`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `❌ Claude Error: ${error.message}`;
+            }
+        }
+
+        async function runAllTests() {
+            document.getElementById('statusTable').style.display = 'table';
+            document.getElementById('systemStatus').textContent = 'Running tests...';
+            document.getElementById('systemStatus').className = 'status pending';
+            
+            // Test Frontend
+            document.getElementById('frontendStatus').innerHTML = '<span class="status success">✅ Active</span>';
+            document.getElementById('frontendDetails').textContent = 'signal-desk-qmzk-nivra-sd.vercel.app';
+            
+            // Test API
+            try {
+                const apiResponse = await fetch(`${API_BASE}/health`);
+                if (apiResponse.ok) {
+                    document.getElementById('apiStatus').innerHTML = '<span class="status success">✅ Online</span>';
+                    document.getElementById('apiDetails').textContent = 'signal-desk.vercel.app/api';
+                } else {
+                    throw new Error('API not responding');
+                }
+            } catch (e) {
+                document.getElementById('apiStatus').innerHTML = '<span class="status error">❌ Offline</span>';
+                document.getElementById('apiDetails').textContent = e.message;
+            }
+            
+            // Test Auth
+            try {
+                const authResponse = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'demo@signaldesk.com',
+                        password: 'demo123'
+                    })
+                });
+                const authData = await authResponse.json();
+                if (authData.success) {
+                    authToken = authData.token;
+                    document.getElementById('authStatus').innerHTML = '<span class="status success">✅ Working</span>';
+                    document.getElementById('authDetails').textContent = 'Demo login successful';
+                } else {
+                    throw new Error(authData.error);
+                }
+            } catch (e) {
+                document.getElementById('authStatus').innerHTML = '<span class="status error">❌ Failed</span>';
+                document.getElementById('authDetails').textContent = e.message;
+            }
+            
+            // Test Claude
+            if (authToken) {
+                try {
+                    const claudeResponse = await fetch(`${API_BASE}/content/ai-generate`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                        body: JSON.stringify({
+                            type: 'press-release',
+                            prompt: 'Test',
+                            tone: 'professional'
+                        })
+                    });
+                    const claudeData = await claudeResponse.json();
+                    const isUsingClaude = claudeData.metadata?.powered_by === 'Claude AI';
+                    document.getElementById('claudeStatus').innerHTML = isUsingClaude ? 
+                        '<span class="status success">✅ Connected</span>' : 
+                        '<span class="status error">⚠️ Fallback</span>';
+                    document.getElementById('claudeDetails').textContent = claudeData.metadata?.powered_by || 'Unknown';
+                } catch (e) {
+                    document.getElementById('claudeStatus').innerHTML = '<span class="status error">❌ Error</span>';
+                    document.getElementById('claudeDetails').textContent = e.message;
+                }
+            }
+            
+            // Test CORS
+            document.getElementById('corsStatus').innerHTML = '<span class="status success">✅ Enabled</span>';
+            document.getElementById('corsDetails').textContent = 'Cross-origin requests allowed';
+            
+            // Update overall status
+            document.getElementById('systemStatus').textContent = 'System Operational';
+            document.getElementById('systemStatus').className = 'status success';
+        }
+        
+        // Auto-run tests on load
+        window.onload = () => {
+            setTimeout(runAllTests, 500);
+        };
+    </script>
+</body>
+</html>

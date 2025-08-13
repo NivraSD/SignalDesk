@@ -7,7 +7,7 @@ const pool = require('../config/db');
 const Parser = require('rss-parser');
 const axios = require('axios');
 const MonitoringDiagnosticService = require('./MonitoringDiagnosticService');
-const OpportunityEngineOrchestrator = require('../agents/OpportunityEngineOrchestration');
+const OpportunityEngineOrchestrator = require('../agents/opportunity/OpportunityEngineOrchestration');
 
 class StrategicMonitoringCoordinator {
   constructor() {
