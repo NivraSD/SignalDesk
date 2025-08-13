@@ -227,7 +227,12 @@ Give a brief response (if you have enough info, say "I'll generate that now"):`;
       response: response,
       suggestions: [],
       mode: mode,
-      isGeneratedContent: isGeneratedContent
+      shouldGenerate: wantsToGenerate,
+      isGeneratedContent: isGeneratedContent,
+      generatedContent: isGeneratedContent ? {
+        type: state.contentType || 'content',
+        content: response
+      } : null
     });
     
   } catch (error) {
