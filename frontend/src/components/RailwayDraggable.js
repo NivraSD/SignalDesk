@@ -60,7 +60,7 @@ const RailwayDraggable = () => {
   const [newNote, setNewNote] = useState('');
   const [notepadMinimized, setNotepadMinimized] = useState(false);
   
-  // Session ID for conversation continuity - v2
+  // Session ID for conversation continuity - v3 force update
   const [sessionId] = useState(() => `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
   
   // Feature/Activity definitions
@@ -725,6 +725,7 @@ const RailwayDraggable = () => {
         <div className="header-left">
           <div className="signaldesk-brand">
             <span className="brand-text">SignalDesk</span>
+            <span style={{ fontSize: '10px', opacity: 0.5, marginLeft: '8px' }}>v3.1</span>
           </div>
           
           <div className="project-selector">
