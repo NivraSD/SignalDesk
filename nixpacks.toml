@@ -1,23 +1,28 @@
+# NIXPACKS OVERRIDE - FORCE BUILD WITHOUT DOCKER
+# This completely bypasses any Dockerfile
+
 [phases.setup]
-nixPkgs = ["nodejs-18_x", "npm-9_x"]
+nixPkgs = ["nodejs-20_x"]
+aptPkgs = []
 
 [phases.install]
+# FORCE CLEAN BUILD - NO CACHE
 cmds = [
-  "echo 'FORCE CACHE BUST: $(date +%s)'",
-  "rm -rf node_modules .npm package-lock.json",
-  "npm cache clean --force",
-  "npm install --verbose --no-cache"
+    "echo 'NIXPACKS BUILD - NOT DOCKER'",
+    "echo 'Build timestamp: '$(date)",
+    "rm -rf node_modules",
+    "rm -rf package-lock.json", 
+    "rm -rf .npm",
+    "rm -rf /app/node_modules/.cache || true",
+    "npm install --no-cache --verbose"
 ]
 
 [phases.build]
-cmds = [
-  "echo 'Building SignalDesk Backend'",
-  "echo 'Cache Bust Token: FORCE_REBUILD_2025_01_13_V1'",
-  "ls -la"
-]
+cmds = ["echo 'Build complete - using Nixpacks'"]
 
 [start]
 cmd = "node server.js"
 
-[providers]
-node = false
+[variables]
+NODE_ENV = "production"
+NIXPACKS_NO_CACHE = "true"

@@ -1,6 +1,6 @@
-Dockerfile*
-dockerfile*
-DOCKERFILE*
+Dockerfile
+Dockerfile.*
 *.Dockerfile
 .dockerignore
-docker-compose*
+docker-compose.yml
+docker-compose.yaml
