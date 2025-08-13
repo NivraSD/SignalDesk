@@ -1,0 +1,16 @@
+{
+  "name": "signaldesk-monitoring",
+  "version": "1.0.0",
+  "description": "SignalDesk Monitoring Service",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "node-cron": "^3.0.3",
+    "dotenv": "^16.3.1",
+    "pg": "^8.11.3"
+  }
+}

@@ -1,3 +1,18 @@
+<<<<<<< HEAD
+# Railway Deploy Trigger
+# This file forces Railway to rebuild and redeploy
+# Last updated: 2025-08-13 14:18:00
+# Deployment ID: deploy-dockerfile-fix-2025-08-13
+# 
+# CRITICAL FIXES INCLUDED:
+# - Removed conflicting root Dockerfile
+# - Fixed Docker build 'cd backend' error
+# - Railway now uses backend/Dockerfile correctly
+# - All nested backend folders cleaned up
+# - Proper server.js entry point
+#
+# Force rebuild trigger: v3.2.2
+=======
 # Railway Deploy Trigger - FORCE NIXPACKS
 # This file forces Railway to rebuild with Nixpacks (NOT Docker)
 # Last updated: 2025-01-13 12:00:00
@@ -13,3 +28,4 @@
 # CACHE_BUST=1737035000
 # BUILDER=NIXPACKS
 # NO_DOCKER=true
+>>>>>>> 3a432886918e35763ef5d6bf9ddc7406623deb92

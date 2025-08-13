@@ -1,6 +1,7 @@
 {
-  "version": "1.0.2",
-  "timestamp": "2025-08-09T00:00:00Z",
-  "component": "MediaIntelligence",
-  "build": "force-refresh-required"
+  "version": "1.0.3",
+  "timestamp": "2025-08-13T15:27:00Z",
+  "component": "RailwayDraggable",
+  "build": "restart-and-opportunity-fix",
+  "features": ["restart-button", "fast-opportunity-engine"]
 }

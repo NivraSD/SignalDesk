@@ -2,6 +2,16 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
+<<<<<<< HEAD
+    "buildCommand": "npm ci --production=false"
+  },
+  "deploy": {
+    "startCommand": "node backend/index.js",
+    "healthcheckPath": "/api/health",
+    "healthcheckTimeout": 60,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3
+=======
     "nixpacksConfigPath": "./nixpacks.toml",
     "dockerfilePath": null,
     "watchPatterns": ["**/*.js", "**/*.json", "!node_modules/**"],
@@ -22,5 +32,6 @@
         "nixpacksConfigPath": "./nixpacks.toml"
       }
     }
+>>>>>>> 3a432886918e35763ef5d6bf9ddc7406623deb92
   }
 }

@@ -1,0 +1,23 @@
+# Ignore everything to prevent Docker from being used
+*
+!package.json
+!package-lock.json
+!server.js
+!api/
+!src/
+!config/
+!controllers/
+!routes/
+!scripts/
+!migrations/
+
+# Explicitly exclude problematic files
+Dockerfile
+Dockerfile.*
+.dockerignore
+node_modules/
+.npm/
+.cache/
+*.log
+.git/
+.gitignore
