@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalDesk Deployment Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .pending {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #5a67d8;
+        }
+        .claude-indicator {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .claude-working {
+            background: #28a745;
+            color: white;
+        }
+        .claude-mock {
+            background: #dc3545;
+            color: white;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 SignalDesk Deployment Test Dashboard</h1>
+        <p>Testing Railway Backend + Vercel Frontend Integration</p>
+        <p>Backend URL: <strong>https://signaldesk-production.up.railway.app</strong></p>
+    </div>
+
+    <div class="test-section">
+        <h2>1. Backend Health Check</h2>
+        <button onclick="testBackendHealth()">Test Backend Status</button>
+        <div id="health-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Authentication Test</h2>
+        <button onclick="testLogin()">Test Login (Demo User)</button>
+        <div id="auth-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Claude AI Integration Tests</h2>
+        <button onclick="testAllFeatures()">Test All Features</button>
+        <div id="features-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Results Summary</h2>
+        <div id="summary"></div>
+    </div>
+
+    <script>
+        const API_URL = 'https://signaldesk-production.up.railway.app/api';
+        let authToken = null;
+
+        async function testBackendHealth() {
+            const resultDiv = document.getElementById('health-result');
+            resultDiv.innerHTML = '<div class="pending">Testing backend connection...</div>';
+            
+            try {
+                const response = await fetch('https://signaldesk-production.up.railway.app/');
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        ✅ Backend is operational!
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Backend connection failed: ${error.message}</div>`;
+            }
+        }
+
+        async function testLogin() {
+            const resultDiv = document.getElementById('auth-result');
+            resultDiv.innerHTML = '<div class="pending">Attempting login...</div>';
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'demo@signaldesk.com',
+                        password: 'Demo123!'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.token) {
+                    authToken = data.token;
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ Login successful! Token obtained.
+                            <br>User: ${data.user?.email || 'demo@signaldesk.com'}
+                        </div>
+                    `;
+                } else {
+                    // Try to create demo user first
+                    resultDiv.innerHTML = '<div class="pending">Demo user not found, creating...</div>';
+                    await createDemoUser();
+                    await testLogin(); // Retry login
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Login failed: ${error.message}</div>`;
+            }
+        }
+
+        async function createDemoUser() {
+            try {
+                await fetch(`${API_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: 'Demo User',
+                        email: 'demo@signaldesk.com',
+                        password: 'Demo123!'
+                    })
+                });
+            } catch (error) {
+                console.log('Could not create demo user:', error);
+            }
+        }
+
+        async function testAllFeatures() {
+            if (!authToken) {
+                document.getElementById('features-result').innerHTML = 
+                    '<div class="error">Please login first!</div>';
+                return;
+            }
+
+            const resultDiv = document.getElementById('features-result');
+            resultDiv.innerHTML = '<div class="pending">Testing all features with Claude AI...</div>';
+            
+            const features = [
+                {
+                    name: 'Crisis Management',
+                    endpoint: '/crisis/generate-plan',
+                    method: 'POST',
+                    body: { situation: 'Product recall needed', severity: 'high' }
+                },
+                {
+                    name: 'Content Generation',
+                    endpoint: '/content/generate',
+                    method: 'POST',
+                    body: { 
+                        topic: 'AI innovation in healthcare',
+                        tone: 'professional',
+                        audience: 'healthcare executives'
+                    }
+                },
+                {
+                    name: 'Campaign Intelligence',
+                    endpoint: '/campaigns/analyze',
+                    method: 'POST',
+                    body: { 
+                        campaign: 'New product launch',
+                        objectives: ['awareness', 'engagement'],
+                        targetAudience: 'tech professionals'
+                    }
+                },
+                {
+                    name: 'Media Search',
+                    endpoint: '/media/search-journalists',
+                    method: 'POST',
+                    body: { query: 'AI technology reporters San Francisco' }
+                },
+                {
+                    name: 'Opportunity Finder',
+                    endpoint: '/opportunities/find',
+                    method: 'POST',
+                    body: { 
+                        industry: 'technology',
+                        topics: ['AI', 'machine learning']
+                    }
+                }
+            ];
+
+            let results = [];
+            let claudeWorking = false;
+
+            for (const feature of features) {
+                try {
+                    const response = await fetch(`${API_URL}${feature.endpoint}`, {
+                        method: feature.method,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                        body: JSON.stringify(feature.body)
+                    });
+
+                    const data = await response.json();
+                    
+                    // Check if response is from Claude (not mock data)
+                    const isClaudeResponse = detectClaudeResponse(data);
+                    if (isClaudeResponse) claudeWorking = true;
+
+                    results.push({
+                        feature: feature.name,
+                        success: response.ok,
+                        status: response.status,
+                        isClaude: isClaudeResponse,
+                        data: data
+                    });
+                } catch (error) {
+                    results.push({
+                        feature: feature.name,
+                        success: false,
+                        error: error.message
+                    });
+                }
+            }
+
+            // Display results
+            let html = '<h3>Feature Test Results:</h3>';
+            results.forEach(result => {
+                const statusClass = result.success ? 'success' : 'error';
+                const claudeIndicator = result.isClaude ? 
+                    '<span class="claude-indicator claude-working">🤖 CLAUDE AI</span>' : 
+                    '<span class="claude-indicator claude-mock">📝 MOCK DATA</span>';
+                
+                html += `
+                    <div class="test-result ${statusClass}">
+                        ${result.success ? '✅' : '❌'} ${result.feature} 
+                        ${result.success ? claudeIndicator : ''}
+                        ${result.error ? `<br>Error: ${result.error}` : ''}
+                    </div>
+                `;
+            });
+
+            resultDiv.innerHTML = html;
+
+            // Update summary
+            updateSummary(results, claudeWorking);
+        }
+
+        function detectClaudeResponse(data) {
+            // Check for signs that this is a real Claude response
+            if (!data) return false;
+            
+            const dataStr = JSON.stringify(data).toLowerCase();
+            
+            // Mock data usually has generic templates or placeholder text
+            const mockIndicators = [
+                'mock response',
+                'sample data',
+                'placeholder',
+                'test response',
+                'coming soon',
+                'not implemented'
+            ];
+            
+            for (const indicator of mockIndicators) {
+                if (dataStr.includes(indicator)) return false;
+            }
+            
+            // Real Claude responses are usually longer and more detailed
+            if (dataStr.length < 200) return false;
+            
+            // Real Claude responses often have varied, contextual content
+            return true;
+        }
+
+        function updateSummary(results, claudeWorking) {
+            const summaryDiv = document.getElementById('summary');
+            const successCount = results.filter(r => r.success).length;
+            const claudeCount = results.filter(r => r.isClaude).length;
+            
+            const overallStatus = claudeWorking ? 
+                '<div class="success">🎉 <strong>PLATFORM FULLY OPERATIONAL WITH CLAUDE AI!</strong></div>' :
+                '<div class="error">⚠️ <strong>Platform running but Claude AI not responding - check API key in Railway</strong></div>';
+            
+            summaryDiv.innerHTML = `
+                ${overallStatus}
+                <div style="margin-top: 20px;">
+                    <strong>Statistics:</strong>
+                    <ul>
+                        <li>Features Working: ${successCount}/${results.length}</li>
+                        <li>Claude AI Responses: ${claudeCount}/${results.length}</li>
+                        <li>Mock Data Responses: ${results.length - claudeCount}/${results.length}</li>
+                    </ul>
+                </div>
+                ${!claudeWorking ? `
+                    <div class="error" style="margin-top: 20px;">
+                        <strong>Action Required:</strong>
+                        <ol>
+                            <li>Go to Railway Dashboard → Variables</li>
+                            <li>Ensure ANTHROPIC_API_KEY is set correctly</li>
+                            <li>Redeploy if you just added the key</li>
+                        </ol>
+                    </div>
+                ` : ''}
+            `;
+        }
+
+        // Auto-run health check on load
+        window.onload = () => {
+            testBackendHealth();
+        };
+    </script>
+</body>
+</html>

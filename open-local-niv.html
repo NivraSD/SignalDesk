@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Open Local SignalDesk with Niv</title>
+    <meta charset="UTF-8">
+    <style>
+        body { 
+            margin: 0; 
+            font-family: system-ui; 
+            background: #0a0a0a;
+            color: #e8e8e8;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        .header {
+            padding: 20px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+            color: white;
+            text-align: center;
+        }
+        .info {
+            padding: 20px;
+            background: rgba(255,255,255,0.05);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .checklist {
+            margin: 10px 0;
+        }
+        .check {
+            margin: 5px 0;
+            padding: 8px;
+            background: rgba(0,255,0,0.1);
+            border-radius: 4px;
+        }
+        iframe { 
+            flex: 1;
+            width: 100%; 
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎯 SignalDesk with Niv PR Strategist</h1>
+    </div>
+    
+    <div class="info">
+        <h3>✅ Niv PR Strategist is now integrated!</h3>
+        <div class="checklist">
+            <div class="check">✓ Component created: NivPRStrategist.js</div>
+            <div class="check">✓ Backend agent: src/agents/NivPRStrategist.js</div>
+            <div class="check">✓ API endpoint: api/niv/chat.js</div>
+            <div class="check">✓ Added to RailwayDraggable activities</div>
+            <div class="check">✓ ID: niv-strategist</div>
+            <div class="check">✓ Frontend running on port 3002</div>
+        </div>
+        <p><strong>To see Niv:</strong> Click on the project page below, then look for "Niv PR Strategist" in the activities panel (first item with Brain icon)</p>
+    </div>
+    
+    <iframe src="http://localhost:3002"></iframe>
+    
+    <script>
+        // Auto-reload if frontend restarts
+        setInterval(() => {
+            fetch('http://localhost:3002').catch(() => {
+                console.log('Frontend not responding, waiting...');
+            });
+        }, 5000);
+    </script>
+</body>
+</html>

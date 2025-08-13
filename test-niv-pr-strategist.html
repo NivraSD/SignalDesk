@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Niv PR Strategist</title>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #0a0a0a;
+            color: #e8e8e8;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .test-button {
+            background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .test-button:hover {
+            opacity: 0.9;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            white-space: pre-wrap;
+            min-height: 100px;
+        }
+        .success {
+            border-left: 4px solid #10b981;
+        }
+        .error {
+            border-left: 4px solid #ef4444;
+        }
+        .loading {
+            border-left: 4px solid #f59e0b;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Test Niv PR Strategist</h1>
+        
+        <div class="test-section">
+            <h2>1. Check Frontend Deployment</h2>
+            <button class="test-button" onclick="checkFrontend()">Check Vercel Frontend</button>
+            <button class="test-button" onclick="checkLocal()">Check Local Frontend</button>
+            <div id="frontend-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. Test Niv API Endpoint</h2>
+            <button class="test-button" onclick="testNivAPI()">Test Railway API</button>
+            <button class="test-button" onclick="testNivLocal()">Test Local API</button>
+            <div id="api-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>3. Check Activity Panel</h2>
+            <button class="test-button" onclick="loadActivityPanel()">Load Activity Panel</button>
+            <div id="activity-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>4. Live Frontend Preview</h2>
+            <button class="test-button" onclick="loadFrontend('https://signaldesk-frontend.vercel.app')">Load Vercel</button>
+            <button class="test-button" onclick="loadFrontend('http://localhost:3002')">Load Local</button>
+            <iframe id="frontend-frame" style="display:none;"></iframe>
+        </div>
+    </div>
+
+    <script>
+        const log = (elementId, message, type = 'info') => {
+            const element = document.getElementById(elementId);
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'loading';
+            element.className = 'result ' + className;
+            element.textContent = message;
+        };
+
+        async function checkFrontend() {
+            log('frontend-result', 'Checking Vercel frontend...', 'loading');
+            try {
+                const response = await fetch('https://signaldesk-frontend.vercel.app', {
+                    mode: 'no-cors'
+                });
+                log('frontend-result', '✅ Vercel frontend is reachable', 'success');
+            } catch (error) {
+                log('frontend-result', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkLocal() {
+            log('frontend-result', 'Checking local frontend on port 3002...', 'loading');
+            try {
+                const response = await fetch('http://localhost:3002');
+                const text = await response.text();
+                if (text.includes('SignalDesk')) {
+                    log('frontend-result', '✅ Local frontend is running on port 3002', 'success');
+                } else {
+                    log('frontend-result', '⚠️ Local frontend is running but might not be SignalDesk', 'error');
+                }
+            } catch (error) {
+                log('frontend-result', `❌ Local frontend not running: ${error.message}\n\nPlease run: cd backend/backend/frontend && PORT=3002 npm start`, 'error');
+            }
+        }
+
+        async function testNivAPI() {
+            log('api-result', 'Testing Niv API on Railway...', 'loading');
+            try {
+                const response = await fetch('https://signaldesk-production.up.railway.app/api/niv/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: 'Hello Niv, can you help me with PR strategy?',
+                        conversationId: Date.now().toString()
+                    })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    log('api-result', `✅ Niv API is working!\n\nResponse from ${data.agent?.name || 'Niv'}:\n${data.response}`, 'success');
+                } else {
+                    log('api-result', `⚠️ API responded but with error: ${JSON.stringify(data)}`, 'error');
+                }
+            } catch (error) {
+                log('api-result', `❌ API Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testNivLocal() {
+            log('api-result', 'Testing Niv API locally...', 'loading');
+            try {
+                const response = await fetch('http://localhost:3001/api/niv/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: 'Hello Niv, what are your PR capabilities?',
+                        conversationId: Date.now().toString()
+                    })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    log('api-result', `✅ Local Niv API is working!\n\nResponse from ${data.agent?.name || 'Niv'}:\n${data.response}`, 'success');
+                } else {
+                    log('api-result', `⚠️ Local API responded but with error: ${JSON.stringify(data)}`, 'error');
+                }
+            } catch (error) {
+                log('api-result', `❌ Local API not running: ${error.message}\n\nPlease run: cd backend/backend && PORT=3001 npm start`, 'error');
+            }
+        }
+
+        async function loadActivityPanel() {
+            log('activity-result', 'Checking for Niv in activity panel...', 'loading');
+            
+            // Check if Niv is in the code
+            const checkpoints = [
+                '✓ NivPRStrategist.js component exists',
+                '✓ Imported in RailwayDraggable.js',
+                '✓ Added to activities array',
+                '✓ ID: niv-strategist',
+                '✓ Name: Niv PR Strategist',
+                '✓ Icon: Brain',
+                '✓ Color: #f59e0b (amber)',
+                '✓ Description: Senior AI PR Strategist',
+                '',
+                'If you don\'t see Niv in the UI:',
+                '1. Check if the deployment succeeded',
+                '2. Try hard refresh (Cmd+Shift+R)',
+                '3. Clear browser cache',
+                '4. Check browser console for errors'
+            ];
+            
+            log('activity-result', checkpoints.join('\n'), 'success');
+        }
+
+        function loadFrontend(url) {
+            const frame = document.getElementById('frontend-frame');
+            frame.src = url;
+            frame.style.display = 'block';
+            frame.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Auto-check on load
+        window.addEventListener('load', () => {
+            checkLocal();
+        });
+    </script>
+</body>
+</html>

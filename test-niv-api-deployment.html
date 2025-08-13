@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Niv API Deployment</title>
+    <style>
+        body {
+            font-family: system-ui;
+            background: #0a0a0a;
+            color: #e8e8e8;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .test-btn {
+            background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            border-left: 4px solid #8b5cf6;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .success { border-left-color: #10b981; }
+        .error { border-left-color: #ef4444; }
+        .loading { border-left-color: #f59e0b; }
+    </style>
+</head>
+<body>
+    <h1>🎯 Test Niv PR Strategist API Deployment</h1>
+    
+    <p>Railway usually takes 2-3 minutes to rebuild after pushing. Click the buttons to test:</p>
+    
+    <button class="test-btn" onclick="testHealth()">1. Test API Health</button>
+    <button class="test-btn" onclick="testCapabilities()">2. Test Niv Capabilities</button>
+    <button class="test-btn" onclick="testChat()">3. Test Niv Chat</button>
+    <button class="test-btn" onclick="autoTest()">🔄 Auto-Test Every 10s</button>
+    
+    <div id="result" class="result">Ready to test...</div>
+    
+    <script>
+        let autoTestInterval = null;
+        const API_URL = 'https://signaldesk-production.up.railway.app';
+        
+        // Get demo token first
+        async function getAuthToken() {
+            try {
+                const response = await fetch(`${API_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'demo@signaldesk.com',
+                        password: 'demo123'
+                    })
+                });
+                const data = await response.json();
+                return data.token;
+            } catch (error) {
+                console.error('Auth error:', error);
+                return null;
+            }
+        }
+        
+        async function testHealth() {
+            updateResult('Testing Niv health endpoint...', 'loading');
+            const token = await getAuthToken();
+            
+            try {
+                const response = await fetch(`${API_URL}/api/niv/health`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    updateResult(`✅ Niv Health Check Success!\n\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    updateResult(`⚠️ Health check returned ${response.status}\n\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                updateResult(`❌ Health check failed: ${error.message}\n\nThe API might still be building...`, 'error');
+            }
+        }
+        
+        async function testCapabilities() {
+            updateResult('Testing Niv capabilities endpoint...', 'loading');
+            const token = await getAuthToken();
+            
+            try {
+                const response = await fetch(`${API_URL}/api/niv/capabilities`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    updateResult(`✅ Niv Capabilities Loaded!\n\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    updateResult(`⚠️ Capabilities returned ${response.status}\n\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                updateResult(`❌ Capabilities failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testChat() {
+            updateResult('Testing Niv chat endpoint...', 'loading');
+            const token = await getAuthToken();
+            
+            try {
+                const response = await fetch(`${API_URL}/api/niv/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        message: 'Hello Niv! Can you introduce yourself and tell me about your PR expertise?',
+                        conversationId: Date.now().toString()
+                    })
+                });
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    updateResult(`✅ Niv is Online!\n\n${data.agent?.name}: ${data.response}`, 'success');
+                } else {
+                    updateResult(`⚠️ Chat returned ${response.status}\n\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                updateResult(`❌ Chat failed: ${error.message}\n\nThe API might still be building...`, 'error');
+            }
+        }
+        
+        function updateResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = message;
+            resultDiv.className = 'result ' + type;
+        }
+        
+        async function autoTest() {
+            if (autoTestInterval) {
+                clearInterval(autoTestInterval);
+                autoTestInterval = null;
+                updateResult('Auto-test stopped', 'success');
+                return;
+            }
+            
+            updateResult('Starting auto-test every 10 seconds...', 'loading');
+            
+            // Run immediately
+            await testHealth();
+            
+            // Then every 10 seconds
+            autoTestInterval = setInterval(async () => {
+                await testHealth();
+            }, 10000);
+        }
+        
+        // Test on load
+        window.addEventListener('load', () => {
+            testHealth();
+        });
+    </script>
+</body>
+</html>

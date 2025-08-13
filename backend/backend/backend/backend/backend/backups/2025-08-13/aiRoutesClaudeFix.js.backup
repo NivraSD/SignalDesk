@@ -1,0 +1,390 @@
+const express = require("express");
+const router = express.Router();
+const authMiddleware = require("../src/middleware/authMiddleware");
+const { Anthropic } = require('@anthropic-ai/sdk');
+
+// Initialize Claude
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY || ''
+});
+
+// Simple conversation state
+const conversationStates = new Map();
+
+// Add comprehensive logging at the top of the file
+console.log("🎯 [CLAUDE FIX] Route file loaded at:", new Date().toISOString());
+
+// PROPER unified-chat with Claude - but STRICT constraints
+router.post("/unified-chat", authMiddleware, async (req, res) => {
+  console.log("🚀 [CLAUDE FIX] ROUTE HIT! /unified-chat endpoint called");
+  console.log("📍 [CLAUDE FIX] Full request path:", req.originalUrl);
+  console.log("📦 [CLAUDE FIX] Request body:", JSON.stringify(req.body, null, 2));
+  
+  try {
+    const { message, mode, context } = req.body;
+    const userId = req.user?.id || 'unknown';
+    
+    console.log("✅ [CLAUDE FIX] Processing request:", {
+      message: message?.substring(0, 100),
+      messageLength: message?.length,
+      userId,
+      folder: context?.folder,
+      contentType: context?.contentTypeName,
+      mode: mode
+    });
+
+    // Get or create conversation state
+    if (!conversationStates.has(userId)) {
+      console.log("[CLAUDE FIX] Creating new conversation state for user:", userId);
+      conversationStates.set(userId, {
+        history: [],
+        contentType: null,
+        messageCount: 0
+      });
+    } else {
+      console.log("[CLAUDE FIX] Found existing conversation state for user:", userId, {
+        messageCount: conversationStates.get(userId).messageCount,
+        contentType: conversationStates.get(userId).contentType,
+        historyLength: conversationStates.get(userId).history.length
+      });
+    }
+    
+    const state = conversationStates.get(userId);
+    
+    // Detect content type from message if needed - be more permissive
+    const isContentRequest = 
+      message.toLowerCase().includes('thought leadership') ||
+      message.toLowerCase().includes('press release') ||
+      message.toLowerCase().includes('release') || // Handle "generate release"
+      message.toLowerCase().includes('social media') ||
+      message.toLowerCase().includes('social post') ||
+      message.toLowerCase().includes('blog') ||
+      message.toLowerCase().includes('email') ||
+      message.toLowerCase().includes('announcement') ||
+      message.toLowerCase().includes('article') ||
+      message.toLowerCase().includes('post') ||
+      message.toLowerCase().includes('tweet') ||
+      message.toLowerCase().includes('linkedin') ||
+      message.toLowerCase().includes('statement') ||
+      message.toLowerCase().includes('write') ||
+      message.toLowerCase().includes('create') ||
+      message.toLowerCase().includes('draft') ||
+      message.toLowerCase().includes('generate') || // Handle "generate X" requests
+      message.toLowerCase().includes('need') ||
+      context?.folder === 'content-generator';
+    
+    // Check if switching to a new content type or feature
+    const isFeatureSwitch = context?.folder && state.lastFolder && context.folder !== state.lastFolder;
+    
+    if (isContentRequest || isFeatureSwitch) {
+      const newContentType = context?.contentTypeName || detectContentType(message);
+      
+      // If switching content types or features, reset the conversation
+      if ((state.contentType && state.contentType !== newContentType) || isFeatureSwitch) {
+        console.log("[CLAUDE FIX] Context switch detected:", {
+          from: state.contentType || state.lastFolder,
+          to: newContentType || context?.folder
+        });
+        state.history = [];
+        state.messageCount = 0;
+        state.contentType = newContentType;
+        state.lastFolder = context?.folder;
+      } else if (!state.contentType) {
+        state.contentType = newContentType;
+        state.lastFolder = context?.folder;
+      }
+    }
+    
+    // Check if message is JUST stating content type without any context
+    // Only consider it "just content type" if it exactly matches common content types
+    const isJustContentType = 
+      (message.toLowerCase() === 'press release' ||
+       message.toLowerCase() === 'social media post' ||
+       message.toLowerCase() === 'social post' ||
+       message.toLowerCase() === 'blog post' ||
+       message.toLowerCase() === 'blog' ||
+       message.toLowerCase() === 'email' ||
+       message.toLowerCase() === 'announcement' ||
+       message.toLowerCase() === 'thought leadership' ||
+       message.toLowerCase() === 'article' ||
+       message.toLowerCase() === 'linkedin post' ||
+       message.toLowerCase() === 'twitter post' ||
+       message.toLowerCase() === 'tweet') && 
+      state.messageCount === 0 && // First message
+      !message.toLowerCase().includes('about') && // Not if they're providing context
+      !message.toLowerCase().includes('for') && // Not if they're providing context
+      !message.toLowerCase().includes('announcing'); // Not if they're providing context
+    
+    console.log("[CLAUDE FIX] Content type check:", {
+      message: message.substring(0, 50),
+      isJustContentType,
+      messageCount: state.messageCount,
+      wordCount: message.split(' ').length
+    });
+    
+    // Check if user wants to generate - BALANCED approach
+    const wantsToGenerate = 
+      message.toLowerCase().includes('generate') ||
+      message.toLowerCase().includes('create it') ||
+      message.toLowerCase().includes('write it') ||
+      message.toLowerCase().includes('draft it') ||
+      message.toLowerCase().includes('make it') ||
+      message.toLowerCase().includes('do it') ||
+      message.toLowerCase().includes('go ahead') ||
+      message.toLowerCase().includes('let\'s do it') ||
+      message.toLowerCase().includes('proceed') ||
+      message.toLowerCase().includes('let\'s go') ||
+      message.toLowerCase().includes('sounds good') ||
+      (message.toLowerCase() === 'yes' && state.lastQuestion?.toLowerCase().includes('generate')) ||
+      (message.toLowerCase() === 'yes' && state.lastQuestion?.toLowerCase().includes('create')) ||
+      (message.toLowerCase() === 'yes' && state.lastQuestion?.toLowerCase().includes('shall i')) ||
+      (message.toLowerCase() === 'ok' && state.lastQuestion?.toLowerCase().includes('shall i')) ||
+      (message.toLowerCase() === 'sure' && state.lastQuestion?.toLowerCase().includes('shall i')) ||
+      (state.messageCount >= 2 && message.toLowerCase() === 'yes') || // After 2 exchanges, simple "yes" triggers generation
+      (state.messageCount >= 3 && (message.toLowerCase() === 'ok' || message.toLowerCase() === 'sure')); // After 3 exchanges, ok/sure triggers generation
+    
+    let response = "";
+    let isGeneratedContent = false;
+    
+    // Only generate if explicitly requested - don't auto-generate on first message or just content type
+    console.log("[CLAUDE FIX] Generation decision:", {
+      wantsToGenerate,
+      isJustContentType,
+      willGenerate: wantsToGenerate && !isJustContentType
+    });
+    
+    if (wantsToGenerate && !isJustContentType) {
+      // Ensure we have a content type
+      if (!state.contentType) {
+        state.contentType = detectContentType(message) || 'content';
+      }
+      
+      // Generate actual content
+      const prompt = `Create a professional ${state.contentType}.
+
+Context from user: "${message}"
+${state.history.length > 0 ? '\nPrevious context: ' + state.history.map(h => `${h.role}: ${h.content}`).join('\n') : ''}
+
+IMPORTANT: Generate a COMPLETE, PROFESSIONAL ${state.contentType} NOW.
+- If the user mentioned ANY specific detail (like "Allen Smith" or "new CEO"), USE IT
+- For missing details, use smart placeholders: [Company Name], [Date], etc.
+- Make it publication-ready and professional
+- If it's a press release about a new CEO and they said "Allen Smith", use that name
+- Be helpful - don't ask for more info, just CREATE IT`;
+
+      try {
+        const completion = await anthropic.messages.create({
+          model: 'claude-3-haiku-20240307', // Fast model
+          max_tokens: 1000,
+          temperature: 0.7,
+          messages: [{ role: 'user', content: prompt }]
+        });
+        
+        response = completion.content[0].text;
+        isGeneratedContent = true;
+        
+        // Reset state after generation
+        state.history = [];
+        state.messageCount = 0;
+        state.contentType = null;
+        
+      } catch (error) {
+        console.error('Claude generation error:', error);
+        // Don't generate fake content - just acknowledge the error
+        response = `I apologize, but I'm having trouble generating the ${state.contentType} right now. Please try again or provide more details about what you'd like to create.`;
+        isGeneratedContent = false;
+      }
+      
+    } else if (isContentRequest || state.contentType) {
+      // Natural conversation with Claude - BE HELPFUL LIKE CLAUDE
+      const conversationContext = state.history.slice(-4).map(h => `${h.role}: ${h.content}`).join('\n');
+      
+      const prompt = `You are Claude, a helpful AI assistant for content creation. Be conversational and balanced.
+
+The user wants to create: ${state.contentType || 'content'}
+Message count: ${state.messageCount}
+${isJustContentType ? 'CRITICAL: User JUST selected content type. DO NOT generate content yet! Ask what they want to announce/write about.' : ''}
+
+Recent conversation:
+${conversationContext}
+
+User: "${message}"
+
+Guidelines:
+${isJustContentType ? '- NEVER generate actual content when user just says the content type' : ''}
+${isJustContentType ? '- Instead, ask ONE specific question about what they want to create' : ''}
+${isJustContentType ? '- Example: "What would you like to announce in the press release?"' : ''}
+- If the user has provided specific details (company name, announcement, person's name, etc.), acknowledge them
+- If you're missing essential information (like what to announce), ask for it concisely
+- After 2-3 exchanges, offer to generate with what you have: "I have enough to start. Shall I create the ${state.contentType} now?"
+- Never ask more than 2 questions total
+- Be friendly and helpful, not interrogative
+- Keep responses under 2 sentences`;
+
+      console.log("[CLAUDE FIX] Sending to Claude with prompt guidelines:", {
+        isJustContentType,
+        messageCount: state.messageCount,
+        contentType: state.contentType
+      });
+      
+      try {
+        const completion = await anthropic.messages.create({
+          model: 'claude-3-haiku-20240307', // Fast model
+          max_tokens: 150, // Allow more natural responses
+          temperature: 0.7,
+          messages: [{ role: 'user', content: prompt }]
+        });
+        
+        response = completion.content[0].text.trim();
+        
+        // Check for stuck conversation (same response repeating 3+ times)
+        if (state.history.length > 4) {
+          const recentResponses = state.history.slice(-4).filter((_, i) => i % 2 === 1).map(h => h.content);
+          const uniqueResponses = new Set(recentResponses);
+          if (uniqueResponses.size === 1) {
+            // Actually stuck in a loop after multiple attempts
+            if (state.messageCount >= 4) {
+              response = "I have a good understanding now. Would you like me to generate the content?";
+            } else {
+              response = "Let me approach this differently. What's the key message you want to convey?";
+            }
+          }
+        }
+        
+      } catch (error) {
+        console.error('Claude error:', error);
+        // Better fallback handling based on context
+        if (isJustContentType) {
+          // User just selected content type - ask what they want to create
+          const contentTypeMap = {
+            'press release': 'What announcement would you like to make in the press release?',
+            'social media post': 'What would you like to share in your social media post?',
+            'social post': 'What would you like to share in your social post?',
+            'blog post': 'What topic would you like to write about in your blog post?',
+            'blog': 'What topic would you like to write about in your blog?',
+            'email': 'What is the purpose of this email?',
+            'announcement': 'What would you like to announce?',
+            'thought leadership': 'What insights would you like to share in your thought leadership piece?',
+            'article': 'What is the subject of your article?',
+            'linkedin post': 'What would you like to share on LinkedIn?',
+            'twitter post': 'What would you like to tweet about?',
+            'tweet': 'What would you like to tweet about?'
+          };
+          const cleanContentType = state.contentType?.toLowerCase() || message.toLowerCase();
+          response = contentTypeMap[cleanContentType] || `What would you like to communicate in your ${state.contentType || 'content'}?`;
+        } else if (state.messageCount === 0) {
+          response = "I understand you want to create content. What would you like to communicate?";
+        } else if (state.messageCount === 1) {
+          response = "Got it. Is there anything specific you'd like me to include?";
+        } else {
+          // After multiple exchanges, offer to generate
+          response = `I have enough context. Shall I create the ${state.contentType || 'content'} now?`;
+        }
+      }
+      
+      // Add to history (limit to prevent memory issues)
+      state.history.push(
+        { role: 'user', content: message },
+        { role: 'assistant', content: response }
+      );
+      state.lastQuestion = response; // Track last AI question for context
+      state.messageCount++;
+      
+      // Keep history reasonable (last 10 exchanges)
+      if (state.history.length > 20) {
+        state.history = state.history.slice(-20);
+      }
+      
+      // After 2 exchanges, offer to generate if not already offered
+      if (state.messageCount >= 2 && 
+          !response.toLowerCase().includes('shall i') && 
+          !response.toLowerCase().includes('generate') &&
+          !response.toLowerCase().includes('would you like me to create')) {
+        response = `I have enough context now. Shall I create the ${state.contentType || 'content'} for you?`;
+        state.forceGenerate = true; // Mark that next "yes" should generate
+      }
+      
+    } else {
+      // Non-content request - general help
+      response = "I can help you create content like press releases, social media posts, or thought leadership pieces. What would you like to create?";
+    }
+    
+    console.log("[CLAUDE FIX] Response:", {
+      length: response.length,
+      isGenerated: isGeneratedContent,
+      messageCount: state.messageCount
+    });
+    
+    res.json({
+      success: true,
+      response: response,
+      suggestions: [],
+      mode: mode,
+      isGeneratedContent: isGeneratedContent
+    });
+    
+  } catch (error) {
+    console.error("[CLAUDE FIX] Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "AI service error",
+      error: error.message
+    });
+  }
+});
+
+// Helper to detect content type
+function detectContentType(message) {
+  const lower = message.toLowerCase();
+  if (lower.includes('thought leadership')) return 'thought leadership piece';
+  if (lower.includes('press release') || lower.includes('announce')) return 'press release';
+  if (lower.includes('release') && lower.includes('generate')) return 'press release'; // Handle "generate release"
+  if (lower.includes('social media') || lower.includes('social post')) return 'social media post';
+  if (lower.includes('twitter') || lower.includes('tweet') || lower.includes(' x ')) return 'social media post';
+  if (lower.includes('linkedin')) return 'LinkedIn post';
+  if (lower.includes('blog')) return 'blog post';
+  if (lower.includes('email')) return 'email';
+  if (lower.includes('article')) return 'article';
+  if (lower.includes('statement')) return 'statement';
+  if (lower.includes('announcement')) return 'announcement';
+  // Default to social post for generic "post" requests
+  if (lower.includes('post') && !lower.includes('blog')) return 'social media post';
+  return 'content';
+}
+
+// Version endpoint
+router.get("/version", (req, res) => {
+  console.log("🔍 [CLAUDE FIX] Version endpoint called");
+  res.json({
+    version: "CLAUDE-NATURAL-2025-08-12",
+    status: "Natural conversation with Claude - one question at a time",
+    timestamp: new Date().toISOString(),
+    routeLoaded: true,
+    debug: "Route file is properly loaded and accessible"
+  });
+});
+
+// Debug endpoint to test if routes are accessible
+router.get("/debug", (req, res) => {
+  console.log("🐛 [CLAUDE FIX] Debug endpoint hit!");
+  res.json({
+    success: true,
+    message: "AI routes are loaded and accessible",
+    endpoints: ["/api/ai/unified-chat", "/api/ai/version", "/api/ai/debug"],
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Test POST endpoint
+router.post("/test", (req, res) => {
+  console.log("🧪 [CLAUDE FIX] Test POST endpoint hit with body:", req.body);
+  res.json({
+    success: true,
+    message: "POST endpoint working",
+    received: req.body
+  });
+});
+
+console.log("✨ [CLAUDE FIX] All routes registered in aiRoutesClaudeFix.js");
+
+module.exports = router;

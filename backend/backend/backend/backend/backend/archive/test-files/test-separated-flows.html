@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Separated Flows Test - SignalDesk</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #e8e8e8;
+            padding: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #7c3aed;
+            margin-bottom: 30px;
+        }
+        .flow-section {
+            background: rgba(20, 20, 20, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        .flow-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .flow-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #7c3aed, #6366f1);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        .flow-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+        .flow-description {
+            color: #9ca3af;
+            margin-bottom: 20px;
+        }
+        .step {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 3px solid #7c3aed;
+        }
+        .vs-divider {
+            text-align: center;
+            margin: 30px 0;
+            color: #6b7280;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        code {
+            background: rgba(124, 58, 237, 0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .highlight {
+            color: #10b981;
+            font-weight: 600;
+        }
+        .warning {
+            color: #f59e0b;
+            font-weight: 600;
+        }
+        .implementation-note {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎯 Separated Content Generation Flows</h1>
+    
+    <div class="flow-section">
+        <div class="flow-header">
+            <div class="flow-icon">💬</div>
+            <div class="flow-title">Flow 1: AI Assistant Conversation</div>
+        </div>
+        <div class="flow-description">
+            Natural conversation that leads to generated content appearing directly in the Content Generator
+        </div>
+        
+        <div class="step">
+            <strong>Step 1:</strong> User says <code>I need a press release</code>
+            <br>→ Content Generator auto-opens
+            <br>→ AI gives tips and asks ONE question at a time
+        </div>
+        
+        <div class="step">
+            <strong>Step 2:</strong> User provides information through conversation
+            <br>→ AI continues asking follow-up questions
+            <br>→ <span class="highlight">NO buttons needed</span> in Content Generator
+        </div>
+        
+        <div class="step">
+            <strong>Step 3:</strong> When AI has enough info, user says <code>Generate it now</code>
+            <br>→ AI generates ACTUAL content (with "FOR IMMEDIATE RELEASE" etc.)
+            <br>→ Content appears fully formed in Content Generator
+            <br>→ Content replaces the entire interface
+        </div>
+        
+        <div class="implementation-note">
+            <strong>Key Point:</strong> The AI Assistant handles the entire flow conversationally. 
+            The Content Generator is just a display for the final result.
+        </div>
+    </div>
+
+    <div class="vs-divider">VS</div>
+
+    <div class="flow-section">
+        <div class="flow-header">
+            <div class="flow-icon">🎛️</div>
+            <div class="flow-title">Flow 2: Manual Content Generator</div>
+        </div>
+        <div class="flow-description">
+            Traditional interface with buttons for users who prefer direct control
+        </div>
+        
+        <div class="step">
+            <strong>Step 1:</strong> User clicks "Content Generator" feature
+            <br>→ Sees content type options
+            <br>→ Manually selects "Press Release"
+        </div>
+        
+        <div class="step">
+            <strong>Step 2:</strong> User selects tone
+            <br>→ Chooses "Professional" or other tone
+            <br>→ Generate button appears
+        </div>
+        
+        <div class="step">
+            <strong>Step 3:</strong> User clicks "Generate Content" button
+            <br>→ Direct API call to generate content
+            <br>→ No conversation needed
+            <br>→ Content appears immediately
+        </div>
+        
+        <div class="implementation-note">
+            <strong>Key Point:</strong> This flow works independently of the AI Assistant. 
+            It's for users who know exactly what they want and don't need guidance.
+        </div>
+    </div>
+
+    <div class="flow-section">
+        <div class="flow-header">
+            <div class="flow-icon">🔧</div>
+            <div class="flow-title">Implementation Details</div>
+        </div>
+        
+        <div class="step">
+            <strong>AI Assistant (UnifiedPlatform.js):</strong>
+            <ul>
+                <li>Detects content requests and auto-opens Content Generator</li>
+                <li>Uses <code>mode: 'content'</code> for conversational responses</li>
+                <li>Only passes ACTUAL generated content (validated by <code>isActualGeneratedContent()</code>)</li>
+                <li>Never passes conversational responses as content</li>
+            </ul>
+        </div>
+        
+        <div class="step">
+            <strong>Content Generator (ContentGeneratorModule.js):</strong>
+            <ul>
+                <li>Accepts generated content from AI Assistant</li>
+                <li>Maintains its own buttons for manual generation</li>
+                <li>Shows full interface when no content</li>
+                <li>Shows content-only view when content exists</li>
+            </ul>
+        </div>
+        
+        <div class="step">
+            <strong>Content Detection Rules:</strong>
+            <ul>
+                <li>Must include strong indicators ("FOR IMMEDIATE RELEASE", "Q:", etc.)</li>
+                <li>Must NOT include questions or conversational markers</li>
+                <li>Must be >400 chars with >5 lines for weak indicators</li>
+                <li>Rejects anything with "What?", "I can help", "tips", etc.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="flow-section">
+        <div class="flow-header">
+            <div class="flow-icon">✅</div>
+            <div class="flow-title">Benefits of Separation</div>
+        </div>
+        
+        <div class="step">
+            <span class="highlight">For Conversational Users:</span>
+            <ul>
+                <li>Natural dialogue flow</li>
+                <li>AI guides them through the process</li>
+                <li>No need to understand UI buttons</li>
+                <li>Gets personalized content based on conversation</li>
+            </ul>
+        </div>
+        
+        <div class="step">
+            <span class="highlight">For Power Users:</span>
+            <ul>
+                <li>Direct access to generation</li>
+                <li>No conversation needed</li>
+                <li>Faster for those who know what they want</li>
+                <li>Traditional UI they're familiar with</li>
+            </ul>
+        </div>
+        
+        <div class="step">
+            <span class="highlight">For the System:</span>
+            <ul>
+                <li>Clean separation of concerns</li>
+                <li>No confusing mixed states</li>
+                <li>Each flow works independently</li>
+                <li>Easier to maintain and debug</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

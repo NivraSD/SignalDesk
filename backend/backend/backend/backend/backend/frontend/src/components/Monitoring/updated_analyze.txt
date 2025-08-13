@@ -1,0 +1,20 @@
+  const analyzeSentiment = async (text) => {
+    try {
+      const response = await api.analyzeSentiment({
+        text: text,
+        source: 'Live Monitoring',
+        config: { claude: claudeConfig }
+      });
+
+      return response;
+    } catch (error) {
+      console.error('Sentiment analysis error:', error);
+      return {
+        sentiment: 'neutral',
+        sentiment_score: 0,
+        confidence: 0.3,
+        summary: 'Analysis failed',
+        is_fallback: true
+      };
+    }
+  };

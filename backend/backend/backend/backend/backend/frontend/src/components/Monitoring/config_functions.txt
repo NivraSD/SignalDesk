@@ -1,0 +1,61 @@
+  
+  // Load configuration on mount
+  useEffect(() => {
+    loadConfiguration();
+  }, []);
+
+  const loadConfiguration = async () => {
+    try {
+      const response = await api.getMonitoringConfig();
+      if (response.data.config) {
+        const config = response.data.config;
+        if (config.dataSource) {
+          setDataSourceConfig(prev => ({
+            ...prev,
+            ...config.dataSource
+          }));
+        }
+        if (config.claude) setClaudeConfig(config.claude);
+        if (config.alerts) setAlertConfig(config.alerts);
+      }
+    } catch (error) {
+      console.error('Failed to load configuration:', error);
+    }
+  };
+
+  // Save configuration
+  const saveAllConfigurations = async () => {
+    try {
+      await api.saveMonitoringConfig({
+        dataSource: dataSourceConfig,
+        claude: claudeConfig,
+        alerts: alertConfig
+      });
+      setConfigSaved(true);
+      setTimeout(() => setConfigSaved(false), 3000);
+      
+      setAlerts(prev => [{
+        id: Date.now(),
+        type: 'config_saved',
+        severity: 'low',
+        title: 'Configuration Saved',
+        message: 'Your monitoring settings have been saved successfully.',
+        timestamp: new Date(),
+        acknowledged: false
+      }, ...prev].slice(0, 100));
+    } catch (error) {
+      console.error('Failed to save configuration:', error);
+    }
+  };
+
+  // Fetch RSS feeds
+  const fetchFromRSSFeeds = async () => {
+    try {
+      const response = await api.fetchRSSFeeds(dataSourceConfig.monitoringKeywords || ['AI']);
+      return response.data.mentions;
+    } catch (error) {
+      console.error('Failed to fetch RSS feeds:', error);
+      return generateDemoMentions(dataSourceConfig.monitoringKeywords);
+    }
+  };
+

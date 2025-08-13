@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalDesk Deployment Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #0f0f1f;
+            color: #e0e0e0;
+        }
+        h1 {
+            color: #8b5cf6;
+            border-bottom: 2px solid #8b5cf6;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            background: #1a1a2e;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .test-item {
+            margin: 15px 0;
+            padding: 10px;
+            background: #16213e;
+            border-radius: 4px;
+        }
+        .status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .success { background: #10b981; color: white; }
+        .error { background: #ef4444; color: white; }
+        .loading { background: #f59e0b; color: white; }
+        .info { background: #3b82f6; color: white; }
+        button {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #7c3aed;
+        }
+        .result {
+            background: #0f172a;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <h1>SignalDesk Deployment Verification</h1>
+    
+    <div class="test-section">
+        <h2>Deployment URLs</h2>
+        <div class="test-item">
+            <strong>Main Domain:</strong> 
+            <a href="https://signaldesk-frontend.vercel.app" target="_blank" style="color: #8b5cf6;">
+                https://signaldesk-frontend.vercel.app
+            </a>
+        </div>
+        <div class="test-item">
+            <strong>Latest Deployment:</strong> 
+            <a href="https://signaldesk-frontend-gkzk1cd2e-nivra-sd.vercel.app" target="_blank" style="color: #8b5cf6;">
+                https://signaldesk-frontend-gkzk1cd2e-nivra-sd.vercel.app
+            </a>
+        </div>
+        <div class="test-item">
+            <strong>Backend API:</strong> 
+            <a href="https://signaldesk-production.up.railway.app" target="_blank" style="color: #8b5cf6;">
+                https://signaldesk-production.up.railway.app
+            </a>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Connection Tests</h2>
+        <button onclick="testBackendHealth()">Test Backend Health</button>
+        <button onclick="testBackendVersion()">Check Backend Version</button>
+        <button onclick="testFrontendVersion()">Check Frontend Version</button>
+        <button onclick="testLogin()">Test Login</button>
+        <button onclick="testAllEndpoints()">Test All Critical Endpoints</button>
+        <div id="test-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Expected Features</h2>
+        <div class="test-item">
+            ✓ Version: <span class="status info">v3.2-FIXED</span>
+        </div>
+        <div class="test-item">
+            ✓ Refresh button in project dropdown (RefreshCw icon)
+        </div>
+        <div class="test-item">
+            ✓ Opportunity Engine analysis feature
+        </div>
+        <div class="test-item">
+            ✓ Connection to Railway backend API
+        </div>
+        <div class="test-item">
+            ✓ AI Crisis Advisor (Fixed)
+        </div>
+        <div class="test-item">
+            ✓ Memory Vault functionality
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://signaldesk-production.up.railway.app/api';
+        const FRONTEND_URL = 'https://signaldesk-frontend.vercel.app';
+        
+        function addResult(message, status = 'info') {
+            const resultsDiv = document.getElementById('test-results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'result';
+            const timestamp = new Date().toLocaleTimeString();
+            resultDiv.innerHTML = `[${timestamp}] <span class="status ${status}">${status.toUpperCase()}</span> ${message}`;
+            resultsDiv.appendChild(resultDiv);
+        }
+
+        async function testBackendHealth() {
+            addResult('Testing backend health endpoint...', 'loading');
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+                addResult(`Backend Health: ${JSON.stringify(data, null, 2)}`, 'success');
+            } catch (error) {
+                addResult(`Backend Health Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testBackendVersion() {
+            addResult('Checking backend version...', 'loading');
+            try {
+                const response = await fetch(`${API_URL}/version`);
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult(`Backend Version: ${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    addResult(`Backend version endpoint returned ${response.status}`, 'info');
+                }
+            } catch (error) {
+                addResult(`Backend Version Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testFrontendVersion() {
+            addResult('Checking frontend build info...', 'loading');
+            try {
+                // Try to fetch the manifest
+                const response = await fetch(`${FRONTEND_URL}/manifest.json`);
+                const data = await response.json();
+                addResult(`Frontend Manifest: ${JSON.stringify(data, null, 2)}`, 'success');
+                
+                // Note about the actual version
+                addResult('Note: The v3.2-FIXED version is displayed in the React app UI, not in manifest.json', 'info');
+            } catch (error) {
+                addResult(`Frontend Check Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testLogin() {
+            addResult('Testing login endpoint...', 'loading');
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'demo@signaldesk.com',
+                        password: 'demo123'
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult(`Login successful! Token received: ${data.token ? 'Yes' : 'No'}`, 'success');
+                } else {
+                    const error = await response.text();
+                    addResult(`Login failed: ${response.status} - ${error}`, 'error');
+                }
+            } catch (error) {
+                addResult(`Login Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAllEndpoints() {
+            const endpoints = [
+                { path: '/health', method: 'GET', name: 'Health Check' },
+                { path: '/auth/verify', method: 'GET', name: 'Auth Verify', needsAuth: true },
+                { path: '/projects', method: 'GET', name: 'Projects List', needsAuth: true },
+                { path: '/monitoring/status', method: 'GET', name: 'Monitoring Status' },
+                { path: '/intelligence/analyze-organization', method: 'POST', name: 'Organization Analysis', needsAuth: true },
+                { path: '/memoryvault/items', method: 'GET', name: 'Memory Vault Items', needsAuth: true },
+                { path: '/opportunity/engine/analyze', method: 'POST', name: 'Opportunity Engine', needsAuth: true }
+            ];
+
+            addResult('Testing all critical endpoints...', 'loading');
+            
+            // First get a token if needed
+            let token = null;
+            try {
+                const loginResponse = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: 'demo@signaldesk.com', password: 'demo123' })
+                });
+                if (loginResponse.ok) {
+                    const loginData = await loginResponse.json();
+                    token = loginData.token;
+                    addResult('Authentication successful for endpoint tests', 'success');
+                }
+            } catch (error) {
+                addResult('Could not authenticate for protected endpoints', 'error');
+            }
+
+            for (const endpoint of endpoints) {
+                try {
+                    const headers = { 'Content-Type': 'application/json' };
+                    if (endpoint.needsAuth && token) {
+                        headers['Authorization'] = `Bearer ${token}`;
+                    }
+
+                    const options = {
+                        method: endpoint.method,
+                        headers
+                    };
+
+                    if (endpoint.method === 'POST') {
+                        options.body = JSON.stringify({ test: true });
+                    }
+
+                    const response = await fetch(`${API_URL}${endpoint.path}`, options);
+                    const status = response.ok ? 'success' : 'error';
+                    addResult(`${endpoint.name} (${endpoint.path}): ${response.status} ${response.statusText}`, status);
+                } catch (error) {
+                    addResult(`${endpoint.name} (${endpoint.path}): ${error.message}`, 'error');
+                }
+            }
+        }
+
+        // Run basic tests on load
+        window.addEventListener('load', () => {
+            addResult('SignalDesk Deployment Test Started', 'info');
+            addResult('Click the buttons above to run specific tests', 'info');
+            testBackendHealth();
+        });
+    </script>
+</body>
+</html>
