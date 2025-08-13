@@ -1040,7 +1040,20 @@ const RailwayDraggable = () => {
                     
                     <div className="activity-content">
                       <div className="activity-header">
-                        <h3>{activity.name}</h3>
+                        <h3>
+                          {activity.name}
+                          {activity.isNew && (
+                            <span style={{
+                              marginLeft: '8px',
+                              padding: '2px 6px',
+                              background: 'linear-gradient(135deg, #f59e0b 0%, #dc2626 100%)',
+                              borderRadius: '4px',
+                              fontSize: '10px',
+                              fontWeight: 'bold',
+                              color: 'white'
+                            }}>NEW</span>
+                          )}
+                        </h3>
                         <span className={`activity-status ${activity.status}`}>
                           {activity.status === 'ready' ? (
                             <><Circle size={6} fill="currentColor" /> Ready</>
