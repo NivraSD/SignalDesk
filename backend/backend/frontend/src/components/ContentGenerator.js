@@ -59,8 +59,6 @@ const ContentGenerator = () => {
   const [generationMethod, setGenerationMethod] = useState(null); // 'ai' or 'form'
   const [isChangingType, setIsChangingType] = useState(false);
   const [selectedTone, setSelectedTone] = useState("professional");
-  const [generationProgress, setGenerationProgress] = useState(0);
-  const [progressMessage, setProgressMessage] = useState("");
 
   const getScoreColor = (score) => {
     if (score >= 80) return "#10b981";
@@ -628,24 +626,6 @@ const ContentGenerator = () => {
         ];
     }
   };
-  // Progress Bar Component (add this before your return statement)
-  const ProgressBar = ({ progress, message }) => (
-    <div className="generation-progress-container">
-      <div className="progress-header">
-        <div className="progress-icon">⚡</div>
-        <span className="progress-message">{message}</span>
-      </div>
-      <div className="progress-bar-wrapper">
-        <div className="progress-bar-background">
-          <div
-            className="progress-bar-fill"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-        <span className="progress-percentage">{progress}%</span>
-      </div>
-    </div>
-  );
   // Generate content
   const generateContent = async () => {
     const formData = {};
@@ -675,34 +655,7 @@ const ContentGenerator = () => {
     setContentAnalysis(null);
     setShowAnalysis(false);
 
-    console.log("isGenerating:", true);
-    console.log("generationMethod:", "form");
-    console.log("Starting progress tracking...");
-
-    // Initialize progress
-    setGenerationProgress(0);
-    console.log("Starting generation, progress:", 0);
-    setProgressMessage("Initializing AI engine...");
-
-    // Simulate progress updates
-    const progressInterval = setInterval(() => {
-      setGenerationProgress((prev) => {
-        if (prev >= 85) return prev;
-        return prev + 2; // Steady 2% increment
-      });
-    }, 100);
-
-    // Update progress messages
-    setTimeout(() => setProgressMessage("Analyzing requirements..."), 1000);
-    setTimeout(
-      () => setProgressMessage("Crafting content with selected tone..."),
-      2000
-    );
-    setTimeout(() => setProgressMessage("Applying best practices..."), 3000);
-    setTimeout(() => setProgressMessage("Finalizing output..."), 4000);
-
     try {
-      await new Promise((resolve) => setTimeout(resolve, 5000));
       const response = await apiGenerateContent({
         type: currentType,
         formData,
@@ -713,21 +666,10 @@ const ContentGenerator = () => {
         industry: selectedProject?.industry || "technology",
       });
 
-      clearInterval(progressInterval);
-      setGenerationProgress(100);
-      setProgressMessage("Content generated successfully!");
-
-      setTimeout(() => {
-        setGeneratedContent(response.content);
-        setGenerationProgress(0);
-        setProgressMessage("");
-      }, 500);
+      setGeneratedContent(response.content);
     } catch (error) {
-      clearInterval(progressInterval);
       console.error("Content generation error:", error);
       alert("Failed to generate content. Please try again.");
-      setGenerationProgress(0);
-      setProgressMessage("");
     } finally {
       setIsGenerating(false);
     }
@@ -771,7 +713,6 @@ const ContentGenerator = () => {
   };
 
   // AI Assistant prompt generation
-  // AI Assistant prompt generation
   const generateWithAI = async () => {
     const assistantInput = contentFormRef.current.assistantInput?.value;
     if (!assistantInput) {
@@ -779,47 +720,10 @@ const ContentGenerator = () => {
       return;
     }
 
-    // ADD ALL THE DEBUG LOGGING HERE
-    console.log("=== AI Generation Debug ===");
-    console.log("1. Starting AI generation");
-    console.log("2. Assistant input:", assistantInput);
-    console.log("3. Current type:", currentType);
-    console.log("4. Selected tone:", selectedTone);
-    console.log("5. Selected project:", selectedProject);
-
     setIsGenerating(true);
     setGenerationMethod("ai");
 
-    // Initialize progress
-    setGenerationProgress(0);
-    setProgressMessage("Understanding your request...");
-
-    // Simulate progress updates
-    const progressInterval = setInterval(() => {
-      setGenerationProgress((prev) => {
-        if (prev >= 85) return prev;
-        return prev + 2; // Steady 2% increment
-      });
-    }, 100);
-
-    // Update progress messages for AI generation
-    setTimeout(
-      () => setProgressMessage("AI analyzing your requirements..."),
-      1000
-    );
-    setTimeout(
-      () =>
-        setProgressMessage(`Generating ${contentTypeLabels[currentType]}...`),
-      2000
-    );
-    setTimeout(
-      () => setProgressMessage("Incorporating tone preferences..."),
-      3000
-    );
-    setTimeout(() => setProgressMessage("Polishing final content..."), 4000);
-
     try {
-      // ADD MORE DEBUG LOGGING HERE
       const requestData = {
         prompt: assistantInput,
         type: currentType,
@@ -830,44 +734,16 @@ const ContentGenerator = () => {
         industry: selectedProject?.industry || "technology",
       };
 
-      console.log("6. Request data being sent:", requestData);
-
       const response = await generateAIContent(requestData);
+      const content = response.content || response.data?.content || response.message || response;
 
-      console.log("7. Response received:", response);
-      console.log("8. Response type:", typeof response);
-      console.log("9. Response keys:", Object.keys(response || {}));
-
-      clearInterval(progressInterval);
-      setGenerationProgress(100);
-      setProgressMessage("AI content ready!");
-
-      setTimeout(() => {
-        console.log("10. Looking for content in response");
-        const content =
-          response.content ||
-          response.data?.content ||
-          response.message ||
-          response;
-        console.log("11. Content found:", content);
-
-        setGeneratedContent(content);
-        contentFormRef.current.assistantInput.value = "";
-        setContentAnalysis(null);
-        setShowAnalysis(false);
-        setGenerationProgress(0);
-        setProgressMessage("");
-      }, 500);
+      setGeneratedContent(content);
+      contentFormRef.current.assistantInput.value = "";
+      setContentAnalysis(null);
+      setShowAnalysis(false);
     } catch (error) {
-      console.error("=== AI Generation Error ===");
-      console.error("Error object:", error);
-      console.error("Error message:", error.message);
-      console.error("Error stack:", error.stack);
-
-      clearInterval(progressInterval);
+      console.error("AI Generation Error:", error);
       alert("Failed to generate content with AI. Please try again.");
-      setGenerationProgress(0);
-      setProgressMessage("");
     } finally {
       setIsGenerating(false);
     }
@@ -1043,7 +919,7 @@ const ContentGenerator = () => {
 
           {/* Tone Selector - Add after Content Type Selector */}
           <div className="form-group">
-            <label>Content Tone</label>
+            <label>Content Tone <span style={{ fontSize: '12px', color: '#666', fontWeight: 'normal' }}>(for AI and form generation)</span></label>
             <div className="tone-selector">
               <select
                 value={selectedTone}
@@ -1073,48 +949,35 @@ const ContentGenerator = () => {
           {/* AI Writing Assistant */}
           <div className="ai-assistant-box">
             <div className="ai-header">
-              <h3>Claude Writing Assistant</h3>
-              <span className="badge">AI-Powered</span>
+              <h3>Your AI Writing Partner</h3>
+              <span className="badge">Smart Guidance</span>
             </div>
+            <p style={{ fontSize: '14px', color: '#666', marginBottom: '15px' }}>
+              I'm your writing guide, not an interviewer. Tell me what you need and I'll create it directly. Or use the structured form below.
+            </p>
             <textarea
               ref={(el) => (contentFormRef.current.assistantInput = el)}
-              placeholder={`Describe your ${contentTypeLabels[
-                currentType
-              ].toLowerCase()} needs...`}
+              placeholder={`Example: "Write a press release about our new product launch" or "Help me announce our partnership with XYZ Corp"`}
               className="assistant-input"
+              style={{ minHeight: '80px' }}
             />
 
-            {/* Replace the button with this conditional */}
-            {isGenerating && generationMethod === "ai" ? (
-              <ProgressBar
-                progress={generationProgress}
-                message={progressMessage}
-              />
-            ) : (
-              <button
-                onClick={generateWithAI}
-                disabled={isGenerating}
-                className="btn btn-primary"
-              >
-                {isGenerating
-                  ? "Generating..."
-                  : `Generate ${contentTypeLabels[currentType]}`}
-              </button>
-            )}
+            <button
+              onClick={generateWithAI}
+              disabled={isGenerating}
+              className="btn btn-primary"
+            >
+              {isGenerating && generationMethod === "ai"
+                ? "🤖 Writing..."
+                : "✨ Create Content"}
+            </button>
           </div>
 
           {/* Show note when content was generated via AI */}
           {generatedContent && generationMethod === "ai" && (
             <div className="ai-generated-note">
               <p>
-                Content generated using AI Assistant.{" "}
-                <button
-                  onClick={() => setGenerationMethod("form")}
-                  className="switch-to-form"
-                >
-                  Switch to form mode
-                </button>{" "}
-                to use structured fields instead.
+                ✨ Content created with AI assistance. You can edit it directly in the output below, or ask me for specific changes like "make it more casual" or "add metrics about user growth".
               </p>
             </div>
           )}
@@ -1226,42 +1089,34 @@ const ContentGenerator = () => {
               </div>
 
               {/* Action Buttons */}
-              {isGenerating && generationMethod === "form" ? (
-                <div
-                  style={{ padding: "20px", background: "red", color: "white" }}
+              <div className="action-buttons">
+                <button
+                  onClick={generateContent}
+                  disabled={isGenerating}
+                  className="btn btn-primary"
                 >
-                  PROGRESS BAR SHOULD BE HERE - {generationProgress}% -{" "}
-                  {progressMessage}
-                </div>
-              ) : (
-                <div className="action-buttons">
-                  <button
-                    onClick={generateContent}
-                    disabled={isGenerating}
-                    className="btn btn-primary"
-                  >
-                    {isGenerating
-                      ? "⏳ Generating..."
-                      : "✨ Generate with Best Practices"}
-                  </button>
-                  <button
-                    onClick={() => {
-                      currentFields.forEach((field) => {
-                        if (contentFormRef.current[field.key]) {
-                          contentFormRef.current[field.key].value = "";
-                        }
-                      });
-                      setGeneratedContent("");
-                      setContentAnalysis(null);
-                      setShowAnalysis(false);
-                      setGenerationMethod(null);
-                    }}
-                    className="btn btn-secondary"
-                  >
-                    Clear Form
-                  </button>
-                </div>
-              )}
+                  {isGenerating
+                    ? "⏳ Generating..."
+                    : "✨ Generate with Best Practices"}
+                </button>
+                <button
+                  onClick={() => {
+                    currentFields.forEach((field) => {
+                      if (contentFormRef.current[field.key]) {
+                        contentFormRef.current[field.key].value = "";
+                      }
+                    });
+                    setGeneratedContent("");
+                    setContentAnalysis(null);
+                    setShowAnalysis(false);
+                    setGenerationMethod(null);
+                  }}
+                  className="btn btn-secondary"
+                  disabled={isGenerating}
+                >
+                  Clear Form
+                </button>
+              </div>
             </>
           )}
 

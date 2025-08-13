@@ -68,15 +68,16 @@ const Layout = () => {
     },
     {
       path: `/projects/${projectId}/media-list`,
-      label: "Media List Builder",
+      label: "Media Intelligence",
       icon: Users,
-      description: "Media contacts",
+      description: "AI-powered media discovery",
     },
     {
-      path: `/projects/${projectId}/campaign-intelligence`,
-      label: "Campaign Intel",
+      path: `/projects/${projectId}/campaign-intelligence-enhanced`,
+      label: "Campaign Intel ✨",
       icon: Brain,
-      description: "Strategic insights",
+      description: "Enhanced with Railway UI & MemoryVault",
+      enhanced: true,
     },
     {
       path: `/projects/${projectId}/stakeholder-intelligence`,
@@ -291,7 +292,33 @@ const Layout = () => {
                 <Icon
                   style={{ width: "20px", height: "20px", flexShrink: 0 }}
                 />
-                <span>{item.label}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span>{item.label}</span>
+                    {item.enhanced && (
+                      <span style={{
+                        padding: "2px 6px",
+                        background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)",
+                        borderRadius: "4px",
+                        fontSize: "10px",
+                        fontWeight: "600",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.5px"
+                      }}>
+                        NEW
+                      </span>
+                    )}
+                  </div>
+                  {item.description && (
+                    <div style={{ 
+                      fontSize: "11px", 
+                      opacity: 0.6, 
+                      marginTop: "2px" 
+                    }}>
+                      {item.description}
+                    </div>
+                  )}
+                </div>
               </button>
             );
           })}

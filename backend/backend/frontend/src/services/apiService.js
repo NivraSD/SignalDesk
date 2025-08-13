@@ -3,16 +3,16 @@
  * Handles all communication with the backend intelligence monitoring system
  */
 
-import API_BASE_URL from '../config/api';
+import FORCE_API_URL from '../config/apiUrl';
 
-// Use the configured API URL
-console.log('✅ API Service initialized with URL:', API_BASE_URL);
+// Use the EMERGENCY hardcoded URL
+console.log('✅ API Service initialized with FORCE URL:', FORCE_API_URL);
 
 class ApiService {
   constructor() {
     this.updateToken();
-    // Store the API URL from config
-    this.apiUrl = API_BASE_URL;
+    // Store the hardcoded API URL
+    this.apiUrl = FORCE_API_URL;
     console.log('API Service using URL:', this.apiUrl);
   }
 

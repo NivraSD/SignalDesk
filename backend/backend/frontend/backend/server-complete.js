@@ -1,9 +1,15 @@
 const express = require('express');
 const cors = require('cors');
+const Anthropic = require('@anthropic-ai/sdk');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 5001;
+
+// Initialize Anthropic client
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY
+});
 
 // Middleware
 app.use(cors());
@@ -23,7 +29,8 @@ const storage = {
   mediaLists: [],
   contentHistory: [],
   templates: [],
-  crisisPlans: new Map()
+  crisisPlans: new Map(),
+  conversations: new Map() // Store conversation history by session
 };
 
 // Initialize with demo data
@@ -462,6 +469,134 @@ app.post('/api/intelligence/discover-topics', async (req, res) => {
   }
 });
 
+// Helper function to detect if Claude's response is actual generated content
+function detectGeneratedContent(text, context) {
+  // If we're not in content-generator folder, never treat as content
+  if (context.folder !== 'content-generator') {
+    return false;
+  }
+  
+  // Must be substantial length
+  if (text.length < 100) {
+    return false;
+  }
+  
+  // Check if user explicitly requested generation
+  const userRequestedGeneration = context.userRequestedGeneration || false;
+  
+  // If user explicitly requested generation, be very aggressive about treating as content
+  if (userRequestedGeneration) {
+    console.log('User requested generation, checking response...');
+    
+    // Only exclude if it's CLEARLY just asking a single question and short
+    const questionCount = (text.match(/\?/g) || []).length;
+    const isShort = text.length < 150;
+    const hasQuestionWords = text.toLowerCase().includes('tell me') || 
+                           text.toLowerCase().includes('what') ||
+                           text.toLowerCase().includes('which') ||
+                           text.toLowerCase().includes('how') ||
+                           text.toLowerCase().includes('can you') ||
+                           text.toLowerCase().includes('could you');
+    
+    const isObviousQuestion = questionCount === 1 && isShort && hasQuestionWords;
+    
+    if (isObviousQuestion) {
+      console.log('Still asking questions, treating as conversation');
+      return false;
+    } else {
+      console.log('User requested generation and response looks like content - routing to Content Generator');
+      return true;
+    }
+  }
+
+  // Check if user requested an edit to existing content
+  const userRequestedEdit = context.userRequestedEdit || false;
+  
+  if (userRequestedEdit) {
+    console.log('User requested edit, checking if response contains edited content...');
+    
+    // For edits, be more lenient - if it's substantial and not obviously conversational
+    const isSubstantial = text.length > 200;
+    const hasEditIndicators = text.toLowerCase().includes("here's") || 
+                             text.toLowerCase().includes("here is") ||
+                             text.toLowerCase().includes("revised") ||
+                             text.toLowerCase().includes("updated") ||
+                             text.toLowerCase().includes("edited");
+    
+    const isConversationalOnly = text.includes('?') && text.length < 300 &&
+                                (text.toLowerCase().includes('would you like') ||
+                                 text.toLowerCase().includes('should i') ||
+                                 text.toLowerCase().includes('do you want'));
+    
+    if (isSubstantial && !isConversationalOnly) {
+      console.log('User requested edit and response contains edited content - routing to Content Generator');
+      return true;
+    }
+  }
+  
+  // Exclude conversational responses - if it contains these phrases, it's conversation
+  const conversationalIndicators = [
+    'tell me',
+    'what',
+    'how',
+    'can you',
+    'would you',
+    'let me know',
+    'i need to understand',
+    'could you',
+    'perfect!',
+    'great!',
+    'excellent!',
+    'i\'d like to',
+    'now that i know',
+    'to create',
+    'to help you',
+    'i\'ll help',
+    'let\'s',
+    'what\'s your',
+    'who is your',
+    'which',
+    '?'
+  ];
+  
+  const lowerText = text.toLowerCase();
+  const isConversational = conversationalIndicators.some(indicator => 
+    lowerText.includes(indicator)
+  );
+  
+  // If it's conversational, it's not generated content
+  if (isConversational) {
+    return false;
+  }
+  
+  // Very specific content format indicators - must be actual content structures
+  const strongContentIndicators = [
+    'FOR IMMEDIATE RELEASE',
+    'PRESS RELEASE',
+    'Subject: ',
+    'Dear Mr.',
+    'Dear Ms.',
+    'Dear Dr.',
+    'Q: ',
+    'A: ',
+    'Question: ',
+    'Answer: '
+  ];
+  
+  const hasStrongIndicators = strongContentIndicators.some(indicator => 
+    text.includes(indicator)
+  );
+  
+  // Social media specific indicators
+  const socialIndicators = text.includes('#') && text.includes('@') && text.length < 800;
+  
+  // Only treat as content if it has very strong indicators AND sufficient structure
+  const hasMultipleParagraphs = text.split('\n\n').length > 2;
+  const hasProperLength = text.length > 300;
+  
+  return (hasStrongIndicators && hasMultipleParagraphs) || socialIndicators;
+}
+
 // Helper functions for discovery
 async function discoverCompetitors(company, url) {
   const companyLower = company.toLowerCase();
@@ -601,26 +736,135 @@ async function discoverTopics(company, url, industry) {
 // AI Assistant Routes
 // ============================================
 
-app.post('/api/ai/chat', (req, res) => {
-  const { message, projectId } = req.body;
+app.post('/api/ai/chat', async (req, res) => {
+  const { message, mode = 'general', context = {}, sessionId = 'default' } = req.body;
   
-  // Simulate AI response
-  const responses = [
-    "I understand your request. Let me help you with that PR strategy.",
-    "Based on your project goals, I recommend focusing on thought leadership content.",
-    "Here's a data-driven approach to improve your media outreach.",
-    "I've analyzed your campaign metrics. Here are my recommendations."
-  ];
-  
-  res.json({
-    success: true,
-    response: responses[Math.floor(Math.random() * responses.length)],
-    suggestions: [
-      "Consider expanding your media list",
-      "Review your key messaging",
-      "Schedule a press release"
-    ]
-  });
+  try {
+    // Get or create conversation history for this session
+    if (!storage.conversations.has(sessionId)) {
+      storage.conversations.set(sessionId, []);
+    }
+    const conversationHistory = storage.conversations.get(sessionId);
+    
+    // Build conversational system prompt based on context
+    let systemPrompt = `You are Claude, an AI assistant integrated into SignalDesk, a professional PR and communications platform. You are conversational, engaging, and genuinely helpful.
+
+You are a world-class PR executive and content strategist with deep expertise in:
+- Strategic communications and messaging
+- Content creation across all formats (press releases, thought leadership, social media, etc.)
+- Media relations and journalist outreach
+- Crisis communications
+- Brand positioning and storytelling
+
+Your communication style is:
+- Conversational and engaging (not robotic or scripted)
+- Professional but approachable
+- Strategic and insightful
+- Genuinely curious about the user's needs
+- Collaborative (you work WITH the user, not just for them)
+
+IMPORTANT: Ask only ONE question at a time. Wait for the user's response before asking your next question. Have a natural back-and-forth conversation, not an interview questionnaire. Never provide long lists of questions - engage in genuine dialogue by asking one thoughtful question, getting their response, then building on that with your next single question.`;
+
+    // Add context-specific guidance
+    if (context.hasGeneratedContent && context.currentContent) {
+      systemPrompt += `\n\nIMPORTANT CONTEXT: The user has already generated content and is now refining it. The current content is:
+---
+${context.currentContent}
+---
+
+Stay focused on helping them improve this specific piece. Ask questions about their goals, suggest refinements, and help them adapt it for different platforms or audiences. Be conversational and collaborative.`;
+    } else if (context.contentContext && context.contentContext.type) {
+      systemPrompt += `\n\nThe user is working on creating ${context.contentContext.type.replace('-', ' ')} content. Be conversational and ask engaging questions to understand their goals, audience, and message. Don't follow a script - have a natural dialogue. 
+
+IMPORTANT: Only generate the actual content piece when you have gathered sufficient detail about:
+- What the content is about (topic/subject)  
+- Who the audience is
+- What the key message or goal is
+
+Do NOT generate content prematurely. Keep the conversation going until you have these essential details. 
+
+CRITICAL: When the user says "generate it", "create it", "write it", or similar generation requests, you must immediately provide the actual finished content piece with NO conversational text, NO explanations, and NO additional questions. Just provide the raw, finished content that's ready to publish.`;
+    }
+    
+    // Add explicit generation instruction when user requested it
+    if (context.userRequestedGeneration) {
+      systemPrompt += `\n\nIMPORTANT: The user has explicitly requested content generation. You must now provide the actual finished content piece immediately. Do NOT ask any more questions. Do NOT provide explanations. Provide ONLY the final, polished content that is ready to use.`;
+    }
+
+    // Add explicit editing instruction when user requested edits
+    if (context.userRequestedEdit && context.currentContent) {
+      systemPrompt += `\n\nIMPORTANT: The user has requested an edit to existing content. You must provide the complete, revised content piece incorporating their requested changes. Do NOT just explain what changes to make. Provide the full, updated content that replaces the original. The current content is:
+
+---
+${context.currentContent}
+---
+
+Provide the complete revised version incorporating the user's requested changes.`;
+    }
+    
+    if (mode === 'content' && context.generateDirectly) {
+      systemPrompt += `\n\nGenerate actual content now. Provide the complete, polished content piece that meets professional PR standards.`;
+    }
+    
+    // Build messages array with conversation history
+    const messages = [
+      ...conversationHistory,
+      { role: 'user', content: message }
+    ];
+    
+    // Call Claude API
+    const completion = await anthropic.messages.create({
+      model: process.env.CLAUDE_MODEL || 'claude-3-5-sonnet-20241022',
+      max_tokens: 2048,
+      temperature: 0.7,
+      system: systemPrompt,
+      messages: messages
+    });
+    
+    // Extract text content from Claude's response
+    const responseText = completion.content[0].text;
+    
+    // Detect if this is actual generated content that should go to the Content Generator
+    const isGeneratedContent = detectGeneratedContent(responseText, context);
+    
+    // Debug logging
+    console.log('Content Detection Debug:', {
+      userRequestedGeneration: context.userRequestedGeneration,
+      responseLength: responseText.length,
+      isGeneratedContent: isGeneratedContent,
+      folder: context.folder,
+      responsePreview: responseText.substring(0, 100) + '...'
+    });
+    
+    // Store conversation history (keep last 10 messages to prevent context overflow)
+    conversationHistory.push(
+      { role: 'user', content: message },
+      { role: 'assistant', content: responseText }
+    );
+    
+    // Keep only last 20 messages (10 exchanges) to manage context window
+    if (conversationHistory.length > 20) {
+      conversationHistory.splice(0, conversationHistory.length - 20);
+    }
+    
+    storage.conversations.set(sessionId, conversationHistory);
+    
+    res.json({
+      success: true,
+      response: responseText,
+      mode: mode,
+      context: context,
+      isGeneratedContent: isGeneratedContent
+    });
+    
+  } catch (error) {
+    console.error('Claude API error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate AI response',
+      details: error.message
+    });
+  }
 });
 
 // ============================================

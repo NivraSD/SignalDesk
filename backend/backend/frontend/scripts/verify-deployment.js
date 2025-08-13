@@ -10,7 +10,7 @@ const https = require('https');
 const url = require('url');
 
 // Configuration
-const FRONTEND_URL = process.argv[2] || 'https://signaldesk-frontend-23tc8mlwq-nivra-sd.vercel.app';
+const FRONTEND_URL = process.argv[2] || 'https://signaldesk-frontend.vercel.app';
 const BACKEND_URL = 'https://signaldesk-production.up.railway.app/api';
 const DEMO_EMAIL = 'demo@signaldesk.com';
 const DEMO_PASSWORD = 'demo123';
