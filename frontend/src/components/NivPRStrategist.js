@@ -9,6 +9,7 @@ import {
   AlertCircle, Target, Calendar, MessageSquare,
   Brain, Zap, ChevronRight, Loader
 } from 'lucide-react';
+import API_BASE_URL from '../config/api';
 
 const NivPRStrategist = ({ onStrategyGenerated }) => {
   const [messages, setMessages] = useState([]);
@@ -38,6 +39,8 @@ const NivPRStrategist = ({ onStrategyGenerated }) => {
 
   // Initialize with welcome message
   useEffect(() => {
+    console.log('🔧 Niv: Component initializing with API_BASE_URL:', API_BASE_URL);
+    
     const welcomeMessage = {
       id: Date.now(),
       role: 'assistant',
@@ -64,8 +67,14 @@ How can I assist you?`,
 
   // Send message to Niv
   const sendMessage = async (text = input) => {
-    if (!text.trim()) return;
+    console.log('🔄 Niv: sendMessage called with text:', text);
+    
+    if (!text.trim()) {
+      console.log('⚠️ Niv: Empty text, returning early');
+      return;
+    }
 
+    console.log('📝 Niv: Creating user message');
     const userMessage = {
       id: Date.now(),
       role: 'user',
@@ -73,12 +82,24 @@ How can I assist you?`,
       timestamp: new Date().toISOString()
     };
 
+    console.log('📝 Niv: Adding user message to chat');
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setLoading(true);
 
     try {
-      const response = await fetch('https://signaldesk-production.up.railway.app/api/niv/chat', {
+      console.log('🚀 Niv: Making request to:', `${API_BASE_URL}/niv/chat`);
+      console.log('🚀 Niv: Request payload:', {
+        message: text,
+        conversationId: conversationId,
+        mode: mode,
+        context: {
+          previousMessages: messages.slice(-5),
+          currentProject: localStorage.getItem('activeProject')
+        }
+      });
+      
+      const response = await fetch(`${API_BASE_URL}/niv/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -95,7 +116,11 @@ How can I assist you?`,
         })
       });
 
+      console.log('📡 Niv: Response status:', response.status);
+      console.log('📡 Niv: Response headers:', [...response.headers.entries()]);
+
       const data = await response.json();
+      console.log('📡 Niv: Response data:', data);
 
       if (data.success) {
         const nivMessage = {
@@ -118,11 +143,15 @@ How can I assist you?`,
         }
       }
     } catch (error) {
-      console.error('Error talking to Niv:', error);
+      console.error('❌ Niv: Error making request:', error);
+      console.error('❌ Niv: Error type:', error.constructor.name);
+      console.error('❌ Niv: Error message:', error.message);
+      console.error('❌ Niv: Full error:', error);
+      
       const errorMessage = {
         id: Date.now() + 1,
         role: 'assistant',
-        content: 'I apologize, I\'m having connection issues. Let me try to help you anyway. What specific PR challenge are you facing?',
+        content: `I apologize, I'm having connection issues. ${error.message ? `(${error.message})` : ''} Let me try to help you anyway. What specific PR challenge are you facing?`,
         timestamp: new Date().toISOString(),
         error: true
       };
