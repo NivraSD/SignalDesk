@@ -11,4 +11,5 @@
 # - ES6 to CommonJS conversion complete
 # - NivPRStrategist module exports fixed
 #
-# Force rebuild trigger: v4.0-niv-integration
+# Force rebuild trigger: v4.1-niv-routes-registered
+URGENT_DEPLOY_TIMESTAMP=2025-08-13-1900
