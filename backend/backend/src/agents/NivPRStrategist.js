@@ -3,7 +3,7 @@
  * 20 years of PR expertise encoded into an intelligent system
  */
 
-import Anthropic from '@anthropic-ai/sdk';
+const Anthropic = require('@anthropic-ai/sdk');
 
 class NivPRStrategist {
   constructor(config = {}) {
@@ -470,4 +470,4 @@ Respond as Niv would - strategic, experienced, and helpful.`;
   }
 }
 
-export default NivPRStrategist;
+module.exports = NivPRStrategist;
