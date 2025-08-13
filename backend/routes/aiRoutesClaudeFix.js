@@ -94,12 +94,22 @@ router.post("/unified-chat", authMiddleware, async (req, res) => {
       }
       
       // Generate actual content
-      const prompt = `Generate a professional ${state.contentType} based on this request:
+      const prompt = `You are a professional content writer. Generate ACTUAL, REAL content - not a template or example.
 
-${state.history.map(h => `${h.role}: ${h.content}`).join('\n')}
-User: ${message}
+Request: ${message}
+Content Type: ${state.contentType}
 
-Create the actual ${state.contentType} content now. Be professional and complete.`;
+Context from conversation:
+${state.history.slice(-4).map(h => `${h.role}: ${h.content}`).join('\n')}
+
+IMPORTANT: Generate the ACTUAL ${state.contentType} content now. 
+- Do NOT provide a template or example
+- Do NOT use placeholder text like [Company Name] or [Your Name]
+- Create real, substantive, professional content
+- Make it specific and detailed
+- If the topic is general (like "AI"), create specific content about that topic
+
+Begin the actual ${state.contentType} content below:`;
 
       try {
         const completion = await anthropic.messages.create({
