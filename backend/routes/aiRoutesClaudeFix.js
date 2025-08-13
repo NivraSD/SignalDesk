@@ -35,13 +35,19 @@ router.post("/unified-chat", authMiddleware, async (req, res) => {
     
     const state = conversationStates.get(userId);
     
-    // Detect content type from message if needed
+    // Detect content type from message if needed - be VERY aggressive
     const isContentRequest = 
-      message.toLowerCase().includes('thought leadership') ||
-      message.toLowerCase().includes('press release') ||
-      message.toLowerCase().includes('social media') ||
+      message.toLowerCase().includes('thought') ||
+      message.toLowerCase().includes('leadership') ||
+      message.toLowerCase().includes('write') ||
+      message.toLowerCase().includes('create') ||
+      message.toLowerCase().includes('press') ||
+      message.toLowerCase().includes('release') ||
+      message.toLowerCase().includes('social') ||
       message.toLowerCase().includes('blog') ||
       message.toLowerCase().includes('email') ||
+      message.toLowerCase().includes('content') ||
+      message.toLowerCase().includes('article') ||
       context?.folder === 'content-generator';
     
     // Check if switching to a new content type or feature
@@ -66,21 +72,29 @@ router.post("/unified-chat", authMiddleware, async (req, res) => {
       }
     }
     
-    // Check if user wants to generate
-    const wantsToGenerate = 
-      state.messageCount >= 2 && (
-        message.toLowerCase().includes('yes') ||
-        message.toLowerCase().includes('generate') ||
-        message.toLowerCase().includes('create') ||
-        message.toLowerCase().includes('do it')
-      );
+    // IMMEDIATELY generate if content request - don't wait
+    let wantsToGenerate = isContentRequest || 
+      message.toLowerCase().includes('generate') ||
+      message.toLowerCase().includes('create') ||
+      message.toLowerCase().includes('write') ||
+      message.toLowerCase().includes('make') ||
+      message.toLowerCase().includes('yes') ||
+      message.toLowerCase().includes('go') ||
+      message.toLowerCase().includes('do it') ||
+      (state.messageCount >= 1 && isContentRequest); // Generate immediately for content
     
     let response = "";
     let isGeneratedContent = false;
     
-    if (wantsToGenerate && state.contentType) {
+    // Generate IMMEDIATELY if requested
+    if (wantsToGenerate) {
+      // Ensure we have content type
+      if (!state.contentType) {
+        state.contentType = detectContentType(message) || 'content';
+      }
+      
       // Generate actual content
-      const prompt = `Generate a professional ${state.contentType} based on this conversation:
+      const prompt = `Generate a professional ${state.contentType} based on this request:
 
 ${state.history.map(h => `${h.role}: ${h.content}`).join('\n')}
 User: ${message}
@@ -89,8 +103,8 @@ Create the actual ${state.contentType} content now. Be professional and complete
 
       try {
         const completion = await anthropic.messages.create({
-          model: 'claude-3-haiku-20240307', // Fast model
-          max_tokens: 1000,
+          model: 'claude-3-5-sonnet-20241022', // Better model for content generation
+          max_tokens: 2000,
           temperature: 0.7,
           messages: [{ role: 'user', content: prompt }]
         });
@@ -113,31 +127,41 @@ Create the actual ${state.contentType} content now. Be professional and complete
       // Natural conversation with Claude - but STRICT constraints
       const conversationContext = state.history.map(h => `${h.role}: ${h.content}`).join('\n');
       
-      const prompt = `You are helping create ${state.contentType || 'content'}. Have a natural, helpful conversation.
+      const prompt = `You are helping create ${state.contentType || 'content'}. Be action-oriented.
 
-Guidelines:
-1. Ask relevant follow-up questions to understand the user's needs
-2. Keep responses concise but complete (aim for 1-2 sentences)
-3. Be specific and contextual to what the user just said
-4. Natural, professional tone
-5. Focus on gathering necessary information for content creation
+Rules:
+1. After ONE clarifying question, offer to generate
+2. If user provides ANY topic or direction, that's enough to generate
+3. Keep responses under 50 words
+4. Don't ask for more than one detail
+5. Default to generating if you have a topic
 
 Previous conversation:
 ${conversationContext}
 
 User: "${message}"
 
-Provide a helpful, contextual response:`;
+Give a brief response (if you have enough info, say "I'll generate that now"):`;
 
       try {
         const completion = await anthropic.messages.create({
-          model: 'claude-3-haiku-20240307', // Fast model
-          max_tokens: 150, // Increased from 60
+          model: 'claude-3-5-sonnet-20241022', // Better model for conversation
+          max_tokens: 300, // Good length for conversation
           temperature: 0.7,
           messages: [{ role: 'user', content: prompt }]
         });
         
         response = completion.content[0].text.trim();
+        
+        // If AI says it will generate, force generation
+        if (response.toLowerCase().includes("i'll generate") || 
+            response.toLowerCase().includes("i will generate") ||
+            response.toLowerCase().includes("generating") ||
+            response.toLowerCase().includes("let me create")) {
+          // Force immediate generation
+          wantsToGenerate = true;
+          state.contentType = state.contentType || detectContentType(message);
+        }
         
         // Only validate for excessive length
         if (response.length > 300) {

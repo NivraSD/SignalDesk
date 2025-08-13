@@ -36,7 +36,7 @@ const SimpleContentGenerator = () => {
     setIsThinking(true);
 
     try {
-      const apiUrl = 'https://signaldesk-production.up.railway.app/api';
+      const apiUrl = 'http://localhost:3001/api';
       const response = await fetch(`${apiUrl}/ai/unified-chat`, {
         method: 'POST',
         headers: {

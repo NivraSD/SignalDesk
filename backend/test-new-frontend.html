@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test New SignalDesk Frontend</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; background: #f0f0f0; }
+        .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin: 20px 0; }
+        .success { background: #4CAF50; color: white; padding: 20px; border-radius: 8px; }
+        .error { background: #f44336; color: white; padding: 20px; border-radius: 8px; }
+        .info { background: #2196F3; color: white; padding: 20px; border-radius: 8px; }
+        button { padding: 15px 30px; font-size: 16px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; margin: 10px 5px; }
+        button:hover { background: #45a049; }
+        .url { font-family: monospace; background: #f5f5f5; padding: 10px; border-radius: 5px; word-break: break-all; }
+        h1 { color: #333; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🚀 New SignalDesk Frontend Test</h1>
+        
+        <div class="info">
+            <h3>Your New Clean Deployment:</h3>
+            <p class="url">Frontend: https://signaldesk-frontend-703usigb0-nivra-sd.vercel.app</p>
+            <p class="url">Backend: https://signaldesk-production.up.railway.app</p>
+        </div>
+
+        <h2>Quick Tests:</h2>
+        <button onclick="testBackend()">1. Test Backend</button>
+        <button onclick="testLogin()">2. Test Login</button>
+        <button onclick="goToFrontend()">3. Go to Frontend</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const BACKEND = 'https://signaldesk-production.up.railway.app';
+        const FRONTEND = 'https://signaldesk-frontend-703usigb0-nivra-sd.vercel.app';
+        const results = document.getElementById('results');
+
+        async function testBackend() {
+            results.innerHTML = '<div class="info">Testing backend health...</div>';
+            try {
+                const response = await fetch(`${BACKEND}/health`);
+                const data = await response.json();
+                results.innerHTML = `<div class="success">✅ Backend is healthy: ${data.status}</div>`;
+            } catch (error) {
+                results.innerHTML = `<div class="error">❌ Backend error: ${error.message}</div>`;
+            }
+        }
+
+        async function testLogin() {
+            results.innerHTML = '<div class="info">Testing login endpoint...</div>';
+            try {
+                const response = await fetch(`${BACKEND}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Origin': FRONTEND
+                    },
+                    body: JSON.stringify({
+                        email: 'demo@signaldesk.com',
+                        password: 'demo123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    results.innerHTML = `
+                        <div class="success">
+                            <h3>✅ Login Successful!</h3>
+                            <p>The backend is working perfectly with CORS enabled for your new frontend.</p>
+                            <p><strong>User:</strong> ${data.user.email}</p>
+                            <p><strong>Token:</strong> ${data.token.substring(0, 50)}...</p>
+                            <br>
+                            <p><strong>Your frontend should now work!</strong></p>
+                            <p>Login credentials:</p>
+                            <ul>
+                                <li>Email: demo@signaldesk.com</li>
+                                <li>Password: demo123</li>
+                            </ul>
+                        </div>
+                    `;
+                } else {
+                    results.innerHTML = `<div class="error">❌ Login failed: ${JSON.stringify(data)}</div>`;
+                }
+            } catch (error) {
+                results.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        function goToFrontend() {
+            window.open(FRONTEND, '_blank');
+        }
+
+        // Auto-test on load
+        setTimeout(testBackend, 500);
+    </script>
+</body>
+</html>
