@@ -482,6 +482,53 @@ const RailwayDraggable = () => {
     }
   };
 
+  // RESTART FUNCTIONALITY - Reset all states and return to activity view
+  const restartProject = () => {
+    console.log('🔄 Restarting project page...');
+    
+    // Reset view states
+    setCurrentView('activity');
+    setSelectedFeature(null);
+    setIsTransitioning(false);
+    
+    // Reset AI Assistant states
+    setMessages([]);
+    setMessage('');
+    setLoading(false);
+    setIsEditingMode(false);
+    
+    // Reset Content Generator states
+    setGeneratedContent('');
+    setCurrentContentType(null);
+    setSelectedContentTypeId(null);
+    setSelectedContentTypeName(null);
+    
+    // Reset drag/resize states
+    setDraggedElement(null);
+    setResizingElement(null);
+    setPositions({});
+    setSizes({});
+    
+    // Reset modals and dropdowns
+    setShowProfileMenu(false);
+    setShowProjectMenu(false);
+    setShowNewProjectModal(false);
+    setShowNotepad(false);
+    
+    // Add restart confirmation message
+    const restartMsg = {
+      id: `restart-${Date.now()}`,
+      type: 'system',
+      content: '🔄 Project page has been restarted. All states have been reset.',
+      timestamp: new Date()
+    };
+    setTimeout(() => {
+      setMessages([restartMsg]);
+    }, 100);
+    
+    console.log('✅ Project restart complete');
+  };
+
   // FIXED AI message handling - direct backend call, no local processing
   const sendMessage = async (text, contentTypeId = null, contentTypeName = null) => {
     if (!text?.trim()) return;
@@ -784,6 +831,15 @@ const RailwayDraggable = () => {
         </div>
         
         <div className="header-right">
+          <button 
+            className="header-button restart-button"
+            onClick={restartProject}
+            title="Restart project page and reset all states"
+          >
+            <RefreshCw size={16} />
+            Restart
+          </button>
+          
           <button 
             className={`header-button ${showNotepad ? 'active' : ''}`}
             onClick={() => setShowNotepad(!showNotepad)}
