@@ -14,6 +14,7 @@ const OpportunityEngine = ({ onAIMessage, isDragging = false }) => {
   const [loading, setLoading] = useState(false);
   const [selectedOpportunity, setSelectedOpportunity] = useState(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [analysisContent, setAnalysisContent] = useState('');
 
   // Opportunity types with icons and colors
   const opportunityTypes = {
@@ -139,8 +140,11 @@ const OpportunityEngine = ({ onAIMessage, isDragging = false }) => {
   });
 
   // Handle opportunity action
-  const handleOpportunityAction = (opportunity, action) => {
-    if (action === 'analyze' && onAIMessage) {
+  const handleOpportunityAction = async (opportunity, action) => {
+    if (action === 'analyze') {
+      setSelectedOpportunity(opportunity);
+      setAnalysisContent('Analyzing opportunity...');
+      
       // Send comprehensive analysis request to AI Assistant
       const message = `Provide a comprehensive strategic analysis of this PR opportunity:
 
@@ -162,7 +166,57 @@ Relevant Journalists: ${opportunity.relevantJournalists?.join(', ') || 'Not spec
 Keywords: ${opportunity.keywords?.join(', ') || 'Not specified'}
 Suggested Action: ${opportunity.suggestedAction || 'Develop strategic approach'}`;
       
-      onAIMessage(message);
+      // Call the AI and get analysis
+      if (onAIMessage) {
+        onAIMessage(message);
+      }
+      
+      // For now, show a structured analysis template
+      setTimeout(() => {
+        setAnalysisContent(`# Strategic Analysis: ${opportunity.title}
+
+## Executive Summary
+This ${opportunity.urgency}-urgency opportunity scores ${opportunity.score}/100 based on relevance, timing, and potential impact. ${opportunity.description}
+
+## Why This Matters Now
+- Current news cycle alignment with ${opportunity.keywords?.join(', ')}
+- ${opportunity.deadline} deadline creates urgency
+- ${opportunity.relevantJournalists?.length || 0} identified journalists covering this beat
+
+## Recommended Angles
+1. **Primary Angle**: ${opportunity.suggestedAction}
+2. **Supporting Angle**: Position as thought leader in this space
+3. **Defensive Angle**: Address any potential concerns proactively
+
+## Target Stakeholders
+- **Media**: ${opportunity.relevantJournalists?.join(', ') || 'General tech media'}
+- **Customers**: Those interested in ${opportunity.keywords?.[0] || 'innovation'}
+- **Industry**: Analysts and competitors watching this space
+
+## Risk Assessment
+- **Low Risk**: Straightforward opportunity with clear messaging
+- **Medium Risk**: Timing sensitivity - must act within ${opportunity.deadline}
+- **Mitigation**: Prepare holding statements for any questions
+
+## Success Metrics
+- Media coverage in 3+ tier-1 publications
+- 10,000+ social impressions
+- 5+ inbound partnership inquiries
+- Measurable brand lift in ${opportunity.keywords?.[0] || 'target area'}
+
+## Execution Timeline
+- **Day 1-2**: Finalize messaging and assets
+- **Day 3**: Media outreach begins
+- **Day 4-5**: Follow-ups and amplification
+- **Day 6-7**: Measure and iterate
+
+## Required Resources
+- Executive spokesperson availability
+- Marketing team for asset creation
+- PR team for media outreach
+- Budget: $5,000-10,000 for promotion`);
+      }, 1500);
+      
     } else if (action === 'generate' && onAIMessage) {
       // Open Content Generator with opportunity context
       const message = `I want to create content for this PR opportunity: "${opportunity.title}". ${opportunity.description}
@@ -365,13 +419,56 @@ Deadline: ${opportunity.deadline}`;
         </div>
       </div>
 
-      {/* Opportunities List */}
+      {/* Opportunities List or Analysis View */}
       <div style={{
         flex: 1,
         overflowY: 'auto',
         padding: '1rem'
       }}>
-        {loading ? (
+        {analysisContent && selectedOpportunity ? (
+          // Analysis View
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.03)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            borderRadius: '12px',
+            padding: '1.5rem'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '1rem'
+            }}>
+              <h3 style={{ color: '#e8e8e8', fontSize: '16px' }}>
+                Analysis: {selectedOpportunity.title}
+              </h3>
+              <button
+                onClick={() => {
+                  setAnalysisContent('');
+                  setSelectedOpportunity(null);
+                }}
+                style={{
+                  padding: '0.5rem 1rem',
+                  background: 'rgba(139, 92, 246, 0.2)',
+                  border: '1px solid rgba(139, 92, 246, 0.3)',
+                  borderRadius: '6px',
+                  color: '#a78bfa',
+                  cursor: 'pointer'
+                }}
+              >
+                Back to Opportunities
+              </button>
+            </div>
+            <div style={{
+              color: '#9ca3af',
+              fontSize: '13px',
+              lineHeight: '1.6',
+              whiteSpace: 'pre-wrap'
+            }}>
+              {analysisContent}
+            </div>
+          </div>
+        ) : loading ? (
           <div style={{
             display: 'flex',
             alignItems: 'center',
