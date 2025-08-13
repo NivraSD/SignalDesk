@@ -1,4 +1,14 @@
 {
+  "providers": ["node"],
+  "buildPlan": {
+    "phases": {
+      "install": {
+        "cmds": [
+          "npm ci --verbose"
+        ]
+      }
+    }
+  },
   "start": {
     "cmd": "node server.js"
   }
