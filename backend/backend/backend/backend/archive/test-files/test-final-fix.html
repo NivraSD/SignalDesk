@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FINAL FIX TEST - One Question Only</title>
+    <style>
+        body { 
+            font-family: -apple-system, Arial, sans-serif; 
+            padding: 20px; 
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #f5f5f5;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .panel {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .result { 
+            margin: 20px 0; 
+            padding: 20px; 
+            background: #f0f0f0; 
+            border-radius: 8px; 
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        button { 
+            padding: 10px 20px; 
+            font-size: 16px; 
+            cursor: pointer; 
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        h1 { color: #333; }
+        h2 { color: #555; margin-top: 0; }
+        .status {
+            padding: 5px 10px;
+            border-radius: 4px;
+            display: inline-block;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        .chat-messages {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            background: white;
+        }
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .user-message {
+            background: #007bff;
+            color: white;
+            text-align: right;
+            margin-left: 20%;
+        }
+        .ai-message {
+            background: #f1f3f5;
+            color: #333;
+            margin-right: 20%;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎯 FINAL FIX TEST - AI Should Ask ONE Question Only</h1>
+    
+    <div class="container">
+        <div class="panel">
+            <h2>Test the Fixed Backend</h2>
+            
+            <div class="status success">
+                Backend: https://signaldesk-production.up.railway.app/api
+            </div>
+            
+            <input type="text" id="token" placeholder="Paste JWT token here (get from browser console)">
+            
+            <button onclick="testVersion()">Check Backend Version</button>
+            
+            <div style="margin-top: 20px;">
+                <button onclick="testThoughtLeadership()">Test "thought leadership"</button>
+                <button onclick="testPressRelease()">Test "press release"</button>
+                <button onclick="testSocialMedia()">Test "social media"</button>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <input type="text" id="customMessage" placeholder="Or type custom message">
+                <button onclick="testCustom()">Send Custom</button>
+            </div>
+            
+            <div id="result" class="result" style="display:none;"></div>
+        </div>
+        
+        <div class="panel">
+            <h2>Live Chat Test</h2>
+            
+            <div class="chat-messages" id="chatMessages"></div>
+            
+            <input type="text" id="chatInput" placeholder="Type message and press Enter" onkeypress="if(event.key==='Enter') sendChat()">
+            <button onclick="sendChat()">Send</button>
+            <button onclick="clearChat()">Clear Chat</button>
+        </div>
+    </div>
+    
+    <div class="panel" style="margin-top: 20px;">
+        <h2>✅ EXPECTED vs ❌ BROKEN</h2>
+        <div class="result">
+<strong>✅ EXPECTED (FIXED):</strong>
+User: "thought leadership"
+AI: "What's the main topic you'd like to cover?" (ONE question, <30 words)
+
+<strong>❌ BROKEN (OLD):</strong>
+User: "thought leadership"
+AI: "Thought leadership content is a valuable PR strategy... [500+ words of tips and comprehensive information]"
+        </div>
+    </div>
+    
+    <script>
+        const API_URL = 'https://signaldesk-production.up.railway.app/api';
+        let sessionId = `test-${Date.now()}`;
+        
+        async function makeRequest(endpoint, method = 'GET', body = null) {
+            const token = document.getElementById('token').value;
+            const options = {
+                method,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            };
+            
+            if (token) {
+                options.headers['Authorization'] = `Bearer ${token}`;
+            }
+            
+            if (body) {
+                options.body = JSON.stringify(body);
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}${endpoint}`, options);
+                const data = await response.json();
+                return { success: response.ok, data };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        }
+        
+        async function testVersion() {
+            const result = await makeRequest('/ai/version');
+            const div = document.getElementById('result');
+            div.style.display = 'block';
+            
+            if (result.success) {
+                div.className = 'result success';
+                div.innerHTML = `Backend Version: ${JSON.stringify(result.data, null, 2)}`;
+            } else {
+                div.className = 'result error';
+                div.innerHTML = `Error: ${result.error || result.data?.message || 'Failed'}`;
+            }
+        }
+        
+        async function testMessage(message) {
+            const result = await makeRequest('/ai/unified-chat', 'POST', {
+                message: message,
+                mode: 'content',
+                sessionId: sessionId,
+                context: {
+                    folder: 'content-generator',
+                    contentTypeName: 'thought leadership'
+                }
+            });
+            
+            const div = document.getElementById('result');
+            div.style.display = 'block';
+            
+            if (result.success) {
+                const response = result.data.response;
+                const wordCount = response.split(' ').length;
+                const hasTips = response.toLowerCase().includes('tips') || 
+                               response.includes('•') || 
+                               response.includes('Components') ||
+                               response.length > 200;
+                
+                if (hasTips || wordCount > 30) {
+                    div.className = 'result error';
+                    div.innerHTML = `❌ FAILED - AI still dumping information!
+                    
+Word count: ${wordCount}
+Response length: ${response.length} chars
+
+Response:
+${response}`;
+                } else {
+                    div.className = 'result success';
+                    div.innerHTML = `✅ SUCCESS - One question only!
+                    
+Word count: ${wordCount}
+Response: "${response}"`;
+                }
+            } else {
+                div.className = 'result warning';
+                div.innerHTML = `Note: ${result.data?.message || 'Need auth token'}`;
+            }
+        }
+        
+        function testThoughtLeadership() {
+            testMessage('thought leadership');
+        }
+        
+        function testPressRelease() {
+            testMessage('press release');
+        }
+        
+        function testSocialMedia() {
+            testMessage('social media');
+        }
+        
+        function testCustom() {
+            const msg = document.getElementById('customMessage').value;
+            if (msg) testMessage(msg);
+        }
+        
+        async function sendChat() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message) return;
+            
+            // Add user message to chat
+            const chatDiv = document.getElementById('chatMessages');
+            chatDiv.innerHTML += `<div class="message user-message">${message}</div>`;
+            input.value = '';
+            
+            // Send to backend
+            const result = await makeRequest('/ai/unified-chat', 'POST', {
+                message: message,
+                mode: 'content',
+                sessionId: sessionId,
+                context: {
+                    folder: 'content-generator'
+                }
+            });
+            
+            if (result.success) {
+                const response = result.data.response;
+                chatDiv.innerHTML += `<div class="message ai-message">${response}</div>`;
+                
+                // Check if response is good
+                const wordCount = response.split(' ').length;
+                if (wordCount > 50 || response.length > 300) {
+                    chatDiv.innerHTML += `<div class="message" style="background:#f8d7da;color:#721c24;">
+                        ⚠️ WARNING: Response too long (${wordCount} words, ${response.length} chars)
+                    </div>`;
+                }
+            } else {
+                chatDiv.innerHTML += `<div class="message ai-message" style="background:#f8d7da;">
+                    Error: ${result.data?.message || 'Failed to get response'}
+                </div>`;
+            }
+            
+            chatDiv.scrollTop = chatDiv.scrollHeight;
+        }
+        
+        function clearChat() {
+            document.getElementById('chatMessages').innerHTML = '';
+            sessionId = `test-${Date.now()}`;
+        }
+        
+        // Enter key support
+        document.getElementById('chatInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') sendChat();
+        });
+    </script>
+</body>
+</html>

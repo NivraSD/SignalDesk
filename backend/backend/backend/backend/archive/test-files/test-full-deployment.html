@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalDesk Full Deployment Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .pending {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            flex: 1;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        #tokenDisplay {
+            word-break: break-all;
+            background: #f1f3f5;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 SignalDesk Full Deployment Test</h1>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="totalTests">0</div>
+                <div class="stat-label">Total Tests</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="passedTests">0</div>
+                <div class="stat-label">Passed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="failedTests">0</div>
+                <div class="stat-label">Failed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="pendingTests">0</div>
+                <div class="stat-label">Pending</div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🔧 Configuration</h2>
+            <p><strong>Backend URL:</strong> <span id="backendUrl">https://signaldesk-production.up.railway.app</span></p>
+            <p><strong>Frontend URL:</strong> <span id="frontendUrl">https://signaldesk.vercel.app</span></p>
+            <p><strong>Test Mode:</strong> <span id="testMode">Production</span></p>
+            <button onclick="switchToLocal()">Test Local</button>
+            <button onclick="switchToProduction()">Test Production</button>
+        </div>
+
+        <div class="test-section">
+            <h2>🔐 Authentication Tests</h2>
+            <button onclick="testLogin()">Test Login</button>
+            <button onclick="testVerifyToken()">Verify Token</button>
+            <button onclick="clearToken()">Clear Token</button>
+            <div id="authResults"></div>
+            <div id="tokenDisplay"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🌐 API Endpoint Tests</h2>
+            <button onclick="testAllEndpoints()">Test All Endpoints</button>
+            <button onclick="testHealthCheck()">Health Check</button>
+            <button onclick="testCORS()">Test CORS</button>
+            <div id="endpointResults"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🤖 Claude AI Tests</h2>
+            <button onclick="testClaude()">Test Claude Basic</button>
+            <button onclick="testContentGeneration()">Test Content Generation</button>
+            <button onclick="testCrisisAnalysis()">Test Crisis Analysis</button>
+            <button onclick="testMediaListBuilder()">Test Media List Builder</button>
+            <div id="claudeResults"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>📊 Feature Tests</h2>
+            <button onclick="testProjects()">Test Projects</button>
+            <button onclick="testMonitoring()">Test Monitoring</button>
+            <button onclick="testOpportunities()">Test Opportunities</button>
+            <div id="featureResults"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🎨 Frontend Tests</h2>
+            <button onclick="testManifest()">Test Manifest.json</button>
+            <button onclick="testFrontendLoad()">Test Frontend Load</button>
+            <div id="frontendResults"></div>
+        </div>
+    </div>
+
+    <script>
+        let API_URL = 'https://signaldesk-production.up.railway.app/api';
+        let FRONTEND_URL = 'https://signaldesk.vercel.app';
+        let authToken = localStorage.getItem('signaldesk_token');
+        let testStats = { total: 0, passed: 0, failed: 0, pending: 0 };
+
+        function updateStats() {
+            document.getElementById('totalTests').textContent = testStats.total;
+            document.getElementById('passedTests').textContent = testStats.passed;
+            document.getElementById('failedTests').textContent = testStats.failed;
+            document.getElementById('pendingTests').textContent = testStats.pending;
+        }
+
+        function switchToLocal() {
+            API_URL = 'http://localhost:5001/api';
+            FRONTEND_URL = 'http://localhost:3000';
+            document.getElementById('backendUrl').textContent = API_URL.replace('/api', '');
+            document.getElementById('frontendUrl').textContent = FRONTEND_URL;
+            document.getElementById('testMode').textContent = 'Local';
+            clearAllResults();
+        }
+
+        function switchToProduction() {
+            API_URL = 'https://signaldesk-production.up.railway.app/api';
+            FRONTEND_URL = 'https://signaldesk.vercel.app';
+            document.getElementById('backendUrl').textContent = API_URL.replace('/api', '');
+            document.getElementById('frontendUrl').textContent = FRONTEND_URL;
+            document.getElementById('testMode').textContent = 'Production';
+            clearAllResults();
+        }
+
+        function clearAllResults() {
+            document.getElementById('authResults').innerHTML = '';
+            document.getElementById('endpointResults').innerHTML = '';
+            document.getElementById('claudeResults').innerHTML = '';
+            document.getElementById('featureResults').innerHTML = '';
+            document.getElementById('frontendResults').innerHTML = '';
+            testStats = { total: 0, passed: 0, failed: 0, pending: 0 };
+            updateStats();
+        }
+
+        function addTestResult(containerId, message, status = 'pending') {
+            const container = document.getElementById(containerId);
+            const result = document.createElement('div');
+            result.className = `test-result ${status}`;
+            result.textContent = message;
+            container.appendChild(result);
+            
+            testStats.total++;
+            testStats[status === 'success' ? 'passed' : status === 'error' ? 'failed' : 'pending']++;
+            updateStats();
+            
+            return result;
+        }
+
+        function updateTestResult(element, message, status) {
+            element.textContent = message;
+            element.className = `test-result ${status}`;
+            
+            // Update stats
+            testStats.pending--;
+            testStats[status === 'success' ? 'passed' : 'failed']++;
+            updateStats();
+        }
+
+        async function testLogin() {
+            const resultEl = addTestResult('authResults', '🔄 Testing login...');
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'demo@signaldesk.com',
+                        password: 'demo123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.token) {
+                    authToken = data.token;
+                    localStorage.setItem('signaldesk_token', authToken);
+                    document.getElementById('tokenDisplay').textContent = `Token: ${authToken.substring(0, 50)}...`;
+                    updateTestResult(resultEl, `✅ Login successful! User: ${data.user?.email || 'demo@signaldesk.com'}`, 'success');
+                } else {
+                    updateTestResult(resultEl, `❌ Login failed: ${data.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                updateTestResult(resultEl, `❌ Login error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testVerifyToken() {
+            const resultEl = addTestResult('authResults', '🔄 Verifying token...');
+            
+            if (!authToken) {
+                updateTestResult(resultEl, '❌ No token available. Please login first.', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/verify`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.valid) {
+                    updateTestResult(resultEl, `✅ Token valid! User ID: ${data.userId}`, 'success');
+                } else {
+                    updateTestResult(resultEl, `❌ Token invalid: ${data.error || 'Token verification failed'}`, 'error');
+                }
+            } catch (error) {
+                updateTestResult(resultEl, `❌ Verification error: ${error.message}`, 'error');
+            }
+        }
+
+        function clearToken() {
+            authToken = null;
+            localStorage.removeItem('signaldesk_token');
+            document.getElementById('tokenDisplay').textContent = '';
+            addTestResult('authResults', '✅ Token cleared', 'success');
+        }
+
+        async function testHealthCheck() {
+            const resultEl = addTestResult('endpointResults', '🔄 Testing health check...');
+            
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+                
+                if (response.ok && data.status === 'ok') {
+                    updateTestResult(resultEl, `✅ Health check passed: ${data.message}`, 'success');
+                } else {
+                    updateTestResult(resultEl, `❌ Health check failed: ${JSON.stringify(data)}`, 'error');
+                }
+            } catch (error) {
+                updateTestResult(resultEl, `❌ Health check error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testCORS() {
+            const resultEl = addTestResult('endpointResults', '🔄 Testing CORS...');
+            
+            try {
+                const response = await fetch(`${API_URL}/test`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ test: 'data' })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    updateTestResult(resultEl, `✅ CORS test passed! Origin: ${data.origin}`, 'success');
+                } else {
+                    updateTestResult(resultEl, `❌ CORS test failed: ${JSON.stringify(data)}`, 'error');
+                }
+            } catch (error) {
+                updateTestResult(resultEl, `❌ CORS error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testClaude() {
+            const resultEl = addTestResult('claudeResults', '🔄 Testing Claude API...');
+            
+            try {
+                const response = await fetch(`${API_URL}/claude-test`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: 'Hello Claude' })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success && !data.isMockData) {
+                    updateTestResult(resultEl, `✅ Claude API working! Response: "${data.response.substring(0, 100)}..."`, 'success');
+                } else if (data.isMockData) {
+                    updateTestResult(resultEl, `⚠️ Claude returned mock data (API key issue?)`, 'error');
+                } else {
+                    updateTestResult(resultEl, `❌ Claude test failed: ${data.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                updateTestResult(resultEl, `❌ Claude error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testContentGeneration() {
+            const resultEl = addTestResult('claudeResults', '🔄 Testing content generation...');
+            
+            if (!authToken) {
+                updateTestResult(resultEl, '❌ Authentication required', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/content/ai-generate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        type: 'press-release',
+                        prompt: 'Test press release generation'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    updateTestResult(resultEl, `✅ Content generation working! Generated ${data.content?.length || 0} characters`, 'success');
+                } else {
+                    updateTestResult(resultEl, `❌ Content generation failed: ${data.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                updateTestResult(resultEl, `❌ Content generation error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testCrisisAnalysis() {
+            const resultEl = addTestResult('claudeResults', '🔄 Testing crisis analysis...');
+            
+            if (!authToken) {
+                updateTestResult(resultEl, '❌ Authentication required', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/crisis/analyze`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        situation: 'Test crisis scenario',
+                        urgency: 'high'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    updateTestResult(resultEl, `✅ Crisis analysis working! Analysis complete`, 'success');
+                } else {
+                    updateTestResult(resultEl, `❌ Crisis analysis failed: ${data.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                updateTestResult(resultEl, `❌ Crisis analysis error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testMediaListBuilder() {
+            const resultEl = addTestResult('claudeResults', '🔄 Testing media list builder...');
+            
+            if (!authToken) {
+                updateTestResult(resultEl, '❌ Authentication required', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/media/search`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        query: 'technology journalists',
+                        limit: 5
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    updateTestResult(resultEl, `✅ Media list builder working! Found ${data.journalists?.length || 0} journalists`, 'success');
+                } else {
+                    updateTestResult(resultEl, `❌ Media list builder failed: ${data.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                updateTestResult(resultEl, `❌ Media list builder error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testProjects() {
+            const resultEl = addTestResult('featureResults', '🔄 Testing projects...');
+            
+            if (!authToken) {
+                updateTestResult(resultEl, '❌ Authentication required', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/projects`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    updateTestResult(resultEl, `✅ Projects API working! Found ${data.projects?.length || 0} projects`, 'success');
+                } else {
+                    updateTestResult(resultEl, `❌ Projects API failed: ${data.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                updateTestResult(resultEl, `❌ Projects error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testMonitoring() {
+            const resultEl = addTestResult('featureResults', '🔄 Testing monitoring...');
+            
+            if (!authToken) {
+                updateTestResult(resultEl, '❌ Authentication required', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/monitoring/status`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    updateTestResult(resultEl, `✅ Monitoring API working! Status: ${data.status || 'active'}`, 'success');
+                } else {
+                    updateTestResult(resultEl, `❌ Monitoring API failed: ${data.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                updateTestResult(resultEl, `❌ Monitoring error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testOpportunities() {
+            const resultEl = addTestResult('featureResults', '🔄 Testing opportunities...');
+            
+            if (!authToken) {
+                updateTestResult(resultEl, '❌ Authentication required', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/opportunities/recent`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    updateTestResult(resultEl, `✅ Opportunities API working! Found ${data.opportunities?.length || 0} opportunities`, 'success');
+                } else {
+                    updateTestResult(resultEl, `❌ Opportunities API failed: ${data.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                updateTestResult(resultEl, `❌ Opportunities error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testManifest() {
+            const resultEl = addTestResult('frontendResults', '🔄 Testing manifest.json...');
+            
+            try {
+                const response = await fetch(`${FRONTEND_URL}/manifest.json`);
+                const data = await response.json();
+                
+                if (response.ok && data.name) {
+                    updateTestResult(resultEl, `✅ Manifest loaded! App: ${data.name}`, 'success');
+                } else {
+                    updateTestResult(resultEl, `❌ Manifest failed: ${response.status} ${response.statusText}`, 'error');
+                }
+            } catch (error) {
+                updateTestResult(resultEl, `❌ Manifest error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testFrontendLoad() {
+            const resultEl = addTestResult('frontendResults', '🔄 Testing frontend load...');
+            
+            try {
+                const response = await fetch(FRONTEND_URL);
+                const html = await response.text();
+                
+                if (response.ok && html.includes('SignalDesk')) {
+                    updateTestResult(resultEl, `✅ Frontend loaded successfully!`, 'success');
+                } else if (response.ok) {
+                    updateTestResult(resultEl, `⚠️ Frontend loaded but may not be SignalDesk`, 'error');
+                } else {
+                    updateTestResult(resultEl, `❌ Frontend failed: ${response.status} ${response.statusText}`, 'error');
+                }
+            } catch (error) {
+                updateTestResult(resultEl, `❌ Frontend error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAllEndpoints() {
+            await testHealthCheck();
+            await testCORS();
+            
+            // Test all main endpoints
+            const endpoints = [
+                { path: '/test', method: 'GET', name: 'Test GET' },
+                { path: '/test', method: 'POST', name: 'Test POST', body: { test: true } },
+                { path: '/claude-diagnostics', method: 'GET', name: 'Claude Diagnostics' },
+                { path: '/deployment-monitor', method: 'GET', name: 'Deployment Monitor' }
+            ];
+            
+            for (const endpoint of endpoints) {
+                const resultEl = addTestResult('endpointResults', `🔄 Testing ${endpoint.name}...`);
+                
+                try {
+                    const options = {
+                        method: endpoint.method,
+                        headers: { 'Content-Type': 'application/json' }
+                    };
+                    
+                    if (endpoint.body) {
+                        options.body = JSON.stringify(endpoint.body);
+                    }
+                    
+                    const response = await fetch(`${API_URL}${endpoint.path}`, options);
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        updateTestResult(resultEl, `✅ ${endpoint.name} working!`, 'success');
+                    } else {
+                        updateTestResult(resultEl, `❌ ${endpoint.name} failed: ${response.status}`, 'error');
+                    }
+                } catch (error) {
+                    updateTestResult(resultEl, `❌ ${endpoint.name} error: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        // Auto-load token if available
+        if (authToken) {
+            document.getElementById('tokenDisplay').textContent = `Token: ${authToken.substring(0, 50)}...`;
+        }
+    </script>
+</body>
+</html>

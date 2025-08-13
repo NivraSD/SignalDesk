@@ -1,0 +1,2 @@
+No service linked
+Run `railway service` to link a service

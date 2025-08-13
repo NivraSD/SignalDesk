@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Media Intelligence Deployment</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .info-box {
+            background: #e8f4fd;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .code-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .iframe-container {
+            width: 100%;
+            height: 600px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Verify Media Intelligence Deployment</h1>
+        
+        <div class="info-box">
+            <strong>Deployment URL:</strong> https://signaldesk-frontend-23tc8mlwq-nivra-sd.vercel.app<br>
+            <strong>Expected Feature:</strong> Media Intelligence Platform replacing MediaListBuilder<br>
+            <strong>Test Path:</strong> /projects/[projectId]/media-list
+        </div>
+
+        <div class="test-section">
+            <h2>Quick Deployment Check</h2>
+            <button onclick="checkDeployment()">Check if MediaIntelligence is Deployed</button>
+            <button onclick="openMediaList()">Open Media List Page</button>
+            <button onclick="checkBuildStatus()">Check Build Files</button>
+            <div id="deploymentStatus"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Manual Deployment Steps</h2>
+            <div class="code-block">
+# 1. First, ensure all changes are committed
+git status
+
+# 2. Check that MediaIntelligence.js exists
+ls -la frontend/src/components/MediaIntelligence.js
+
+# 3. Build locally to verify
+cd frontend
+npm run build
+
+# 4. Check build output for MediaIntelligence
+grep -r "MediaIntelligence" build/
+
+# 5. Deploy via GitHub (automatic)
+git push origin main
+
+# 6. Or deploy manually via Vercel Dashboard
+# Go to: https://vercel.com/nivra-sd/signaldesk-frontend
+# Click "Redeploy" on latest deployment
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Live Site Preview</h2>
+            <p>Login with: demo@signaldesk.com / demo123</p>
+            <div class="iframe-container">
+                <iframe id="siteFrame" src="https://signaldesk-frontend-23tc8mlwq-nivra-sd.vercel.app"></iframe>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Alternative Deployment Methods</h2>
+            <button onclick="showAlternatives()">Show Alternative Deploy Options</button>
+            <div id="alternatives" style="display:none;">
+                <div class="status warning">
+                    <strong>Option 1: GitHub Auto-Deploy</strong><br>
+                    Make a small change and push to trigger rebuild:
+                    <div class="code-block">
+echo "// Force rebuild $(date)" >> frontend/src/App.js
+git add -A
+git commit -m "Force Vercel rebuild"
+git push origin main
+                    </div>
+                </div>
+                <div class="status warning">
+                    <strong>Option 2: Vercel Dashboard</strong><br>
+                    1. Go to <a href="https://vercel.com/dashboard" target="_blank">Vercel Dashboard</a><br>
+                    2. Find your SignalDesk project<br>
+                    3. Click on the latest deployment<br>
+                    4. Click "Redeploy" → "Redeploy with existing Build Cache"
+                </div>
+                <div class="status warning">
+                    <strong>Option 3: New Vercel Project</strong><br>
+                    Create a fresh deployment:
+                    <div class="code-block">
+# Remove old config
+rm -rf .vercel
+
+# Create new deployment with unique name
+vercel --name signaldesk-media-$(date +%s) --yes
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const FRONTEND_URL = 'https://signaldesk-frontend-23tc8mlwq-nivra-sd.vercel.app';
+        const API_URL = 'https://signaldesk-production.up.railway.app/api';
+
+        async function checkDeployment() {
+            const statusEl = document.getElementById('deploymentStatus');
+            statusEl.innerHTML = '<div class="status warning">Checking deployment...</div>';
+            
+            try {
+                // Try to fetch the main page
+                const response = await fetch(FRONTEND_URL);
+                const html = await response.text();
+                
+                // Check if MediaIntelligence is mentioned in the page
+                const hasMediaIntelligence = html.includes('MediaIntelligence') || 
+                                            html.includes('Media Intelligence');
+                
+                if (hasMediaIntelligence) {
+                    statusEl.innerHTML = `
+                        <div class="status success">
+                            ✅ MediaIntelligence component found in deployment!<br>
+                            The new features should be working.
+                        </div>
+                    `;
+                } else {
+                    statusEl.innerHTML = `
+                        <div class="status error">
+                            ❌ MediaIntelligence not found in current deployment<br>
+                            The deployment may not have updated yet. Try:<br>
+                            1. Wait a few minutes for Vercel to rebuild<br>
+                            2. Check Vercel dashboard for build status<br>
+                            3. Manually trigger a redeploy
+                        </div>
+                    `;
+                }
+                
+                // Also check API
+                const apiResponse = await fetch(`${API_URL}/media/search-journalists`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ query: 'test' })
+                });
+                
+                if (apiResponse.status === 401) {
+                    statusEl.innerHTML += `
+                        <div class="status success">
+                            ✅ Backend Media Intelligence API is responding (requires auth)
+                        </div>
+                    `;
+                }
+                
+            } catch (error) {
+                statusEl.innerHTML = `
+                    <div class="status error">
+                        ❌ Error checking deployment: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        function openMediaList() {
+            // Open in new tab with a sample project ID
+            window.open(`${FRONTEND_URL}/projects/1/media-list`, '_blank');
+        }
+
+        async function checkBuildStatus() {
+            const statusEl = document.getElementById('deploymentStatus');
+            statusEl.innerHTML = `
+                <div class="status warning">
+                    To check build status:<br>
+                    1. Go to <a href="https://vercel.com/nivra-sd/signaldesk-frontend" target="_blank">Vercel Dashboard</a><br>
+                    2. Check the latest deployment status<br>
+                    3. Look for any build errors<br>
+                    4. Click "View Function Logs" for details
+                </div>
+            `;
+        }
+
+        function showAlternatives() {
+            const altEl = document.getElementById('alternatives');
+            altEl.style.display = altEl.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Auto-check on load
+        window.onload = () => {
+            checkDeployment();
+        };
+    </script>
+</body>
+</html>

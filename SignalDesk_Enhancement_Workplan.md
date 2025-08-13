@@ -1,37 +1,37 @@
-# SignalDesk Platform Enhancement - Complete Workplan with Alex PR Strategist
+# SignalDesk Platform Enhancement - Complete Workplan with Niv PR Strategist
 
 ## 📋 Executive Summary
 
-**CURRENT STATE**: Railway UI deployed, MCP servers operational, ready for Alex PR Strategist implementation
+**CURRENT STATE**: Railway UI deployed, MCP servers operational, ready for Niv PR Strategist implementation
 
-SignalDesk is evolving into an autonomous PR department powered by Alex, an AI PR Strategist with 20 years of encoded expertise:
+SignalDesk is evolving into an autonomous PR department powered by Niv, an AI PR Strategist with 20 years of encoded expertise:
 - **Railway-inspired UI** with draggable panels ✅ DEPLOYED
 - **MCP Servers** for memory, campaigns, media, opportunities ✅ OPERATIONAL  
-- **Alex PR Strategist** - Autonomous AI agent with PR expertise (NEXT PRIORITY)
+- **Niv PR Strategist** - Autonomous AI agent with PR expertise (NEXT PRIORITY)
 - **Enhanced MemoryVault** with semantic search and versioning (In Progress)
 - **Real-time Campaign Orchestrator** for execution automation (Foundation Built)
 
-**Implementation Duration**: 6-8 weeks for Alex + remaining features
+**Implementation Duration**: 6-8 weeks for Niv + remaining features
 **Team Size**: 2-3 developers focused
 **Budget**: $3,000-7,000/month infrastructure costs (increased for AI operations)
 
 ---
 
-## 🎯 Project Vision: Alex as Your Autonomous PR Department
+## 🎯 Project Vision: Niv as Your Autonomous PR Department
 
 Transform SignalDesk from a toolset into an intelligent PR partner where:
-- **Alex** = Your senior PR strategist with 20 years experience
-- **MCP Servers** = Alex's brain and memory across all PR functions
-- **MemoryVault** = Alex's evolving knowledge base that gets smarter over time
-- **Railway UI** = Command center where you collaborate with Alex
+- **Niv** = Your senior PR strategist with 20 years experience
+- **MCP Servers** = Niv's brain and memory across all PR functions
+- **MemoryVault** = Niv's evolving knowledge base that gets smarter over time
+- **Railway UI** = Command center where you collaborate with Niv
 
-**The Revolution**: Alex doesn't just generate content - she thinks strategically, manages relationships, spots opportunities, and orchestrates campaigns autonomously.
+**The Revolution**: Niv doesn't just generate content - Niv thinks strategically, manages relationships, spots opportunities, and orchestrates campaigns autonomously.
 
 ---
 
-## 🤖 ALEX PR STRATEGIST IMPLEMENTATION PLAN
+## 🤖 NIV PR STRATEGIST IMPLEMENTATION PLAN
 
-### Alex's Core Architecture
+### Niv's Core Architecture
 
 #### 1. Hub-and-Spoke MCP Architecture
 ```
@@ -43,7 +43,7 @@ signaldesk-core (Hub)
 └── Automation Engine (Workflows & Triggers)
 ```
 
-#### 2. Alex's Personality & Expertise
+#### 2. Niv's Personality & Expertise
 - 20 years PR agency experience encoded
 - Knows journalists personally - beats, preferences, pet peeves
 - Understands news cycles, embargo timing, exclusive strategies
@@ -51,7 +51,7 @@ signaldesk-core (Hub)
 - Direct but warm - tells hard truths kindly
 - Always thinks 3 steps ahead
 
-#### 3. Alex's Strategic Capabilities
+#### 3. Niv's Strategic Capabilities
 - **Crisis Management**: Immediate assessment, stakeholder mapping, rapid response
 - **Launch Strategy**: Media targeting, embargo management, momentum building
 - **Thought Leadership**: Authority building, byline placement, speaking opportunities
@@ -61,11 +61,11 @@ signaldesk-core (Hub)
 
 ## 📅 IMPLEMENTATION ROADMAP (6-8 Weeks)
 
-### Phase 1: Alex Foundation (Weeks 1-2)
-**Objective**: Implement Alex's core personality and basic PR capabilities
+### Phase 1: Niv Foundation (Weeks 1-2)
+**Objective**: Implement Niv's core personality and basic PR capabilities
 
-#### Week 1: Core Alex Implementation
-- **Alex System Prompt & Personality** (2 days)
+#### Week 1: Core Niv Implementation
+- **Niv System Prompt & Personality** (2 days)
   ```javascript
   - Encode 20 years PR expertise
   - Define decision trees for common scenarios
@@ -99,7 +99,7 @@ signaldesk-core (Hub)
   ```
 
 **Deliverables**:
-- ✅ Alex personality fully operational
+- ✅ Niv personality fully operational
 - ✅ Basic PR decision-making working
 - ✅ Proactive suggestions enabled
 - ✅ Context-aware conversations
@@ -107,7 +107,7 @@ signaldesk-core (Hub)
 ---
 
 ### Phase 2: Memory & Learning System (Weeks 3-4)
-**Objective**: Build Alex's learning and memory capabilities
+**Objective**: Build Niv's learning and memory capabilities
 
 #### Week 3: Enhanced MemoryVault
 - **PR-Specific Memory Structure** (3 days)
@@ -149,14 +149,14 @@ signaldesk-core (Hub)
 
 **Deliverables**:
 - ✅ MemoryVault fully functional
-- ✅ Alex learns from every interaction
+- ✅ Niv learns from every interaction
 - ✅ Personalized strategies based on history
 - ✅ Semantic search operational
 
 ---
 
 ### Phase 3: Relationship & Media Intelligence (Weeks 5-6)
-**Objective**: Implement Alex's media relationship management
+**Objective**: Implement Niv's media relationship management
 
 #### Week 5: Journalist Intelligence System
 - **Media Database Enhancement** (3 days)
@@ -204,7 +204,7 @@ signaldesk-core (Hub)
 ---
 
 ### Phase 4: Campaign Orchestration (Week 7)
-**Objective**: Enable Alex to run campaigns autonomously
+**Objective**: Enable Niv to run campaigns autonomously
 
 #### Campaign Automation Engine
 - **Workflow Templates** (2 days)
@@ -226,14 +226,14 @@ signaldesk-core (Hub)
 
 **Deliverables**:
 - ✅ Campaign workflows automated
-- ✅ Alex can execute campaigns
+- ✅ Niv can execute campaigns
 - ✅ Multi-campaign management
 - ✅ Real-time monitoring
 
 ---
 
 ### Phase 5: Advanced Intelligence (Week 8)
-**Objective**: Implement Alex's advanced capabilities
+**Objective**: Implement Niv's advanced capabilities
 
 #### Advanced Features
 - **Predictive Analytics** (2 days)
@@ -255,7 +255,7 @@ signaldesk-core (Hub)
 - ✅ Predictive capabilities operational
 - ✅ Crisis management automated
 - ✅ Competitive intelligence active
-- ✅ Alex fully autonomous
+- ✅ Niv fully autonomous
 
 ---
 
@@ -295,9 +295,9 @@ const TOOLS = {
 }
 ```
 
-### Alex's Decision Framework
+### Niv's Decision Framework
 ```javascript
-class AlexStrategist {
+class NivStrategist {
   assessSituation(input) {
     if (this.detectCrisisSignals(input)) {
       return this.crisisPlaybook();
@@ -342,7 +342,7 @@ const PR_RULES = {
 - **Stakeholder Intelligence**: Functional, needs enhancement
 
 ### 📝 To Be Built
-- **Alex PR Strategist**: Core implementation (NEXT PRIORITY)
+- **Niv PR Strategist**: Core implementation (NEXT PRIORITY)
 - **Learning System**: Feedback loops and adaptation
 - **Advanced Automation**: Workflow execution engine
 - **Predictive Analytics**: Coverage and success modeling
@@ -354,13 +354,13 @@ const PR_RULES = {
 ### Infrastructure Costs (Monthly)
 - **Railway (Backend + DB)**: $500-1,000
 - **Vercel (Frontend)**: $20-100
-- **Claude API**: $2,000-5,000 (increased usage with Alex)
+- **Claude API**: $2,000-5,000 (increased usage with Niv)
 - **Vector Database**: $200-500 (for semantic search)
 - **Monitoring Tools**: $100-200
 - **Total**: $3,000-7,000/month
 
 ### Team Requirements
-- **Lead Developer**: Alex implementation & MCP architecture
+- **Lead Developer**: Niv implementation & MCP architecture
 - **Backend Developer**: Memory system & automation engine  
 - **AI/ML Engineer**: Learning systems & predictive analytics (part-time)
 
@@ -368,7 +368,7 @@ const PR_RULES = {
 
 ## 🎯 Success Metrics
 
-### Alex Performance Metrics
+### Niv Performance Metrics
 - **Response Quality**: 90%+ user satisfaction
 - **Strategic Accuracy**: 80%+ successful recommendations
 - **Relationship Score**: 20%+ improvement in journalist engagement
@@ -379,14 +379,14 @@ const PR_RULES = {
 - **System Uptime**: 99.9%
 - **API Response Time**: <500ms
 - **Learning Rate**: Measurable improvement weekly
-- **User Adoption**: 80%+ active usage of Alex
+- **User Adoption**: 80%+ active usage of Niv
 
 ---
 
 ## 🚀 Launch Strategy
 
 ### Soft Launch (Week 6)
-- Deploy Alex to 5-10 beta users
+- Deploy Niv to 5-10 beta users
 - Focus on basic PR tasks
 - Gather feedback on personality and effectiveness
 
@@ -412,7 +412,7 @@ const PR_RULES = {
 - **Event Intelligence**: Conference and speaking opportunity management
 
 ### Long-term Goals
-- Alex becomes industry-standard AI PR strategist
+- Niv becomes industry-standard AI PR strategist
 - Platform handles 100% of routine PR tasks autonomously
 - Predictive capabilities prevent crises before they happen
 - Network effects from shared (anonymized) learnings across clients
@@ -422,8 +422,8 @@ const PR_RULES = {
 ## 📝 Implementation Notes
 
 ### Priority Order
-1. **Alex Core Personality** - Without this, nothing else matters
-2. **Memory System** - Alex needs to remember and learn
+1. **Niv Core Personality** - Without this, nothing else matters
+2. **Memory System** - Niv needs to remember and learn
 3. **Media Intelligence** - Core PR function
 4. **Campaign Automation** - Biggest time-saver
 5. **Advanced Features** - Nice-to-haves that differentiate
@@ -431,11 +431,11 @@ const PR_RULES = {
 ### Risk Mitigation
 - **Gradual Rollout**: Test each phase thoroughly
 - **Human Override**: Always allow manual intervention
-- **Transparency**: Show Alex's reasoning when requested
+- **Transparency**: Show Niv's reasoning when requested
 - **Privacy**: Ensure client data isolation
 - **Fallbacks**: Graceful degradation if AI unavailable
 
 ---
 
 _Last Updated: August 13, 2025_
-_Status: Ready for Alex PR Strategist Implementation_
+_Status: Ready for Niv PR Strategist Implementation_

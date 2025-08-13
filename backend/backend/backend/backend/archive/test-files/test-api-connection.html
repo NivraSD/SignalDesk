@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalDesk API Connection Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .endpoint-test {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f9f9f9;
+            border-left: 4px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <h1>SignalDesk API Connection Test</h1>
+    
+    <div class="test-section">
+        <h2>Configuration</h2>
+        <div id="config-status"></div>
+        <button onclick="testConfig()">Test Configuration</button>
+    </div>
+
+    <div class="test-section">
+        <h2>CORS Test</h2>
+        <div id="cors-status"></div>
+        <button onclick="testCORS()">Test CORS</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Authentication Test</h2>
+        <div id="auth-status"></div>
+        <button onclick="testAuth()">Test Login</button>
+        <button onclick="testVerify()">Test Token Verify</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Claude Endpoints Test</h2>
+        <div id="claude-status"></div>
+        <button onclick="testAllClaudeEndpoints()">Test All Claude Endpoints</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Results Summary</h2>
+        <div id="summary"></div>
+    </div>
+
+    <script>
+        const API_URL = 'https://signaldesk-production.up.railway.app/api';
+        const FRONTEND_URL = window.location.origin;
+        let authToken = null;
+
+        function log(message, type = 'info', elementId = 'config-status') {
+            const element = document.getElementById(elementId);
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.innerHTML = `${new Date().toLocaleTimeString()}: ${message}`;
+            element.appendChild(div);
+        }
+
+        async function testConfig() {
+            log('Testing configuration...', 'info', 'config-status');
+            log(`Backend URL: ${API_URL}`, 'info', 'config-status');
+            log(`Frontend URL: ${FRONTEND_URL}`, 'info', 'config-status');
+            
+            // Check if backend is reachable
+            try {
+                const response = await fetch(API_URL.replace('/api', '/health'), {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                if (response.ok) {
+                    log('Backend is reachable', 'success', 'config-status');
+                } else {
+                    log(`Backend returned status: ${response.status}`, 'warning', 'config-status');
+                }
+            } catch (error) {
+                log(`Cannot reach backend: ${error.message}`, 'error', 'config-status');
+            }
+        }
+
+        async function testCORS() {
+            log('Testing CORS headers...', 'info', 'cors-status');
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/verify`, {
+                    method: 'OPTIONS',
+                    mode: 'cors',
+                    headers: {
+                        'Origin': FRONTEND_URL,
+                        'Access-Control-Request-Method': 'GET',
+                        'Access-Control-Request-Headers': 'Authorization,Content-Type'
+                    }
+                });
+                
+                const headers = {};
+                response.headers.forEach((value, key) => {
+                    if (key.toLowerCase().includes('access-control')) {
+                        headers[key] = value;
+                    }
+                });
+                
+                log('CORS Headers received:', 'info', 'cors-status');
+                log(`<pre>${JSON.stringify(headers, null, 2)}</pre>`, 'info', 'cors-status');
+                
+                if (response.headers.get('access-control-allow-origin')) {
+                    log('CORS is properly configured', 'success', 'cors-status');
+                } else {
+                    log('CORS headers missing', 'error', 'cors-status');
+                }
+            } catch (error) {
+                log(`CORS test failed: ${error.message}`, 'error', 'cors-status');
+            }
+        }
+
+        async function testAuth() {
+            log('Testing authentication...', 'info', 'auth-status');
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Origin': FRONTEND_URL
+                    },
+                    body: JSON.stringify({
+                        email: 'demo@signaldesk.com',
+                        password: 'demo123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.token) {
+                    authToken = data.token;
+                    log('Login successful', 'success', 'auth-status');
+                    log(`Token received: ${authToken.substring(0, 20)}...`, 'info', 'auth-status');
+                    localStorage.setItem('test-token', authToken);
+                } else {
+                    log(`Login failed: ${JSON.stringify(data)}`, 'error', 'auth-status');
+                }
+            } catch (error) {
+                log(`Auth test failed: ${error.message}`, 'error', 'auth-status');
+            }
+        }
+
+        async function testVerify() {
+            if (!authToken) {
+                authToken = localStorage.getItem('test-token');
+                if (!authToken) {
+                    log('No token available. Please login first.', 'warning', 'auth-status');
+                    return;
+                }
+            }
+            
+            log('Testing token verification...', 'info', 'auth-status');
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/verify`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Origin': FRONTEND_URL
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log('Token verification successful', 'success', 'auth-status');
+                    log(`User: ${JSON.stringify(data.user)}`, 'info', 'auth-status');
+                } else {
+                    log(`Token verification failed: ${response.status}`, 'error', 'auth-status');
+                }
+            } catch (error) {
+                log(`Verify test failed: ${error.message}`, 'error', 'auth-status');
+            }
+        }
+
+        async function testEndpoint(name, method, endpoint, body = null) {
+            const div = document.createElement('div');
+            div.className = 'endpoint-test';
+            
+            try {
+                const options = {
+                    method: method,
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': authToken ? `Bearer ${authToken}` : '',
+                        'Origin': FRONTEND_URL
+                    }
+                };
+                
+                if (body) {
+                    options.body = JSON.stringify(body);
+                }
+                
+                const response = await fetch(`${API_URL}${endpoint}`, options);
+                const responseData = await response.text();
+                
+                let parsedData;
+                try {
+                    parsedData = JSON.parse(responseData);
+                } catch {
+                    parsedData = responseData;
+                }
+                
+                if (response.ok) {
+                    div.innerHTML = `✅ <strong>${name}</strong> - ${method} ${endpoint}<br>
+                                     Status: ${response.status}<br>
+                                     Response: <pre>${JSON.stringify(parsedData, null, 2).substring(0, 200)}...</pre>`;
+                } else {
+                    div.innerHTML = `❌ <strong>${name}</strong> - ${method} ${endpoint}<br>
+                                     Status: ${response.status}<br>
+                                     Error: <pre>${JSON.stringify(parsedData, null, 2)}</pre>`;
+                }
+            } catch (error) {
+                div.innerHTML = `❌ <strong>${name}</strong> - ${method} ${endpoint}<br>
+                                 Network Error: ${error.message}`;
+            }
+            
+            document.getElementById('claude-status').appendChild(div);
+        }
+
+        async function testAllClaudeEndpoints() {
+            if (!authToken) {
+                authToken = localStorage.getItem('test-token');
+                if (!authToken) {
+                    await testAuth();
+                    if (!authToken) {
+                        log('Authentication required first', 'error', 'claude-status');
+                        return;
+                    }
+                }
+            }
+            
+            document.getElementById('claude-status').innerHTML = '';
+            log('Testing all Claude endpoints...', 'info', 'claude-status');
+            
+            // Test Content Generator
+            await testEndpoint(
+                'Content Generator',
+                'POST',
+                '/content/generate',
+                {
+                    type: 'press-release',
+                    formData: { headline: 'Test' },
+                    tone: 'professional'
+                }
+            );
+            
+            // Test AI Content Generation
+            await testEndpoint(
+                'AI Content Generator',
+                'POST',
+                '/content/ai-generate',
+                {
+                    prompt: 'Generate a test press release',
+                    type: 'press-release'
+                }
+            );
+            
+            // Test Crisis Advisor
+            await testEndpoint(
+                'Crisis Advisor',
+                'POST',
+                '/crisis/advisor',
+                {
+                    situation: 'Test crisis situation',
+                    severity: 'medium'
+                }
+            );
+            
+            // Test Memory Vault
+            await testEndpoint(
+                'Memory Vault - Get',
+                'GET',
+                '/memoryvault/project?projectId=test'
+            );
+            
+            await testEndpoint(
+                'Memory Vault - Save',
+                'POST',
+                '/memoryvault/project',
+                {
+                    projectId: 'test',
+                    type: 'note',
+                    content: 'Test memory'
+                }
+            );
+            
+            // Test Campaign AI
+            await testEndpoint(
+                'Campaign AI - Opportunities',
+                'POST',
+                '/campaign/opportunities',
+                {
+                    context: 'Test opportunity analysis'
+                }
+            );
+            
+            await testEndpoint(
+                'Campaign AI - Strategy',
+                'POST',
+                '/campaign/strategy',
+                {
+                    objective: 'Test campaign strategy'
+                }
+            );
+            
+            // Summary
+            const tests = document.querySelectorAll('.endpoint-test');
+            const passed = document.querySelectorAll('.endpoint-test').length;
+            const failed = Array.from(tests).filter(t => t.innerHTML.includes('❌')).length;
+            
+            log(`<h3>Test Complete</h3>
+                 Total Endpoints: ${tests.length}<br>
+                 Passed: ${passed - failed}<br>
+                 Failed: ${failed}`, 
+                 failed > 0 ? 'warning' : 'success', 
+                 'summary');
+        }
+    </script>
+</body>
+</html>
