@@ -1,0 +1,5 @@
+DEPLOYMENT_TIMESTAMP=$(date +%s)
+NIV_ROUTES_VERSION=v1.0.0
+FORCED_REDEPLOY=true
+COMMIT_HASH=28f9ed18
+MESSAGE="Force redeploy to include Niv routes registration in index.js"
