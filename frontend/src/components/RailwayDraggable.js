@@ -60,7 +60,7 @@ const RailwayDraggable = () => {
   const [newNote, setNewNote] = useState('');
   const [notepadMinimized, setNotepadMinimized] = useState(false);
   
-  // Session ID for conversation continuity
+  // Session ID for conversation continuity - v2
   const [sessionId] = useState(() => `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
   
   // Feature/Activity definitions
