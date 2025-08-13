@@ -2,7 +2,7 @@
   "name": "signaldesk-api",
   "version": "1.0.0",
   "description": "SignalDesk API Backend",
-  "main": "server.js",
+  "main": "app.js",
   "scripts": {
     "build": "echo 'Build timestamp:' && date && echo 'SignalDesk Backend Build v6' && echo 'Build ID: '$(date +%s)",
     "start": "node server.js",

@@ -9,7 +9,7 @@
       "REACT_APP_API_URL": "https://signaldesk-production.up.railway.app/api",
       "CI": "false",
       "GENERATE_SOURCEMAP": "false",
-      "REACT_APP_BUILD_ID": "v3.1-20250813-fix"
+      "REACT_APP_BUILD_ID": "v3.2-FIXED"
     }
   },
   "headers": [
@@ -109,7 +109,7 @@
   ],
   "rewrites": [
     {
-      "source": "/((?!api|_next|static|favicon.ico|manifest.json|.*\\.).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ],

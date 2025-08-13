@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Conversation Fix</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .panel {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            margin-top: 0;
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .response {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .warning {
+            background: #fff3cd;
+            border-color: #ffeeba;
+            color: #856404;
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 4px;
+            display: inline-block;
+            margin: 5px 0;
+            font-weight: bold;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        textarea {
+            min-height: 100px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔬 SignalDesk Conversation Fix Test</h1>
+    
+    <div class="container">
+        <div class="panel">
+            <h2>Test Conversation Flow</h2>
+            <p>Testing if AI asks ONE question only (no tips/comprehensive info)</p>
+            
+            <div>
+                <label>JWT Token (get from browser console):</label>
+                <input type="text" id="jwtToken" placeholder="Paste your JWT token here">
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <button class="test-button" onclick="testThoughtLeadership()">
+                    Test "thought leadership"
+                </button>
+                <button class="test-button" onclick="testPressRelease()">
+                    Test "press release"
+                </button>
+                <button class="test-button" onclick="testSocialMedia()">
+                    Test "social media"
+                </button>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <label>Custom Message:</label>
+                <input type="text" id="customMessage" placeholder="Enter custom message">
+                <button class="test-button" onclick="testCustomMessage()">
+                    Send Custom Message
+                </button>
+            </div>
+            
+            <div id="conversationResponse" class="response" style="display:none;"></div>
+        </div>
+        
+        <div class="panel">
+            <h2>Version & Debug Info</h2>
+            
+            <button class="test-button" onclick="checkVersion()">
+                Check Deployment Version
+            </button>
+            
+            <button class="test-button" onclick="checkConversationVersion()">
+                Check Conversation Version
+            </button>
+            
+            <div id="versionInfo" class="response" style="display:none;"></div>
+            
+            <h3 style="margin-top: 30px;">Expected vs Actual</h3>
+            <div class="response">
+                <strong>✅ EXPECTED (ONE question only):</strong>
+                "Great! What's the main topic you'd like to cover?"
+                
+                <strong>❌ BAD (Tips/comprehensive info):</strong>
+                "Here are some quick tips: Thought Leadership Excellence..."
+                [Multiple paragraphs of information]
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_URL = 'https://signaldesk-production.up.railway.app/api';
+        
+        async function makeRequest(endpoint, method = 'GET', body = null) {
+            const token = document.getElementById('jwtToken').value;
+            const options = {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token ? `Bearer ${token}` : ''
+                }
+            };
+            
+            if (body) {
+                options.body = JSON.stringify(body);
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}${endpoint}`, options);
+                const data = await response.json();
+                return { success: response.ok, data };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        }
+        
+        async function checkVersion() {
+            const result = await makeRequest('/version');
+            const info = document.getElementById('versionInfo');
+            info.style.display = 'block';
+            
+            if (result.success) {
+                info.className = 'response success';
+                info.innerHTML = `<strong>Deployment Version:</strong>
+Version: ${result.data.version}
+Commit: ${result.data.commit}
+Timestamp: ${result.data.timestamp}
+Build ID: ${result.data.build_id}
+
+✅ Latest deployment is running`;
+            } else {
+                info.className = 'response error';
+                info.innerHTML = `Error: ${result.error || 'Failed to fetch version'}`;
+            }
+        }
+        
+        async function checkConversationVersion() {
+            const result = await makeRequest('/ai/conversation-version');
+            const info = document.getElementById('versionInfo');
+            info.style.display = 'block';
+            
+            if (result.success) {
+                info.className = 'response success';
+                info.innerHTML = `<strong>Conversation Logic Version:</strong>
+${JSON.stringify(result.data, null, 2)}`;
+            } else {
+                info.className = 'response warning';
+                info.innerHTML = `Note: ${result.data?.message || 'Requires authentication'}`;
+            }
+        }
+        
+        async function testConversation(message, contentType = 'thought leadership') {
+            const response = document.getElementById('conversationResponse');
+            response.style.display = 'block';
+            response.className = 'response';
+            response.innerHTML = 'Sending request...';
+            
+            const body = {
+                message: message,
+                mode: 'content',
+                context: {
+                    folder: 'content-generator',
+                    contentTypeId: contentType.replace(' ', '-'),
+                    contentTypeName: contentType,
+                    previousMessages: []
+                }
+            };
+            
+            const result = await makeRequest('/ai/unified-chat', 'POST', body);
+            
+            if (result.success) {
+                const aiResponse = result.data.response;
+                const wordCount = aiResponse.split(' ').length;
+                const hasTips = aiResponse.includes('tips') || aiResponse.includes('•') || aiResponse.includes('Excellence');
+                const hasMultipleQuestions = (aiResponse.match(/\?/g) || []).length > 1;
+                
+                let status = 'success';
+                let analysis = [];
+                
+                if (hasTips) {
+                    status = 'error';
+                    analysis.push('❌ FAILED: Response contains tips/comprehensive info');
+                }
+                if (hasMultipleQuestions) {
+                    status = 'error';
+                    analysis.push('❌ FAILED: Multiple questions detected');
+                }
+                if (wordCount > 50) {
+                    status = 'warning';
+                    analysis.push('⚠️ WARNING: Response is too long (' + wordCount + ' words)');
+                }
+                if (!hasTips && !hasMultipleQuestions && wordCount <= 30) {
+                    analysis.push('✅ SUCCESS: One question only, no tips!');
+                }
+                
+                response.className = 'response ' + status;
+                response.innerHTML = `<strong>Test: "${message}"</strong>
+
+<strong>AI Response:</strong>
+${aiResponse}
+
+<strong>Analysis:</strong>
+Word count: ${wordCount}
+${analysis.join('\n')}
+
+<strong>Raw Response:</strong>
+${JSON.stringify(result.data, null, 2)}`;
+            } else {
+                response.className = 'response error';
+                response.innerHTML = `Error: ${result.data?.message || result.error || 'Request failed'}
+                
+Make sure to paste a valid JWT token from your browser console.
+In the SignalDesk app, open console and type: localStorage.getItem('token')`;
+            }
+        }
+        
+        function testThoughtLeadership() {
+            testConversation('thought leadership', 'thought leadership');
+        }
+        
+        function testPressRelease() {
+            testConversation('press release', 'press release');
+        }
+        
+        function testSocialMedia() {
+            testConversation('social media', 'social media');
+        }
+        
+        function testCustomMessage() {
+            const message = document.getElementById('customMessage').value;
+            if (message) {
+                testConversation(message, 'content');
+            }
+        }
+        
+        // Check version on load
+        window.onload = () => {
+            checkVersion();
+        };
+    </script>
+</body>
+</html>

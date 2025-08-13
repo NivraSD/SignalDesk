@@ -1,0 +1,48 @@
+          <button
+            onClick={() => setActiveTab('datasource')} 
+            style={{
+              padding: '10px 20px',
+              margin: '0 5px',
+              borderRadius: '8px',
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'all 0.3s',
+              fontWeight: '500',
+              background: activeTab === 'datasource' ? '#007bff' : '#f0f0f0',
+              color: activeTab === 'datasource' ? 'white' : '#333'
+            }}
+          >
+            Data Sources
+          </button>
+          <button
+            onClick={() => setActiveTab('alerts')} 
+            style={{
+              padding: '10px 20px',
+              margin: '0 5px',
+              borderRadius: '8px',
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'all 0.3s',
+              fontWeight: '500',
+              background: activeTab === 'alerts' ? '#007bff' : '#f0f0f0',
+              color: activeTab === 'alerts' ? 'white' : '#333'
+            }}
+          >
+            Alerts
+          </button>
+          <button
+            onClick={() => setActiveTab('claude')} 
+            style={{
+              padding: '10px 20px',
+              margin: '0 5px',
+              borderRadius: '8px',
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'all 0.3s',
+              fontWeight: '500',
+              background: activeTab === 'claude' ? '#007bff' : '#f0f0f0',
+              color: activeTab === 'claude' ? 'white' : '#333'
+            }}
+          >
+            Claude AI Setup
+          </button>

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Sentiment Context</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            max-width: 800px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        textarea {
+            width: 100%;
+            min-height: 100px;
+            margin: 10px 0;
+        }
+        button {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #results {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .positive { color: green; }
+        .negative { color: red; }
+        .neutral { color: gray; }
+    </style>
+</head>
+<body>
+    <h1>Test Sentiment Context UI</h1>
+    
+    <div class="section">
+        <h2>1. Set Auth Token</h2>
+        <p>Get this from browser console: <code>localStorage.getItem('token')</code></p>
+        <input type="text" id="authToken" placeholder="Paste your auth token here" style="width: 100%; padding: 8px;">
+    </div>
+    
+    <div class="section">
+        <h2>2. Define Sentiment Context</h2>
+        <label>Positive Scenarios:</label>
+        <textarea id="positiveScenarios" placeholder="Enter positive indicators...">Customer satisfaction improvements
+Product innovation and launches
+Positive media coverage
+Strategic partnerships</textarea>
+        
+        <label>Negative Scenarios:</label>
+        <textarea id="negativeScenarios" placeholder="Enter negative indicators...">Data security concerns
+Customer complaints
+Product defects or recalls
+Regulatory violations</textarea>
+        
+        <label>Critical Concerns:</label>
+        <textarea id="criticalConcerns" placeholder="Enter critical indicators...">Data breaches
+Major security incidents
+Executive misconduct
+Financial fraud</textarea>
+    </div>
+    
+    <div class="section">
+        <h2>3. Test Text</h2>
+        <textarea id="testText" placeholder="Enter text to analyze...">Our customer support team received praise for quickly resolving a data security concern that affected several enterprise clients.</textarea>
+    </div>
+    
+    <div class="section">
+        <h2>4. Actions</h2>
+        <button onclick="saveConfig()">Save Config</button>
+        <button onclick="loadConfig()">Load Config</button>
+        <button onclick="testAnalysis()">Test Analysis</button>
+        <button onclick="testDirect()">Test Direct (Hardcoded)</button>
+    </div>
+    
+    <div class="section">
+        <h2>Results</h2>
+        <div id="results">Click a button to see results...</div>
+    </div>
+    
+    <script>
+        const API_URL = 'http://localhost:5001/api';
+        
+        function getHeaders() {
+            const token = document.getElementById('authToken').value;
+            return {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            };
+        }
+        
+        function showResult(data) {
+            document.getElementById('results').textContent = JSON.stringify(data, null, 2);
+        }
+        
+        async function saveConfig() {
+            try {
+                const config = {
+                    dataSource: {
+                        sourceType: 'demo',
+                        monitoringKeywords: ['test', 'demo']
+                    },
+                    claude: {
+                        enabled: true,
+                        sentimentContext: {
+                            positiveScenarios: document.getElementById('positiveScenarios').value,
+                            negativeScenarios: document.getElementById('negativeScenarios').value,
+                            criticalConcerns: document.getElementById('criticalConcerns').value
+                        }
+                    }
+                };
+                
+                const response = await fetch(`${API_URL}/monitoring/config`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify(config)
+                });
+                
+                const result = await response.json();
+                showResult({ action: 'Save Config', result });
+            } catch (error) {
+                showResult({ error: error.message });
+            }
+        }
+        
+        async function loadConfig() {
+            try {
+                const response = await fetch(`${API_URL}/monitoring/config`, {
+                    headers: getHeaders()
+                });
+                
+                const config = await response.json();
+                showResult({ action: 'Load Config', config });
+                
+                if (config?.claude?.sentimentContext) {
+                    document.getElementById('positiveScenarios').value = config.claude.sentimentContext.positiveScenarios || '';
+                    document.getElementById('negativeScenarios').value = config.claude.sentimentContext.negativeScenarios || '';
+                    document.getElementById('criticalConcerns').value = config.claude.sentimentContext.criticalConcerns || '';
+                }
+            } catch (error) {
+                showResult({ error: error.message });
+            }
+        }
+        
+        async function testAnalysis() {
+            try {
+                const response = await fetch(`${API_URL}/monitoring/analyze-sentiment`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({
+                        text: document.getElementById('testText').value,
+                        source: 'test-ui',
+                        sentimentContext: {
+                            positiveScenarios: document.getElementById('positiveScenarios').value,
+                            negativeScenarios: document.getElementById('negativeScenarios').value,
+                            criticalConcerns: document.getElementById('criticalConcerns').value
+                        }
+                    })
+                });
+                
+                const result = await response.json();
+                showResult({ action: 'Test Analysis', result });
+                
+                if (result.analysis) {
+                    const sentiment = result.analysis.sentiment;
+                    document.getElementById('results').innerHTML = 
+                        `<div class="${sentiment}">Sentiment: ${sentiment} (${result.analysis.sentiment_score})</div>` +
+                        `<div>Rationale: ${result.analysis.rationale}</div>` +
+                        `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+                }
+            } catch (error) {
+                showResult({ error: error.message });
+            }
+        }
+        
+        async function testDirect() {
+            try {
+                const response = await fetch(`${API_URL}/monitoring/test-sentiment`, {
+                    headers: getHeaders()
+                });
+                
+                const result = await response.json();
+                showResult({ action: 'Test Direct', result });
+            } catch (error) {
+                showResult({ error: error.message });
+            }
+        }
+    </script>
+</body>
+</html>
