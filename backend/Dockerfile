@@ -21,4 +21,4 @@ RUN ls -la src/routes/ || true
 
 # Start server
 EXPOSE 3000
-CMD ["node", "server.js"]
+CMD ["node", "server.js"]# DEPLOY: 20250813-164927

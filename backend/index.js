@@ -343,3 +343,4 @@ const server = app.listen(PORT, '0.0.0.0', () => {
 // Export app for compatibility
 module.exports = app;
 // Force rebuild at Fri Aug  8 20:21:00 EDT 2025
+// FORCE DEPLOY: 20250813-164927

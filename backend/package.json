@@ -1,6 +1,6 @@
 {
   "name": "signaldesk-api",
-  "version": "1.0.0-niv-routes-force-20250813-2025",
+  "version": "1.0.20250813-164927-niv-routes-force-20250813-2025",
   "description": "SignalDesk API Backend",
   "main": "app.js",
   "scripts": {
