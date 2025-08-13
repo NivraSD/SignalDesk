@@ -2,12 +2,12 @@
 const path = require('path');
 console.log('🚀 Railway is running server.js from root');
 console.log('📍 Current directory:', __dirname);
-console.log('📍 Redirecting to backend/index.js (full server with all routes)...');
+console.log('📍 Redirecting to index.js (full server with all routes)...');
 console.log('🔄 Deployment timestamp:', new Date().toISOString());
 
-// Ensure we can find the backend directory
-const backendPath = path.join(__dirname, 'backend', 'index.js');
-console.log('📍 Looking for backend at:', backendPath);
+// Ensure we can find the index.js file
+const backendPath = path.join(__dirname, 'index.js');
+console.log('📍 Looking for server at:', backendPath);
 
 // Check if the backend file exists
 const fs = require('fs');
