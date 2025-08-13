@@ -131,7 +131,8 @@
       "Bash(git fetch:*)",
       "Bash(true)",
       "Bash(gh api:*)",
-      "Bash(railway:*)"
+      "Bash(railway:*)",
+      "Bash(git stash:*)"
     ],
     "deny": []
   }

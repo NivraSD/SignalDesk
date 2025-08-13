@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SignalDesk Bulletproof Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #0f0; }
+        .test { margin: 10px 0; padding: 10px; border: 1px solid #333; background: #222; }
+        .pass { border-color: #0f0; background: #002200; }
+        .fail { border-color: #f00; background: #220000; color: #f00; }
+        .info { color: #ff0; }
+        button { background: #0f0; color: #000; padding: 10px 20px; margin: 5px; border: none; cursor: pointer; font-weight: bold; }
+        button:hover { background: #0ff; }
+        pre { background: #111; padding: 10px; overflow-x: auto; color: #fff; }
+        h1 { color: #0ff; text-shadow: 0 0 10px #0ff; }
+        .status { font-size: 24px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>🛡️ SIGNALDESK BULLETPROOF TEST SUITE</h1>
+    
+    <div class="info">
+        <p>Backend: https://signaldesk-production.up.railway.app</p>
+        <p>Frontend: https://frontend-p0rvzi1f9-nivra-sd.vercel.app</p>
+    </div>
+
+    <button onclick="runAllTests()">🚀 RUN ALL TESTS</button>
+    <button onclick="clearResults()">🗑️ CLEAR</button>
+    
+    <div id="results"></div>
+
+    <script>
+        const BACKEND = 'https://signaldesk-production.up.railway.app';
+        const results = document.getElementById('results');
+        let token = null;
+
+        function log(message, isPass = null) {
+            const div = document.createElement('div');
+            div.className = 'test';
+            if (isPass !== null) {
+                div.className += isPass ? ' pass' : ' fail';
+            }
+            div.innerHTML = `[${new Date().toISOString()}] ${message}`;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+
+        function clearResults() {
+            results.innerHTML = '';
+        }
+
+        async function testEndpoint(method, path, data = null, useToken = false) {
+            const options = {
+                method,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            };
+            
+            if (useToken && token) {
+                options.headers['Authorization'] = `Bearer ${token}`;
+            }
+            
+            if (data) {
+                options.body = JSON.stringify(data);
+            }
+            
+            try {
+                const response = await fetch(`${BACKEND}${path}`, options);
+                const result = await response.json();
+                return { success: response.ok, status: response.status, data: result };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        }
+
+        async function runAllTests() {
+            clearResults();
+            log('=== STARTING BULLETPROOF TEST SUITE ===', null);
+            
+            // Test 1: Health Check
+            log('TEST 1: Health Check...');
+            const health = await testEndpoint('GET', '/health');
+            log(`Health: ${health.success ? 'PASS ✅' : 'FAIL ❌'} - ${health.data?.status || health.error}`, health.success);
+            
+            // Test 2: Root Endpoint
+            log('TEST 2: Root Endpoint...');
+            const root = await testEndpoint('GET', '/');
+            log(`Root: ${root.success ? 'PASS ✅' : 'FAIL ❌'} - Database: ${root.data?.database || 'unknown'}`, root.success);
+            
+            // Test 3: CORS Preflight
+            log('TEST 3: CORS Preflight...');
+            const cors = await testEndpoint('OPTIONS', '/api/auth/login');
+            log(`CORS: ${cors.status === 200 || cors.status === 204 ? 'PASS ✅' : 'FAIL ❌'} - Status: ${cors.status}`, cors.status === 200 || cors.status === 204);
+            
+            // Test 4: Login with demo123
+            log('TEST 4: Login with demo123...');
+            const login1 = await testEndpoint('POST', '/api/auth/login', {
+                email: 'demo@signaldesk.com',
+                password: 'demo123'
+            });
+            if (login1.success && login1.data?.token) {
+                token = login1.data.token;
+                log(`Login (demo123): PASS ✅ - User ID: ${login1.data.user?.id}`, true);
+            } else {
+                log(`Login (demo123): FAIL ❌ - ${login1.data?.message || login1.error}`, false);
+            }
+            
+            // Test 5: Login with password
+            log('TEST 5: Login with password...');
+            const login2 = await testEndpoint('POST', '/api/auth/login', {
+                email: 'demo@signaldesk.com',
+                password: 'password'
+            });
+            log(`Login (password): ${login2.success ? 'PASS ✅' : 'FAIL ❌'}`, login2.success);
+            
+            // Test 6: Token Verification (GET)
+            log('TEST 6: Token Verification (GET)...');
+            const verify1 = await testEndpoint('GET', '/api/auth/verify', null, true);
+            log(`Verify (GET): ${verify1.data?.valid ? 'PASS ✅' : 'FAIL ❌'} - User: ${verify1.data?.user?.email || 'none'}`, verify1.data?.valid);
+            
+            // Test 7: Token Verification (POST)
+            log('TEST 7: Token Verification (POST)...');
+            const verify2 = await testEndpoint('POST', '/api/auth/verify', {}, true);
+            log(`Verify (POST): ${verify2.data?.valid ? 'PASS ✅' : 'FAIL ❌'}`, verify2.data?.valid);
+            
+            // Test 8: Get Projects
+            log('TEST 8: Get Projects...');
+            const projects = await testEndpoint('GET', '/api/projects', null, true);
+            log(`Get Projects: ${projects.success ? 'PASS ✅' : 'FAIL ❌'} - Count: ${Array.isArray(projects.data) ? projects.data.length : 'error'}`, projects.success);
+            
+            // Test 9: Create Project
+            log('TEST 9: Create Project...');
+            const newProject = await testEndpoint('POST', '/api/projects', {
+                name: `Test Project ${Date.now()}`,
+                description: 'Created by bulletproof test'
+            }, true);
+            log(`Create Project: ${newProject.success && newProject.data?.id ? 'PASS ✅' : 'FAIL ❌'} - ID: ${newProject.data?.id || 'none'}`, newProject.success && newProject.data?.id);
+            
+            // Test 10: Get Todos
+            log('TEST 10: Get Todos...');
+            const todos = await testEndpoint('GET', '/api/todos', null, true);
+            log(`Get Todos: ${todos.success ? 'PASS ✅' : 'FAIL ❌'} - Count: ${Array.isArray(todos.data) ? todos.data.length : 'error'}`, todos.success);
+            
+            // Test 11: Create Todo
+            log('TEST 11: Create Todo...');
+            const newTodo = await testEndpoint('POST', '/api/todos', {
+                title: 'Test Todo',
+                description: 'Created by bulletproof test',
+                project_id: newProject.data?.id || null
+            }, true);
+            log(`Create Todo: ${newTodo.success || newTodo.data?.id ? 'PASS ✅' : 'FAIL ❌'} - ID: ${newTodo.data?.id || 'none'}`, newTodo.success || newTodo.data?.id);
+            
+            // Test 12: AI Content Generation
+            log('TEST 12: AI Content Generation...');
+            const content = await testEndpoint('POST', '/api/content/ai-generate', {
+                prompt: 'Test prompt',
+                type: 'test'
+            }, true);
+            log(`AI Content: ${content.data?.success ? 'PASS ✅' : 'FAIL ❌'}`, content.data?.success);
+            
+            // Summary
+            log('=== TEST SUITE COMPLETE ===', null);
+            
+            const allTests = results.querySelectorAll('.test');
+            const passed = results.querySelectorAll('.pass').length;
+            const failed = results.querySelectorAll('.fail').length;
+            
+            const summary = document.createElement('div');
+            summary.className = 'status';
+            summary.innerHTML = `
+                <br>RESULTS: ${passed} PASSED ✅ | ${failed} FAILED ❌
+                <br>${failed === 0 ? '🎉 ALL TESTS PASSED! SYSTEM IS BULLETPROOF!' : '⚠️ SOME TESTS FAILED - CHECK LOGS ABOVE'}
+            `;
+            results.appendChild(summary);
+            
+            if (failed === 0) {
+                log('', null);
+                log('✅ Your SignalDesk platform is FULLY OPERATIONAL!', true);
+                log('✅ Frontend can now login and create projects at:', true);
+                log('   https://frontend-p0rvzi1f9-nivra-sd.vercel.app', true);
+            }
+        }
+
+        // Auto-run tests on load
+        setTimeout(() => {
+            log('Auto-running tests in 3 seconds...', null);
+            setTimeout(runAllTests, 3000);
+        }, 500);
+    </script>
+</body>
+</html>
