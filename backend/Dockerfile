@@ -1,4 +1,5 @@
 # Emergency Dockerfile - Works around Railway cache bug
+# FORCE REBUILD: Niv Routes v2.0 - 2025-08-13T20:24:00Z
 FROM node:20-alpine
 
 WORKDIR /app
