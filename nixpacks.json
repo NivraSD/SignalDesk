@@ -1,0 +1,20 @@
+{
+  "providers": ["node"],
+  "phases": {
+    "setup": {
+      "nixPkgs": ["nodejs-20_x"]
+    },
+    "install": {
+      "cmds": [
+        "echo '==== USING NIXPACKS NOT DOCKER ====='",
+        "echo 'Clearing any cache directories'",
+        "rm -rf node_modules .npm package-lock.json",
+        "echo 'Installing dependencies with npm'",
+        "npm install --verbose"
+      ]
+    }
+  },
+  "start": {
+    "cmd": "node server.js"
+  }
+}
