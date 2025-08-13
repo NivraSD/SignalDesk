@@ -1,12 +1,15 @@
-# Railway Deploy Trigger
-# This file forces Railway to rebuild and redeploy
-# Last updated: 2025-08-12 15:30:00
-# Deployment ID: deploy-fix-ai-assistant-2025-08-12
+# Railway Deploy Trigger - FORCE NIXPACKS
+# This file forces Railway to rebuild with Nixpacks (NOT Docker)
+# Last updated: 2025-01-13 12:00:00
+# Deployment ID: force-nixpacks-no-docker-2025-01-13
 # 
-# CRITICAL FIXES INCLUDED:
-# - AI Assistant conversation state management
-# - Content generation with proper type handling
-# - Session persistence fixes
-# - Unified chat endpoint implementation
+# CRITICAL CHANGES:
+# - FORCE NIXPACKS BUILDER
+# - REMOVE ALL DOCKER REFERENCES
+# - BREAK BUILD CACHE
+# - NO CACHE MOUNTS
 #
-# Force rebuild trigger: v1.0.1
+# Force rebuild trigger: v4.0.0-nixpacks
+# CACHE_BUST=1737035000
+# BUILDER=NIXPACKS
+# NO_DOCKER=true

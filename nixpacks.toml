@@ -1,17 +1,31 @@
-# Nixpacks configuration for Railway
+# Nixpacks configuration for Railway - FORCE DOCKER BYPASS
+# This configuration ensures Railway uses Nixpacks instead of Docker
+
 [phases.setup]
-nixPkgs = ["nodejs-20_x"]
+# Use Node.js 20 LTS
+nixPkgs = ["nodejs-20_x", "npm-9_x"]
 
 [phases.install]
-# Clean install without cache
+# Force complete cache clean and fresh install
 cmds = [
-    "rm -rf node_modules",
-    "rm -rf .npm",
-    "npm install --verbose"
+    "echo 'FORCING NIXPACKS BUILD - BYPASSING DOCKER'",
+    "rm -rf node_modules package-lock.json .npm .cache",
+    "npm cache clean --force",
+    "npm install --no-cache --verbose --loglevel verbose",
+    "echo 'Build completed at:' && date"
+]
+
+[phases.build]
+# Optional build phase if needed
+cmds = [
+    "echo 'Skipping build phase - no compilation needed'"
 ]
 
 [start]
+# Start command
 cmd = "node server.js"
 
 [variables]
 NODE_ENV = "production"
+NPM_CONFIG_CACHE = "/tmp/.npm"
+NPM_CONFIG_LOGLEVEL = "verbose"
