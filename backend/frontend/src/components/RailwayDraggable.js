@@ -74,7 +74,7 @@ const RailwayDraggable = () => {
       description: 'Senior AI PR Strategist',
       status: 'ready',
       stats: '20 years experience',
-      component: 'NivPRStrategist',
+      component: NivPRStrategist,
       lastUsed: 'Always available'
     },
     {

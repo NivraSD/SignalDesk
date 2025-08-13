@@ -44,11 +44,11 @@ const NivPRStrategist = ({ onStrategyGenerated }) => {
       content: `Hi, I'm Niv, your Senior PR Strategist. With 20 years of agency experience, I'm here to help you navigate media relations, develop campaigns, and handle any PR challenges.
 
 What's on your PR agenda today? I can help with:
-" Strategic PR planning
-" Media outreach and relationships
-" Crisis communications
-" Campaign development
-" Content strategy
+• Strategic PR planning
+• Media outreach and relationships
+• Crisis communications
+• Campaign development
+• Content strategy
 
 How can I assist you?`,
       timestamp: new Date().toISOString()
@@ -190,7 +190,7 @@ How can I assist you?`,
                 color: '#9ca3af',
                 margin: '2px 0 0 0'
               }}>
-                {nivPersonality.title} " {nivPersonality.experience} Experience
+                {nivPersonality.title} • {nivPersonality.experience} Experience
               </p>
             </div>
           </div>

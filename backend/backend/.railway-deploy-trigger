@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Railway Deploy Trigger
 # This file forces Railway to rebuild and redeploy
 # Last updated: 2025-08-13 14:18:00
@@ -11,3 +12,20 @@
 # - Proper server.js entry point
 #
 # Force rebuild trigger: v3.2.2
+=======
+# Railway Deploy Trigger - FORCE NIXPACKS
+# This file forces Railway to rebuild with Nixpacks (NOT Docker)
+# Last updated: 2025-01-13 12:00:00
+# Deployment ID: force-nixpacks-no-docker-2025-01-13
+# 
+# CRITICAL CHANGES:
+# - FORCE NIXPACKS BUILDER
+# - REMOVE ALL DOCKER REFERENCES
+# - BREAK BUILD CACHE
+# - NO CACHE MOUNTS
+#
+# Force rebuild trigger: v4.0.0-nixpacks
+# CACHE_BUST=1737035000
+# BUILDER=NIXPACKS
+# NO_DOCKER=true
+>>>>>>> 3a432886918e35763ef5d6bf9ddc7406623deb92
