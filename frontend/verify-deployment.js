@@ -10,7 +10,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Configuration
-const BACKEND_URL = 'https://signaldesk-production.up.railway.app/api';
+const BACKEND_URL = 'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1';
 const CONFIG_FILE = path.join(__dirname, 'src/config/api.js');
 const ENV_FILE = path.join(__dirname, '.env.production');
 
@@ -103,7 +103,7 @@ testBackend().then((success) => {
     console.log('=====================================');
     
     if (success) {
-        console.log('✅ Frontend is properly configured to connect to Railway backend');
+        console.log('✅ Frontend is properly configured to connect to Supabase backend');
         console.log('\n🚀 Next Steps:');
         console.log('1. Deploy to Vercel: vercel --prod');
         console.log('2. Set environment variables in Vercel Dashboard');
@@ -111,8 +111,8 @@ testBackend().then((success) => {
     } else {
         console.log('⚠️  Some issues detected. Please review the output above.');
         console.log('\n🔧 Troubleshooting:');
-        console.log('1. Ensure Railway backend is deployed and running');
-        console.log('2. Check Railway logs for any errors');
+        console.log('1. Ensure Supabase project is configured and running');
+        console.log('2. Check Supabase functions logs for any errors');
         console.log('3. Verify CORS settings on the backend');
     }
     

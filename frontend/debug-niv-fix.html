@@ -69,18 +69,18 @@
             <h2>🐛 Expected Console Messages</h2>
             <div class="info">
                 <p>After the fix, you should see these console messages when sending a message to Niv:</p>
-                <pre>🔧 Niv: Component initializing with API_BASE_URL: https://signaldesk-production.up.railway.app/api
+                <pre>🔧 Niv: Component initializing with API_BASE_URL: https://zskaxjtyuaqazydouifp.supabase.co/functions/v1
 🔄 Niv: sendMessage called with text: [your message]
 📝 Niv: Creating user message
 📝 Niv: Adding user message to chat  
-🚀 Niv: Making request to: https://signaldesk-production.up.railway.app/api/niv/chat
+🚀 Niv: Making request to: https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/niv-chat
 📡 Niv: Response status: [200 or 401]</pre>
             </div>
         </div>
     </div>
 
     <script>
-        const API_BASE_URL = 'https://signaldesk-production.up.railway.app/api';
+        const API_BASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1';
         
         function showResult(elementId, message, type = 'info') {
             const element = document.getElementById(elementId);

@@ -29,40 +29,49 @@ const EnhancedCampaignIntelligence = () => {
   // Initialize WebSocket connection
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const socketInstance = io('https://signaldesk-production.up.railway.app', {
-      auth: { token },
-      transports: ['websocket', 'polling']
-    });
+    // Use Supabase Realtime for real-time collaboration
+    // const socketInstance = io(`${process.env.REACT_APP_SUPABASE_URL}/realtime`, {
+    //   auth: { token },
+    //   transports: ['websocket', 'polling']
+    // });
+    
+    // Temporarily disable socket connection - using Supabase Realtime instead
+    const socketInstance = null;
 
-    socketInstance.on('connect', () => {
-      console.log('Connected to WebSocket');
-      // Join project room
-      socketInstance.emit('join:project', projectId);
-    });
+    // TODO: Replace with Supabase Realtime subscriptions
+    if (socketInstance) {
+      socketInstance.on('connect', () => {
+        console.log('Connected to WebSocket');
+        // Join project room
+        socketInstance.emit('join:project', projectId);
+      });
 
-    // Real-time campaign updates
-    socketInstance.on('campaign:section:updated', (data) => {
-      handleRealtimeUpdate(data);
-    });
+      // Real-time campaign updates
+      socketInstance.on('campaign:section:updated', (data) => {
+        handleRealtimeUpdate(data);
+      });
 
-    // Real-time collaborator cursors
-    socketInstance.on('collaboration:cursor:update', (data) => {
-      updateCollaboratorCursor(data);
-    });
+      // Real-time collaborator cursors
+      socketInstance.on('collaboration:cursor:update', (data) => {
+        updateCollaboratorCursor(data);
+      });
 
-    // AI Assistant updates
-    socketInstance.on('ai:suggestion', (data) => {
-      setAiAssistant(prev => ({
-        ...prev,
-        suggestions: [...prev.suggestions, data.suggestion]
-      }));
-    });
+      // AI Assistant updates
+      socketInstance.on('ai:suggestion', (data) => {
+        setAiAssistant(prev => ({
+          ...prev,
+          suggestions: [...prev.suggestions, data.suggestion]
+        }));
+      });
+    }
 
     setSocket(socketInstance);
 
     return () => {
-      socketInstance.emit('leave:project', projectId);
-      socketInstance.disconnect();
+      if (socketInstance) {
+        socketInstance.emit('leave:project', projectId);
+        socketInstance.disconnect();
+      }
     };
   }, [projectId]);
 

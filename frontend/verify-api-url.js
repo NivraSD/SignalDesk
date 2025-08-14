@@ -37,7 +37,7 @@ console.log("=== MAKING TEST REQUEST ===");
 console.log("Check the Network tab to see which URL is being called");
 
 // Try to make a test fetch
-const testUrl = window.SIGNALDESK_API_URL || 'https://signaldesk-production.up.railway.app/api';
+const testUrl = window.SIGNALDESK_API_URL || 'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1';
 fetch(`${testUrl}/health`)
   .then(res => {
     console.log(`✅ Test request to ${testUrl}/health:`, res.status);
@@ -69,5 +69,5 @@ console.log("If you see the wrong URL (signaldesk-api-production):");
 console.log("1. Go to Vercel Dashboard: https://vercel.com");
 console.log("2. Select your project");
 console.log("3. Settings > Environment Variables");
-console.log("4. Update REACT_APP_API_URL to: https://signaldesk-production.up.railway.app/api");
+console.log("4. Update REACT_APP_API_URL to: https://zskaxjtyuaqazydouifp.supabase.co/functions/v1");
 console.log("5. Redeploy without cache");

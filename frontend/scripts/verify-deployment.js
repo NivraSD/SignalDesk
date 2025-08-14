@@ -11,7 +11,7 @@ const url = require('url');
 
 // Configuration
 const FRONTEND_URL = process.argv[2] || 'https://signaldesk-frontend.vercel.app';
-const BACKEND_URL = 'https://signaldesk-production.up.railway.app/api';
+const BACKEND_URL = 'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1';
 const DEMO_EMAIL = 'demo@signaldesk.com';
 const DEMO_PASSWORD = 'demo123';
 
@@ -335,7 +335,7 @@ async function runTests() {
     console.log(`\n${colors.yellow}Common fixes:${colors.reset}`);
     console.log(`1. Ensure environment variables are set in Vercel dashboard`);
     console.log(`2. Redeploy the frontend after updating vercel.json`);
-    console.log(`3. Check that the Railway backend is running`);
+    console.log(`3. Check that the Supabase project is configured`);
     console.log(`4. Verify CORS settings in backend/index.js`);
     process.exit(1);
   }

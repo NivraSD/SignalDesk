@@ -1,4 +1,4 @@
-# Ignore the backend folder - we're using Railway for backend
+# Ignore the backend folder - we're using Supabase for backend
 backend/
 backend/**
 

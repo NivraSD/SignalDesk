@@ -1,7 +1,7 @@
 // PRODUCTION DEBUG TEST - SignalDesk Critical Issues
 // This script tests the exact API flow that's failing in production
 
-const API_BASE_URL = 'https://signaldesk-production.up.railway.app/api';
+const API_BASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1';
 
 console.log('🔍 PRODUCTION DEBUG TEST - SignalDesk API');
 console.log('Testing API URL:', API_BASE_URL);

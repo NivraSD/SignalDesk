@@ -28,24 +28,32 @@ const EnhancedCampaignIntelligenceFixed = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const briefSectionRefs = useRef({});
 
-  // Initialize WebSocket connection
+  // Initialize Supabase Realtime connection
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const socketInstance = io('https://signaldesk-production.up.railway.app', {
-      auth: { token },
-      transports: ['websocket', 'polling']
-    });
+    // TODO: Replace with Supabase Realtime subscriptions
+    // const token = localStorage.getItem('token');
+    // const socketInstance = io(`${process.env.REACT_APP_SUPABASE_URL}/realtime`, {
+    //   auth: { token },
+    //   transports: ['websocket', 'polling']
+    // });
 
-    socketInstance.on('connect', () => {
-      console.log('Connected to Enhanced WebSocket');
-      socketInstance.emit('join:project', projectId);
-    });
+    // Temporarily disable socket connection - using Supabase Realtime instead
+    const socketInstance = null;
+
+    if (socketInstance) {
+      socketInstance.on('connect', () => {
+        console.log('Connected to Enhanced WebSocket');
+        socketInstance.emit('join:project', projectId);
+      });
+    }
 
     setSocket(socketInstance);
 
     return () => {
-      socketInstance.emit('leave:project', projectId);
-      socketInstance.disconnect();
+      if (socketInstance) {
+        socketInstance.emit('leave:project', projectId);
+        socketInstance.disconnect();
+      }
     };
   }, [projectId]);
 

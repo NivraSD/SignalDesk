@@ -137,7 +137,8 @@
       "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/FORCE_DEPLOY_NOW.sh:*)",
       "WebSearch",
       "Bash(supabase functions logs:*)",
-      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/test-direct-api.sh:*)"
+      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/test-direct-api.sh:*)",
+      "WebFetch(domain:vercel.com)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

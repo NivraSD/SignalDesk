@@ -9,7 +9,7 @@ import {
   AlertCircle, Target, Calendar, MessageSquare,
   Brain, Zap, ChevronRight, Loader
 } from 'lucide-react';
-import API_BASE_URL from '../config/api';
+import { supabase } from '../config/supabase';
 
 const NivPRStrategist = ({ onStrategyGenerated }) => {
   const [messages, setMessages] = useState([]);
@@ -39,7 +39,7 @@ const NivPRStrategist = ({ onStrategyGenerated }) => {
 
   // Initialize with welcome message
   useEffect(() => {
-    console.log('🔧 Niv: Component initializing with API_BASE_URL:', API_BASE_URL);
+    console.log('🔧 Niv: Component initializing with Supabase URL:', process.env.REACT_APP_SUPABASE_URL);
     
     const welcomeMessage = {
       id: Date.now(),
@@ -88,7 +88,7 @@ How can I assist you?`,
     setLoading(true);
 
     try {
-      console.log('🚀 Niv: Making request to:', `${API_BASE_URL}/niv/chat`);
+      console.log('🚀 Niv: Making request to Supabase Edge Function: niv-chat');
       console.log('🚀 Niv: Request payload:', {
         message: text,
         conversationId: conversationId,
@@ -99,13 +99,9 @@ How can I assist you?`,
         }
       });
       
-      const response = await fetch(`${API_BASE_URL}/niv/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
+      // Use Supabase Edge Functions for Niv PR Strategist
+      const { data, error } = await supabase.functions.invoke('niv-chat', {
+        body: {
           message: text,
           conversationId: conversationId,
           mode: mode,
@@ -113,16 +109,17 @@ How can I assist you?`,
             previousMessages: messages.slice(-5),
             currentProject: localStorage.getItem('activeProject')
           }
-        })
+        }
       });
+      
+      const response = { ok: !error, status: error ? 400 : 200 };
 
       console.log('📡 Niv: Response status:', response.status);
       console.log('📡 Niv: Response headers:', [...response.headers.entries()]);
 
-      const data = await response.json();
       console.log('📡 Niv: Response data:', data);
 
-      if (data.success) {
+      if (response.ok && data) {
         const nivMessage = {
           id: Date.now() + 1,
           role: 'assistant',

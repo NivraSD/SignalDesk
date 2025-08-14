@@ -1,11 +1,11 @@
 # SignalDesk Frontend - Vercel Deployment Guide
 
 ## 🎯 Objective
-Deploy SignalDesk frontend on Vercel and connect it to the Railway backend with working Claude AI integration.
+Deploy SignalDesk frontend on Vercel and connect it to the Supabase backend with working Claude AI integration.
 
 ## 📋 Prerequisites
 - Vercel account (free tier is sufficient)
-- Railway backend deployed at: `https://signaldesk-production.up.railway.app`
+- Supabase project configured at: `https://zskaxjtyuaqazydouifp.supabase.co`
 - Node.js and npm installed locally
 
 ## 🚀 Deployment Steps
@@ -59,7 +59,8 @@ vercel --prod
 
 | Variable Name | Value | Environment |
 |--------------|-------|-------------|
-| `REACT_APP_API_URL` | `https://signaldesk-production.up.railway.app/api` | Production |
+| `REACT_APP_SUPABASE_URL` | `https://zskaxjtyuaqazydouifp.supabase.co` | Production |
+| `REACT_APP_SUPABASE_ANON_KEY` | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8` | Production |
 | `REACT_APP_ENV` | `production` | Production |
 
 5. Click **Save** for each variable
@@ -84,14 +85,14 @@ vercel --prod
 
 3. **Check browser console:**
    - Open Developer Tools (F12)
-   - Look for: `API Configuration: Using API URL: https://signaldesk-production.up.railway.app/api`
+   - Look for: `API Configuration: Using Supabase URL: https://zskaxjtyuaqazydouifp.supabase.co`
 
 ## 🔧 Troubleshooting
 
 ### Issue: Frontend can't connect to backend
 
-**Solution 1: Check CORS on Railway backend**
-Ensure your Railway backend allows your Vercel domain:
+**Solution 1: Check CORS on Supabase project**
+Ensure your Supabase project allows your Vercel domain:
 ```javascript
 // In your backend server.js
 app.use(cors({
@@ -116,13 +117,13 @@ vercel env ls
 
 ### Issue: Claude AI not responding
 
-**Solution 1: Check Railway backend logs**
+**Solution 1: Check Supabase Edge Functions logs**
 ```bash
-# In Railway dashboard, check logs for Claude API errors
+# In Supabase dashboard, check Edge Function logs for Claude API errors
 ```
 
-**Solution 2: Verify Claude API key in Railway**
-Ensure `ANTHROPIC_API_KEY` is set in Railway environment variables
+**Solution 2: Verify Claude API key in Supabase**
+Ensure `ANTHROPIC_API_KEY` is set in Supabase Edge Function secrets
 
 ### Issue: Build fails on Vercel
 
@@ -185,11 +186,11 @@ vercel rollback [deployment-url]
 
 1. **Check Vercel Status:** https://vercel-status.com/
 2. **Vercel Documentation:** https://vercel.com/docs
-3. **Railway Status:** https://railway.app/status
+3. **Supabase Status:** https://status.supabase.com
 
 ## 📝 Notes
 
-- The frontend is configured to automatically connect to the Railway backend
+- The frontend is configured to automatically connect to the Supabase backend
 - All API calls go through the configured `REACT_APP_API_URL`
 - The test page at `/test-backend-connection.html` helps diagnose issues
 - Vercel automatically provides SSL and handles routing for SPA
@@ -205,4 +206,4 @@ When properly configured, you should see:
 
 ---
 
-**Last Updated:** Configuration optimized for Railway backend at `https://signaldesk-production.up.railway.app`
+**Last Updated:** Configuration optimized for Supabase backend at `https://zskaxjtyuaqazydouifp.supabase.co`

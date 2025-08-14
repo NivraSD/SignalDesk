@@ -6,7 +6,7 @@
  * Run this after deployment to verify the configuration
  */
 
-const EXPECTED_API_URL = 'https://signaldesk-production.up.railway.app/api';
+const EXPECTED_API_URL = 'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1';
 const VERCEL_URL = 'https://signaldesk-two.vercel.app';
 
 console.log('========================================');
@@ -46,8 +46,8 @@ async function verifyDeployment() {
       // Check for the correct API URL
       if (jsContent.includes(EXPECTED_API_URL)) {
         console.log('   ✅ Correct API URL found in bundle!');
-      } else if (jsContent.includes('signaldesk-production.up.railway.app')) {
-        console.warn('   ⚠️ Railway URL found but might be incomplete');
+      } else if (jsContent.includes('zskaxjtyuaqazydouifp.supabase.co')) {
+        console.warn('   ⚠️ Supabase URL found but might be incomplete');
       } else {
         console.error('   ❌ API URL not found in bundle!');
       }

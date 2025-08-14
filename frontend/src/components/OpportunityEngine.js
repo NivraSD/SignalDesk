@@ -107,7 +107,8 @@ const OpportunityEngine = ({ onAIMessage, isDragging = false }) => {
     try {
       // Try to fetch from backend first
       const token = localStorage.getItem('token');
-      const response = await fetch('https://signaldesk-production.up.railway.app/api/opportunities/discover', {
+      // Use Supabase functions for opportunity discovery
+      const response = await fetch(`${process.env.REACT_APP_SUPABASE_URL}/functions/v1/opportunities-discover`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -218,7 +219,8 @@ Deadline: ${opportunity.deadline}`;
   const trackOpportunity = async (opportunity) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`https://signaldesk-production.up.railway.app/api/opportunities/${opportunity.id}/track`, {
+      // Use Supabase functions for opportunity tracking
+      const response = await fetch(`${process.env.REACT_APP_SUPABASE_URL}/functions/v1/opportunities-track`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

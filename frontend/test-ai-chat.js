@@ -1,6 +1,6 @@
 // Test AI Chat specifically to identify the "restart after 2 messages" issue
 
-const API_BASE_URL = 'https://signaldesk-production.up.railway.app/api';
+const API_BASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1';
 
 async function testAIChatFlow() {
   console.log('🤖 Testing AI Chat Flow - "Restart after 2 messages" issue\n');
