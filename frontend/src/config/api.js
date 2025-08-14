@@ -30,10 +30,12 @@ console.log('- Database: Supabase PostgreSQL');
 console.log('- APIs: Supabase Edge Functions');
 console.log('✅ Supabase-only configuration loaded');
 
-// Debug log
-if (!API_BASE_URL.startsWith('http')) {
+// Debug log - only warn if API_BASE_URL is supposed to have a value
+if (API_BASE_URL && !API_BASE_URL.startsWith('http')) {
   console.error('⚠️ WARNING: API_BASE_URL is missing protocol:', API_BASE_URL);
   console.error('This will cause requests to fail. Check environment variables.');
+} else if (!API_BASE_URL) {
+  console.log('✅ Supabase-only mode: No API_BASE_URL needed');
 }
 
 // API request helper with retry logic
