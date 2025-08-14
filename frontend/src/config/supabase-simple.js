@@ -1,21 +1,6 @@
 // Simple Supabase functions that work without profile tables
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY
-
-export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key',
-  {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true,
-      storage: window.localStorage
-    }
-  }
-)
+// DEPRECATED: Use singleton client from config/supabase.js instead
+import { supabase } from './supabase'  // Use singleton client
 
 // Simple sign in - no profile lookup
 export const signIn = async (email, password) => {

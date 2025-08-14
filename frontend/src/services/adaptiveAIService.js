@@ -5,9 +5,9 @@
 
 class AdaptiveAIService {
   constructor() {
-    // Use Supabase functions for AI services
-    this.apiUrl = process.env.REACT_APP_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co';
-    console.log('AdaptiveAIService initialized with Supabase URL:', this.apiUrl);
+    // Hardcoded URL - no more environment variable issues
+    this.apiUrl = 'DISABLED/api';
+    console.log('AdaptiveAIService initialized with:', this.apiUrl);
   }
 
   // Process message - just returns whatever type of response for compatibility

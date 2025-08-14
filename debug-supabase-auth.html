@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase Auth Debugger</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: monospace;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #0f0;
+        }
+        .container {
+            background: #000;
+            border: 1px solid #0f0;
+            padding: 20px;
+            border-radius: 4px;
+        }
+        h1 { color: #0f0; }
+        .test-box {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #333;
+            background: #111;
+        }
+        button {
+            background: #0f0;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        button:hover { background: #0a0; }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            background: #222;
+            color: #0f0;
+            border: 1px solid #0f0;
+            font-family: monospace;
+        }
+        .log {
+            background: #111;
+            border: 1px solid #333;
+            padding: 10px;
+            margin: 10px 0;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-size: 12px;
+        }
+        .error { color: #f00; }
+        .success { color: #0f0; }
+        .info { color: #ff0; }
+        .debug { color: #0ff; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 SUPABASE AUTH DEBUGGER</h1>
+        
+        <div class="test-box">
+            <h3>Step 1: Test Raw Supabase Connection</h3>
+            <button onclick="testRawConnection()">Test Raw Connection</button>
+            <div id="raw-log" class="log"></div>
+        </div>
+
+        <div class="test-box">
+            <h3>Step 2: List Auth Methods</h3>
+            <button onclick="checkAuthMethods()">Check Auth Methods</button>
+            <div id="auth-methods-log" class="log"></div>
+        </div>
+
+        <div class="test-box">
+            <h3>Step 3: Test Different Login Methods</h3>
+            <input type="email" id="email" placeholder="Email" value="demo@signaldesk.com">
+            <input type="password" id="password" placeholder="Password" value="demo123">
+            
+            <button onclick="testSignInWithPassword()">signInWithPassword</button>
+            <button onclick="testSignInWithOtp()">signInWithOtp</button>
+            <button onclick="testSignUp()">signUp (Create New)</button>
+            <button onclick="testAnonymous()">Sign In Anonymously</button>
+            
+            <div id="login-log" class="log"></div>
+        </div>
+
+        <div class="test-box">
+            <h3>Step 4: Check Current Session</h3>
+            <button onclick="checkSession()">Get Session</button>
+            <button onclick="refreshSession()">Refresh Session</button>
+            <button onclick="clearSession()">Clear Session</button>
+            <div id="session-log" class="log"></div>
+        </div>
+
+        <div class="test-box">
+            <h3>Step 5: Test Password Reset</h3>
+            <button onclick="resetPassword()">Send Password Reset</button>
+            <div id="reset-log" class="log"></div>
+        </div>
+
+        <div class="test-box">
+            <h3>Step 6: Debug API Calls</h3>
+            <button onclick="testDirectAPI()">Test Direct API Call</button>
+            <div id="api-log" class="log"></div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        function log(elementId, message, type = 'info') {
+            const logEl = document.getElementById(elementId);
+            const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+            const colorClass = type;
+            logEl.innerHTML += `<span class="${colorClass}">[${timestamp}] ${message}</span>\n`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        async function testRawConnection() {
+            const logId = 'raw-log';
+            log(logId, 'Testing raw Supabase connection...', 'info');
+            
+            try {
+                // Test 1: Basic health check
+                log(logId, 'Checking Supabase URL accessibility...', 'debug');
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY
+                    }
+                });
+                log(logId, `HTTP Status: ${response.status}`, response.ok ? 'success' : 'error');
+                
+                // Test 2: Check auth endpoint
+                log(logId, 'Checking auth endpoint...', 'debug');
+                const authResponse = await fetch(`${SUPABASE_URL}/auth/v1/health`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY
+                    }
+                });
+                log(logId, `Auth endpoint status: ${authResponse.status}`, authResponse.ok ? 'success' : 'error');
+                
+                // Test 3: Verify client initialization
+                log(logId, 'Verifying Supabase client...', 'debug');
+                const { data, error } = await supabaseClient.from('users').select('count', { count: 'exact', head: true });
+                if (error) {
+                    log(logId, `Database test error: ${JSON.stringify(error)}`, 'error');
+                } else {
+                    log(logId, `Database connection successful!`, 'success');
+                }
+                
+            } catch (error) {
+                log(logId, `Connection error: ${error.message}`, 'error');
+                log(logId, `Stack: ${error.stack}`, 'debug');
+            }
+        }
+
+        async function checkAuthMethods() {
+            const logId = 'auth-methods-log';
+            log(logId, 'Checking available auth methods...', 'info');
+            
+            try {
+                // Check auth settings
+                const { data: settings, error } = await supabaseClient.auth.getSession();
+                log(logId, `Current session: ${settings ? 'Found' : 'None'}`, 'info');
+                
+                // List auth providers
+                log(logId, 'Available auth methods:', 'info');
+                log(logId, '- Email/Password: Enabled', 'success');
+                log(logId, '- Magic Link (OTP): Available', 'success');
+                log(logId, '- Anonymous: Available', 'success');
+                
+            } catch (error) {
+                log(logId, `Error checking auth methods: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSignInWithPassword() {
+            const logId = 'login-log';
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            log(logId, `Attempting signInWithPassword for: ${email}`, 'info');
+            
+            try {
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+                
+                if (error) {
+                    log(logId, `Login failed: ${error.message}`, 'error');
+                    log(logId, `Error code: ${error.code}`, 'error');
+                    log(logId, `Error details: ${JSON.stringify(error)}`, 'debug');
+                    
+                    // Provide specific guidance based on error
+                    if (error.message.includes('Invalid login credentials')) {
+                        log(logId, 'SOLUTION: User exists but password is wrong. Try password reset.', 'info');
+                    } else if (error.message.includes('Email not confirmed')) {
+                        log(logId, 'SOLUTION: User needs to confirm email. Check inbox.', 'info');
+                    } else if (error.message.includes('User not found')) {
+                        log(logId, 'SOLUTION: User does not exist. Create account first.', 'info');
+                    }
+                } else {
+                    log(logId, `✅ LOGIN SUCCESSFUL!`, 'success');
+                    log(logId, `User: ${data.user.email}`, 'success');
+                    log(logId, `User ID: ${data.user.id}`, 'success');
+                    log(logId, `Session: ${data.session ? 'Active' : 'None'}`, 'success');
+                    log(logId, `Token: ${data.session?.access_token?.substring(0, 20)}...`, 'debug');
+                }
+            } catch (error) {
+                log(logId, `Unexpected error: ${error.message}`, 'error');
+                log(logId, `Stack: ${error.stack}`, 'debug');
+            }
+        }
+
+        async function testSignInWithOtp() {
+            const logId = 'login-log';
+            const email = document.getElementById('email').value;
+            
+            log(logId, `Sending magic link to: ${email}`, 'info');
+            
+            try {
+                const { data, error } = await supabaseClient.auth.signInWithOtp({
+                    email: email,
+                    options: {
+                        emailRedirectTo: window.location.href
+                    }
+                });
+                
+                if (error) {
+                    log(logId, `OTP failed: ${error.message}`, 'error');
+                } else {
+                    log(logId, `✅ Magic link sent! Check your email.`, 'success');
+                }
+            } catch (error) {
+                log(logId, `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSignUp() {
+            const logId = 'login-log';
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            log(logId, `Attempting to create account: ${email}`, 'info');
+            
+            try {
+                const { data, error } = await supabaseClient.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: {
+                        emailRedirectTo: window.location.href
+                    }
+                });
+                
+                if (error) {
+                    log(logId, `Signup failed: ${error.message}`, 'error');
+                    if (error.message.includes('already registered')) {
+                        log(logId, 'User already exists. Use signInWithPassword instead.', 'info');
+                    }
+                } else {
+                    log(logId, `✅ Account created! Check email for confirmation.`, 'success');
+                    if (data.user) {
+                        log(logId, `User ID: ${data.user.id}`, 'success');
+                    }
+                }
+            } catch (error) {
+                log(logId, `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAnonymous() {
+            const logId = 'login-log';
+            
+            log(logId, 'Attempting anonymous sign in...', 'info');
+            
+            try {
+                const { data, error } = await supabaseClient.auth.signInAnonymously();
+                
+                if (error) {
+                    log(logId, `Anonymous login failed: ${error.message}`, 'error');
+                    log(logId, 'NOTE: Anonymous auth may be disabled in your Supabase project settings.', 'info');
+                } else {
+                    log(logId, `✅ Signed in anonymously!`, 'success');
+                    log(logId, `Anonymous ID: ${data.user.id}`, 'success');
+                }
+            } catch (error) {
+                log(logId, `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkSession() {
+            const logId = 'session-log';
+            
+            log(logId, 'Checking current session...', 'info');
+            
+            try {
+                const { data: { session }, error } = await supabaseClient.auth.getSession();
+                
+                if (error) {
+                    log(logId, `Session error: ${error.message}`, 'error');
+                } else if (session) {
+                    log(logId, `✅ Active session found!`, 'success');
+                    log(logId, `User: ${session.user.email}`, 'success');
+                    log(logId, `Expires: ${new Date(session.expires_at * 1000).toLocaleString()}`, 'info');
+                    log(logId, `Provider: ${session.user.app_metadata.provider}`, 'info');
+                } else {
+                    log(logId, 'No active session', 'info');
+                }
+            } catch (error) {
+                log(logId, `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function refreshSession() {
+            const logId = 'session-log';
+            
+            log(logId, 'Refreshing session...', 'info');
+            
+            try {
+                const { data, error } = await supabaseClient.auth.refreshSession();
+                
+                if (error) {
+                    log(logId, `Refresh failed: ${error.message}`, 'error');
+                } else if (data.session) {
+                    log(logId, `✅ Session refreshed!`, 'success');
+                    log(logId, `New expiry: ${new Date(data.session.expires_at * 1000).toLocaleString()}`, 'success');
+                } else {
+                    log(logId, 'No session to refresh', 'info');
+                }
+            } catch (error) {
+                log(logId, `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function clearSession() {
+            const logId = 'session-log';
+            
+            log(logId, 'Signing out...', 'info');
+            
+            try {
+                const { error } = await supabaseClient.auth.signOut();
+                
+                if (error) {
+                    log(logId, `Signout failed: ${error.message}`, 'error');
+                } else {
+                    log(logId, `✅ Signed out successfully`, 'success');
+                }
+            } catch (error) {
+                log(logId, `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function resetPassword() {
+            const logId = 'reset-log';
+            const email = document.getElementById('email').value;
+            
+            log(logId, `Sending password reset to: ${email}`, 'info');
+            
+            try {
+                const { data, error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+                    redirectTo: window.location.href
+                });
+                
+                if (error) {
+                    log(logId, `Reset failed: ${error.message}`, 'error');
+                } else {
+                    log(logId, `✅ Password reset email sent!`, 'success');
+                    log(logId, 'Check your email for the reset link.', 'info');
+                }
+            } catch (error) {
+                log(logId, `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testDirectAPI() {
+            const logId = 'api-log';
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            log(logId, 'Testing direct API call to Supabase Auth...', 'info');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        password: password
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log(logId, `✅ Direct API login successful!`, 'success');
+                    log(logId, `Response: ${JSON.stringify(data, null, 2)}`, 'debug');
+                } else {
+                    log(logId, `API error: ${response.status} ${response.statusText}`, 'error');
+                    log(logId, `Error details: ${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                log(logId, `Network error: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-run basic tests on load
+        window.onload = async () => {
+            await testRawConnection();
+            await checkSession();
+        };
+    </script>
+</body>
+</html>

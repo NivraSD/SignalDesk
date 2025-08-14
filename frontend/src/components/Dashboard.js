@@ -11,7 +11,7 @@ const Dashboard = () => {
     { title: 'Campaign Intelligence', path: '/campaign-intelligence', color: '#ffc107', desc: 'Plan campaigns' },
     { title: 'MemoryVault', path: '/memory-vault', color: '#6f42c1', desc: 'Store brand content' },
     { title: 'Crisis Command', path: '/crisis-command', color: '#dc3545', desc: 'Crisis management' },
-    { title: 'AI Monitoring', path: '/monitoring', color: '#00bcd4', desc: 'Sentiment analysis & alerts' }
+    { title: 'Stakeholder Intelligence', path: '/monitoring', color: '#00bcd4', desc: 'Monitor stakeholders & gather intelligence' }
   ];
 
   return (

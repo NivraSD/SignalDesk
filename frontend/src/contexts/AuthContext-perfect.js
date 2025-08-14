@@ -1,20 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { createClient } from '@supabase/supabase-js';
-
-// Supabase client - direct and clean
-const supabase = createClient(
-  process.env.REACT_APP_SUPABASE_URL,
-  process.env.REACT_APP_SUPABASE_ANON_KEY,
-  {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: false,
-      flowType: 'pkce'
-    }
-  }
-);
+import { supabase } from '../config/supabase';  // Use singleton client - CRITICAL FIX
 
 const AuthContext = createContext({});
 

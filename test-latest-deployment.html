@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test SignalDesk Latest Deployment</title>
+</head>
+<body>
+    <h1>SignalDesk Deployment Test</h1>
+    
+    <div id="status">Testing deployment...</div>
+    
+    <iframe 
+        src="https://signaldesk-frontend-56f1yp1t1-nivra-sd.vercel.app" 
+        width="100%" 
+        height="600"
+        style="border: 2px solid #ccc; border-radius: 8px;">
+    </iframe>
+    
+    <script>
+        // Test if the app is accessible
+        fetch('https://signaldesk-frontend-56f1yp1t1-nivra-sd.vercel.app')
+            .then(response => {
+                document.getElementById('status').innerHTML = 
+                    `<p style="color: green;">✓ Deployment accessible (Status: ${response.status})</p>
+                     <p>URL: <a href="https://signaldesk-frontend-56f1yp1t1-nivra-sd.vercel.app" target="_blank">https://signaldesk-frontend-56f1yp1t1-nivra-sd.vercel.app</a></p>
+                     <p>Try logging in with: demo@signaldesk.com / DemoPassword123!</p>`;
+            })
+            .catch(error => {
+                document.getElementById('status').innerHTML = 
+                    `<p style="color: red;">✗ Error accessing deployment: ${error}</p>`;
+            });
+    </script>
+</body>
+</html>

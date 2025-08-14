@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,16 +12,51 @@ serve(async (req) => {
   }
 
   try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    
     const body = await req.json()
-    const { action } = body
+    const { action, organizationId, sources } = body
 
     switch (action) {
+      case 'getFindings': {
+        const { data: findings, error } = await supabase
+          .from('intelligence_findings')
+          .select('*')
+          .eq('organization_id', organizationId || 'demo-org')
+          .order('created_at', { ascending: false })
+          .limit(50)
+          
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            findings: findings || [],
+            message: 'Intelligence findings retrieved'
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      
       case 'startMonitoring': {
+        // Create monitoring entry
+        const { error: insertError } = await supabase
+          .from('monitoring_alerts')
+          .insert({
+            organization_id: organizationId || 'demo-org',
+            alert_type: 'system',
+            title: 'Monitoring Started',
+            message: `Intelligence monitoring activated for ${sources?.length || 0} sources`,
+            severity: 'info',
+            status: 'active'
+          })
+          
         return new Response(
           JSON.stringify({ 
             success: true, 
             message: 'Monitoring started successfully',
-            status: 'active'
+            status: 'active',
+            sources: sources || []
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
@@ -38,11 +74,18 @@ serve(async (req) => {
       }
 
       case 'getStatus': {
+        const { data: alerts } = await supabase
+          .from('monitoring_alerts')
+          .select('*')
+          .eq('organization_id', organizationId || 'demo-org')
+          .eq('status', 'active')
+          .limit(1)
+          
         return new Response(
           JSON.stringify({ 
             success: true,
-            isActive: true,
-            organization: 'SignalDesk',
+            isActive: !!alerts?.length,
+            organization: organizationId || 'SignalDesk',
             status: 'ready',
             message: 'Monitoring service is operational'
           }),
@@ -65,7 +108,7 @@ serve(async (req) => {
           JSON.stringify({ 
             success: true,
             message: 'Monitoring service ready',
-            availableActions: ['startMonitoring', 'stopMonitoring', 'getStatus', 'configureSources']
+            availableActions: ['getFindings', 'startMonitoring', 'stopMonitoring', 'getStatus', 'configureSources']
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )

@@ -12,7 +12,14 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, model = 'claude-3-haiku-20240307', max_tokens = 1000, ...options } = await req.json()
+    const requestBody = await req.json()
+    // Support both 'message' and 'prompt' fields for backwards compatibility
+    const { message, prompt, model = 'claude-3-haiku-20240307', max_tokens = 1000, ...options } = requestBody
+    const userPrompt = message || prompt || ''
+    
+    if (!userPrompt) {
+      throw new Error('No message or prompt provided')
+    }
 
     // Get Anthropic API key from environment
     const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
@@ -31,7 +38,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model,
         max_tokens,
-        messages: [{ role: 'user', content: prompt }],
+        messages: [{ role: 'user', content: userPrompt }],
         ...options
       })
     })
@@ -53,8 +60,13 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
+    console.error('Claude chat error:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        success: false,
+        error: error.message || 'Internal server error',
+        details: error.toString()
+      }),
       { 
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 

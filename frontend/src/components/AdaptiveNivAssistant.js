@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useProject } from '../contexts/ProjectContext';
-import { generateAIContent, analyzeContent as apiAnalyzeContent } from '../services/api';
+import supabaseApiService from '../services/supabaseApiService';
 import SaveToMemoryVaultButton from './MemoryVault/SaveToMemoryVaultButton';
 
 const AdaptiveNivAssistant = ({ 
@@ -261,7 +261,7 @@ ${Object.entries(info).map(([key, value]) => `• ${key}: ${value.substring(0, 1
     try {
       const prompt = `Create a ${currentContentType} with the following information:\n\n${Object.entries(info).map(([key, value]) => `${key}: ${value}`).join('\n\n')}`;
       
-      const response = await generateAIContent({
+      const response = await supabaseApiService.generateContent(currentContentType, {
         prompt,
         type: currentContentType,
         tone: adaptivePersonality.tone,
@@ -478,8 +478,7 @@ Context:
 Respond helpfully and adapt your tone to match the user's preferred communication style.`;
 
     try {
-      const response = await generateAIContent({
-        prompt: contextualPrompt,
+      const response = await supabaseApiService.sendClaudeMessage(contextualPrompt, {
         type: 'conversation',
         tone: adaptivePersonality.tone,
         projectId: selectedProject?.id,
@@ -525,17 +524,18 @@ Respond helpfully and adapt your tone to match the user's preferred communicatio
   // Analyze generated content
   const analyzeGeneratedContent = async (content) => {
     try {
-      const analysis = await apiAnalyzeContent({
-        content,
-        contentType: currentContentType,
-        tone: adaptivePersonality.tone,
-        user_id: user?.userId,
-        context: {
+      const analysis = await supabaseApiService.sendClaudeMessage(
+        `Analyze this ${currentContentType}: ${content}`,
+        {
+          action: 'analyzeContent',
+          contentType: currentContentType,
+          tone: adaptivePersonality.tone,
+          user_id: user?.id,
           company: selectedProject?.name || user?.company,
           industry: selectedProject?.industry || 'technology',
           projectId: selectedProject?.id,
         }
-      });
+      );
       
       setContentAnalysis(analysis.analysis);
       

@@ -7,14 +7,26 @@ if (window.__SUPABASE_CLIENT__) {
   throw new Error('Multiple Supabase clients detected! Use the singleton from config/supabase.js')
 }
 
-// Get from environment variables
+// Get from environment variables - NO HARDCODED FALLBACKS FOR SECURITY
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL
 const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY
 
-// Validate environment variables
+// Log configuration (for debugging)
+console.log('🔧 Supabase Configuration:', {
+  url: supabaseUrl,
+  hasKey: !!supabaseAnonKey,
+  envVarsPresent: !!(process.env.REACT_APP_SUPABASE_URL && process.env.REACT_APP_SUPABASE_ANON_KEY),
+  buildTime: new Date().toISOString()
+})
+
+// Validate configuration
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('CRITICAL: Supabase configuration missing. Add REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY to .env')
-  throw new Error('Supabase configuration is required')
+  console.error('CRITICAL: Supabase configuration missing from environment variables')
+  console.error('Required environment variables:')
+  console.error('- REACT_APP_SUPABASE_URL')
+  console.error('- REACT_APP_SUPABASE_ANON_KEY')
+  console.error('Please set these in your .env file locally or in Vercel environment settings for production')
+  throw new Error('Supabase configuration is required. Please set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY environment variables.')
 }
 
 // Create SINGLETON Supabase client - DO NOT create multiple instances

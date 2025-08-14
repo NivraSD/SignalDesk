@@ -160,6 +160,7 @@ const enhancedClaudeRoutes = require("./src/routes/enhancedClaudeRoutes");
 const healthCheckRoutes = require("./src/routes/healthCheckRoutes");
 const mcpRoutes = require("./src/routes/mcpRoutes");
 const nivRoutes = require("./src/routes/nivRoutes");
+const aiClaudeRoutes = require("./src/routes/aiClaudeRoutes"); // Main Claude API endpoints
 
 // Database initialization routes (MUST BE BEFORE AUTH FOR PUBLIC ACCESS)
 const databaseInitRoutes = require("./src/routes/databaseInit");
@@ -246,6 +247,7 @@ app.use("/api", healthCheckRoutes); // Health check and monitoring - MUST BE FIR
 app.use("/api/auth", authRoutes);
 app.use("/api/proxy", proxyRoutes); // Proxy routes for external APIs (CORS avoidance)
 app.use("/api/claude-diagnostics", claudeDiagnosticsRoutes); // Claude diagnostics for debugging
+app.use("/api", aiClaudeRoutes); // Main Claude API endpoints - MUST BE EARLY for /ai/claude/message
 
 // ⚡ ORIGINAL SOPHISTICATED ROUTES - Load BEFORE generic Claude routes
 // CRITICAL: These MUST load before enhancedClaudeRoutes to prevent override

@@ -1,15 +1,12 @@
-// Smart API URL resolution with fallback
+// SUPABASE-ONLY MODE - No traditional backend API
+import { supabase } from './supabase';
+
 const getAPIBaseURL = () => {
-  // Primary: Environment variable from build
-  if (process.env.REACT_APP_API_URL) {
-    return process.env.REACT_APP_API_URL;
-  }
-  
-  // No fallback - Supabase is configured via environment variables
+  // Return empty string - all API calls go through Supabase
   return '';
 };
 
-const API_BASE_URL = getAPIBaseURL();
+const API_BASE_URL = '';  // No backend server - Supabase handles everything
 
 // Enhanced API configuration with retry logic and error handling
 const API_CONFIG = {
@@ -24,14 +21,14 @@ const API_CONFIG = {
 };
 
 // Log the current configuration
-console.log('SignalDesk API Configuration:');
-console.log('- API URL Source:', process.env.REACT_APP_API_URL ? 'Environment Variable' : 'Fallback');
-console.log('- API URL:', API_BASE_URL);
-console.log('- Environment:', process.env.REACT_APP_ENVIRONMENT || process.env.NODE_ENV);
-console.log('- Build ID:', process.env.REACT_APP_BUILD_ID || 'unknown');
-console.log('- Timeout:', API_CONFIG.timeout, 'ms');
-console.log('- Retry Attempts:', API_CONFIG.retryAttempts);
-console.log('✅ API configuration loaded successfully');
+console.log('SignalDesk Configuration - SUPABASE ONLY:');
+console.log('- Backend Mode: Supabase Edge Functions');
+console.log('- Supabase URL:', process.env.REACT_APP_SUPABASE_URL);
+console.log('- Environment:', process.env.NODE_ENV);
+console.log('- Auth: Supabase Auth');
+console.log('- Database: Supabase PostgreSQL');
+console.log('- APIs: Supabase Edge Functions');
+console.log('✅ Supabase-only configuration loaded');
 
 // Debug log
 if (!API_BASE_URL.startsWith('http')) {

@@ -5,8 +5,8 @@ import { useProject } from '../contexts/ProjectContext';
 import { useAuth } from '../contexts/AuthContext';
 import ContentGeneratorModule from './ContentGeneratorModule';
 import OpportunityEngine from './OpportunityEngine';
-import API_BASE_URL from '../config/api';
-// import adaptiveAI from '../services/adaptiveAIService'; // REMOVED - backend handles everything
+import AdaptiveNivAssistant from './AdaptiveNivAssistant';
+import supabaseApiService from '../services/supabaseApiService';
 import {
   Bot, Brain, FileText, Users, TrendingUp, AlertTriangle, 
   BarChart3, Archive, Send, ChevronLeft, ChevronRight, X,
@@ -65,6 +65,18 @@ const RailwayDraggable = () => {
   
   // Feature/Activity definitions
   const activities = [
+    {
+      id: 'niv-command-center',
+      name: 'Niv Command Center',
+      isNew: true,
+      icon: Brain,
+      color: '#8b5cf6',
+      description: 'Your AI PR Strategist & Platform Commander',
+      status: 'ready',
+      stats: '20+ years expertise',
+      component: AdaptiveNivAssistant,
+      lastUsed: 'Always active'
+    },
     {
       id: 'content-generator',
       name: 'Content Generator',
@@ -326,17 +338,12 @@ const RailwayDraggable = () => {
     if (!newProjectName.trim()) return;
     
     try {
-      const response = await fetch(`${API_BASE_URL}/projects`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ name: newProjectName })
+      const newProject = await supabaseApiService.createProject({ 
+        name: newProjectName,
+        user_id: user?.id
       });
       
-      if (response.ok) {
-        const newProject = await response.json();
+      if (newProject) {
         await fetchProjects();
         selectProject(newProject);
         navigate(`/projects/${newProject.id}`);
@@ -434,26 +441,17 @@ const RailwayDraggable = () => {
     
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/ai/unified-chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          message: `Edit the following content based on this request: "${editPrompt}"\n\nCurrent content:\n${currentContent}`,
+      const data = await supabaseApiService.sendClaudeMessage(
+        `Edit the following content based on this request: "${editPrompt}"\n\nCurrent content:\n${currentContent}`,
+        {
           mode: 'content',
           sessionId: sessionId,
-          context: {
-            folder: 'content-generator',
-            editing: true,
-            contentType: metadata?.contentType,
-            tone: metadata?.tone
-          }
-        })
-      });
-
-      const data = await response.json();
+          folder: 'content-generator',
+          editing: true,
+          contentType: metadata?.contentType,
+          tone: metadata?.tone
+        }
+      );
       
       if (data.success && data.response) {
         // Update content directly in the Content Generator feature (not in chat)
@@ -559,27 +557,15 @@ const RailwayDraggable = () => {
     try {
       const hasContent = !!(generatedContent && generatedContent.trim());
       
-      const response = await fetch(`${API_BASE_URL}/ai/unified-chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          message: text,
-          mode: isContentMessage ? 'content' : 'general',
-          sessionId: sessionId,
-          context: {
-            folder: isContentMessage ? 'content-generator' : 'general',
-            contentTypeId: typeId,
-            contentTypeName: typeName || text, // Use message as content type if not specified
-            hasGeneratedContent: hasContent,
-            currentContent: generatedContent
-          }
-        })
+      const data = await supabaseApiService.sendClaudeMessage(text, {
+        mode: isContentMessage ? 'content' : 'general',
+        sessionId: sessionId,
+        folder: isContentMessage ? 'content-generator' : 'general',
+        contentTypeId: typeId,
+        contentTypeName: typeName || text, // Use message as content type if not specified
+        hasGeneratedContent: hasContent,
+        currentContent: generatedContent
       });
-
-      const data = await response.json();
       
       if (data.success && data.response) {
         if (data.isGeneratedContent) {
@@ -640,28 +626,16 @@ const RailwayDraggable = () => {
       // Build prompt from guided flow context
       const prompt = `Create a ${params.type} about ${params.topic} for ${params.audience} audience with a ${params.tone} tone. ${params.keyPoints || ''}`;
       
-      const response = await fetch(`${API_BASE_URL}/ai/unified-chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          message: prompt,
-          mode: 'content',
-          sessionId: sessionId,
-          context: {
-            folder: 'content-generator',
-            contentType: params.type,
-            contentTypeId: params.type,  // CRITICAL: Backend expects contentTypeId
-            contentTypeName: params.type,
-            generateDirectly: true,
-            userRequestedGeneration: true
-          }
-        })
+      const data = await supabaseApiService.sendClaudeMessage(prompt, {
+        mode: 'content',
+        sessionId: sessionId,
+        folder: 'content-generator',
+        contentType: params.type,
+        contentTypeId: params.type,  // CRITICAL: Backend expects contentTypeId
+        contentTypeName: params.type,
+        generateDirectly: true,
+        userRequestedGeneration: true
       });
-
-      const data = await response.json();
       
       if (data.success && data.response) {
         // Set the generated content directly
@@ -1098,6 +1072,27 @@ const RailwayDraggable = () => {
           </div>
           
           <div className="panel-content">
+            {selectedFeature?.id === 'niv-command-center' && (
+              <AdaptiveNivAssistant
+                onContentGenerated={(content, type) => {
+                  // Handle content generation from Niv
+                  setGeneratedContent(content);
+                  setCurrentContentType(type);
+                  // Open Content Generator to show the content
+                  const contentGen = activities.find(a => a.id === 'content-generator');
+                  if (contentGen) {
+                    handleActivityClick(contentGen);
+                  }
+                }}
+                onStrategyGenerated={(strategy) => {
+                  console.log('Strategy generated by Niv:', strategy);
+                }}
+                style={{
+                  height: '100%',
+                  background: 'transparent'
+                }}
+              />
+            )}
             {selectedFeature?.id === 'content-generator' && (
               <ContentGeneratorModule
                 onAIMessage={handleContentGeneratorMessage}

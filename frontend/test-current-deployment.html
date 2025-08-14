@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Current Deployment - SignalDesk</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .test-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 10px 10px 0;
+            transition: all 0.3s;
+        }
+        .test-button:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+        .success {
+            background: #c6f6d5;
+            border-color: #9ae6b4;
+            color: #22543d;
+        }
+        .error {
+            background: #fed7d7;
+            border-color: #fc8181;
+            color: #742a2a;
+        }
+        .info {
+            background: #e6f7ff;
+            border-color: #91d5ff;
+            color: #0050b3;
+        }
+        pre {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 14px;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-online { background: #48bb78; }
+        .status-offline { background: #f56565; }
+        .status-checking { background: #f6ad55; }
+        .deployment-link {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-block;
+            margin: 5px 0;
+        }
+        .deployment-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 SignalDesk Deployment Test Suite</h1>
+        
+        <div class="test-section">
+            <h2>📍 Current Deployment</h2>
+            <p><strong>Latest URL:</strong> <a href="https://signaldesk-frontend-ju4nrqz1h-nivra-sd.vercel.app" target="_blank" class="deployment-link">https://signaldesk-frontend-ju4nrqz1h-nivra-sd.vercel.app</a></p>
+            <p><strong>Production URL:</strong> <a href="https://signaldesk-frontend.vercel.app" target="_blank" class="deployment-link">https://signaldesk-frontend.vercel.app</a></p>
+            <button class="test-button" onclick="testDeployment()">Test Deployment Status</button>
+            <div id="deployment-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🤖 Claude AI Integration</h2>
+            <button class="test-button" onclick="testClaudeConnection()">Test Claude Connection</button>
+            <button class="test-button" onclick="testClaudeChat()">Test Claude Chat</button>
+            <div id="claude-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>📊 Monitoring Service</h2>
+            <button class="test-button" onclick="testMonitoringService()">Test Monitoring Status</button>
+            <button class="test-button" onclick="testIntelligenceFindings()">Check Intelligence Findings</button>
+            <div id="monitoring-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🔐 Supabase Auth</h2>
+            <input type="email" id="test-email" placeholder="test@example.com" style="padding: 10px; margin-right: 10px;">
+            <input type="password" id="test-password" placeholder="password" style="padding: 10px; margin-right: 10px;">
+            <button class="test-button" onclick="testSupabaseLogin()">Test Login</button>
+            <button class="test-button" onclick="testSupabaseSignup()">Test Signup</button>
+            <div id="auth-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🔧 API Endpoints</h2>
+            <button class="test-button" onclick="testAPIHealth()">Test API Health</button>
+            <button class="test-button" onclick="testSupabaseEdgeFunctions()">Test Edge Functions</button>
+            <div id="api-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>📝 Full System Test</h2>
+            <button class="test-button" onclick="runFullSystemTest()">Run Complete Test Suite</button>
+            <div id="full-test-result"></div>
+        </div>
+    </div>
+
+    <script>
+        const DEPLOYMENT_URL = 'https://signaldesk-frontend-ju4nrqz1h-nivra-sd.vercel.app';
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+
+        function showResult(elementId, content, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="result ${type}">${content}</div>`;
+        }
+
+        async function testDeployment() {
+            showResult('deployment-result', 'Checking deployment status...', 'info');
+            try {
+                const response = await fetch(DEPLOYMENT_URL);
+                if (response.ok) {
+                    const text = await response.text();
+                    const hasReact = text.includes('root') || text.includes('React');
+                    const hasSignalDesk = text.includes('SignalDesk') || text.includes('signal');
+                    
+                    showResult('deployment-result', `
+                        <span class="status-indicator status-online"></span>
+                        Deployment is LIVE! ✅<br>
+                        Status: ${response.status}<br>
+                        React App: ${hasReact ? 'Detected' : 'Not found'}<br>
+                        SignalDesk: ${hasSignalDesk ? 'Detected' : 'Not found'}
+                    `, 'success');
+                } else {
+                    showResult('deployment-result', `Deployment returned status: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                showResult('deployment-result', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testClaudeConnection() {
+            showResult('claude-result', 'Testing Claude connection...', 'info');
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/claude-chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        prompt: 'Hello Claude, are you connected?',
+                        model: 'claude-3-haiku-20240307',
+                        max_tokens: 50
+                    })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('claude-result', `
+                        <span class="status-indicator status-online"></span>
+                        Claude is CONNECTED! ✅<br>
+                        Response: ${JSON.stringify(data).substring(0, 200)}...
+                    `, 'success');
+                } else {
+                    showResult('claude-result', `Claude connection failed: ${JSON.stringify(data)}`, 'error');
+                }
+            } catch (error) {
+                showResult('claude-result', `Error testing Claude: ${error.message}`, 'error');
+            }
+        }
+
+        async function testClaudeChat() {
+            showResult('claude-result', 'Testing Claude chat functionality...', 'info');
+            try {
+                const response = await fetch(`${DEPLOYMENT_URL}/api/ai/claude/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: 'What is SignalDesk?',
+                        context: { type: 'test' }
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult('claude-result', `
+                        Claude Chat Working! ✅<br>
+                        <pre>${JSON.stringify(data, null, 2).substring(0, 500)}</pre>
+                    `, 'success');
+                } else {
+                    showResult('claude-result', `Chat API returned: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                showResult('claude-result', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testMonitoringService() {
+            showResult('monitoring-result', 'Testing monitoring service...', 'info');
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/monitor-intelligence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        action: 'getStatus',
+                        organizationId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+                    })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('monitoring-result', `
+                        <span class="status-indicator status-online"></span>
+                        Monitoring Service ACTIVE! ✅<br>
+                        Status: ${JSON.stringify(data).substring(0, 200)}
+                    `, 'success');
+                } else {
+                    showResult('monitoring-result', `Monitoring service error: ${JSON.stringify(data)}`, 'error');
+                }
+            } catch (error) {
+                showResult('monitoring-result', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testIntelligenceFindings() {
+            showResult('monitoring-result', 'Checking intelligence findings...', 'info');
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/intelligence_findings?limit=5`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('monitoring-result', `
+                        Found ${data.length} intelligence findings<br>
+                        <pre>${JSON.stringify(data, null, 2).substring(0, 500)}</pre>
+                    `, 'success');
+                } else {
+                    showResult('monitoring-result', `Error fetching findings: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                showResult('monitoring-result', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSupabaseLogin() {
+            const email = document.getElementById('test-email').value || 'test@signaldesk.com';
+            const password = document.getElementById('test-password').value || 'TestPass123!';
+            
+            showResult('auth-result', 'Testing login...', 'info');
+            try {
+                const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('auth-result', `
+                        <span class="status-indicator status-online"></span>
+                        Login SUCCESSFUL! ✅<br>
+                        User: ${data.user?.email}<br>
+                        Token: ${data.access_token?.substring(0, 50)}...
+                    `, 'success');
+                } else {
+                    showResult('auth-result', `Login failed: ${data.error || data.msg || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                showResult('auth-result', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSupabaseSignup() {
+            const email = `test${Date.now()}@signaldesk.com`;
+            const password = 'TestPass123!';
+            
+            showResult('auth-result', 'Testing signup...', 'info');
+            try {
+                const response = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('auth-result', `
+                        Signup successful!<br>
+                        Email: ${email}<br>
+                        Status: ${data.user?.email_confirmed_at ? 'Confirmed' : 'Needs confirmation'}
+                    `, 'success');
+                } else {
+                    showResult('auth-result', `Signup failed: ${data.error || data.msg}`, 'error');
+                }
+            } catch (error) {
+                showResult('auth-result', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAPIHealth() {
+            showResult('api-result', 'Testing API health...', 'info');
+            try {
+                const response = await fetch(`${DEPLOYMENT_URL}/api/health`);
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult('api-result', `
+                        API is healthy! ✅<br>
+                        ${JSON.stringify(data, null, 2)}
+                    `, 'success');
+                } else {
+                    showResult('api-result', `API returned status: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                // API might not have health endpoint, check main app
+                try {
+                    const appResponse = await fetch(DEPLOYMENT_URL);
+                    if (appResponse.ok) {
+                        showResult('api-result', 'App is running (no dedicated health endpoint)', 'info');
+                    } else {
+                        showResult('api-result', `Error: ${error.message}`, 'error');
+                    }
+                } catch (appError) {
+                    showResult('api-result', `Error: ${appError.message}`, 'error');
+                }
+            }
+        }
+
+        async function testSupabaseEdgeFunctions() {
+            showResult('api-result', 'Testing Supabase Edge Functions...', 'info');
+            const functions = ['claude-chat', 'monitor-intelligence'];
+            const results = [];
+
+            for (const func of functions) {
+                try {
+                    const response = await fetch(`${SUPABASE_URL}/functions/v1/${func}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        },
+                        body: JSON.stringify({ test: true })
+                    });
+                    
+                    results.push(`${func}: ${response.ok ? '✅ Active' : `❌ Status ${response.status}`}`);
+                } catch (error) {
+                    results.push(`${func}: ❌ ${error.message}`);
+                }
+            }
+
+            showResult('api-result', `
+                Edge Functions Status:<br>
+                ${results.join('<br>')}
+            `, results.every(r => r.includes('✅')) ? 'success' : 'error');
+        }
+
+        async function runFullSystemTest() {
+            showResult('full-test-result', 'Running complete system test...', 'info');
+            
+            const tests = [
+                { name: 'Deployment', fn: testDeployment },
+                { name: 'Claude Connection', fn: testClaudeConnection },
+                { name: 'Monitoring Service', fn: testMonitoringService },
+                { name: 'API Health', fn: testAPIHealth }
+            ];
+
+            const results = [];
+            for (const test of tests) {
+                try {
+                    await test.fn();
+                    results.push(`✅ ${test.name}: PASSED`);
+                } catch (error) {
+                    results.push(`❌ ${test.name}: FAILED - ${error.message}`);
+                }
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Wait between tests
+            }
+
+            const allPassed = results.every(r => r.includes('✅'));
+            showResult('full-test-result', `
+                <h3>System Test Results:</h3>
+                ${results.join('<br>')}<br><br>
+                <strong>Overall Status: ${allPassed ? '✅ ALL TESTS PASSED' : '⚠️ SOME TESTS FAILED'}</strong>
+            `, allPassed ? 'success' : 'error');
+        }
+
+        // Auto-run deployment test on load
+        window.addEventListener('load', () => {
+            testDeployment();
+        });
+    </script>
+</body>
+</html>

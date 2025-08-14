@@ -105,15 +105,18 @@ const OpportunityEngine = ({ onAIMessage, isDragging = false }) => {
   const loadOpportunities = async () => {
     setLoading(true);
     try {
-      // Try to fetch from backend first
+      // No backend API - use mock data
       const token = localStorage.getItem('token');
-      // Use Supabase functions for opportunity discovery
-      const response = await fetch(`${process.env.REACT_APP_SUPABASE_URL}/functions/v1/opportunities-discover`, {
+      const response = { ok: false };
+      
+      /* Original Railway API call disabled:
+      const response = await fetch('/api/opportunities/discover', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
+      */
       
       if (response.ok) {
         const data = await response.json();
@@ -219,8 +222,11 @@ Deadline: ${opportunity.deadline}`;
   const trackOpportunity = async (opportunity) => {
     try {
       const token = localStorage.getItem('token');
-      // Use Supabase functions for opportunity tracking
-      const response = await fetch(`${process.env.REACT_APP_SUPABASE_URL}/functions/v1/opportunities-track`, {
+      // No backend API - simulate tracking
+      const response = { ok: false };
+      
+      /* Original Railway API call disabled:
+      const response = await fetch(`/api/opportunities/${opportunity.id}/track`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -228,6 +234,7 @@ Deadline: ${opportunity.deadline}`;
         },
         body: JSON.stringify({ notes: `Tracking: ${opportunity.title}` })
       });
+      */
       
       if (response.ok) {
         alert(`Now tracking: ${opportunity.title}`);

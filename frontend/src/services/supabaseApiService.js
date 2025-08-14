@@ -1,0 +1,259 @@
+/**
+ * Supabase-Only API Service for SignalDesk
+ * All backend functionality through Supabase Edge Functions and Database
+ */
+
+import { supabase } from '../config/supabase';
+
+class SupabaseApiService {
+  constructor() {
+    this.supabase = supabase;
+    console.log('✅ Supabase API Service initialized');
+    console.log('🚀 Using Supabase for ALL backend operations');
+  }
+
+  /**
+   * Get current user session
+   */
+  async getSession() {
+    const { data: { session } } = await this.supabase.auth.getSession();
+    return session;
+  }
+
+  /**
+   * Call Supabase Edge Function
+   */
+  async callEdgeFunction(functionName, payload = {}) {
+    try {
+      console.log(`Calling Edge Function: ${functionName}`, payload);
+      
+      const { data, error } = await this.supabase.functions.invoke(functionName, {
+        body: payload
+      });
+
+      if (error) {
+        console.error(`Edge Function error (${functionName}):`, error);
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      console.error(`Failed to call Edge Function ${functionName}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Database Operations
+   */
+  async dbQuery(table, operation, params = {}) {
+    let query = this.supabase.from(table);
+    
+    switch(operation) {
+      case 'select':
+        query = query.select(params.columns || '*');
+        if (params.filter) query = query.match(params.filter);
+        if (params.limit) query = query.limit(params.limit);
+        if (params.orderBy) query = query.order(params.orderBy.column, { ascending: params.orderBy.ascending });
+        break;
+      
+      case 'insert':
+        query = query.insert(params.data);
+        break;
+      
+      case 'update':
+        query = query.update(params.data);
+        if (params.filter) query = query.match(params.filter);
+        break;
+      
+      case 'delete':
+        query = query.delete();
+        if (params.filter) query = query.match(params.filter);
+        break;
+    }
+
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error(`Database error (${table}/${operation}):`, error);
+      throw error;
+    }
+    
+    return data;
+  }
+
+  // Authentication methods
+  async login(email, password) {
+    const { data, error } = await this.supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+    
+    if (error) throw error;
+    return data;
+  }
+
+  async signup(email, password, metadata = {}) {
+    const { data, error } = await this.supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: metadata
+      }
+    });
+    
+    if (error) throw error;
+    return data;
+  }
+
+  async logout() {
+    const { error } = await this.supabase.auth.signOut();
+    if (error) throw error;
+  }
+
+  // Organization methods
+  async getOrganizations() {
+    return this.dbQuery('organizations', 'select');
+  }
+
+  async createOrganization(orgData) {
+    return this.dbQuery('organizations', 'insert', { data: orgData });
+  }
+
+  async updateOrganization(id, updates) {
+    return this.dbQuery('organizations', 'update', {
+      data: updates,
+      filter: { id }
+    });
+  }
+
+  // Project methods  
+  async getProjects(organizationId = null) {
+    const params = organizationId 
+      ? { filter: { organization_id: organizationId } }
+      : {};
+    return this.dbQuery('projects', 'select', params);
+  }
+
+  async createProject(projectData) {
+    return this.dbQuery('projects', 'insert', { data: projectData });
+  }
+
+  // Intelligence/Monitoring methods (via Edge Functions)
+  async getIntelligenceFindings(organizationId) {
+    return this.callEdgeFunction('monitor-intelligence', {
+      action: 'getFindings',
+      organizationId
+    });
+  }
+
+  async startMonitoring(organizationId, sources) {
+    return this.callEdgeFunction('monitor-intelligence', {
+      action: 'startMonitoring',
+      organizationId,
+      sources
+    });
+  }
+
+  async stopMonitoring(organizationId) {
+    return this.callEdgeFunction('monitor-intelligence', {
+      action: 'stopMonitoring',
+      organizationId
+    });
+  }
+
+  // Claude AI methods (via Edge Functions)
+  async sendClaudeMessage(message, context = {}) {
+    return this.callEdgeFunction('claude-chat', {
+      message,
+      context
+    });
+  }
+
+  async generateContent(type, params) {
+    return this.callEdgeFunction('claude-chat', {
+      action: 'generateContent',
+      contentType: type,
+      parameters: params
+    });
+  }
+
+  async analyzeOpportunity(opportunityData) {
+    return this.callEdgeFunction('claude-chat', {
+      action: 'analyzeOpportunity',
+      data: opportunityData
+    });
+  }
+
+  // Campaign methods
+  async analyzeCampaign(campaignData) {
+    return this.callEdgeFunction('claude-chat', {
+      action: 'analyzeCampaign',
+      campaign: campaignData
+    });
+  }
+
+  // Crisis management
+  async analyzeCrisis(crisisData) {
+    return this.callEdgeFunction('claude-chat', {
+      action: 'analyzeCrisis',
+      crisis: crisisData
+    });
+  }
+
+  // Real-time subscriptions
+  subscribeToFindings(organizationId, callback) {
+    return this.supabase
+      .channel(`findings:${organizationId}`)
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'intelligence_findings',
+          filter: `organization_id=eq.${organizationId}`
+        },
+        callback
+      )
+      .subscribe();
+  }
+
+  subscribeToOpportunities(organizationId, callback) {
+    return this.supabase
+      .channel(`opportunities:${organizationId}`)
+      .on('postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'opportunity_queue',
+          filter: `organization_id=eq.${organizationId}`
+        },
+        callback
+      )
+      .subscribe();
+  }
+
+  // Utility methods
+  async uploadFile(bucket, path, file) {
+    const { data, error } = await this.supabase.storage
+      .from(bucket)
+      .upload(path, file);
+    
+    if (error) throw error;
+    return data;
+  }
+
+  async getFileUrl(bucket, path) {
+    const { data } = this.supabase.storage
+      .from(bucket)
+      .getPublicUrl(path);
+    
+    return data.publicUrl;
+  }
+}
+
+// Create singleton instance
+const supabaseApiService = new SupabaseApiService();
+
+// Export both the class and instance
+export { SupabaseApiService };
+export default supabaseApiService;

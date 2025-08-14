@@ -26,17 +26,26 @@
     "react-scripts": "5.0.1",
     "recharts": "^3.1.0",
     "socket.io-client": "^4.8.1",
+    "typescript": "^5.9.2",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "build:vercel": "GENERATE_SOURCEMAP=false CI=false BUILD_TIME=$(date -u +\"%Y-%m-%dT%H:%M:%SZ\") react-scripts build",
+    "build:prod": "GENERATE_SOURCEMAP=false CI=false npm run build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "post-build": "node scripts/verify-deployment.js",
-    "build-prod": "GENERATE_SOURCEMAP=false CI=false npm run build",
-    "verify-deployment": "node scripts/verify-deployment.js",
-    "health-check": "curl -f https://signaldesk-frontend.vercel.app/ || exit 1"
+    "verify": "node scripts/verify-deployment.js",
+    "verify:prod": "VERCEL_URL=https://signaldesk-frontend.vercel.app node scripts/verify-deployment.js",
+    "deploy": "bash scripts/vercel-deploy.sh",
+    "deploy:prod": "bash scripts/vercel-deploy.sh production",
+    "deploy:preview": "bash scripts/vercel-deploy.sh preview",
+    "rollback": "bash scripts/vercel-deploy.sh rollback",
+    "cache:clear": "rm -rf build .vercel/cache node_modules/.cache",
+    "env:check": "node scripts/check-env.js",
+    "health": "curl -f https://signaldesk-frontend.vercel.app/api/health || exit 1",
+    "prebuild": "echo 'Starting build with timestamp: 1755186768230'"
   },
   "eslintConfig": {
     "extends": [
@@ -55,5 +64,10 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "buildMeta": {
+    "timestamp": 1755186768230,
+    "buildId": "build_1755186768230",
+    "nodeVersion": "v24.4.0"
   }
 }

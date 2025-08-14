@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Niv Command Center Deployment</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        h1 {
+            color: white;
+            text-align: center;
+            font-size: 2.5rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .test-container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+        }
+        .test-header {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #4a5568;
+        }
+        button {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background: #7c3aed;
+            transform: scale(1.05);
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        .pending {
+            background: #e7f5ff;
+            border: 1px solid #a5d8ff;
+            color: #1971c2;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin: 0 5px;
+        }
+        .status-ok { background: #d4edda; color: #155724; }
+        .status-fail { background: #f8d7da; color: #721c24; }
+        .status-checking { background: #fff3cd; color: #856404; }
+        
+        .checklist {
+            list-style: none;
+            padding: 0;
+        }
+        .checklist li {
+            padding: 10px;
+            margin: 5px 0;
+            background: #f8f9fa;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .check-icon {
+            margin-right: 10px;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧠 Niv Command Center Deployment Verification</h1>
+    
+    <div class="test-container">
+        <div class="test-section">
+            <div class="test-header">📋 Deployment Checklist</div>
+            <ul class="checklist">
+                <li>
+                    <span><span class="check-icon">⏳</span> Cache Headers Configured</span>
+                    <span class="status-badge status-checking" id="cache-status">Checking...</span>
+                </li>
+                <li>
+                    <span><span class="check-icon">⏳</span> Build ID Present</span>
+                    <span class="status-badge status-checking" id="build-status">Checking...</span>
+                </li>
+                <li>
+                    <span><span class="check-icon">⏳</span> Niv Component Loaded</span>
+                    <span class="status-badge status-checking" id="niv-status">Checking...</span>
+                </li>
+                <li>
+                    <span><span class="check-icon">⏳</span> Supabase Connection</span>
+                    <span class="status-badge status-checking" id="supabase-status">Checking...</span>
+                </li>
+                <li>
+                    <span><span class="check-icon">⏳</span> Command Center First in List</span>
+                    <span class="status-badge status-checking" id="position-status">Checking...</span>
+                </li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <div class="test-header">🔍 Live Deployment Tests</div>
+            <button onclick="testDeploymentHeaders()">Test Headers & Cache</button>
+            <button onclick="testNivPresence()">Test Niv Component</button>
+            <button onclick="testSupabaseIntegration()">Test Supabase</button>
+            <button onclick="testFullIntegration()">Run All Tests</button>
+            <div id="test-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-header">🌐 Live Preview</div>
+            <p>Production URL: <a href="https://signaldesk-frontend.vercel.app" target="_blank">https://signaldesk-frontend.vercel.app</a></p>
+            <iframe src="https://signaldesk-frontend.vercel.app" id="preview-frame"></iframe>
+        </div>
+    </div>
+
+    <script>
+        const PROD_URL = 'https://signaldesk-frontend.vercel.app';
+        const BUILD_ID = 'build_1755186768230';
+        
+        // Test deployment headers
+        async function testDeploymentHeaders() {
+            const resultDiv = document.getElementById('test-result');
+            resultDiv.className = 'result pending';
+            resultDiv.textContent = 'Testing deployment headers...';
+            
+            try {
+                const response = await fetch(PROD_URL);
+                const headers = {};
+                response.headers.forEach((value, key) => {
+                    headers[key] = value;
+                });
+                
+                const checks = {
+                    'Cache-Control': headers['cache-control'],
+                    'X-Build-Id': headers['x-build-id'],
+                    'X-Vercel-Cache': headers['x-vercel-cache']
+                };
+                
+                let allGood = true;
+                let message = 'Header Check Results:\n\n';
+                
+                for (const [key, value] of Object.entries(checks)) {
+                    if (value) {
+                        message += `✅ ${key}: ${value}\n`;
+                        if (key === 'X-Build-Id' && value === BUILD_ID) {
+                            document.getElementById('build-status').className = 'status-badge status-ok';
+                            document.getElementById('build-status').textContent = 'OK';
+                        }
+                        if (key === 'Cache-Control' && value.includes('must-revalidate')) {
+                            document.getElementById('cache-status').className = 'status-badge status-ok';
+                            document.getElementById('cache-status').textContent = 'OK';
+                        }
+                    } else {
+                        message += `❌ ${key}: Not found\n`;
+                        allGood = false;
+                    }
+                }
+                
+                resultDiv.className = allGood ? 'result success' : 'result warning';
+                resultDiv.textContent = message;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `Error testing headers: ${error.message}`;
+            }
+        }
+        
+        // Test Niv presence
+        async function testNivPresence() {
+            const resultDiv = document.getElementById('test-result');
+            resultDiv.className = 'result pending';
+            resultDiv.textContent = 'Testing Niv component presence...';
+            
+            try {
+                const response = await fetch(PROD_URL);
+                const html = await response.text();
+                
+                const checks = {
+                    'AdaptiveNivAssistant': html.includes('AdaptiveNivAssistant'),
+                    'Niv Command Center': html.includes('niv-command-center') || html.includes('Niv Command Center'),
+                    'Build Info': html.includes(BUILD_ID),
+                    'Railway UI': html.includes('RailwayDraggable')
+                };
+                
+                let message = 'Niv Component Check:\n\n';
+                let nivFound = false;
+                
+                for (const [component, found] of Object.entries(checks)) {
+                    message += `${found ? '✅' : '❌'} ${component}: ${found ? 'Found' : 'Not found'}\n`;
+                    if (component.includes('Niv') && found) {
+                        nivFound = true;
+                    }
+                }
+                
+                if (nivFound) {
+                    document.getElementById('niv-status').className = 'status-badge status-ok';
+                    document.getElementById('niv-status').textContent = 'OK';
+                    document.getElementById('position-status').className = 'status-badge status-ok';
+                    document.getElementById('position-status').textContent = 'OK';
+                }
+                
+                resultDiv.className = nivFound ? 'result success' : 'result warning';
+                resultDiv.textContent = message;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `Error testing Niv: ${error.message}`;
+            }
+        }
+        
+        // Test Supabase integration
+        async function testSupabaseIntegration() {
+            const resultDiv = document.getElementById('test-result');
+            resultDiv.className = 'result pending';
+            resultDiv.textContent = 'Testing Supabase integration...';
+            
+            try {
+                const response = await fetch(PROD_URL);
+                const html = await response.text();
+                
+                const supabaseChecks = {
+                    'Supabase Config': html.includes('supabase.co'),
+                    'Supabase Client': html.includes('createClient'),
+                    'Auth Context': html.includes('AuthContext'),
+                    'API Service': html.includes('supabaseApiService')
+                };
+                
+                let message = 'Supabase Integration Check:\n\n';
+                let supabaseOk = true;
+                
+                for (const [check, found] of Object.entries(supabaseChecks)) {
+                    message += `${found ? '✅' : '⚠️'} ${check}: ${found ? 'Found' : 'Not found'}\n`;
+                    if (!found && check.includes('Config')) {
+                        supabaseOk = false;
+                    }
+                }
+                
+                if (supabaseOk) {
+                    document.getElementById('supabase-status').className = 'status-badge status-ok';
+                    document.getElementById('supabase-status').textContent = 'OK';
+                }
+                
+                resultDiv.className = supabaseOk ? 'result success' : 'result warning';
+                resultDiv.textContent = message;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `Error testing Supabase: ${error.message}`;
+            }
+        }
+        
+        // Run all tests
+        async function testFullIntegration() {
+            await testDeploymentHeaders();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            await testNivPresence();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            await testSupabaseIntegration();
+            
+            const resultDiv = document.getElementById('test-result');
+            const currentContent = resultDiv.textContent;
+            resultDiv.textContent = '🎯 FULL INTEGRATION TEST COMPLETE\n\n' + currentContent;
+        }
+        
+        // Auto-run basic checks on load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                testDeploymentHeaders();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

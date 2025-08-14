@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local Authentication Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1a1a1a;
+            margin-bottom: 30px;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-family: monospace;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .form-group {
+            margin: 20px 0;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Local SignalDesk Authentication Test</h1>
+        
+        <div class="status info" id="status">
+            Testing local authentication at http://localhost:3000
+        </div>
+
+        <div class="form-group">
+            <label>Email:</label>
+            <input type="email" id="email" value="test@signaldesk.com" />
+        </div>
+
+        <div class="form-group">
+            <label>Password:</label>
+            <input type="password" id="password" value="TestPassword123!" />
+        </div>
+
+        <button onclick="testDirectSupabase()">Test Direct Supabase Auth</button>
+        <button onclick="testLocalLogin()">Test Local React App Login</button>
+        <button onclick="checkSupabaseConfig()">Check Supabase Config</button>
+        <button onclick="testLocalAPI()">Test Local API</button>
+
+        <div id="results"></div>
+    </div>
+
+    <script type="module">
+        // Import Supabase from CDN
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.55.0/+esm';
+
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        window.testDirectSupabase = async function() {
+            const status = document.getElementById('status');
+            const results = document.getElementById('results');
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            status.className = 'status info';
+            status.textContent = 'Testing direct Supabase authentication...';
+
+            try {
+                // Test sign in
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if (error) {
+                    status.className = 'status error';
+                    status.textContent = `Auth failed: ${error.message}`;
+                    results.innerHTML += `<div class="status error">Error: ${JSON.stringify(error, null, 2)}</div>`;
+                } else {
+                    status.className = 'status success';
+                    status.textContent = '✅ Direct Supabase auth successful!';
+                    results.innerHTML += `<div class="status success">User: ${data.user.email}<br>Session: ${data.session.access_token.substring(0, 20)}...</div>`;
+                    
+                    // Sign out for clean test
+                    await supabase.auth.signOut();
+                }
+            } catch (err) {
+                status.className = 'status error';
+                status.textContent = `Exception: ${err.message}`;
+                results.innerHTML += `<div class="status error">Exception: ${err.stack}</div>`;
+            }
+        };
+
+        window.testLocalLogin = async function() {
+            const status = document.getElementById('status');
+            const results = document.getElementById('results');
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            status.className = 'status info';
+            status.textContent = 'Testing local React app login...';
+
+            try {
+                // First check if local app is running
+                const healthCheck = await fetch('http://localhost:3000/manifest.json');
+                if (!healthCheck.ok) {
+                    throw new Error('Local app not running on port 3000');
+                }
+
+                results.innerHTML += `<div class="status success">✅ Local app is running</div>`;
+
+                // Test auth through local app
+                status.className = 'status info';
+                status.textContent = 'Open http://localhost:3000 in your browser to test login';
+                results.innerHTML += `<div class="status info">
+                    <p>Manual test steps:</p>
+                    <ol>
+                        <li>Open <a href="http://localhost:3000" target="_blank">http://localhost:3000</a></li>
+                        <li>Use email: ${email}</li>
+                        <li>Use password: ${password}</li>
+                        <li>Check browser console for auth logs</li>
+                    </ol>
+                </div>`;
+
+            } catch (err) {
+                status.className = 'status error';
+                status.textContent = `Local app error: ${err.message}`;
+                results.innerHTML += `<div class="status error">Make sure to run: npm start</div>`;
+            }
+        };
+
+        window.checkSupabaseConfig = async function() {
+            const status = document.getElementById('status');
+            const results = document.getElementById('results');
+
+            status.className = 'status info';
+            status.textContent = 'Checking Supabase configuration...';
+
+            try {
+                // Test connection
+                const { data: { session } } = await supabase.auth.getSession();
+                
+                results.innerHTML += `<div class="status info">
+                    <strong>Supabase Config:</strong><br>
+                    URL: ${SUPABASE_URL}<br>
+                    Key: ${SUPABASE_ANON_KEY.substring(0, 50)}...<br>
+                    Session: ${session ? 'Active' : 'None'}<br>
+                    Client Initialized: ✅
+                </div>`;
+
+                // Test auth methods
+                const { data: { settings } } = await supabase.auth.mfa.getAuthenticatorAssuranceLevels();
+                
+                status.className = 'status success';
+                status.textContent = '✅ Supabase client configured correctly';
+
+            } catch (err) {
+                status.className = 'status error';
+                status.textContent = `Config error: ${err.message}`;
+            }
+        };
+
+        window.testLocalAPI = async function() {
+            const status = document.getElementById('status');
+            const results = document.getElementById('results');
+
+            status.className = 'status info';
+            status.textContent = 'Testing local API endpoints...';
+
+            try {
+                const endpoints = [
+                    'http://localhost:3000/',
+                    'http://localhost:3000/manifest.json',
+                    'http://localhost:3000/static/js/bundle.js'
+                ];
+
+                for (const endpoint of endpoints) {
+                    try {
+                        const response = await fetch(endpoint, { method: 'HEAD' });
+                        results.innerHTML += `<div class="status ${response.ok ? 'success' : 'error'}">
+                            ${endpoint}: ${response.status} ${response.statusText}
+                        </div>`;
+                    } catch (err) {
+                        results.innerHTML += `<div class="status error">
+                            ${endpoint}: Failed - ${err.message}
+                        </div>`;
+                    }
+                }
+
+                status.className = 'status success';
+                status.textContent = '✅ Local API tests complete';
+
+            } catch (err) {
+                status.className = 'status error';
+                status.textContent = `API test error: ${err.message}`;
+            }
+        };
+
+        // Auto-check config on load
+        window.addEventListener('load', () => {
+            window.checkSupabaseConfig();
+        });
+    </script>
+</body>
+</html>

@@ -9,7 +9,6 @@ import {
   AlertCircle, Target, Calendar, MessageSquare,
   Brain, Zap, ChevronRight, Loader
 } from 'lucide-react';
-import { supabase } from '../config/supabase';
 
 const NivPRStrategist = ({ onStrategyGenerated }) => {
   const [messages, setMessages] = useState([]);
@@ -39,19 +38,17 @@ const NivPRStrategist = ({ onStrategyGenerated }) => {
 
   // Initialize with welcome message
   useEffect(() => {
-    console.log('🔧 Niv: Component initializing with Supabase URL:', process.env.REACT_APP_SUPABASE_URL);
-    
     const welcomeMessage = {
       id: Date.now(),
       role: 'assistant',
       content: `Hi, I'm Niv, your Senior PR Strategist. With 20 years of agency experience, I'm here to help you navigate media relations, develop campaigns, and handle any PR challenges.
 
 What's on your PR agenda today? I can help with:
-• Strategic PR planning
-• Media outreach and relationships
-• Crisis communications
-• Campaign development
-• Content strategy
+" Strategic PR planning
+" Media outreach and relationships
+" Crisis communications
+" Campaign development
+" Content strategy
 
 How can I assist you?`,
       timestamp: new Date().toISOString()
@@ -67,14 +64,8 @@ How can I assist you?`,
 
   // Send message to Niv
   const sendMessage = async (text = input) => {
-    console.log('🔄 Niv: sendMessage called with text:', text);
-    
-    if (!text.trim()) {
-      console.log('⚠️ Niv: Empty text, returning early');
-      return;
-    }
+    if (!text.trim()) return;
 
-    console.log('📝 Niv: Creating user message');
     const userMessage = {
       id: Date.now(),
       role: 'user',
@@ -82,26 +73,22 @@ How can I assist you?`,
       timestamp: new Date().toISOString()
     };
 
-    console.log('📝 Niv: Adding user message to chat');
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setLoading(true);
 
     try {
-      console.log('🚀 Niv: Making request to Supabase Edge Function: niv-chat');
-      console.log('🚀 Niv: Request payload:', {
-        message: text,
-        conversationId: conversationId,
-        mode: mode,
-        context: {
-          previousMessages: messages.slice(-5),
-          currentProject: localStorage.getItem('activeProject')
-        }
-      });
+      // Simulated response since no backend API - no Railway backend
+      const response = { ok: false };
       
-      // Use Supabase Edge Functions for Niv PR Strategist
-      const { data, error } = await supabase.functions.invoke('niv-chat', {
-        body: {
+      /* Original Railway API call disabled:
+      const response = await fetch('/api/niv/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
           message: text,
           conversationId: conversationId,
           mode: mode,
@@ -109,17 +96,13 @@ How can I assist you?`,
             previousMessages: messages.slice(-5),
             currentProject: localStorage.getItem('activeProject')
           }
-        }
+        })
       });
-      
-      const response = { ok: !error, status: error ? 400 : 200 };
+      */
 
-      console.log('📡 Niv: Response status:', response.status);
-      console.log('📡 Niv: Response headers:', [...response.headers.entries()]);
+      const data = await response.json();
 
-      console.log('📡 Niv: Response data:', data);
-
-      if (response.ok && data) {
+      if (data.success) {
         const nivMessage = {
           id: Date.now() + 1,
           role: 'assistant',
@@ -140,15 +123,11 @@ How can I assist you?`,
         }
       }
     } catch (error) {
-      console.error('❌ Niv: Error making request:', error);
-      console.error('❌ Niv: Error type:', error.constructor.name);
-      console.error('❌ Niv: Error message:', error.message);
-      console.error('❌ Niv: Full error:', error);
-      
+      console.error('Error talking to Niv:', error);
       const errorMessage = {
         id: Date.now() + 1,
         role: 'assistant',
-        content: `I apologize, I'm having connection issues. ${error.message ? `(${error.message})` : ''} Let me try to help you anyway. What specific PR challenge are you facing?`,
+        content: 'I apologize, I\'m having connection issues. Let me try to help you anyway. What specific PR challenge are you facing?',
         timestamp: new Date().toISOString(),
         error: true
       };
@@ -216,7 +195,7 @@ How can I assist you?`,
                 color: '#9ca3af',
                 margin: '2px 0 0 0'
               }}>
-                {nivPersonality.title} • {nivPersonality.experience} Experience
+                {nivPersonality.title} " {nivPersonality.experience} Experience
               </p>
             </div>
           </div>

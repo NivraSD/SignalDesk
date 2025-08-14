@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Supabase Claude Connection</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #8b5cf6;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #7c3aed;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .pending {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .status-active { background: #28a745; }
+        .status-inactive { background: #dc3545; }
+        .status-pending { background: #ffc107; }
+    </style>
+</head>
+<body>
+    <h1>🚀 SignalDesk Supabase Integration Test</h1>
+    
+    <div class="test-section">
+        <h2>Configuration</h2>
+        <div id="config-status"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>1. Test Supabase Auth</h2>
+        <input type="email" id="email" placeholder="Email" value="test@signaldesk.com">
+        <input type="password" id="password" placeholder="Password" value="test123456">
+        <br>
+        <button onclick="testAuth()">Test Login</button>
+        <button onclick="testSignup()">Test Signup</button>
+        <button onclick="testLogout()">Test Logout</button>
+        <div id="auth-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Test Claude Edge Function</h2>
+        <textarea id="claude-message" placeholder="Enter message for Claude">Hello Claude! Are you connected through Supabase?</textarea>
+        <br>
+        <button onclick="testClaude()">Send to Claude</button>
+        <div id="claude-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Test Monitoring Edge Function</h2>
+        <button onclick="testMonitoring('getStatus')">Get Status</button>
+        <button onclick="testMonitoring('startMonitoring')">Start Monitoring</button>
+        <button onclick="testMonitoring('getFindings')">Get Findings</button>
+        <div id="monitoring-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Test Database Operations</h2>
+        <button onclick="testDatabase('projects')">Get Projects</button>
+        <button onclick="testDatabase('organizations')">Get Organizations</button>
+        <button onclick="testDatabase('monitoring_alerts')">Get Monitoring Alerts</button>
+        <div id="database-result" class="result"></div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+        
+        // Supabase configuration
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+        
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        window.supabase = supabase;
+        
+        // Display configuration
+        document.getElementById('config-status').innerHTML = `
+            <p><span class="status-indicator status-active"></span><strong>Supabase URL:</strong> ${SUPABASE_URL}</p>
+            <p><span class="status-indicator status-active"></span><strong>Anon Key:</strong> ${SUPABASE_ANON_KEY.substring(0, 20)}...</p>
+            <p><span class="status-indicator status-pending"></span><strong>Status:</strong> Ready to test</p>
+        `;
+        
+        // Test functions
+        window.testAuth = async function() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('auth-result');
+            
+            resultDiv.className = 'result pending';
+            resultDiv.textContent = 'Testing login...';
+            
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
+                });
+                
+                if (error) throw error;
+                
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `✅ Login successful!\nUser ID: ${data.user.id}\nEmail: ${data.user.email}`;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Login failed: ${error.message}`;
+            }
+        };
+        
+        window.testSignup = async function() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('auth-result');
+            
+            resultDiv.className = 'result pending';
+            resultDiv.textContent = 'Testing signup...';
+            
+            try {
+                const { data, error } = await supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: {
+                            company: 'SignalDesk Test'
+                        }
+                    }
+                });
+                
+                if (error) throw error;
+                
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `✅ Signup successful!\nUser ID: ${data.user?.id || 'Check email for confirmation'}\nEmail: ${data.user?.email || email}`;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Signup failed: ${error.message}`;
+            }
+        };
+        
+        window.testLogout = async function() {
+            const resultDiv = document.getElementById('auth-result');
+            
+            try {
+                const { error } = await supabase.auth.signOut();
+                if (error) throw error;
+                
+                resultDiv.className = 'result success';
+                resultDiv.textContent = '✅ Logged out successfully';
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Logout failed: ${error.message}`;
+            }
+        };
+        
+        window.testClaude = async function() {
+            const message = document.getElementById('claude-message').value;
+            const resultDiv = document.getElementById('claude-result');
+            
+            resultDiv.className = 'result pending';
+            resultDiv.textContent = 'Sending message to Claude...';
+            
+            try {
+                const { data, error } = await supabase.functions.invoke('claude-chat', {
+                    body: { 
+                        message,
+                        context: {
+                            test: true,
+                            timestamp: new Date().toISOString()
+                        }
+                    }
+                });
+                
+                if (error) throw error;
+                
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `✅ Claude Response:\n${JSON.stringify(data, null, 2)}`;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Claude test failed: ${error.message}`;
+            }
+        };
+        
+        window.testMonitoring = async function(action) {
+            const resultDiv = document.getElementById('monitoring-result');
+            
+            resultDiv.className = 'result pending';
+            resultDiv.textContent = `Testing ${action}...`;
+            
+            try {
+                const { data, error } = await supabase.functions.invoke('monitor-intelligence', {
+                    body: { 
+                        action,
+                        organizationId: 'demo-org',
+                        sources: ['twitter', 'linkedin', 'news']
+                    }
+                });
+                
+                if (error) throw error;
+                
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `✅ Monitoring Response:\n${JSON.stringify(data, null, 2)}`;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Monitoring test failed: ${error.message}`;
+            }
+        };
+        
+        window.testDatabase = async function(table) {
+            const resultDiv = document.getElementById('database-result');
+            
+            resultDiv.className = 'result pending';
+            resultDiv.textContent = `Querying ${table} table...`;
+            
+            try {
+                const { data, error } = await supabase
+                    .from(table)
+                    .select('*')
+                    .limit(5);
+                
+                if (error) throw error;
+                
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `✅ ${table} data (${data.length} records):\n${JSON.stringify(data, null, 2)}`;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Database query failed: ${error.message}`;
+            }
+        };
+        
+        // Check initial auth status
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            const authDiv = document.getElementById('auth-result');
+            if (session) {
+                authDiv.className = 'result success';
+                authDiv.textContent = `Already logged in as: ${session.user.email}`;
+            } else {
+                authDiv.className = 'result';
+                authDiv.textContent = 'Not logged in';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,8 +1,8 @@
 import React from 'react';
-import MonitoringSimple from './MonitoringSimple';
+import StakeholderIntelligenceHub from './StakeholderIntelligence/StakeholderIntelligenceHub';
 
 const Monitoring = () => {
-  return <MonitoringSimple />;
+  return <StakeholderIntelligenceHub />;
 };
 
 export default Monitoring;

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Runtime Supabase Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 { color: #333; }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #7c3aed; }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Runtime Supabase Configuration Test</h1>
+    
+    <div class="test-section">
+        <h2>Test Production App Configuration</h2>
+        <p>URL: <a href="https://signaldesk-frontend.vercel.app" target="_blank">https://signaldesk-frontend.vercel.app</a></p>
+        <button onclick="testRuntimeConfig()">Test Runtime Config</button>
+        <button onclick="testConsoleAccess()">Check Console Access</button>
+        <button onclick="testActualLogin()">Test Actual Login</button>
+        <div id="runtime-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Direct Supabase Test</h2>
+        <button onclick="testDirectSupabase()">Test Direct Supabase Connection</button>
+        <div id="direct-result" class="result"></div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+        
+        window.testRuntimeConfig = async function() {
+            const resultDiv = document.getElementById('runtime-result');
+            resultDiv.className = 'result info';
+            resultDiv.textContent = 'Opening production site and checking console...';
+            
+            // Open the site in a new window
+            const win = window.open('https://signaldesk-frontend.vercel.app', '_blank');
+            
+            resultDiv.textContent = `Production site opened in new window.
+
+To test if Supabase is loaded:
+1. Open browser Developer Tools (F12)
+2. Go to Console tab
+3. Type: window.__SIGNALDESK_SUPABASE__
+4. If it returns an object, Supabase is loaded
+5. Type: window.__SIGNALDESK_CONFIG__
+6. This should show the configuration
+
+Also check for any console errors or warnings.`;
+        };
+        
+        window.testConsoleAccess = function() {
+            const resultDiv = document.getElementById('runtime-result');
+            
+            // Try to inject a test script
+            const testScript = `
+console.log('🔍 Testing from external script');
+if (window.__SIGNALDESK_SUPABASE__) {
+    console.log('✅ Supabase is available globally');
+    console.log('Config:', window.__SIGNALDESK_CONFIG__);
+} else {
+    console.log('❌ Supabase not found in global scope');
+}
+            `;
+            
+            resultDiv.className = 'result info';
+            resultDiv.textContent = `Copy and paste this into the console of the production site:
+
+${testScript}`;
+        };
+        
+        window.testDirectSupabase = async function() {
+            const resultDiv = document.getElementById('direct-result');
+            resultDiv.className = 'result info';
+            resultDiv.textContent = 'Testing direct Supabase connection...';
+            
+            try {
+                const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+                
+                const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                
+                // Test the connection
+                const { data, error } = await supabase.from('projects').select('count').limit(1);
+                
+                if (error) {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `❌ Supabase connection failed: ${error.message}`;
+                } else {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ Direct Supabase connection successful!
+                    
+This confirms:
+1. Supabase credentials are correct
+2. Supabase backend is accessible
+3. The issue is with the frontend build/deployment
+
+The Supabase configuration IS valid, but it's not being included in the production build properly.`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `Error: ${error.message}`;
+            }
+        };
+        
+        window.testActualLogin = function() {
+            const resultDiv = document.getElementById('runtime-result');
+            resultDiv.className = 'result info';
+            resultDiv.textContent = `To test login on production:
+
+1. Go to: https://signaldesk-frontend.vercel.app/login
+2. Try logging in with test credentials
+3. Check browser console for errors
+4. Check Network tab for failed API calls
+
+If login fails, check:
+- Are there 404 errors to Supabase?
+- Are there CORS errors?
+- Is the auth token being set?`;
+        };
+    </script>
+</body>
+</html>
