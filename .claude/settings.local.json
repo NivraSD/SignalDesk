@@ -136,7 +136,8 @@
       "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/test-niv-complete.sh:*)",
       "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/FORCE_DEPLOY_NOW.sh:*)",
       "WebSearch",
-      "Bash(supabase functions logs:*)"
+      "Bash(supabase functions logs:*)",
+      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/test-direct-api.sh:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

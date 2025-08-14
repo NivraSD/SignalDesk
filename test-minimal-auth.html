@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Minimal Supabase Auth Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Supabase Auth Test</h1>
+    <div id="status">Testing...</div>
+    <div id="result"></div>
+
+    <script>
+        const { createClient } = supabase;
+        
+        const supabaseUrl = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        const client = createClient(supabaseUrl, supabaseKey);
+        
+        async function testAuth() {
+            const statusEl = document.getElementById('status');
+            const resultEl = document.getElementById('result');
+            
+            try {
+                statusEl.innerHTML = 'Attempting login...';
+                
+                const { data, error } = await client.auth.signInWithPassword({
+                    email: 'admin@signaldesk.com',
+                    password: 'admin123'
+                });
+                
+                if (error) {
+                    statusEl.innerHTML = '❌ Login Failed';
+                    resultEl.innerHTML = `<pre style="color: red;">Error: ${error.message}\nCode: ${error.code || 'N/A'}\nStatus: ${error.status || 'N/A'}</pre>`;
+                } else {
+                    statusEl.innerHTML = '✅ Login Successful!';
+                    resultEl.innerHTML = `<pre style="color: green;">User ID: ${data.user.id}\nEmail: ${data.user.email}\nToken: ${data.session.access_token.substring(0, 50)}...</pre>`;
+                }
+            } catch (err) {
+                statusEl.innerHTML = '❌ Unexpected Error';
+                resultEl.innerHTML = `<pre style="color: red;">${err.toString()}</pre>`;
+            }
+        }
+        
+        testAuth();
+    </script>
+</body>
+</html>

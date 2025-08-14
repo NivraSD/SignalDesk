@@ -51,9 +51,7 @@ export const AuthProvider = ({ children }) => {
         if (session) {
           setToken(session.access_token);
         }
-        console.log('[Auth] User authenticated via Supabase');
       } else {
-        console.log('[Auth] No authenticated user found');
       }
     } catch (err) {
       console.error("[Auth] Auth check failed:", err.message);
@@ -65,7 +63,6 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       setError(null);
-      console.log('[Auth] Attempting Supabase login for:', email);
       
       const result = await signIn(email, password);
       
@@ -80,7 +77,6 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem("token", result.session.access_token);
       }
       
-      console.log('[Auth] Login successful via Supabase for:', email);
 
       // Navigate to dashboard
       navigate("/dashboard");
