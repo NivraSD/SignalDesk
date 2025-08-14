@@ -27,6 +27,15 @@
         "DATABASE_URL": "postgresql://postgres:your_postgres_password_here@localhost:5432/signaldesk",
         "ANTHROPIC_API_KEY": "your-anthropic-api-key"
       }
+    },
+    "signaldesk-monitor": {
+      "command": "node", 
+      "args": [
+        "/Users/jonathanliebowitz/Desktop/SignalDesk/mcp-servers/signaldesk-monitor/dist/index.js"
+      ],
+      "env": {
+        "DATABASE_URL": "postgresql://postgres.zskaxjtyuaqazydouifp:MUmjKBxTiecMPpYVgwGsZEKyFfyFbxqV@aws-0-us-west-1.pooler.supabase.com:6543/postgres"
+      }
     }
   }
 }

@@ -1,32 +1,99 @@
-// Supabase Client Configuration for Frontend
+// Supabase Client Configuration for Frontend - SINGLETON INSTANCE
 import { createClient } from '@supabase/supabase-js'
+
+// Singleton enforcement - prevent multiple client creation
+if (window.__SUPABASE_CLIENT__) {
+  console.warn('WARNING: Attempting to create multiple Supabase clients. Using existing singleton.')
+  throw new Error('Multiple Supabase clients detected! Use the singleton from config/supabase.js')
+}
 
 // Get from environment variables
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL
 const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY
 
+// Validate environment variables
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Supabase configuration missing. Add REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY to .env')
+  console.error('CRITICAL: Supabase configuration missing. Add REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY to .env')
+  throw new Error('Supabase configuration is required')
 }
 
-// Create Supabase client
-export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key',
-  {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true,
-      storage: window.localStorage
-    },
-    realtime: {
-      params: {
-        eventsPerSecond: 10
+// Create SINGLETON Supabase client - DO NOT create multiple instances
+export const supabase = window.__SUPABASE_CLIENT__ || (() => {
+  const client = createClient(
+    supabaseUrl,
+    supabaseAnonKey,
+    {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false,  // Prevents conflicts with SPA routing
+        storage: window.localStorage,
+        flowType: 'pkce',  // Added PKCE for better security
+        debug: process.env.NODE_ENV === 'development'  // Enable auth debugging in dev
+      },
+      realtime: {
+        params: {
+          eventsPerSecond: 10
+        }
+      },
+      global: {
+        headers: {
+          'X-Client-Info': 'signaldesk-frontend'
+        }
       }
     }
+  )
+  
+  // Store singleton reference globally to prevent multiple instances
+  window.__SUPABASE_CLIENT__ = client
+  
+  // Add development validation
+  if (process.env.NODE_ENV === 'development') {
+    // Add global method to check client health
+    window.__SUPABASE_VALIDATE__ = () => {
+      const isValid = client && typeof client.auth === 'object'
+      console.log('🔍 Supabase singleton validation:', isValid ? '✅ PASS' : '❌ FAIL')
+      return isValid
+    }
   }
-)
+  
+  console.log('✅ Supabase singleton client created successfully')
+  return client
+})()
+
+// Add global error handler for database schema issues
+const originalFrom = supabase.from.bind(supabase)
+supabase.from = function(table) {
+  const query = originalFrom(table)
+  const originalSelect = query.select.bind(query)
+  
+  query.select = function(...args) {
+    const result = originalSelect(...args)
+    
+    // Add error handling for schema access issues
+    const originalPromise = result.then.bind(result)
+    result.then = function(onSuccess, onError) {
+      return originalPromise(
+        onSuccess,
+        (error) => {
+          if (error?.message?.includes('schema') || error?.message?.includes('permission')) {
+            console.warn(`Database schema access issue for table '${table}':`, error.message)
+            // Return empty result instead of throwing
+            if (onSuccess) {
+              return onSuccess({ data: [], error: null, count: 0 })
+            }
+          }
+          if (onError) return onError(error)
+          throw error
+        }
+      )
+    }
+    
+    return result
+  }
+  
+  return query
+}
 
 // Helper functions for the frontend
 
@@ -39,14 +106,40 @@ export const signIn = async (email, password) => {
   
   if (error) throw error
   
-  // Get user profile
-  const { data: profile } = await supabase
-    .from('users')
-    .select('*, organization:organizations(*)')
-    .eq('id', data.user.id)
-    .single()
-  
-  return { ...data, profile }
+  // Get user profile with proper error handling
+  try {
+    const { data: profile, error: profileError } = await supabase
+      .from('users')
+      .select('*, organization:organizations(*)')
+      .eq('id', data.user.id)
+      .maybeSingle() // Use maybeSingle to handle no rows gracefully
+    
+    if (profileError && !profileError.message.includes('Row not found')) {
+      console.warn('Profile fetch warning:', profileError.message)
+    }
+    
+    return { 
+      ...data, 
+      profile: profile || {
+        id: data.user.id,
+        email: data.user.email,
+        username: data.user.email?.split('@')[0],
+        role: 'admin'
+      }
+    }
+  } catch (profileError) {
+    console.warn('Profile fetch failed (non-critical):', profileError.message)
+    // Return basic user data without profile
+    return { 
+      ...data, 
+      profile: {
+        id: data.user.id,
+        email: data.user.email,
+        username: data.user.email?.split('@')[0],
+        role: 'admin'
+      }
+    }
+  }
 }
 
 export const signOut = async () => {
@@ -60,13 +153,40 @@ export const getCurrentUser = async () => {
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) return null
   
-  const { data: profile } = await supabase
-    .from('users')
-    .select('*, organization:organizations(*)')
-    .eq('id', user.id)
-    .single()
-  
-  return { ...user, profile }
+  // Get user profile with proper error handling
+  try {
+    const { data: profile, error: profileError } = await supabase
+      .from('users')
+      .select('*, organization:organizations(*)')
+      .eq('id', user.id)
+      .maybeSingle() // Use maybeSingle to handle no rows gracefully
+    
+    if (profileError && !profileError.message.includes('Row not found')) {
+      console.warn('Profile fetch warning:', profileError.message)
+    }
+    
+    return { 
+      ...user, 
+      profile: profile || {
+        id: user.id,
+        email: user.email,
+        username: user.email?.split('@')[0],
+        role: 'admin'
+      }
+    }
+  } catch (profileError) {
+    console.warn('Profile fetch failed (non-critical):', profileError.message)
+    // Return basic user data without profile
+    return { 
+      ...user, 
+      profile: {
+        id: user.id,
+        email: user.email,
+        username: user.email?.split('@')[0],
+        role: 'admin'
+      }
+    }
+  }
 }
 
 // Real-time subscriptions

@@ -5,8 +5,6 @@ import { useProject } from '../contexts/ProjectContext';
 import { useAuth } from '../contexts/AuthContext';
 import ContentGeneratorModule from './ContentGeneratorModule';
 import OpportunityEngine from './OpportunityEngine';
-import NivPRStrategist from './NivPRStrategist';
-import RealtimeMonitoring from './RealtimeMonitoring';
 import API_BASE_URL from '../config/api';
 // import adaptiveAI from '../services/adaptiveAIService'; // REMOVED - backend handles everything
 import {
@@ -68,17 +66,6 @@ const RailwayDraggable = () => {
   // Feature/Activity definitions
   const activities = [
     {
-      id: 'niv-strategist',
-      name: 'Niv PR Strategist',
-      icon: Brain,
-      color: '#f59e0b',
-      description: 'Senior AI PR Strategist',
-      status: 'ready',
-      stats: '20 years experience',
-      component: NivPRStrategist,
-      lastUsed: 'Always available'
-    },
-    {
       id: 'content-generator',
       name: 'Content Generator',
       icon: FileText,
@@ -134,26 +121,15 @@ const RailwayDraggable = () => {
       lastUsed: '5 minutes ago'
     },
     {
-      id: 'realtime-monitoring',
-      name: 'Real-time Monitoring',
-      icon: Activity,
-      color: '#10b981',
-      description: 'Live intelligence updates',
-      status: 'live',
-      stats: 'Connected to Supabase',
-      component: RealtimeMonitoring,
-      lastUsed: 'Live now'
-    },
-    {
-      id: 'stakeholder-intelligence',
+      id: 'stakeholder-monitoring',
       name: 'Stakeholder Intelligence',
-      icon: TrendingUp,
-      color: '#ec4899',
-      description: 'Stakeholder monitoring',
-      status: 'building',
-      stats: '56 stakeholders monitored',
+      icon: Activity,
+      color: '#00bcd4',
+      description: 'Monitor stakeholders & gather intelligence',
+      status: 'active',
+      stats: 'Live monitoring active',
       path: `/projects/${projectId}/stakeholder-intelligence`,
-      lastUsed: '1 day ago'
+      lastUsed: 'Active now'
     },
     {
       id: 'crisis-command',
@@ -1051,7 +1027,20 @@ const RailwayDraggable = () => {
                     
                     <div className="activity-content">
                       <div className="activity-header">
-                        <h3>{activity.name}</h3>
+                        <h3>
+                          {activity.name}
+                          {activity.isNew && (
+                            <span style={{
+                              marginLeft: '8px',
+                              padding: '2px 6px',
+                              background: 'linear-gradient(135deg, #f59e0b 0%, #dc2626 100%)',
+                              borderRadius: '4px',
+                              fontSize: '10px',
+                              fontWeight: 'bold',
+                              color: 'white'
+                            }}>NEW</span>
+                          )}
+                        </h3>
                         <span className={`activity-status ${activity.status}`}>
                           {activity.status === 'ready' ? (
                             <><Circle size={6} fill="currentColor" /> Ready</>
@@ -1116,9 +1105,6 @@ const RailwayDraggable = () => {
                 onContentUpdate={handleContentUpdate}
                 currentContentType={currentContentType}
               />
-            )}
-            {selectedFeature?.id === 'realtime-monitoring' && (
-              <RealtimeMonitoring />
             )}
             {selectedFeature?.id === 'niv-strategist' && (
               <NivPRStrategist

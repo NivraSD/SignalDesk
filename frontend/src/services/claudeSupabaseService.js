@@ -30,6 +30,17 @@ class ClaudeSupabaseService {
    */
   async callClaude(prompt, options = {}) {
     try {
+      console.log('Calling Claude through Supabase Edge Function...');
+      
+      // Check if Supabase is configured
+      if (!this.isConfigured) {
+        console.warn('Supabase not configured, checking again...');
+        await this.checkConfiguration();
+        if (!this.isConfigured) {
+          throw new Error('Supabase authentication required for Claude API');
+        }
+      }
+      
       // Use Supabase Edge Function for Claude integration
       const { data, error } = await supabase.functions.invoke('claude-chat', {
         body: {
@@ -40,11 +51,38 @@ class ClaudeSupabaseService {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase Edge Function error:', error);
+        throw error;
+      }
+      
+      console.log('Claude response received via Supabase');
       return data;
     } catch (error) {
       console.error('Claude API error through Supabase:', error);
-      throw error;
+      
+      // Fallback to backend API if Supabase fails
+      console.log('Attempting fallback to backend Claude API...');
+      try {
+        const response = await fetch('/api/ai/claude/message', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({ prompt, ...options })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Backend API error: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        return result.message || result.content;
+      } catch (backendError) {
+        console.error('Backend fallback also failed:', backendError);
+        throw error; // Throw original error
+      }
     }
   }
 
