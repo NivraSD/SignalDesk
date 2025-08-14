@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ProjectProvider } from "./contexts/ProjectContext";
 import { IntelligenceProvider } from "./context/IntelligenceContext";
+import { supabase } from "./config/supabase"; // Force Supabase to be included
 import Dashboard from "./components/Dashboard";
 import AIAssistant from "./components/AIAssistant";
 import ContentGenerator from "./components/ContentGenerator";
@@ -27,7 +28,19 @@ import Layout from "./components/Layout/Layout";
 import CreateProject from "./components/CreateProject";
 import Analytics from "./components/Analytics";
 import StakeholderIntelligenceHub from "./components/StakeholderIntelligence/StakeholderIntelligenceHub";
-import FloatingNivAssistant from "./components/FloatingNivAssistant";
+
+// Log Supabase initialization for debugging
+console.log('🚀 SignalDesk initialized with Supabase:', supabase ? 'Connected' : 'Not connected');
+
+// Make Supabase available globally for testing
+if (typeof window !== 'undefined') {
+  window.__SIGNALDESK_SUPABASE__ = supabase;
+  window.__SIGNALDESK_CONFIG__ = {
+    supabaseConnected: !!supabase,
+    buildTime: process.env.REACT_APP_BUILD_TIME,
+    buildId: process.env.REACT_APP_BUILD_ID
+  };
+}
 
 // Private Route component - FIXED to use useAuth hook
 function PrivateRoute({ children }) {
@@ -172,7 +185,6 @@ function App() {
         <ProjectProvider>
           <IntelligenceProvider>
             <AppRoutes />
-            <FloatingNivAssistant />
           </IntelligenceProvider>
         </ProjectProvider>
       </AuthProvider>
