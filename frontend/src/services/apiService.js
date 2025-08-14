@@ -3,10 +3,8 @@
  * Handles all communication with the backend intelligence monitoring system
  */
 
-import FORCE_API_URL from '../config/apiUrl';
-
-// Use the EMERGENCY hardcoded URL
-console.log('✅ API Service initialized with FORCE URL:', FORCE_API_URL);
+// API Service now uses environment variables or empty string
+const FORCE_API_URL = '';
 
 class ApiService {
   constructor() {
