@@ -26,8 +26,8 @@ const RailwayDraggable = () => {
   const inputRef = useRef(null);
   
   // View state - either showing activity list or expanded feature
-  const [currentView, setCurrentView] = useState('feature'); // 'activity' or 'feature'
-  const [selectedFeature, setSelectedFeature] = useState({ id: 'niv-command-center' });
+  const [currentView, setCurrentView] = useState('activity'); // 'activity' or 'feature'
+  const [selectedFeature, setSelectedFeature] = useState(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   
   // AI Assistant state - PRESERVING ALL FUNCTIONALITY
@@ -199,6 +199,20 @@ const RailwayDraggable = () => {
       content: "Welcome to SignalDesk! I'm your AI assistant. I can help you create content, find journalists, plan campaigns, and more. Just tell me what you need - for example, 'I need to write a press release' or 'Find tech journalists'. You can also click any feature from the list to get started.",
       timestamp: new Date()
     }]);
+  }, []);
+
+  // Auto-select Niv Command Center on mount to show the new Adaptive Assistant
+  useEffect(() => {
+    // Find the Niv Command Center activity
+    const nivCommandCenter = activities.find(a => a.id === 'niv-command-center');
+    if (nivCommandCenter) {
+      // Small delay to ensure component is fully mounted
+      setTimeout(() => {
+        setSelectedFeature(nivCommandCenter);
+        setCurrentView('feature');
+        setIsTransitioning(false);
+      }, 100);
+    }
   }, []);
 
   // Save positions and sizes
