@@ -878,7 +878,7 @@ const RailwayDraggable = () => {
         >
           <div className="panel-title">
             <Brain size={18} />
-            <span>Niv - Platform Assistant</span>
+            <span>Niv • Senior PR Strategist</span>
           </div>
           <div className="panel-controls">
             <button onClick={() => setAiPanelOpen(!aiPanelOpen)}>

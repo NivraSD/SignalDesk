@@ -34,6 +34,7 @@ const AdaptiveNivAssistant = ({
   const [conversationId, setConversationId] = useState(null);
   const [mode, setMode] = useState(initialMode);
   const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
 
   // Content generation state
   const [isGeneratingContent, setIsGeneratingContent] = useState(false);
@@ -384,6 +385,11 @@ What feels right to you?`,
 
     setMessages(prev => [...prev, userMessage]);
     setInput('');
+    
+    // Refocus input after sending message
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 100);
 
     // Check if we're in content generation flow
     const lastMessage = messages[messages.length - 1];
@@ -656,102 +662,21 @@ Would you like me to revise the content based on these insights?`,
                 fontSize: '20px', 
                 fontWeight: '600', 
                 color: '#e8e8e8',
-                margin: 0,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem'
+                margin: 0
               }}>
                 {adaptivePersonality.name}
-                <Sparkles size={16} color="#a78bfa" />
               </h2>
               <p style={{ 
                 fontSize: '13px', 
                 color: '#9ca3af',
                 margin: '2px 0 0 0'
               }}>
-                {adaptivePersonality.title} • {adaptivePersonality.experience} • Strategic PR Thinking
+                {adaptivePersonality.title}
               </p>
             </div>
           </div>
-          
-          {/* Status indicators */}
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'flex-end',
-            gap: '0.25rem'
-          }}>
-            <div style={{ display: 'flex', gap: '0.5rem', fontSize: '11px' }}>
-              {adaptivePersonality.strengths?.slice(0, 3).map(strength => (
-                <span key={strength} style={{
-                  padding: '0.25rem 0.5rem',
-                  background: 'rgba(139, 92, 246, 0.2)',
-                  border: '1px solid rgba(139, 92, 246, 0.3)',
-                  borderRadius: '12px',
-                  color: '#a78bfa'
-                }}>
-                  {strength}
-                </span>
-              ))}
-            </div>
-            {selectedProject && (
-              <div style={{ fontSize: '11px', color: '#6b7280' }}>
-                Context: {selectedProject.name}
-              </div>
-            )}
-          </div>
         </div>
 
-        {/* Enhanced Quick Actions */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-          gap: '0.5rem',
-          marginTop: '1rem'
-        }}>
-          {quickActions.map(action => {
-            const Icon = action.icon;
-            return (
-              <button
-                key={action.id}
-                onClick={() => handleQuickAction(action)}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'flex-start',
-                  gap: '0.25rem',
-                  padding: '0.75rem',
-                  background: mode === action.id ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255, 255, 255, 0.05)',
-                  border: `1px solid ${mode === action.id ? 'rgba(59, 130, 246, 0.3)' : 'rgba(255, 255, 255, 0.1)'}`,
-                  borderRadius: '8px',
-                  color: '#e8e8e8',
-                  fontSize: '12px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  textAlign: 'left'
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.background = 'rgba(59, 130, 246, 0.2)';
-                  e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.3)';
-                }}
-                onMouseLeave={e => {
-                  if (mode !== action.id) {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                  }
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Icon size={14} />
-                  <span style={{ fontWeight: '500' }}>{action.label}</span>
-                </div>
-                <span style={{ fontSize: '10px', color: '#9ca3af' }}>
-                  {action.description}
-                </span>
-              </button>
-            );
-          })}
-        </div>
       </div>
 
       {/* Messages with enhanced content generation */}
@@ -956,6 +881,7 @@ Would you like me to revise the content based on these insights?`,
           gap: '0.75rem'
         }}>
           <input
+            ref={inputRef}
             id="niv-input"
             type="text"
             value={input}
