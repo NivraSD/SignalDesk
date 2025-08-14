@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase, signIn, signOut, getCurrentUser } from '../config/supabase';
+import { supabase, signIn, signOut, getCurrentUser } from '../config/supabase-simple';
 
 const AuthContext = createContext();
 
@@ -26,11 +26,8 @@ export const AuthProvider = ({ children }) => {
     // Set up auth state listener
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        const userData = await getCurrentUser();
-        if (userData) {
-          setUser(userData.profile || userData);
-          setToken(session.access_token);
-        }
+        setUser(session.user);
+        setToken(session.access_token);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setToken(null);
@@ -44,14 +41,10 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuth = async () => {
     try {
-      const userData = await getCurrentUser();
-      if (userData) {
-        setUser(userData.profile || userData);
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          setToken(session.access_token);
-        }
-      } else {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setUser(session.user);
+        setToken(session.access_token);
       }
     } catch (err) {
       console.error("[Auth] Auth check failed:", err.message);
@@ -66,10 +59,10 @@ export const AuthProvider = ({ children }) => {
       
       const result = await signIn(email, password);
       
-      // Store user info for compatibility
-      if (result.profile) {
-        localStorage.setItem("user", JSON.stringify(result.profile));
-        setUser(result.profile);
+      // Store user info
+      if (result.user) {
+        localStorage.setItem("user", JSON.stringify(result.user));
+        setUser(result.user);
       }
       
       if (result.session) {
