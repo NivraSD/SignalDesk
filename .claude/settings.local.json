@@ -138,7 +138,8 @@
       "WebSearch",
       "Bash(supabase functions logs:*)",
       "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/test-direct-api.sh:*)",
-      "WebFetch(domain:vercel.com)"
+      "WebFetch(domain:vercel.com)",
+      "WebFetch(domain:signaldesk-supabase-git-main-nivra-sd.vercel.app)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

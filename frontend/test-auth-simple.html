@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Auth Test</title>
+</head>
+<body>
+    <h1>Simple Supabase Auth Test</h1>
+    <div id="status">Ready</div>
+    <button onclick="testLogin()">Test Login</button>
+    <div id="result"></div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js';
+        
+        const supabase = createClient(
+            'https://zskaxjtyuaqazydouifp.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8'
+        );
+        
+        window.testLogin = async function() {
+            document.getElementById('status').textContent = 'Testing...';
+            
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: 'admin2@signaldesk.com',
+                    password: 'admin123'
+                });
+                
+                if (error) {
+                    document.getElementById('status').textContent = `❌ Error: ${error.message}`;
+                    document.getElementById('result').innerHTML = `<pre>${JSON.stringify(error, null, 2)}</pre>`;
+                } else {
+                    document.getElementById('status').textContent = '✅ Success!';
+                    document.getElementById('result').innerHTML = `<pre>User: ${data.user.email}\nID: ${data.user.id}</pre>`;
+                }
+            } catch (err) {
+                document.getElementById('status').textContent = `❌ Exception: ${err.message}`;
+                document.getElementById('result').innerHTML = `<pre>${err}</pre>`;
+            }
+        };
+    </script>
+</body>
+</html>
