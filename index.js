@@ -113,7 +113,13 @@ app.get('/', (req, res) => {
         ai: "POST /api/content/ai-generate",
         crisis: "POST /api/crisis/analyze",
         campaigns: "POST /api/campaigns/analyze",
-        monitoring: "GET /api/monitoring/status"
+        monitoring: "GET /api/monitoring/status",
+        niv: {
+          chat: "POST /api/niv/chat",
+          capabilities: "GET /api/niv/capabilities",
+          health: "GET /api/niv/health",
+          history: "GET /api/niv/history/:conversationId"
+        }
       }
     },
     database: "PostgreSQL with fallback to mock data",
@@ -159,6 +165,7 @@ const missingEndpointsRoutes = require("./src/routes/missingEndpointsRoutes");
 const enhancedClaudeRoutes = require("./src/routes/enhancedClaudeRoutes");
 const healthCheckRoutes = require("./src/routes/healthCheckRoutes");
 const mcpRoutes = require("./src/routes/mcpRoutes");
+const nivRoutes = require("./backend/src/routes/nivRoutes");
 
 // Database initialization routes (MUST BE BEFORE AUTH FOR PUBLIC ACCESS)
 const databaseInitRoutes = require("./src/routes/databaseInit");
@@ -272,6 +279,7 @@ app.use("/api/stakeholder-intelligence", authMiddleware, stakeholderIntelligence
 app.use("/api/opportunities", authMiddleware, opportunitiesRoutes);
 app.use("/api/opportunity", authMiddleware, opportunityRoutes);  // Opportunity finding
 app.use("/api/mcp", authMiddleware, mcpRoutes);  // MCP integration routes
+app.use("/api/niv", authMiddleware, nivRoutes);  // Niv PR Strategist routes
 
 // Intelligence Index Routes (pre-indexed data) - Public access for browsing
 const intelligenceIndexRoutes = require("./src/routes/intelligenceIndexRoutes");

@@ -1,16 +1,13 @@
 {
   "name": "signaldesk-api",
-  "version": "1.0.0-force-rebuild-20250113",
+  "version": "1.0.0",
   "description": "SignalDesk API Backend",
   "main": "app.js",
   "scripts": {
-    "build": "echo 'Build timestamp:' && date && echo 'SignalDesk Backend Build v6' && echo 'Build ID: '$(date +%s)",
+    "build": "echo 'SignalDesk Backend Build Complete'",
     "start": "node server.js",
-    "start-legacy": "node app.js",
-    "dev": "nodemon backend/index.js",
-    "test": "echo 'Tests passing'",
-    "railway-deploy": "node server.js",
-    "verify": "echo 'Verification complete'"
+    "dev": "nodemon index.js",
+    "test": "jest"
   },
   "keywords": [
     "api",
