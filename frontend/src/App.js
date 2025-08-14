@@ -181,4 +181,4 @@ function App() {
 }
 
 export default App;
-// Force Vercel rebuild - Media Intelligence Platform deployed Sat Aug  9 14:27:00 EDT 2025
+// Force Vercel rebuild - Adaptive Niv Platform deployed Wed Aug 14 10:30:00 EDT 2025
