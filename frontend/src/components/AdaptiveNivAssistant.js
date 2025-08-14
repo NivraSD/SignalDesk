@@ -49,83 +49,90 @@ const AdaptiveNivAssistant = ({
   const [adaptivePersonality, setAdaptivePersonality] = useState({});
   const [conversationContext, setConversationContext] = useState({});
 
-  // Niv's enhanced personality with adaptive traits
+  // Niv's enhanced personality - World-class PR consultant with 20 years experience
   const basePersonality = {
     name: 'Niv',
-    title: 'Your AI PR Assistant',
-    experience: '20+ years of collective knowledge',
-    style: 'Adaptive to your working style',
-    strengths: ['Strategic Thinking', 'Content Creation', 'Adaptive Learning', 'Multi-modal Support'],
+    title: 'Senior PR Strategist',
+    experience: '20 years of PR expertise',
+    style: 'Direct but warm, always thinking 3 steps ahead',
+    strengths: ['Strategic PR Planning', 'Crisis Navigation', 'Media Psychology', 'Brand Positioning'],
     tone: 'professional', // Will adapt based on user preferences
-    communicationStyle: 'conversational', // Will adapt based on interactions
-    expertiseAreas: ['PR Strategy', 'Content Generation', 'Media Relations', 'Crisis Management', 'Campaign Planning']
+    communicationStyle: 'conversational', // Short, tactical responses
+    expertiseAreas: ['PR Strategy', 'Crisis Management', 'Media Relations', 'Brand Positioning', 'Executive Communications'],
+    personality: {
+      approach: 'Patient and tactical',
+      style: 'Direct but warm',
+      thinking: 'Strategic, 3 steps ahead',
+      questioning: 'Clarifies before creating',
+      expertise: 'World-class PR consultant mindset'
+    }
   };
 
-  // Content type questions for conversational generation
+  // Strategic content questions - more consultant-focused
   const contentQuestions = {
     'press-release': [
-      { key: 'announcement', question: "What's the main news you're announcing?", type: 'textarea' },
-      { key: 'company', question: "What's your company name and industry?", type: 'text' },
-      { key: 'metrics', question: "Do you have specific numbers, dates, or metrics to highlight?", type: 'textarea', optional: true },
-      { key: 'quotes', question: "Would you like to include any executive quotes? If so, what should they say?", type: 'textarea', optional: true },
-      { key: 'timing', question: "When should this news be released, and what are the next steps?", type: 'text', optional: true }
+      { key: 'announcement', question: "What's the core news? Give me the headline-worthy piece.", type: 'textarea' },
+      { key: 'significance', question: "Why does this matter to your industry/customers right now?", type: 'textarea' },
+      { key: 'metrics', question: "Any compelling numbers or milestones to strengthen the story?", type: 'textarea', optional: true },
+      { key: 'stakeholders', question: "Who are the key voices (CEO, customers, partners) we should feature?", type: 'textarea', optional: true },
+      { key: 'context', question: "What's the broader business context or trend this ties into?", type: 'textarea', optional: true }
     ],
     'social-post': [
-      { key: 'platform', question: "Which social platform is this for? (LinkedIn, Twitter, Instagram, etc.)", type: 'text' },
-      { key: 'message', question: "What's the key message you want to share?", type: 'textarea' },
-      { key: 'tone', question: "What tone should this have? (Professional, casual, inspiring, urgent, etc.)", type: 'text' },
-      { key: 'cta', question: "What action do you want people to take after reading this?", type: 'text', optional: true }
+      { key: 'platform', question: "Which platform? (This shapes everything about tone and format)", type: 'text' },
+      { key: 'objective', question: "What's the business goal? (Brand awareness, lead gen, engagement, etc.)", type: 'text' },
+      { key: 'message', question: "What's the key insight or value you're sharing?", type: 'textarea' },
+      { key: 'audience', question: "Who specifically are you trying to reach with this?", type: 'text', optional: true }
     ],
     'media-pitch': [
-      { key: 'outlet', question: "Which media outlet or journalist are you pitching to?", type: 'text' },
-      { key: 'story_angle', question: "What's your story angle? Why should they care?", type: 'textarea' },
-      { key: 'newsworthiness', question: "What makes this newsworthy right now?", type: 'textarea' },
-      { key: 'exclusivity', question: "Are you offering any exclusive access, data, or interviews?", type: 'text', optional: true }
+      { key: 'target', question: "Which journalist/outlet? (I need to know their beat and interests)", type: 'text' },
+      { key: 'hook', question: "What's your news hook? Why is this story happening now?", type: 'textarea' },
+      { key: 'angle', question: "What's the broader trend or issue this story represents?", type: 'textarea' },
+      { key: 'sources', question: "What exclusive access, data, or expert voices can you provide?", type: 'text', optional: true }
     ],
     'crisis-response': [
-      { key: 'situation', question: "What happened? Give me the key facts.", type: 'textarea' },
-      { key: 'impact', question: "Who was affected and how?", type: 'textarea' },
-      { key: 'actions', question: "What steps are you taking to address this?", type: 'textarea' },
-      { key: 'timeline', question: "When will you provide updates, and what are next steps?", type: 'text' }
+      { key: 'situation', question: "What exactly happened? I need clear, factual details.", type: 'textarea' },
+      { key: 'responsibility', question: "What's your company's role/responsibility in this situation?", type: 'textarea' },
+      { key: 'actions', question: "What concrete steps are you taking to resolve this?", type: 'textarea' },
+      { key: 'stakeholders', question: "Who needs to hear from you first? (Employees, customers, media, etc.)", type: 'text' }
     ]
   };
 
-  // Quick action prompts with conversational generation
+  // Strategic quick actions - PR consultant focused
   const quickActions = [
     { 
       id: 'content', 
-      label: 'Create Content', 
+      label: 'Content Creation', 
       icon: FileText, 
-      prompt: 'I need help creating content',
-      description: 'Generate any type of PR content with guided questions'
+      prompt: 'I need to create content for',
+      description: 'Strategic content with guided questions'
     },
     { 
       id: 'strategy', 
       label: 'PR Strategy', 
       icon: Target, 
-      prompt: 'Help me develop a PR strategy for',
-      description: 'Strategic planning and campaign development'
+      prompt: 'Help me think through PR strategy for',
+      description: 'Campaign planning and strategic approach'
     },
     { 
       id: 'media', 
-      label: 'Media Relations', 
+      label: 'Media Strategy', 
       icon: Users, 
-      prompt: 'I need media advice about',
-      description: 'Journalist outreach and relationship building'
+      prompt: 'I need media strategy for',
+      description: 'Journalist targeting and story angles'
     },
     { 
       id: 'crisis', 
-      label: 'Crisis Help', 
+      label: 'Crisis Response', 
       icon: AlertCircle, 
-      prompt: 'I need crisis communication help with',
-      description: 'Urgent crisis communication support'
+      prompt: 'I have a crisis situation:',
+      description: 'Urgent communication strategy'
     },
     { 
       id: 'optimize', 
-      label: 'Optimize Content', 
+      label: 'Content Review', 
       icon: BarChart3, 
-      prompt: 'Review and improve this content:',
-      description: 'Analyze and enhance existing content'
+      prompt: 'Review this content:',
+      description: 'Strategic analysis and improvements'
     }
   ];
 
@@ -158,16 +165,15 @@ const AdaptiveNivAssistant = ({
     const welcomeMessage = {
       id: Date.now(),
       role: 'assistant',
-      content: `Hi! I'm Niv, your adaptive AI PR assistant. I learn from our conversations to better support your communication goals.
+      content: `Hi, I'm Niv. I've spent 20 years helping companies navigate complex PR challenges. I'm here to be your strategic thought partner.
 
-I can help you with:
-✨ **Content Creation** - I'll ask the right questions to create exactly what you need
-🎯 **PR Strategy** - Strategic planning tailored to your industry and goals  
-📱 **Social Media** - Platform-optimized content that drives engagement
-📰 **Media Relations** - Journalist outreach and relationship building
-🚨 **Crisis Communication** - Rapid response and reputation management
+Here's how I work best:
+• **I ask smart questions first** - Better input = better output
+• **Think 3 steps ahead** - Every piece connects to your bigger picture  
+• **Keep it conversational** - No long blocks of text, just clear guidance
+• **Generate content seamlessly** - From strategy to execution in one flow
 
-${selectedProject ? `I see you're working on "${selectedProject.name}". ` : ''}What would you like to work on today?`,
+${selectedProject ? `I see we're working on "${selectedProject.name}". ` : ''}What's the PR challenge you're facing today?`,
       timestamp: new Date().toISOString(),
       adaptive: true
     };
@@ -217,16 +223,15 @@ ${selectedProject ? `I see you're working on "${selectedProject.name}". ` : ''}W
     const question = questions[stepIndex];
     const progressPercent = Math.round((stepIndex / questions.length) * 100);
     
+    // More conversational, consultant-like questioning
     const message = {
       id: Date.now(),
       role: 'assistant',
-      content: `**Step ${stepIndex + 1} of ${questions.length}** (${progressPercent}% complete)
+      content: `**${question.question}**
 
-${question.question}
+${question.optional ? '*(Optional - just say "skip" if not relevant)*' : ''}
 
-${question.optional ? '*This is optional - you can skip by typing "skip" or just hit enter.*' : ''}
-
-💡 **Tip:** Be as specific as possible. The more detail you provide, the better content I can create for you.`,
+The more context you give me, the better I can craft this for your specific situation.`,
       timestamp: new Date().toISOString(),
       waitingForInput: true,
       questionKey: question.key,
@@ -246,12 +251,9 @@ ${question.optional ? '*This is optional - you can skip by typing "skip" or just
     const summaryMessage = {
       id: Date.now(),
       role: 'assistant',
-      content: `Perfect! I have all the information I need. Let me create your ${currentContentType.replace('-', ' ')} now...
+      content: `Got it. I can see the full picture now.
 
-**What I'm creating:**
-${Object.entries(info).map(([key, value]) => `• ${key}: ${value.substring(0, 100)}${value.length > 100 ? '...' : ''}`).join('\n')}
-
-✨ **Generating your content now...**`,
+Let me craft this ${currentContentType.replace('-', ' ')} with the strategic angle that'll resonate with your audience...`,
       timestamp: new Date().toISOString()
     };
     
@@ -259,10 +261,18 @@ ${Object.entries(info).map(([key, value]) => `• ${key}: ${value.substring(0, 1
     setLoading(true);
 
     try {
-      const prompt = `Create a ${currentContentType} with the following information:\n\n${Object.entries(info).map(([key, value]) => `${key}: ${value}`).join('\n\n')}`;
+      const strategicPrompt = `As a senior PR strategist, create a ${currentContentType} that strategically addresses the following:
+
+${Object.entries(info).map(([key, value]) => `${key}: ${value}`).join('\n\n')}
+
+Apply 20 years of PR expertise to make this compelling, strategic, and results-driven. Focus on:
+- Clear, compelling messaging
+- Strategic positioning 
+- Audience-appropriate tone
+- Actionable next steps where relevant`;
       
       const response = await supabaseApiService.generateContent(currentContentType, {
-        prompt,
+        prompt: strategicPrompt,
         type: currentContentType,
         tone: adaptivePersonality.tone,
         projectId: selectedProject?.id,
@@ -271,7 +281,8 @@ ${Object.entries(info).map(([key, value]) => `• ${key}: ${value.substring(0, 1
         context: {
           userPreferences,
           conversationHistory: messages.slice(-5),
-          collectedInfo: info
+          collectedInfo: info,
+          strategicApproach: 'senior_pr_consultant'
         }
       });
 
@@ -281,19 +292,18 @@ ${Object.entries(info).map(([key, value]) => `• ${key}: ${value.substring(0, 1
       const contentMessage = {
         id: Date.now() + 1,
         role: 'assistant',
-        content: `🎉 **Here's your ${currentContentType.replace('-', ' ')}:**
+        content: `Here's your ${currentContentType.replace('-', ' ')}:
 
 ${content}
 
 ---
 
-**What would you like to do now?**
-• Ask me to make changes ("make it more casual", "add statistics", etc.)
-• Generate a different version with different tone
-• Create additional content for this campaign
-• Analyze the performance potential of this content
+**Next steps?**
+• Need edits? ("Make it stronger", "Add more data", "Different angle")
+• Ready to distribute? I can help with targeting and timing
+• Want to build a campaign around this? Let's think bigger picture
 
-I can adapt and refine this until it's exactly what you need!`,
+What feels right to you?`,
         timestamp: new Date().toISOString(),
         generatedContent: content,
         contentType: currentContentType,
@@ -318,7 +328,7 @@ I can adapt and refine this until it's exactly what you need!`,
       const errorMessage = {
         id: Date.now() + 1,
         role: 'assistant',
-        content: `I apologize, but I encountered an issue generating your content. Let me try a different approach. Could you give me a brief description of what you'd like me to create, and I'll work with that?`,
+        content: `Hit a technical snag there. Let me try a different approach - just tell me what you need in your own words and I'll work with that.`,
         timestamp: new Date().toISOString(),
         error: true
       };
@@ -391,16 +401,15 @@ I can adapt and refine this until it's exactly what you need!`,
         const contentTypeQuestion = {
           id: Date.now() + 1,
           role: 'assistant',
-          content: `I'd love to help you create content! What type would you like to work on?
+          content: `Got it. What kind of content are we creating?
 
-**Quick Options:**
-• Press Release - Company announcements and news
-• Social Media Post - Engaging platform content  
-• Media Pitch - Journalist outreach
-• Crisis Response - Urgent communications
-• Other - Tell me what you have in mind
+• **Press Release** - News announcement  
+• **Social Post** - Platform-specific content
+• **Media Pitch** - Journalist outreach
+• **Crisis Response** - Urgent communication
+• **Something else** - Just describe it
 
-Just tell me the type, and I'll guide you through creating exactly what you need with the right questions.`,
+I'll ask the right strategic questions once I know the format.`,
           timestamp: new Date().toISOString(),
           waitingForContentType: true
         };
@@ -454,7 +463,7 @@ Just tell me the type, and I'll guide you through creating exactly what you need
       const errorMessage = {
         id: Date.now() + 1,
         role: 'assistant',
-        content: `I encountered a technical issue, but I'm still here to help! Could you try rephrasing your request, or let me know if you'd like to start with creating some content?`,
+        content: `Technical hiccup on my end. Can you try that again? Or if you want to create content, just tell me what type you need.`,
         timestamp: new Date().toISOString(),
         error: true
       };
@@ -466,16 +475,23 @@ Just tell me the type, and I'll guide you through creating exactly what you need
 
   // Generate adaptive responses based on user patterns
   const generateAdaptiveResponse = async (userInput) => {
-    // Use the existing AI content generation with enhanced context
-    const contextualPrompt = `As Niv, an adaptive AI PR assistant, respond to: "${userInput}"
-    
+    // Enhanced PR consultant personality in the prompt
+    const contextualPrompt = `You are Niv, a world-class PR strategist with 20 years of experience. You are:
+- Patient and tactical in your approach
+- Direct but warm in communication style
+- Always thinking 3 steps ahead strategically
+- Focused on asking smart clarifying questions before generating content
+- Conversational and concise (no long blocks of text)
+
+User says: "${userInput}"
+
 Context:
 - User preferences: ${JSON.stringify(userPreferences)}
 - Current project: ${selectedProject?.name || 'None'}
 - Communication style: ${adaptivePersonality.communicationStyle}
-- Previous interactions: ${messages.slice(-3).map(m => `${m.role}: ${m.content.substring(0, 100)}`).join(' | ')}
+- Recent conversation: ${messages.slice(-3).map(m => `${m.role}: ${m.content.substring(0, 100)}`).join(' | ')}
 
-Respond helpfully and adapt your tone to match the user's preferred communication style.`;
+Respond as a senior PR consultant would - be strategic, ask clarifying questions, and keep responses conversational and actionable. If they need content, guide them to the content generation flow rather than trying to create it directly.`;
 
     try {
       const response = await supabaseApiService.sendClaudeMessage(contextualPrompt, {
@@ -486,9 +502,9 @@ Respond helpfully and adapt your tone to match the user's preferred communicatio
         context: { userPreferences, conversationHistory: messages.slice(-5) }
       });
       
-      return response.content || response.data?.content || response.message || "I understand what you're looking for. How can I help you achieve that goal?";
+      return response.content || response.data?.content || response.message || "What's the strategic challenge we're solving here? I can help you think through the approach.";
     } catch (error) {
-      return "I'm here to help with your PR and content needs. What would you like to work on?";
+      return "Let's break this down. What's the PR challenge, and what outcome are you looking for?";
     }
   };
 
@@ -646,7 +662,7 @@ Would you like me to revise the content based on these insights?`,
                 color: '#9ca3af',
                 margin: '2px 0 0 0'
               }}>
-                {adaptivePersonality.title} • Adaptive AI • Learning from {messages.length} interactions
+                {adaptivePersonality.title} • {adaptivePersonality.experience} • Strategic PR Thinking
               </p>
             </div>
           </div>
@@ -913,8 +929,8 @@ Would you like me to revise the content based on these insights?`,
             </div>
             <div style={{ color: '#9ca3af', fontSize: '13px' }}>
               {isGeneratingContent 
-                ? `Creating your ${currentContentType?.replace('-', ' ')}...` 
-                : "Niv is thinking strategically..."}
+                ? `Crafting your ${currentContentType?.replace('-', ' ')}...` 
+                : "Niv is analyzing the situation..."}
             </div>
           </div>
         )}
@@ -941,7 +957,7 @@ Would you like me to revise the content based on these insights?`,
             placeholder={
               isGeneratingContent 
                 ? "Type your answer here..." 
-                : "Ask me anything about PR, content, or strategy..."
+                : "What's the PR challenge? I'll help you think it through..."
             }
             disabled={loading}
             style={{
