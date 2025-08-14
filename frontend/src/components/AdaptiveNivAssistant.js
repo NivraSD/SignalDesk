@@ -286,7 +286,8 @@ Apply 20 years of PR expertise to make this compelling, strategic, and results-d
         }
       });
 
-      const content = response.content || response.data?.content || response.message || response;
+      // The Edge Function returns { success: true, response: "text" }
+      const content = response.response || response.content || response.data?.content || response.message || response;
       setGeneratedContent(content);
       
       const contentMessage = {
@@ -495,6 +496,7 @@ Respond as a senior PR consultant would - be strategic, ask clarifying questions
 
     try {
       const response = await supabaseApiService.sendClaudeMessage(contextualPrompt, {
+        systemPrompt: "You are Niv, a senior PR strategist with 20 years of experience. Be conversational, strategic, and helpful.",
         type: 'conversation',
         tone: adaptivePersonality.tone,
         projectId: selectedProject?.id,
@@ -502,8 +504,10 @@ Respond as a senior PR consultant would - be strategic, ask clarifying questions
         context: { userPreferences, conversationHistory: messages.slice(-5) }
       });
       
-      return response.content || response.data?.content || response.message || "What's the strategic challenge we're solving here? I can help you think through the approach.";
+      // The Edge Function returns { success: true, response: "text" }
+      return response.response || response.content || response.data?.content || response.message || "What's the strategic challenge we're solving here? I can help you think through the approach.";
     } catch (error) {
+      console.error('Claude API error:', error);
       return "Let's break this down. What's the PR challenge, and what outcome are you looking for?";
     }
   };
@@ -543,6 +547,7 @@ Respond as a senior PR consultant would - be strategic, ask clarifying questions
       const analysis = await supabaseApiService.sendClaudeMessage(
         `Analyze this ${currentContentType}: ${content}`,
         {
+          systemPrompt: "You are a PR expert. Analyze this content for quality, effectiveness, and strategic alignment.",
           action: 'analyzeContent',
           contentType: currentContentType,
           tone: adaptivePersonality.tone,
@@ -553,7 +558,9 @@ Respond as a senior PR consultant would - be strategic, ask clarifying questions
         }
       );
       
-      setContentAnalysis(analysis.analysis);
+      // Handle the response format correctly
+      const analysisData = analysis.response || analysis.analysis || analysis;
+      setContentAnalysis(analysisData);
       
       const analysisMessage = {
         id: Date.now(),
