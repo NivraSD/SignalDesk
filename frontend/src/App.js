@@ -3,25 +3,17 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ProjectProvider } from "./contexts/ProjectContext";
 import { IntelligenceProvider } from "./context/IntelligenceContext";
-import Dashboard from "./components/Dashboard";
 import AIAssistant from "./components/AIAssistant";
 import ContentGenerator from "./components/ContentGenerator";
 import CrisisCommandCenter from "./components/CrisisCommandCenter";
-// import MediaListBuilder from "./components/MediaListBuilder"; // OLD - Basic journalist search
-import MediaIntelligence from "./components/MediaIntelligence"; // NEW - Full intelligence platform
+import MediaIntelligence from "./components/MediaIntelligence"; // Full intelligence platform
 import CampaignIntelligence from "./components/CampaignIntelligence";
 import EnhancedCampaignIntelligenceFixed from "./components/EnhancedCampaignIntelligenceFixed"; // Fixed enhanced version
-import UnifiedPlatform from "./components/UnifiedPlatform"; // Restored unified platform
-import RailwayPlatform from "./components/RailwayPlatform"; // New Railway UI with proper drag/resize
-import RailwayCanvas from "./components/RailwayCanvas"; // True Railway canvas with service nodes
-import RailwayActivity from "./components/RailwayActivity"; // Railway-style activity list
-import RailwayDraggable from "./components/RailwayDraggable"; // Draggable and resizable UI
+import UnifiedPlatform from "./components/UnifiedPlatform"; // Main platform component
 import Monitoring from "./components/Monitoring";
 import Reports from "./components/Reports";
-import ProjectList from "./components/ProjectList";
 import Login from "./components/Login";
 import ProjectManagement from "./components/ProjectManagement";
-import Homepage from "./components/Homepage";
 import MemoryVault from "./components/MemoryVault";
 import Layout from "./components/Layout/Layout";
 import CreateProject from "./components/CreateProject";
@@ -92,40 +84,12 @@ function AppRoutes() {
         <Route path="/analytics" element={<Analytics />} />
       </Route>
 
-      {/* Use RailwayDraggable for main project view - Draggable and resizable UI */}
+      {/* Use UnifiedPlatform for main project view */}
       <Route
         path="/projects/:projectId"
         element={
           <PrivateRoute>
-            <RailwayDraggable />
-          </PrivateRoute>
-        }
-      />
-      
-      {/* Alternative UI versions for comparison */}
-      <Route
-        path="/projects/:projectId/unified"
-        element={
-          <PrivateRoute>
             <UnifiedPlatform />
-          </PrivateRoute>
-        }
-      />
-      
-      <Route
-        path="/projects/:projectId/railway-panels"
-        element={
-          <PrivateRoute>
-            <RailwayPlatform />
-          </PrivateRoute>
-        }
-      />
-      
-      <Route
-        path="/projects/:projectId/canvas"
-        element={
-          <PrivateRoute>
-            <RailwayCanvas />
           </PrivateRoute>
         }
       />
