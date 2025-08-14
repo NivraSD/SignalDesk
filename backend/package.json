@@ -1,16 +1,13 @@
 {
   "name": "signaldesk-api",
-  "version": "1.0.20250813-164927-niv-routes-force-20250813-2025",
+  "version": "1.0.0",
   "description": "SignalDesk API Backend",
   "main": "app.js",
   "scripts": {
-    "build": "echo 'Build timestamp:' && date && echo 'SignalDesk Backend Build v6' && echo 'Build ID: '$(date +%s)",
+    "build": "echo 'SignalDesk Backend Build Complete'",
     "start": "node server.js",
-    "start-legacy": "node app.js",
-    "dev": "nodemon backend/index.js",
-    "test": "echo 'Tests passing'",
-    "railway-deploy": "node server.js",
-    "verify": "echo 'Verification complete'"
+    "dev": "nodemon index.js",
+    "test": "jest"
   },
   "keywords": [
     "api",
@@ -24,6 +21,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.56.0",
+    "@supabase/supabase-js": "^2.55.0",
     "axios": "^1.11.0",
     "bcryptjs": "^2.4.3",
     "cheerio": "^1.1.2",
