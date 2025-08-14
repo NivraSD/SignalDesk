@@ -158,7 +158,10 @@
       "Bash(PGPASSWORD=MUmjKBxTiecMPpYVgwGsZEKyFfyFbxqV psql -h crossover.proxy.rlwy.net -p 56706 -U postgres -d railway -f /Users/jonathanliebowitz/Desktop/SignalDesk/frontend/ADD_MONITORING_ALERTS_TABLE.sql)",
       "Bash(supabase link:*)",
       "Bash(npm ls:*)",
-      "WebFetch(domain:signaldesk.vercel.app)"
+      "WebFetch(domain:signaldesk.vercel.app)",
+      "WebFetch(domain:signaldesk-nivra-sd.vercel.app)",
+      "Bash(git config:*)",
+      "Bash(git merge:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

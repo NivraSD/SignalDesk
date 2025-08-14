@@ -1,7 +1,0 @@
-# This file forces Railway to use Nixpacks
-# Remove this file only if you want to use Docker
-
-BUILDER=nixpacks
-NO_DOCKER=true
-FORCE_NIXPACKS=true
-TIMESTAMP=1737035000
