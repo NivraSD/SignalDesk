@@ -165,39 +165,85 @@ class SupabaseApiService {
   // Claude AI methods (via Edge Functions)
   async sendClaudeMessage(message, context = {}) {
     return this.callEdgeFunction('claude-chat', {
-      message,
-      context
+      prompt: message,  // Edge Function expects 'prompt' not 'message'
+      system: context.systemPrompt,
+      model: context.model || 'claude-3-haiku-20240307',
+      max_tokens: context.max_tokens || 1000,
+      temperature: context.temperature || 0.7
     });
   }
 
   async generateContent(type, params) {
+    // Build a comprehensive prompt for content generation
+    const prompt = `Generate ${type} content with the following parameters:
+Type: ${type}
+${params.prompt || ''}
+Company: ${params.companyName || 'the company'}
+Industry: ${params.industry || 'technology'}
+Tone: ${params.tone || 'professional'}
+${params.context ? `Additional context: ${JSON.stringify(params.context)}` : ''}`;
+    
     return this.callEdgeFunction('claude-chat', {
-      action: 'generateContent',
-      contentType: type,
-      parameters: params
+      prompt,
+      system: "You are Niv, an experienced PR strategist with 20 years of expertise. Generate high-quality PR content that is strategic, compelling, and tailored to the target audience.",
+      model: params.model || 'claude-3-haiku-20240307',
+      max_tokens: params.max_tokens || 2000,
+      temperature: params.temperature || 0.7
     });
   }
 
   async analyzeOpportunity(opportunityData) {
+    const prompt = `Analyze this PR opportunity and provide strategic recommendations:
+${JSON.stringify(opportunityData, null, 2)}
+
+Provide analysis including:
+1. Strategic value (1-10)
+2. Timing recommendations
+3. Key angles to pursue
+4. Potential risks
+5. Action steps`;
+
     return this.callEdgeFunction('claude-chat', {
-      action: 'analyzeOpportunity',
-      data: opportunityData
+      prompt,
+      system: "You are Niv, a senior PR strategist. Analyze opportunities with deep strategic insight.",
+      model: 'claude-3-haiku-20240307',
+      max_tokens: 1500
     });
   }
 
   // Campaign methods
   async analyzeCampaign(campaignData) {
+    const prompt = `Analyze this PR campaign and provide strategic guidance:
+${JSON.stringify(campaignData, null, 2)}
+
+Provide comprehensive campaign analysis including messaging, targeting, and execution strategy.`;
+
     return this.callEdgeFunction('claude-chat', {
-      action: 'analyzeCampaign',
-      campaign: campaignData
+      prompt,
+      system: "You are Niv, an expert PR strategist with 20 years of experience running successful campaigns.",
+      model: 'claude-3-haiku-20240307',
+      max_tokens: 2000
     });
   }
 
   // Crisis management
   async analyzeCrisis(crisisData) {
+    const prompt = `URGENT: Analyze this crisis situation and provide immediate strategic guidance:
+${JSON.stringify(crisisData, null, 2)}
+
+Provide crisis response plan including:
+1. Immediate actions (first hour)
+2. Key stakeholders to address
+3. Core messaging framework
+4. Media response strategy
+5. Timeline for updates`;
+
     return this.callEdgeFunction('claude-chat', {
-      action: 'analyzeCrisis',
-      crisis: crisisData
+      prompt,
+      system: "You are Niv, a crisis management expert. Time is critical. Be direct, strategic, and action-oriented.",
+      model: 'claude-3-sonnet-20240229',  // Use better model for crisis
+      max_tokens: 2000,
+      temperature: 0.3  // Lower temperature for more consistent crisis response
     });
   }
 
