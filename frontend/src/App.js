@@ -181,4 +181,4 @@ function App() {
 }
 
 export default App;
-// Force Vercel rebuild - Adaptive Niv Platform deployed Wed Aug 14 10:30:00 EDT 2025
+// CACHE BUST: Adaptive Niv Platform v2.0 - Wed Aug 14 14:50:00 EDT 2025
