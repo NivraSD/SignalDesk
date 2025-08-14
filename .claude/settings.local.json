@@ -161,7 +161,8 @@
       "WebFetch(domain:signaldesk.vercel.app)",
       "WebFetch(domain:signaldesk-nivra-sd.vercel.app)",
       "Bash(git config:*)",
-      "Bash(git merge:*)"
+      "Bash(git merge:*)",
+      "WebFetch(domain:signaldesk-gewbkr7w4-nivra-sd.vercel.app)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

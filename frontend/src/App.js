@@ -193,4 +193,4 @@ function App() {
 }
 
 export default App;
-// CACHE BUST: Adaptive Niv Platform v2.0 - Wed Aug 14 14:50:00 EDT 2025
+// CACHE BUST: Adaptive Niv Platform v2.1 - DEFAULT NIV ASSISTANT - Wed Aug 14 16:20:00 EDT 2025

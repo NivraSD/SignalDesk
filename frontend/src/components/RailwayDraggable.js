@@ -26,8 +26,8 @@ const RailwayDraggable = () => {
   const inputRef = useRef(null);
   
   // View state - either showing activity list or expanded feature
-  const [currentView, setCurrentView] = useState('activity'); // 'activity' or 'feature'
-  const [selectedFeature, setSelectedFeature] = useState(null);
+  const [currentView, setCurrentView] = useState('feature'); // 'activity' or 'feature'
+  const [selectedFeature, setSelectedFeature] = useState({ id: 'niv-command-center' });
   const [isTransitioning, setIsTransitioning] = useState(false);
   
   // AI Assistant state - PRESERVING ALL FUNCTIONALITY
