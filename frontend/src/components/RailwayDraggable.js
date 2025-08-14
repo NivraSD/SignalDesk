@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import ContentGeneratorModule from './ContentGeneratorModule';
 import OpportunityEngine from './OpportunityEngine';
 import NivPRStrategist from './NivPRStrategist';
+import RealtimeMonitoring from './RealtimeMonitoring';
 import API_BASE_URL from '../config/api';
 // import adaptiveAI from '../services/adaptiveAIService'; // REMOVED - backend handles everything
 import {
@@ -131,6 +132,17 @@ const RailwayDraggable = () => {
       stats: '1,234 items stored',
       path: `/projects/${projectId}`,
       lastUsed: '5 minutes ago'
+    },
+    {
+      id: 'realtime-monitoring',
+      name: 'Real-time Monitoring',
+      icon: Activity,
+      color: '#10b981',
+      description: 'Live intelligence updates',
+      status: 'live',
+      stats: 'Connected to Supabase',
+      component: RealtimeMonitoring,
+      lastUsed: 'Live now'
     },
     {
       id: 'stakeholder-intelligence',
@@ -1104,6 +1116,9 @@ const RailwayDraggable = () => {
                 onContentUpdate={handleContentUpdate}
                 currentContentType={currentContentType}
               />
+            )}
+            {selectedFeature?.id === 'realtime-monitoring' && (
+              <RealtimeMonitoring />
             )}
             {selectedFeature?.id === 'niv-strategist' && (
               <NivPRStrategist

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalDesk Production Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #0a0a0a;
+            color: #e5e5e5;
+        }
+        h1 {
+            color: #8b5cf6;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .test-section {
+            background: #171717;
+            border: 1px solid #262626;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background: #7c3aed;
+        }
+        .success {
+            color: #10b981;
+            background: #10b98120;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .error {
+            color: #ef4444;
+            background: #ef444420;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .info {
+            color: #60a5fa;
+            background: #3b82f620;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .link {
+            color: #8b5cf6;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .link:hover {
+            text-decoration: underline;
+        }
+        h2 {
+            color: #a78bfa;
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        .response {
+            background: #0a0a0a;
+            border: 1px solid #262626;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            color: #a3a3a3;
+        }
+        .deployment-info {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 10px;
+            font-size: 14px;
+        }
+        .deployment-info dt {
+            color: #737373;
+            font-weight: 500;
+        }
+        .deployment-info dd {
+            color: #e5e5e5;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 SignalDesk Production Deployment Test</h1>
+
+    <!-- Deployment Info -->
+    <div class="test-section">
+        <h2>Deployment Information</h2>
+        <dl class="deployment-info">
+            <dt>Frontend URL:</dt>
+            <dd><a href="https://signaldesk-frontend.vercel.app" target="_blank" class="link">https://signaldesk-frontend.vercel.app</a></dd>
+            
+            <dt>Supabase URL:</dt>
+            <dd><a href="https://zskaxjtyuaqazydouifp.supabase.co" target="_blank" class="link">https://zskaxjtyuaqazydouifp.supabase.co</a></dd>
+            
+            <dt>Edge Function:</dt>
+            <dd>monitor-intelligence (deployed)</dd>
+            
+            <dt>Test Login:</dt>
+            <dd>admin@signaldesk.com / admin123</dd>
+        </dl>
+    </div>
+
+    <!-- Quick Test Buttons -->
+    <div class="test-section">
+        <h2>Quick Tests</h2>
+        <button onclick="openFrontend()">1. Open Frontend</button>
+        <button onclick="testSupabase()">2. Test Supabase Connection</button>
+        <button onclick="testEdgeFunction()">3. Test Edge Function</button>
+        <button onclick="testFullFlow()">4. Test Complete Flow</button>
+        <div id="test-status"></div>
+    </div>
+
+    <!-- Test Instructions -->
+    <div class="test-section">
+        <h2>Testing Instructions</h2>
+        <ol style="color: #a3a3a3; line-height: 1.8;">
+            <li><strong>Open Frontend:</strong> Click the button to open the production site</li>
+            <li><strong>Login:</strong> Use admin@signaldesk.com / admin123</li>
+            <li><strong>Navigate to Dashboard:</strong> After login, you should see the main dashboard</li>
+            <li><strong>Access Real-time Monitoring:</strong> Click on "Real-time Intelligence Monitoring" in the Railway interface</li>
+            <li><strong>Test Monitoring:</strong> Click "Run Monitor Now" to trigger the Edge Function</li>
+            <li><strong>Verify Real-time Updates:</strong> You should see new findings appear in real-time</li>
+        </ol>
+    </div>
+
+    <!-- Status Display -->
+    <div class="test-section">
+        <h2>Test Results</h2>
+        <div id="results"></div>
+    </div>
+
+    <script type="module">
+        // Test functions
+        window.openFrontend = function() {
+            const statusDiv = document.getElementById('test-status');
+            statusDiv.innerHTML = '<div class="info">Opening frontend in new tab...</div>';
+            window.open('https://signaldesk-frontend.vercel.app', '_blank');
+            
+            setTimeout(() => {
+                statusDiv.innerHTML = `
+                    <div class="success">✅ Frontend opened!</div>
+                    <div class="response">
+Next steps:
+1. Login with admin@signaldesk.com / admin123
+2. Navigate to the dashboard
+3. Click on "Real-time Intelligence Monitoring"
+4. Test the monitoring features</div>
+                `;
+            }, 1000);
+        };
+
+        window.testSupabase = async function() {
+            const statusDiv = document.getElementById('test-status');
+            statusDiv.innerHTML = '<div class="info">Testing Supabase connection...</div>';
+            
+            try {
+                const response = await fetch('https://zskaxjtyuaqazydouifp.supabase.co/rest/v1/organizations?select=id,name&limit=1', {
+                    headers: {
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    statusDiv.innerHTML = `
+                        <div class="success">✅ Supabase connection successful!</div>
+                        <div class="response">Database is accessible and responding correctly.
+Organizations found: ${data.length}</div>
+                    `;
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `
+                    <div class="error">❌ Supabase connection failed</div>
+                    <div class="response">Error: ${error.message}</div>
+                `;
+            }
+        };
+
+        window.testEdgeFunction = async function() {
+            const statusDiv = document.getElementById('test-status');
+            statusDiv.innerHTML = '<div class="info">Testing Edge Function...</div>';
+            
+            try {
+                const response = await fetch('https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/monitor-intelligence', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ organizationId: 'demo-org' })
+                });
+                
+                const data = await response.json();
+                statusDiv.innerHTML = `
+                    <div class="success">✅ Edge Function working!</div>
+                    <div class="response">Monitoring completed successfully
+Findings: ${data.findings_count || 0}
+Runtime: ${data.execution_time || 'N/A'}ms</div>
+                `;
+            } catch (error) {
+                statusDiv.innerHTML = `
+                    <div class="error">❌ Edge Function test failed</div>
+                    <div class="response">Error: ${error.message}</div>
+                `;
+            }
+        };
+
+        window.testFullFlow = async function() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="info">Running complete test flow...</div>';
+            
+            let results = [];
+            
+            // Test 1: Supabase Connection
+            try {
+                const response = await fetch('https://zskaxjtyuaqazydouifp.supabase.co/rest/v1/organizations?select=id&limit=1', {
+                    headers: {
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8'
+                    }
+                });
+                results.push(response.ok ? '✅ Supabase Database' : '❌ Supabase Database');
+            } catch {
+                results.push('❌ Supabase Database');
+            }
+            
+            // Test 2: Frontend
+            try {
+                const response = await fetch('https://signaldesk-frontend.vercel.app');
+                results.push(response.ok ? '✅ Frontend Deployment' : '❌ Frontend Deployment');
+            } catch {
+                results.push('❌ Frontend Deployment');
+            }
+            
+            // Test 3: Edge Function
+            try {
+                const response = await fetch('https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/monitor-intelligence', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ organizationId: 'demo-org' })
+                });
+                results.push(response.ok ? '✅ Edge Function' : '❌ Edge Function');
+            } catch {
+                results.push('❌ Edge Function');
+            }
+            
+            resultsDiv.innerHTML = `
+                <div class="success">Test Results:</div>
+                <div class="response">${results.join('\n')}</div>
+                ${results.every(r => r.includes('✅')) ? 
+                    '<div class="success">🎉 All systems operational! Your deployment is working perfectly.</div>' : 
+                    '<div class="error">Some tests failed. Please check the individual components.</div>'}
+            `;
+        };
+    </script>
+</body>
+</html>

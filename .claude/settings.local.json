@@ -135,7 +135,8 @@
       "Bash(git stash:*)",
       "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/test-niv-complete.sh:*)",
       "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/FORCE_DEPLOY_NOW.sh:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(supabase functions logs:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

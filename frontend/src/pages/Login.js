@@ -5,8 +5,8 @@ import { useAuth } from '../contexts/AuthContext';
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [email, setEmail] = useState('demo@signaldesk.com');
-  const [password, setPassword] = useState('demo123');
+  const [email, setEmail] = useState('admin@signaldesk.com');
+  const [password, setPassword] = useState('admin123');
   const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
@@ -47,7 +47,7 @@ const Login = () => {
           </button>
         </form>
         <p className="text-center text-sm text-gray-600">
-          Demo: demo@signaldesk.com / demo123
+          Demo: admin@signaldesk.com / admin123
         </p>
       </div>
     </div>

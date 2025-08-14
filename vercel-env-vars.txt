@@ -1,0 +1,16 @@
+VERCEL ENVIRONMENT VARIABLES TO ADD:
+=====================================
+
+Go to: https://vercel.com/nivra-sd/signaldesk-frontend/settings/environment-variables
+
+Add these environment variables for Production:
+
+1. REACT_APP_SUPABASE_URL
+   Value: https://zskaxjtyuaqazydouifp.supabase.co
+
+2. REACT_APP_SUPABASE_ANON_KEY
+   Value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8
+
+After adding them, redeploy by clicking "Redeploy" or run: vercel --prod
+
+Your production URL is: https://signaldesk-frontend.vercel.app

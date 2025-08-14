@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Environment Check</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #0a0a0a;
+            color: #e5e5e5;
+        }
+        .success { color: #10b981; }
+        .error { color: #ef4444; }
+        .info { color: #60a5fa; }
+    </style>
+</head>
+<body>
+    <h1>Environment Variable Check</h1>
+    <div id="results"></div>
+    
+    <script>
+        // This will show us what's available in the browser
+        const results = document.getElementById('results');
+        
+        // These won't work directly (process.env is replaced at build time)
+        // But we can check if the Supabase client is configured
+        results.innerHTML = `
+            <p class="info">Checking window object for Supabase configuration...</p>
+            <p>Window location: ${window.location.href}</p>
+            <p>This is a static HTML file to verify deployment.</p>
+            <br>
+            <p class="info">To properly check env vars, they must be used in React components during build.</p>
+            <p class="info">Check the browser console when visiting the main app.</p>
+        `;
+        
+        // Try to fetch from Supabase directly
+        fetch('https://zskaxjtyuaqazydouifp.supabase.co/rest/v1/', {
+            headers: {
+                'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8'
+            }
+        }).then(res => {
+            if (res.ok) {
+                results.innerHTML += '<p class="success">✅ Supabase is accessible from this domain</p>';
+            } else {
+                results.innerHTML += '<p class="error">❌ Supabase returned error: ' + res.status + '</p>';
+            }
+        }).catch(err => {
+            results.innerHTML += '<p class="error">❌ Cannot reach Supabase: ' + err.message + '</p>';
+        });
+    </script>
+</body>
+</html>

@@ -3,23 +3,23 @@
 _Complete Technical Documentation - Full System Architecture_
 
 **Last Updated:** August 13, 2025  
-**Version:** 4.0 (Complete Platform with Alex PR Strategist Vision)  
-**Status:** ✅ PLATFORM OPERATIONAL - READY FOR ALEX IMPLEMENTATION
+**Version:** 4.0 (Complete Platform with Niv PR Strategist Vision)  
+**Status:** ✅ PLATFORM OPERATIONAL - READY FOR Niv IMPLEMENTATION
 
 ---
 
 ## Executive Summary
 
-SignalDesk is evolving into an autonomous PR department powered by Alex, an AI PR Strategist with 20 years of encoded expertise. The platform combines intelligent monitoring, opportunity discovery, content generation, and campaign orchestration with a sophisticated Railway-inspired UI featuring draggable panels. Alex will transform SignalDesk from a powerful toolset into a strategic PR partner that thinks ahead, manages relationships, and executes campaigns autonomously.
+SignalDesk is evolving into an autonomous PR department powered by Niv, an AI PR Strategist with 20 years of encoded expertise. The platform combines intelligent monitoring, opportunity discovery, content generation, and campaign orchestration with a sophisticated Railway-inspired UI featuring draggable panels. Niv will transform SignalDesk from a powerful toolset into a strategic PR partner that thinks ahead, manages relationships, and executes campaigns autonomously.
 
 ### Core Value Proposition
 
-- **Autonomous PR Department**: Alex serves as your senior PR strategist with 20 years experience
+- **Autonomous PR Department**: Niv serves as your senior PR strategist with 20 years experience
 - **Unified Intelligence**: Single platform for all PR and communications needs
 - **AI-Powered Automation**: Claude AI and MCP servers throughout the system
 - **Real-time Monitoring**: Continuous intelligence gathering from multiple sources
 - **Strategic Orchestration**: Automated campaign execution and optimization
-- **Learning System**: Alex gets smarter with every interaction and campaign
+- **Learning System**: Niv gets smarter with every interaction and campaign
 
 ---
 
@@ -33,11 +33,11 @@ SignalDesk is evolving into an autonomous PR department powered by Alex, an AI P
 6. [Frontend Components](#frontend-components)
 7. [Backend Services](#backend-services)
 8. [Intelligence & Monitoring](#intelligence--monitoring)
-9. [Alex PR Strategist](#alex-pr-strategist)
+9. [Niv PR Strategist](#Niv-pr-strategist)
 10. [MCP Integration](#mcp-integration)
-10. [Deployment Infrastructure](#deployment-infrastructure)
-11. [Security & Authentication](#security--authentication)
-12. [Performance & Scaling](#performance--scaling)
+11. [Deployment Infrastructure](#deployment-infrastructure)
+12. [Security & Authentication](#security--authentication)
+13. [Performance & Scaling](#performance--scaling)
 
 ---
 
@@ -783,11 +783,11 @@ GET / api / mcp / health; // MCP health check
 
 ---
 
-## Alex PR Strategist
+## Niv PR Strategist
 
 ### Vision
 
-Alex is SignalDesk's AI PR Strategist - an autonomous agent with 20 years of encoded PR expertise who serves as your senior strategic partner.
+Niv is SignalDesk's AI PR Strategist - an autonomous agent with 20 years of encoded PR expertise who serves as your senior strategic partner.
 
 ### Core Personality & Expertise
 
@@ -815,10 +815,10 @@ Alex is SignalDesk's AI PR Strategist - an autonomous agent with 20 years of enc
 }
 ```
 
-### Alex's Strategic Decision Framework
+### Niv's Strategic Decision Framework
 
 ```javascript
-class AlexStrategist {
+class NivStrategist {
   assessSituation(input) {
     if (this.detectCrisisSignals(input)) {
       return this.crisisPlaybook();
@@ -837,15 +837,15 @@ class AlexStrategist {
         "assess_severity",
         "identify_stakeholders",
         "draft_holding_statement",
-        "assemble_war_room"
+        "assemble_war_room",
       ],
       tools_sequence: [
         "monitor.sentiment",
         "memory.recall('past_crises')",
         "media.analyze_reporters",
-        "campaign.create_rapid_response"
+        "campaign.create_rapid_response",
       ],
-      tone: "calm, authoritative, decisive"
+      tone: "calm, authoritative, decisive",
     };
   }
 }
@@ -861,7 +861,7 @@ const PR_RULES = {
   crisis_response_within_hour: true,
   build_relationships_before_needing: true,
   tier_1_media_special_treatment: true,
-  bad_news_dumps_on_friday: true
+  bad_news_dumps_on_friday: true,
 };
 ```
 
@@ -872,7 +872,7 @@ const PR_RULES = {
 ```
 signaldesk-core (Hub)
 ├── Memory Engine (Persistent Context)
-├── Campaign Engine (Strategy & Execution)  
+├── Campaign Engine (Strategy & Execution)
 ├── Media Engine (Relationships & Outreach)
 ├── Analytics Engine (Intelligence & Insights)
 └── Automation Engine (Workflows & Triggers)
@@ -886,9 +886,10 @@ async function findJournalists(beat, context) {
   const campaign = await getCurrentCampaign(context.userId);
   const previousOutreach = await getOutreachHistory(context.userId);
   const companyProfile = await getCompanyProfile(context.userId);
-  
+
   // Smart filtering based on context
-  const journalists = await db.query(`
+  const journalists = await db.query(
+    `
     SELECT j.*, 
            oh.relationship_score,
            COUNT(oh.id) as previous_interactions
@@ -897,8 +898,10 @@ async function findJournalists(beat, context) {
     WHERE j.beat = ? 
       AND j.id NOT IN (SELECT journalist_id FROM recent_outreach WHERE days_ago < 30)
     ORDER BY relationship_score DESC
-  `, [beat]);
-  
+  `,
+    [beat]
+  );
+
   return { journalists, context };
 }
 ```
@@ -912,10 +915,10 @@ class AdaptiveStrategist {
       successful_angles: memory.analyze("campaigns.successful"),
       journalist_relationships: memory.analyze("media.coverage_given"),
       message_resonance: memory.analyze("content.engagement"),
-      stakeholder_preferences: memory.analyze("feedback.patterns")
+      stakeholder_preferences: memory.analyze("feedback.patterns"),
     };
   }
-  
+
   personalizeStrategy() {
     return `Based on your history:
       - Technical angles work better than business angles
@@ -1025,6 +1028,7 @@ class AdaptiveStrategist {
 ### Complete Railway Backend Deployment
 
 #### Current Production Status ✅
+
 ```yaml
 Status: OPERATIONAL
 Domain: https://signaldesk-production.up.railway.app
@@ -1036,6 +1040,7 @@ Current Commit: dc9f78a65c6b2defd83d330709131b62cb038911
 #### Railway Configuration Files
 
 **📁 `/backend/railway.json`** - Primary Railway Configuration
+
 ```json
 {
   "$schema": "https://railway.app/railway.schema.json",
@@ -1054,25 +1059,28 @@ Current Commit: dc9f78a65c6b2defd83d330709131b62cb038911
 ```
 
 **📁 `/backend/server.js`** - Railway Entry Point with Enhanced Diagnostics
+
 ```javascript
 // Railway entry point - redirects to the full server
-const path = require('path');
-console.log('🚀 Railway is running server.js from root');
-console.log('📍 Current directory:', __dirname);
-console.log('📍 Redirecting to backend/index.js (full server with all routes)...');
-console.log('🔄 Deployment timestamp:', new Date().toISOString());
+const path = require("path");
+console.log("🚀 Railway is running server.js from root");
+console.log("📍 Current directory:", __dirname);
+console.log(
+  "📍 Redirecting to backend/index.js (full server with all routes)..."
+);
+console.log("🔄 Deployment timestamp:", new Date().toISOString());
 
 // Ensure we can find the backend directory
-const backendPath = path.join(__dirname, 'backend', 'index.js');
-console.log('📍 Looking for backend at:', backendPath);
+const backendPath = path.join(__dirname, "backend", "index.js");
+console.log("📍 Looking for backend at:", backendPath);
 
 // Check if the backend file exists
-const fs = require('fs');
+const fs = require("fs");
 if (!fs.existsSync(backendPath)) {
-  console.error('❌ Backend file not found at:', backendPath);
-  console.log('📂 Available files in current directory:');
-  fs.readdirSync(__dirname).forEach(file => {
-    console.log('   -', file);
+  console.error("❌ Backend file not found at:", backendPath);
+  console.log("📂 Available files in current directory:");
+  fs.readdirSync(__dirname).forEach((file) => {
+    console.log("   -", file);
   });
   process.exit(1);
 }
@@ -1082,6 +1090,7 @@ require(backendPath);
 ```
 
 **📁 `/backend/package.json`** - Railway Package Configuration
+
 ```json
 {
   "main": "server.js",
@@ -1093,11 +1102,12 @@ require(backendPath);
 ```
 
 #### Repository Structure for Railway
+
 ```
 /Users/jonathanliebowitz/Desktop/SignalDesk/
 ├── backend/                          # ← Railway deploys from here
 │   ├── server.js                     # ← Railway entry point
-│   ├── package.json                  # ← Main: "server.js"  
+│   ├── package.json                  # ← Main: "server.js"
 │   ├── railway.json                  # ← Railway configuration
 │   └── backend/
 │       ├── index.js                  # ← Actual server with all routes
@@ -1109,11 +1119,12 @@ require(backendPath);
 ```
 
 #### Railway Environment Variables (Production)
+
 ```bash
 # Database
 DATABASE_URL=postgresql://postgres:[password]@[host]:[port]/railway
 
-# AI Integration  
+# AI Integration
 ANTHROPIC_API_KEY=sk-ant-[key]
 
 # Authentication
@@ -1125,11 +1136,12 @@ NODE_ENV=production
 ```
 
 #### Railway CLI Commands
+
 ```bash
 # Check deployment status
 railway status
 
-# View logs  
+# View logs
 railway logs
 
 # Force deployment (if auto-deploy fails)
@@ -1145,8 +1157,9 @@ railway connect postgresql
 ### Complete Vercel Frontend Deployment
 
 #### Current Production Status ✅
+
 ```yaml
-Status: OPERATIONAL  
+Status: OPERATIONAL
 Domain: https://signaldesk-frontend.vercel.app
 Framework: create-react-app
 Build Status: Successful
@@ -1156,6 +1169,7 @@ Version: v3.2-FIXED
 #### Vercel Configuration Files
 
 **📁 `/backend/backend/frontend/vercel.json`** - Optimized Production Config
+
 ```json
 {
   "buildCommand": "cd frontend && npm ci && npm run build",
@@ -1191,7 +1205,7 @@ Version: v3.2-FIXED
       "source": "/(.*\\.(js|css))",
       "headers": [
         {
-          "key": "Cache-Control", 
+          "key": "Cache-Control",
           "value": "public, max-age=86400, s-maxage=31536000"
         }
       ]
@@ -1231,7 +1245,7 @@ Version: v3.2-FIXED
           "value": "nosniff"
         },
         {
-          "key": "X-Frame-Options", 
+          "key": "X-Frame-Options",
           "value": "DENY"
         },
         {
@@ -1253,22 +1267,25 @@ Version: v3.2-FIXED
 ```
 
 **📁 `/backend/backend/frontend/src/config/api.js`** - Smart API Configuration
+
 ```javascript
 // Smart API URL resolution with fallback
-const API_BASE_URL = process.env.REACT_APP_API_URL || 
-                     'https://signaldesk-production.up.railway.app/api';
+const API_BASE_URL =
+  process.env.REACT_APP_API_URL ||
+  "https://signaldesk-production.up.railway.app/api";
 
-console.log('🔗 Frontend connecting to API:', API_BASE_URL);
+console.log("🔗 Frontend connecting to API:", API_BASE_URL);
 
 export default API_BASE_URL;
 ```
 
 #### Vercel Environment Variables (Production)
+
 ```bash
 # API Connection
 REACT_APP_API_URL=https://signaldesk-production.up.railway.app/api
 
-# Build Optimization  
+# Build Optimization
 CI=false
 GENERATE_SOURCEMAP=false
 REACT_APP_ENVIRONMENT=production
@@ -1278,6 +1295,7 @@ REACT_APP_BUILD_ID=v3.3-optimized
 ### Database Infrastructure (Railway PostgreSQL)
 
 #### Production Database Configuration
+
 ```yaml
 Provider: Railway PostgreSQL
 Version: 15
@@ -1289,34 +1307,37 @@ Availability: 99.9% uptime SLA
 ```
 
 #### Database Schema Status
+
 ```sql
 -- Core Tables (✅ Active)
 users, organizations, projects, content
 
--- Intelligence & Monitoring (✅ Active) 
+-- Intelligence & Monitoring (✅ Active)
 intelligence_targets, intelligence_findings, monitoring_runs
 
 -- Opportunities (✅ Active)
 opportunity_queue, opportunity_patterns
 
--- MemoryVault (✅ Active)  
+-- MemoryVault (✅ Active)
 memoryvault_items, memoryvault_versions, memoryvault_relationships
 
 -- Demo Data (✅ Populated)
 Demo user: demo@signaldesk.com / demo123
-Demo organization: demo-org  
+Demo organization: demo-org
 Sample projects and content available
 ```
 
 ### Deployment Verification & Health Checks
 
 #### Automated Verification Script
+
 **📁 `/backend/backend/frontend/scripts/verify-deployment.js`**
 
 **Test Results (Latest Run: 2025-08-13T14:43:14.210Z)**
+
 ```bash
 ✅ Frontend Access: https://signaldesk-frontend.vercel.app (200ms)
-✅ Backend Health: https://signaldesk-production.up.railway.app/api/health  
+✅ Backend Health: https://signaldesk-production.up.railway.app/api/health
 ✅ Authentication: demo@signaldesk.com login successful
 ✅ Protected Endpoints: Accessible with JWT token
 ✅ CORS Configuration: Proper cross-origin setup
@@ -1327,13 +1348,14 @@ Status: All systems operational
 ```
 
 #### Production Health Check Endpoints
+
 ```bash
 # Backend Health
 curl https://signaldesk-production.up.railway.app/api/health
 # Returns: {"status":"ok","message":"SignalDesk API is running","timestamp":"..."}
 
 # Version Info
-curl https://signaldesk-production.up.railway.app/api/version  
+curl https://signaldesk-production.up.railway.app/api/version
 # Returns: {"version":"...","commit":"dc9f78a6","timestamp":"..."}
 
 # Authentication Test
@@ -1348,6 +1370,7 @@ curl -X POST https://signaldesk-production.up.railway.app/api/auth/login \
 #### Common Railway Issues & Solutions
 
 **🚨 Issue: Auto-Deploy Not Triggering**
+
 ```bash
 # Check GitHub webhook status
 git push origin main --force-with-lease
@@ -1362,6 +1385,7 @@ cat backend/railway.json
 ```
 
 **🚨 Issue: Server Entry Point Confusion**
+
 ```bash
 # Verify file structure
 ls -la backend/
@@ -1375,6 +1399,7 @@ cat backend/server.js
 ```
 
 **🚨 Issue: Environment Variables Missing**
+
 ```bash
 # Check Railway dashboard environment variables
 railway vars
@@ -1386,6 +1411,7 @@ DATABASE_URL=... ANTHROPIC_API_KEY=... npm start
 #### Common Vercel Issues & Solutions
 
 **🚨 Issue: SPA Routing Not Working**
+
 ```json
 // Ensure this rewrite rule is in vercel.json
 {
@@ -1398,29 +1424,34 @@ DATABASE_URL=... ANTHROPIC_API_KEY=... npm start
 }
 ```
 
-**🚨 Issue: API Connection Fails**  
+**🚨 Issue: API Connection Fails**
+
 ```javascript
 // Check CORS headers in backend
-app.use(cors({
-  origin: ['https://signaldesk-frontend.vercel.app'],
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: ["https://signaldesk-frontend.vercel.app"],
+    credentials: true,
+  })
+);
 
 // Verify API URL in frontend config
-console.log('API URL:', process.env.REACT_APP_API_URL);
+console.log("API URL:", process.env.REACT_APP_API_URL);
 ```
 
 #### Emergency Deployment Recovery
 
 **🔥 Railway Recovery Steps**
+
 1. Check Railway dashboard for error logs
-2. Verify GitHub webhook delivery in repository settings  
+2. Verify GitHub webhook delivery in repository settings
 3. Force manual deployment: `railway up`
 4. Check environment variables are set
 5. Verify database connectivity
 6. Review recent commits for breaking changes
 
 **🔥 Vercel Recovery Steps**
+
 1. Check Vercel dashboard for build errors
 2. Verify build command and output directory
 3. Force rebuild from Vercel dashboard
@@ -1430,18 +1461,20 @@ console.log('API URL:', process.env.REACT_APP_API_URL);
 ### Performance Optimization
 
 #### Railway Backend Optimization
+
 ```javascript
 // Current Performance Metrics
 {
   "response_time": "<300ms average",
-  "concurrent_requests": "100+ supported", 
+  "concurrent_requests": "100+ supported",
   "database_queries": "<50ms average",
   "memory_usage": "~200MB baseline",
   "cpu_usage": "<30% under load"
 }
 ```
 
-#### Vercel Frontend Optimization  
+#### Vercel Frontend Optimization
+
 ```javascript
 // Build Performance
 {
@@ -1456,18 +1489,21 @@ console.log('API URL:', process.env.REACT_APP_API_URL);
 ### Monitoring & Maintenance
 
 #### Daily Checks
+
 - [ ] Health endpoints responding (automated)
 - [ ] Authentication flow working
 - [ ] Database connectivity stable
 - [ ] No error spikes in logs
 
 #### Weekly Maintenance
+
 - [ ] Review deployment logs for issues
 - [ ] Check database storage usage
-- [ ] Update dependencies if needed  
+- [ ] Update dependencies if needed
 - [ ] Verify backup integrity
 
 #### Monthly Reviews
+
 - [ ] Performance metrics analysis
 - [ ] Security audit and updates
 - [ ] Cost optimization review
@@ -1639,33 +1675,38 @@ git push origin feature/your-feature
 
 ## Future Roadmap
 
-### Near Term (1-2 months) - Alex Implementation Phases
+### Near Term (1-2 months) - Niv Implementation Phases
 
-#### Phase 1: Alex Foundation (Weeks 1-2)
-- [ ] Alex system prompt & personality encoding
+#### Phase 1: Niv Foundation (Weeks 1-2)
+
+- [ ] Niv system prompt & personality encoding
 - [ ] MCP tool enhancement for context awareness
 - [ ] PR pattern recognition system
 - [ ] Proactive guidance implementation
 
 #### Phase 2: Memory & Learning (Weeks 3-4)
+
 - [ ] Enhanced MemoryVault with PR-specific structure
 - [ ] Semantic search implementation
 - [ ] Campaign learning system
 - [ ] Feedback loop integration
 
 #### Phase 3: Media Intelligence (Weeks 5-6)
+
 - [ ] Journalist intelligence database
 - [ ] Relationship management automation
 - [ ] Smart pitch generation
 - [ ] Outreach orchestration
 
 #### Phase 4: Campaign Orchestration (Week 7)
+
 - [ ] Workflow template system
 - [ ] Execution engine
 - [ ] Multi-campaign coordination
 - [ ] Real-time monitoring integration
 
 #### Phase 5: Advanced Intelligence (Week 8)
+
 - [ ] Predictive analytics
 - [ ] Crisis detection & response
 - [ ] Competitive intelligence
@@ -1693,7 +1734,7 @@ git push origin feature/your-feature
 
 SignalDesk represents a comprehensive, AI-powered PR platform that combines cutting-edge technology with practical PR expertise. The platform's modular architecture, intelligent monitoring capabilities, and seamless AI integration position it as a next-generation solution for strategic communications.
 
-The system is production-ready with proven stability and comprehensive feature set. The Railway UI is fully deployed, MCP servers are operational, and the platform is ready for Alex implementation. With Alex as the AI PR Strategist, SignalDesk will transform from a powerful toolset into an autonomous PR department that thinks strategically, manages relationships, spots opportunities, and orchestrates campaigns with the expertise of a 20-year PR veteran.
+The system is production-ready with proven stability and comprehensive feature set. The Railway UI is fully deployed, MCP servers are operational, and the platform is ready for Niv implementation. With Niv as the AI PR Strategist, SignalDesk will transform from a powerful toolset into an autonomous PR department that thinks strategically, manages relationships, spots opportunities, and orchestrates campaigns with the expertise of a 20-year PR veteran.
 
 ---
 
@@ -1708,6 +1749,7 @@ The system is production-ready with proven stability and comprehensive feature s
 #### Working Dockerfile Configuration
 
 **📁 `/backend/Dockerfile`**
+
 ```dockerfile
 FROM node:20-alpine
 
@@ -1732,6 +1774,7 @@ CMD ["node", "server.js"]
 ```
 
 **📁 Updated `/backend/railway.json`**
+
 ```json
 {
   "$schema": "https://railway.app/railway.schema.json",
@@ -1752,19 +1795,22 @@ CMD ["node", "server.js"]
 ### Frontend Updates
 
 #### 1. Project Page Restart Button
+
 - **Added**: Restart functionality to refresh project state
 - **Location**: Project detail pages
 - **Purpose**: Allow users to reset project analysis without navigating away
 
 #### 2. Opportunity Engine Timing Fix
+
 - **Issue**: Analysis was triggering too quickly, causing UI confusion
 - **Fix**: Added 250ms delay before analysis starts
 - **Result**: Smoother user experience with proper loading states
 
 #### 3. Opportunity Engine Button Behavior
+
 - **Fixed**: "Analyze" button now stays within Opportunity Engine
 - **Previous Issue**: Was incorrectly triggering Content Generator switch
-- **Current Behavior**: 
+- **Current Behavior**:
   - "Analyze" generates strategic analysis locally
   - "Generate Content" explicitly switches to Content Generator
   - Clear separation of concerns between features
@@ -1772,6 +1818,7 @@ CMD ["node", "server.js"]
 ### Environment Variables Required
 
 #### Railway Backend (Production)
+
 ```bash
 # Core Database
 DATABASE_URL=postgresql://postgres:[password]@[host]:[port]/railway
@@ -1788,6 +1835,7 @@ NODE_ENV=production
 ```
 
 #### Vercel Frontend (Production)
+
 ```bash
 # API Connection
 REACT_APP_API_URL=https://signaldesk-production.up.railway.app/api
@@ -1802,6 +1850,7 @@ REACT_APP_BUILD_ID=v3.3-docker-fix
 ### Deployment Commands
 
 #### Railway Deployment (Using Dockerfile)
+
 ```bash
 # From /backend directory
 git add .
@@ -1814,6 +1863,7 @@ railway up
 ```
 
 #### Vercel Deployment
+
 ```bash
 # Auto-deploys on push to main
 # Or manual deployment from /backend/backend/frontend:
@@ -1823,20 +1873,23 @@ vercel --prod
 ### Verification Steps
 
 1. **Check Railway Build**:
+
    - Verify Dockerfile is being used in Railway dashboard
    - Check build logs for successful Docker image creation
    - Confirm health check passes at `/api/health`
 
 2. **Test Frontend Features**:
+
    - Verify restart button appears and functions on project pages
    - Test Opportunity Engine analyze timing (should have slight delay)
    - Confirm analyze button stays in Opportunity Engine
 
 3. **API Connectivity**:
+
    ```bash
    # Test health endpoint
    curl https://signaldesk-production.up.railway.app/api/health
-   
+
    # Test authentication
    curl -X POST https://signaldesk-production.up.railway.app/api/auth/login \
      -H "Content-Type: application/json" \
@@ -1848,15 +1901,18 @@ vercel --prod
 **If Railway deployment fails with Dockerfile**:
 
 1. **Check Dockerfile syntax**:
+
    ```bash
    docker build -f backend/Dockerfile backend/
    ```
 
 2. **Verify file paths in Dockerfile**:
+
    - Ensure COPY commands match actual file structure
    - Check that package.json files exist in specified locations
 
 3. **Review Railway logs**:
+
    ```bash
    railway logs
    ```

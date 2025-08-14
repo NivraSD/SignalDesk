@@ -27,6 +27,7 @@ import Layout from "./components/Layout/Layout";
 import CreateProject from "./components/CreateProject";
 import Analytics from "./components/Analytics";
 import StakeholderIntelligenceHub from "./components/StakeholderIntelligence/StakeholderIntelligenceHub";
+import EnvDebug from "./components/EnvDebug";
 
 // Private Route component - FIXED to use useAuth hook
 function PrivateRoute({ children }) {
@@ -171,6 +172,7 @@ function App() {
         <ProjectProvider>
           <IntelligenceProvider>
             <AppRoutes />
+            <EnvDebug />
           </IntelligenceProvider>
         </ProjectProvider>
       </AuthProvider>
