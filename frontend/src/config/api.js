@@ -5,8 +5,8 @@ const getAPIBaseURL = () => {
     return process.env.REACT_APP_API_URL;
   }
   
-  // Fallback: Production Railway URL
-  return 'https://signaldesk-production.up.railway.app/api';
+  // No fallback - Supabase is configured via environment variables
+  return '';
 };
 
 const API_BASE_URL = getAPIBaseURL();
