@@ -2,6 +2,7 @@ import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Login from "./components/Login";
+import TestLogin from "./TestLogin";
 
 // Minimal component for dashboard
 function Dashboard() {
@@ -43,6 +44,7 @@ function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/test" element={<TestLogin />} />
           <Route
             path="/dashboard"
             element={
@@ -51,7 +53,7 @@ function App() {
               </PrivateRoute>
             }
           />
-          <Route path="/" element={<Navigate to="/dashboard" />} />
+          <Route path="/" element={<Navigate to="/test" />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
