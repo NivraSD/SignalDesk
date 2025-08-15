@@ -161,6 +161,7 @@ const healthCheckRoutes = require("./src/routes/healthCheckRoutes");
 const mcpRoutes = require("./src/routes/mcpRoutes");
 const nivRoutes = require("./src/routes/nivRoutes");
 const aiClaudeRoutes = require("./src/routes/aiClaudeRoutes"); // Main Claude API endpoints
+const strategicPlanningRoutes = require("./routes/strategicPlanningRoutes"); // Strategic Planning API
 
 // Database initialization routes (MUST BE BEFORE AUTH FOR PUBLIC ACCESS)
 const databaseInitRoutes = require("./src/routes/databaseInit");
@@ -276,6 +277,7 @@ app.use("/api/opportunities", authMiddleware, opportunitiesRoutes);
 app.use("/api/opportunity", authMiddleware, opportunityRoutes);  // Opportunity finding
 app.use("/api/mcp", authMiddleware, mcpRoutes);  // MCP integration routes
 app.use("/api/niv", authMiddleware, nivRoutes);  // Niv PR Strategist routes
+app.use("/api/strategic-planning", authMiddleware, strategicPlanningRoutes);  // Strategic Planning routes
 
 // Intelligence Index Routes (pre-indexed data) - Public access for browsing
 const intelligenceIndexRoutes = require("./src/routes/intelligenceIndexRoutes");

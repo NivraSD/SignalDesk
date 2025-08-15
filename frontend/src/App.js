@@ -10,8 +10,8 @@ import ContentGenerator from "./components/ContentGenerator";
 import CrisisCommandCenter from "./components/CrisisCommandCenter";
 // import MediaListBuilder from "./components/MediaListBuilder"; // OLD - Basic journalist search
 import MediaIntelligence from "./components/MediaIntelligence"; // NEW - Full intelligence platform
-import CampaignIntelligence from "./components/CampaignIntelligence";
-import EnhancedCampaignIntelligenceFixed from "./components/EnhancedCampaignIntelligenceFixed"; // Fixed enhanced version
+import StrategicPlanning from "./components/StrategicPlanning";
+import CampaignExecutionDashboard from "./components/CampaignExecutionDashboard";
 import UnifiedPlatform from "./components/UnifiedPlatform"; // Restored unified platform
 import RailwayPlatform from "./components/RailwayPlatform"; // New Railway UI with proper drag/resize
 import RailwayCanvas from "./components/RailwayCanvas"; // True Railway canvas with service nodes
@@ -158,12 +158,12 @@ function AppRoutes() {
         <Route path="content-generator" element={<ContentGenerator />} />
         <Route path="media-list" element={<MediaIntelligence />} />
         <Route
-          path="campaign-intelligence"
-          element={<CampaignIntelligence />}
+          path="strategic-planning"
+          element={<StrategicPlanning />}
         />
         <Route
-          path="campaign-intelligence-enhanced"
-          element={<EnhancedCampaignIntelligenceFixed />}
+          path="campaign-execution/:campaignId"
+          element={<CampaignExecutionDashboard />}
         />
         <Route path="monitoring" element={<Monitoring />} />
         <Route path="stakeholder-intelligence" element={<StakeholderIntelligenceHub />} />

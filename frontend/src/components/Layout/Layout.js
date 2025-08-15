@@ -73,10 +73,10 @@ const Layout = () => {
       description: "AI-powered media discovery",
     },
     {
-      path: `/projects/${projectId}/campaign-intelligence-enhanced`,
-      label: "Campaign Intel ✨",
+      path: `/projects/${projectId}/strategic-planning`,
+      label: "Strategic Planning",
       icon: Brain,
-      description: "Enhanced with Railway UI & MemoryVault",
+      description: "Evidence-based strategy & execution",
       enhanced: true,
     },
     {
