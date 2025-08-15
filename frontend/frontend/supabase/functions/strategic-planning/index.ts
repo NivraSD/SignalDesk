@@ -23,7 +23,7 @@ serve(async (req) => {
     const urlPath = new URL(url).pathname.replace('/strategic-planning', '')
     
     // Route handling
-    if (method === 'POST' && urlPath === '/generate-plan') {
+    if (method === 'POST' && (urlPath === '/generate-plan' || urlPath === '' || urlPath === '/')) {
       return await generatePlan(req, supabaseClient)
     }
     
@@ -105,7 +105,7 @@ Return as JSON with keys: executive_summary, strategic_pillars, evidence_needs, 
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 4000,
         messages: [{ role: 'user', content: prompt }]
       })

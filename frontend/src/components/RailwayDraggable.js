@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useProject } from '../contexts/ProjectContext';
 import { useAuth } from '../contexts/AuthContext';
 import ContentGeneratorModule from './ContentGeneratorModule';
+import StrategicPlanning from './StrategicPlanning';
 import OpportunityEngine from './OpportunityEngine';
 import AdaptiveNivAssistant from './AdaptiveNivAssistant';
 import supabaseApiService from '../services/supabaseApiService';
@@ -95,7 +96,7 @@ const RailwayDraggable = () => {
       description: 'Evidence-based strategic plans',
       status: 'ready',
       stats: 'AI-powered planning',
-      path: `/projects/${projectId}/strategic-planning`,
+      component: StrategicPlanning,
       lastUsed: '3 hours ago'
     },
     {
@@ -1057,6 +1058,9 @@ const RailwayDraggable = () => {
                 }}
                 isDragging={draggedElement === 'feature-view'}
               />
+            )}
+            {selectedFeature?.id === 'strategic-planning' && (
+              <StrategicPlanning />
             )}
           </div>
           
