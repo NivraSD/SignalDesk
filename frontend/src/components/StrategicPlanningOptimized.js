@@ -73,6 +73,7 @@ export default function StrategicPlanningOptimized() {
 
   const tabs = [
     { id: 'create', label: 'Create Plan', icon: Brain },
+    { id: 'current', label: 'Current Plan', icon: FileText },
     { id: 'saved', label: 'Saved Plans', icon: Save },
     { id: 'history', label: 'Analytics', icon: BarChart3 }
   ];
@@ -103,8 +104,6 @@ export default function StrategicPlanningOptimized() {
     setError(null);
 
     try {
-      setShowPlanOverlay(true);
-      
       const result = await strategicPlanningService.generatePlan(
         objective,
         context,
@@ -125,10 +124,12 @@ export default function StrategicPlanningOptimized() {
       if (plan.strategic_pillars && plan.strategic_pillars.length > 0) {
         setExpandedPillars({ 0: true });
       }
+      
+      // Switch to current plan tab to show the generated plan
+      setActiveTab('current');
     } catch (error) {
       console.error("Error generating strategic plan:", error);
       setError(error.message || "Failed to generate strategic plan");
-      setShowPlanOverlay(false);
     } finally {
       setIsGenerating(false);
     }
@@ -370,6 +371,152 @@ ${strategicPlan.success_metrics?.map(metric => `• ${metric}`).join('\n')}
           </div>
         )}
 
+        {/* Current Plan Tab - Shows generated plan inline */}
+        {activeTab === 'current' && (
+          <div className="current-plan-tab">
+            {strategicPlan ? (
+              <div className="current-plan-view">
+                {/* Plan Header */}
+                <div className="plan-header-inline">
+                  <div className="plan-meta-inline">
+                    <div className="ai-badge">
+                      <Brain size={12} />
+                      AI Generated Plan
+                    </div>
+                    <span className="plan-type-badge">{selectedPlanType}</span>
+                  </div>
+                  <div className="plan-actions-inline">
+                    <button onClick={() => setActiveTab('create')} className="back-btn-inline">
+                      <ArrowRight size={14} />
+                      New Plan
+                    </button>
+                    <button onClick={copyPlanToClipboard} className="copy-btn-inline">
+                      <Copy size={14} />
+                      Copy
+                    </button>
+                    <button onClick={executeStrategicPlan} className="execute-btn-inline" disabled={isExecuting}>
+                      {isExecuting ? (
+                        <>
+                          <Loader className="loading-icon-tiny" />
+                          Executing...
+                        </>
+                      ) : (
+                        <>
+                          <Play size={14} />
+                          Execute
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Plan Content */}
+                <div className="plan-content-inline">
+                  <h3 className="plan-objective">{strategicPlan.objective}</h3>
+                  
+                  {/* Executive Summary */}
+                  <div className="plan-section-inline">
+                    <h4>
+                      <Target size={16} />
+                      Executive Summary
+                    </h4>
+                    <p className="executive-summary-inline">{strategicPlan.executive_summary}</p>
+                  </div>
+
+                  {/* Strategic Pillars */}
+                  <div className="plan-section-inline">
+                    <h4>
+                      <Lightbulb size={16} />
+                      Strategic Pillars ({strategicPlan.strategic_pillars?.length || 0})
+                    </h4>
+                    <div className="pillars-inline">
+                      {strategicPlan.strategic_pillars?.map((pillar, index) => (
+                        <div key={index} className="pillar-inline">
+                          <div
+                            className="pillar-header-inline-toggle"
+                            onClick={() => togglePillar(index)}
+                          >
+                            <h5>{pillar.title}</h5>
+                            {expandedPillars[index] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                          </div>
+                          
+                          {expandedPillars[index] && (
+                            <div className="pillar-details-inline">
+                              <p>{pillar.description}</p>
+                              {pillar.actions && (
+                                <div className="pillar-actions-inline">
+                                  <strong>Actions:</strong>
+                                  <ul>
+                                    {pillar.actions.map((action, actionIndex) => (
+                                      <li key={actionIndex}>{action}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                              <div className="pillar-meta-inline">
+                                <span>
+                                  <Clock size={14} />
+                                  {pillar.timeline || 'TBD'}
+                                </span>
+                                <span>
+                                  <Zap size={14} />
+                                  {pillar.mcp || 'Content Generator'}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Success Metrics */}
+                  {strategicPlan.success_metrics && (
+                    <div className="plan-section-inline">
+                      <h4>
+                        <BarChart3 size={16} />
+                        Success Metrics
+                      </h4>
+                      <div className="metrics-inline">
+                        {strategicPlan.success_metrics.map((metric, index) => (
+                          <div key={index} className="metric-inline">
+                            <CheckCircle size={14} />
+                            <span>{metric}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Execution Status */}
+                {executionStatus && (
+                  <div className="execution-status-inline">
+                    <div className="status-content-inline">
+                      {executionStatus.stage === 'error' ? (
+                        <AlertCircle className="status-icon-inline error" />
+                      ) : (
+                        <Loader className="status-icon-inline loading" />
+                      )}
+                      <span>{executionStatus.message}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="no-plan-state">
+                <FileText className="no-plan-icon" />
+                <h3>No Strategic Plan Generated</h3>
+                <p>Generate a strategic plan from the Create Plan tab to view it here.</p>
+                <button onClick={() => setActiveTab('create')} className="create-plan-btn">
+                  <Brain size={16} />
+                  Create Plan
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Saved Plans Tab */}
         {activeTab === 'saved' && (
           <div className="saved-plans-tab">
@@ -430,139 +577,6 @@ ${strategicPlan.success_metrics?.map(metric => `• ${metric}`).join('\n')}
         )}
       </div>
 
-      {/* Strategic Plan Overlay - Now with dark theme */}
-      {showPlanOverlay && strategicPlan && (
-        <div className="strategic-overlay-dark">
-          <div className="strategic-overlay-content-dark">
-            <div className="overlay-header-dark">
-              <div className="overlay-title-dark">
-                <Brain className="title-icon-dark" />
-                <h2>Strategic Plan Generated</h2>
-              </div>
-              <div className="overlay-actions-dark">
-                <button onClick={copyPlanToClipboard} className="action-btn-dark">
-                  <Copy className="btn-icon-small" />
-                  Copy
-                </button>
-                <SaveToMemoryVaultButton
-                  title={`Strategic Plan: ${strategicPlan.objective}`}
-                  content={JSON.stringify(strategicPlan, null, 2)}
-                  category="strategic-planning"
-                  tags={['strategy', 'planning', selectedPlanType]}
-                />
-                <button onClick={executeStrategicPlan} className="execute-btn-dark" disabled={isExecuting}>
-                  {isExecuting ? (
-                    <>
-                      <Loader className="loading-icon-small" />
-                      Executing...
-                    </>
-                  ) : (
-                    <>
-                      <Play className="btn-icon-small" />
-                      Execute
-                    </>
-                  )}
-                </button>
-                <button onClick={closePlanOverlay} className="close-btn-dark">
-                  <X className="btn-icon-small" />
-                </button>
-              </div>
-            </div>
-
-            <div className="overlay-body-dark">
-              {/* Executive Summary */}
-              <div className="plan-section-dark">
-                <h3>
-                  <Target className="section-icon-dark" />
-                  Executive Summary
-                </h3>
-                <p className="executive-summary-dark">{strategicPlan.executive_summary}</p>
-              </div>
-
-              {/* Strategic Pillars */}
-              <div className="plan-section-dark">
-                <h3>
-                  <Lightbulb className="section-icon-dark" />
-                  Strategic Pillars
-                </h3>
-                <div className="pillars-container-dark">
-                  {strategicPlan.strategic_pillars?.map((pillar, index) => (
-                    <div key={index} className="pillar-card-dark">
-                      <div
-                        className="pillar-header-dark"
-                        onClick={() => togglePillar(index)}
-                      >
-                        <h4>{pillar.title}</h4>
-                        {expandedPillars[index] ? <ChevronDown /> : <ChevronRight />}
-                      </div>
-                      
-                      {expandedPillars[index] && (
-                        <div className="pillar-content-dark">
-                          <p className="pillar-description-dark">{pillar.description}</p>
-                          
-                          {pillar.actions && (
-                            <div className="pillar-actions-dark">
-                              <h5>Actions:</h5>
-                              <ul>
-                                {pillar.actions.map((action, actionIndex) => (
-                                  <li key={actionIndex}>{action}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                          
-                          <div className="pillar-meta-dark">
-                            <span className="timeline-dark">
-                              <Clock className="meta-icon-small" />
-                              {pillar.timeline || 'TBD'}
-                            </span>
-                            <span className="mcp-dark">
-                              <Zap className="meta-icon-small" />
-                              {pillar.mcp || 'Content Generator'}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Success Metrics */}
-              {strategicPlan.success_metrics && (
-                <div className="plan-section-dark">
-                  <h3>
-                    <BarChart3 className="section-icon-dark" />
-                    Success Metrics
-                  </h3>
-                  <div className="metrics-grid-dark">
-                    {strategicPlan.success_metrics.map((metric, index) => (
-                      <div key={index} className="metric-item-dark">
-                        <CheckCircle className="metric-icon-small" />
-                        <span>{metric}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Execution Status */}
-            {executionStatus && (
-              <div className="execution-status-dark">
-                <div className="status-content-dark">
-                  {executionStatus.stage === 'error' ? (
-                    <AlertCircle className="status-icon-small error" />
-                  ) : (
-                    <Loader className="status-icon-small loading" />
-                  )}
-                  <span>{executionStatus.message}</span>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
