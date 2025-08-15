@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useProject } from '../contexts/ProjectContext';
 import { useAuth } from '../contexts/AuthContext';
 import ContentGeneratorModule from './ContentGeneratorModule';
-import StrategicPlanning from './StrategicPlanning';
+import StrategicPlanningOptimized from './StrategicPlanningOptimized';
 import OpportunityEngine from './OpportunityEngine';
 import AdaptiveNivAssistant from './AdaptiveNivAssistant';
 import supabaseApiService from '../services/supabaseApiService';
@@ -96,7 +96,7 @@ const RailwayDraggable = () => {
       description: 'Evidence-based strategic plans',
       status: 'ready',
       stats: 'AI-powered planning',
-      component: StrategicPlanning,
+      component: StrategicPlanningOptimized,
       lastUsed: '3 hours ago'
     },
     {
@@ -1060,7 +1060,7 @@ const RailwayDraggable = () => {
               />
             )}
             {selectedFeature?.id === 'strategic-planning' && (
-              <StrategicPlanning />
+              <StrategicPlanningOptimized />
             )}
           </div>
           
