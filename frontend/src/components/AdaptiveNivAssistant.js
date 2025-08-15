@@ -480,8 +480,87 @@ I'll ask the right strategic questions once I know the format.`,
     }
   };
 
+  // MCP Integration Functions
+  const enrichWithMCPData = async (userInput, messageType) => {
+    try {
+      // Detect what type of MCP data might be helpful
+      const enrichments = {};
+      
+      // Check for intelligence needs
+      if (userInput.toLowerCase().includes('competitor') || userInput.toLowerCase().includes('market')) {
+        const intelligence = await supabaseApiService.callEdgeFunction('mcp-bridge', {
+          mcp: 'intelligence',
+          tool: 'market_narrative_tracking',
+          params: { keywords: extractKeywords(userInput) }
+        });
+        if (intelligence?.success) {
+          enrichments.intelligence = intelligence.data;
+        }
+      }
+      
+      // Check for journalist/media needs
+      if (userInput.toLowerCase().includes('journalist') || userInput.toLowerCase().includes('media') || userInput.toLowerCase().includes('reporter')) {
+        const relationships = await supabaseApiService.callEdgeFunction('mcp-bridge', {
+          mcp: 'relationships',
+          tool: 'find_best_journalists',
+          params: { beat: extractBeat(userInput) }
+        });
+        if (relationships?.success) {
+          enrichments.relationships = relationships.data;
+        }
+      }
+      
+      // Check for metrics/analytics needs
+      if (userInput.toLowerCase().includes('metric') || userInput.toLowerCase().includes('performance') || userInput.toLowerCase().includes('analytic')) {
+        const analytics = await supabaseApiService.callEdgeFunction('mcp-bridge', {
+          mcp: 'analytics',
+          tool: 'generate_performance_dashboard',
+          params: { period: '30d' }
+        });
+        if (analytics?.success) {
+          enrichments.analytics = analytics.data;
+        }
+      }
+      
+      return enrichments;
+    } catch (error) {
+      console.error('MCP enrichment error:', error);
+      return {};
+    }
+  };
+  
+  const extractKeywords = (text) => {
+    // Simple keyword extraction
+    const stopWords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for'];
+    return text.toLowerCase()
+      .split(/\s+/)
+      .filter(word => word.length > 3 && !stopWords.includes(word))
+      .slice(0, 5)
+      .join(' ');
+  };
+  
+  const extractBeat = (text) => {
+    // Detect journalism beat from text
+    const beats = {
+      'tech': ['technology', 'software', 'app', 'platform', 'startup', 'ai', 'machine learning'],
+      'finance': ['funding', 'investment', 'series', 'venture', 'capital', 'money'],
+      'health': ['health', 'medical', 'healthcare', 'wellness', 'pharma'],
+      'enterprise': ['enterprise', 'b2b', 'saas', 'business', 'corporate']
+    };
+    
+    for (const [beat, keywords] of Object.entries(beats)) {
+      if (keywords.some(keyword => text.toLowerCase().includes(keyword))) {
+        return beat;
+      }
+    }
+    return 'general';
+  };
+
   // Generate adaptive responses based on user patterns
   const generateAdaptiveResponse = async (userInput) => {
+    // Get MCP enrichments for more intelligent responses
+    const mcpData = await enrichWithMCPData(userInput, 'chat');
+    
     // Enhanced PR consultant personality in the prompt
     const contextualPrompt = `You are Niv, a world-class PR strategist with 20 years of experience. You are:
 - Patient and tactical in your approach
@@ -497,6 +576,9 @@ Context:
 - Current project: ${selectedProject?.name || 'None'}
 - Communication style: ${adaptivePersonality.communicationStyle}
 - Recent conversation: ${messages.slice(-3).map(m => `${m.role}: ${m.content.substring(0, 100)}`).join(' | ')}
+${mcpData.intelligence ? `- Market Intelligence: ${JSON.stringify(mcpData.intelligence.narratives?.slice(0, 2))}` : ''}
+${mcpData.relationships ? `- Relevant Journalists: ${mcpData.relationships.journalists?.slice(0, 3).map(j => j.name).join(', ')}` : ''}
+${mcpData.analytics ? `- Recent Metrics: ${JSON.stringify(mcpData.analytics.metrics?.slice(0, 2))}` : ''}
 
 Respond as a senior PR consultant would - be strategic, ask clarifying questions, and keep responses conversational and actionable. If they need content, guide them to the content generation flow rather than trying to create it directly.`;
 

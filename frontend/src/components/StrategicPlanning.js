@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useProject } from "../contexts/ProjectContext";
+import { useNavigate } from "react-router-dom";
 import SaveToMemoryVaultButton from "./MemoryVault/SaveToMemoryVaultButton";
-import API_BASE_URL from '../config/api';
+import strategicPlanningService from '../services/strategicPlanningService';
 import {
   Brain,
   Target,
@@ -31,7 +32,10 @@ import {
 } from "lucide-react";
 
 export default function StrategicPlanning() {
-  const [goals, setGoals] = useState("");
+  const [objective, setObjective] = useState("");
+  const [context, setContext] = useState("");
+  const [constraints, setConstraints] = useState("");
+  const [timeline, setTimeline] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [strategicPlan, setStrategicPlan] = useState(null);
   const [error, setError] = useState(null);
@@ -40,6 +44,7 @@ export default function StrategicPlanning() {
   const [isExecuting, setIsExecuting] = useState(false);
   const [executionStatus, setExecutionStatus] = useState(null);
   const { selectedProject } = useProject();
+  const navigate = useNavigate();
 
   // Context pills for quick starts
   const contextPills = [
@@ -65,8 +70,8 @@ export default function StrategicPlanning() {
   };
 
   const generateStrategicPlan = async () => {
-    if (!goals.trim()) {
-      setError("Please describe your goals");
+    if (!objective.trim()) {
+      setError("Please describe your objective");
       return;
     }
 
@@ -74,51 +79,28 @@ export default function StrategicPlanning() {
     setError(null);
 
     try {
-      // Call the strategic planning API endpoint
-      const response = await fetch(
-        `${API_BASE_URL}/strategic-planning/generate`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-          },
-          body: JSON.stringify({
-            goals: goals,
-            projectId: selectedProject?.id,
-            // This will trigger MCP orchestration in the backend
-            useMCPs: true,
-            includeEvidence: true,
-            predictCascades: true
-          }),
-        }
+      // Call the Supabase Edge Function
+      const result = await strategicPlanningService.generatePlan(
+        objective,
+        context,
+        constraints,
+        timeline
       );
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to generate strategic plan");
+      if (!result.success) {
+        throw new Error(result.error || "Failed to generate strategic plan");
       }
 
-      // Structure the plan with evidence from MCPs
-      const plan = {
-        objective: data.objective || extractObjective(goals),
-        approach: data.approach,
-        timeline: data.timeline,
-        pillars: data.pillars || generatePillars(data),
-        cascadeEffects: data.cascadeEffects,
-        opportunities: data.opportunities,
-        risks: data.risks,
-        metrics: data.metrics,
-        evidence: data.evidence, // From MCPs
-        timestamp: new Date().toISOString()
-      };
-
+      // Use the plan data from Supabase Edge Function
+      const plan = result.data;
       setStrategicPlan(plan);
 
+      // Save to localStorage and service
+      strategicPlanningService.savePlanToLocalStorage(plan);
+
       // Auto-expand first pillar
-      if (plan.pillars && plan.pillars.length > 0) {
-        setExpandedPillars({ [plan.pillars[0].id]: true });
+      if (plan.strategic_pillars && plan.strategic_pillars.length > 0) {
+        setExpandedPillars({ 0: true });
       }
     } catch (error) {
       console.error("Error generating strategic plan:", error);
@@ -135,164 +117,25 @@ export default function StrategicPlanning() {
     setExecutionStatus({ stage: 'initializing', message: 'Creating campaign...' });
 
     try {
-      // Step 1: Create campaign in Campaign Orchestrator MCP
-      setExecutionStatus({ stage: 'campaign', message: 'Setting up campaign structure...' });
+      // Generate campaign from strategic plan
+      const campaign = strategicPlanningService.generateCampaignFromPlan(strategicPlan);
       
-      const campaignResponse = await fetch(
-        `${API_BASE_URL}/campaigns/create-from-plan`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-          },
-          body: JSON.stringify({
-            plan: strategicPlan,
-            projectId: selectedProject?.id,
-          }),
-        }
-      );
-
-      const campaign = await campaignResponse.json();
-
-      // Step 2: Generate materials for each pillar
-      setExecutionStatus({ stage: 'materials', message: 'Generating content and materials...' });
+      setExecutionStatus({ stage: 'campaign', message: 'Campaign created successfully!' });
       
-      const materials = [];
-      for (const pillar of strategicPlan.pillars) {
-        // Generate content based on tactics
-        for (const tactic of pillar.tactics) {
-          if (tactic.includes('Press Release') || tactic.includes('press')) {
-            const content = await generateContent('press_release', pillar);
-            materials.push(content);
-          }
-          if (tactic.includes('Social') || tactic.includes('social')) {
-            const content = await generateContent('social_series', pillar);
-            materials.push(content);
-          }
-          if (tactic.includes('Email') || tactic.includes('outreach')) {
-            const content = await generateContent('email_template', pillar);
-            materials.push(content);
-          }
-        }
-      }
-
-      // Step 3: Build media lists
-      setExecutionStatus({ stage: 'media', message: 'Building media lists...' });
-      
-      const mediaLists = [];
-      for (const pillar of strategicPlan.pillars) {
-        if (pillar.tactics.some(t => t.includes('Media') || t.includes('media'))) {
-          const list = await buildMediaList(pillar);
-          mediaLists.push(list);
-        }
-      }
-
-      // Step 4: Store in MemoryVault
-      setExecutionStatus({ stage: 'storage', message: 'Organizing in MemoryVault...' });
-      
-      await storeInMemoryVault({
-        campaign,
-        materials,
-        mediaLists,
-        plan: strategicPlan
-      });
-
-      // Step 5: Open execution dashboard
-      setExecutionStatus({ 
-        stage: 'complete', 
-        message: 'Campaign ready for execution!',
-        campaign,
-        materials,
-        mediaLists
-      });
-
-      // Redirect to campaign execution view after 2 seconds
+      // Navigate to Campaign Execution Dashboard
       setTimeout(() => {
-        window.location.href = `/campaign-execution/${campaign.id}`;
+        navigate(`/projects/${selectedProject?.id}/campaign-execution/${campaign.id}`);
       }, 2000);
 
     } catch (error) {
-      console.error("Error executing plan:", error);
-      setExecutionStatus({ 
-        stage: 'error', 
-        message: error.message || 'Failed to execute plan' 
-      });
+      console.error("Error executing strategic plan:", error);
+      setExecutionStatus({ stage: 'error', message: 'Execution failed: ' + error.message });
     } finally {
-      setIsExecuting(false);
+      setTimeout(() => {
+        setIsExecuting(false);
+        setExecutionStatus(null);
+      }, 3000);
     }
-  };
-
-  const generateContent = async (type, pillar) => {
-    const response = await fetch(
-      `${API_BASE_URL}/content/generate-from-pillar`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-        },
-        body: JSON.stringify({
-          type,
-          pillar,
-          context: strategicPlan
-        }),
-      }
-    );
-    return response.json();
-  };
-
-  const buildMediaList = async (pillar) => {
-    const response = await fetch(
-      `${API_BASE_URL}/media/build-list`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-        },
-        body: JSON.stringify({
-          beat: pillar.topic || pillar.name,
-          tier: pillar.priority === 'high' ? 'tier-1' : 'tier-2',
-          context: strategicPlan
-        }),
-      }
-    );
-    return response.json();
-  };
-
-  const storeInMemoryVault = async (data) => {
-    const response = await fetch(
-      `${API_BASE_URL}/memory-vault/store-campaign`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-        },
-        body: JSON.stringify(data),
-      }
-    );
-    return response.json();
-  };
-
-  // Helper functions
-  const extractObjective = (text) => {
-    const firstLine = text.split('\n')[0];
-    return firstLine.length > 100 ? firstLine.substring(0, 100) + '...' : firstLine;
-  };
-
-  const generatePillars = (data) => {
-    // Transform API response into pillars if not already structured
-    return data.recommendations?.map((rec, idx) => ({
-      id: `pillar-${idx}`,
-      name: rec.title || `Strategic Pillar ${idx + 1}`,
-      rationale: rec.rationale,
-      evidence: rec.evidence,
-      tactics: rec.tactics || [],
-      timeline: rec.timeline,
-      owner: rec.owner || 'Team'
-    })) || [];
   };
 
   const addContextPill = (pillId) => {
@@ -305,7 +148,7 @@ export default function StrategicPlanning() {
         'market': 'Enter new market segment strategically',
         'reputation': 'Build and enhance corporate reputation'
       };
-      setGoals(prev => prev ? `${prev}\n\n${contextText[pillId]}` : contextText[pillId]);
+      setContext(prev => prev ? `${prev}\n\n${contextText[pillId]}` : contextText[pillId]);
     }
   };
 
@@ -390,26 +233,107 @@ export default function StrategicPlanning() {
               })}
             </div>
 
-            {/* Goal Textarea */}
-            <textarea
-              value={goals}
-              onChange={(e) => setGoals(e.target.value)}
-              placeholder="Describe your goals, timeline, constraints, or paste any relevant context. Be as specific or as broad as you like - Niv will analyze and create a comprehensive strategic plan..."
-              style={{
-                width: "100%",
-                minHeight: "200px",
-                padding: "1rem",
-                fontSize: "1rem",
-                border: "2px solid #e5e7eb",
-                borderRadius: "8px",
-                resize: "vertical",
-                outline: "none",
-                transition: "border-color 0.2s",
-                fontFamily: "inherit",
-              }}
-              onFocus={(e) => e.target.style.borderColor = "#3b82f6"}
-              onBlur={(e) => e.target.style.borderColor = "#e5e7eb"}
-            />
+            {/* Objective Input */}
+            <div style={{ marginBottom: "1.5rem" }}>
+              <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}>
+                Objective *
+              </label>
+              <textarea
+                value={objective}
+                onChange={(e) => setObjective(e.target.value)}
+                placeholder="What do you want to achieve? Be specific about your main goal..."
+                style={{
+                  width: "100%",
+                  minHeight: "100px",
+                  padding: "1rem",
+                  fontSize: "1rem",
+                  border: "2px solid #e5e7eb",
+                  borderRadius: "8px",
+                  resize: "vertical",
+                  outline: "none",
+                  transition: "border-color 0.2s",
+                  fontFamily: "inherit",
+                }}
+                onFocus={(e) => e.target.style.borderColor = "#3b82f6"}
+                onBlur={(e) => e.target.style.borderColor = "#e5e7eb"}
+              />
+            </div>
+
+            {/* Context Input */}
+            <div style={{ marginBottom: "1.5rem" }}>
+              <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}>
+                Context
+              </label>
+              <textarea
+                value={context}
+                onChange={(e) => setContext(e.target.value)}
+                placeholder="Provide background information, current situation, market conditions..."
+                style={{
+                  width: "100%",
+                  minHeight: "80px",
+                  padding: "1rem",
+                  fontSize: "1rem",
+                  border: "2px solid #e5e7eb",
+                  borderRadius: "8px",
+                  resize: "vertical",
+                  outline: "none",
+                  transition: "border-color 0.2s",
+                  fontFamily: "inherit",
+                }}
+                onFocus={(e) => e.target.style.borderColor = "#3b82f6"}
+                onBlur={(e) => e.target.style.borderColor = "#e5e7eb"}
+              />
+            </div>
+
+            {/* Constraints Input */}
+            <div style={{ marginBottom: "1.5rem" }}>
+              <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}>
+                Constraints
+              </label>
+              <input
+                type="text"
+                value={constraints}
+                onChange={(e) => setConstraints(e.target.value)}
+                placeholder="Budget limits, resource constraints, deadlines..."
+                style={{
+                  width: "100%",
+                  padding: "1rem",
+                  fontSize: "1rem",
+                  border: "2px solid #e5e7eb",
+                  borderRadius: "8px",
+                  outline: "none",
+                  transition: "border-color 0.2s",
+                  fontFamily: "inherit",
+                }}
+                onFocus={(e) => e.target.style.borderColor = "#3b82f6"}
+                onBlur={(e) => e.target.style.borderColor = "#e5e7eb"}
+              />
+            </div>
+
+            {/* Timeline Input */}
+            <div style={{ marginBottom: "1.5rem" }}>
+              <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}>
+                Timeline
+              </label>
+              <input
+                type="text"
+                value={timeline}
+                onChange={(e) => setTimeline(e.target.value)}
+                placeholder="e.g., 3 months, Q2 2025, by end of year..."
+                style={{
+                  width: "100%",
+                  padding: "1rem",
+                  fontSize: "1rem",
+                  border: "2px solid #e5e7eb",
+                  borderRadius: "8px",
+                  outline: "none",
+                  transition: "border-color 0.2s",
+                  fontFamily: "inherit",
+                }}
+                onFocus={(e) => e.target.style.borderColor = "#3b82f6"}
+                onBlur={(e) => e.target.style.borderColor = "#e5e7eb"}
+              />
+            </div>
 
             {error && (
               <div style={{
@@ -429,20 +353,20 @@ export default function StrategicPlanning() {
 
             <button
               onClick={generateStrategicPlan}
-              disabled={!goals.trim() || isGenerating}
+              disabled={!objective.trim() || isGenerating}
               style={{
                 marginTop: "1.5rem",
                 width: "100%",
                 padding: "1rem",
                 borderRadius: "8px",
-                background: goals.trim() && !isGenerating
+                background: objective.trim() && !isGenerating
                   ? "linear-gradient(135deg, #10b981 0%, #3b82f6 100%)"
                   : "#e5e7eb",
-                color: goals.trim() && !isGenerating ? "white" : "#9ca3af",
+                color: objective.trim() && !isGenerating ? "white" : "#9ca3af",
                 border: "none",
                 fontSize: "1.125rem",
                 fontWeight: "600",
-                cursor: goals.trim() && !isGenerating ? "pointer" : "not-allowed",
+                cursor: objective.trim() && !isGenerating ? "pointer" : "not-allowed",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",

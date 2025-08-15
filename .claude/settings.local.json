@@ -162,7 +162,13 @@
       "WebFetch(domain:signaldesk-nivra-sd.vercel.app)",
       "Bash(git config:*)",
       "Bash(git merge:*)",
-      "WebFetch(domain:signaldesk-gewbkr7w4-nivra-sd.vercel.app)"
+      "WebFetch(domain:signaldesk-gewbkr7w4-nivra-sd.vercel.app)",
+      "Bash(./test-mcps.sh:*)",
+      "Bash(git clone:*)",
+      "Bash(do echo -n \"signaldesk-$mcp: \")",
+      "Bash(if [ -f \"/Users/jonathanliebowitz/Desktop/SignalDesk/mcp-servers/signaldesk-$mcp/dist/index.js\" ])",
+      "Bash(then echo \"✅ Built\")",
+      "Bash(else echo \"❌ Not built\")"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

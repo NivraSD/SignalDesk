@@ -88,14 +88,14 @@ const RailwayDraggable = () => {
       lastUsed: '1 hour ago'
     },
     {
-      id: 'campaign-intelligence',
-      name: 'Campaign Intelligence',
+      id: 'strategic-planning',
+      name: 'Strategic Planning',
       icon: Brain,
       color: '#f59e0b',
-      description: 'Strategic campaign planning',
+      description: 'Evidence-based strategic plans',
       status: 'ready',
-      stats: '3 active campaigns',
-      path: `/projects/${projectId}/campaign-intelligence-enhanced`,
+      stats: 'AI-powered planning',
+      path: `/projects/${projectId}/strategic-planning`,
       lastUsed: '3 hours ago'
     },
     {

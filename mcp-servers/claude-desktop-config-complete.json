@@ -1,0 +1,120 @@
+{
+  "mcpServers": {
+    "signaldesk-memory": {
+      "command": "node",
+      "args": [
+        "/Users/jonathanliebowitz/Desktop/SignalDesk/mcp-servers/signaldesk-memory/dist/index.js"
+      ],
+      "env": {
+        "DATABASE_URL": "postgresql://postgres.zskaxjtyuaqazydouifp:MUmjKBxTiecMPpYVgwGsZEKyFfyFbxqV@aws-0-us-west-1.pooler.supabase.com:6543/postgres",
+        "SUPABASE_URL": "https://zskaxjtyuaqazydouifp.supabase.co",
+        "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8",
+        "NODE_ENV": "production"
+      }
+    },
+    "signaldesk-campaigns": {
+      "command": "node",
+      "args": [
+        "/Users/jonathanliebowitz/Desktop/SignalDesk/mcp-servers/signaldesk-campaigns/dist/index.js"
+      ],
+      "env": {
+        "DATABASE_URL": "postgresql://postgres.zskaxjtyuaqazydouifp:MUmjKBxTiecMPpYVgwGsZEKyFfyFbxqV@aws-0-us-west-1.pooler.supabase.com:6543/postgres",
+        "SUPABASE_URL": "https://zskaxjtyuaqazydouifp.supabase.co",
+        "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8",
+        "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}",
+        "NODE_ENV": "production"
+      }
+    },
+    "signaldesk-media": {
+      "command": "node",
+      "args": [
+        "/Users/jonathanliebowitz/Desktop/SignalDesk/mcp-servers/signaldesk-media/dist/index.js"
+      ],
+      "env": {
+        "DATABASE_URL": "postgresql://postgres.zskaxjtyuaqazydouifp:MUmjKBxTiecMPpYVgwGsZEKyFfyFbxqV@aws-0-us-west-1.pooler.supabase.com:6543/postgres",
+        "SUPABASE_URL": "https://zskaxjtyuaqazydouifp.supabase.co",
+        "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8",
+        "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}",
+        "NODE_ENV": "production"
+      }
+    },
+    "signaldesk-opportunities": {
+      "command": "node",
+      "args": [
+        "/Users/jonathanliebowitz/Desktop/SignalDesk/mcp-servers/signaldesk-opportunities/dist/index.js"
+      ],
+      "env": {
+        "DATABASE_URL": "postgresql://postgres.zskaxjtyuaqazydouifp:MUmjKBxTiecMPpYVgwGsZEKyFfyFbxqV@aws-0-us-west-1.pooler.supabase.com:6543/postgres",
+        "SUPABASE_URL": "https://zskaxjtyuaqazydouifp.supabase.co",
+        "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8",
+        "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}",
+        "NODE_ENV": "production"
+      }
+    },
+    "signaldesk-monitor": {
+      "command": "node",
+      "args": [
+        "/Users/jonathanliebowitz/Desktop/SignalDesk/mcp-servers/signaldesk-monitor/dist/index.js"
+      ],
+      "env": {
+        "DATABASE_URL": "postgresql://postgres.zskaxjtyuaqazydouifp:MUmjKBxTiecMPpYVgwGsZEKyFfyFbxqV@aws-0-us-west-1.pooler.supabase.com:6543/postgres",
+        "SUPABASE_URL": "https://zskaxjtyuaqazydouifp.supabase.co",
+        "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8",
+        "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}",
+        "NODE_ENV": "production"
+      }
+    },
+    "signaldesk-intelligence": {
+      "command": "node",
+      "args": [
+        "/Users/jonathanliebowitz/Desktop/SignalDesk/mcp-servers/signaldesk-intelligence/dist/index.js"
+      ],
+      "env": {
+        "DATABASE_URL": "postgresql://postgres.zskaxjtyuaqazydouifp:MUmjKBxTiecMPpYVgwGsZEKyFfyFbxqV@aws-0-us-west-1.pooler.supabase.com:6543/postgres",
+        "SUPABASE_URL": "https://zskaxjtyuaqazydouifp.supabase.co",
+        "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8",
+        "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}",
+        "NODE_ENV": "production"
+      }
+    },
+    "signaldesk-relationships": {
+      "command": "node",
+      "args": [
+        "/Users/jonathanliebowitz/Desktop/SignalDesk/mcp-servers/signaldesk-relationships/dist/index.js"
+      ],
+      "env": {
+        "DATABASE_URL": "postgresql://postgres.zskaxjtyuaqazydouifp:MUmjKBxTiecMPpYVgwGsZEKyFfyFbxqV@aws-0-us-west-1.pooler.supabase.com:6543/postgres",
+        "SUPABASE_URL": "https://zskaxjtyuaqazydouifp.supabase.co",
+        "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8",
+        "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}",
+        "NODE_ENV": "production"
+      }
+    },
+    "signaldesk-analytics": {
+      "command": "node",
+      "args": [
+        "/Users/jonathanliebowitz/Desktop/SignalDesk/mcp-servers/signaldesk-analytics/dist/index.js"
+      ],
+      "env": {
+        "DATABASE_URL": "postgresql://postgres.zskaxjtyuaqazydouifp:MUmjKBxTiecMPpYVgwGsZEKyFfyFbxqV@aws-0-us-west-1.pooler.supabase.com:6543/postgres",
+        "SUPABASE_URL": "https://zskaxjtyuaqazydouifp.supabase.co",
+        "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8",
+        "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}",
+        "NODE_ENV": "production"
+      }
+    },
+    "signaldesk-content": {
+      "command": "node",
+      "args": [
+        "/Users/jonathanliebowitz/Desktop/SignalDesk/mcp-servers/signaldesk-content/dist/index.js"
+      ],
+      "env": {
+        "DATABASE_URL": "postgresql://postgres.zskaxjtyuaqazydouifp:MUmjKBxTiecMPpYVgwGsZEKyFfyFbxqV@aws-0-us-west-1.pooler.supabase.com:6543/postgres",
+        "SUPABASE_URL": "https://zskaxjtyuaqazydouifp.supabase.co",
+        "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8",
+        "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}",
+        "NODE_ENV": "production"
+      }
+    }
+  }
+}
