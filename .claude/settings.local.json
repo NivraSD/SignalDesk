@@ -170,7 +170,8 @@
       "Bash(then echo \"✅ Built\")",
       "Bash(else echo \"❌ Not built\")",
       "Bash(./deploy-supabase-functions.sh:*)",
-      "WebFetch(domain:zskaxjtyuaqazydouifp.supabase.co)"
+      "WebFetch(domain:zskaxjtyuaqazydouifp.supabase.co)",
+      "Bash(deno check:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

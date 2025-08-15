@@ -3,36 +3,26 @@ import { supabase } from '../config/supabase';
 
 class StrategicPlanningService {
   constructor() {
-    this.functionName = 'niv-chat';
+    this.functionName = 'strategic-planning';
   }
 
   async generatePlan(objective, context = '', constraints = '', timeline = '') {
     try {
-      console.log('📋 Generating strategic plan via Niv Chat function...');
+      console.log('📋 Generating strategic plan via dedicated Strategic Planning function...');
       
-      // Use niv-chat function with strategic planning path
-      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/niv-chat/strategic-planning`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabase.supabaseKey}`
-        },
-        body: JSON.stringify({
+      // Use dedicated strategic-planning function
+      const { data, error } = await supabase.functions.invoke(this.functionName, {
+        body: {
           objective,
           context,
           constraints,
           timeline
-        })
+        }
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to generate strategic plan');
+      if (error) {
+        console.error('Strategic planning error:', error);
+        throw error;
       }
 
       console.log('✅ Strategic plan generated successfully');
@@ -46,25 +36,19 @@ class StrategicPlanningService {
 
   async executeCampaign(planId, pillarIndex, executionType = 'immediate') {
     try {
-      console.log('🚀 Executing campaign via Niv Chat function...');
+      console.log('🚀 Executing campaign via Strategic Planning function...');
       
-      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/niv-chat/execute-campaign`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabase.supabaseKey}`
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke(`${this.functionName}/execute`, {
+        body: {
           planId,
           pillarIndex,
           executionType
-        })
+        }
       });
 
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to execute campaign');
+      if (error) {
+        console.error('Campaign execution error:', error);
+        throw error;
       }
 
       console.log('✅ Campaign execution initiated');
@@ -78,24 +62,18 @@ class StrategicPlanningService {
 
   async gatherEvidence(topic, sources = ['market', 'competitors', 'trends']) {
     try {
-      console.log('🔍 Gathering evidence via Niv Chat function...');
+      console.log('🔍 Gathering evidence via Strategic Planning function...');
       
-      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/niv-chat/gather-evidence`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabase.supabaseKey}`
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke(`${this.functionName}/evidence`, {
+        body: {
           topic,
           sources
-        })
+        }
       });
 
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to gather evidence');
+      if (error) {
+        console.error('Evidence gathering error:', error);
+        throw error;
       }
 
       console.log('✅ Evidence gathered successfully');

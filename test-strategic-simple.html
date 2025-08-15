@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Strategic Planning Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 10px 0; }
+        .result { padding: 15px; border: 1px solid #ddd; border-radius: 5px; margin: 10px 0; white-space: pre-wrap; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+    </style>
+</head>
+<body>
+    <h1>🎯 Strategic Planning Test (Simple)</h1>
+    
+    <button onclick="testStrategicPlanning()">🧠 Test Strategic Planning</button>
+    <button onclick="testNivChat()">💬 Test Basic Niv Chat</button>
+    
+    <div id="result" class="result" style="display:none;"></div>
+    
+    <script>
+        const supabaseUrl = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+        
+        async function testStrategicPlanning() {
+            const result = document.getElementById('result');
+            result.style.display = 'block';
+            result.textContent = '🔄 Testing Strategic Planning...\n';
+            
+            try {
+                const response = await fetch(`${supabaseUrl}/functions/v1/niv-chat/strategic-planning`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${supabaseKey}`
+                    },
+                    body: JSON.stringify({
+                        objective: 'Launch our new AI-powered productivity app',
+                        context: 'Competitive landscape with established players',
+                        constraints: '$50K budget, 3-month timeline',
+                        timeline: 'Q1 2025'
+                    })
+                });
+                
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                const data = await response.json();
+                console.log('Response data:', data);
+                
+                if (data.success) {
+                    result.className = 'result success';
+                    result.textContent = '✅ Strategic Planning SUCCESS!\n\n' + JSON.stringify(data, null, 2);
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+                
+            } catch (error) {
+                console.error('Test error:', error);
+                result.className = 'result error';
+                result.textContent = '❌ Strategic Planning FAILED:\n\n' + error.message;
+            }
+        }
+        
+        async function testNivChat() {
+            const result = document.getElementById('result');
+            result.style.display = 'block';
+            result.textContent = '🔄 Testing Basic Niv Chat...\n';
+            
+            try {
+                const response = await fetch(`${supabaseUrl}/functions/v1/niv-chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${supabaseKey}`
+                    },
+                    body: JSON.stringify({
+                        message: 'Hello Niv, can you help me with PR strategy?',
+                        mode: 'chat'
+                    })
+                });
+                
+                console.log('Niv chat response status:', response.status);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                const data = await response.json();
+                console.log('Niv chat response data:', data);
+                
+                result.className = 'result success';
+                result.textContent = '✅ Niv Chat SUCCESS!\n\nNiv responded: ' + data.response;
+                
+            } catch (error) {
+                console.error('Niv chat test error:', error);
+                result.className = 'result error';
+                result.textContent = '❌ Niv Chat FAILED:\n\n' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

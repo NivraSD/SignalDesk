@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalDesk Functions Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .function-test { border: 1px solid #ddd; margin: 20px 0; padding: 20px; border-radius: 8px; }
+        .result { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e8; color: #2e7d32; }
+        button { background: #1976d2; color: white; border: none; padding: 10px 20px; margin: 5px; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #1565c0; }
+        textarea { width: 100%; height: 100px; margin: 10px 0; }
+        input { width: 100%; padding: 8px; margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <h1>SignalDesk Edge Functions Test</h1>
+    <p>Use this page to test both niv-chat and strategic-planning functions after deployment.</p>
+    
+    <div class="function-test">
+        <h2>🤖 Niv Chat Function Test</h2>
+        <div>
+            <label>Message:</label>
+            <textarea id="nivMessage" placeholder="Test message for Niv">Analyze the PR opportunity for launching an AI startup in 2024</textarea>
+        </div>
+        <div>
+            <label>Mode:</label>
+            <select id="nivMode">
+                <option value="chat">Chat</option>
+                <option value="analysis">Analysis</option>
+                <option value="opportunity">Opportunity</option>
+                <option value="campaign">Campaign</option>
+            </select>
+        </div>
+        <button onclick="testNivChat()">Test Niv Chat</button>
+        <div id="nivResult" class="result"></div>
+    </div>
+
+    <div class="function-test">
+        <h2>📊 Strategic Planning Function Test</h2>
+        
+        <h3>Generate Plan</h3>
+        <div>
+            <label>Objective:</label>
+            <input type="text" id="objective" placeholder="Launch new AI product successfully" value="Launch new AI product successfully">
+        </div>
+        <div>
+            <label>Context:</label>
+            <textarea id="context" placeholder="Additional context">Startup in stealth mode preparing for public launch</textarea>
+        </div>
+        <div>
+            <label>Timeline:</label>
+            <input type="text" id="timeline" placeholder="90 days" value="90 days">
+        </div>
+        <button onclick="testGeneratePlan()">Generate Strategic Plan</button>
+        <div id="planResult" class="result"></div>
+
+        <h3>Execute Campaign</h3>
+        <div>
+            <label>Plan ID:</label>
+            <input type="text" id="planId" placeholder="plan-123" value="plan-123">
+        </div>
+        <button onclick="testExecuteCampaign()">Execute Campaign</button>
+        <div id="executeResult" class="result"></div>
+
+        <h3>Gather Evidence</h3>
+        <div>
+            <label>Topic:</label>
+            <input type="text" id="evidenceTopic" placeholder="AI market analysis" value="AI market analysis">
+        </div>
+        <button onclick="testGatherEvidence()">Gather Evidence</button>
+        <div id="evidenceResult" class="result"></div>
+    </div>
+
+    <script>
+        // Configuration
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1`;
+
+        // Helper function to display results
+        function displayResult(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            element.className = `result ${isError ? 'error' : 'success'}`;
+            element.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+        }
+
+        // Test Niv Chat function
+        async function testNivChat() {
+            const message = document.getElementById('nivMessage').value;
+            const mode = document.getElementById('nivMode').value;
+
+            if (!message) {
+                displayResult('nivResult', { error: 'Please enter a message' }, true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${FUNCTIONS_URL}/niv-chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        mode: mode,
+                        conversationId: 'test-' + Date.now()
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Request failed');
+                }
+
+                displayResult('nivResult', data);
+            } catch (error) {
+                displayResult('nivResult', { error: error.message }, true);
+            }
+        }
+
+        // Test Strategic Planning - Generate Plan
+        async function testGeneratePlan() {
+            const objective = document.getElementById('objective').value;
+            const context = document.getElementById('context').value;
+            const timeline = document.getElementById('timeline').value;
+
+            if (!objective) {
+                displayResult('planResult', { error: 'Please enter an objective' }, true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${FUNCTIONS_URL}/strategic-planning/generate-plan`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        objective: objective,
+                        context: context,
+                        timeline: timeline
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Request failed');
+                }
+
+                displayResult('planResult', data);
+            } catch (error) {
+                displayResult('planResult', { error: error.message }, true);
+            }
+        }
+
+        // Test Strategic Planning - Execute Campaign
+        async function testExecuteCampaign() {
+            const planId = document.getElementById('planId').value;
+
+            if (!planId) {
+                displayResult('executeResult', { error: 'Please enter a plan ID' }, true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${FUNCTIONS_URL}/strategic-planning/execute-campaign`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        planId: planId,
+                        pillarIndex: 0,
+                        executionType: 'full'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Request failed');
+                }
+
+                displayResult('executeResult', data);
+            } catch (error) {
+                displayResult('executeResult', { error: error.message }, true);
+            }
+        }
+
+        // Test Strategic Planning - Gather Evidence
+        async function testGatherEvidence() {
+            const topic = document.getElementById('evidenceTopic').value;
+
+            if (!topic) {
+                displayResult('evidenceResult', { error: 'Please enter a topic' }, true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${FUNCTIONS_URL}/strategic-planning/gather-evidence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        topic: topic,
+                        sources: ['market', 'competitors', 'trends']
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Request failed');
+                }
+
+                displayResult('evidenceResult', data);
+            } catch (error) {
+                displayResult('evidenceResult', { error: error.message }, true);
+            }
+        }
+    </script>
+</body>
+</html>
