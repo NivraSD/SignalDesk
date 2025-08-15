@@ -47,7 +47,6 @@ export default function StrategicPlanningOptimized() {
   const [showEvidence, setShowEvidence] = useState({});
   const [isExecuting, setIsExecuting] = useState(false);
   const [executionStatus, setExecutionStatus] = useState(null);
-  const [showPlanOverlay, setShowPlanOverlay] = useState(false);
   const [savedPlans, setSavedPlans] = useState([]);
   const [activeTab, setActiveTab] = useState('create');
   const { selectedProject } = useProject();
@@ -135,12 +134,6 @@ export default function StrategicPlanningOptimized() {
     }
   };
 
-  const closePlanOverlay = () => {
-    setShowPlanOverlay(false);
-    setStrategicPlan(null);
-    setExpandedPillars({});
-    setShowEvidence({});
-  };
 
   const copyPlanToClipboard = () => {
     if (!strategicPlan) return;
@@ -214,11 +207,16 @@ ${strategicPlan.success_metrics?.map(metric => `• ${metric}`).join('\n')}
 
   const loadSavedPlan = (plan) => {
     setStrategicPlan(plan);
-    setShowPlanOverlay(true);
+    setActiveTab('current'); // Switch to Current Plan tab to show the plan inline
     setObjective(plan.objective || '');
     setContext(plan.context || '');
     setConstraints(plan.constraints || '');
     setTimeline(plan.timeline || '');
+    
+    // Auto-expand first pillar
+    if (plan.strategic_pillars && plan.strategic_pillars.length > 0) {
+      setExpandedPillars({ 0: true });
+    }
   };
 
   return (
@@ -508,6 +506,9 @@ ${strategicPlan.success_metrics?.map(metric => `• ${metric}`).join('\n')}
                 <FileText className="no-plan-icon" />
                 <h3>No Strategic Plan Generated</h3>
                 <p>Generate a strategic plan from the Create Plan tab to view it here.</p>
+                <p style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.4)', marginBottom: '1.5rem' }}>
+                  Debug: strategicPlan = {strategicPlan ? 'EXISTS' : 'NULL'}
+                </p>
                 <button onClick={() => setActiveTab('create')} className="create-plan-btn">
                   <Brain size={16} />
                   Create Plan
@@ -520,11 +521,14 @@ ${strategicPlan.success_metrics?.map(metric => `• ${metric}`).join('\n')}
         {/* Saved Plans Tab */}
         {activeTab === 'saved' && (
           <div className="saved-plans-tab">
-            <h3>Saved Strategic Plans</h3>
+            <h3>Saved Strategic Plans ({savedPlans.length})</h3>
             {savedPlans.length === 0 ? (
               <div className="empty-state-compact">
                 <FileText className="empty-icon-small" />
                 <p>No saved plans yet</p>
+                <p style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.5)' }}>
+                  Generate a plan from the Create Plan tab to see it here.
+                </p>
               </div>
             ) : (
               <div className="plans-grid">
@@ -535,10 +539,13 @@ ${strategicPlan.success_metrics?.map(metric => `• ${metric}`).join('\n')}
                       <span className="plan-date">
                         {new Date(plan.created_at).toLocaleDateString()}
                       </span>
-                      <span className="plan-type">{selectedPlanType}</span>
+                      <span className="plan-type">Strategic Plan</span>
                     </div>
                     <button
-                      onClick={() => loadSavedPlan(plan)}
+                      onClick={() => {
+                        console.log('Loading saved plan:', plan);
+                        loadSavedPlan(plan);
+                      }}
                       className="load-btn-compact"
                     >
                       <Eye className="btn-icon-tiny" />
