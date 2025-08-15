@@ -168,7 +168,9 @@
       "Bash(do echo -n \"signaldesk-$mcp: \")",
       "Bash(if [ -f \"/Users/jonathanliebowitz/Desktop/SignalDesk/mcp-servers/signaldesk-$mcp/dist/index.js\" ])",
       "Bash(then echo \"✅ Built\")",
-      "Bash(else echo \"❌ Not built\")"
+      "Bash(else echo \"❌ Not built\")",
+      "Bash(./deploy-supabase-functions.sh:*)",
+      "WebFetch(domain:zskaxjtyuaqazydouifp.supabase.co)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Strategic Planning Deployment Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        textarea, input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .loading { opacity: 0.6; pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Strategic Planning Deployment Test</h1>
+        <p>Testing the new Strategic Planning feature with Supabase Edge Functions</p>
+
+        <div class="test-section">
+            <h3>📝 Test Strategic Plan Generation</h3>
+            <div>
+                <label>Objective:</label>
+                <textarea id="objective" placeholder="What do you want to achieve?" rows="3">Launch our new AI-powered productivity app to capture 10% market share in the first quarter</textarea>
+            </div>
+            <div>
+                <label>Context:</label>
+                <textarea id="context" placeholder="Background information..." rows="2">Competitive landscape has established players but no AI-first solutions</textarea>
+            </div>
+            <div>
+                <label>Constraints:</label>
+                <input id="constraints" placeholder="Budget, time, resources..." value="$50K marketing budget, 3-month timeline">
+            </div>
+            <div>
+                <label>Timeline:</label>
+                <input id="timeline" placeholder="When do you need this completed?" value="Q1 2025">
+            </div>
+            <button onclick="testPlanGeneration()" id="generateBtn">🧠 Generate Strategic Plan</button>
+            <div id="planResult" class="test-section" style="display:none;">
+                <h4>Generated Plan:</h4>
+                <pre id="planOutput"></pre>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>🚀 Test Campaign Execution</h3>
+            <button onclick="testCampaignExecution()" id="executeBtn">Execute Campaign</button>
+            <div id="executionResult" class="test-section" style="display:none;">
+                <h4>Execution Result:</h4>
+                <pre id="executionOutput"></pre>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 Test Evidence Gathering</h3>
+            <input id="evidenceTopic" placeholder="Topic for evidence gathering" value="AI productivity apps market analysis">
+            <button onclick="testEvidenceGathering()" id="evidenceBtn">🔍 Gather Evidence</button>
+            <div id="evidenceResult" class="test-section" style="display:none;">
+                <h4>Evidence Result:</h4>
+                <pre id="evidenceOutput"></pre>
+            </div>
+        </div>
+
+        <div id="testResults" class="test-section">
+            <h3>🎯 Test Results</h3>
+            <div id="results"></div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Supabase client
+        const supabaseUrl = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+        
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        let generatedPlan = null;
+
+        async function testPlanGeneration() {
+            const btn = document.getElementById('generateBtn');
+            const result = document.getElementById('planResult');
+            const output = document.getElementById('planOutput');
+            
+            btn.textContent = '🔄 Generating...';
+            btn.disabled = true;
+            
+            try {
+                const objective = document.getElementById('objective').value;
+                const context = document.getElementById('context').value;
+                const constraints = document.getElementById('constraints').value;
+                const timeline = document.getElementById('timeline').value;
+                
+                console.log('🔥 Testing Strategic Plan Generation...');
+                console.log('Objective:', objective);
+                
+                const response = await fetch(`${supabaseUrl}/functions/v1/niv-chat/strategic-planning`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${supabaseKey}`
+                    },
+                    body: JSON.stringify({
+                        objective,
+                        context,
+                        constraints,
+                        timeline
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok || !data.success) {
+                    throw new Error(data.error || `HTTP error! status: ${response.status}`);
+                }
+                
+                generatedPlan = data.data;
+                result.style.display = 'block';
+                result.className = 'test-section success';
+                output.textContent = JSON.stringify(data, null, 2);
+                
+                addResult('✅ Plan Generation: SUCCESS');
+                console.log('✅ Plan generated successfully:', data);
+                
+            } catch (error) {
+                result.style.display = 'block';
+                result.className = 'test-section error';
+                output.textContent = `Error: ${error.message}\n\nDetails: ${JSON.stringify(error, null, 2)}`;
+                
+                addResult('❌ Plan Generation: FAILED - ' + error.message);
+                console.error('❌ Plan generation failed:', error);
+            } finally {
+                btn.textContent = '🧠 Generate Strategic Plan';
+                btn.disabled = false;
+            }
+        }
+
+        async function testCampaignExecution() {
+            if (!generatedPlan) {
+                alert('Please generate a strategic plan first!');
+                return;
+            }
+            
+            const btn = document.getElementById('executeBtn');
+            const result = document.getElementById('executionResult');
+            const output = document.getElementById('executionOutput');
+            
+            btn.textContent = '🔄 Executing...';
+            btn.disabled = true;
+            
+            try {
+                console.log('🚀 Testing Campaign Execution...');
+                
+                const response = await fetch(`${supabaseUrl}/functions/v1/niv-chat/execute-campaign`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${supabaseKey}`
+                    },
+                    body: JSON.stringify({
+                        planId: generatedPlan.id,
+                        pillarIndex: 0,
+                        executionType: 'immediate'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok || !data.success) {
+                    throw new Error(data.error || `HTTP error! status: ${response.status}`);
+                }
+                
+                result.style.display = 'block';
+                result.className = 'test-section success';
+                output.textContent = JSON.stringify(data, null, 2);
+                
+                addResult('✅ Campaign Execution: SUCCESS');
+                console.log('✅ Campaign execution successful:', data);
+                
+            } catch (error) {
+                result.style.display = 'block';
+                result.className = 'test-section error';
+                output.textContent = `Error: ${error.message}\n\nDetails: ${JSON.stringify(error, null, 2)}`;
+                
+                addResult('❌ Campaign Execution: FAILED - ' + error.message);
+                console.error('❌ Campaign execution failed:', error);
+            } finally {
+                btn.textContent = '🚀 Execute Campaign';
+                btn.disabled = false;
+            }
+        }
+
+        async function testEvidenceGathering() {
+            const btn = document.getElementById('evidenceBtn');
+            const result = document.getElementById('evidenceResult');
+            const output = document.getElementById('evidenceOutput');
+            
+            btn.textContent = '🔄 Gathering...';
+            btn.disabled = true;
+            
+            try {
+                const topic = document.getElementById('evidenceTopic').value;
+                
+                console.log('🔍 Testing Evidence Gathering...');
+                console.log('Topic:', topic);
+                
+                const response = await fetch(`${supabaseUrl}/functions/v1/niv-chat/gather-evidence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${supabaseKey}`
+                    },
+                    body: JSON.stringify({
+                        topic,
+                        sources: ['market', 'competitors', 'trends']
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok || !data.success) {
+                    throw new Error(data.error || `HTTP error! status: ${response.status}`);
+                }
+                
+                result.style.display = 'block';
+                result.className = 'test-section success';
+                output.textContent = JSON.stringify(data, null, 2);
+                
+                addResult('✅ Evidence Gathering: SUCCESS');
+                console.log('✅ Evidence gathering successful:', data);
+                
+            } catch (error) {
+                result.style.display = 'block';
+                result.className = 'test-section error';
+                output.textContent = `Error: ${error.message}\n\nDetails: ${JSON.stringify(error, null, 2)}`;
+                
+                addResult('❌ Evidence Gathering: FAILED - ' + error.message);
+                console.error('❌ Evidence gathering failed:', error);
+            } finally {
+                btn.textContent = '🔍 Gather Evidence';
+                btn.disabled = false;
+            }
+        }
+
+        function addResult(message) {
+            const results = document.getElementById('results');
+            const p = document.createElement('p');
+            p.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
+            results.appendChild(p);
+        }
+
+        // Initial test
+        window.onload = function() {
+            addResult('🚀 Strategic Planning Test Page Loaded');
+            console.log('🎯 Strategic Planning deployment test ready');
+            console.log('Supabase URL:', supabaseUrl);
+            console.log('Supabase client initialized:', !!supabase);
+        };
+    </script>
+</body>
+</html>

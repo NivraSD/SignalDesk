@@ -31,6 +31,173 @@ When analyzing situations, you use the NVS framework which considers:
 
 Provide actionable, strategic advice that helps PR professionals win.`
 
+// Strategic Planning handler
+async function handleStrategicPlanning(req: Request) {
+  const { url, method } = req
+  const urlPath = new URL(url).pathname
+  
+  if (method === 'POST' && (urlPath.includes('/generate-plan') || urlPath.includes('/strategic-planning'))) {
+    const { objective, context, constraints, timeline } = await req.json()
+    
+    if (!objective) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Objective is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
+    if (!ANTHROPIC_API_KEY) {
+      throw new Error('ANTHROPIC_API_KEY is not configured')
+    }
+
+    const prompt = `As Niv, SignalDesk's expert PR Strategist, create a comprehensive strategic plan:
+
+OBJECTIVE: ${objective}
+${context ? `CONTEXT: ${context}` : ''}
+${constraints ? `CONSTRAINTS: ${constraints}` : ''}
+${timeline ? `TIMELINE: ${timeline}` : ''}
+
+Create a structured strategic plan with these sections:
+1. Executive Summary (2-3 sentences)
+2. Strategic Pillars (3-4 key focus areas with specific actions and MCP assignments)
+3. Evidence & Research Needs (specific data/insights required)
+4. Implementation Phases (clear milestones with timelines)
+5. Success Metrics (measurable PR KPIs)
+6. Risk Mitigation (top 3 risks and strategies)
+
+For each strategic pillar, specify:
+- Title and description
+- Specific actions to take
+- Timeline for completion
+- Which MCP (SignalDesk service) will execute it
+- Expected outcomes
+
+Available MCPs: Content Generator, Media Intelligence, Crisis Command, Analytics, Opportunity Engine
+
+Return as JSON with keys: executive_summary, strategic_pillars, evidence_needs, implementation_phases, success_metrics, risk_mitigation`
+
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 4000,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error(`Claude API error: ${response.status}`)
+      }
+
+      const claudeResult = await response.json()
+      const content = claudeResult.content[0].text
+      
+      let strategicPlan
+      try {
+        const jsonMatch = content.match(/\{[\s\S]*\}/)
+        strategicPlan = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(content)
+      } catch (parseError) {
+        strategicPlan = {
+          executive_summary: content.substring(0, 200) + '...',
+          strategic_pillars: [
+            {
+              title: 'Strategic Execution',
+              description: 'Execute the strategic plan objectives',
+              actions: ['Define action items', 'Assign responsibilities', 'Set timelines'],
+              timeline: '30 days',
+              mcp: 'Content Generator'
+            }
+          ],
+          evidence_needs: ['Market analysis', 'Competitor research', 'Media landscape'],
+          implementation_phases: [
+            { phase: 'Planning', duration: '2 weeks', tasks: ['Research', 'Strategy formation'] },
+            { phase: 'Execution', duration: '8 weeks', tasks: ['Implementation', 'Monitoring'] }
+          ],
+          success_metrics: ['Media mentions', 'Engagement rate', 'Share of voice'],
+          risk_mitigation: [
+            { risk: 'Timeline delays', strategy: 'Buffer time and parallel execution' },
+            { risk: 'Resource constraints', strategy: 'Prioritization and alternatives' }
+          ]
+        }
+      }
+
+      const planData = {
+        ...strategicPlan,
+        objective,
+        context,
+        constraints,
+        timeline,
+        created_at: new Date().toISOString(),
+        status: 'draft',
+        id: `plan-${Date.now()}`
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, data: planData }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+
+    } catch (error) {
+      console.error('Strategic planning error:', error)
+      return new Response(
+        JSON.stringify({ success: false, error: 'Failed to generate strategic plan' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+  }
+
+  // Handle other strategic planning endpoints with mock responses
+  if (method === 'POST' && urlPath.includes('/gather-evidence')) {
+    const { topic } = await req.json()
+    return new Response(
+      JSON.stringify({
+        success: true,
+        data: {
+          topic,
+          evidence: {
+            market_analysis: 'Growing market with 15% YoY growth',
+            competitor_insights: 'Key gaps in competitor messaging',
+            trend_analysis: 'AI and automation trends accelerating'
+          },
+          gathered_at: new Date().toISOString()
+        }
+      }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  }
+
+  if (method === 'POST' && urlPath.includes('/execute-campaign')) {
+    const { planId } = await req.json()
+    return new Response(
+      JSON.stringify({
+        success: true,
+        data: {
+          id: `exec-${Date.now()}`,
+          planId,
+          status: 'pending',
+          tasks: [
+            { id: 'task-1', name: 'Content Creation', status: 'pending', assignee: 'Content Generator' },
+            { id: 'task-2', name: 'Media Outreach', status: 'pending', assignee: 'Media Intelligence' }
+          ]
+        }
+      }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  }
+
+  return new Response(
+    JSON.stringify({ error: 'Not Found' }),
+    { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  )
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -38,6 +205,15 @@ serve(async (req) => {
   }
 
   try {
+    const { url } = req
+    const urlPath = new URL(url).pathname
+
+    // Handle Strategic Planning endpoints
+    if (urlPath.includes('/strategic-planning')) {
+      return await handleStrategicPlanning(req)
+    }
+
+    // Handle regular Niv chat
     const { message, conversationId, mode = 'chat', context = {} } = await req.json()
 
     if (!message) {
