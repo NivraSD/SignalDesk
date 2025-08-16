@@ -171,8 +171,13 @@ I've helped clients turn product launches into thought leadership platforms, man
     const lowerMessage = message.toLowerCase();
     const wordCount = message.split(' ').length;
     
-    // Crisis indicators - highest priority
-    if (['help', 'disaster', 'emergency', 'breaking', 'just happened', 'went viral', 'leaked', 'crisis'].some(i => lowerMessage.includes(i))) {
+    // Crisis indicators - highest priority (more specific patterns)
+    const crisisPatterns = [
+      'emergency', 'disaster', 'breaking news', 'just happened', 'went viral', 'leaked', 'crisis',
+      'damage control', 'urgent help', 'emergency help', 'crisis help', 'disaster help',
+      'reputation damage', 'pr disaster', 'media crisis', 'urgent crisis'
+    ];
+    if (crisisPatterns.some(pattern => lowerMessage.includes(pattern))) {
       return 'CRISIS_MODE';
     }
     
@@ -182,7 +187,12 @@ I've helped clients turn product launches into thought leadership platforms, man
     }
     
     // Strategic indicators
-    if (['strategy', 'campaign', 'quarterly', 'roadmap', 'comprehensive', 'full plan'].some(i => lowerMessage.includes(i))) {
+    const strategicPatterns = [
+      'strategic plan', 'strategy', 'campaign', 'quarterly', 'roadmap', 'comprehensive', 'full plan',
+      'plan for', 'planning for', 'strategic', 'long-term', 'campaign strategy', 'pr strategy',
+      'strategic approach', 'strategic thinking', 'strategic guidance'
+    ];
+    if (strategicPatterns.some(pattern => lowerMessage.includes(pattern))) {
       return 'STRATEGIC_PLANNING';
     }
     
@@ -276,7 +286,7 @@ I've helped clients turn product launches into thought leadership platforms, man
       if (feature === 'content-generator') {
         return "Got it. Quick questions: Platform? Target audience? Key message? I'll generate immediately.";
       } else if (feature === 'strategic-planning') {
-        return "Understood. What's the specific deliverable you need and when?";
+        return "Strategic plan needed urgently. Let me open the Strategic Planning tool and we'll build this fast. What's your main objective?";
       } else {
         return "What's the immediate need? I'll cut to the chase.";
       }
@@ -386,7 +396,7 @@ Conversation history: ${JSON.stringify(messages.slice(-3).map(m => ({ type: m.ty
       const fallbackMessage = {
         id: Date.now(),
         type: 'assistant',
-        content: "I want to make sure I understand your strategic needs. Can you tell me more about your objectives and constraints?",
+        content: "Got it - strategic planning mode. Based on my 20 years experience, let me open the Strategic Planning tool and we'll build this properly. I'll guide you through my proven framework for creating winning PR strategies.",
         timestamp: new Date()
       };
       setMessages(prev => [...prev, fallbackMessage]);
