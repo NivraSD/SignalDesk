@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 import "./StrategicPlanningOptimized.css";
 
-export default function StrategicPlanningOptimized() {
+export default function StrategicPlanningOptimized({ initialData, onDataChange }) {
   const [objective, setObjective] = useState("");
   const [context, setContext] = useState("");
   const [constraints, setConstraints] = useState("");
@@ -80,6 +80,26 @@ export default function StrategicPlanningOptimized() {
   useEffect(() => {
     loadSavedPlans();
   }, []);
+  
+  // Handle initial data from Niv
+  useEffect(() => {
+    if (initialData) {
+      setObjective(initialData.objective || '');
+      setContext(initialData.context || '');
+      setConstraints(initialData.constraints || '');
+      setTimeline(initialData.timeline || '');
+      
+      // Set plan type if provided
+      if (initialData.planType) {
+        setSelectedPlanType(initialData.planType);
+      }
+      
+      // Auto-generate if all required data is present
+      if (initialData.objective && initialData.autoGenerate) {
+        generateStrategicPlan();
+      }
+    }
+  }, [initialData]);
 
   const loadSavedPlans = () => {
     const plans = strategicPlanningService.getPlansFromLocalStorage();
