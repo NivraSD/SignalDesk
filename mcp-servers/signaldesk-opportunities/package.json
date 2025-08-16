@@ -2,6 +2,7 @@
   "name": "signaldesk-opportunities",
   "version": "1.0.0",
   "description": "MCP server for SignalDesk PR opportunity discovery",
+  "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",

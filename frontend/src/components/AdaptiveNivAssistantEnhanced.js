@@ -142,7 +142,7 @@ const AdaptiveNivAssistantEnhanced = ({
     return null;
   };
 
-  // Process user message
+  // Process user message with Claude understanding
   const handleSend = async () => {
     if (!input.trim()) return;
 
@@ -163,14 +163,8 @@ const AdaptiveNivAssistantEnhanced = ({
       return;
     }
 
-    // Detect feature intent
-    const detectedFeature = detectFeatureIntent(input);
-    
-    if (detectedFeature) {
-      await handleFeatureRequest(detectedFeature, input);
-    } else {
-      await handleGeneralQuery(input);
-    }
+    // Use Claude to understand intent and context
+    await handleClaudeAnalysis(input);
   };
 
   // Handle feature-specific requests
@@ -332,38 +326,129 @@ const AdaptiveNivAssistantEnhanced = ({
     }
   };
 
-  // Handle general queries
-  const handleGeneralQuery = async (query) => {
+  // Handle Claude-powered analysis with intent recognition
+  const handleClaudeAnalysis = async (query) => {
     try {
-      // Call Supabase niv-chat function
+      // Build context from conversation history
+      const conversationContext = {
+        currentFeature: currentFeature,
+        previousMessages: messages.slice(-5).map(m => ({
+          type: m.type,
+          content: m.content
+        })),
+        availableFeatures: Object.keys(featurePatterns),
+        currentContext: currentContext
+      };
+
+      // Enhanced prompt for Claude to understand intent and take action
+      const enhancedQuery = `
+User Query: "${query}"
+
+Available Features in SignalDesk:
+- strategic-planning: Create comprehensive strategic plans
+- content-generator: Write press releases, articles, social posts
+- media-intelligence: Find journalists and media contacts
+- opportunity-engine: Discover PR opportunities and trends
+- stakeholder-intelligence: Monitor competitors and stakeholders
+- crisis-command: Manage crisis communications
+- memory-vault: Save and retrieve knowledge
+
+Instructions:
+1. Understand what the user wants to accomplish
+2. If they want to use a specific feature, identify which one
+3. If they need guidance, provide strategic PR advice
+4. Be conversational and helpful, not robotic
+5. If opening a feature, explain what you're doing
+
+Respond with your analysis and next steps.`;
+
+      // Call Claude via Supabase
       const response = await supabaseApiService.callNivChat({
-        message: query,
-        context: currentFeature || 'general',
+        message: enhancedQuery,
+        context: conversationContext,
+        mode: 'analysis',
         sessionId: `session-${Date.now()}`
       });
 
-      const aiMessage = {
-        id: Date.now(),
-        type: 'assistant',
-        content: response.response || "How can I help you with your PR strategy?",
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, aiMessage]);
+      // Parse Claude's response to determine action
+      const claudeResponse = response.response || response.data || '';
+      
+      // Check if Claude identified a feature to open
+      const featureToOpen = detectFeatureFromClaudeResponse(claudeResponse);
+      
+      if (featureToOpen) {
+        // Open the feature and provide context
+        await handleFeatureRequest(featureToOpen, query);
+        
+        // Add Claude's explanation
+        const aiMessage = {
+          id: Date.now(),
+          type: 'assistant',
+          content: claudeResponse,
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, aiMessage]);
+      } else {
+        // Just show Claude's response
+        const aiMessage = {
+          id: Date.now(),
+          type: 'assistant',
+          content: claudeResponse,
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, aiMessage]);
+      }
     } catch (error) {
-      console.error('Niv chat error:', error);
+      console.error('Claude analysis error:', error);
       
-      const errorMessage = {
-        id: Date.now(),
-        type: 'assistant',
-        content: "I'm here to help. What would you like to work on?",
-        timestamp: new Date()
-      };
+      // Fallback to pattern matching if Claude fails
+      const detectedFeature = detectFeatureIntent(query);
       
-      setMessages(prev => [...prev, errorMessage]);
+      if (detectedFeature) {
+        await handleFeatureRequest(detectedFeature, query);
+      } else {
+        const errorMessage = {
+          id: Date.now(),
+          type: 'assistant',
+          content: "I understand you need help. Could you tell me more about what you'd like to accomplish?",
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, errorMessage]);
+      }
     }
     
     setIsTyping(false);
+  };
+
+  // Detect feature intent from Claude's response
+  const detectFeatureFromClaudeResponse = (response) => {
+    const lowerResponse = response.toLowerCase();
+    
+    // Check for explicit feature mentions
+    if (lowerResponse.includes('opening strategic planning') || 
+        lowerResponse.includes("let's create a strategic plan")) {
+      return 'strategic-planning';
+    }
+    if (lowerResponse.includes('opening content generator') || 
+        lowerResponse.includes("let's write") ||
+        lowerResponse.includes("i'll help you create content")) {
+      return 'content-generator';
+    }
+    if (lowerResponse.includes('opening media intelligence') || 
+        lowerResponse.includes("finding journalists")) {
+      return 'media-intelligence';
+    }
+    if (lowerResponse.includes('opening opportunity engine')) {
+      return 'opportunity-engine';
+    }
+    
+    return null;
+  };
+
+  // Handle general queries (fallback)
+  const handleGeneralQuery = async (query) => {
+    // This is now a fallback - main logic is in handleClaudeAnalysis
+    await handleClaudeAnalysis(query);
   };
 
   // Quick action buttons

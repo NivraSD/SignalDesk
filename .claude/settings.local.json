@@ -171,7 +171,20 @@
       "Bash(else echo \"❌ Not built\")",
       "Bash(./deploy-supabase-functions.sh:*)",
       "WebFetch(domain:zskaxjtyuaqazydouifp.supabase.co)",
-      "Bash(deno check:*)"
+      "Bash(deno check:*)",
+      "Bash(supabase functions list:*)",
+      "WebFetch(domain:frontend-5ar62vd2h-nivra-sd.vercel.app)",
+      "Bash(do echo -n \"$mcp: \")",
+      "Bash(if [ -f \"/Users/jonathanliebowitz/Desktop/SignalDesk/mcp-servers/$mcp/dist/index.js\" ])",
+      "Bash(do if [ -f \"$mcp/dist/index.js\" ])",
+      "Bash(then echo \"Cleaning $mcp...\")",
+      "Bash(head:*)",
+      "Bash(./remove-railway-references.sh:*)",
+      "Bash(./fix-and-build-mcps.sh:*)",
+      "Bash(do echo \"Cleaning $mcp...\")",
+      "Bash(./update-all-mcps.sh)",
+      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/test-final-mcps.sh:*)",
+      "Bash(./deploy-strategic-planning.sh:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

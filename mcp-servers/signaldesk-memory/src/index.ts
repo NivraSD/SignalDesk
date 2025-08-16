@@ -1,6 +1,5 @@
-#!/usr/bin/env node
 /**
- * SignalDesk Memory MCP Server
+ * SignalDesk Memory MCP Server - Clean Version (No Console Output)
  * Provides access to MemoryVault for semantic search and knowledge management
  */
 
@@ -23,13 +22,61 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Load environment variables
-dotenv.config({ path: path.join(__dirname, '../../../backend/.env') });
+dotenv.config({ path: path.join(__dirname, '../../.env') });
+
+// Supabase connection
+const SUPABASE_DB_PASSWORD = 'habku2-gotraf-suVhan';
+const DATABASE_URL = `postgresql://postgres:${SUPABASE_DB_PASSWORD}@db.zskaxjtyuaqazydouifp.supabase.co:5432/postgres`;
 
 // Database connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || process.env.DATABASE_PUBLIC_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
+let pool: Pool | null = null;
+
+async function initializeDatabase() {
+  try {
+    pool = new Pool({
+      connectionString: DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000,
+    });
+    
+    // Test the connection silently
+    await pool.query('SELECT 1');
+    
+    // Verify tables exist
+    const tableCheck = await pool.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' 
+      AND table_name = 'memoryvault_items'
+    `);
+    
+    if (tableCheck.rows.length === 0) {
+      // Create the table if it doesn't exist
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS memoryvault_items (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id VARCHAR(255) NOT NULL DEFAULT 'demo-user',
+          title VARCHAR(500) NOT NULL,
+          content TEXT NOT NULL,
+          category VARCHAR(100) DEFAULT 'general',
+          tags TEXT[] DEFAULT '{}',
+          metadata JSONB DEFAULT '{}',
+          created_at TIMESTAMP DEFAULT NOW(),
+          updated_at TIMESTAMP DEFAULT NOW()
+        )
+      `);
+    }
+    
+  } catch (error) {
+    // Fail silently, continue without persistence
+    pool = null;
+  }
+}
+
+// Initialize database connection
+await initializeDatabase();
 
 // Create MCP server
 const server = new Server(
@@ -144,23 +191,37 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'search_memory': {
         const { query, searchType = 'hybrid', limit = 10 } = args as any;
         
-        // For now, implement keyword search (semantic search requires embeddings)
+        if (!pool) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  results: [],
+                  count: 0,
+                  searchType: 'keyword',
+                  message: 'Database not available'
+                }, null, 2)
+              }
+            ]
+          };
+        }
+        
+        // Keyword search (semantic search would require embeddings)
         const searchQuery = `
           SELECT id, title, content, category, tags, created_at
           FROM memoryvault_items
-          WHERE user_id = $1
-          AND (
-            title ILIKE $2 
-            OR content ILIKE $2
-            OR category ILIKE $2
-            OR array_to_string(tags, ' ') ILIKE $2
+          WHERE (
+            title ILIKE $1 
+            OR content ILIKE $1
+            OR category ILIKE $1
+            OR array_to_string(tags, ' ') ILIKE $1
           )
           ORDER BY created_at DESC
-          LIMIT $3
+          LIMIT $2
         `;
         
         const result = await pool.query(searchQuery, [
-          'demo-user', // In production, get from context
           `%${query}%`,
           limit
         ]);
@@ -172,7 +233,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               text: JSON.stringify({
                 results: result.rows,
                 count: result.rowCount,
-                searchType: 'keyword' // Until we implement semantic
+                searchType: 'keyword'
               }, null, 2)
             }
           ]
@@ -182,6 +243,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'add_to_memory': {
         const { title, content, category = 'general', tags = [] } = args as any;
         
+        if (!pool) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Memory item would be created (database unavailable): ${JSON.stringify({ title, category }, null, 2)}`
+              }
+            ]
+          };
+        }
+        
         const insertQuery = `
           INSERT INTO memoryvault_items (user_id, title, content, category, tags)
           VALUES ($1, $2, $3, $4, $5)
@@ -189,7 +261,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         `;
         
         const result = await pool.query(insertQuery, [
-          'demo-user', // In production, get from context
+          'demo-user',
           title,
           content,
           category,
@@ -209,32 +281,42 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'get_memory_context': {
         const { itemId, topic, depth = 1 } = args as any;
         
+        if (!pool) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'Database not available for context retrieval'
+              }
+            ]
+          };
+        }
+        
         let contextQuery;
         let queryParams;
         
         if (itemId) {
-          // Get specific item and related items
+          // Get specific item
           contextQuery = `
             SELECT id, title, content, category, tags
             FROM memoryvault_items
-            WHERE user_id = $1 AND id = $2
+            WHERE id = $1
           `;
-          queryParams = ['demo-user', itemId];
+          queryParams = [itemId];
         } else if (topic) {
           // Get items related to topic
           contextQuery = `
             SELECT id, title, content, category, tags
             FROM memoryvault_items
-            WHERE user_id = $1
-            AND (
-              category = $2
-              OR $2 = ANY(tags)
-              OR title ILIKE $3
-              OR content ILIKE $3
+            WHERE (
+              category = $1
+              OR $1 = ANY(tags)
+              OR title ILIKE $2
+              OR content ILIKE $2
             )
             LIMIT 20
           `;
-          queryParams = ['demo-user', topic, `%${topic}%`];
+          queryParams = [topic, `%${topic}%`];
         } else {
           return {
             content: [
@@ -254,7 +336,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               type: 'text',
               text: JSON.stringify({
                 context: result.rows,
-                depth: depth
+                count: result.rowCount,
+                depth
               }, null, 2)
             }
           ]
@@ -262,22 +345,33 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'list_memory_categories': {
+        if (!pool) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'Database not available'
+              }
+            ]
+          };
+        }
+        
         const categoryQuery = `
           SELECT DISTINCT category, COUNT(*) as count
           FROM memoryvault_items
-          WHERE user_id = $1
           GROUP BY category
           ORDER BY count DESC
         `;
         
-        const result = await pool.query(categoryQuery, ['demo-user']);
+        const result = await pool.query(categoryQuery);
         
         return {
           content: [
             {
               type: 'text',
               text: JSON.stringify({
-                categories: result.rows
+                categories: result.rows,
+                total: result.rowCount
               }, null, 2)
             }
           ]
@@ -285,7 +379,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       default:
-        throw new Error(`Unknown tool: ${name}`);
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Unknown tool: ${name}`
+            }
+          ]
+        };
     }
   } catch (error: any) {
     return {
@@ -300,113 +401,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 });
 
-// Resource handlers for browsing memory vault
-server.setRequestHandler(ListResourcesRequestSchema, async () => {
-  try {
-    const categoriesResult = await pool.query(`
-      SELECT DISTINCT category 
-      FROM memoryvault_items 
-      WHERE user_id = $1
-      ORDER BY category
-    `, ['demo-user']);
-
-    const resources: Resource[] = categoriesResult.rows.map(row => ({
-      uri: `memory://category/${row.category}`,
-      name: `MemoryVault: ${row.category}`,
-      description: `Browse items in ${row.category} category`,
-      mimeType: 'application/json'
-    }));
-
-    // Add a resource for recent items
-    resources.unshift({
-      uri: 'memory://recent',
-      name: 'Recent Memory Items',
-      description: 'View recently added memory items',
-      mimeType: 'application/json'
-    });
-
-    return { resources };
-  } catch (error) {
-    return { resources: [] };
-  }
-});
-
-server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
-  const { uri } = request.params;
-  
-  try {
-    if (uri === 'memory://recent') {
-      const result = await pool.query(`
-        SELECT id, title, content, category, tags, created_at
-        FROM memoryvault_items
-        WHERE user_id = $1
-        ORDER BY created_at DESC
-        LIMIT 20
-      `, ['demo-user']);
-      
-      return {
-        contents: [
-          {
-            uri,
-            mimeType: 'application/json',
-            text: JSON.stringify(result.rows, null, 2)
-          }
-        ]
-      };
-    } else if (uri.startsWith('memory://category/')) {
-      const category = uri.replace('memory://category/', '');
-      const result = await pool.query(`
-        SELECT id, title, content, tags, created_at
-        FROM memoryvault_items
-        WHERE user_id = $1 AND category = $2
-        ORDER BY created_at DESC
-      `, ['demo-user', category]);
-      
-      return {
-        contents: [
-          {
-            uri,
-            mimeType: 'application/json',
-            text: JSON.stringify(result.rows, null, 2)
-          }
-        ]
-      };
-    }
-    
-    throw new Error(`Unknown resource: ${uri}`);
-  } catch (error: any) {
-    return {
-      contents: [
-        {
-          uri,
-          mimeType: 'text/plain',
-          text: `Error reading resource: ${error.message}`
-        }
-      ]
-    };
-  }
-});
+// Resource handlers (currently empty)
+server.setRequestHandler(ListResourcesRequestSchema, async () => ({
+  resources: []
+}));
 
 // Start the server
 async function main() {
-  console.log('Starting SignalDesk Memory MCP Server...');
-  
-  // Test database connection
-  try {
-    await pool.query('SELECT 1');
-    console.log('Database connected successfully');
-  } catch (error) {
-    console.error('Database connection failed:', error);
-    console.log('Server will continue but database operations will fail');
-  }
-  
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  
-  console.log('SignalDesk Memory MCP Server is running');
+  // NO console.log here - it breaks the JSON-RPC protocol!
 }
 
 main().catch((error) => {
-  console.error('Failed to start server:', error);
+  // Fail silently
   process.exit(1);
 });

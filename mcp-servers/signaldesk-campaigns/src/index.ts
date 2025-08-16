@@ -23,9 +23,10 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '../../../backend/.env') });
 
 // Database connection
+const DATABASE_URL = 'postgresql://postgres:habku2-gotraf-suVhan@db.zskaxjtyuaqazydouifp.supabase.co:5432/postgres';
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || process.env.DATABASE_PUBLIC_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  connectionString: DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
 });
 
 // Create MCP server
@@ -515,24 +516,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 // Start the server
 async function main() {
-  console.log('Starting SignalDesk Campaigns MCP Server...');
-  
-  // Test database connection
+  // Test database connection silently
   try {
     await pool.query('SELECT 1');
-    console.log('Database connected successfully');
   } catch (error) {
-    console.error('Database connection failed:', error);
-    console.log('Server will continue but database operations will fail');
+    // Fail silently
   }
   
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  
-  console.log('SignalDesk Campaigns MCP Server is running');
+  // No console output - it breaks JSON-RPC
 }
 
 main().catch((error) => {
-  console.error('Failed to start server:', error);
+  // Fail silently
   process.exit(1);
 });

@@ -116,8 +116,9 @@ redirect_uri = ""
 # or any other third-party OIDC providers.
 url = ""
 
-[edge_functions]
-enabled = true
+# Edge functions are enabled by default
+# [edge_functions]
+# enabled = true
 
 # Configure Postgres to use prepared statements
 [db.pooler]

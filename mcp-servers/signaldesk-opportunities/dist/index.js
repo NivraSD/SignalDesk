@@ -1,10 +1,7 @@
-#!/usr/bin/env node
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const index_js_1 = require("@modelcontextprotocol/sdk/server/index.js");
-const stdio_js_1 = require("@modelcontextprotocol/sdk/server/stdio.js");
-const types_js_1 = require("@modelcontextprotocol/sdk/types.js");
-const pg_1 = require("pg");
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { CallToolRequestSchema, ErrorCode, ListToolsRequestSchema, McpError, } from "@modelcontextprotocol/sdk/types.js";
+import { Client } from "pg";
 const TOOLS = [
     {
         name: "discover_opportunities",
@@ -131,9 +128,10 @@ const TOOLS = [
     }
 ];
 class OpportunitiesServer {
+    server;
+    db = null;
     constructor() {
-        this.db = null;
-        this.server = new index_js_1.Server({
+        this.server = new Server({
             name: "signaldesk-opportunities",
             version: "1.0.0",
         }, {
@@ -147,9 +145,9 @@ class OpportunitiesServer {
         if (!this.db) {
             const dbUrl = process.env.DATABASE_URL;
             if (!dbUrl) {
-                throw new types_js_1.McpError(types_js_1.ErrorCode.InternalError, "DATABASE_URL environment variable is not set");
+                throw new McpError(ErrorCode.InternalError, "DATABASE_URL environment variable is not set");
             }
-            this.db = new pg_1.Client({ connectionString: dbUrl });
+            this.db = new Client({ connectionString: dbUrl });
             await this.db.connect();
             // Create opportunities table if it doesn't exist
             await this.db.query(`
@@ -185,10 +183,10 @@ class OpportunitiesServer {
         }
     }
     setupHandlers() {
-        this.server.setRequestHandler(types_js_1.ListToolsRequestSchema, async () => ({
+        this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
             tools: TOOLS,
         }));
-        this.server.setRequestHandler(types_js_1.CallToolRequestSchema, async (request) => {
+        this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
             await this.ensureDatabase();
             const { name, arguments: args } = request.params;
             try {
@@ -235,7 +233,7 @@ class OpportunitiesServer {
                         const { opportunity_id } = args;
                         const result = await this.db.query("SELECT * FROM opportunities WHERE id = $1", [opportunity_id]);
                         if (result.rows.length === 0) {
-                            throw new types_js_1.McpError(types_js_1.ErrorCode.InvalidRequest, "Opportunity not found");
+                            throw new McpError(ErrorCode.InvalidRequest, "Opportunity not found");
                         }
                         const opp = result.rows[0];
                         return {
@@ -319,7 +317,7 @@ Recommendation: ${opp.score >= 80 ? 'HIGH PRIORITY - Act quickly' : opp.score >=
                         const { opportunity_id, company_context } = args;
                         const result = await this.db.query("SELECT * FROM opportunities WHERE id = $1", [opportunity_id]);
                         if (result.rows.length === 0) {
-                            throw new types_js_1.McpError(types_js_1.ErrorCode.InvalidRequest, "Opportunity not found");
+                            throw new McpError(ErrorCode.InvalidRequest, "Opportunity not found");
                         }
                         const opp = result.rows[0];
                         return {
@@ -347,15 +345,15 @@ Timing: ${opp.urgency === 'high' ? 'Send immediately' : 'Send within 24-48 hours
                         };
                     }
                     default:
-                        throw new types_js_1.McpError(types_js_1.ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
+                        throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
                 }
             }
             catch (error) {
-                if (error instanceof types_js_1.McpError) {
+                if (error instanceof McpError) {
                     throw error;
                 }
                 console.error(`Error executing tool ${name}:`, error);
-                throw new types_js_1.McpError(types_js_1.ErrorCode.InternalError, `Tool execution failed: ${error}`);
+                throw new McpError(ErrorCode.InternalError, `Tool execution failed: ${error}`);
             }
         });
     }
@@ -402,7 +400,7 @@ Timing: ${opp.urgency === 'high' ? 'Send immediately' : 'Send within 24-48 hours
         }
     }
     async run() {
-        const transport = new stdio_js_1.StdioServerTransport();
+        const transport = new StdioServerTransport();
         await this.server.connect(transport);
         console.error("SignalDesk Opportunities MCP server running");
     }

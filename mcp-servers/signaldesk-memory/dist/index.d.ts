@@ -1,6 +1,5 @@
-#!/usr/bin/env node
 /**
- * SignalDesk Memory MCP Server
+ * SignalDesk Memory MCP Server - Clean Version (No Console Output)
  * Provides access to MemoryVault for semantic search and knowledge management
  */
 export {};

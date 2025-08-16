@@ -49,6 +49,7 @@ export default function StrategicPlanning() {
   const [executionStatus, setExecutionStatus] = useState(null);
   const [showPlanOverlay, setShowPlanOverlay] = useState(false);
   const [savedPlans, setSavedPlans] = useState([]);
+  const [activeTab, setActiveTab] = useState('create'); // 'create', 'saved', 'history'
   const { selectedProject } = useProject();
   const navigate = useNavigate();
 
@@ -69,6 +70,13 @@ export default function StrategicPlanning() {
   ];
 
   const [selectedPlanType, setSelectedPlanType] = useState('comprehensive');
+
+  // Tab configuration
+  const tabs = [
+    { id: 'create', label: 'Create Plan', icon: Brain },
+    { id: 'saved', label: 'Saved Plans', icon: FileText },
+    { id: 'history', label: 'Plan History', icon: Clock }
+  ];
 
   useEffect(() => {
     loadSavedPlans();
@@ -223,171 +231,207 @@ ${strategicPlan.success_metrics?.map(metric => `• ${metric}`).join('\n')}
   return (
     <div className="strategic-planning-container">
       <div className="strategic-planning-main">
-        {/* Header */}
-        <div className="strategic-header">
-          <div className="strategic-title">
-            <Brain className="title-icon" />
-            <h1>Strategic Planning</h1>
-          </div>
-          <p className="strategic-subtitle">
-            Transform goals into evidence-based strategic plans with AI orchestration
-          </p>
+        {/* Tab Navigation */}
+        <div className="strategic-tabs">
+          {tabs.map((tab) => {
+            const TabIcon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                <TabIcon className="tab-icon" />
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
+        {/* Tab Content */}
+        <div className="tab-content">
+          {activeTab === 'create' && (
+            <div className="create-plan-tab">
+              {/* Planning Type Selection */}
+              <div className="plan-type-selector">
+                <h3>Select Planning Type</h3>
+                <div className="plan-types">
+                  {planningTypes.map((type) => {
+                    const Icon = type.icon;
+                    return (
+                      <div
+                        key={type.id}
+                        className={`plan-type ${selectedPlanType === type.id ? 'selected' : ''}`}
+                        onClick={() => setSelectedPlanType(type.id)}
+                      >
+                        <Icon className="plan-type-icon" />
+                        <div className="plan-type-content">
+                          <h4>{type.label}</h4>
+                          <p>{type.desc}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
 
-        {/* Planning Type Selection */}
-        <div className="plan-type-selector">
-          <h3>Select Planning Type</h3>
-          <div className="plan-types">
-            {planningTypes.map((type) => {
-              const Icon = type.icon;
-              return (
-                <div
-                  key={type.id}
-                  className={`plan-type ${selectedPlanType === type.id ? 'selected' : ''}`}
-                  onClick={() => setSelectedPlanType(type.id)}
-                >
-                  <Icon className="plan-type-icon" />
-                  <div className="plan-type-content">
-                    <h4>{type.label}</h4>
-                    <p>{type.desc}</p>
+              {/* Main Input Form */}
+              <div className="strategic-form">
+                <div className="form-group">
+                  <label htmlFor="objective">
+                    <Target className="form-icon" />
+                    Strategic Objective
+                  </label>
+                  <textarea
+                    id="objective"
+                    value={objective}
+                    onChange={(e) => setObjective(e.target.value)}
+                    placeholder="Describe what you want to achieve..."
+                    rows="2"
+                  />
+                </div>
+
+                {/* Context Pills */}
+                <div className="context-pills">
+                  <label>Quick Context:</label>
+                  <div className="pills-container">
+                    {contextPills.map((pill) => {
+                      const Icon = pill.icon;
+                      return (
+                        <button
+                          key={pill.id}
+                          className="context-pill"
+                          onClick={() => addContextPill(pill.id)}
+                          style={{ borderColor: pill.color }}
+                        >
+                          <Icon className="pill-icon" style={{ color: pill.color }} />
+                          {pill.label}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        </div>
 
-        {/* Main Input Form */}
-        <div className="strategic-form">
-          <div className="form-group">
-            <label htmlFor="objective">
-              <Target className="form-icon" />
-              Strategic Objective
-            </label>
-            <textarea
-              id="objective"
-              value={objective}
-              onChange={(e) => setObjective(e.target.value)}
-              placeholder="Describe what you want to achieve..."
-              rows="3"
-            />
-          </div>
+                <div className="form-row">
+                  <div className="form-group half">
+                    <label htmlFor="context">
+                      <Info className="form-icon" />
+                      Context
+                    </label>
+                    <textarea
+                      id="context"
+                      value={context}
+                      onChange={(e) => setContext(e.target.value)}
+                      placeholder="Additional context, background, or situation..."
+                      rows="3"
+                    />
+                  </div>
+                  <div className="form-group half">
+                    <label htmlFor="constraints">
+                      <AlertCircle className="form-icon" />
+                      Constraints
+                    </label>
+                    <textarea
+                      id="constraints"
+                      value={constraints}
+                      onChange={(e) => setConstraints(e.target.value)}
+                      placeholder="Budget, timeline, or other limitations..."
+                      rows="3"
+                    />
+                  </div>
+                </div>
 
-          {/* Context Pills */}
-          <div className="context-pills">
-            <label>Quick Context:</label>
-            <div className="pills-container">
-              {contextPills.map((pill) => {
-                const Icon = pill.icon;
-                return (
-                  <button
-                    key={pill.id}
-                    className="context-pill"
-                    onClick={() => addContextPill(pill.id)}
-                    style={{ borderColor: pill.color }}
-                  >
-                    <Icon className="pill-icon" style={{ color: pill.color }} />
-                    {pill.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+                <div className="form-group">
+                  <label htmlFor="timeline">
+                    <Clock className="form-icon" />
+                    Timeline
+                  </label>
+                  <input
+                    type="text"
+                    id="timeline"
+                    value={timeline}
+                    onChange={(e) => setTimeline(e.target.value)}
+                    placeholder="e.g., 3 months, Q1 2025, etc."
+                  />
+                </div>
 
-          <div className="form-row">
-            <div className="form-group half">
-              <label htmlFor="context">
-                <Info className="form-icon" />
-                Context
-              </label>
-              <textarea
-                id="context"
-                value={context}
-                onChange={(e) => setContext(e.target.value)}
-                placeholder="Additional context, background, or situation..."
-                rows="4"
-              />
-            </div>
-            <div className="form-group half">
-              <label htmlFor="constraints">
-                <AlertCircle className="form-icon" />
-                Constraints
-              </label>
-              <textarea
-                id="constraints"
-                value={constraints}
-                onChange={(e) => setConstraints(e.target.value)}
-                placeholder="Budget, timeline, or other limitations..."
-                rows="4"
-              />
-            </div>
-          </div>
+                {error && (
+                  <div className="error-message">
+                    <AlertCircle className="error-icon" />
+                    {error}
+                  </div>
+                )}
 
-          <div className="form-group">
-            <label htmlFor="timeline">
-              <Clock className="form-icon" />
-              Timeline
-            </label>
-            <input
-              type="text"
-              id="timeline"
-              value={timeline}
-              onChange={(e) => setTimeline(e.target.value)}
-              placeholder="e.g., 3 months, Q1 2025, etc."
-            />
-          </div>
-
-          {error && (
-            <div className="error-message">
-              <AlertCircle className="error-icon" />
-              {error}
+                <button
+                  className="generate-btn"
+                  onClick={generateStrategicPlan}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader className="loading-icon" />
+                      Generating Strategic Plan...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="btn-icon" />
+                      Generate Strategic Plan
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           )}
 
-          <button
-            className="generate-btn"
-            onClick={generateStrategicPlan}
-            disabled={isGenerating}
-          >
-            {isGenerating ? (
-              <>
-                <Loader className="loading-icon" />
-                Generating Strategic Plan...
-              </>
-            ) : (
-              <>
-                <Sparkles className="btn-icon" />
-                Generate Strategic Plan
-              </>
-            )}
-          </button>
-        </div>
-
-        {/* Saved Plans Sidebar */}
-        <div className="saved-plans-sidebar">
-          <h3>Recent Plans</h3>
-          {savedPlans.length === 0 ? (
-            <div className="empty-state">
-              <FileText className="empty-icon" />
-              <p>No saved plans yet</p>
+          {activeTab === 'saved' && (
+            <div className="saved-plans-tab">
+              <div className="saved-plans-content">
+                <h3>Saved Strategic Plans</h3>
+                {savedPlans.length === 0 ? (
+                  <div className="empty-state">
+                    <FileText className="empty-icon" />
+                    <p>No saved plans yet</p>
+                    <button onClick={() => setActiveTab('create')} className="create-first-btn">
+                      <Sparkles className="btn-icon" />
+                      Create Your First Plan
+                    </button>
+                  </div>
+                ) : (
+                  <div className="plans-grid">
+                    {savedPlans.map((plan) => (
+                      <div key={plan.id} className="plan-card">
+                        <div className="plan-card-header">
+                          <h4>{plan.objective?.substring(0, 80)}...</h4>
+                          <span className="plan-date">
+                            {new Date(plan.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <div className="plan-card-actions">
+                          <button
+                            onClick={() => loadSavedPlan(plan)}
+                            className="view-plan-btn"
+                          >
+                            <Eye className="btn-icon" />
+                            View Plan
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-          ) : (
-            <div className="plans-list">
-              {savedPlans.slice(-5).reverse().map((plan) => (
-                <div key={plan.id} className="plan-item">
-                  <h4>{plan.objective?.substring(0, 60)}...</h4>
-                  <span className="plan-date">
-                    {new Date(plan.created_at).toLocaleDateString()}
-                  </span>
-                  <button
-                    onClick={() => loadSavedPlan(plan)}
-                    className="load-plan-btn"
-                  >
-                    <Eye className="btn-icon" />
-                    View
-                  </button>
+          )}
+
+          {activeTab === 'history' && (
+            <div className="history-tab">
+              <div className="history-content">
+                <h3>Plan History & Analytics</h3>
+                <div className="coming-soon">
+                  <BarChart3 className="coming-soon-icon" />
+                  <h4>Analytics Coming Soon</h4>
+                  <p>Track plan performance, execution metrics, and strategic outcomes.</p>
                 </div>
-              ))}
+              </div>
             </div>
           )}
         </div>

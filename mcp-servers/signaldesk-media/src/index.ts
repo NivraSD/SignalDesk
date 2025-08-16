@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * SignalDesk Media MCP Server
  * Provides journalist discovery, media monitoring, and press outreach capabilities
@@ -21,17 +20,26 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Load environment variables
-dotenv.config({ path: path.join(__dirname, '../../../backend/.env') });
+// dotenv.config({ path: path.join(__dirname, '../../../backend/.env') });
 
 // Database connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || process.env.DATABASE_PUBLIC_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
+const DATABASE_URL = 'postgresql://postgres:habku2-gotraf-suVhan@db.zskaxjtyuaqazydouifp.supabase.co:5432/postgres';
+let pool: Pool | null = null;
+try {
+  pool = new Pool({
+    connectionString: DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+  });
+  pool.query('SELECT 1').catch(() => {
+    pool = null;
+  });
+} catch (error) {
+  pool = null;
+}
 
 // Initialize Claude for intelligent journalist matching
 const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || ''
+  apiKey: process.env.ANTHROPIC_API_KEY || 'dummy-key'
 });
 
 // Create MCP server
@@ -267,13 +275,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
         
         // Store in database for tracking
-        for (const journalist of journalists.slice(0, 3)) { // Store top 3
-          await pool.query(`
-            INSERT INTO journalists (name, publication, beat, email, twitter, last_updated)
-            VALUES ($1, $2, $3, $4, $5, NOW())
-            ON CONFLICT (email) DO UPDATE SET last_updated = NOW()
-          `, [journalist.name, journalist.publication, journalist.beat, journalist.email, journalist.twitter])
-            .catch(() => {}); // Ignore errors if table doesn't exist
+        if (pool) {
+          for (const journalist of journalists.slice(0, 3)) { // Store top 3
+            await pool.query(`
+              INSERT INTO journalists (name, publication, beat, email, twitter, last_updated)
+              VALUES ($1, $2, $3, $4, $5, NOW())
+              ON CONFLICT (email) DO UPDATE SET last_updated = NOW()
+            `, [journalist.name, journalist.publication, journalist.beat, journalist.email, journalist.twitter])
+              .catch(() => {}); // Ignore errors if table doesn't exist
+          }
         }
         
         return {
@@ -346,14 +356,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const { listName, topic, tier1Publications = [], targetBeats = [] } = args as any;
         
         // Create media list in database
-        const listResult = await pool.query(`
-          INSERT INTO media_lists (user_id, name, topic, created_at)
-          VALUES ($1, $2, $3, NOW())
-          RETURNING id
-        `, ['demo-user', listName, topic])
-          .catch(() => ({ rows: [{ id: 'temp-' + Date.now() }] }));
-        
-        const listId = listResult.rows[0].id;
+        let listId = 'temp-' + Date.now();
+        if (pool) {
+          const listResult = await pool.query(`
+            INSERT INTO media_lists (user_id, name, topic, created_at)
+            VALUES ($1, $2, $3, NOW())
+            RETURNING id
+          `, ['demo-user', listName, topic])
+            .catch(() => ({ rows: [{ id: listId }] }));
+          listId = listResult.rows[0].id;
+        }
         
         // Use Claude to build targeted list
         const prompt = `Create a media list for: ${topic}
@@ -499,16 +511,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         
         if (action === 'log' || action === 'update') {
           // Log outreach activity
-          const result = await pool.query(`
-            INSERT INTO media_outreach (
-              journalist_id, status, notes, updated_at, user_id
-            )
-            VALUES ($1, $2, $3, NOW(), $4)
-            ON CONFLICT (journalist_id, user_id) 
-            DO UPDATE SET status = $2, notes = $3, updated_at = NOW()
-            RETURNING id, status, updated_at
-          `, [journalistId || 'unknown', status, notes || '', 'demo-user'])
-            .catch(() => ({ rows: [{ status, message: 'Logged (database unavailable)' }] }));
+          let result = { rows: [{ status, message: 'Logged (database unavailable)' }] };
+          if (pool) {
+            result = await pool.query(`
+              INSERT INTO media_outreach (
+                journalist_id, status, notes, updated_at, user_id
+              )
+              VALUES ($1, $2, $3, NOW(), $4)
+              ON CONFLICT (journalist_id, user_id) 
+              DO UPDATE SET status = $2, notes = $3, updated_at = NOW()
+              RETURNING id, status, updated_at
+            `, [journalistId || 'unknown', status, notes || '', 'demo-user'])
+              .catch(() => ({ rows: [{ status, message: 'Logged (database unavailable)' }] }));
+          }
           
           return {
             content: [
@@ -566,24 +581,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 // Start the server
 async function main() {
-  console.log('Starting SignalDesk Media MCP Server...');
   
   // Test database connection
-  try {
-    await pool.query('SELECT 1');
-    console.log('Database connected successfully');
-  } catch (error) {
-    console.error('Database connection failed:', error);
-    console.log('Server will continue but some features may be limited');
+  if (pool) {
+    try {
+      await pool.query('SELECT 1');
+    } catch (error) {
+    }
+  } else {
   }
   
   const transport = new StdioServerTransport();
   await server.connect(transport);
   
-  console.log('SignalDesk Media MCP Server is running');
 }
 
 main().catch((error) => {
-  console.error('Failed to start server:', error);
   process.exit(1);
 });

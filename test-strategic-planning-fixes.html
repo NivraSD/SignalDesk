@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Strategic Planning Fixes</title>
+</head>
+<body>
+    <h1>Strategic Planning Fix Testing</h1>
+    
+    <h2>1. Test Supabase Edge Function</h2>
+    <button onclick="testEdgeFunction()">Test Strategic Planning Edge Function</button>
+    <div id="edge-function-result"></div>
+    
+    <h2>2. Test Frontend Deployment</h2>
+    <p>Navigate to: <a href="https://signaldesk.vercel.app/projects/demo-project" target="_blank">SignalDesk Platform</a></p>
+    <p>Then click on "Strategic Planning" in the activity list - it should open as an overlay instead of navigating to a separate page.</p>
+    
+    <h3>Expected Results:</h3>
+    <ul>
+        <li>✅ Strategic Planning should open as overlay (like Content Generator)</li>
+        <li>✅ Should replace the activity list with the Strategic Planning interface</li>
+        <li>✅ Should show the enhanced UI with planning type selection, context pills, etc.</li>
+        <li>✅ Strategic plan generation should work without 404 errors</li>
+        <li>✅ Should use Supabase Edge Function instead of falling back to local generation</li>
+    </ul>
+
+    <script>
+        async function testEdgeFunction() {
+            const resultDiv = document.getElementById('edge-function-result');
+            resultDiv.innerHTML = 'Testing Supabase Edge Function...';
+            
+            try {
+                const response = await fetch('https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/strategic-planning', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0'
+                    },
+                    body: JSON.stringify({
+                        objective: 'Test strategic plan generation',
+                        context: 'Testing the deployed edge function',
+                        constraints: 'Quick test',
+                        timeline: 'Immediate'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <h3>✅ SUCCESS: Edge Function Working</h3>
+                        <p>Status: ${response.status}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <h3>❌ ERROR: Edge Function Failed</h3>
+                        <p>Status: ${response.status}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <h3>❌ ERROR: Network/Connection Issue</h3>
+                    <p>Error: ${error.message}</p>
+                `;
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        button { padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #059669; }
+        #edge-function-result { margin: 20px 0; padding: 15px; background: #f9fafb; border-radius: 5px; border-left: 4px solid #10b981; }
+        pre { background: #f1f5f9; padding: 10px; border-radius: 5px; overflow-x: auto; }
+        ul li { margin: 5px 0; }
+    </style>
+</body>
+</html>
