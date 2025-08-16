@@ -167,7 +167,7 @@ class SupabaseApiService {
     return this.callEdgeFunction('claude-chat', {
       prompt: message,  // Edge Function expects 'prompt' not 'message'
       system: context.systemPrompt,
-      model: context.model || 'claude-3-haiku-20240307',
+      model: context.model || 'claude-sonnet-4',
       max_tokens: context.max_tokens || 1000,
       temperature: context.temperature || 0.7
     });
@@ -186,7 +186,7 @@ ${params.context ? `Additional context: ${JSON.stringify(params.context)}` : ''}
     return this.callEdgeFunction('claude-chat', {
       prompt,
       system: "You are Niv, an experienced PR strategist with 20 years of expertise. Generate high-quality PR content that is strategic, compelling, and tailored to the target audience.",
-      model: params.model || 'claude-3-haiku-20240307',
+      model: params.model || 'claude-sonnet-4',
       max_tokens: params.max_tokens || 2000,
       temperature: params.temperature || 0.7
     });
@@ -206,7 +206,7 @@ Provide analysis including:
     return this.callEdgeFunction('claude-chat', {
       prompt,
       system: "You are Niv, a senior PR strategist. Analyze opportunities with deep strategic insight.",
-      model: 'claude-3-haiku-20240307',
+      model: 'claude-sonnet-4',
       max_tokens: 1500
     });
   }
@@ -231,7 +231,7 @@ Provide comprehensive campaign analysis including messaging, targeting, and exec
     return this.callEdgeFunction('claude-chat', {
       prompt,
       system: "You are Niv, an expert PR strategist with 20 years of experience running successful campaigns.",
-      model: 'claude-3-haiku-20240307',
+      model: 'claude-sonnet-4',
       max_tokens: 2000
     });
   }
@@ -251,7 +251,7 @@ Provide crisis response plan including:
     return this.callEdgeFunction('claude-chat', {
       prompt,
       system: "You are Niv, a crisis management expert. Time is critical. Be direct, strategic, and action-oriented.",
-      model: 'claude-3-sonnet-20240229',  // Use better model for crisis
+      model: 'claude-sonnet-4',  // Use Claude Sonnet 4 for crisis
       max_tokens: 2000,
       temperature: 0.3  // Lower temperature for more consistent crisis response
     });

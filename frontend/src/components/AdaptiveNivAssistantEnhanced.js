@@ -632,9 +632,9 @@ Current conversation context: ${JSON.stringify(conversationContext)}`;;
         borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
         background: 'rgba(0, 0, 0, 0.3)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-          <Bot size={20} style={{ color: '#10b981' }} />
-          <h3 style={{ margin: 0, fontSize: '1rem', color: '#ffffff' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+          <Bot size={24} style={{ color: '#10b981' }} />
+          <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '600', color: '#ffffff' }}>
             Niv - Your PR Strategist
           </h3>
         </div>

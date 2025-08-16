@@ -439,9 +439,9 @@ Create content that actually gets coverage, not just corporate fluff.`
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514', // Using Claude Sonnet 4 for strategic PR thinking
+        model: 'claude-sonnet-4', // Using Claude Sonnet 4 for strategic PR thinking
         max_tokens: 3000,
-        temperature: 0.8,
+        temperature: 0.7,
         system: systemPrompt,
         messages: [
           {
