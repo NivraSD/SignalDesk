@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import ContentGeneratorModule from './ContentGeneratorModule';
 import StrategicPlanningOptimized from './StrategicPlanningOptimized';
 import OpportunityEngine from './OpportunityEngine';
-import AdaptiveNivAssistantEnhanced from './AdaptiveNivAssistantEnhanced';
+import NivStrategicOrchestrator from './NivStrategicOrchestrator';
 import supabaseApiService from '../services/supabaseApiService';
 import {
   Bot, Brain, FileText, Users, TrendingUp, AlertTriangle, 
@@ -43,6 +43,10 @@ const RailwayDraggable = () => {
   const [currentContentType, setCurrentContentType] = useState(null);
   const [selectedContentTypeId, setSelectedContentTypeId] = useState(null);
   const [selectedContentTypeName, setSelectedContentTypeName] = useState(null);
+  
+  // NEW: Niv real-time integration state
+  const [nivGeneratedData, setNivGeneratedData] = useState(null);
+  const [isNivGenerating, setIsNivGenerating] = useState(false);
   
   // Strategic Planning state
   const [strategicPlanData, setStrategicPlanData] = useState(null);
@@ -901,7 +905,7 @@ const RailwayDraggable = () => {
         
         {aiPanelOpen && (
           <div className="panel-content" style={{ padding: 0, height: 'calc(100% - 40px)' }}>
-            <AdaptiveNivAssistantEnhanced
+            <NivStrategicOrchestrator
               messages={messages}
               setMessages={setMessages}
               currentFeature={selectedFeature?.id}
@@ -913,9 +917,18 @@ const RailwayDraggable = () => {
                 }
               }}
               onContentGenerate={(contentData) => {
-                // Handle content generation from Niv
-                setGeneratedContent(contentData.message || '');
+                // Handle content generation from Niv - Enhanced for real-time editing
+                setIsNivGenerating(true);
+                
+                if (contentData.initialContent) {
+                  setGeneratedContent(contentData.initialContent);
+                  setNivGeneratedData(contentData);
+                } else {
+                  setGeneratedContent(contentData.message || contentData.content || '');
+                }
+                
                 setCurrentContentType(contentData.type || 'press-release');
+                
                 // Open Content Generator if not already open
                 if (selectedFeature?.id !== 'content-generator') {
                   const contentGen = activities.find(a => a.id === 'content-generator');
@@ -923,7 +936,50 @@ const RailwayDraggable = () => {
                     handleActivityClick(contentGen);
                   }
                 }
+                
+                // Stop generating indicator after content is set
+                setTimeout(() => setIsNivGenerating(false), 1000);
               }}
+              
+              onNivEdit={async (editData) => {
+                // Handle Niv's real-time editing
+                setIsNivGenerating(true);
+                
+                try {
+                  const response = await supabaseApiService.callNivChat({
+                    message: `Edit this content: "${editData.editRequest}"\n\nCurrent content:\n${editData.currentContent}`,
+                    context: {
+                      clientMode: 'URGENT_FIRE',
+                      detectedFeature: 'content-generator',
+                      editMode: true,
+                      contentType: editData.contentType
+                    },
+                    mode: 'content_editing'
+                  });
+                  
+                  if (response.response) {
+                    setGeneratedContent(response.response);
+                    
+                    // Add Niv's edit explanation to messages
+                    setMessages(prev => [...prev, {
+                      id: Date.now(),
+                      type: 'assistant',
+                      content: `I've updated the content based on your request: "${editData.editRequest}"`,
+                      timestamp: new Date()
+                    }]);
+                  }
+                } catch (error) {
+                  console.error('Error in Niv editing:', error);
+                  setMessages(prev => [...prev, {
+                    id: Date.now(),
+                    type: 'assistant',
+                    content: 'I apologize - there was an issue editing the content. Let me try a different approach.',
+                    timestamp: new Date()
+                  }]);
+                } finally {
+                  setIsNivGenerating(false);
+                }
+              }
               onStrategicPlanGenerate={(planData) => {
                 // Handle strategic plan generation from Niv
                 console.log('Generating strategic plan:', planData);
@@ -1065,6 +1121,19 @@ const RailwayDraggable = () => {
                 generatedContent={generatedContent}
                 onContentUpdate={handleContentUpdate}
                 currentContentType={currentContentType}
+                // NEW: Niv real-time integration props
+                nivGeneratedData={nivGeneratedData}
+                onNivEdit={async (editData) => {
+                  // This will be handled by the onNivEdit prop of NivStrategicOrchestrator
+                  // For now, just trigger a message to Niv
+                  setMessages(prev => [...prev, {
+                    id: Date.now(),
+                    type: 'user',
+                    content: editData.editRequest,
+                    timestamp: new Date()
+                  }]);
+                }}
+                isNivGenerating={isNivGenerating}
               />
             )}
             {selectedFeature?.id === 'opportunity-engine' && (

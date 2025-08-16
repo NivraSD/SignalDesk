@@ -6,14 +6,27 @@ import {
   Hash, Bot, Save, ArrowLeft, Wand2, X, Send
 } from 'lucide-react';
 
-const ContentGeneratorModule = ({ onAIMessage, generatedContent, onContentUpdate, currentContentType }) => {
+const ContentGeneratorModule = ({ 
+  onAIMessage, 
+  generatedContent, 
+  onContentUpdate, 
+  currentContentType,
+  // NEW: Real-time Niv integration props
+  nivGeneratedData,
+  onNivEdit,
+  isNivGenerating 
+}) => {
   const [content, setContent] = useState(generatedContent || '');
-  // Start in edit mode when there's content
-  const [editMode, setEditMode] = useState(!!generatedContent || false);
+  // Start in edit mode when there's content OR when Niv is generating
+  const [editMode, setEditMode] = useState(!!generatedContent || !!isNivGenerating || false);
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
   const [aiEditPrompt, setAiEditPrompt] = useState('');
   const [showAiEdit, setShowAiEdit] = useState(false);
+  
+  // NEW: Niv real-time generation state
+  const [nivEditInput, setNivEditInput] = useState('');
+  const [showNivEdit, setShowNivEdit] = useState(false);
   
   // Content type options
   const contentTypes = [
@@ -76,6 +89,27 @@ const ContentGeneratorModule = ({ onAIMessage, generatedContent, onContentUpdate
       setEditMode(true);
     }
   }, [generatedContent]);
+
+  // NEW: Handle Niv's real-time generation
+  useEffect(() => {
+    if (nivGeneratedData?.initialContent) {
+      setContent(nivGeneratedData.initialContent);
+      setEditMode(true);
+      setShowNivEdit(true); // Enable Niv editing mode
+    }
+  }, [nivGeneratedData]);
+
+  // NEW: Handle Niv editing requests
+  const handleNivEdit = async (editRequest) => {
+    if (onNivEdit) {
+      await onNivEdit({
+        currentContent: content,
+        editRequest,
+        contentType: currentContentType
+      });
+    }
+    setNivEditInput('');
+  };
 
   // Handle content type selection - triggers AI assistant
   const handleContentTypeSelect = (contentType) => {
@@ -339,6 +373,74 @@ const ContentGeneratorModule = ({ onAIMessage, generatedContent, onContentUpdate
               >
                 <X size={14} />
               </button>
+            </div>
+          )}
+          
+          {/* NEW: Niv Real-time Editing Panel */}
+          {showNivEdit && (
+            <div style={{
+              padding: '1rem',
+              background: 'rgba(59, 130, 246, 0.1)',
+              borderBottom: '1px solid rgba(59, 130, 246, 0.2)',
+              display: 'flex',
+              gap: '0.5rem',
+              alignItems: 'center'
+            }}>
+              <Bot size={16} style={{ color: '#3b82f6' }} />
+              <input
+                type="text"
+                value={nivEditInput}
+                onChange={(e) => setNivEditInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleNivEdit(nivEditInput)}
+                placeholder="Tell Niv how to edit this content..."
+                style={{
+                  flex: 1,
+                  padding: '0.5rem',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                  borderRadius: '6px',
+                  color: '#e8e8e8',
+                  fontSize: '14px'
+                }}
+              />
+              <button
+                onClick={() => handleNivEdit(nivEditInput)}
+                disabled={!nivEditInput.trim()}
+                style={{
+                  padding: '0.5rem 0.8rem',
+                  background: nivEditInput.trim() ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                  borderRadius: '6px',
+                  color: nivEditInput.trim() ? '#60a5fa' : '#6b7280',
+                  cursor: nivEditInput.trim() ? 'pointer' : 'not-allowed',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  fontSize: '12px'
+                }}
+              >
+                <Sparkles size={14} />
+                Ask Niv
+              </button>
+            </div>
+          )}
+          
+          {/* Niv Generation Status */}
+          {isNivGenerating && (
+            <div style={{
+              padding: '1rem',
+              background: 'rgba(16, 185, 129, 0.1)',
+              borderBottom: '1px solid rgba(16, 185, 129, 0.2)',
+              color: '#10b981',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontSize: '14px'
+            }}>
+              <div className="animate-pulse">
+                <Bot size={16} />
+              </div>
+              Niv is generating content strategically...
             </div>
           )}
           

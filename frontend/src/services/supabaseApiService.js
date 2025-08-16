@@ -211,8 +211,18 @@ Provide analysis including:
     });
   }
 
-  // Niv Chat - Strategic PR Conversation
-  async callNivChat({ message, context = {}, mode = 'chat', sessionId = null }) {
+  // Niv Strategic Orchestrator - Main interface
+  async callNivChat({ message, context = {}, mode = 'strategic_orchestration', sessionId = null }) {
+    return this.callEdgeFunction('niv-orchestrator', {
+      message,
+      context,
+      mode,
+      conversationId: sessionId
+    });
+  }
+
+  // Legacy Niv Chat - Keep for backward compatibility
+  async callNivChatLegacy({ message, context = {}, mode = 'chat', sessionId = null }) {
     return this.callEdgeFunction('niv-chat', {
       message,
       context,

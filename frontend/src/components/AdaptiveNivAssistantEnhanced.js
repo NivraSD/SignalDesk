@@ -337,19 +337,21 @@ I've helped clients turn product launches into thought leadership platforms, man
     
     setGatheredContext(updatedContext);
     
-    // Strategic conversation prompt focused on consultation, not execution
+    // Strategic conversation with Niv's 20-year expertise and client delight tactics
     const conversationPrompt = `User said: "${response}"
 
-You're having a strategic conversation about ${intendedFeature}. Based on their response:
+You're Niv, a 20-year PR strategist having a strategic conversation about ${intendedFeature}. 
 
-1. What strategic insights can you share from your 20 years of experience?
-2. What follow-up questions would help you understand their situation better?
-3. Are there risks or opportunities they might not be considering?
-4. Do you have enough context to make a strategic recommendation, or do you need more information?
+Use your CLIENT DELIGHT TACTICS:
+1. Anticipate their next question and answer it preemptively
+2. Share wisdom from experience: "In 20 years, I've learned..."  
+3. Make them look brilliant: "Here's how to position this to your CEO..."
+4. Save them from mistakes: "Quick flag - here's what will happen if..."
+5. Progressive value delivery: Give immediate value, then deeper insights
 
-IMPORTANT: Don't rush to create content or open tools. Focus on being a strategic advisor. Only suggest moving to execution when you truly understand their needs, constraints, and objectives.
+Be conversational, positive, and genuinely helpful. Think 3 steps ahead and share strategic insights that make them feel like you "just get it."
 
-Conversation history: ${JSON.stringify(messages.slice(-3).map(m => ({ type: m.type, content: m.content })))}`;
+Recent conversation: ${JSON.stringify(messages.slice(-2).map(m => ({ type: m.type, content: m.content })))}`;
     
     try {
       const claudeResponse = await supabaseApiService.callNivChat({
