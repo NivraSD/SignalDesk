@@ -16,6 +16,8 @@ const AdaptiveNivAssistantEnhanced = ({
   const [currentContext, setCurrentContext] = useState(null);
   const [awaitingResponse, setAwaitingResponse] = useState(null);
   const [lastProcessedMessageId, setLastProcessedMessageId] = useState(null);
+  const [conversationPhase, setConversationPhase] = useState('discovery'); // discovery, planning, execution
+  const [gatheredContext, setGatheredContext] = useState({});
   const messagesEndRef = useRef(null);
 
   // Feature recognition patterns
@@ -105,6 +107,38 @@ const AdaptiveNivAssistantEnhanced = ({
   useEffect(() => {
     scrollToBottom();
     
+    // Add welcome message if no messages exist
+    if (!messages || messages.length === 0) {
+      const welcomeMessage = {
+        id: 'welcome-1',
+        type: 'assistant',
+        content: `Hi there! I'm Niv, your PR strategist with 20 years of agency experience. I'm here to help you navigate any communications challenge.
+
+Rather than jumping straight into tools, I prefer to understand your situation first. Are you looking to:
+• Launch something and need strategic positioning?
+• Handle a crisis or sensitive situation?
+• Build relationships with journalists?
+• Create content that actually gets coverage?
+• Spot opportunities in the market?
+
+What's on your mind today?`,
+        timestamp: new Date(),
+        expertise: true
+      };
+      
+      const exampleMessage = {
+        id: 'welcome-2',
+        type: 'assistant',
+        content: `💡 **Quick tip from 20 years in PR:** The most successful campaigns I've run started with a simple question: "Who actually cares about this story, and why?" 
+
+I've helped clients turn product launches into thought leadership platforms, managed crisis communications for Fortune 500s, and built media relationships that last decades. Let's figure out the best strategic approach for your specific situation.`,
+        timestamp: new Date(),
+        expertise: true
+      };
+      
+      setMessages([welcomeMessage, exampleMessage]);
+    }
+    
     // Check for new messages from Content Generator
     if (messages && messages.length > 0) {
       const lastMessage = messages[messages.length - 1];
@@ -169,104 +203,171 @@ const AdaptiveNivAssistantEnhanced = ({
     await handleClaudeAnalysis(input);
   };
 
-  // Handle feature-specific requests with natural conversation
+  // DON'T automatically open features - start with conversation
   const handleFeatureRequest = async (feature, userInput) => {
-    const mcp = mcpExpertise[feature];
-    const context = conversationContext[feature];
-    
-    // Don't re-open if already in the feature
-    if (currentFeature !== feature && onFeatureOpen) {
-      onFeatureOpen(feature);
-    }
-
-    // Set natural conversation context
+    // Reset conversation state for focused discussion
+    setConversationPhase('discovery');
     setCurrentContext({ 
-      feature, 
-      expertise: context?.expertise || feature,
-      gatheredInfo: {},
-      naturalFlow: true
+      intendedFeature: feature,
+      expertise: conversationContext[feature]?.expertise || feature,
+      naturalFlow: true,
+      readyToExecute: false
     });
+    setGatheredContext({});
     
-    // Generate natural response based on the request
-    let naturalResponse = '';
-    
-    if (feature === 'strategic-planning') {
-      naturalResponse = `Let's create a strategic plan that actually works. Tell me about your objective and I'll think through the strategy, timing, and execution approach. What are you looking to achieve?`;
-    } else if (feature === 'content-generator') {
-      naturalResponse = `I'll help you create content that journalists actually want to cover. What's the story you're trying to tell, and who needs to hear it?`;
-    } else if (feature === 'media-intelligence') {
-      naturalResponse = `Let's find the right journalists for your story. What's your angle, and what beat or industry are we targeting? I'll think about which contacts would be most interested.`;
-    } else if (feature === 'opportunity-engine') {
-      naturalResponse = `Time to spot some PR gold. What industry or trend are you tracking? I'll analyze the opportunity landscape and find angles your competitors are missing.`;
-    } else if (feature === 'crisis-command') {
-      naturalResponse = `Crisis mode activated. Tell me what's happening and I'll help you map stakeholders, craft messaging, and control the narrative. What's the situation?`;
-    } else {
-      naturalResponse = `I'm opening ${feature.replace('-', ' ')} and bringing my 20 years of experience to help you succeed. What specific challenge are you facing?`;
-    }
+    // Start strategic conversation based on the user's intent
+    const strategicQuestions = getStrategicQuestions(feature, userInput);
     
     const response = {
       id: Date.now(),
       type: 'assistant',
-      content: naturalResponse,
+      content: strategicQuestions,
       timestamp: new Date(),
-      feature: feature
+      phase: 'discovery'
     };
     
     setMessages(prev => [...prev, response]);
     setIsTyping(false);
   };
 
-  // Handle natural conversation flow (replaces rigid guided responses)
+  // Strategic questions based on feature intent
+  const getStrategicQuestions = (feature, userInput) => {
+    const input = userInput.toLowerCase();
+    
+    if (feature === 'content-generator') {
+      if (input.includes('social') || input.includes('post')) {
+        return "Before we create any content, let me understand the strategy. What platform are you targeting? LinkedIn posts need a very different approach than Twitter. What's the key message you want to get across, and who's your ideal audience?";
+      } else if (input.includes('press release') || input.includes('announcement')) {
+        return "Let's make sure this actually gets picked up. What's the news angle here? Is this a product launch, funding announcement, or something else? Who are the journalists that would care about this story?";
+      } else {
+        return "I'll help you create content that cuts through the noise. What type of content are we talking about, what's the story you're trying to tell, and who needs to hear it?";
+      }
+    } else if (feature === 'strategic-planning') {
+      return "I love tackling strategic challenges. Walk me through the situation - what's your objective, what's the timeline, and what obstacles are you anticipating? Let's think through this together.";
+    } else if (feature === 'media-intelligence') {
+      return "Let's find the right journalists for maximum impact. What's your story angle, what industry or beat should I focus on, and what's your timing? Are we looking for exclusives or broader coverage?";
+    } else if (feature === 'opportunity-engine') {
+      return "Time to spot opportunities your competitors are missing. What industry are you in, what trends are you tracking, and what unique positioning do you have? Let's find the perfect angles.";
+    } else if (feature === 'crisis-command') {
+      return "Crisis mode - I need to understand the situation quickly. What happened, who's affected, and what's the current public narrative? Time is critical here.";
+    } else {
+      return `Let's dive into this challenge together. Tell me more about what you're trying to accomplish and the constraints you're working within.`;
+    }
+  };
+
+  // Handle natural conversation flow with proper context building
   const handleNaturalResponse = async (response) => {
     if (!currentContext) return;
 
-    const { feature, gatheredInfo, expertise } = currentContext;
+    const { intendedFeature, expertise } = currentContext;
     
-    // Update gathered information naturally
-    const updatedInfo = { ...gatheredInfo, latestResponse: response };
-    setCurrentContext({ ...currentContext, gatheredInfo: updatedInfo });
+    // Build context gradually
+    const updatedContext = { ...gatheredContext };
     
-    // Let Claude decide if we have enough information or need more context
-    const contextualPrompt = `User provided: "${response}"
+    // Extract information based on conversation phase
+    if (conversationPhase === 'discovery') {
+      // Look for key information in their response
+      updatedContext.userResponse = response;
+      updatedContext.timestamp = new Date();
+    }
     
-For ${feature} (${expertise}), do I have enough information to help them, or should I ask strategic follow-up questions? Be natural and conversational - act like a senior PR strategist having a real conversation, not a chatbot with a checklist.`;
+    setGatheredContext(updatedContext);
+    
+    // Strategic conversation prompt focused on consultation, not execution
+    const conversationPrompt = `User said: "${response}"
+
+You're having a strategic conversation about ${intendedFeature}. Based on their response:
+
+1. What strategic insights can you share from your 20 years of experience?
+2. What follow-up questions would help you understand their situation better?
+3. Are there risks or opportunities they might not be considering?
+4. Do you have enough context to make a strategic recommendation, or do you need more information?
+
+IMPORTANT: Don't rush to create content or open tools. Focus on being a strategic advisor. Only suggest moving to execution when you truly understand their needs, constraints, and objectives.
+
+Conversation history: ${JSON.stringify(messages.slice(-3).map(m => ({ type: m.type, content: m.content })))}`;
     
     try {
       const claudeResponse = await supabaseApiService.callNivChat({
-        message: contextualPrompt,
-        context: { feature, gatheredInfo: updatedInfo, conversationHistory: messages.slice(-3) },
-        mode: 'conversation',
+        message: conversationPrompt,
+        context: { 
+          intendedFeature, 
+          conversationPhase,
+          gatheredContext: updatedContext,
+          focusMode: 'strategic_consultation'
+        },
+        mode: 'consultation',
         sessionId: `session-${Date.now()}`
       });
+      
+      const responseText = claudeResponse.response || claudeResponse.data || "Let me think about the best strategic approach here.";
       
       const aiMessage = {
         id: Date.now(),
         type: 'assistant',
-        content: claudeResponse.response || claudeResponse.data || "Let me think about the best approach for your situation.",
+        content: responseText,
         timestamp: new Date(),
-        strategicInsights: claudeResponse.strategicAnalysis
+        strategicInsights: claudeResponse.strategicAnalysis,
+        phase: conversationPhase
       };
       
       setMessages(prev => [...prev, aiMessage]);
       
-      // Check if Claude suggested executing the feature
-      if (claudeResponse.response && 
-          (claudeResponse.response.includes('let me create') || 
-           claudeResponse.response.includes('I\'ll generate') ||
-           claudeResponse.response.includes('let\'s build'))) {
-        // Execute the feature with gathered information
+      // Check if the conversation indicates readiness to move to execution
+      if (shouldMoveToExecution(responseText, updatedContext)) {
+        setConversationPhase('planning');
+        setCurrentContext({ ...currentContext, readyToExecute: true });
+        
+        // Ask for final confirmation before opening feature
         setTimeout(() => {
-          executeFeatureAction(feature, updatedInfo);
-        }, 1000);
+          confirmFeatureExecution(intendedFeature, updatedContext);
+        }, 1500);
       }
       
     } catch (error) {
-      console.error('Natural conversation error:', error);
-      // Fallback to direct execution if Claude fails
-      await executeFeatureAction(feature, updatedInfo);
+      console.error('Strategic conversation error:', error);
+      
+      // Fallback response
+      const fallbackMessage = {
+        id: Date.now(),
+        type: 'assistant',
+        content: "I want to make sure I understand your strategic needs. Can you tell me more about your objectives and constraints?",
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, fallbackMessage]);
     }
     
     setIsTyping(false);
+  };
+
+  // Determine if we have enough context to move to execution
+  const shouldMoveToExecution = (responseText, context) => {
+    const executionIndicators = [
+      'sounds like we have what we need',
+      'ready to move forward',
+      'let\'s proceed with',
+      'i think we can now',
+      'based on what you\'ve told me, let\'s'
+    ];
+    
+    const lowerResponse = responseText.toLowerCase();
+    return executionIndicators.some(indicator => lowerResponse.includes(indicator)) && 
+           Object.keys(context).length >= 2; // Ensure we have some context
+  };
+
+  // Confirm before opening feature and executing
+  const confirmFeatureExecution = async (feature, context) => {
+    const confirmationMessage = {
+      id: Date.now(),
+      type: 'assistant',
+      content: `Perfect! Based on our conversation, I recommend we open the ${feature.replace('-', ' ')} tool to execute this strategy. I'll guide you through the process with all the context we've discussed. Ready to proceed?`,
+      timestamp: new Date(),
+      showConfirmation: true,
+      proposedFeature: feature,
+      gatheredContext: context
+    };
+    
+    setMessages(prev => [...prev, confirmationMessage]);
   };
 
   // Execute feature-specific actions
@@ -340,6 +441,43 @@ For ${feature} (${expertise}), do I have enough information to help them, or sho
     }
   };
 
+  // Handle confirmation of feature execution
+  const handleFeatureConfirmation = async (feature, context, confirmed) => {
+    if (confirmed) {
+      // Now actually open the feature
+      if (feature !== currentFeature && onFeatureOpen) {
+        onFeatureOpen(feature);
+      }
+      
+      // Execute the feature action with gathered context
+      await executeFeatureAction(feature, context);
+      
+      // Reset conversation state
+      setConversationPhase('execution');
+      setCurrentContext({ ...currentContext, executing: true });
+      
+      const confirmationMessage = {
+        id: Date.now(),
+        type: 'assistant',
+        content: `Perfect! I'm opening ${feature.replace('-', ' ')} now and will use all the context we discussed to guide you through the process.`,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, confirmationMessage]);
+      
+    } else {
+      // Continue the conversation
+      setConversationPhase('discovery');
+      
+      const continueMessage = {
+        id: Date.now(),
+        type: 'assistant',
+        content: "Absolutely, let's make sure we get this right. What other aspects should we consider? I want to ensure we have the best strategic approach.",
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, continueMessage]);
+    }
+  };
+
   // Handle Claude-powered analysis with intent recognition
   const handleClaudeAnalysis = async (query) => {
     try {
@@ -354,18 +492,24 @@ For ${feature} (${expertise}), do I have enough information to help them, or sho
         currentContext: currentContext
       };
 
-      // Enhanced strategic analysis prompt for Niv
+      // Enhanced consultation prompt - focus on conversation, not execution
       const enhancedQuery = `User says: "${query}"
 
-As Niv, a senior PR strategist with 20 years of experience, analyze this request:
+As Niv, a senior PR strategist with 20 years of experience, start a strategic conversation:
 
-1. What's the real PR challenge or opportunity here?
-2. What strategic approach would you recommend?
-3. Do they need a specific SignalDesk feature, or just strategic guidance?
-4. What risks or opportunities should they consider?
-5. What's your expert recommendation for next steps?
+1. What questions would help you understand their real challenge?
+2. What insights from your experience are relevant here?
+3. What strategic considerations should they be thinking about?
+4. What context do you need before making any recommendations?
 
-Available SignalDesk features:
+IMPORTANT CONVERSATION RULES:
+- DON'T immediately suggest opening tools or creating content
+- DO ask strategic questions to understand their situation
+- DON'T assume you know what they need from one message
+- DO share insights and probe for context
+- DON'T rush to solutions - build understanding first
+
+Available tools (mention only after understanding their needs):
 - Strategic Planning: Comprehensive campaign strategies
 - Content Generator: Strategic content creation
 - Media Intelligence: Journalist relationships and outreach
@@ -373,9 +517,9 @@ Available SignalDesk features:
 - Crisis Command: Crisis communication management
 - Memory Vault: Knowledge management
 
-Respond as Niv would - warm but direct, strategic, and focused on actionable insights. If you recommend opening a feature, explain the strategic reasoning.
+Respond as a strategic consultant having an initial conversation, not as someone ready to execute.
 
-Current conversation context: ${JSON.stringify(conversationContext)}`;
+Current conversation context: ${JSON.stringify(conversationContext)}`;;
 
       // Call Claude via Supabase with strategic analysis mode
       const response = await supabaseApiService.callNivChat({
@@ -531,12 +675,64 @@ Current conversation context: ${JSON.stringify(conversationContext)}`;
               borderRadius: '8px',
               background: msg.type === 'user' 
                 ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-                : 'rgba(255, 255, 255, 0.05)',
+                : msg.expertise 
+                  ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%)'
+                  : 'rgba(255, 255, 255, 0.05)',
+              border: msg.expertise ? '1px solid rgba(16, 185, 129, 0.3)' : 'none',
               color: msg.type === 'user' ? 'white' : '#e8e8e8',
               fontSize: '0.875rem',
               lineHeight: '1.4'
             }}>
+              {msg.expertise && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.25rem',
+                  marginBottom: '0.5rem',
+                  fontSize: '0.75rem',
+                  color: '#10b981'
+                }}>
+                  <Sparkles size={12} />
+                  20 Years PR Experience
+                </div>
+              )}
               {msg.content}
+              {msg.showConfirmation && (
+                <div style={{
+                  marginTop: '0.75rem',
+                  display: 'flex',
+                  gap: '0.5rem'
+                }}>
+                  <button
+                    onClick={() => handleFeatureConfirmation(msg.proposedFeature, msg.gatheredContext, true)}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      border: 'none',
+                      borderRadius: '6px',
+                      color: 'white',
+                      fontSize: '0.75rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Yes, let's proceed
+                  </button>
+                  <button
+                    onClick={() => handleFeatureConfirmation(msg.proposedFeature, msg.gatheredContext, false)}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      borderRadius: '6px',
+                      color: '#e8e8e8',
+                      fontSize: '0.75rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Let's discuss more
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -569,7 +765,7 @@ Current conversation context: ${JSON.stringify(conversationContext)}`;
             return (
               <button
                 key={action.id}
-                onClick={() => handleFeatureRequest(action.feature, `I want to ${action.label.toLowerCase()}`)}
+                onClick={() => handleFeatureRequest(action.feature, `I need help with ${action.label.toLowerCase()}`)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',

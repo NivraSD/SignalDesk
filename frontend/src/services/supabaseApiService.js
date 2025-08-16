@@ -211,6 +211,16 @@ Provide analysis including:
     });
   }
 
+  // Niv Chat - Strategic PR Conversation
+  async callNivChat({ message, context = {}, mode = 'chat', sessionId = null }) {
+    return this.callEdgeFunction('niv-chat', {
+      message,
+      context,
+      mode,
+      conversationId: sessionId
+    });
+  }
+
   // Campaign methods
   async analyzeCampaign(campaignData) {
     const prompt = `Analyze this PR campaign and provide strategic guidance:
