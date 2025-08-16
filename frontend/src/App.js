@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ProjectProvider } from "./contexts/ProjectContext";
@@ -28,6 +28,9 @@ import Layout from "./components/Layout/Layout";
 import CreateProject from "./components/CreateProject";
 import Analytics from "./components/Analytics";
 import StakeholderIntelligenceHub from "./components/StakeholderIntelligence/StakeholderIntelligenceHub";
+// New Niv-First components
+import PlatformModeSwitcher from "./components/PlatformModeSwitcher";
+import NivFirstLayout from "./components/NivFirst/NivFirstLayout";
 
 // Log Supabase initialization for debugging
 console.log('🚀 SignalDesk initialized with Supabase:', supabase ? 'Connected' : 'Not connected');
@@ -179,12 +182,43 @@ function AppRoutes() {
 }
 
 function App() {
+  const [platformMode, setPlatformMode] = useState(() => {
+    // Load saved preference or default to classic
+    return localStorage.getItem('platformMode') || 'classic';
+  });
+
+  useEffect(() => {
+    // Save preference when it changes
+    localStorage.setItem('platformMode', platformMode);
+  }, [platformMode]);
+
   return (
     <BrowserRouter>
       <AuthProvider>
         <ProjectProvider>
           <IntelligenceProvider>
-            <AppRoutes />
+            {/* Platform Mode Switcher - Always visible */}
+            <PlatformModeSwitcher 
+              currentMode={platformMode}
+              onModeChange={setPlatformMode}
+            />
+            
+            {/* Render different layouts based on mode */}
+            {platformMode === 'niv-first' ? (
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route
+                  path="/*"
+                  element={
+                    <PrivateRoute>
+                      <NivFirstLayout />
+                    </PrivateRoute>
+                  }
+                />
+              </Routes>
+            ) : (
+              <AppRoutes />
+            )}
           </IntelligenceProvider>
         </ProjectProvider>
       </AuthProvider>

@@ -979,7 +979,8 @@ const RailwayDraggable = () => {
                 } finally {
                   setIsNivGenerating(false);
                 }
-              }
+              }}
+              
               onStrategicPlanGenerate={(planData) => {
                 // Handle strategic plan generation from Niv
                 console.log('Generating strategic plan:', planData);

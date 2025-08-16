@@ -191,7 +191,10 @@
       "WebFetch(domain:signaldesk-3q7g44y69-nivra-sd.vercel.app)",
       "WebFetch(domain:signaldesk-nivrasd-nivra-sd.vercel.app)",
       "WebFetch(domain:signaldesk-igherrqim-nivra-sd.vercel.app)",
-      "WebFetch(domain:signaldesk-krbnpf22t-nivra-sd.vercel.app)"
+      "WebFetch(domain:signaldesk-krbnpf22t-nivra-sd.vercel.app)",
+      "WebFetch(domain:signaldesk-8cea21wx6-nivra-sd.vercel.app)",
+      "WebFetch(domain:signaldesk-q3fnqa7i9-nivra-sd.vercel.app)",
+      "WebFetch(domain:signaldesk-3oodwmgd7-nivra-sd.vercel.app)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

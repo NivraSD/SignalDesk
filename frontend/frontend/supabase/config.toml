@@ -145,3 +145,6 @@ verify_jwt = false
 
 [functions.strategic-planning]
 verify_jwt = false
+
+[functions.niv-orchestrator]
+verify_jwt = false

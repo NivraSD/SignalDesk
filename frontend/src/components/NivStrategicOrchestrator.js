@@ -4,10 +4,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
-  Bot, Send, Sparkles, Brain, FileText, Users, TrendingUp, 
-  AlertTriangle, Shield, Target, Zap, Activity, MessageSquare,
-  Edit3, Save, Copy, RefreshCw, CheckCircle, ArrowRight,
-  Lightbulb, BarChart3, Calendar, Settings
+  Bot, Send, Sparkles, RefreshCw
 } from 'lucide-react';
 import supabaseApiService from '../services/supabaseApiService';
 
@@ -16,11 +13,7 @@ const NivStrategicOrchestrator = ({
   onFeatureOpen,
   onContentGenerate,
   onStrategicPlanGenerate,
-  currentFeature,
-  
-  // Real-time Feature Integration Props
-  activeFeatureData,
-  onFeatureDataUpdate,
+  onWorkCardCreate,
   
   // Message State Props
   messages,
@@ -30,17 +23,6 @@ const NivStrategicOrchestrator = ({
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [clientMode, setClientMode] = useState('NORMAL');
-  const [conversationPhase, setConversationPhase] = useState('discovery');
-  const [activeWorkflow, setActiveWorkflow] = useState(null);
-  
-  // === STRATEGIC CONTEXT ===
-  const [strategicContext, setStrategicContext] = useState({
-    userPreferences: {},
-    companyProfile: {},
-    currentObjectives: [],
-    activeOpportunities: [],
-    recentLearnings: []
-  });
   
   // === REAL-TIME FEATURE CONTROL ===
   const [isGeneratingInFeature, setIsGeneratingInFeature] = useState(false);
@@ -99,375 +81,400 @@ const NivStrategicOrchestrator = ({
   const detectFeatureIntent = useCallback((message) => {
     const lowerMessage = message.toLowerCase();
     
-    const featurePatterns = {
-      'strategic-planning': [
-        'strategic plan', 'strategy', 'campaign strategy', 'planning', 
-        'plan', 'comprehensive strategy', 'strategic approach', 'roadmap'
-      ],
-      'content-generator': [
-        'press release', 'write', 'create', 'draft', 'content', 'article',
-        'social post', 'media pitch', 'announcement', 'statement', 'blog post'
-      ],
-      'media-intelligence': [
-        'journalist', 'media', 'reporter', 'press', 'media list', 
-        'find journalists', 'media contacts', 'outreach'
-      ],
-      'opportunity-engine': [
-        'opportunity', 'opportunities', 'trending', 'what can i pitch',
-        'pr opportunities', 'news', 'newsjacking'
-      ],
-      'crisis-command': [
-        'crisis', 'emergency', 'damage control', 'reputation', 
-        'crisis response', 'crisis management'
-      ]
-    };
+    // Strategic planning patterns (check first - higher priority)
+    if (lowerMessage.includes('strategic plan') || lowerMessage.includes('campaign') || 
+        lowerMessage.includes('strategy') || lowerMessage.includes('planning') ||
+        lowerMessage.includes('launch') || lowerMessage.includes('framework') ||
+        lowerMessage.includes('roadmap') || lowerMessage.includes('timeline')) {
+      return 'strategic-planning';
+    }
     
-    for (const [feature, patterns] of Object.entries(featurePatterns)) {
-      if (patterns.some(pattern => lowerMessage.includes(pattern))) {
-        return feature;
-      }
+    // Content generation patterns (specific content types only)
+    if (lowerMessage.includes('press release') || lowerMessage.includes('write a') || 
+        lowerMessage.includes('create content') || lowerMessage.includes('draft')) {
+      return 'content-generator';
+    }
+    
+    // Media intelligence patterns
+    if (lowerMessage.includes('journalist') || lowerMessage.includes('media list') || 
+        lowerMessage.includes('reporter') || lowerMessage.includes('outreach')) {
+      return 'media-intelligence';
     }
     
     return null;
   }, []);
 
-  // === NIV'S STRATEGIC BRAIN ===
-  const generateStrategicResponse = useCallback(async (userMessage, detectedFeature, mode) => {
-    setIsProcessing(true);
+  // === FEATURE ORCHESTRATION FUNCTIONS ===
+  const initiateContentGeneration = useCallback(async (userMessage, detectedMode) => {
+    if (!onContentGenerate) return;
+    
+    setIsGeneratingInFeature(true);
+    setFeatureGenerationProgress('Analyzing content requirements...');
     
     try {
-      // Build Niv's strategic prompt based on the vision
-      const strategicPrompt = `You are Niv, a Senior PR Strategist with 20 years of experience. You're the primary interface for SignalDesk, controlling all features through conversation.
-
-CURRENT SITUATION:
-- User said: "${userMessage}"
-- Detected client mode: ${mode}
-- Detected feature intent: ${detectedFeature || 'general_consultation'}
-- Current conversation phase: ${conversationPhase}
-
-YOUR PERSONALITY & APPROACH:
-- Conversational, friendly, and genuinely enthusiastic about PR strategy
-- 20 years of encoded expertise - you've seen it all and know what works
-- Client delight focused - make them feel brilliant and confident
-- Proactively helpful - anticipate needs and think 3 steps ahead
-- Direct but warm - share wisdom and guide with optimism
-
-STRATEGIC INTELLIGENCE:
-- Pattern recognition expert - "I've seen this before, here's what works..."
-- Situational awareness - understand news cycles, timing, competitive landscape
-- Progressive value delivery - immediate answer + context + opportunity
-- Mistake prevention - "Quick flag: if you do this, here's what will happen..."
-
-RESPONSE STYLE FOR ${mode}:
-${mode === 'URGENT_FIRE' ? 
-  '- Direct, immediate, no fluff - give exactly what they need\n- Quick strategic insight + immediate solution\n- "Here\'s what you need right now..."' :
-mode === 'CRISIS_MODE' ?
-  '- Take control with calm confidence\n- "I\'ve handled this before. Here\'s what we do..."\n- Immediate actions for next 30 minutes' :
-mode === 'STRATEGIC_PLANNING' ?
-  '- Full strategic depth with enthusiasm\n- Share proven frameworks and approaches\n- "Let me walk you through my 20-year proven strategy..."' :
-mode === 'EXPLORATORY' ?
-  '- Thought partner mode, conversational exploration\n- "Interesting direction. Let me share what I\'ve seen work..."\n- Ask strategic follow-ups' :
-  '- Balanced professional with immediate value\n- Share strategic insights and actionable next steps\n- Anticipate their next question'
-}
-
-${detectedFeature ? `
-FEATURE ORCHESTRATION:
-Since this involves ${detectedFeature}, you should:
-1. Start working on it immediately with strategic context
-2. Explain how you'll approach it based on your experience
-3. Begin generating/planning in real-time
-4. Guide them through your proven framework
-` : ''}
-
-CURRENT CONTEXT:
-- Recent conversation: ${JSON.stringify(messages.slice(-2).map(m => ({ type: m.type, content: m.content })))}
-
-Respond as Niv with enthusiasm, strategic wisdom, and immediate value. If you're opening a feature, explain your approach and start working on it.`;
-
+      // Call Niv to generate strategic content
       const response = await supabaseApiService.callNivChat({
-        message: strategicPrompt,
+        message: userMessage,
         context: {
-          clientMode: mode,
-          detectedFeature,
-          conversationPhase,
-          strategicContext
+          clientMode: detectedMode,
+          detectedFeature: 'content-generator',
+          requestType: 'content_generation'
         },
-        mode: 'strategic_orchestration',
-        sessionId: `niv-${Date.now()}`
+        mode: 'content_orchestration'
       });
-
-      const responseText = response.response || response.data || "Let me think about the best strategic approach here...";
-
-      // If feature was detected, initiate feature orchestration
-      if (detectedFeature && onFeatureOpen) {
-        setIsGeneratingInFeature(true);
-        setFeatureGenerationProgress('Opening feature and preparing strategic approach...');
-        
-        // Open the feature
-        setTimeout(() => {
-          onFeatureOpen(detectedFeature);
-          setFeatureGenerationProgress('Feature opened - beginning strategic generation...');
-        }, 500);
-        
-        // If it's content generation, start generating in the feature
-        if (detectedFeature === 'content-generator' && onContentGenerate) {
-          setTimeout(() => {
-            initiateContentGeneration(userMessage, responseText);
-          }, 1000);
-        } else if (detectedFeature === 'strategic-planning' && onStrategicPlanGenerate) {
-          setTimeout(() => {
-            initiateStrategicPlanning(userMessage, responseText);
-          }, 1000);
-        }
-      }
-
-      return {
-        content: responseText,
-        mode,
-        detectedFeature,
-        strategicInsights: extractStrategicInsights(responseText),
-        nextActions: suggestNextActions(detectedFeature, mode)
-      };
-
-    } catch (error) {
-      console.error('Error generating strategic response:', error);
-      return {
-        content: "I apologize - let me refocus. As your strategic advisor, I'm here to help you succeed. What's the main challenge you're facing right now?",
-        mode,
-        error: true
-      };
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [conversationPhase, messages, onFeatureOpen, onContentGenerate, onStrategicPlanGenerate, strategicContext]);
-
-  // === REAL-TIME CONTENT GENERATION IN FEATURES ===
-  const initiateContentGeneration = useCallback(async (userRequest, nivResponse) => {
-    setFeatureGenerationProgress('Analyzing your request and company context...');
-    
-    try {
-      // Generate content based on Niv's strategic approach
-      const contentData = await generateContentWithStrategy(userRequest, nivResponse);
       
-      setFeatureGenerationProgress('Generating content in real-time...');
+      setFeatureGenerationProgress('Generating content strategically...');
       
-      // Stream content generation if possible
-      if (onContentGenerate) {
-        onContentGenerate({
-          type: detectContentType(userRequest),
-          initialContent: contentData.content,
-          strategicNotes: contentData.strategy,
-          suggestions: contentData.improvements,
-          realTimeMode: true
-        });
-      }
+      // Trigger content generation in the feature
+      onContentGenerate({
+        type: 'press-release', // Default type, Niv will guide
+        initialContent: response.response,
+        message: response.response,
+        nivGenerated: true
+      });
       
-      setFeatureGenerationProgress('Content generated - ready for your feedback!');
+      setFeatureGenerationProgress('Content ready for editing!');
       
     } catch (error) {
       console.error('Error in content generation:', error);
-      setFeatureGenerationProgress('Error in generation - let me try a different approach...');
     } finally {
       setTimeout(() => {
         setIsGeneratingInFeature(false);
         setFeatureGenerationProgress('');
-      }, 2000);
+      }, 1500);
     }
   }, [onContentGenerate]);
 
-  const initiateStrategicPlanning = useCallback(async (userRequest, nivResponse) => {
-    setFeatureGenerationProgress('Building your strategic framework...');
+  const initiateStrategicPlanning = useCallback(async (userMessage, detectedMode) => {
+    if (!onStrategicPlanGenerate) return;
+    
+    setIsGeneratingInFeature(true);
+    setFeatureGenerationProgress('Analyzing strategic requirements...');
     
     try {
-      const strategyData = await generateStrategyWithFramework(userRequest, nivResponse);
+      const response = await supabaseApiService.callNivChat({
+        message: userMessage,
+        context: {
+          clientMode: detectedMode,
+          detectedFeature: 'strategic-planning',
+          requestType: 'strategic_planning'
+        },
+        mode: 'strategic_orchestration'
+      });
       
-      if (onStrategicPlanGenerate) {
-        onStrategicPlanGenerate({
-          objective: strategyData.objective,
-          framework: strategyData.framework,
-          timeline: strategyData.timeline,
-          tactics: strategyData.tactics,
-          realTimeMode: true
-        });
-      }
+      setFeatureGenerationProgress('Creating strategic framework...');
       
-      setFeatureGenerationProgress('Strategic plan generated - let\'s refine it together!');
+      onStrategicPlanGenerate({
+        framework: response.response,
+        nivGenerated: true,
+        strategicInsights: response.strategicAnalysis?.strategicInsights || []
+      });
       
     } catch (error) {
       console.error('Error in strategic planning:', error);
-      setFeatureGenerationProgress('Error in planning - let me recalibrate...');
     } finally {
       setTimeout(() => {
         setIsGeneratingInFeature(false);
         setFeatureGenerationProgress('');
-      }, 2000);
+      }, 1500);
     }
   }, [onStrategicPlanGenerate]);
-
-  // === HELPER FUNCTIONS ===
-  const generateContentWithStrategy = async (request, strategy) => {
-    // This would integrate with the content generation MCP
-    return {
-      content: "Generated content based on strategic approach...",
-      strategy: "Strategic reasoning for this content...",
-      improvements: ["Suggestion 1", "Suggestion 2"]
-    };
-  };
-
-  const generateStrategyWithFramework = async (request, approach) => {
-    // This would integrate with the strategic planning MCP
-    return {
-      objective: "Main strategic objective",
-      framework: "Proven framework approach",
-      timeline: "Strategic timeline",
-      tactics: ["Tactic 1", "Tactic 2", "Tactic 3"]
-    };
-  };
-
-  const detectContentType = (request) => {
-    const lower = request.toLowerCase();
-    if (lower.includes('press release')) return 'press-release';
-    if (lower.includes('social')) return 'social-post';
-    if (lower.includes('pitch')) return 'media-pitch';
-    return 'general-content';
-  };
-
-  const extractStrategicInsights = (response) => {
-    // Extract key strategic insights from Niv's response
-    return [];
-  };
-
-  const suggestNextActions = (feature, mode) => {
-    // Suggest next actions based on feature and mode
-    return [];
-  };
 
   // === MESSAGE HANDLING ===
   const handleSendMessage = useCallback(async () => {
     if (!input.trim() || isProcessing) return;
-
-    const userMessage = {
-      id: Date.now(),
-      type: 'user',
-      content: input.trim(),
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
+    
+    const userMessage = input.trim();
     setInput('');
-
+    setIsProcessing(true);
+    
     // Detect client mode and feature intent
-    const detectedMode = detectClientMode(input);
-    const detectedFeature = detectFeatureIntent(input);
+    const detectedMode = detectClientMode(userMessage);
+    const detectedFeature = detectFeatureIntent(userMessage);
     
     setClientMode(detectedMode);
-
-    // Generate Niv's strategic response
-    const strategicResponse = await generateStrategicResponse(input, detectedFeature, detectedMode);
-
-    const nivMessage = {
-      id: Date.now() + 1,
-      type: 'assistant',
-      content: strategicResponse.content,
-      mode: strategicResponse.mode,
-      feature: strategicResponse.detectedFeature,
-      strategicInsights: strategicResponse.strategicInsights,
+    
+    // Add user message
+    const userMsg = {
+      id: Date.now(),
+      type: 'user',
+      content: userMessage,
       timestamp: new Date()
     };
+    setMessages(prev => [...prev, userMsg]);
+    
+    try {
+      // Get Niv's response first to understand intent
+      const response = await supabaseApiService.callNivChat({
+        message: userMessage,
+        context: {
+          clientMode: detectedMode,
+          detectedFeature: detectedFeature,
+          conversationPhase: 'understanding'
+        },
+        mode: 'strategic_orchestration'
+      });
+      
+      // Add Niv's response
+      const assistantMsg = {
+        id: Date.now() + 1,
+        type: 'assistant',
+        content: response.response,
+        timestamp: new Date(),
+        mode: detectedMode,
+        strategicAnalysis: response.strategicAnalysis
+      };
+      setMessages(prev => [...prev, assistantMsg]);
+      
+      // If Niv suggests showing work, create inline work cards
+      if (detectedFeature && onWorkCardCreate) {
+        // Create work card after a brief delay
+        setTimeout(() => {
+          if (detectedFeature === 'content-generator') {
+            onWorkCardCreate({
+              type: 'content-draft',
+              data: {
+                title: 'Press Release Draft',
+                description: 'Strategic press release with key messaging points',
+                details: {
+                  'Length': '500 words',
+                  'Tone': 'Professional',
+                  'Audience': 'Tech Media'
+                }
+              }
+            });
+          } else if (detectedFeature === 'strategic-planning') {
+            onWorkCardCreate({
+              type: 'strategy-plan',
+              data: {
+                title: 'Campaign Strategy',
+                description: 'Comprehensive launch strategy with timeline and milestones',
+                details: {
+                  'Duration': '6 weeks',
+                  'Budget': '$75K',
+                  'Team': '3 members'
+                }
+              }
+            });
+          } else if (detectedFeature === 'media-intelligence') {
+            onWorkCardCreate({
+              type: 'media-list',
+              data: {
+                title: 'Media Target List',
+                description: 'Curated journalist list with personalized angles',
+                details: {
+                  'Journalists': '47',
+                  'Tier 1': '12',
+                  'Response Rate': '35%'
+                }
+              }
+            });
+          }
+        }, 1000);
+      }
+      
+    } catch (error) {
+      console.error('Error sending message:', error);
+      const errorMsg = {
+        id: Date.now() + 1,
+        type: 'assistant',
+        content: 'I apologize - I encountered an issue. Let me help you in a different way. What would you like to work on?',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMsg]);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [input, isProcessing, detectClientMode, detectFeatureIntent, setMessages, onWorkCardCreate]);
 
-    setMessages(prev => [...prev, nivMessage]);
+  const handleKeyPress = useCallback((e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  }, [handleSendMessage]);
 
-  }, [input, isProcessing, detectClientMode, detectFeatureIntent, generateStrategicResponse, setMessages]);
-
-  // === SCROLL MANAGEMENT ===
+  // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // === RENDER ===
+  // Focus input on mount
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  // === COMPONENT RENDER ===
   return (
-    <div className="niv-strategic-orchestrator">
-      {/* Header */}
-      <div className="niv-header">
-        <div className="niv-avatar">
-          <Bot className="w-8 h-8 text-blue-600" />
-          <Sparkles className="w-4 h-4 text-yellow-500 absolute -top-1 -right-1" />
+    <div style={{ 
+      height: '100%', 
+      display: 'flex', 
+      flexDirection: 'column',
+      background: 'rgba(0, 0, 0, 0.95)',
+      color: '#e8e8e8',
+      borderRadius: '8px'
+    }}>
+      {/* Niv Header with Strategic Identity */}
+      <div style={{
+        padding: '1rem',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+        background: 'rgba(59, 130, 246, 0.1)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.75rem'
+      }}>
+        <div style={{
+          width: '40px',
+          height: '40px',
+          background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+          borderRadius: '8px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative'
+        }}>
+          <Bot size={20} color="white" />
+          <div style={{
+            position: 'absolute',
+            top: '-2px',
+            right: '-2px',
+            width: '12px',
+            height: '12px',
+            background: '#10b981',
+            borderRadius: '50%',
+            border: '2px solid rgba(0, 0, 0, 0.95)'
+          }} />
         </div>
-        <div className="niv-status">
-          <h3 className="font-bold text-gray-900">Niv</h3>
-          <p className="text-sm text-gray-600">
-            Strategic PR Orchestrator • 20 Years Experience
+        <div style={{ flex: 1 }}>
+          <div style={{ 
+            fontWeight: '600', 
+            fontSize: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}>
+            Niv • Senior PR Strategist
             {clientMode !== 'NORMAL' && (
-              <span className={`ml-2 px-2 py-1 rounded text-xs ${
-                clientMode === 'CRISIS_MODE' ? 'bg-red-100 text-red-700' :
-                clientMode === 'URGENT_FIRE' ? 'bg-orange-100 text-orange-700' :
-                clientMode === 'STRATEGIC_PLANNING' ? 'bg-blue-100 text-blue-700' :
-                'bg-green-100 text-green-700'
-              }`}>
+              <span style={{
+                padding: '0.25rem 0.5rem',
+                borderRadius: '4px',
+                fontSize: '11px',
+                fontWeight: '500',
+                background: 
+                  clientMode === 'CRISIS_MODE' ? 'rgba(239, 68, 68, 0.2)' :
+                  clientMode === 'URGENT_FIRE' ? 'rgba(245, 158, 11, 0.2)' :
+                  clientMode === 'STRATEGIC_PLANNING' ? 'rgba(59, 130, 246, 0.2)' :
+                  'rgba(16, 185, 129, 0.2)',
+                color:
+                  clientMode === 'CRISIS_MODE' ? '#ef4444' :
+                  clientMode === 'URGENT_FIRE' ? '#f59e0b' :
+                  clientMode === 'STRATEGIC_PLANNING' ? '#3b82f6' :
+                  '#10b981'
+              }}>
                 {clientMode === 'CRISIS_MODE' ? '🚨 Crisis Mode' :
                  clientMode === 'URGENT_FIRE' ? '⚡ Urgent Mode' :
                  clientMode === 'STRATEGIC_PLANNING' ? '🎯 Strategic Mode' :
                  '🔍 Exploring Mode'}
               </span>
             )}
-          </p>
+          </div>
+          <div style={{ 
+            fontSize: '12px', 
+            color: '#9ca3af',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.25rem'
+          }}>
+            <Sparkles size={12} />
+            20 years experience • Strategic conversations • Feature orchestration
+          </div>
         </div>
       </div>
 
       {/* Feature Generation Progress */}
       {isGeneratingInFeature && (
-        <div className="niv-generation-progress bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-          <div className="flex items-center space-x-3">
-            <div className="animate-spin">
-              <RefreshCw className="w-5 h-5 text-blue-600" />
+        <div style={{
+          padding: '1rem',
+          background: 'rgba(59, 130, 246, 0.1)',
+          borderBottom: '1px solid rgba(59, 130, 246, 0.2)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem'
+        }}>
+          <div style={{ animation: 'spin 1s linear infinite' }}>
+            <RefreshCw size={16} color="#3b82f6" />
+          </div>
+          <div>
+            <div style={{ fontWeight: '500', color: '#3b82f6' }}>
+              Niv is working in the feature...
             </div>
-            <div>
-              <p className="font-medium text-blue-900">Niv is working in the feature...</p>
-              <p className="text-sm text-blue-700">{featureGenerationProgress}</p>
+            <div style={{ fontSize: '12px', color: '#60a5fa' }}>
+              {featureGenerationProgress}
             </div>
           </div>
         </div>
       )}
 
       {/* Messages */}
-      <div className="niv-messages space-y-4 flex-1 overflow-y-auto p-4">
+      <div style={{ 
+        flex: 1, 
+        overflowY: 'auto', 
+        padding: '1rem',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1rem'
+      }}>
         {messages.map((message) => (
           <div
             key={message.id}
-            className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+            style={{
+              display: 'flex',
+              justifyContent: message.type === 'user' ? 'flex-end' : 'flex-start'
+            }}
           >
-            <div
-              className={`max-w-3xl rounded-lg p-4 ${
-                message.type === 'user'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-900'
-              }`}
-            >
+            <div style={{
+              maxWidth: '80%',
+              padding: '0.75rem 1rem',
+              borderRadius: '12px',
+              background: message.type === 'user' 
+                ? 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)'
+                : 'rgba(255, 255, 255, 0.08)',
+              color: message.type === 'user' ? 'white' : '#e8e8e8'
+            }}>
               {message.type === 'assistant' && (
-                <div className="flex items-center space-x-2 mb-2">
-                  <Bot className="w-4 h-4" />
-                  <span className="font-medium">Niv</span>
-                  {message.mode && message.mode !== 'NORMAL' && (
-                    <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded">
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '0.5rem',
+                  marginBottom: '0.5rem',
+                  fontSize: '12px',
+                  color: '#9ca3af'
+                }}>
+                  <Bot size={14} />
+                  <span style={{ fontWeight: '500' }}>Niv</span>
+                  {message.mode && (
+                    <span style={{
+                      padding: '0.125rem 0.375rem',
+                      background: 'rgba(59, 130, 246, 0.2)',
+                      color: '#60a5fa',
+                      borderRadius: '4px',
+                      fontSize: '10px'
+                    }}>
                       {message.mode}
                     </span>
                   )}
                 </div>
               )}
-              
-              <div className="whitespace-pre-wrap">{message.content}</div>
-              
-              {message.strategicInsights && message.strategicInsights.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-gray-200">
-                  <p className="text-sm font-medium text-gray-700 mb-2">Strategic Insights:</p>
-                  <ul className="text-sm text-gray-600 space-y-1">
-                    {message.strategicInsights.map((insight, idx) => (
-                      <li key={idx} className="flex items-start space-x-2">
-                        <Lightbulb className="w-3 h-3 mt-0.5 text-yellow-500" />
-                        <span>{insight}</span>
-                      </li>
-                    ))}
-                  </ul>
+              <div style={{ whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
+                {message.content}
+              </div>
+              {message.timestamp && (
+                <div style={{ 
+                  fontSize: '10px', 
+                  opacity: 0.7, 
+                  marginTop: '0.5rem' 
+                }}>
+                  {new Date(message.timestamp).toLocaleTimeString()}
                 </div>
               )}
             </div>
@@ -476,82 +483,68 @@ Respond as Niv with enthusiasm, strategic wisdom, and immediate value. If you're
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <div className="niv-input border-t bg-white p-4">
-        <div className="flex space-x-3">
-          <input
-            ref={inputRef}
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-            placeholder="Ask Niv to strategize, create content, or orchestrate any PR task..."
-            className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={isProcessing}
-          />
-          <button
-            onClick={handleSendMessage}
-            disabled={isProcessing || !input.trim()}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-          >
-            {isProcessing ? (
-              <RefreshCw className="w-4 h-4 animate-spin" />
-            ) : (
-              <Send className="w-4 h-4" />
-            )}
-            <span>Send</span>
-          </button>
-        </div>
+      {/* Strategic Input Interface */}
+      <div style={{
+        padding: '1rem',
+        borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+        background: 'rgba(0, 0, 0, 0.5)',
+        display: 'flex',
+        gap: '0.75rem'
+      }}>
+        <input
+          ref={inputRef}
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyPress={handleKeyPress}
+          placeholder="Ask Niv for strategic guidance, content creation, or open any feature..."
+          style={{
+            flex: 1,
+            padding: '0.75rem 1rem',
+            background: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '8px',
+            color: '#e8e8e8',
+            fontSize: '14px',
+            outline: 'none'
+          }}
+          disabled={isProcessing}
+          onFocus={(e) => e.target.style.borderColor = 'rgba(59, 130, 246, 0.5)'}
+          onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
+        />
+        <button
+          onClick={handleSendMessage}
+          disabled={!input.trim() || isProcessing}
+          style={{
+            padding: '0.75rem 1.25rem',
+            borderRadius: '8px',
+            border: 'none',
+            background: !input.trim() || isProcessing
+              ? 'rgba(255, 255, 255, 0.1)'
+              : 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+            color: !input.trim() || isProcessing ? '#6b7280' : 'white',
+            cursor: !input.trim() || isProcessing ? 'not-allowed' : 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            fontSize: '14px',
+            fontWeight: '500',
+            transition: 'all 0.2s'
+          }}
+        >
+          {isProcessing ? (
+            <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} />
+          ) : (
+            <Send size={16} />
+          )}
+          Send
+        </button>
       </div>
 
-      <style jsx>{`
-        .niv-strategic-orchestrator {
-          display: flex;
-          flex-direction: column;
-          height: 100%;
-          background: white;
-          border-radius: 12px;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-
-        .niv-header {
-          display: flex;
-          align-items: center;
-          space-x: 12px;
-          padding: 16px;
-          border-bottom: 1px solid #e5e7eb;
-          background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-        }
-
-        .niv-avatar {
-          position: relative;
-          width: 48px;
-          height: 48px;
-          background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .niv-messages {
-          min-height: 400px;
-          max-height: 600px;
-        }
-
-        .niv-generation-progress {
-          animation: slideIn 0.3s ease-out;
-        }
-
-        @keyframes slideIn {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
       `}</style>
     </div>

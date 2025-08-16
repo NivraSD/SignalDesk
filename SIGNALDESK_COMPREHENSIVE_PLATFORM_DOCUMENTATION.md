@@ -2,9 +2,9 @@
 
 _Complete Technical Documentation - Full System Architecture_
 
-**Last Updated:** August 15, 2025  
-**Version:** 6.0 (MCP Cascade Intelligence & Opportunity Engine Complete)  
-**Status:** ✅ FULLY OPERATIONAL with 11 Integrated MCPs & Stable Cascade Predictor
+**Last Updated:** August 16, 2025  
+**Version:** 7.0 (Niv Strategic Orchestrator Complete)  
+**Status:** ✅ FULLY OPERATIONAL with Niv Strategic Orchestrator, 11 Integrated MCPs & Stable Cascade Predictor
 
 ---
 
@@ -788,6 +788,75 @@ GET / api / mcp / health; // MCP health check
 
 ---
 
+## Niv Strategic Orchestrator - MAJOR UPDATE (v7.0)
+
+### 🎯 AUGUST 16, 2025 TRANSFORMATION COMPLETE
+
+Niv has been completely transformed from a basic chat assistant into a **Strategic PR Orchestrator** with 20 years of encoded expertise, real-time feature control, and adaptive client mode detection.
+
+#### ✨ NEW CAPABILITIES
+
+**🧠 Strategic Intelligence Engine**
+- **Client Mode Detection**: Automatically detects Crisis, Urgent, Strategic, or Exploratory modes
+- **Feature Orchestration**: Directly opens and controls platform features
+- **Real-time Generation**: Creates and edits content within features themselves
+- **Progressive Value Delivery**: Builds context strategically before suggesting tools
+
+**🎭 Adaptive Personality System**
+- **Crisis Mode** 🚨: Takes immediate control, emergency protocols
+- **Urgent Fire Mode** ⚡: Fast-track delivery, minimal questions
+- **Strategic Planning Mode** 🎯: Comprehensive analysis and roadmapping  
+- **Exploratory Mode** 🔍: Patient guidance and option exploration
+
+**🔧 Technical Architecture**
+- **New Component**: `NivStrategicOrchestrator.js` (replaces basic chat)
+- **New Edge Function**: `niv-orchestrator` Supabase function
+- **Enhanced Integration**: Real-time feature control and content editing
+- **Fixed UI**: Proper inline styling (no more Tailwind CSS issues)
+
+#### 🛠 IMPLEMENTATION DETAILS
+
+**Component Structure:**
+```javascript
+// /frontend/src/components/NivStrategicOrchestrator.js
+const NivStrategicOrchestrator = ({ 
+  onFeatureOpen,           // Opens platform features
+  onContentGenerate,       // Triggers content generation  
+  onStrategicPlanGenerate, // Creates strategic plans
+  messages,                // Conversation history
+  setMessages             // Message state management
+}) => {
+  // Client mode detection with keyword analysis
+  // Feature intent recognition 
+  // Real-time orchestration
+  // Progressive value delivery
+}
+```
+
+**Supabase Edge Function:**
+```typescript
+// /supabase/functions/niv-orchestrator/index.ts
+// 20-year PR strategist personality
+// Client delight tactics
+// Strategic conversation engine
+// Feature orchestration logic
+```
+
+### 🎪 USER EXPERIENCE TRANSFORMATION
+
+**Before (Basic Chat):**
+- Generic Q&A responses
+- Opens tools without context
+- No strategic guidance
+- Limited conversation awareness
+
+**After (Strategic Orchestrator):**
+- Immediate strategic value
+- Context-aware feature opening
+- Real-time content generation and editing
+- Adaptive to client urgency levels
+- Truly conversational with memory
+
 ## Niv PR Strategist - IMPLEMENTED
 
 ### Current Status: FULLY OPERATIONAL
@@ -1375,51 +1444,140 @@ When configured for Uber, the system would:
 
 ## Deployment Infrastructure
 
-### NEW DEPLOYMENT ARCHITECTURE - NO RAILWAY
+### 🚀 CRITICAL DEPLOYMENT ARCHITECTURE - FOLLOW EXACTLY TO AVOID ISSUES
 
 #### Current Production Status ✅
 
 ```yaml
 Status: FULLY OPERATIONAL
-Frontend: Vercel (signaldesk-7v03xd6nz-nivra-sd.vercel.app)
-Backend: Supabase Edge Functions (NO Railway)
+Frontend: Vercel (signaldesk.vercel.app via project "signaldesk")
+Backend: Supabase Edge Functions 
 Database: Supabase PostgreSQL
 Authentication: Supabase Auth
-Last Deployment: August 14, 2025
-Version: 5.0 (Niv Integration Complete)
+Last Deployment: August 16, 2025
+Version: 7.0 (Niv Strategic Orchestrator Complete)
+Latest URL: signaldesk-3oodwmgd7-nivra-sd.vercel.app
 ```
 
-#### Supabase Edge Functions Configuration
+### 🔥 DEPLOYMENT RULES - PREVENT FRONTEND PROJECT CONFUSION
 
-**📁 `/supabase/functions/`** - Edge Functions for Backend Logic
+**❌ NEVER CREATE:** `frontend` project on Vercel
+**✅ ALWAYS USE:** `signaldesk` project on Vercel
+**❌ NEVER RUN:** `vercel` from `/frontend/` directory  
+**✅ ALWAYS RUN:** `vercel` from root `/SignalDesk/` directory with correct vercel.json
 
-```typescript
-// chat function for Niv AI integration
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+### 📋 CORRECT DEPLOYMENT PROCEDURE
 
-serve(async (req) => {
-  // Handle Claude API calls
-  // Process Niv conversations
-  // Return responses with proper CORS
-})
+#### Step 1: Vercel Frontend Deployment (MANDATORY PROCESS)
+
+**Directory Structure:**
+```
+/SignalDesk/                          ← Root directory (deploy from here)
+├── vercel.json                       ← Contains deployment config
+├── frontend/                         ← React app subdirectory  
+│   ├── package.json                  ← Frontend dependencies
+│   ├── src/                          ← Source code
+│   └── build/                        ← Build output
+└── .vercel/                          ← Vercel project link
 ```
 
-**📁 `/backend/server.js`** - Railway Entry Point with Enhanced Diagnostics
+**Critical vercel.json Configuration:**
+```json
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "build", 
+  "framework": "create-react-app",
+  "installCommand": "npm install --legacy-peer-deps",
+  "rootDirectory": "frontend",
+  "env": {
+    "REACT_APP_SUPABASE_URL": "https://zskaxjtyuaqazydouifp.supabase.co",
+    "REACT_APP_SUPABASE_ANON_KEY": "[anon-key]"
+  },
+  "rewrites": [
+    {"source": "/(.*)", "destination": "/index.html"}
+  ]
+}
+```
 
-```javascript
-// Railway entry point - redirects to the full server
-const path = require("path");
-console.log("🚀 Railway is running server.js from root");
-console.log("📍 Current directory:", __dirname);
-console.log(
-  "📍 Redirecting to backend/index.js (full server with all routes)..."
-);
-console.log("🔄 Deployment timestamp:", new Date().toISOString());
+**Deployment Commands (RUN FROM ROOT /SignalDesk/):**
+```bash
+# 1. Ensure you're in root directory
+cd /Users/jonathanliebowitz/Desktop/SignalDesk
 
-// Ensure we can find the backend directory
-const backendPath = path.join(__dirname, "backend", "index.js");
-console.log("📍 Looking for backend at:", backendPath);
+# 2. Link to CORRECT project (one-time setup)
+vercel link --project signaldesk --yes
+
+# 3. Deploy to production
+vercel --prod
+
+# ✅ Result: deploys to signaldesk-[hash]-nivra-sd.vercel.app
+# ❌ NEVER: Creates frontend-[hash]-nivra-sd.vercel.app
+```
+
+#### Step 2: Supabase Backend Deployment
+
+**Active Edge Functions:**
+- `niv-chat` - Legacy chat function
+- `niv-orchestrator` - NEW Strategic Orchestrator (primary)
+- `strategic-planning` - Strategic planning function
+
+**Deploy Edge Functions:**
+```bash
+# Deploy new niv-orchestrator function
+cd /Users/jonathanliebowitz/Desktop/SignalDesk
+supabase functions deploy niv-orchestrator --project-ref zskaxjtyuaqazydouifp
+
+# Verify deployment
+supabase functions list
+```
+
+### 🚨 DEPLOYMENT TROUBLESHOOTING
+
+#### Common Vercel Issues & Fixes
+
+**Issue: "frontend" project gets created accidentally**
+```bash
+# Fix: Delete wrong project and relink
+vercel rm frontend --yes
+rm -rf .vercel
+vercel link --project signaldesk --yes
+```
+
+**Issue: Package.json not found during build**
+```bash
+# Cause: Missing rootDirectory in vercel.json
+# Fix: Ensure vercel.json has "rootDirectory": "frontend"
+```
+
+**Issue: Build fails with npm install errors**
+```bash
+# Fix: Use legacy peer deps in vercel.json
+"installCommand": "npm install --legacy-peer-deps"
+```
+
+#### Emergency Recovery Steps
+
+**If wrong frontend project exists:**
+1. Go to Vercel dashboard
+2. Delete the `frontend` project completely
+3. Ensure only `signaldesk` project exists
+4. Re-run deployment from root directory
+
+**If deployment fails:**
+1. Check vercel.json configuration
+2. Verify you're in root `/SignalDesk/` directory
+3. Check `.vercel/project.json` points to "signaldesk"
+4. Force fresh deployment: `vercel --prod --force`
+
+### ✅ VERIFICATION CHECKLIST
+
+After deployment, verify:
+- [ ] URL contains "signaldesk" not "frontend"
+- [ ] Niv interface loads with proper dark styling
+- [ ] No Tailwind CSS errors in console
+- [ ] Client mode detection works
+- [ ] Content generation opens properly
+- [ ] Supabase Edge Functions respond
 
 // Check if the backend file exists
 const fs = require("fs");
