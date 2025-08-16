@@ -206,7 +206,7 @@ Provide analysis including:
     return this.callEdgeFunction('claude-chat', {
       prompt,
       system: "You are Niv, a senior PR strategist. Analyze opportunities with deep strategic insight.",
-      model: 'claude-sonnet-4',
+      model: 'claude-3-5-sonnet-20241022',
       max_tokens: 1500
     });
   }
@@ -231,7 +231,7 @@ Provide comprehensive campaign analysis including messaging, targeting, and exec
     return this.callEdgeFunction('claude-chat', {
       prompt,
       system: "You are Niv, an expert PR strategist with 20 years of experience running successful campaigns.",
-      model: 'claude-sonnet-4',
+      model: 'claude-3-5-sonnet-20241022',
       max_tokens: 2000
     });
   }
@@ -251,7 +251,7 @@ Provide crisis response plan including:
     return this.callEdgeFunction('claude-chat', {
       prompt,
       system: "You are Niv, a crisis management expert. Time is critical. Be direct, strategic, and action-oriented.",
-      model: 'claude-sonnet-4',  // Use Claude Sonnet 4 for crisis
+      model: 'claude-3-5-sonnet-20241022',  // Use Claude Sonnet 4 for crisis
       max_tokens: 2000,
       temperature: 0.3  // Lower temperature for more consistent crisis response
     });
