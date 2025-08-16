@@ -67,33 +67,54 @@ async function generatePlan(req: Request, supabaseClient: any) {
     )
   }
 
-  // Call Claude API for strategic planning
-  const prompt = `As Niv, SignalDesk's expert PR Strategist, create a comprehensive strategic plan:
+  // Niv's Strategic Planning Prompt - 20 Years of PR Experience
+  const prompt = `I'm Niv, and I've been doing strategic PR for 20 years. Let me create a strategic plan that actually works.
 
-OBJECTIVE: ${objective}
+THE SITUATION:
+Objective: ${objective}
+${context ? `Context: ${context}` : ''}
+${constraints ? `Constraints: ${constraints}` : ''}
+${timeline ? `Timeline: ${timeline}` : ''}
 
-${context ? `CONTEXT: ${context}` : ''}
-${constraints ? `CONSTRAINTS: ${constraints}` : ''}
-${timeline ? `TIMELINE: ${timeline}` : ''}
+As a senior PR strategist, I need to think through this strategically:
 
-Create a structured strategic plan with these sections:
-1. Executive Summary (2-3 sentences)
-2. Strategic Pillars (3-4 key focus areas with specific actions and MCP assignments)
-3. Evidence & Research Needs (specific data/insights required)
-4. Implementation Phases (clear milestones with timelines)
-5. Success Metrics (measurable PR KPIs)
-6. Risk Mitigation (top 3 risks and strategies)
+1. EXECUTIVE SUMMARY: What's the real story here? What's the narrative that gets coverage and moves business metrics? (2-3 sentences that a CEO would understand)
 
-For each strategic pillar, specify:
-- Title and description
-- Specific actions to take
-- Timeline for completion
-- Which MCP (SignalDesk service) will execute it
-- Expected outcomes
+2. STRATEGIC PILLARS: What are the 3-4 strategic approaches that will actually drive results?
+For each pillar:
+- Strategic rationale (why this matters)
+- Tactical execution (specific actions)
+- Media angle (how this gets coverage)
+- Timeline and dependencies
+- MCP assignment (Content Generator, Media Intelligence, Opportunity Engine, Analytics, Crisis Command)
+- Success indicators
 
-Available MCPs: Content Generator, Media Intelligence, Crisis Command, Analytics, Opportunity Engine
+3. MEDIA STRATEGY: 
+- Tier 1 targets and exclusive angles
+- Tier 2 amplification strategy
+- Content calendar and messaging
+- Journalist relationship mapping
 
-Return as JSON with keys: executive_summary, strategic_pillars, evidence_needs, implementation_phases, success_metrics, risk_mitigation`
+4. EXECUTION ROADMAP:
+- Phase 1: Foundation (research, messaging, asset creation)
+- Phase 2: Launch (media outreach, content distribution)
+- Phase 3: Amplification (coverage follow-up, stakeholder engagement)
+- Phase 4: Measurement (impact analysis, optimization)
+
+5. RISK MITIGATION:
+- What could go wrong and how to prevent it
+- Crisis preparedness
+- Competitive response planning
+
+6. SUCCESS METRICS:
+- Coverage quality over quantity
+- Message penetration
+- Stakeholder engagement
+- Business impact
+
+Think like you're presenting to a board that expects ROI. Be specific, actionable, and strategic.
+
+Return as JSON with keys: executive_summary, strategic_pillars, media_strategy, execution_roadmap, risk_mitigation, success_metrics`
 
   try {
     // Use Claude via Anthropic API
@@ -106,7 +127,9 @@ Return as JSON with keys: executive_summary, strategic_pillars, evidence_needs, 
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 4000,
+        max_tokens: 5000,
+        temperature: 0.8,
+        system: `You are Niv, a Senior PR Strategist with 20 years of agency experience. You create strategic plans that actually work - not corporate fluff, but actionable strategies that get coverage and drive business results. Think strategically, write naturally, and focus on what actually matters in PR.`,
         messages: [{ role: 'user', content: prompt }]
       })
     })
@@ -124,29 +147,53 @@ Return as JSON with keys: executive_summary, strategic_pillars, evidence_needs, 
       const jsonMatch = content.match(/\{[\s\S]*\}/)
       strategicPlan = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(content)
     } catch (parseError) {
-      // Fallback structure
+      // Strategic fallback with Niv's expertise
       strategicPlan = {
-        executive_summary: content.substring(0, 200) + '...',
+        executive_summary: `Based on my 20 years of PR experience, this objective requires a multi-faceted approach focusing on strategic positioning, targeted media relations, and measurable outcomes. The key is finding the narrative angle that resonates with both media and stakeholders while driving business impact.`,
         strategic_pillars: [
           {
-            title: 'Strategic Execution',
-            description: 'Execute the strategic plan objectives',
-            actions: ['Define action items', 'Assign responsibilities', 'Set timelines'],
-            timeline: '30 days',
-            mcp: 'Content Generator'
+            title: 'Narrative Foundation',
+            description: 'Establish core messaging that journalists actually want to cover',
+            rationale: 'Without a compelling story, even perfect execution fails',
+            actions: ['Research unique angles competitors are missing', 'Develop data-driven story hooks', 'Create journalist-specific value propositions'],
+            media_angle: 'Exclusive insights and industry analysis',
+            timeline: '2-3 weeks',
+            mcp: 'Content Generator + Analytics',
+            success_indicators: ['Message testing scores', 'Journalist interest responses']
+          },
+          {
+            title: 'Relationship Activation',
+            description: 'Strategic media outreach with personalized approaches',
+            rationale: 'Coverage comes from relationships, not spray-and-pray pitching',
+            actions: ['Map journalist beats and interests', 'Craft tier-specific messaging', 'Execute embargo and exclusive strategies'],
+            media_angle: 'Tier 1 exclusives, then strategic amplification',
+            timeline: '4-6 weeks',
+            mcp: 'Media Intelligence',
+            success_indicators: ['Response rates', 'Coverage quality scores']
           }
         ],
-        evidence_needs: ['Market analysis', 'Competitor research', 'Media landscape'],
-        implementation_phases: [
-          { phase: 'Planning', duration: '2 weeks', tasks: ['Research', 'Strategy formation'] },
-          { phase: 'Execution', duration: '8 weeks', tasks: ['Implementation', 'Monitoring'] },
-          { phase: 'Evaluation', duration: '2 weeks', tasks: ['Analysis', 'Optimization'] }
+        media_strategy: {
+          tier_1_approach: 'Exclusive access and insights for top-tier journalists',
+          tier_2_amplification: 'Broader story distribution with regional angles',
+          content_calendar: 'Strategic content release aligned with news cycles',
+          relationship_mapping: 'Journalist preference and beat analysis'
+        },
+        execution_roadmap: [
+          { phase: 'Strategic Foundation', duration: '2 weeks', focus: 'Research, messaging, asset creation', deliverables: ['Messaging framework', 'Content assets', 'Media target list'] },
+          { phase: 'Media Engagement', duration: '4 weeks', focus: 'Outreach execution and relationship building', deliverables: ['Coverage secured', 'Relationships strengthened', 'Message penetration'] },
+          { phase: 'Amplification & Optimization', duration: '2 weeks', focus: 'Coverage amplification and strategy refinement', deliverables: ['Impact analysis', 'Strategy optimization', 'Next phase planning'] }
         ],
-        success_metrics: ['Media mentions', 'Engagement rate', 'Share of voice'],
+        success_metrics: [
+          'Coverage quality score (tier weighting)',
+          'Message penetration rate',
+          'Stakeholder engagement metrics',
+          'Share of voice vs competitors',
+          'Business impact correlation'
+        ],
         risk_mitigation: [
-          { risk: 'Timeline delays', strategy: 'Buffer time and parallel execution' },
-          { risk: 'Resource constraints', strategy: 'Prioritization and alternative solutions' },
-          { risk: 'Stakeholder alignment', strategy: 'Regular communication and feedback' }
+          { risk: 'News cycle disruption', strategy: 'Flexible timing with holding strategies and alternative angles ready' },
+          { risk: 'Competitive counter-narratives', strategy: 'Proactive monitoring and rapid response capabilities' },
+          { risk: 'Message dilution', strategy: 'Clear core narrative with consistent reinforcement across all touchpoints' }
         ]
       }
     }

@@ -78,26 +78,28 @@ const AdaptiveNivAssistantEnhanced = ({
     }
   };
 
-  // Guided conversation flows
-  const guidedFlows = {
-    'strategic-planning': [
-      { question: "What's your main objective?", key: 'objective' },
-      { question: "What's the timeline?", key: 'timeline' },
-      { question: "Any constraints or budget limits?", key: 'constraints' },
-      { question: "What type of plan? (Comprehensive/Crisis/Campaign/Launch)", key: 'planType' }
-    ],
-    'content-generator': [
-      { question: "What type of content?", key: 'contentType' },
-      { question: "What's the main message?", key: 'message' },
-      { question: "Who's the audience?", key: 'audience' },
-      { question: "Any specific requirements?", key: 'requirements' }
-    ],
-    'media-intelligence': [
-      { question: "What industry or beat?", key: 'beat' },
-      { question: "What's your story angle?", key: 'angle' },
-      { question: "Geographic focus?", key: 'location' },
-      { question: "Tier preference? (Tier 1/2/3)", key: 'tier' }
-    ]
+  // Natural conversation context tracking (no rigid flows)
+  const conversationContext = {
+    'strategic-planning': {
+      contextKeys: ['objective', 'timeline', 'constraints', 'planType', 'audience', 'budget'],
+      expertise: 'strategic campaign development and execution'
+    },
+    'content-generator': {
+      contextKeys: ['contentType', 'message', 'audience', 'angle', 'deadline', 'requirements'],
+      expertise: 'strategic content creation and messaging'
+    },
+    'media-intelligence': {
+      contextKeys: ['beat', 'angle', 'geography', 'tier', 'timeline', 'exclusivity'],
+      expertise: 'media relationship management and outreach strategy'
+    },
+    'opportunity-engine': {
+      contextKeys: ['industry', 'trends', 'timing', 'competitive_landscape'],
+      expertise: 'opportunity identification and strategic positioning'
+    },
+    'crisis-command': {
+      contextKeys: ['situation', 'stakeholders', 'timeline', 'impact_level', 'response_strategy'],
+      expertise: 'crisis communication and reputation management'
+    }
   };
 
   useEffect(() => {
@@ -157,9 +159,9 @@ const AdaptiveNivAssistantEnhanced = ({
     setInput('');
     setIsTyping(true);
 
-    // Check if we're in a guided flow
-    if (awaitingResponse) {
-      await handleGuidedResponse(input);
+    // Check if we're in a natural conversation flow
+    if (currentContext && currentContext.naturalFlow) {
+      await handleNaturalResponse(input);
       return;
     }
 
@@ -167,89 +169,101 @@ const AdaptiveNivAssistantEnhanced = ({
     await handleClaudeAnalysis(input);
   };
 
-  // Handle feature-specific requests
+  // Handle feature-specific requests with natural conversation
   const handleFeatureRequest = async (feature, userInput) => {
     const mcp = mcpExpertise[feature];
-    const flow = guidedFlows[feature];
+    const context = conversationContext[feature];
     
     // Don't re-open if already in the feature
     if (currentFeature !== feature && onFeatureOpen) {
       onFeatureOpen(feature);
     }
 
-    // For content generator requests from button clicks, start guided flow
-    if (feature === 'content-generator' && userInput.includes('I want to create a')) {
-      // Extract content type from message
-      const contentTypeMatch = userInput.match(/create a (.+)/i);
-      const contentType = contentTypeMatch ? contentTypeMatch[1] : 'content';
-      
-      setCurrentContext({ 
-        feature, 
-        flow: guidedFlows[feature], 
-        currentStep: 0, 
-        data: { contentType } 
-      });
-      
-      const response = {
-        id: Date.now(),
-        type: 'assistant',
-        content: `I'll help you create a ${contentType}. What's the main message you want to convey?`,
-        timestamp: new Date()
-      };
-      
-      setMessages(prev => [...prev, response]);
-      setAwaitingResponse({ feature, key: 'message', step: 1 });
-    } else if (flow && flow.length > 0) {
-      // Regular guided flow for other features
-      setCurrentContext({ feature, flow, currentStep: 0, data: {} });
-      
-      const response = {
-        id: Date.now(),
-        type: 'assistant',
-        content: `${flow[0].question}`,
-        timestamp: new Date()
-      };
-      
-      setMessages(prev => [...prev, response]);
-      setAwaitingResponse({ feature, key: flow[0].key, step: 0 });
+    // Set natural conversation context
+    setCurrentContext({ 
+      feature, 
+      expertise: context?.expertise || feature,
+      gatheredInfo: {},
+      naturalFlow: true
+    });
+    
+    // Generate natural response based on the request
+    let naturalResponse = '';
+    
+    if (feature === 'strategic-planning') {
+      naturalResponse = `Let's create a strategic plan that actually works. Tell me about your objective and I'll think through the strategy, timing, and execution approach. What are you looking to achieve?`;
+    } else if (feature === 'content-generator') {
+      naturalResponse = `I'll help you create content that journalists actually want to cover. What's the story you're trying to tell, and who needs to hear it?`;
+    } else if (feature === 'media-intelligence') {
+      naturalResponse = `Let's find the right journalists for your story. What's your angle, and what beat or industry are we targeting? I'll think about which contacts would be most interested.`;
+    } else if (feature === 'opportunity-engine') {
+      naturalResponse = `Time to spot some PR gold. What industry or trend are you tracking? I'll analyze the opportunity landscape and find angles your competitors are missing.`;
+    } else if (feature === 'crisis-command') {
+      naturalResponse = `Crisis mode activated. Tell me what's happening and I'll help you map stakeholders, craft messaging, and control the narrative. What's the situation?`;
     } else {
-      // Direct action for simple features
-      await executeFeatureAction(feature, userInput);
+      naturalResponse = `I'm opening ${feature.replace('-', ' ')} and bringing my 20 years of experience to help you succeed. What specific challenge are you facing?`;
     }
     
+    const response = {
+      id: Date.now(),
+      type: 'assistant',
+      content: naturalResponse,
+      timestamp: new Date(),
+      feature: feature
+    };
+    
+    setMessages(prev => [...prev, response]);
     setIsTyping(false);
   };
 
-  // Handle guided conversation responses
-  const handleGuidedResponse = async (response) => {
+  // Handle natural conversation flow (replaces rigid guided responses)
+  const handleNaturalResponse = async (response) => {
     if (!currentContext) return;
 
-    const { feature, flow, currentStep, data } = currentContext;
-    const currentKey = flow[currentStep].key;
+    const { feature, gatheredInfo, expertise } = currentContext;
     
-    // Store the response
-    const updatedData = { ...data, [currentKey]: response };
+    // Update gathered information naturally
+    const updatedInfo = { ...gatheredInfo, latestResponse: response };
+    setCurrentContext({ ...currentContext, gatheredInfo: updatedInfo });
     
-    // Check if there are more questions
-    const nextStep = currentStep + 1;
-    if (nextStep < flow.length) {
-      // Ask next question
-      setCurrentContext({ ...currentContext, currentStep: nextStep, data: updatedData });
+    // Let Claude decide if we have enough information or need more context
+    const contextualPrompt = `User provided: "${response}"
+    
+For ${feature} (${expertise}), do I have enough information to help them, or should I ask strategic follow-up questions? Be natural and conversational - act like a senior PR strategist having a real conversation, not a chatbot with a checklist.`;
+    
+    try {
+      const claudeResponse = await supabaseApiService.callNivChat({
+        message: contextualPrompt,
+        context: { feature, gatheredInfo: updatedInfo, conversationHistory: messages.slice(-3) },
+        mode: 'conversation',
+        sessionId: `session-${Date.now()}`
+      });
       
-      const nextMessage = {
+      const aiMessage = {
         id: Date.now(),
         type: 'assistant',
-        content: flow[nextStep].question,
-        timestamp: new Date()
+        content: claudeResponse.response || claudeResponse.data || "Let me think about the best approach for your situation.",
+        timestamp: new Date(),
+        strategicInsights: claudeResponse.strategicAnalysis
       };
       
-      setMessages(prev => [...prev, nextMessage]);
-      setAwaitingResponse({ feature, key: flow[nextStep].key, step: nextStep });
-    } else {
-      // All questions answered, execute the feature
-      await executeFeatureAction(feature, updatedData);
-      setCurrentContext(null);
-      setAwaitingResponse(null);
+      setMessages(prev => [...prev, aiMessage]);
+      
+      // Check if Claude suggested executing the feature
+      if (claudeResponse.response && 
+          (claudeResponse.response.includes('let me create') || 
+           claudeResponse.response.includes('I\'ll generate') ||
+           claudeResponse.response.includes('let\'s build'))) {
+        // Execute the feature with gathered information
+        setTimeout(() => {
+          executeFeatureAction(feature, updatedInfo);
+        }, 1000);
+      }
+      
+    } catch (error) {
+      console.error('Natural conversation error:', error);
+      // Fallback to direct execution if Claude fails
+      await executeFeatureAction(feature, updatedInfo);
     }
     
     setIsTyping(false);
@@ -340,63 +354,64 @@ const AdaptiveNivAssistantEnhanced = ({
         currentContext: currentContext
       };
 
-      // Enhanced prompt for Claude to understand intent and take action
-      const enhancedQuery = `
-User Query: "${query}"
+      // Enhanced strategic analysis prompt for Niv
+      const enhancedQuery = `User says: "${query}"
 
-Available Features in SignalDesk:
-- strategic-planning: Create comprehensive strategic plans
-- content-generator: Write press releases, articles, social posts
-- media-intelligence: Find journalists and media contacts
-- opportunity-engine: Discover PR opportunities and trends
-- stakeholder-intelligence: Monitor competitors and stakeholders
-- crisis-command: Manage crisis communications
-- memory-vault: Save and retrieve knowledge
+As Niv, a senior PR strategist with 20 years of experience, analyze this request:
 
-Instructions:
-1. Understand what the user wants to accomplish
-2. If they want to use a specific feature, identify which one
-3. If they need guidance, provide strategic PR advice
-4. Be conversational and helpful, not robotic
-5. If opening a feature, explain what you're doing
+1. What's the real PR challenge or opportunity here?
+2. What strategic approach would you recommend?
+3. Do they need a specific SignalDesk feature, or just strategic guidance?
+4. What risks or opportunities should they consider?
+5. What's your expert recommendation for next steps?
 
-Respond with your analysis and next steps.`;
+Available SignalDesk features:
+- Strategic Planning: Comprehensive campaign strategies
+- Content Generator: Strategic content creation
+- Media Intelligence: Journalist relationships and outreach
+- Opportunity Engine: PR opportunity identification
+- Crisis Command: Crisis communication management
+- Memory Vault: Knowledge management
 
-      // Call Claude via Supabase
+Respond as Niv would - warm but direct, strategic, and focused on actionable insights. If you recommend opening a feature, explain the strategic reasoning.
+
+Current conversation context: ${JSON.stringify(conversationContext)}`;
+
+      // Call Claude via Supabase with strategic analysis mode
       const response = await supabaseApiService.callNivChat({
         message: enhancedQuery,
-        context: conversationContext,
+        context: {
+          currentFeature: currentFeature,
+          conversationHistory: messages.slice(-5),
+          userIntent: 'strategic_analysis'
+        },
         mode: 'analysis',
         sessionId: `session-${Date.now()}`
       });
 
-      // Parse Claude's response to determine action
+      // Parse Claude's strategic response
       const claudeResponse = response.response || response.data || '';
+      const strategicInsights = response.strategicAnalysis || null;
+      
+      // Add Claude's strategic analysis
+      const aiMessage = {
+        id: Date.now(),
+        type: 'assistant',
+        content: claudeResponse,
+        timestamp: new Date(),
+        strategicInsights: strategicInsights,
+        expertiseLevel: '20_years_experience'
+      };
+      setMessages(prev => [...prev, aiMessage]);
       
       // Check if Claude identified a feature to open
       const featureToOpen = detectFeatureFromClaudeResponse(claudeResponse);
       
       if (featureToOpen) {
-        // Open the feature and provide context
-        await handleFeatureRequest(featureToOpen, query);
-        
-        // Add Claude's explanation
-        const aiMessage = {
-          id: Date.now(),
-          type: 'assistant',
-          content: claudeResponse,
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, aiMessage]);
-      } else {
-        // Just show Claude's response
-        const aiMessage = {
-          id: Date.now(),
-          type: 'assistant',
-          content: claudeResponse,
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, aiMessage]);
+        // Open the feature with strategic context
+        setTimeout(() => {
+          handleFeatureRequest(featureToOpen, query);
+        }, 1000);
       }
     } catch (error) {
       console.error('Claude analysis error:', error);
