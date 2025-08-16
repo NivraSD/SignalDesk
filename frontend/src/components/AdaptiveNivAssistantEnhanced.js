@@ -18,6 +18,8 @@ const AdaptiveNivAssistantEnhanced = ({
   const [lastProcessedMessageId, setLastProcessedMessageId] = useState(null);
   const [conversationPhase, setConversationPhase] = useState('discovery'); // discovery, planning, execution
   const [gatheredContext, setGatheredContext] = useState({});
+  const [clientMode, setClientMode] = useState(null); // Track detected client mode
+  const [lastClientMode, setLastClientMode] = useState(null); // Remember last mode
   const messagesEndRef = useRef(null);
 
   // Feature recognition patterns
@@ -164,6 +166,34 @@ I've helped clients turn product launches into thought leadership platforms, man
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Detect client mode from message
+  const detectClientMode = (message) => {
+    const lowerMessage = message.toLowerCase();
+    const wordCount = message.split(' ').length;
+    
+    // Crisis indicators - highest priority
+    if (['help', 'disaster', 'emergency', 'breaking', 'just happened', 'went viral', 'leaked', 'crisis'].some(i => lowerMessage.includes(i))) {
+      return 'CRISIS_MODE';
+    }
+    
+    // Urgent indicators
+    if (['asap', 'urgent', 'now', 'quick', 'just need', 'immediately'].some(i => lowerMessage.includes(i)) || wordCount < 10) {
+      return 'URGENT_FIRE';
+    }
+    
+    // Strategic indicators
+    if (['strategy', 'campaign', 'quarterly', 'roadmap', 'comprehensive', 'full plan'].some(i => lowerMessage.includes(i))) {
+      return 'STRATEGIC_PLANNING';
+    }
+    
+    // Exploratory indicators
+    if (['thinking about', 'considering', 'what if', 'explore', 'options', 'wondering'].some(i => lowerMessage.includes(i))) {
+      return 'EXPLORATORY';
+    }
+    
+    return 'NORMAL';
+  };
+
   // Detect feature intent from user message
   const detectFeatureIntent = (message) => {
     const lowerMessage = message.toLowerCase();
@@ -182,11 +212,17 @@ I've helped clients turn product launches into thought leadership platforms, man
   const handleSend = async () => {
     if (!input.trim()) return;
 
+    // Detect client mode first
+    const detectedMode = detectClientMode(input);
+    setClientMode(detectedMode);
+    setLastClientMode(detectedMode);
+
     const userMessage = {
       id: Date.now(),
       type: 'user',
       content: input,
-      timestamp: new Date()
+      timestamp: new Date(),
+      clientMode: detectedMode
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -230,10 +266,28 @@ I've helped clients turn product launches into thought leadership platforms, man
     setIsTyping(false);
   };
 
-  // Strategic questions based on feature intent
+  // Strategic questions based on feature intent AND client mode
   const getStrategicQuestions = (feature, userInput) => {
     const input = userInput.toLowerCase();
+    const mode = detectClientMode(userInput);
     
+    // URGENT MODE - Skip most questions, get to the point
+    if (mode === 'URGENT_FIRE') {
+      if (feature === 'content-generator') {
+        return "Got it. Quick questions: Platform? Target audience? Key message? I'll generate immediately.";
+      } else if (feature === 'strategic-planning') {
+        return "Understood. What's the specific deliverable you need and when?";
+      } else {
+        return "What's the immediate need? I'll cut to the chase.";
+      }
+    }
+    
+    // CRISIS MODE - Take control
+    if (mode === 'CRISIS_MODE') {
+      return "I've handled this before. Tell me: What just happened? Who knows? What's been said publicly? I'll take it from here.";
+    }
+    
+    // NORMAL/EXPLORATORY MODE - Full strategic conversation
     if (feature === 'content-generator') {
       if (input.includes('social') || input.includes('post')) {
         return "Before we create any content, let me understand the strategy. What platform are you targeting? LinkedIn posts need a very different approach than Twitter. What's the key message you want to get across, and who's your ideal audience?";
@@ -294,7 +348,8 @@ Conversation history: ${JSON.stringify(messages.slice(-3).map(m => ({ type: m.ty
           intendedFeature, 
           conversationPhase,
           gatheredContext: updatedContext,
-          focusMode: 'strategic_consultation'
+          focusMode: 'strategic_consultation',
+          clientMode: clientMode || lastClientMode || 'NORMAL'
         },
         mode: 'consultation',
         sessionId: `session-${Date.now()}`
@@ -527,7 +582,8 @@ Current conversation context: ${JSON.stringify(conversationContext)}`;;
         context: {
           currentFeature: currentFeature,
           conversationHistory: messages.slice(-5),
-          userIntent: 'strategic_analysis'
+          userIntent: 'strategic_analysis',
+          clientMode: clientMode || lastClientMode || 'NORMAL'
         },
         mode: 'analysis',
         sessionId: `session-${Date.now()}`
@@ -637,6 +693,32 @@ Current conversation context: ${JSON.stringify(conversationContext)}`;;
           <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '600', color: '#ffffff' }}>
             Niv - Your PR Strategist
           </h3>
+          {clientMode && (
+            <span style={{
+              fontSize: '0.65rem',
+              padding: '0.25rem 0.5rem',
+              borderRadius: '12px',
+              background: clientMode === 'CRISIS_MODE' ? 'rgba(239, 68, 68, 0.2)' :
+                         clientMode === 'URGENT_FIRE' ? 'rgba(251, 146, 60, 0.2)' :
+                         clientMode === 'STRATEGIC_PLANNING' ? 'rgba(59, 130, 246, 0.2)' :
+                         'rgba(16, 185, 129, 0.2)',
+              color: clientMode === 'CRISIS_MODE' ? '#ef4444' :
+                     clientMode === 'URGENT_FIRE' ? '#fb923c' :
+                     clientMode === 'STRATEGIC_PLANNING' ? '#3b82f6' :
+                     '#10b981',
+              border: `1px solid ${clientMode === 'CRISIS_MODE' ? '#ef4444' :
+                                   clientMode === 'URGENT_FIRE' ? '#fb923c' :
+                                   clientMode === 'STRATEGIC_PLANNING' ? '#3b82f6' :
+                                   '#10b981'}`,
+              fontWeight: '500'
+            }}>
+              {clientMode === 'CRISIS_MODE' ? '🚨 Crisis' :
+               clientMode === 'URGENT_FIRE' ? '⚡ Urgent' :
+               clientMode === 'STRATEGIC_PLANNING' ? '🎯 Strategic' :
+               clientMode === 'EXPLORATORY' ? '🔍 Exploring' :
+               '✓ Ready'}
+            </span>
+          )}
         </div>
         {currentFeature && mcpExpertise[currentFeature] && (
           <div style={{

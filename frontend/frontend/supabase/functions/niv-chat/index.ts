@@ -209,8 +209,132 @@ const calculateNVS = (scenario: any) => {
   return { ...mockScores, overall }
 }
 
-// Niv's Core Personality and Expertise - 20 Years PR Strategist
+// Client Mode Assessment - Understanding what they really need
+const assessClientMode = (message: string, context: any = {}) => {
+  const lowerMessage = message.toLowerCase()
+  const wordCount = message.split(' ').length
+  
+  // Urgency indicators
+  const urgentIndicators = ['asap', 'urgent', 'now', 'quick', 'just need', 'can you just', 'simple question', 'real quick', 'immediately', 'right now']
+  const exploratoryIndicators = ['thinking about', 'considering', 'what if', 'explore', 'options', 'wondering', 'thoughts on', 'how about']
+  const strategicIndicators = ['strategy', 'campaign', 'quarterly', 'roadmap', 'comprehensive', 'full plan', 'long-term', 'strategic']
+  const crisisIndicators = ['help', 'disaster', 'emergency', 'breaking', 'just happened', 'went viral', 'leaked', 'crisis', 'damage control']
+  const relationshipIndicators = ['how are we doing', 'thoughts on', 'gut check', 'am I crazy', 'sanity check', 'your opinion', 'what do you think']
+  
+  // Check for crisis first (highest priority)
+  if (crisisIndicators.some(indicator => lowerMessage.includes(indicator))) {
+    return 'CRISIS_MODE'
+  }
+  
+  // Check for urgent/rushed requests
+  if (urgentIndicators.some(indicator => lowerMessage.includes(indicator)) || wordCount < 10) {
+    return 'URGENT_FIRE'
+  }
+  
+  // Check for strategic planning
+  if (strategicIndicators.some(indicator => lowerMessage.includes(indicator))) {
+    return 'STRATEGIC_PLANNING'
+  }
+  
+  // Check for exploratory
+  if (exploratoryIndicators.some(indicator => lowerMessage.includes(indicator))) {
+    return 'EXPLORATORY'
+  }
+  
+  // Check for relationship check
+  if (relationshipIndicators.some(indicator => lowerMessage.includes(indicator))) {
+    return 'RELATIONSHIP_CHECK'
+  }
+  
+  // Default to normal mode
+  return 'NORMAL'
+}
+
+// Adaptive Response Patterns based on client mode
+const getAdaptiveResponsePattern = (clientMode: string) => {
+  const patterns = {
+    URGENT_FIRE: `
+RESPONSE STYLE: Direct, immediate, no fluff
+- Line 1: Direct answer/solution
+- Line 2: Most critical warning or opportunity
+- Line 3: "When you have time, there's more strategic value here..."
+VALUE DENSITY: Ultra-high, 30 seconds max
+`,
+    CRISIS_MODE: `
+RESPONSE STYLE: Take control, calm confidence
+- Line 1: "I've handled this before. Here's what we do."
+- Lines 2-5: Exact immediate actions (next 30 minutes)
+- Line 6: "I'll handle the complex parts. You focus on [simple critical task]"
+- Last line: "We'll debrief strategy once we're stable."
+VALUE DENSITY: Action-focused, no theory
+`,
+    EXPLORATORY: `
+RESPONSE STYLE: Thought partner, conversational
+- Opening: "Interesting direction. Let me share what I've seen work..."
+- Body: Conversational exploration with options
+- Close: "What resonates most with where you're trying to go?"
+VALUE DENSITY: Medium, 2-3 minutes reading
+`,
+    STRATEGIC_PLANNING: `
+RESPONSE STYLE: Full strategic depth
+- Section 1: Strategic assessment
+- Section 2: Three approaches with trade-offs
+- Section 3: Data-backed recommendation
+- Close: "Want me to war-game the scenarios?"
+VALUE DENSITY: Comprehensive, 5-10 minutes
+`,
+    RELATIONSHIP_CHECK: `
+RESPONSE STYLE: Peer-to-peer, honest counsel
+- Opening: Direct validation or gentle correction
+- Body: Pattern recognition from experience
+- Close: "Here's what I'd do in your position..."
+VALUE DENSITY: Balanced insight and action
+`,
+    NORMAL: `
+RESPONSE STYLE: Balanced professional
+- Para 1: Direct answer with context
+- Para 2: Strategic implication
+- Para 3: Actionable next steps
+- Para 4: "Deeper dive available if needed"
+VALUE DENSITY: 2 minutes, clear value
+`
+  }
+  
+  return patterns[clientMode] || patterns.NORMAL
+}
+
+// Progressive Value Delivery - Layer information appropriately
+const structureProgressiveResponse = (clientMode: string, content: any) => {
+  if (clientMode === 'URGENT_FIRE') {
+    return `
+**THE ANSWER:** ${content.directAnswer || content}
+
+*Quick note: There's a strategic angle here worth exploring when you have 5 minutes.*`
+  } else if (clientMode === 'CRISIS_MODE') {
+    return `
+I've handled this before. Here's what we do:
+
+**NEXT 30 MINUTES:**
+${content.immediateActions || content}
+
+I'll handle the complex stuff. You focus on stakeholder communication.
+We'll debrief strategy once we're stable.`
+  } else {
+    return `
+${content.answer || content}
+
+**Strategic Context:** ${content.context || 'This matters because of the broader narrative implications.'}
+
+**Next Steps:** ${content.nextSteps || 'Let me know if you want to explore the strategic opportunities here.'}
+
+${content.deeperDive ? '*Deeper strategic analysis available when you\'re ready.*' : ''}`
+  }
+}
+
+// Niv's Core Personality and Expertise - 20 Years PR Strategist (Enhanced with Client Awareness)
 const NIV_SYSTEM_PROMPT = `You are Niv, a Senior PR Strategist with 20 years of agency experience. You're the strategic brain behind SignalDesk, with deep expertise in media relations, crisis management, and campaign strategy.
+
+CRITICAL: You adapt your communication style based on client needs. You read the room and calibrate your response accordingly.
 
 🎯 YOUR CORE IDENTITY:
 - 20 years running PR campaigns from $10K to $10M budgets
@@ -316,13 +440,17 @@ serve(async (req) => {
       throw new Error('ANTHROPIC_API_KEY is not configured')
     }
 
+    // CRITICAL: Assess client mode first
+    const clientMode = assessClientMode(message, context)
+    const responsePattern = getAdaptiveResponsePattern(clientMode)
+    
     // Analyze the scenario for strategic insights
     const scenarioAnalysis = analyzeScenario(message, context)
     const proactiveInsights = proactiveAnalysis(message, context)
     const nvsScores = mode === 'opportunity' ? calculateNVS({ message, context }) : null
     
-    // Build the prompt based on mode
-    let systemPrompt = NIV_SYSTEM_PROMPT
+    // Build the prompt based on mode AND client mode
+    let systemPrompt = NIV_SYSTEM_PROMPT + `\n\nCLIENT MODE DETECTED: ${clientMode}\n${responsePattern}`
     let userPrompt = message
     
     // Add strategic analysis to the prompt
@@ -462,8 +590,10 @@ Create content that actually gets coverage, not just corporate fluff.`
     // Extract the response text
     const responseText = data.content?.[0]?.text || ''
 
-    // Enhanced response analysis with strategic insights
+    // Enhanced response analysis with strategic insights and client awareness
     let strategicAnalysis = {
+      clientMode: clientMode,
+      adaptiveResponse: true,
       nvsAnalysis: nvsScores,
       scenarioInsights: scenarioAnalysis,
       proactiveInsights: proactiveInsights,
@@ -473,7 +603,8 @@ Create content that actually gets coverage, not just corporate fluff.`
       opportunities: scenarioAnalysis.opportunities,
       hiddenOpportunities: proactiveInsights.hiddenOpportunities,
       strategicForesight: proactiveInsights.proactiveRecommendations,
-      expertiseLevel: '20_years_senior_strategist'
+      expertiseLevel: '20_years_senior_strategist',
+      valueDensity: clientMode === 'URGENT_FIRE' ? 'ultra-high' : clientMode === 'STRATEGIC_PLANNING' ? 'comprehensive' : 'balanced'
     }
 
     // Store conversation in Supabase if conversationId provided
