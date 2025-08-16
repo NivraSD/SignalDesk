@@ -167,7 +167,7 @@ class SupabaseApiService {
     return this.callEdgeFunction('claude-chat', {
       prompt: message,  // Edge Function expects 'prompt' not 'message'
       system: context.systemPrompt,
-      model: context.model || 'claude-sonnet-4',
+      model: context.model || 'claude-3-5-sonnet-20241022',
       max_tokens: context.max_tokens || 1000,
       temperature: context.temperature || 0.7
     });
@@ -186,7 +186,7 @@ ${params.context ? `Additional context: ${JSON.stringify(params.context)}` : ''}
     return this.callEdgeFunction('claude-chat', {
       prompt,
       system: "You are Niv, an experienced PR strategist with 20 years of expertise. Generate high-quality PR content that is strategic, compelling, and tailored to the target audience.",
-      model: params.model || 'claude-sonnet-4',
+      model: params.model || 'claude-3-5-sonnet-20241022',
       max_tokens: params.max_tokens || 2000,
       temperature: params.temperature || 0.7
     });
