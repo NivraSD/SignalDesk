@@ -180,6 +180,60 @@ const NivStrategicOrchestrator = ({
     }
   }, [onStrategicPlanGenerate]);
 
+  // Helper to format preview content as human-readable text
+  const formatPreviewContent = (content) => {
+    if (!content) return '';
+    
+    // If it's a string, return it directly
+    if (typeof content === 'string') {
+      return content.substring(0, 300) + (content.length > 300 ? '...' : '');
+    }
+    
+    // If it has a content property (press release), show that
+    if (content.content) {
+      return content.content.substring(0, 300) + (content.content.length > 300 ? '...' : '');
+    }
+    
+    // If it has a title and objective (strategy plan), format nicely
+    if (content.title && content.objective) {
+      let preview = `${content.title}\n\n📋 Objective: ${content.objective}\n`;
+      
+      // Add timeline milestones if present
+      if (content.timeline?.milestones) {
+        preview += '\n📅 Timeline:\n';
+        content.timeline.milestones.slice(0, 2).forEach(milestone => {
+          preview += `• Week ${milestone.week}: ${milestone.task}\n`;
+        });
+        if (content.timeline.milestones.length > 2) {
+          preview += `...and ${content.timeline.milestones.length - 2} more milestones`;
+        }
+      }
+      
+      return preview;
+    }
+    
+    // If it's a media list, show journalists
+    if (content.journalists) {
+      let preview = `📰 Media Targets (${content.totalContacts || content.journalists.length} contacts)\n\n`;
+      content.journalists.slice(0, 3).forEach(j => {
+        preview += `• ${j.name} - ${j.outlet} (${j.beat})\n`;
+      });
+      if (content.journalists.length > 3) {
+        preview += `...and ${content.journalists.length - 3} more journalists`;
+      }
+      return preview;
+    }
+    
+    // Fallback: show key-value pairs nicely
+    const entries = Object.entries(content).slice(0, 5);
+    return entries.map(([key, value]) => {
+      const formattedKey = key.replace(/([A-Z])/g, ' $1').trim();
+      const capitalizedKey = formattedKey.charAt(0).toUpperCase() + formattedKey.slice(1);
+      const formattedValue = typeof value === 'object' ? '[...]' : String(value).substring(0, 50);
+      return `${capitalizedKey}: ${formattedValue}`;
+    }).join('\n');
+  };
+
   // Helper to get details based on work type
   const getDetailsFromType = (type) => {
     switch(type) {
@@ -214,6 +268,11 @@ const NivStrategicOrchestrator = ({
     setInput('');
     setIsProcessing(true);
     
+    // Auto-focus input after sending
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 100);
+    
     // Detect client mode and feature intent
     const detectedMode = detectClientMode(userMessage);
     const detectedFeature = detectFeatureIntent(userMessage);
@@ -230,6 +289,9 @@ const NivStrategicOrchestrator = ({
     setMessages(prev => [...prev, userMsg]);
     
     try {
+      console.log('🚀 Sending message to Niv:', userMessage);
+      console.log('📝 Conversation history:', messages);
+      
       // Get Niv's response with full conversation history for context
       const response = await supabaseApiService.callNivChat({
         message: userMessage,
@@ -242,11 +304,13 @@ const NivStrategicOrchestrator = ({
         mode: 'strategic_orchestration'
       });
       
+      console.log('✅ Niv response received:', response);
+      
       // Add Niv's response
       const assistantMsg = {
         id: Date.now() + 1,
         type: 'assistant',
-        content: response.response,
+        content: response.response || 'I received your message but had trouble generating a response. Please try again.',
         timestamp: new Date(),
         mode: detectedMode,
         strategicAnalysis: response.strategicAnalysis
@@ -256,26 +320,39 @@ const NivStrategicOrchestrator = ({
       // If Niv created work items, create inline work cards for each
       if (response.workItems && response.workItems.length > 0) {
         // Add work items as inline cards in the chat
-        response.workItems.forEach((item, index) => {
-          setTimeout(() => {
-            const workCardMessage = {
-              id: Date.now() + 100 + index,
-              type: 'work-card',
-              workCard: {
-                type: item.type,
-                data: {
-                  title: item.title,
-                  description: item.description,
-                  generatedContent: item.generatedContent,
-                  details: getDetailsFromType(item.type)
-                }
-              },
-              timestamp: new Date()
-            };
-            setMessages(prev => [...prev, workCardMessage]);
-            
-            // Also notify parent component if callback exists
-            if (onWorkCardCreate) {
+        const workCardMessages = response.workItems.map((item, index) => ({
+          id: Date.now() + 100 + index,
+          type: 'work-card',
+          workCard: {
+            type: item.type,
+            data: {
+              title: item.title,
+              description: item.description,
+              generatedContent: item.generatedContent,
+              details: getDetailsFromType(item.type)
+            }
+          },
+          timestamp: new Date()
+        }));
+        
+        // Add all work cards - allow multiple versions of same type
+        setTimeout(() => {
+          setMessages(prev => {
+            // Allow all new cards - don't prevent same types, but prevent exact duplicates within same response
+            const newCards = workCardMessages.filter((card, index, array) => {
+              // Only prevent if exact same title AND type in this batch
+              return !array.slice(0, index).some(prevCard => 
+                prevCard.workCard.type === card.workCard.type && 
+                prevCard.workCard.data.title === card.workCard.data.title
+              );
+            });
+            return [...prev, ...newCards];
+          });
+          
+          // Also notify parent component for right panel artifacts
+          // Only call once per batch to prevent duplicates
+          if (onWorkCardCreate) {
+            response.workItems.forEach((item) => {
               onWorkCardCreate({
                 type: item.type,
                 data: {
@@ -285,9 +362,9 @@ const NivStrategicOrchestrator = ({
                   details: getDetailsFromType(item.type)
                 }
               });
-            }
-          }, 500 + (index * 300)); // Stagger card creation for visual effect
-        });
+            });
+          }
+        }, 500);
       }
       
     } catch (error) {
@@ -301,8 +378,12 @@ const NivStrategicOrchestrator = ({
       setMessages(prev => [...prev, errorMsg]);
     } finally {
       setIsProcessing(false);
+      // Re-focus input after processing
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
     }
-  }, [input, isProcessing, detectClientMode, detectFeatureIntent, setMessages, onWorkCardCreate, messages]);
+  }, [input, isProcessing, detectClientMode, detectFeatureIntent, setMessages, messages, onWorkCardCreate]);
 
   const handleKeyPress = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -324,12 +405,17 @@ const NivStrategicOrchestrator = ({
   // === COMPONENT RENDER ===
   return (
     <div style={{ 
-      height: '100%', 
+      height: 'calc(100% - 40px)', // Add spacing from bottom
+      width: '55%', // Reduced from 70% (about 25% reduction)
+      margin: '0 auto',
+      marginBottom: '20px', // Space from bottom
       display: 'flex', 
       flexDirection: 'column',
       background: 'rgba(0, 0, 0, 0.95)',
       color: '#e8e8e8',
-      borderRadius: '8px'
+      borderRadius: '12px',
+      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+      border: '1px solid rgba(59, 130, 246, 0.2)'
     }}>
       {/* Niv Header with Strategic Identity */}
       <div style={{
@@ -408,26 +494,45 @@ const NivStrategicOrchestrator = ({
         </div>
       </div>
 
-      {/* Feature Generation Progress */}
-      {isGeneratingInFeature && (
+      {/* Processing Indicator */}
+      {(isProcessing || isGeneratingInFeature) && (
         <div style={{
           padding: '1rem',
-          background: 'rgba(59, 130, 246, 0.1)',
+          background: 'linear-gradient(90deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)',
           borderBottom: '1px solid rgba(59, 130, 246, 0.2)',
           display: 'flex',
           alignItems: 'center',
-          gap: '0.75rem'
+          gap: '0.75rem',
+          position: 'relative',
+          overflow: 'hidden'
         }}>
-          <div style={{ animation: 'spin 1s linear infinite' }}>
-            <RefreshCw size={16} color="#3b82f6" />
+          {/* Animated progress bar */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            height: '2px',
+            width: '100%',
+            background: 'linear-gradient(90deg, transparent, #3b82f6, transparent)',
+            animation: 'shimmer 2s infinite'
+          }} />
+          
+          <div style={{ 
+            animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            display: 'flex',
+            alignItems: 'center'
+          }}>
+            <Sparkles size={16} color="#3b82f6" />
           </div>
           <div>
             <div style={{ fontWeight: '500', color: '#3b82f6' }}>
-              Niv is working in the feature...
+              {isGeneratingInFeature ? 'Niv is working in the feature...' : 'Niv is thinking...'}
             </div>
-            <div style={{ fontSize: '12px', color: '#60a5fa' }}>
-              {featureGenerationProgress}
-            </div>
+            {featureGenerationProgress && (
+              <div style={{ fontSize: '12px', color: '#60a5fa' }}>
+                {featureGenerationProgress}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -487,27 +592,20 @@ const NivStrategicOrchestrator = ({
               }}>
                 {message.workCard.data.description}
               </div>
-              {message.workCard.data.generatedContent && (
-                <div style={{
-                  padding: '12px',
-                  background: 'rgba(0, 0, 0, 0.3)',
-                  borderRadius: '8px',
-                  fontSize: '12px',
-                  color: '#9ca3af',
-                  maxHeight: '150px',
-                  overflowY: 'auto'
-                }}>
-                  <div style={{ fontWeight: '600', marginBottom: '8px', color: '#60a5fa' }}>Preview:</div>
-                  <pre style={{ 
-                    margin: 0, 
-                    whiteSpace: 'pre-wrap', 
-                    wordWrap: 'break-word',
-                    fontFamily: 'inherit'
-                  }}>
-                    {JSON.stringify(message.workCard.data.generatedContent, null, 2).substring(0, 300)}...
-                  </pre>
-                </div>
-              )}
+              <div style={{
+                padding: '12px',
+                background: 'rgba(139, 92, 246, 0.1)',
+                border: '1px solid rgba(139, 92, 246, 0.3)',
+                borderRadius: '8px',
+                fontSize: '12px',
+                color: '#a78bfa',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <Sparkles size={14} />
+                <span>✅ Generated and ready to edit in workspace → Check right panel</span>
+              </div>
             </div>
           ) : (
           <div
@@ -619,15 +717,21 @@ const NivStrategicOrchestrator = ({
             gap: '0.5rem',
             fontSize: '14px',
             fontWeight: '500',
-            transition: 'all 0.2s'
+            transition: 'all 0.2s',
+            position: 'relative'
           }}
         >
           {isProcessing ? (
-            <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} />
+            <>
+              <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite', opacity: 0.7 }} />
+              <span style={{ opacity: 0.8 }}>Thinking...</span>
+            </>
           ) : (
-            <Send size={16} />
+            <>
+              <Send size={16} />
+              <span>Send</span>
+            </>
           )}
-          Send
         </button>
       </div>
 
@@ -635,6 +739,24 @@ const NivStrategicOrchestrator = ({
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
+        }
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+        @keyframes slideIn {
+          from { 
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
       `}</style>
     </div>

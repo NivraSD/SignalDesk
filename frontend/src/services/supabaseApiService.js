@@ -212,9 +212,10 @@ Provide analysis including:
   }
 
   // Niv Strategic Orchestrator - Main interface
-  async callNivChat({ message, context = {}, mode = 'strategic_orchestration', sessionId = null }) {
+  async callNivChat({ message, messages = [], context = {}, mode = 'strategic_orchestration', sessionId = null }) {
     return this.callEdgeFunction('niv-orchestrator', {
       message,
+      messages, // Pass conversation history
       context,
       mode,
       conversationId: sessionId

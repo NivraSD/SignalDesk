@@ -3,16 +3,39 @@ import { Users, Mail, Star, Filter, Edit2, Save, Plus, Trash2 } from 'lucide-rea
 
 const SimplifiedMediaList = ({ context }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [mediaList, setMediaList] = useState({
-    title: context?.title || 'Media Target List',
-    journalists: context?.journalists || [
-      { name: 'Katie Roof', outlet: 'Bloomberg', beat: 'Venture Capital & AI', priority: 'Tier 1', email: '', notes: '' },
-      { name: 'Cade Metz', outlet: 'New York Times', beat: 'AI & Technology', priority: 'Tier 1', email: '', notes: '' },
-      { name: 'Gillian Tan', outlet: 'Bloomberg', beat: 'Private Equity', priority: 'Tier 1', email: '', notes: '' },
-      { name: 'Ryan Mac', outlet: 'Forbes', beat: 'Tech & Investment', priority: 'Tier 2', email: '', notes: '' },
-      { name: 'Berber Jin', outlet: 'Wall Street Journal', beat: 'AI & Markets', priority: 'Tier 1', email: '', notes: '' }
-    ]
-  });
+  
+  // Extract media list from Niv's generated structure
+  const getNivMediaList = () => {
+    // Check if we have generated content from Niv
+    if (context?.generatedContent) {
+      const generated = context.generatedContent;
+      
+      // Handle media list format
+      if (generated.journalists && Array.isArray(generated.journalists)) {
+        return {
+          title: generated.title || context?.title || 'Media Target List',
+          journalists: generated.journalists,
+          totalContacts: generated.totalContacts,
+          byTier: generated.byTier,
+          outreachStrategy: generated.outreachStrategy
+        };
+      }
+    }
+    
+    // Fallback to default journalists
+    return {
+      title: context?.title || 'Media Target List',
+      journalists: context?.journalists || [
+        { name: 'Katie Roof', outlet: 'Bloomberg', beat: 'Venture Capital & AI', priority: 'Tier 1', email: '', notes: '' },
+        { name: 'Cade Metz', outlet: 'New York Times', beat: 'AI & Technology', priority: 'Tier 1', email: '', notes: '' },
+        { name: 'Gillian Tan', outlet: 'Bloomberg', beat: 'Private Equity', priority: 'Tier 1', email: '', notes: '' },
+        { name: 'Ryan Mac', outlet: 'Forbes', beat: 'Tech & Investment', priority: 'Tier 2', email: '', notes: '' },
+        { name: 'Berber Jin', outlet: 'Wall Street Journal', beat: 'AI & Markets', priority: 'Tier 1', email: '', notes: '' }
+      ]
+    };
+  };
+  
+  const [mediaList, setMediaList] = useState(getNivMediaList());
 
   const getPriorityColor = (priority) => {
     if (priority === 'Tier 1') return '#ef4444';

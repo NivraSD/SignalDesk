@@ -4,6 +4,7 @@ import supabaseApiService from '../../services/supabaseApiService';
 import SimplifiedMediaList from './SimplifiedMediaList';
 import SimplifiedContentDraft from './SimplifiedContentDraft';
 import SimplifiedStrategicPlanning from './SimplifiedStrategicPlanning';
+import SimplifiedGenericContent from './SimplifiedGenericContent';
 import OpportunityEngine from '../OpportunityEngine';
 import CrisisCommandCenter from '../CrisisCommandCenter';
 import Analytics from '../Analytics';
@@ -26,6 +27,9 @@ const WorkspaceContainer = ({ workspace, nivContext, onClose, onNivRequest }) =>
       'media-intelligence': SimplifiedMediaList,
       'content-generator': SimplifiedContentDraft,
       'strategic-planning': SimplifiedStrategicPlanning,
+      'key-messaging': SimplifiedGenericContent,
+      'faq-document': SimplifiedGenericContent,
+      'social-content': SimplifiedGenericContent,
       'opportunity-engine': OpportunityEngine,
       'crisis-command': CrisisCommandCenter,
       'analytics': Analytics,

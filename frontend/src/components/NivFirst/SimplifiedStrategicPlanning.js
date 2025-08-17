@@ -3,37 +3,75 @@ import { Calendar, Target, Users, TrendingUp, Clock, CheckCircle, AlertCircle, E
 
 const SimplifiedStrategicPlanning = ({ context }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [plan, setPlan] = useState({
-    title: context?.title || 'Q2 Product Launch Strategy',
-    objective: context?.objective || 'Successfully launch new product feature with maximum media coverage',
-    timeline: context?.timeline || {
-      start: 'Week 1',
-      end: 'Week 6',
-      milestones: context?.timeline?.milestones || [
-        { week: 1, task: 'Media list building & relationship warming', status: 'completed' },
-        { week: 2, task: 'Content creation & embargo preparation', status: 'in-progress' },
-        { week: 3, task: 'Tier 1 media briefings under embargo', status: 'pending' },
-        { week: 4, task: 'Broad media outreach & social amplification', status: 'pending' },
-        { week: 5, task: 'Launch day execution & rapid response', status: 'pending' },
-        { week: 6, task: 'Post-launch momentum & follow-up stories', status: 'pending' }
-      ]
-    },
-    keyMessages: context?.keyMessages || [
-      'Revolutionary approach to solving customer pain point',
-      'First-to-market with this specific capability',
-      'Backed by compelling customer success data'
-    ],
-    stakeholders: [
-      { name: 'CEO', role: 'Spokesperson', status: 'confirmed' },
-      { name: 'Product Lead', role: 'Technical briefings', status: 'confirmed' },
-      { name: 'Customer Success', role: 'Case studies', status: 'pending' }
-    ],
-    metrics: {
-      targetReach: '10M impressions',
-      tierOneTargets: '5 major outlets',
-      socialEngagement: '50K interactions'
+  
+  // Extract strategic plan from Niv's generated structure
+  const getNivStrategicPlan = () => {
+    // Check if we have generated content from Niv
+    if (context?.generatedContent) {
+      const generated = context.generatedContent;
+      
+      // Handle strategic plan format
+      if (generated.timeline || generated.keyMessages || generated.objective) {
+        return {
+          title: generated.title || context?.title || 'Strategic Communications Plan',
+          objective: generated.objective || 'Successfully execute strategic communications campaign',
+          timeline: generated.timeline || {
+            start: 'Week 1',
+            end: 'Week 4',
+            milestones: []
+          },
+          keyMessages: generated.keyMessages || [],
+          targetAudiences: generated.targetAudiences || [],
+          successMetrics: generated.successMetrics || {},
+          stakeholders: [
+            { name: 'CEO', role: 'Spokesperson', status: 'confirmed' },
+            { name: 'Product Lead', role: 'Technical briefings', status: 'confirmed' },
+            { name: 'Customer Success', role: 'Case studies', status: 'pending' }
+          ],
+          metrics: generated.successMetrics || {
+            targetReach: '10M impressions',
+            tierOneTargets: '5 major outlets',
+            socialEngagement: '50K interactions'
+          }
+        };
+      }
     }
-  });
+    
+    // Fallback to default plan
+    return {
+      title: context?.title || 'Q2 Product Launch Strategy',
+      objective: context?.objective || 'Successfully launch new product feature with maximum media coverage',
+      timeline: context?.timeline || {
+        start: 'Week 1',
+        end: 'Week 6',
+        milestones: context?.timeline?.milestones || [
+          { week: 1, task: 'Media list building & relationship warming', status: 'completed' },
+          { week: 2, task: 'Content creation & embargo preparation', status: 'in-progress' },
+          { week: 3, task: 'Tier 1 media briefings under embargo', status: 'pending' },
+          { week: 4, task: 'Broad media outreach & social amplification', status: 'pending' },
+          { week: 5, task: 'Launch day execution & rapid response', status: 'pending' },
+          { week: 6, task: 'Post-launch momentum & follow-up stories', status: 'pending' }
+        ]
+      },
+      keyMessages: context?.keyMessages || [
+        'Revolutionary approach to solving customer pain point',
+        'First-to-market with this specific capability',
+        'Backed by compelling customer success data'
+      ],
+      stakeholders: [
+        { name: 'CEO', role: 'Spokesperson', status: 'confirmed' },
+        { name: 'Product Lead', role: 'Technical briefings', status: 'confirmed' },
+        { name: 'Customer Success', role: 'Case studies', status: 'pending' }
+      ],
+      metrics: {
+        targetReach: '10M impressions',
+        tierOneTargets: '5 major outlets',
+        socialEngagement: '50K interactions'
+      }
+    };
+  };
+  
+  const [plan, setPlan] = useState(getNivStrategicPlan());
 
   const getStatusColor = (status) => {
     switch(status) {

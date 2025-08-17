@@ -10,15 +10,7 @@ const NivFirstLayout = ({ user, organization }) => {
 
   // Handle when Niv creates something
   const handleWorkCardCreate = useCallback((workCard) => {
-    // Add inline description to chat
-    const inlineMessage = {
-      id: Date.now(),
-      type: 'work-card',
-      content: workCard.data.description,
-      workCard: workCard,
-      timestamp: new Date()
-    };
-    setMessages(prev => [...prev, inlineMessage]);
+    console.log('🎯 NivFirstLayout: handleWorkCardCreate called with:', workCard);
     
     // Add to generated items sidebar
     const newItem = {
@@ -27,7 +19,13 @@ const NivFirstLayout = ({ user, organization }) => {
       timestamp: new Date(),
       status: 'ready'
     };
-    setGeneratedItems(prev => [...prev, newItem]);
+    console.log('🎯 NivFirstLayout: Adding new item to sidebar:', newItem);
+    setGeneratedItems(prev => {
+      console.log('🎯 NivFirstLayout: Previous items:', prev);
+      const updated = [...prev, newItem];
+      console.log('🎯 NivFirstLayout: Updated items:', updated);
+      return updated;
+    });
   }, []);
 
   // Get icon for item type
@@ -38,7 +36,10 @@ const NivFirstLayout = ({ user, organization }) => {
       'strategy-plan': TrendingUp,
       'crisis-response': AlertTriangle,
       'opportunity': Zap,
-      'analytics': BarChart3
+      'analytics': BarChart3,
+      'key-messaging': FileText,
+      'faq-document': FileText,
+      'social-content': FileText
     };
     return icons[type] || FileText;
   };
@@ -51,7 +52,10 @@ const NivFirstLayout = ({ user, organization }) => {
       'strategy-plan': 'strategic-planning',
       'crisis-response': 'crisis-command',
       'opportunity': 'opportunity-engine',
-      'analytics': 'analytics'
+      'analytics': 'analytics',
+      'key-messaging': 'content-generator',
+      'faq-document': 'content-generator',
+      'social-content': 'content-generator'
     };
     return mapping[type] || 'content-generator';
   };
@@ -89,73 +93,15 @@ const NivFirstLayout = ({ user, organization }) => {
         />
       ) : (
         <>
-          {/* Main Niv Conversation Area - 70% width */}
-          <div style={{
-            width: '70%',
-            display: 'flex',
-            flexDirection: 'column',
-            background: 'linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%)',
-            position: 'relative'
-          }}>
-            {/* Niv Header */}
-            <div style={{
-              padding: '20px 30px',
-              background: 'rgba(15, 15, 30, 0.8)',
-              backdropFilter: 'blur(10px)',
-              borderBottom: '1px solid rgba(139, 92, 246, 0.2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                <div style={{
-                  width: '48px',
-                  height: '48px',
-                  background: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
-                  borderRadius: '12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 4px 20px rgba(139, 92, 246, 0.3)'
-                }}>
-                  <Bot size={24} color="white" />
-                </div>
-                <div>
-                  <div style={{ fontSize: '20px', fontWeight: '600', color: '#fff' }}>
-                    Niv Strategic Orchestrator
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#8b5cf6', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <div style={{
-                      width: '8px',
-                      height: '8px',
-                      background: '#10b981',
-                      borderRadius: '50%'
-                    }} />
-                    Active • Strategic Mode
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Conversation Area - Scrollable */}
-            <div style={{
-              flex: 1,
-              padding: '30px',
-              overflowY: 'auto',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '20px'
-            }}>
-              <NivStrategicOrchestrator
-                messages={messages}
-                setMessages={setMessages}
-                onWorkCardCreate={handleWorkCardCreate}
-                onFeatureOpen={() => {}}
-                onContentGenerate={() => {}}
-                onStrategicPlanGenerate={() => {}}
-              />
-            </div>
-          </div>
+          {/* Niv Strategic Orchestrator - Main Interface */}
+          <NivStrategicOrchestrator
+            messages={messages}
+            setMessages={setMessages}
+            onWorkCardCreate={handleWorkCardCreate}
+            onFeatureOpen={() => {}}
+            onContentGenerate={() => {}}
+            onStrategicPlanGenerate={() => {}}
+          />
 
           {/* Right Sidebar - Generated Items - 30% width */}
           <div style={{
@@ -193,7 +139,17 @@ const NivFirstLayout = ({ user, organization }) => {
               overflowY: 'auto',
               padding: '12px'
             }}>
-              {generatedItems.map(item => {
+              {generatedItems.length === 0 ? (
+                <div style={{
+                  textAlign: 'center',
+                  color: '#6b7280',
+                  fontSize: '14px',
+                  marginTop: '40px'
+                }}>
+                  Ask Niv to create materials and they'll appear here
+                </div>
+              ) : (
+                generatedItems.map(item => {
                 const Icon = getItemIcon(item.type);
                 return (
                   <div
@@ -269,7 +225,8 @@ const NivFirstLayout = ({ user, organization }) => {
                     )}
                   </div>
                 );
-              })}
+              })
+              )}
             </div>
           </div>
         </>

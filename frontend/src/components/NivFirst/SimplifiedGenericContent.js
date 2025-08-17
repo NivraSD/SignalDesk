@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FileText, Edit2, Save, Copy, Download, Send } from 'lucide-react';
 
-const SimplifiedContentDraft = ({ context }) => {
+const SimplifiedGenericContent = ({ context }) => {
   const [isEditing, setIsEditing] = useState(false);
   
   // Extract content from Niv's generated structure
@@ -10,33 +10,108 @@ const SimplifiedContentDraft = ({ context }) => {
     if (context?.generatedContent) {
       const generated = context.generatedContent;
       
-      // Handle press release format
-      if (generated.content) {
+      // Handle key messaging format
+      if (generated.sections && generated.sections.coreMessage) {
+        let content = `CORE MESSAGE:\n${generated.sections.coreMessage}\n\n`;
+        
+        if (generated.sections.supportingMessages) {
+          content += `SUPPORTING MESSAGES:\n`;
+          generated.sections.supportingMessages.forEach((msg, i) => {
+            content += `${i + 1}. ${msg}\n`;
+          });
+          content += '\n';
+        }
+        
+        if (generated.sections.audienceMessaging) {
+          content += `AUDIENCE-SPECIFIC MESSAGING:\n`;
+          Object.entries(generated.sections.audienceMessaging).forEach(([audience, message]) => {
+            content += `${audience.toUpperCase()}: ${message}\n`;
+          });
+          content += '\n';
+        }
+        
+        if (generated.sections.talkingPoints) {
+          content += `KEY TALKING POINTS:\n`;
+          generated.sections.talkingPoints.forEach((point, i) => {
+            content += `• ${point}\n`;
+          });
+        }
+        
         return {
-          title: generated.title || context?.title || 'Press Release',
-          content: generated.content
+          title: generated.title || context?.title || 'Key Messaging Framework',
+          content: content
         };
       }
       
-      // Handle other content types with structured data
+      // Handle FAQ format
+      if (generated.sections && (generated.sections.general || generated.sections.technical || generated.sections.business)) {
+        let content = '';
+        
+        if (generated.sections.general) {
+          content += `GENERAL QUESTIONS:\n\n`;
+          generated.sections.general.forEach((faq, i) => {
+            content += `Q${i + 1}: ${faq.q}\nA: ${faq.a}\n\n`;
+          });
+        }
+        
+        if (generated.sections.technical) {
+          content += `TECHNICAL QUESTIONS:\n\n`;
+          generated.sections.technical.forEach((faq, i) => {
+            content += `Q${i + 1}: ${faq.q}\nA: ${faq.a}\n\n`;
+          });
+        }
+        
+        if (generated.sections.business) {
+          content += `BUSINESS QUESTIONS:\n\n`;
+          generated.sections.business.forEach((faq, i) => {
+            content += `Q${i + 1}: ${faq.q}\nA: ${faq.a}\n\n`;
+          });
+        }
+        
+        return {
+          title: generated.title || context?.title || 'FAQ Document',
+          content: content
+        };
+      }
+      
+      // Handle social content format
+      if (generated.platforms) {
+        let content = '';
+        
+        Object.entries(generated.platforms).forEach(([platform, posts]) => {
+          content += `${platform.toUpperCase()} CONTENT:\n\n`;
+          
+          if (Array.isArray(posts)) {
+            posts.forEach((post, i) => {
+              content += `${post.type ? post.type.toUpperCase() + ': ' : ''}${post.content}\n`;
+              if (post.hashtags) {
+                content += `Hashtags: ${post.hashtags.join(' ')}\n`;
+              }
+              content += '\n';
+            });
+          }
+          content += '\n';
+        });
+        
+        return {
+          title: generated.title || context?.title || 'Social Media Content',
+          content: content
+        };
+      }
+      
+      // Handle generic structured content
       if (typeof generated === 'object' && generated.title) {
         return {
           title: generated.title,
-          content: generated.content || JSON.stringify(generated, null, 2)
+          content: JSON.stringify(generated, null, 2)
         };
       }
     }
     
     // Fallback to context fields
     return {
-      title: context?.title || 'Press Release',
-      content: context?.content || `FOR IMMEDIATE RELEASE
-
-AI Investment Summit Brings Together Leading Investors and Technology Pioneers
-
-NEW YORK – [Add your content here]
-
-###`
+      title: context?.title || 'Generated Content',
+      content: context?.content || `Your generated content will appear here once Niv creates it.`
     };
   };
   
@@ -49,7 +124,6 @@ NEW YORK – [Add your content here]
 
   const handleCopy = () => {
     navigator.clipboard.writeText(content.content);
-    // In production, show a toast notification
     console.log('Content copied to clipboard');
   };
 
@@ -90,7 +164,7 @@ NEW YORK – [Add your content here]
             <div style={{
               width: '40px',
               height: '40px',
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
               borderRadius: '8px',
               display: 'flex',
               alignItems: 'center',
@@ -278,4 +352,4 @@ NEW YORK – [Add your content here]
   );
 };
 
-export default SimplifiedContentDraft;
+export default SimplifiedGenericContent;
