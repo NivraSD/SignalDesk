@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Bot, Send, Sparkles, ChevronLeft, Maximize2, Minimize2 } from 'lucide-react';
-import MediaIntelligence from '../MediaIntelligence';
-import ContentGenerator from '../ContentGenerator';
+import SimplifiedMediaList from './SimplifiedMediaList';
+import SimplifiedContentDraft from './SimplifiedContentDraft';
 import SimplifiedStrategicPlanning from './SimplifiedStrategicPlanning';
 import OpportunityEngine from '../OpportunityEngine';
 import CrisisCommandCenter from '../CrisisCommandCenter';
@@ -22,8 +22,8 @@ const WorkspaceContainer = ({ workspace, nivContext, onClose, onNivRequest }) =>
   // Get the appropriate workspace component
   const getWorkspaceComponent = () => {
     const components = {
-      'media-intelligence': MediaIntelligence,
-      'content-generator': ContentGenerator,
+      'media-intelligence': SimplifiedMediaList,
+      'content-generator': SimplifiedContentDraft,
       'strategic-planning': SimplifiedStrategicPlanning,
       'opportunity-engine': OpportunityEngine,
       'crisis-command': CrisisCommandCenter,
@@ -31,7 +31,7 @@ const WorkspaceContainer = ({ workspace, nivContext, onClose, onNivRequest }) =>
       'memory-vault': MemoryVault
     };
 
-    const Component = components[workspace.type] || ContentGenerator;
+    const Component = components[workspace.type] || SimplifiedContentDraft;
     return <Component context={workspace.context} />;
   };
 

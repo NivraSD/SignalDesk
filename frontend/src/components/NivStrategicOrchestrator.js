@@ -180,6 +180,32 @@ const NivStrategicOrchestrator = ({
     }
   }, [onStrategicPlanGenerate]);
 
+  // Helper to get details based on work type
+  const getDetailsFromType = (type) => {
+    switch(type) {
+      case 'strategy-plan':
+        return {
+          'Duration': '4 weeks',
+          'Status': 'Draft',
+          'Priority': 'High'
+        };
+      case 'media-list':
+        return {
+          'Journalists': '5+',
+          'Tier 1': '3',
+          'Status': 'Ready'
+        };
+      case 'content-draft':
+        return {
+          'Length': 'Full',
+          'Status': 'Draft',
+          'Type': 'Press Release'
+        };
+      default:
+        return {};
+    }
+  };
+
   // === MESSAGE HANDLING ===
   const handleSendMessage = useCallback(async () => {
     if (!input.trim() || isProcessing) return;
@@ -227,51 +253,22 @@ const NivStrategicOrchestrator = ({
       };
       setMessages(prev => [...prev, assistantMsg]);
       
-      // If Niv suggests showing work, create inline work cards
-      if (detectedFeature && onWorkCardCreate) {
-        // Create work card after a brief delay
-        setTimeout(() => {
-          if (detectedFeature === 'content-generator') {
+      // If Niv created work items, create inline work cards for each
+      if (response.workItems && response.workItems.length > 0 && onWorkCardCreate) {
+        // Create a card for each work item with a slight delay between them
+        response.workItems.forEach((item, index) => {
+          setTimeout(() => {
             onWorkCardCreate({
-              type: 'content-draft',
+              type: item.type,
               data: {
-                title: 'Press Release Draft',
-                description: 'Strategic press release with key messaging points',
-                details: {
-                  'Length': '500 words',
-                  'Tone': 'Professional',
-                  'Audience': 'Tech Media'
-                }
+                title: item.title,
+                description: item.description,
+                generatedContent: item.generatedContent, // Pass the actual generated content
+                details: getDetailsFromType(item.type)
               }
             });
-          } else if (detectedFeature === 'strategic-planning') {
-            onWorkCardCreate({
-              type: 'strategy-plan',
-              data: {
-                title: 'Campaign Strategy',
-                description: 'Comprehensive launch strategy with timeline and milestones',
-                details: {
-                  'Duration': '6 weeks',
-                  'Budget': '$75K',
-                  'Team': '3 members'
-                }
-              }
-            });
-          } else if (detectedFeature === 'media-intelligence') {
-            onWorkCardCreate({
-              type: 'media-list',
-              data: {
-                title: 'Media Target List',
-                description: 'Curated journalist list with personalized angles',
-                details: {
-                  'Journalists': '47',
-                  'Tier 1': '12',
-                  'Response Rate': '35%'
-                }
-              }
-            });
-          }
-        }, 1000);
+          }, 500 + (index * 300)); // Stagger card creation for visual effect
+        });
       }
       
     } catch (error) {

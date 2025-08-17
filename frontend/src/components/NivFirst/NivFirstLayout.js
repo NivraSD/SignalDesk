@@ -60,7 +60,10 @@ const NivFirstLayout = ({ user, organization }) => {
   const handleOpenWorkspace = useCallback((item) => {
     setActiveWorkspace({
       type: getWorkspaceFromType(item.type),
-      context: item.data,
+      context: {
+        ...item.data,
+        ...item.data.generatedContent // Include the generated content
+      },
       nivAssistance: true
     });
   }, []);

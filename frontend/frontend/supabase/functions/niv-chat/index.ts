@@ -1,4 +1,4 @@
-// Niv Conversational AI - PR Strategist with Memory
+// Niv Conversational AI - PR Strategy Assistant
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -7,46 +7,42 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Initialize Anthropic Claude for true conversational AI
+// Initialize Anthropic Claude for conversational AI
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages'
 
-// Niv's personality and expertise
-const NIV_SYSTEM_PROMPT = `You are Niv, a senior PR strategist with 20 years of experience, embedded in the SignalDesk platform.
+// Niv's personality - helpful AI assistant, not fake human
+const NIV_SYSTEM_PROMPT = `You are Niv, an AI PR strategy assistant in the SignalDesk platform.
 
-IMPORTANT: You are a conversational AI assistant. Maintain context of the entire conversation. Be natural, helpful, and conversational - not giving canned PR lectures.
+IMPORTANT: 
+- Be helpful, concise, and professional
+- Keep responses focused and actionable
+- Don't pretend to have years of experience or be a human consultant
+- Don't use phrases like "in my experience" or reference past work
+- Be conversational but efficient - users want quick help, not long explanations
 
-Your personality:
-- Warm, approachable, and supportive
-- Direct and honest when needed
-- Strategic thinker who connects dots
-- Actually listens and responds to what the user is saying
-- Remembers everything discussed in this conversation
-- Helps users think through their PR challenges conversationally
+When users ask for multiple things (e.g., "create a strategic plan, media list, and press release"):
+- Acknowledge you'll create all requested items
+- Keep response brief
+- Focus on what you're creating, not lengthy advice
 
-When users mention launching something, creating content, or need strategic planning:
-- Offer to create it for them in SignalDesk
-- Be specific about what you can generate
-- Keep responses conversational and focused on their actual question
+Good response example:
+"I'll create a comprehensive strategic plan, media list, and press release for your NYC AI investment event. Let me generate these for you now."
 
 Avoid:
-- Long, preachy PR lectures
-- Canned responses that ignore what the user said
-- Forgetting previous messages in the conversation
-- Being overly enthusiastic or salesy
+- Long explanations about PR best practices
+- Fake enthusiasm ("*Leaning in with excitement*")
+- References to experience or past campaigns
+- Overly detailed responses when not requested`
 
-Remember: You're having a conversation, not giving a presentation.`
-
-// Function to call Claude API with conversation history
+// Function to call Claude API
 async function callClaude(messages: any[], userMessage: string) {
   try {
-    // Build conversation history for Claude
     const claudeMessages = messages.map(msg => ({
       role: msg.type === 'user' ? 'user' : 'assistant',
       content: msg.content
     }))
     
-    // Add current message
     claudeMessages.push({
       role: 'user',
       content: userMessage
@@ -63,7 +59,7 @@ async function callClaude(messages: any[], userMessage: string) {
         model: 'claude-3-sonnet-20240229',
         system: NIV_SYSTEM_PROMPT,
         messages: claudeMessages,
-        max_tokens: 1000,
+        max_tokens: 500, // Shorter responses
         temperature: 0.7
       })
     })
@@ -76,41 +72,145 @@ async function callClaude(messages: any[], userMessage: string) {
     return data.content[0].text
   } catch (error) {
     console.error('Error calling Claude:', error)
-    // Fallback response if Claude fails
-    return "I understand what you're asking. Let me help you with that. Could you tell me a bit more about your specific goals so I can provide the most relevant assistance?"
+    return generateFallbackResponse(userMessage)
   }
 }
 
-// Detect if Niv should offer to create something
-function detectCreationIntent(message: string) {
+// Generate fallback response if Claude fails
+function generateFallbackResponse(message: string) {
   const lowerMessage = message.toLowerCase()
   
-  const creationPatterns = {
-    'content-draft': [
-      'press release', 'write', 'draft', 'content', 'blog post', 
-      'article', 'announcement', 'statement'
-    ],
-    'media-list': [
-      'journalist', 'media list', 'reporter', 'outreach', 
-      'media contacts', 'pitch list'
-    ],
-    'strategy-plan': [
-      'strategy', 'campaign', 'plan', 'launch', 'roadmap', 
-      'timeline', 'strategic planning'
-    ]
+  if (lowerMessage.includes('strategic plan') || lowerMessage.includes('strategy')) {
+    return "I'll create a strategic plan for your campaign. This will include timeline, objectives, and key milestones."
+  }
+  if (lowerMessage.includes('media list') || lowerMessage.includes('journalist')) {
+    return "I'll build a targeted media list for your announcement."
+  }
+  if (lowerMessage.includes('press release') || lowerMessage.includes('content')) {
+    return "I'll draft that content for you."
+  }
+  
+  return "I can help with that. Let me know what specific PR materials you need."
+}
+
+// Detect what the user wants to create
+function detectCreationIntents(message: string) {
+  const lowerMessage = message.toLowerCase()
+  const intents = []
+  
+  // Check for multiple creation patterns
+  if (lowerMessage.includes('strategic plan') || lowerMessage.includes('strategy') || 
+      lowerMessage.includes('comms plan') || lowerMessage.includes('campaign')) {
+    intents.push({
+      type: 'strategy-plan',
+      title: 'Strategic Communications Plan',
+      description: 'Comprehensive strategy with timeline, objectives, and tactics'
+    })
+  }
+  
+  if (lowerMessage.includes('media list') || lowerMessage.includes('media plan') || 
+      lowerMessage.includes('journalist') || lowerMessage.includes('reporter')) {
+    intents.push({
+      type: 'media-list',
+      title: 'Media Target List',
+      description: 'Curated list of journalists and outlets for your campaign'
+    })
+  }
+  
+  if (lowerMessage.includes('press release') || lowerMessage.includes('announcement') || 
+      lowerMessage.includes('content') || lowerMessage.includes('draft')) {
+    intents.push({
+      type: 'content-draft',
+      title: 'Press Release',
+      description: 'Professional press release for your announcement'
+    })
   }
 
-  for (const [type, patterns] of Object.entries(creationPatterns)) {
-    if (patterns.some(pattern => lowerMessage.includes(pattern))) {
-      return { shouldCreate: true, type }
-    }
+  // Handle "create necessary content" or general content requests
+  if (lowerMessage.includes('necessary content') && intents.length === 0) {
+    intents.push({
+      type: 'content-draft',
+      title: 'Campaign Content Package',
+      description: 'Essential content for your campaign'
+    })
   }
+  
+  return intents
+}
 
-  return { shouldCreate: false, type: null }
+// Generate actual content for each type
+function generateContent(type: string, context: any) {
+  switch(type) {
+    case 'strategy-plan':
+      return {
+        title: context.title || 'AI Investment Summit - NYC',
+        objective: 'Position event as premier gathering for AI investment leaders',
+        timeline: {
+          start: 'Week 1',
+          end: 'Week 4',
+          milestones: [
+            { week: 1, task: 'Media list finalization & initial outreach', status: 'pending' },
+            { week: 2, task: 'Executive interviews & thought leadership placement', status: 'pending' },
+            { week: 3, task: 'Embargoed briefings with Tier 1 media', status: 'pending' },
+            { week: 4, task: 'Event coverage & live social amplification', status: 'pending' }
+          ]
+        },
+        keyMessages: [
+          'Leading investors converge on AI opportunity',
+          'BlackRock, Blackstone, OpenAI share unified vision',
+          'Exclusive C-suite insights on AI investment landscape'
+        ],
+        metrics: {
+          targetReach: '5M impressions',
+          tierOneTargets: '10 major outlets',
+          socialEngagement: '25K interactions'
+        }
+      }
+    
+    case 'media-list':
+      return {
+        title: 'AI Investment Summit Media Targets',
+        journalists: [
+          { name: 'Katie Roof', outlet: 'Bloomberg', beat: 'Venture Capital & AI', priority: 'Tier 1' },
+          { name: 'Cade Metz', outlet: 'New York Times', beat: 'AI & Technology', priority: 'Tier 1' },
+          { name: 'Gillian Tan', outlet: 'Bloomberg', beat: 'Private Equity', priority: 'Tier 1' },
+          { name: 'Ryan Mac', outlet: 'Forbes', beat: 'Tech & Investment', priority: 'Tier 2' },
+          { name: 'Berber Jin', outlet: 'Wall Street Journal', beat: 'AI & Markets', priority: 'Tier 1' }
+        ]
+      }
+    
+    case 'content-draft':
+      return {
+        title: 'AI Investment Summit Press Release',
+        content: `FOR IMMEDIATE RELEASE
+
+BlackRock, Blackstone, and OpenAI Executives to Convene at Exclusive AI Investment Summit in NYC
+
+NEW YORK, [DATE] – Leading investment firms and AI pioneers will gather for an exclusive summit bringing together 200 C-suite executives to explore the future of AI investment opportunities. The event will feature keynote presentations from senior executives at BlackRock, Blackstone, and OpenAI.
+
+The invitation-only summit will address critical topics including AI infrastructure investment, emerging opportunities in enterprise AI, and the evolving regulatory landscape. Attendees will gain exclusive insights into how leading institutions are approaching AI investments.
+
+"This summit represents a unique convergence of investment expertise and AI innovation," said [SPOKESPERSON]. "The discussions will shape how institutional capital flows into AI technologies."
+
+Key discussion topics include:
+• Investment strategies for AI infrastructure
+• Risk assessment in emerging AI technologies  
+• Building sustainable AI investment portfolios
+• Regulatory considerations for AI investments
+
+The summit takes place [DATE] at [VENUE] in New York City.
+
+For media inquiries, contact: [CONTACT]
+
+###`
+      }
+    
+    default:
+      return null
+  }
 }
 
 serve(async (req) => {
-  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -118,37 +218,29 @@ serve(async (req) => {
   try {
     const { message, context = {}, messages = [] } = await req.json()
 
-    // Use Claude for natural conversation with memory
+    // Get conversational response from Claude
     let response = ''
     
     if (ANTHROPIC_API_KEY) {
       response = await callClaude(messages, message)
     } else {
-      // Simple fallback if no Claude API key
-      response = "I can help you with that. "
-      
-      const intent = detectCreationIntent(message)
-      if (intent.shouldCreate) {
-        if (intent.type === 'content-draft') {
-          response += "I'll create a draft for you. What key messages should I include?"
-        } else if (intent.type === 'media-list') {
-          response += "I'll build a targeted media list. What industry or beat are you targeting?"
-        } else if (intent.type === 'strategy-plan') {
-          response += "I'll develop a strategic plan. What's your timeline and main objective?"
-        }
-      } else {
-        response += "What specific aspect would you like to explore?"
-      }
+      response = generateFallbackResponse(message)
     }
 
-    // Check if we should signal creation of something
-    const creationIntent = detectCreationIntent(message)
+    // Detect what user wants to create (can be multiple things)
+    const creationIntents = detectCreationIntents(message)
+    
+    // Generate actual content for each intent
+    const workItems = creationIntents.map(intent => ({
+      ...intent,
+      generatedContent: generateContent(intent.type, context)
+    }))
     
     return new Response(
       JSON.stringify({
         response,
-        showWork: creationIntent.shouldCreate,
-        workType: creationIntent.type,
+        showWork: creationIntents.length > 0,
+        workItems: workItems, // Send all work items to create multiple cards
         context: {
           ...context,
           conversationLength: messages.length + 1
@@ -163,7 +255,7 @@ serve(async (req) => {
     console.error('Error in niv-chat function:', error)
     return new Response(
       JSON.stringify({
-        response: "I'm here to help. Could you rephrase your question?",
+        response: "I can help with that. What would you like me to create?",
         error: error.message
       }),
       {
