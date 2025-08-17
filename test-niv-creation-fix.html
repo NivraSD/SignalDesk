@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Niv Creation Detection Fix</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #0a0a0f;
+            color: #e8e8e8;
+        }
+        
+        .test-section {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .test-input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            margin: 10px 0;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        
+        .response {
+            background: rgba(0, 0, 0, 0.4);
+            border-left: 4px solid #3b82f6;
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 8px;
+            white-space: pre-wrap;
+        }
+        
+        .work-items {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 8px;
+        }
+        
+        .work-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 6px;
+            border-left: 4px solid #10b981;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Niv Creation Detection Fix</h1>
+    <p>Testing the enhanced creation detection logic to catch natural language requests.</p>
+    
+    <div class="test-section">
+        <h3>Test Cases</h3>
+        <p>These phrases should now trigger work item creation:</p>
+        
+        <button onclick="testPhrase('i need media list')">Test: "i need media list"</button>
+        <button onclick="testPhrase('i need media list and all the other materials you said you could create')">Test: Full Request</button>
+        <button onclick="testPhrase('create all the materials you mentioned')">Test: "create all the materials"</button>
+        <button onclick="testPhrase('i want media list')">Test: "i want media list"</button>
+        <button onclick="testPhrase('materials you offered')">Test: "materials you offered"</button>
+        
+        <textarea id="customMessage" class="test-input" placeholder="Enter custom test message..."></textarea>
+        <button onclick="testCustomMessage()">Test Custom Message</button>
+    </div>
+    
+    <div class="test-section">
+        <h3>Conversation Context</h3>
+        <div>
+            <strong>Previous Messages:</strong>
+            <div style="margin: 10px 0; font-size: 14px; color: #9ca3af;">
+                User: "I need help creating a media list to reach tech reporters in NYC"<br>
+                Niv: "I can help create a comprehensive media list for NYC tech reporters. I can also create a strategic plan, press release, and other materials to support your campaign."
+            </div>
+        </div>
+    </div>
+    
+    <div id="results"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        const conversationHistory = [
+            {
+                type: "user",
+                content: "I need help creating a media list to reach tech reporters in NYC"
+            },
+            {
+                type: "assistant", 
+                content: "I can help create a comprehensive media list for NYC tech reporters. I can also create a strategic plan, press release, and other materials to support your campaign. What would you like me to start with?"
+            }
+        ];
+        
+        async function testPhrase(message) {
+            const resultsDiv = document.getElementById('results');
+            
+            // Show loading
+            resultsDiv.innerHTML = `
+                <div class="response">
+                    <strong>Testing:</strong> "${message}"
+                    <br><br>
+                    🔄 Calling Niv Orchestrator...
+                </div>
+            `;
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/niv-orchestrator`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        messages: conversationHistory,
+                        context: {
+                            hasConversationHistory: true,
+                            conversationLength: 2
+                        }
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+                
+                const data = await response.json();
+                
+                // Display results
+                let resultHtml = `
+                    <div class="response">
+                        <strong>Test Message:</strong> "${message}"
+                        <br><br>
+                        <strong>Niv Response:</strong><br>
+                        ${data.response || 'No response'}
+                        <br><br>
+                        <strong>Work Items Created:</strong> ${data.workItems ? data.workItems.length : 0}
+                        <br>
+                        <strong>Show Work:</strong> ${data.showWork ? 'Yes' : 'No'}
+                    </div>
+                `;
+                
+                if (data.workItems && data.workItems.length > 0) {
+                    resultHtml += '<div class="work-items"><strong>Work Items:</strong>';
+                    data.workItems.forEach((item, index) => {
+                        resultHtml += `
+                            <div class="work-item">
+                                <strong>${item.title}</strong><br>
+                                <em>${item.description}</em><br>
+                                Type: ${item.type}
+                            </div>
+                        `;
+                    });
+                    resultHtml += '</div>';
+                } else {
+                    resultHtml += '<div style="color: #ef4444; margin: 16px 0;">❌ No work items created</div>';
+                }
+                
+                resultsDiv.innerHTML = resultHtml;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="response" style="border-left-color: #ef4444;">
+                        <strong>Error testing:</strong> "${message}"
+                        <br><br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        function testCustomMessage() {
+            const customMessage = document.getElementById('customMessage').value.trim();
+            if (customMessage) {
+                testPhrase(customMessage);
+            } else {
+                alert('Please enter a custom message to test');
+            }
+        }
+        
+        // Auto-test the main case on load
+        window.onload = () => {
+            setTimeout(() => {
+                testPhrase('i need media list and all the other materials you said you could create');
+            }, 1000);
+        };
+    </script>
+</body>
+</html>

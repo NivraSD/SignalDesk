@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Niv Diagnostic Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-section {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #3a3a3a;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 10px;
+            font-weight: 600;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 6px;
+            background: #1a1a1a;
+            border: 1px solid #3a3a3a;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            border-color: #10b981;
+            background: #064e3b;
+        }
+        .error {
+            border-color: #ef4444;
+            background: #7f1d1d;
+        }
+        .warning {
+            border-color: #f59e0b;
+            background: #78350f;
+        }
+        h1 {
+            color: #3b82f6;
+            text-align: center;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status.pass { background: #10b981; color: white; }
+        .status.fail { background: #ef4444; color: white; }
+        .status.running { background: #f59e0b; color: white; }
+    </style>
+</head>
+<body>
+    <h1>🔬 Niv Diagnostic Test Suite</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Basic Connection <span id="test1-status" class="status running">RUNNING</span></h2>
+        <p>Tests if we can connect to the Edge Function at all</p>
+        <button onclick="testBasicConnection()">Run Test</button>
+        <div id="test1-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 2: Simple Message (No History) <span id="test2-status" class="status">PENDING</span></h2>
+        <p>Tests sending a single message with no conversation history</p>
+        <button onclick="testSimpleMessage()">Run Test</button>
+        <div id="test2-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 3: Two Messages (1 Exchange) <span id="test3-status" class="status">PENDING</span></h2>
+        <p>Tests with one back-and-forth exchange</p>
+        <button onclick="testTwoMessages()">Run Test</button>
+        <div id="test3-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 4: Four Messages (2 Exchanges) <span id="test4-status" class="status">PENDING</span></h2>
+        <p>Tests with two back-and-forth exchanges - should NOT create materials yet</p>
+        <button onclick="testFourMessages()">Run Test</button>
+        <div id="test4-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 5: Six Messages + Creation Request <span id="test5-status" class="status">PENDING</span></h2>
+        <p>Tests with three exchanges plus explicit creation request - SHOULD create materials</p>
+        <button onclick="testSixMessagesWithCreation()">Run Test</button>
+        <div id="test5-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 6: Direct Edge Function Call <span id="test6-status" class="status">PENDING</span></h2>
+        <p>Tests calling the Edge Function directly with minimal payload</p>
+        <button onclick="testDirectCall()">Run Test</button>
+        <div id="test6-result" class="result"></div>
+    </div>
+
+    <!-- Include Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
+    
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        function updateStatus(testId, status) {
+            const statusEl = document.getElementById(`${testId}-status`);
+            statusEl.textContent = status;
+            statusEl.className = 'status ' + (status === 'PASS' ? 'pass' : status === 'FAIL' ? 'fail' : 'running');
+        }
+
+        function showResult(testId, content, isError = false) {
+            const resultEl = document.getElementById(`${testId}-result`);
+            resultEl.textContent = content;
+            resultEl.className = 'result ' + (isError ? 'error' : 'success');
+        }
+
+        async function testBasicConnection() {
+            updateStatus('test1', 'RUNNING');
+            try {
+                console.log('Test 1: Starting basic connection test');
+                
+                const { data, error } = await supabaseClient.functions.invoke('niv-orchestrator', {
+                    body: {
+                        message: 'Hello',
+                        messages: [],
+                        context: {},
+                        mode: 'test'
+                    }
+                });
+
+                if (error) {
+                    throw error;
+                }
+
+                console.log('Test 1 Response:', data);
+                showResult('test1', `✅ Connection successful!\n\nResponse:\n${JSON.stringify(data, null, 2)}`);
+                updateStatus('test1', 'PASS');
+            } catch (error) {
+                console.error('Test 1 Error:', error);
+                showResult('test1', `❌ Connection failed!\n\nError: ${error.message}\n\nDetails: ${JSON.stringify(error, null, 2)}`, true);
+                updateStatus('test1', 'FAIL');
+            }
+        }
+
+        async function testSimpleMessage() {
+            updateStatus('test2', 'RUNNING');
+            try {
+                console.log('Test 2: Testing simple message');
+                
+                const { data, error } = await supabaseClient.functions.invoke('niv-orchestrator', {
+                    body: {
+                        message: 'I need help with PR for my startup',
+                        messages: [],
+                        context: {},
+                        mode: 'strategic_orchestration'
+                    }
+                });
+
+                if (error) {
+                    throw error;
+                }
+
+                console.log('Test 2 Response:', data);
+                const hasResponse = data.response && data.response.length > 0;
+                const hasNoWorkItems = !data.workItems || data.workItems.length === 0;
+                
+                if (hasResponse && hasNoWorkItems) {
+                    showResult('test2', `✅ Test passed!\n\n✓ Got response (${data.response.length} chars)\n✓ No work items created (as expected)\n\nResponse preview:\n${data.response.substring(0, 200)}...`);
+                    updateStatus('test2', 'PASS');
+                } else {
+                    showResult('test2', `⚠️ Unexpected result\n\nHas response: ${hasResponse}\nWork items: ${data.workItems?.length || 0}\n\nFull response:\n${JSON.stringify(data, null, 2)}`, true);
+                    updateStatus('test2', 'FAIL');
+                }
+            } catch (error) {
+                console.error('Test 2 Error:', error);
+                showResult('test2', `❌ Test failed!\n\nError: ${error.message}`, true);
+                updateStatus('test2', 'FAIL');
+            }
+        }
+
+        async function testTwoMessages() {
+            updateStatus('test3', 'RUNNING');
+            try {
+                console.log('Test 3: Testing with 2 messages');
+                
+                const messages = [
+                    { type: 'user', content: 'I need help with PR' },
+                    { type: 'assistant', content: 'I can help with your PR strategy. What kind of announcement are you planning?' }
+                ];
+
+                const { data, error } = await supabaseClient.functions.invoke('niv-orchestrator', {
+                    body: {
+                        message: 'We are launching a new AI product',
+                        messages: messages,
+                        context: {},
+                        mode: 'strategic_orchestration'
+                    }
+                });
+
+                if (error) {
+                    throw error;
+                }
+
+                console.log('Test 3 Response:', data);
+                const hasResponse = data.response && data.response.length > 0;
+                const hasNoWorkItems = !data.workItems || data.workItems.length === 0;
+                
+                if (hasResponse && hasNoWorkItems) {
+                    showResult('test3', `✅ Test passed!\n\n✓ Got response\n✓ No work items (conversation continuing)\n\nMessages sent: ${messages.length}\nResponse preview:\n${data.response.substring(0, 200)}...`);
+                    updateStatus('test3', 'PASS');
+                } else {
+                    showResult('test3', `⚠️ Unexpected result\n\nWork items created: ${data.workItems?.length || 0}`, true);
+                    updateStatus('test3', 'FAIL');
+                }
+            } catch (error) {
+                console.error('Test 3 Error:', error);
+                showResult('test3', `❌ Test failed!\n\nError: ${error.message}`, true);
+                updateStatus('test3', 'FAIL');
+            }
+        }
+
+        async function testFourMessages() {
+            updateStatus('test4', 'RUNNING');
+            try {
+                console.log('Test 4: Testing with 4 messages (2 exchanges)');
+                
+                const messages = [
+                    { type: 'user', content: 'I need help with PR for my startup' },
+                    { type: 'assistant', content: 'I can help with your PR strategy. Tell me about your startup.' },
+                    { type: 'user', content: 'We are TechCorp, we make AI tools for developers' },
+                    { type: 'assistant', content: 'Great! AI developer tools are a hot space. What are you announcing?' }
+                ];
+
+                const { data, error } = await supabaseClient.functions.invoke('niv-orchestrator', {
+                    body: {
+                        message: 'We are launching CloudAI next month',
+                        messages: messages,
+                        context: {},
+                        mode: 'strategic_orchestration'
+                    }
+                });
+
+                if (error) {
+                    throw error;
+                }
+
+                console.log('Test 4 Response:', data);
+                const hasResponse = data.response && data.response.length > 0;
+                const hasNoWorkItems = !data.workItems || data.workItems.length === 0;
+                
+                if (hasResponse && hasNoWorkItems) {
+                    showResult('test4', `✅ Test passed!\n\n✓ Got response\n✓ No work items (still in conversation mode)\n\nMessages sent: ${messages.length}\nResponse preview:\n${data.response.substring(0, 200)}...`);
+                    updateStatus('test4', 'PASS');
+                } else {
+                    showResult('test4', `⚠️ Unexpected result\n\nWork items created: ${data.workItems?.length || 0} (should be 0)`, true);
+                    updateStatus('test4', 'FAIL');
+                }
+            } catch (error) {
+                console.error('Test 4 Error:', error);
+                showResult('test4', `❌ Test failed at 4 messages!\n\nError: ${error.message}\n\nThis is likely where the crash occurs.`, true);
+                updateStatus('test4', 'FAIL');
+            }
+        }
+
+        async function testSixMessagesWithCreation() {
+            updateStatus('test5', 'RUNNING');
+            try {
+                console.log('Test 5: Testing with 6 messages + creation request');
+                
+                const messages = [
+                    { type: 'user', content: 'I need help with PR for my startup' },
+                    { type: 'assistant', content: 'I can help with your PR strategy. Tell me about your startup.' },
+                    { type: 'user', content: 'We are TechCorp, we make AI tools for developers' },
+                    { type: 'assistant', content: 'Great! AI developer tools are interesting. What are you announcing?' },
+                    { type: 'user', content: 'We are launching CloudAI next month, it helps developers deploy AI models faster' },
+                    { type: 'assistant', content: 'CloudAI sounds promising. What are your main PR goals for this launch?' }
+                ];
+
+                const { data, error } = await supabaseClient.functions.invoke('niv-orchestrator', {
+                    body: {
+                        message: 'Create a press release for our CloudAI launch',
+                        messages: messages,
+                        context: {},
+                        mode: 'strategic_orchestration'
+                    }
+                });
+
+                if (error) {
+                    throw error;
+                }
+
+                console.log('Test 5 Response:', data);
+                const hasResponse = data.response && data.response.length > 0;
+                const hasWorkItems = data.workItems && data.workItems.length > 0;
+                
+                if (hasResponse) {
+                    const resultText = hasWorkItems 
+                        ? `✅ Test passed!\n\n✓ Got response\n✓ Created ${data.workItems.length} work items\n\nWork items:\n${data.workItems.map(w => `- ${w.title} (${w.type})`).join('\n')}`
+                        : `⚠️ No work items created despite explicit request\n\nResponse:\n${data.response.substring(0, 300)}...`;
+                    
+                    showResult('test5', resultText, !hasWorkItems);
+                    updateStatus('test5', hasWorkItems ? 'PASS' : 'FAIL');
+                } else {
+                    showResult('test5', `❌ No response received`, true);
+                    updateStatus('test5', 'FAIL');
+                }
+            } catch (error) {
+                console.error('Test 5 Error:', error);
+                showResult('test5', `❌ Test failed!\n\nError: ${error.message}`, true);
+                updateStatus('test5', 'FAIL');
+            }
+        }
+
+        async function testDirectCall() {
+            updateStatus('test6', 'RUNNING');
+            try {
+                console.log('Test 6: Direct Edge Function call');
+                
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/niv-orchestrator`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'apikey': SUPABASE_ANON_KEY
+                    },
+                    body: JSON.stringify({
+                        message: 'Hello Niv',
+                        messages: [],
+                        context: {},
+                        mode: 'test'
+                    })
+                });
+
+                const responseText = await response.text();
+                console.log('Test 6 Response Status:', response.status);
+                console.log('Test 6 Response Text:', responseText);
+
+                if (response.ok) {
+                    const data = JSON.parse(responseText);
+                    showResult('test6', `✅ Direct call successful!\n\nStatus: ${response.status}\n\nResponse:\n${JSON.stringify(data, null, 2)}`);
+                    updateStatus('test6', 'PASS');
+                } else {
+                    showResult('test6', `❌ Direct call failed!\n\nStatus: ${response.status}\n\nResponse:\n${responseText}`, true);
+                    updateStatus('test6', 'FAIL');
+                }
+            } catch (error) {
+                console.error('Test 6 Error:', error);
+                showResult('test6', `❌ Direct call error!\n\nError: ${error.message}`, true);
+                updateStatus('test6', 'FAIL');
+            }
+        }
+
+        // Run first test automatically
+        window.addEventListener('load', () => {
+            setTimeout(testBasicConnection, 500);
+        });
+    </script>
+</body>
+</html>

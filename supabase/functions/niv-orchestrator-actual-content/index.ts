@@ -8,47 +8,6 @@ const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
 // ========================================
 // Multi-modal consultation system supporting advisory, analysis, crisis response, review, and material creation
 
-// Extract Niv's actual generated content from response (NO FALLBACKS)
-function extractNivGeneratedContent(response: string, type: string): any {
-  console.log(`🔎 Attempting to extract ${type} from Niv's response`)
-  
-  // For media lists, look for journalist patterns
-  if (type === 'media-list') {
-    const journalists = []
-    
-    // Look for patterns like "Name from Outlet" or "Name, Outlet"
-    const patterns = [
-      /([A-Z][a-z]+ [A-Z][a-z]+) (?:from |at |with |of |, )([A-Z][a-zA-Z\s&]+?)(?:,|\.|;|\n|$)/g,
-      /(?:^|\n)[-•]\s*([A-Z][a-z]+ [A-Z][a-z]+)[,:]?\s*([A-Z][a-zA-Z\s&]+?)(?:\s*[-–]|\s*\()/g
-    ]
-    
-    for (const pattern of patterns) {
-      const matches = response.matchAll(pattern)
-      for (const match of matches) {
-        if (match[1] && match[2]) {
-          journalists.push({
-            name: match[1].trim(),
-            outlet: match[2].trim(),
-            beat: 'Technology', // Default, could be extracted
-            email: `contact@${match[2].toLowerCase().replace(/\s+/g, '')}.com`
-          })
-        }
-      }
-    }
-    
-    // Only return if we found actual journalists
-    if (journalists.length > 0) {
-      console.log(`✅ Found ${journalists.length} journalists in Niv's response`)
-      return { journalists }
-    }
-  }
-  
-  // For other types, we'd need similar extraction logic
-  // For now, return null to indicate we couldn't extract structured content
-  console.log(`⚠️ Could not extract structured ${type} content`)
-  return null
-}
-
 // Intent Classification for Consultation Modes
 function classifyConsultationIntent(message: string, conversationHistory: any[]): string {
   const lowerMessage = message.toLowerCase();
@@ -1505,32 +1464,26 @@ Deno.serve(async (req) => {
       console.log('🚫 No creation intents detected - NOT generating any work items')
     }
     
-    // NO FALLBACK TEMPLATES - Only use Niv's actual generated content
-    const workItems = []
-    
-    // Extract actual content from Niv's response
-    if (creationIntents.length > 0 && response.length > 100) {
-      console.log('🔍 Attempting to extract Niv\'s actual generated content...')
+    const workItems = creationIntents.map((intent, index) => {
+      console.log(`🔨 Generating work item ${index + 1}/${creationIntents.length}: ${intent.type}`)
       
-      // Try to extract structured content from Niv's response
-      for (const intent of creationIntents) {
-        const extractedContent = extractNivGeneratedContent(response, intent.type)
-        
-        if (extractedContent) {
-          console.log(`✅ Extracted actual ${intent.type} content from Niv's response`)
-          workItems.push({
-            ...intent,
-            generatedContent: extractedContent
-          })
-        } else {
-          console.log(`⚠️ Could not extract ${intent.type} - Niv's content remains in chat only`)
-        }
-      }
+      const generatedContent = generateContent(intent.type, { 
+        ...context, 
+        messages,
+        userMessage: message 
+      })
       
-      if (workItems.length === 0) {
-        console.log('💡 No artifacts created - Niv\'s content is available in the chat response')
+      console.log(`📝 Work item ${index + 1} generated:`, {
+        type: intent.type,
+        hasContent: !!generatedContent,
+        contentKeys: generatedContent ? Object.keys(generatedContent).slice(0, 5) : []
+      })
+      
+      return {
+        ...intent,
+        generatedContent
       }
-    }
+    })
     
     const result = {
       response,

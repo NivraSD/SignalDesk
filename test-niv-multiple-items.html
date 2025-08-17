@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Niv Multiple Items Creation</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0a0f;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #8b5cf6;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            background: rgba(30, 30, 45, 0.4);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .test-button {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .test-button:hover {
+            opacity: 0.9;
+        }
+        .output {
+            background: #000;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success { color: #10b981; }
+        .error { color: #ef4444; }
+        .info { color: #3b82f6; }
+        .warning { color: #f59e0b; }
+        .debug { color: #8b5cf6; }
+        .highlight { 
+            background: rgba(139, 92, 246, 0.2); 
+            padding: 2px 4px; 
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Niv Multiple Items Creation</h1>
+        
+        <div class="test-section">
+            <h2>Expected Behavior</h2>
+            <p style="color: #9ca3af;">
+                ✅ Niv should understand requests for multiple items<br>
+                ✅ Create SEPARATE work items for each type<br>
+                ✅ If asked for 4 items, create 4 distinct work items<br>
+                ✅ Each item should have its own specific content<br>
+                ❌ Don't mix different content types together
+            </p>
+        </div>
+
+        <div class="test-section">
+            <h2>Test 1: Single Item Request</h2>
+            <button class="test-button" onclick="testSingleItem()">
+                Test: "Create a media plan"
+            </button>
+            <div id="single-output" class="output"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Test 2: Two Items Request</h2>
+            <button class="test-button" onclick="testTwoItems()">
+                Test: "Create a media plan and press release"
+            </button>
+            <div id="two-output" class="output"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Test 3: Four Items Request</h2>
+            <button class="test-button" onclick="testFourItems()">
+                Test: "Create media plan, press release, strategic plan, and key messaging"
+            </button>
+            <div id="four-output" class="output"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Test 4: Numbered List Request</h2>
+            <button class="test-button" onclick="testNumberedList()">
+                Test: "Create: 1) Media plan, 2) Press release, 3) FAQ document"
+            </button>
+            <div id="numbered-output" class="output"></div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+
+        function log(elementId, message, type = 'info') {
+            const output = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const colorClass = type;
+            output.innerHTML += `<span class="${colorClass}">[${timestamp}] ${message}</span>\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        async function callNiv(message, messages = []) {
+            const response = await fetch(`${SUPABASE_URL}/functions/v1/niv-orchestrator`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: message,
+                    messages: messages,
+                    context: {},
+                    mode: 'strategic_orchestration'
+                })
+            });
+            return await response.json();
+        }
+
+        function analyzeWorkItems(workItems, outputId) {
+            if (!workItems || workItems.length === 0) {
+                log(outputId, '❌ No work items created', 'error');
+                return;
+            }
+
+            log(outputId, `\n📦 Created ${workItems.length} work item(s):`, 'info');
+            
+            const itemTypes = {};
+            workItems.forEach((item, i) => {
+                const type = item.type;
+                itemTypes[type] = (itemTypes[type] || 0) + 1;
+                
+                log(outputId, `\n${i + 1}. <span class="highlight">${item.title}</span>`, 'success');
+                log(outputId, `   Type: ${item.type}`, 'debug');
+                log(outputId, `   Description: ${item.description}`, 'debug');
+                
+                if (item.generatedContent) {
+                    const contentKeys = Object.keys(item.generatedContent);
+                    log(outputId, `   ✅ Has content (${contentKeys.length} fields)`, 'success');
+                } else {
+                    log(outputId, `   ❌ No generated content`, 'error');
+                }
+            });
+
+            // Check for duplicates
+            Object.entries(itemTypes).forEach(([type, count]) => {
+                if (count > 1) {
+                    log(outputId, `\n⚠️ WARNING: ${count} items of type "${type}" (should be 1)`, 'warning');
+                }
+            });
+        }
+
+        async function testSingleItem() {
+            const outputId = 'single-output';
+            log(outputId, '=== Testing Single Item Request ===', 'info');
+            
+            try {
+                const message = "I need you to create a comprehensive media plan for our AI product launch next month";
+                log(outputId, `Request: "${message}"`, 'debug');
+                
+                const response = await callNiv(message);
+                
+                log(outputId, '\nNiv says:', 'info');
+                log(outputId, response.response?.substring(0, 200) + '...', 'debug');
+                
+                analyzeWorkItems(response.workItems, outputId);
+                
+                if (response.workItems?.length === 1) {
+                    log(outputId, '\n✅ SUCCESS: Exactly 1 item created', 'success');
+                } else {
+                    log(outputId, `\n❌ FAIL: Expected 1 item, got ${response.workItems?.length || 0}`, 'error');
+                }
+                
+            } catch (error) {
+                log(outputId, `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testTwoItems() {
+            const outputId = 'two-output';
+            log(outputId, '=== Testing Two Items Request ===', 'info');
+            
+            try {
+                const message = "Please create both a media plan and a press release for our AI product launch";
+                log(outputId, `Request: "${message}"`, 'debug');
+                
+                const response = await callNiv(message);
+                
+                log(outputId, '\nNiv says:', 'info');
+                log(outputId, response.response?.substring(0, 200) + '...', 'debug');
+                
+                analyzeWorkItems(response.workItems, outputId);
+                
+                if (response.workItems?.length === 2) {
+                    log(outputId, '\n✅ SUCCESS: Exactly 2 items created', 'success');
+                    
+                    // Check if we have both types
+                    const hasMediaPlan = response.workItems.some(i => i.type === 'media-list');
+                    const hasPressRelease = response.workItems.some(i => i.type === 'content-draft');
+                    
+                    if (hasMediaPlan && hasPressRelease) {
+                        log(outputId, '✅ Both media plan and press release created', 'success');
+                    } else {
+                        log(outputId, '❌ Missing expected item types', 'error');
+                    }
+                } else {
+                    log(outputId, `\n❌ FAIL: Expected 2 items, got ${response.workItems?.length || 0}`, 'error');
+                }
+                
+            } catch (error) {
+                log(outputId, `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testFourItems() {
+            const outputId = 'four-output';
+            log(outputId, '=== Testing Four Items Request ===', 'info');
+            
+            try {
+                const message = "Create a media plan, press release, strategic communications plan, and key messaging framework for our launch";
+                log(outputId, `Request: "${message}"`, 'debug');
+                
+                const response = await callNiv(message);
+                
+                log(outputId, '\nNiv says:', 'info');
+                log(outputId, response.response?.substring(0, 200) + '...', 'debug');
+                
+                analyzeWorkItems(response.workItems, outputId);
+                
+                if (response.workItems?.length === 4) {
+                    log(outputId, '\n✅ SUCCESS: Exactly 4 items created', 'success');
+                    
+                    // Check for all expected types
+                    const expectedTypes = ['media-list', 'content-draft', 'strategy-plan', 'key-messaging'];
+                    const actualTypes = response.workItems.map(i => i.type);
+                    
+                    expectedTypes.forEach(type => {
+                        if (actualTypes.includes(type)) {
+                            log(outputId, `✅ Has ${type}`, 'success');
+                        } else {
+                            log(outputId, `❌ Missing ${type}`, 'error');
+                        }
+                    });
+                } else {
+                    log(outputId, `\n❌ FAIL: Expected 4 items, got ${response.workItems?.length || 0}`, 'error');
+                }
+                
+            } catch (error) {
+                log(outputId, `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testNumberedList() {
+            const outputId = 'numbered-output';
+            log(outputId, '=== Testing Numbered List Request ===', 'info');
+            
+            try {
+                const message = "I need you to create: 1) A strategic media plan, 2) A press release, 3) An FAQ document for our AI launch";
+                log(outputId, `Request: "${message}"`, 'debug');
+                
+                const response = await callNiv(message);
+                
+                log(outputId, '\nNiv says:', 'info');
+                log(outputId, response.response?.substring(0, 200) + '...', 'debug');
+                
+                analyzeWorkItems(response.workItems, outputId);
+                
+                if (response.workItems?.length === 3) {
+                    log(outputId, '\n✅ SUCCESS: Exactly 3 items created', 'success');
+                    
+                    // Check for expected types
+                    const hasMediaPlan = response.workItems.some(i => i.type === 'media-list');
+                    const hasPressRelease = response.workItems.some(i => i.type === 'content-draft');
+                    const hasFAQ = response.workItems.some(i => i.type === 'faq-document');
+                    
+                    if (hasMediaPlan && hasPressRelease && hasFAQ) {
+                        log(outputId, '✅ All three requested items created correctly', 'success');
+                    } else {
+                        log(outputId, '❌ Missing some requested items', 'error');
+                    }
+                } else {
+                    log(outputId, `\n❌ FAIL: Expected 3 items, got ${response.workItems?.length || 0}`, 'error');
+                }
+                
+            } catch (error) {
+                log(outputId, `Error: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

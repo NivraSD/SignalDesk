@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Niv Passthrough Debug Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0a0f;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #8b5cf6;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            background: rgba(30, 30, 45, 0.4);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .test-button {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .test-button:hover {
+            opacity: 0.9;
+        }
+        .output {
+            background: #000;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success { color: #10b981; }
+        .error { color: #ef4444; }
+        .info { color: #3b82f6; }
+        .warning { color: #f59e0b; }
+        .debug { color: #8b5cf6; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Niv Passthrough Debug Test</h1>
+        
+        <div class="test-section">
+            <h2>Test Creation Intent Detection</h2>
+            <button class="test-button" onclick="testCreationRequest('create a media list for AI product launch')">
+                Test: "create a media list for AI product launch"
+            </button>
+            <button class="test-button" onclick="testCreationRequest('I need a strategic plan for our launch')">
+                Test: "I need a strategic plan for our launch"
+            </button>
+            <button class="test-button" onclick="testCreationRequest('yes, create everything you mentioned')">
+                Test: "yes, create everything you mentioned"
+            </button>
+            <button class="test-button" onclick="testCreationRequest('help me with PR for AI startup')">
+                Test: "help me with PR for AI startup"
+            </button>
+            <div id="creation-output" class="output"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Test Full Conversation Flow</h2>
+            <button class="test-button" onclick="testFullConversation()">
+                Test Complete Flow: Greeting → Offer → Accept → Generate
+            </button>
+            <div id="conversation-output" class="output"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Direct Edge Function Test</h2>
+            <button class="test-button" onclick="testEdgeFunction('create media list and press release for AI launch')">
+                Test Direct: Media List + Press Release
+            </button>
+            <div id="edge-output" class="output"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Frontend Integration Test</h2>
+            <button class="test-button" onclick="window.open('http://localhost:3000', '_blank')">
+                Open Frontend (Check Console)
+            </button>
+            <p style="color: #9ca3af; font-size: 14px;">
+                Open the browser console to see detailed logging from:
+                <br>• supabaseApiService
+                <br>• NivStrategicOrchestrator
+                <br>• NivFirstLayout
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+
+        function log(elementId, message, type = 'info') {
+            const output = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const colorClass = type;
+            output.innerHTML += `<span class="${colorClass}">[${timestamp}] ${message}</span>\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        async function testCreationRequest(message) {
+            const outputId = 'creation-output';
+            log(outputId, `Testing: "${message}"`, 'info');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/niv-orchestrator`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        messages: [],
+                        context: {},
+                        mode: 'strategic_orchestration'
+                    })
+                });
+
+                const data = await response.json();
+                
+                log(outputId, '✅ Response received', 'success');
+                log(outputId, `Response text: ${data.response?.substring(0, 100)}...`, 'info');
+                log(outputId, `Work items count: ${data.workItems?.length || 0}`, 'debug');
+                
+                if (data.workItems && data.workItems.length > 0) {
+                    log(outputId, '📦 Work Items Generated:', 'success');
+                    data.workItems.forEach((item, i) => {
+                        log(outputId, `  ${i + 1}. ${item.type}: ${item.title}`, 'debug');
+                        log(outputId, `     Has content: ${!!item.generatedContent}`, 'debug');
+                        if (item.generatedContent) {
+                            const keys = Object.keys(item.generatedContent);
+                            log(outputId, `     Content keys: ${keys.join(', ')}`, 'debug');
+                        }
+                    });
+                } else {
+                    log(outputId, '⚠️ No work items generated', 'warning');
+                }
+                
+            } catch (error) {
+                log(outputId, `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testFullConversation() {
+            const outputId = 'conversation-output';
+            log(outputId, 'Starting full conversation test...', 'info');
+            
+            const messages = [];
+            
+            // Step 1: Initial greeting
+            log(outputId, '\n=== Step 1: Greeting ===', 'info');
+            let response = await callNiv('Hi Niv, I need help with PR for our AI product launch', messages);
+            messages.push({ type: 'user', content: 'Hi Niv, I need help with PR for our AI product launch' });
+            messages.push({ type: 'assistant', content: response.response });
+            log(outputId, `Niv: ${response.response?.substring(0, 150)}...`, 'debug');
+            log(outputId, `Work items: ${response.workItems?.length || 0}`, 'debug');
+            
+            // Step 2: Niv offers to create materials
+            if (response.response?.includes('create') || response.response?.includes('help')) {
+                log(outputId, '\n=== Step 2: Accepting offer ===', 'info');
+                response = await callNiv('Yes, please create a media list and strategic plan', messages);
+                messages.push({ type: 'user', content: 'Yes, please create a media list and strategic plan' });
+                messages.push({ type: 'assistant', content: response.response });
+                log(outputId, `Niv: ${response.response?.substring(0, 150)}...`, 'debug');
+                log(outputId, `Work items: ${response.workItems?.length || 0}`, 'debug');
+                
+                if (response.workItems && response.workItems.length > 0) {
+                    log(outputId, '\n✅ SUCCESS: Materials generated!', 'success');
+                    response.workItems.forEach((item, i) => {
+                        log(outputId, `${i + 1}. ${item.type}: ${item.title}`, 'success');
+                    });
+                } else {
+                    log(outputId, '\n❌ FAIL: No materials generated', 'error');
+                }
+            }
+        }
+
+        async function callNiv(message, messages = []) {
+            const response = await fetch(`${SUPABASE_URL}/functions/v1/niv-orchestrator`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: message,
+                    messages: messages,
+                    context: {},
+                    mode: 'strategic_orchestration'
+                })
+            });
+            return await response.json();
+        }
+
+        async function testEdgeFunction(message) {
+            const outputId = 'edge-output';
+            log(outputId, `Direct test: "${message}"`, 'info');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/niv-orchestrator`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        messages: [],
+                        context: { offeredToCreate: true },
+                        mode: 'strategic_orchestration'
+                    })
+                });
+
+                const data = await response.json();
+                
+                log(outputId, 'Full response:', 'info');
+                log(outputId, JSON.stringify(data, null, 2), 'debug');
+                
+            } catch (error) {
+                log(outputId, `Error: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

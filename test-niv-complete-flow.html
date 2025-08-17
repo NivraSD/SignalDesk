@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Complete Niv Flow</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #0a0a0f;
+            color: #e8e8e8;
+        }
+        
+        .test-section {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .conversation {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin: 20px 0;
+        }
+        
+        .message {
+            padding: 12px 16px;
+            border-radius: 12px;
+            max-width: 80%;
+        }
+        
+        .user {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            align-self: flex-end;
+        }
+        
+        .assistant {
+            background: rgba(255, 255, 255, 0.08);
+            color: #e8e8e8;
+            align-self: flex-start;
+        }
+        
+        .work-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+            margin: 20px 0;
+        }
+        
+        .work-item {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .work-item:hover {
+            transform: translateY(-2px);
+            background: rgba(139, 92, 246, 0.15);
+        }
+        
+        button {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        
+        .status {
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        
+        .success { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+        .error { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        .info { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Complete Niv Flow Test</h1>
+    <p>Testing the full conversation → material generation → workspace integration flow</p>
+    
+    <div class="test-section">
+        <h3>Step 1: Natural Conversation</h3>
+        <button onclick="testStep1()">Start Conversation: "I need help with a media list for our AI platform launch"</button>
+        <div id="step1-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Step 2: Natural Follow-up</h3>
+        <button onclick="testStep2()">Follow-up: "sounds good, let's do it"</button>
+        <div id="step2-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Step 3: Generated Materials</h3>
+        <div id="materials-display"></div>
+    </div>
+    
+    <div id="status"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        let conversation = [];
+        
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        async function testStep1() {
+            updateStatus('🔄 Step 1: Starting natural conversation...', 'info');
+            
+            const message = "I need help with a media list for our AI platform launch";
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/niv-orchestrator`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        messages: conversation,
+                        context: { hasConversationHistory: conversation.length > 0 }
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+                
+                const data = await response.json();
+                
+                // Update conversation
+                conversation.push({ type: 'user', content: message });
+                conversation.push({ type: 'assistant', content: data.response });
+                
+                // Display conversation
+                document.getElementById('step1-result').innerHTML = `
+                    <div class="conversation">
+                        <div class="message user">${message}</div>
+                        <div class="message assistant">${data.response}</div>
+                    </div>
+                `;
+                
+                updateStatus('✅ Step 1 Complete: Niv responded naturally', 'success');
+                
+            } catch (error) {
+                updateStatus(`❌ Step 1 Failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testStep2() {
+            if (conversation.length === 0) {
+                updateStatus('❌ Please run Step 1 first', 'error');
+                return;
+            }
+            
+            updateStatus('🔄 Step 2: Testing natural follow-up...', 'info');
+            
+            const message = "sounds good, let's do it";
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/niv-orchestrator`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        messages: conversation,
+                        context: { hasConversationHistory: true }
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+                
+                const data = await response.json();
+                
+                // Update conversation
+                conversation.push({ type: 'user', content: message });
+                conversation.push({ type: 'assistant', content: data.response });
+                
+                // Display conversation
+                document.getElementById('step2-result').innerHTML = `
+                    <div class="conversation">
+                        <div class="message user">${message}</div>
+                        <div class="message assistant">${data.response}</div>
+                    </div>
+                    <div style="margin-top: 16px;">
+                        <strong>Work Items Created:</strong> ${data.workItems ? data.workItems.length : 0}
+                    </div>
+                `;
+                
+                // Display materials
+                if (data.workItems && data.workItems.length > 0) {
+                    displayMaterials(data.workItems);
+                    updateStatus(`✅ Step 2 Complete: Generated ${data.workItems.length} materials!`, 'success');
+                } else {
+                    updateStatus('⚠️ Step 2 Complete: No materials generated', 'error');
+                }
+                
+            } catch (error) {
+                updateStatus(`❌ Step 2 Failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function displayMaterials(workItems) {
+            const materialsDiv = document.getElementById('materials-display');
+            
+            const materialsHtml = workItems.map(item => `
+                <div class="work-item" onclick="openMaterial('${item.type}', ${JSON.stringify(item).replace(/"/g, '&quot;')})">
+                    <h4>${item.title}</h4>
+                    <p>${item.description}</p>
+                    <div style="font-size: 12px; color: #9ca3af; margin-top: 8px;">
+                        Type: ${item.type}
+                    </div>
+                    <div style="font-size: 12px; color: #10b981; margin-top: 4px;">
+                        ✅ Ready to edit in workspace
+                    </div>
+                </div>
+            `).join('');
+            
+            materialsDiv.innerHTML = `
+                <h4>Generated Materials (Click to simulate workspace opening)</h4>
+                <div class="work-items">${materialsHtml}</div>
+            `;
+        }
+        
+        function openMaterial(type, itemData) {
+            const item = JSON.parse(itemData.replace(/&quot;/g, '"'));
+            updateStatus(`🚀 Opening ${item.title} in workspace...`, 'info');
+            
+            // Simulate workspace opening
+            setTimeout(() => {
+                updateStatus(`✅ ${item.title} opened successfully in ${type} workspace`, 'success');
+                
+                // Show a preview of the content
+                if (item.generatedContent) {
+                    console.log('Generated Content:', item.generatedContent);
+                    alert(`Workspace Preview:\n\nTitle: ${item.title}\nType: ${type}\n\nContent includes: ${Object.keys(item.generatedContent).join(', ')}\n\nCheck console for full details.`);
+                }
+            }, 1000);
+        }
+        
+        // Auto-run test sequence
+        window.onload = () => {
+            updateStatus('Ready to test complete Niv flow', 'info');
+        };
+    </script>
+</body>
+</html>

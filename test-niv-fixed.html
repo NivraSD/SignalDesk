@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Niv Fixed Version</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .panel {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        h1 {
+            color: #3b82f6;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #60a5fa;
+            margin-top: 0;
+        }
+        .test-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #222;
+            border-radius: 6px;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 10px;
+            font-weight: 600;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background: #0a0a0a;
+            border-radius: 6px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success { border: 2px solid #10b981; }
+        .error { border: 2px solid #ef4444; }
+        .info { border: 2px solid #3b82f6; }
+        .highlight {
+            background: #fbbf24;
+            color: #000;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Niv Fixed Version Test Suite</h1>
+    
+    <div class="container">
+        <div class="panel">
+            <h2>Test Scenarios</h2>
+            
+            <div class="test-section">
+                <h3>1. Single Item Request</h3>
+                <p>Request ONLY a media plan - should generate 1 item</p>
+                <button onclick="testSingleItem()">Test Media Plan Only</button>
+                <div id="single-result" class="result"></div>
+            </div>
+            
+            <div class="test-section">
+                <h3>2. Multiple Specific Items</h3>
+                <p>Request press release AND media plan - should generate exactly 2</p>
+                <button onclick="testMultipleItems()">Test Multiple Items</button>
+                <div id="multiple-result" class="result"></div>
+            </div>
+            
+            <div class="test-section">
+                <h3>3. Advisory Mode</h3>
+                <p>Ask for help WITHOUT creation words - should NOT generate items</p>
+                <button onclick="testAdvisory()">Test Advisory Mode</button>
+                <div id="advisory-result" class="result"></div>
+            </div>
+            
+            <div class="test-section">
+                <h3>4. Context Extraction</h3>
+                <p>Verify real company names are used</p>
+                <button onclick="testContext()">Test Context Usage</button>
+                <div id="context-result" class="result"></div>
+            </div>
+        </div>
+        
+        <div class="panel">
+            <h2>Comparison: Fixed vs Original</h2>
+            
+            <div class="test-section">
+                <h3>Fixed Version</h3>
+                <button onclick="testFixed()">Test Fixed Niv</button>
+                <div id="fixed-comparison" class="result"></div>
+            </div>
+            
+            <div class="test-section">
+                <h3>Original Version</h3>
+                <button onclick="testOriginal()">Test Original Niv</button>
+                <div id="original-comparison" class="result"></div>
+            </div>
+            
+            <div class="test-section">
+                <h3>Test Results Summary</h3>
+                <div id="summary" class="result info"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        async function callNiv(functionName, message, messages) {
+            const { data, error } = await supabaseClient.functions.invoke(functionName, {
+                body: { message, messages, context: {} }
+            });
+            
+            if (error) throw error;
+            return data;
+        }
+        
+        async function testSingleItem() {
+            const resultEl = document.getElementById('single-result');
+            resultEl.className = 'result info';
+            resultEl.textContent = 'Testing single item request...';
+            
+            try {
+                // Build context
+                const messages = [
+                    { type: 'user', content: 'I need help with PR for TechCorp' },
+                    { type: 'assistant', content: 'I can help with your PR strategy. Tell me more about TechCorp.' },
+                    { type: 'user', content: 'We are launching CloudAI, an AI platform for developers' },
+                    { type: 'assistant', content: 'CloudAI sounds interesting. What are your PR goals?' }
+                ];
+                
+                // Request ONLY media plan
+                const result = await callNiv('niv-orchestrator-fixed', 'Create a media plan for the launch', messages);
+                
+                const workItemCount = result.workItems?.length || 0;
+                const types = result.workItems?.map(w => w.type) || [];
+                
+                if (workItemCount === 1 && types[0] === 'media-list') {
+                    resultEl.className = 'result success';
+                    resultEl.textContent = `✅ SUCCESS! Generated exactly 1 item: ${types[0]}\n\nWork items: ${JSON.stringify(result.workItems, null, 2)}`;
+                } else {
+                    resultEl.className = 'result error';
+                    resultEl.textContent = `❌ FAILED! Expected 1 media-list, got ${workItemCount} items: ${types.join(', ')}\n\n${JSON.stringify(result, null, 2)}`;
+                }
+            } catch (error) {
+                resultEl.className = 'result error';
+                resultEl.textContent = `❌ Error: ${error.message}`;
+            }
+        }
+        
+        async function testMultipleItems() {
+            const resultEl = document.getElementById('multiple-result');
+            resultEl.className = 'result info';
+            resultEl.textContent = 'Testing multiple items request...';
+            
+            try {
+                const messages = [
+                    { type: 'user', content: 'We are DataFlow Analytics' },
+                    { type: 'assistant', content: 'Tell me about DataFlow Analytics.' },
+                    { type: 'user', content: 'We help businesses analyze data in real-time' },
+                    { type: 'assistant', content: 'What can I help you with?' }
+                ];
+                
+                // Request TWO specific items
+                const result = await callNiv('niv-orchestrator-fixed', 'Create a press release and media plan', messages);
+                
+                const workItemCount = result.workItems?.length || 0;
+                const types = result.workItems?.map(w => w.type) || [];
+                
+                if (workItemCount === 2 && types.includes('media-list') && types.includes('press-release')) {
+                    resultEl.className = 'result success';
+                    resultEl.textContent = `✅ SUCCESS! Generated exactly 2 items: ${types.join(', ')}`;
+                } else {
+                    resultEl.className = 'result error';
+                    resultEl.textContent = `❌ FAILED! Expected 2 items (media-list, press-release), got ${workItemCount}: ${types.join(', ')}`;
+                }
+            } catch (error) {
+                resultEl.className = 'result error';
+                resultEl.textContent = `❌ Error: ${error.message}`;
+            }
+        }
+        
+        async function testAdvisory() {
+            const resultEl = document.getElementById('advisory-result');
+            resultEl.className = 'result info';
+            resultEl.textContent = 'Testing advisory mode...';
+            
+            try {
+                const messages = [
+                    { type: 'user', content: 'I need help with PR' },
+                    { type: 'assistant', content: 'What kind of PR help do you need?' }
+                ];
+                
+                // NO creation words - should stay in advisory mode
+                const result = await callNiv('niv-orchestrator-fixed', 'We are launching next month and need advice', messages);
+                
+                const workItemCount = result.workItems?.length || 0;
+                
+                if (workItemCount === 0) {
+                    resultEl.className = 'result success';
+                    resultEl.textContent = `✅ SUCCESS! No items generated (advisory mode)\n\nResponse: ${result.response}`;
+                } else {
+                    resultEl.className = 'result error';
+                    resultEl.textContent = `❌ FAILED! Should not generate items in advisory mode, but got ${workItemCount} items`;
+                }
+            } catch (error) {
+                resultEl.className = 'result error';
+                resultEl.textContent = `❌ Error: ${error.message}`;
+            }
+        }
+        
+        async function testContext() {
+            const resultEl = document.getElementById('context-result');
+            resultEl.className = 'result info';
+            resultEl.textContent = 'Testing context extraction...';
+            
+            try {
+                const messages = [
+                    { type: 'user', content: 'I am from InnovateLabs' },
+                    { type: 'assistant', content: 'Tell me about InnovateLabs.' },
+                    { type: 'user', content: 'We are launching SmartAPI next week' },
+                    { type: 'assistant', content: 'SmartAPI sounds interesting.' }
+                ];
+                
+                const result = await callNiv('niv-orchestrator-fixed', 'Create a press release', messages);
+                
+                const content = JSON.stringify(result.workItems?.[0]?.generatedContent || {});
+                const hasCompanyName = content.includes('InnovateLabs');
+                const hasProductName = content.includes('SmartAPI');
+                const hasPlaceholders = content.includes('[Company') || content.includes('[Product');
+                
+                if (hasCompanyName && hasProductName && !hasPlaceholders) {
+                    resultEl.className = 'result success';
+                    resultEl.textContent = `✅ SUCCESS! Real context used:\n✓ Company: InnovateLabs\n✓ Product: SmartAPI\n✓ No placeholders\n\nContent:\n${content}`;
+                } else {
+                    resultEl.className = 'result error';
+                    resultEl.textContent = `❌ FAILED!\nCompany found: ${hasCompanyName}\nProduct found: ${hasProductName}\nHas placeholders: ${hasPlaceholders}\n\nContent:\n${content}`;
+                }
+            } catch (error) {
+                resultEl.className = 'result error';
+                resultEl.textContent = `❌ Error: ${error.message}`;
+            }
+        }
+        
+        async function testFixed() {
+            const resultEl = document.getElementById('fixed-comparison');
+            resultEl.className = 'result info';
+            resultEl.textContent = 'Testing fixed version...';
+            
+            try {
+                const messages = [
+                    { type: 'user', content: 'We are TechStartup launching ProductX' },
+                    { type: 'assistant', content: 'Tell me more about ProductX.' }
+                ];
+                
+                const result = await callNiv('niv-orchestrator-fixed', 'Create a media plan', messages);
+                
+                resultEl.className = 'result success';
+                resultEl.textContent = `Fixed Version Results:\n• Work items: ${result.workItems?.length || 0}\n• Types: ${result.workItems?.map(w => w.type).join(', ') || 'none'}\n• Has real context: ${JSON.stringify(result.workItems?.[0]?.generatedContent).includes('TechStartup')}\n\nFull response:\n${JSON.stringify(result, null, 2)}`;
+            } catch (error) {
+                resultEl.className = 'result error';
+                resultEl.textContent = `❌ Error: ${error.message}`;
+            }
+        }
+        
+        async function testOriginal() {
+            const resultEl = document.getElementById('original-comparison');
+            resultEl.className = 'result info';
+            resultEl.textContent = 'Testing original version...';
+            
+            try {
+                const messages = [
+                    { type: 'user', content: 'We are TechStartup launching ProductX' },
+                    { type: 'assistant', content: 'Tell me more about ProductX.' }
+                ];
+                
+                const result = await callNiv('niv-orchestrator', 'Create a media plan', messages);
+                
+                resultEl.className = 'result info';
+                resultEl.textContent = `Original Version Results:\n• Work items: ${result.workItems?.length || 0}\n• Types: ${result.workItems?.map(w => w.type).join(', ') || 'none'}\n• Has real context: ${JSON.stringify(result.workItems?.[0]?.generatedContent).includes('TechStartup')}\n\nFull response:\n${JSON.stringify(result, null, 2)}`;
+            } catch (error) {
+                resultEl.className = 'result error';
+                resultEl.textContent = `❌ Error: ${error.message}`;
+            }
+        }
+        
+        // Update summary
+        function updateSummary() {
+            const summary = document.getElementById('summary');
+            summary.innerHTML = `
+<strong>Key Differences:</strong>
+
+<span class="highlight">Fixed Version</span>
+• Only generates what you explicitly request
+• Uses real company/product names from conversation
+• No fallback/placeholder content
+• Clear separation between advisory and creation modes
+
+<span class="highlight">Original Version</span>
+• May generate multiple content types
+• Sometimes uses placeholder text
+• Complex detection logic
+• Can trigger creation unintentionally
+
+<strong>Test the scenarios to see the differences!</strong>`;
+        }
+        
+        updateSummary();
+    </script>
+</body>
+</html>

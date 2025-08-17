@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Niv Consultant</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Test Niv Consultant</h1>
+    <button onclick="testNiv()">Test Advisory Mode</button>
+    <button onclick="testCrisis()">Test Crisis Mode</button>
+    <button onclick="testAnalysis()">Test Analysis Mode</button>
+    <div id="results"></div>
+
+    <script>
+        const supabaseUrl = 'https://zskaxjtyuaqazydouifp.supabase.co'
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8'
+        
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
+
+        async function testNiv() {
+            const results = document.getElementById('results')
+            results.innerHTML = 'Testing Advisory Mode...'
+            
+            try {
+                const { data, error } = await supabase.functions.invoke('niv-orchestrator', {
+                    body: {
+                        message: "I need help with a product launch strategy",
+                        messages: [],
+                        context: {},
+                        mode: "strategic_orchestration"
+                    }
+                })
+                
+                if (error) {
+                    results.innerHTML = `<h3>Error:</h3><pre>${JSON.stringify(error, null, 2)}</pre>`
+                } else {
+                    results.innerHTML = `<h3>Success:</h3><pre>${JSON.stringify(data, null, 2)}</pre>`
+                }
+            } catch (err) {
+                results.innerHTML = `<h3>Exception:</h3><pre>${err.message}</pre>`
+            }
+        }
+
+        async function testCrisis() {
+            const results = document.getElementById('results')
+            results.innerHTML = 'Testing Crisis Mode...'
+            
+            try {
+                const { data, error } = await supabase.functions.invoke('niv-orchestrator', {
+                    body: {
+                        message: "URGENT: We have a data breach that just happened",
+                        messages: [],
+                        context: {},
+                        mode: "strategic_orchestration"
+                    }
+                })
+                
+                if (error) {
+                    results.innerHTML = `<h3>Error:</h3><pre>${JSON.stringify(error, null, 2)}</pre>`
+                } else {
+                    results.innerHTML = `<h3>Success:</h3><pre>${JSON.stringify(data, null, 2)}</pre>`
+                }
+            } catch (err) {
+                results.innerHTML = `<h3>Exception:</h3><pre>${err.message}</pre>`
+            }
+        }
+
+        async function testAnalysis() {
+            const results = document.getElementById('results')
+            results.innerHTML = 'Testing Analysis Mode...'
+            
+            try {
+                const { data, error } = await supabase.functions.invoke('niv-orchestrator', {
+                    body: {
+                        message: "Analyze our competitive position in the AI market",
+                        messages: [],
+                        context: {},
+                        mode: "strategic_orchestration"
+                    }
+                })
+                
+                if (error) {
+                    results.innerHTML = `<h3>Error:</h3><pre>${JSON.stringify(error, null, 2)}</pre>`
+                } else {
+                    results.innerHTML = `<h3>Success:</h3><pre>${JSON.stringify(data, null, 2)}</pre>`
+                }
+            } catch (err) {
+                results.innerHTML = `<h3>Exception:</h3><pre>${err.message}</pre>`
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Niv Content Generation Fix</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .response {
+            background: #f0f8ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .work-item {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #4CAF50;
+        }
+        .journalist {
+            background: white;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .error {
+            color: red;
+            background: #ffe6e6;
+            padding: 10px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Niv Content Generation Fix</h1>
+    <p>This test verifies that Niv properly generates content INSIDE work items rather than in the chat response.</p>
+    
+    <div>
+        <button onclick="testMediaList()">Test Media List Generation</button>
+        <button onclick="testPressRelease()">Test Press Release Generation</button>
+        <button onclick="testStrategy()">Test Strategy Plan Generation</button>
+    </div>
+    
+    <div id="results"></div>
+
+    <script>
+        const SUPABASE_URL = 'http://localhost:54321';
+        
+        async function callNiv(message, context = {}) {
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/niv-orchestrator`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        context: context,
+                        messages: []
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error('Error calling Niv:', error);
+                throw error;
+            }
+        }
+        
+        function displayResults(title, data) {
+            const resultsDiv = document.getElementById('results');
+            
+            let html = `<h3>${title}</h3>`;
+            
+            if (data.error) {
+                html += `<div class="error">Error: ${data.error}</div>`;
+                resultsDiv.innerHTML = html + resultsDiv.innerHTML;
+                return;
+            }
+            
+            // Show conversational response
+            html += `<div class="response">
+                <h4>Chat Response (should be conversational only):</h4>
+                <p>${data.response}</p>
+            </div>`;
+            
+            // Show work items
+            if (data.workItems && data.workItems.length > 0) {
+                html += `<h4>Generated Work Items (should contain actual content):</h4>`;
+                
+                data.workItems.forEach((item, index) => {
+                    html += `<div class="work-item">
+                        <h5>${item.title} (${item.type})</h5>
+                        <p><strong>Description:</strong> ${item.description}</p>
+                    `;
+                    
+                    if (item.generatedContent) {
+                        html += `<h6>Generated Content:</h6>`;
+                        
+                        if (item.type === 'media-list' && item.generatedContent.journalists) {
+                            html += `<p><strong>Total Contacts:</strong> ${item.generatedContent.totalContacts}</p>`;
+                            html += `<h6>Journalists:</h6>`;
+                            item.generatedContent.journalists.forEach(j => {
+                                html += `<div class="journalist">
+                                    <strong>${j.name}</strong> - ${j.outlet}<br>
+                                    Beat: ${j.beat} | Priority: ${j.priority}<br>
+                                    Email: ${j.email}<br>
+                                    Notes: ${j.notes}
+                                </div>`;
+                            });
+                        } else if (item.type === 'content-draft' && item.generatedContent.content) {
+                            html += `<pre style="white-space: pre-wrap; font-size: 14px;">${item.generatedContent.content}</pre>`;
+                        } else if (item.type === 'strategy-plan' && item.generatedContent.timeline) {
+                            html += `<p><strong>Objective:</strong> ${item.generatedContent.objective}</p>`;
+                            html += `<h6>Timeline (${item.generatedContent.timeline.duration}):</h6>`;
+                            item.generatedContent.timeline.milestones.forEach(m => {
+                                html += `<p><strong>Week ${m.week}:</strong> ${m.task}<br>${m.details}</p>`;
+                            });
+                        } else {
+                            html += `<pre>${JSON.stringify(item.generatedContent, null, 2)}</pre>`;
+                        }
+                    } else {
+                        html += `<div class="error">❌ NO GENERATED CONTENT - This is the bug!</div>`;
+                    }
+                    
+                    html += `</div>`;
+                });
+            } else {
+                html += `<div class="error">❌ NO WORK ITEMS GENERATED</div>`;
+            }
+            
+            resultsDiv.innerHTML = html + resultsDiv.innerHTML;
+        }
+        
+        async function testMediaList() {
+            try {
+                const result = await callNiv("I need a media list for our AI platform launch", {
+                    focus: 'AI'
+                });
+                displayResults('Media List Test', result);
+            } catch (error) {
+                displayResults('Media List Test', { error: error.message });
+            }
+        }
+        
+        async function testPressRelease() {
+            try {
+                const result = await callNiv("Create a press release for our new AI product");
+                displayResults('Press Release Test', result);
+            } catch (error) {
+                displayResults('Press Release Test', { error: error.message });
+            }
+        }
+        
+        async function testStrategy() {
+            try {
+                const result = await callNiv("Create a strategic plan for our product launch");
+                displayResults('Strategy Plan Test', result);
+            } catch (error) {
+                displayResults('Strategy Plan Test', { error: error.message });
+            }
+        }
+    </script>
+</body>
+</html>

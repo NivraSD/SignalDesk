@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Simple Niv</title>
+</head>
+<body>
+    <h1>Testing Simplified Niv Edge Function</h1>
+    <button onclick="testSimple()">Test Simple Function</button>
+    <button onclick="testOriginal()">Test Original Function</button>
+    <pre id="result"></pre>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        async function testSimple() {
+            const result = document.getElementById('result');
+            result.textContent = 'Testing simple function...';
+            
+            try {
+                const { data, error } = await supabaseClient.functions.invoke('niv-orchestrator-simple', {
+                    body: { message: 'Test message', messages: [], context: {}, mode: 'test' }
+                });
+                
+                if (error) throw error;
+                result.textContent = '✅ Simple function works!\n\n' + JSON.stringify(data, null, 2);
+            } catch (error) {
+                result.textContent = '❌ Simple function failed:\n' + error.message + '\n\n' + JSON.stringify(error, null, 2);
+            }
+        }
+        
+        async function testOriginal() {
+            const result = document.getElementById('result');
+            result.textContent = 'Testing original function...';
+            
+            try {
+                const { data, error } = await supabaseClient.functions.invoke('niv-orchestrator', {
+                    body: { message: 'Test message', messages: [], context: {}, mode: 'test' }
+                });
+                
+                if (error) throw error;
+                result.textContent = '✅ Original function works!\n\n' + JSON.stringify(data, null, 2);
+            } catch (error) {
+                result.textContent = '❌ Original function failed:\n' + error.message + '\n\n' + JSON.stringify(error, null, 2);
+            }
+        }
+    </script>
+</body>
+</html>

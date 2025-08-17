@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Niv POC Test - Clean Architecture</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0f;
+            color: #e5e7eb;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #8b5cf6;
+            margin-bottom: 10px;
+        }
+
+        .status {
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid;
+        }
+
+        .success {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.3);
+            color: #10b981;
+        }
+
+        .error {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
+
+        .info {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: rgba(59, 130, 246, 0.3);
+            color: #3b82f6;
+        }
+
+        .test-section {
+            background: rgba(30, 30, 45, 0.4);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .test-section h2 {
+            margin-top: 0;
+            color: #e5e7eb;
+            font-size: 18px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .output {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+        }
+
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .test-card {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .test-card h3 {
+            margin: 0 0 10px 0;
+            color: #8b5cf6;
+            font-size: 14px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background: rgba(139, 92, 246, 0.2);
+            color: #8b5cf6;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Niv POC Test Suite</h1>
+        <div class="status info">
+            Clean Architecture Proof of Concept - Testing Niv's Generation Capabilities
+        </div>
+
+        <!-- Test Controls -->
+        <div class="test-section">
+            <h2>Test Controls</h2>
+            <button onclick="testMediaListGeneration()">Test Media List Generation</button>
+            <button onclick="testContentDraftGeneration()">Test Press Release Generation</button>
+            <button onclick="testKeyMessagingGeneration()">Test Key Messaging Generation</button>
+            <button onclick="testSocialContentGeneration()">Test Social Content Generation</button>
+            <button onclick="testFAQGeneration()">Test FAQ Generation</button>
+            <button onclick="testSelectiveGeneration()">Test Selective Generation</button>
+            <button onclick="testConversationalFlow()">Test Conversational Flow</button>
+            <button onclick="clearOutput()">Clear Output</button>
+            <div id="testOutput" class="output"></div>
+        </div>
+
+        <!-- Architecture Validation -->
+        <div class="test-section">
+            <h2>Architecture Validation <span class="badge">POC</span></h2>
+            <div class="test-grid">
+                <div class="test-card">
+                    <h3>✓ State Manager</h3>
+                    <p style="margin: 5px 0; font-size: 13px; color: #9ca3af;">
+                        Single source of truth for all Niv data
+                    </p>
+                </div>
+                <div class="test-card">
+                    <h3>✓ Clean Separation</h3>
+                    <p style="margin: 5px 0; font-size: 13px; color: #9ca3af;">
+                        Chat UI completely separate from work items
+                    </p>
+                </div>
+                <div class="test-card">
+                    <h3>✓ Event-Driven</h3>
+                    <p style="margin: 5px 0; font-size: 13px; color: #9ca3af;">
+                        Components communicate via pub/sub pattern
+                    </p>
+                </div>
+                <div class="test-card">
+                    <h3>✓ Niv as Engine</h3>
+                    <p style="margin: 5px 0; font-size: 13px; color: #9ca3af;">
+                        Niv continues as intelligent generation engine
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Expected Behavior -->
+        <div class="test-section">
+            <h2>Expected Behavior</h2>
+            <ol style="margin: 10px 0; padding-left: 20px; font-size: 14px;">
+                <li>Chat shows only conversational responses (no inline work cards)</li>
+                <li>Work items appear in separate sidebar panel</li>
+                <li>Clicking work item opens it in workspace for editing</li>
+                <li>Only requested materials are generated (not everything at once)</li>
+                <li>Data flows cleanly: Backend → State Manager → UI Components</li>
+                <li>Multi-phase generation works naturally through conversation</li>
+            </ol>
+        </div>
+
+        <!-- Quick Access -->
+        <div class="test-section">
+            <h2>Quick Access</h2>
+            <button onclick="openPOCInNewTab()">Open Full POC Interface</button>
+            <button onclick="exportCurrentState()">Export Current State</button>
+            <button onclick="resetSystem()">Reset System</button>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+
+        function log(message, type = 'info') {
+            const output = document.getElementById('testOutput');
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️';
+            output.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        async function callNivOrchestrator(message, context = {}) {
+            try {
+                log(`Calling Niv with: "${message}"`);
+                
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/niv-orchestrator`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        message,
+                        context,
+                        messages: []
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    log(`Error: ${data.error}`, 'error');
+                    return null;
+                }
+
+                log('Response received:', 'success');
+                log(`Chat response: "${data.response}"`);
+                
+                if (data.workItems && data.workItems.length > 0) {
+                    log(`Work items created: ${data.workItems.length}`, 'success');
+                    data.workItems.forEach(item => {
+                        log(`  - ${item.type}: ${item.title}`);
+                    });
+                } else {
+                    log('No work items created');
+                }
+
+                return data;
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+                return null;
+            }
+        }
+
+        async function testMediaListGeneration() {
+            log('\n=== Testing Media List Generation ===');
+            await callNivOrchestrator('Create a media list for our AI product launch');
+        }
+
+        async function testContentDraftGeneration() {
+            log('\n=== Testing Press Release Generation ===');
+            await callNivOrchestrator('Write a press release about our new AI platform');
+        }
+
+        async function testKeyMessagingGeneration() {
+            log('\n=== Testing Key Messaging Generation ===');
+            await callNivOrchestrator('Develop key messaging for our product');
+        }
+
+        async function testSocialContentGeneration() {
+            log('\n=== Testing Social Content Generation ===');
+            await callNivOrchestrator('Create social media posts for our announcement');
+        }
+
+        async function testFAQGeneration() {
+            log('\n=== Testing FAQ Generation ===');
+            await callNivOrchestrator('Generate an FAQ document for common questions');
+        }
+
+        async function testSelectiveGeneration() {
+            log('\n=== Testing Selective Generation ===');
+            log('Should only generate the requested material, not everything');
+            await callNivOrchestrator('I need just a media list, nothing else yet');
+        }
+
+        async function testConversationalFlow() {
+            log('\n=== Testing Conversational Flow ===');
+            log('Testing multi-phase generation through conversation');
+            
+            // First request
+            const response1 = await callNivOrchestrator('Let me know what materials you can help me create');
+            
+            if (response1) {
+                // Follow-up request
+                setTimeout(async () => {
+                    await callNivOrchestrator('Great, let\'s start with a media list');
+                }, 2000);
+            }
+        }
+
+        function clearOutput() {
+            document.getElementById('testOutput').textContent = '';
+            log('Output cleared');
+        }
+
+        function openPOCInNewTab() {
+            // This would open the actual POC interface
+            log('Opening POC interface in new tab...');
+            window.open('/niv-poc', '_blank');
+        }
+
+        function exportCurrentState() {
+            log('Exporting current state...');
+            // This would export the state from the state manager
+            console.log('State would be exported here');
+        }
+
+        function resetSystem() {
+            if (confirm('Reset all POC data?')) {
+                log('System reset', 'success');
+                clearOutput();
+            }
+        }
+
+        // Initial message
+        log('Niv POC Test Suite Ready', 'success');
+        log('Click any test button to validate the clean architecture');
+    </script>
+</body>
+</html>

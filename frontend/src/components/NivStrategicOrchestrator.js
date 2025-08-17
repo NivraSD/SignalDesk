@@ -31,81 +31,77 @@ const NivStrategicOrchestrator = ({
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
-  // === CLIENT MODE DETECTION (Enhanced) ===
-  const detectClientMode = useCallback((message) => {
+  // === CONSULTATION MODE DETECTION (Enhanced for comprehensive PR strategist) ===
+  const detectConsultationMode = useCallback((message) => {
     const lowerMessage = message.toLowerCase();
-    const wordCount = message.split(' ').length;
+    const urgencyWords = ['urgent', 'crisis', 'emergency', 'breaking', 'immediate', 'asap', 'now'];
+    const analysisWords = ['analyze', 'review', 'evaluate', 'assess', 'thoughts on', 'opinion', 'what do you think'];
+    const advisoryWords = ['advice', 'recommend', 'should i', 'help me decide', 'strategy', 'approach'];
+    const reviewWords = ['feedback', 'review this', 'look at', 'check this', 'improve'];
+    const materialWords = ['create', 'write', 'draft', 'generate', 'make', 'develop'];
     
-    // Crisis indicators - highest priority (more specific)
-    const crisisPatterns = [
-      'emergency', 'disaster', 'breaking news', 'just happened', 'went viral', 
-      'leaked', 'crisis', 'damage control', 'urgent help', 'emergency help', 
-      'crisis help', 'reputation damage', 'pr disaster', 'media crisis'
-    ];
-    if (crisisPatterns.some(pattern => lowerMessage.includes(pattern))) {
-      return 'CRISIS_MODE';
+    // Crisis Response - highest priority
+    if (urgencyWords.some(word => lowerMessage.includes(word)) && 
+        (lowerMessage.includes('crisis') || lowerMessage.includes('emergency') || lowerMessage.includes('breaking'))) {
+      return 'CRISIS_RESPONSE';
     }
     
-    // Urgent indicators
-    const urgentPatterns = [
-      'asap', 'urgent', 'now', 'quick', 'just need', 'immediately', 
-      'right now', 'fast', 'hurry'
-    ];
-    if (urgentPatterns.some(pattern => lowerMessage.includes(pattern)) || wordCount < 8) {
-      return 'URGENT_FIRE';
+    // Review Mode - when reviewing existing materials
+    if (reviewWords.some(word => lowerMessage.includes(word)) || 
+        lowerMessage.includes('attached') || lowerMessage.includes('here is') || lowerMessage.includes('this is')) {
+      return 'REVIEW_MODE';
     }
     
-    // Strategic indicators
-    const strategicPatterns = [
-      'strategic plan', 'strategy', 'campaign', 'quarterly', 'roadmap', 
-      'comprehensive', 'full plan', 'plan for', 'planning for', 'strategic',
-      'long-term', 'campaign strategy', 'pr strategy', 'strategic approach'
-    ];
-    if (strategicPatterns.some(pattern => lowerMessage.includes(pattern))) {
-      return 'STRATEGIC_PLANNING';
+    // Material Creation - explicit creation requests
+    if (materialWords.some(word => lowerMessage.includes(word))) {
+      return 'MATERIAL_CREATION';
     }
     
-    // Exploratory indicators
-    const exploratoryPatterns = [
-      'thinking about', 'considering', 'what if', 'explore', 'options', 
-      'wondering', 'thoughts on', 'help me understand'
-    ];
-    if (exploratoryPatterns.some(pattern => lowerMessage.includes(pattern))) {
-      return 'EXPLORATORY';
+    // Analysis Mode - analytical requests
+    if (analysisWords.some(word => lowerMessage.includes(word))) {
+      return 'ANALYSIS_MODE';
     }
     
-    return 'NORMAL';
+    // Advisory Mode - strategic guidance requests (default)
+    return 'ADVISORY_MODE';
   }, []);
 
-  // === FEATURE DETECTION ===
+  // === IMPROVED FEATURE DETECTION ===
   const detectFeatureIntent = useCallback((message) => {
     const lowerMessage = message.toLowerCase();
     
-    // Strategic planning patterns (check first - higher priority)
-    if (lowerMessage.includes('strategic plan') || lowerMessage.includes('campaign') || 
-        lowerMessage.includes('strategy') || lowerMessage.includes('planning') ||
-        lowerMessage.includes('launch') || lowerMessage.includes('framework') ||
-        lowerMessage.includes('roadmap') || lowerMessage.includes('timeline')) {
+    // Only detect features when user uses creation language
+    const hasCreationIntent = ['create', 'write', 'draft', 'generate', 'make', 'develop'].some(word => 
+      lowerMessage.includes(word)
+    );
+    
+    if (!hasCreationIntent) {
+      console.log('🚫 No creation intent detected - not triggering features');
+      return null;
+    }
+    
+    // Strategic planning patterns (only with creation intent)
+    if (lowerMessage.includes('strategic plan') || lowerMessage.includes('strategy') ||
+        lowerMessage.includes('framework') || lowerMessage.includes('roadmap')) {
       return 'strategic-planning';
     }
     
     // Content generation patterns (specific content types only)
-    if (lowerMessage.includes('press release') || lowerMessage.includes('write a') || 
-        lowerMessage.includes('create content') || lowerMessage.includes('draft')) {
+    if (lowerMessage.includes('press release') || lowerMessage.includes('content')) {
       return 'content-generator';
     }
     
     // Media intelligence patterns
-    if (lowerMessage.includes('journalist') || lowerMessage.includes('media list') || 
-        lowerMessage.includes('reporter') || lowerMessage.includes('outreach')) {
+    if (lowerMessage.includes('media list') || lowerMessage.includes('media plan')) {
       return 'media-intelligence';
     }
     
+    console.log('🤔 Creation intent detected but no specific feature match');
     return null;
   }, []);
 
   // === FEATURE ORCHESTRATION FUNCTIONS ===
-  const initiateContentGeneration = useCallback(async (userMessage, detectedMode) => {
+  const initiateContentGeneration = useCallback(async (userMessage, consultationMode) => {
     if (!onContentGenerate) return;
     
     setIsGeneratingInFeature(true);
@@ -116,7 +112,7 @@ const NivStrategicOrchestrator = ({
       const response = await supabaseApiService.callNivChat({
         message: userMessage,
         context: {
-          clientMode: detectedMode,
+          consultationMode: consultationMode,
           detectedFeature: 'content-generator',
           requestType: 'content_generation'
         },
@@ -145,7 +141,7 @@ const NivStrategicOrchestrator = ({
     }
   }, [onContentGenerate]);
 
-  const initiateStrategicPlanning = useCallback(async (userMessage, detectedMode) => {
+  const initiateStrategicPlanning = useCallback(async (userMessage, consultationMode) => {
     if (!onStrategicPlanGenerate) return;
     
     setIsGeneratingInFeature(true);
@@ -155,7 +151,7 @@ const NivStrategicOrchestrator = ({
       const response = await supabaseApiService.callNivChat({
         message: userMessage,
         context: {
-          clientMode: detectedMode,
+          consultationMode: consultationMode,
           detectedFeature: 'strategic-planning',
           requestType: 'strategic_planning'
         },
@@ -273,11 +269,11 @@ const NivStrategicOrchestrator = ({
       inputRef.current?.focus();
     }, 100);
     
-    // Detect client mode and feature intent
-    const detectedMode = detectClientMode(userMessage);
+    // Detect consultation mode and feature intent
+    const consultationMode = detectConsultationMode(userMessage);
     const detectedFeature = detectFeatureIntent(userMessage);
     
-    setClientMode(detectedMode);
+    setClientMode(consultationMode);
     
     // Add user message
     const userMsg = {
@@ -292,12 +288,12 @@ const NivStrategicOrchestrator = ({
       console.log('🚀 Sending message to Niv:', userMessage);
       console.log('📝 Conversation history:', messages);
       
-      // Get Niv's response with full conversation history for context
+      // Get Niv's response with consultation mode and full conversation history
       const response = await supabaseApiService.callNivChat({
         message: userMessage,
         messages: messages, // Pass full conversation history
         context: {
-          clientMode: detectedMode,
+          consultationMode: consultationMode,
           detectedFeature: detectedFeature,
           conversationPhase: 'understanding'
         },
@@ -305,35 +301,56 @@ const NivStrategicOrchestrator = ({
       });
       
       console.log('✅ Niv response received:', response);
+      console.log('🔍 [NivOrchestrator] Response details:', {
+        hasResponse: !!response.response,
+        responseLength: response.response?.length,
+        hasWorkItems: !!response.workItems,
+        workItemsCount: response.workItems?.length || 0,
+        workItemTypes: response.workItems?.map(item => item.type) || [],
+        workItemTitles: response.workItems?.map(item => item.title) || [],
+        hasGeneratedContent: response.workItems?.map(item => !!item.generatedContent) || [],
+        showWork: response.showWork
+      });
       
-      // Add Niv's response
+      // Add Niv's response with consultation mode
       const assistantMsg = {
         id: Date.now() + 1,
         type: 'assistant',
         content: response.response || 'I received your message but had trouble generating a response. Please try again.',
         timestamp: new Date(),
-        mode: detectedMode,
+        mode: consultationMode,
+        consultationMode: response.consultationMode || consultationMode,
         strategicAnalysis: response.strategicAnalysis
       };
       setMessages(prev => [...prev, assistantMsg]);
       
       // If Niv created work items, create inline work cards for each
       if (response.workItems && response.workItems.length > 0) {
+        console.log('📦 [NivOrchestrator] Processing work items:', response.workItems);
         // Add work items as inline cards in the chat
-        const workCardMessages = response.workItems.map((item, index) => ({
-          id: Date.now() + 100 + index,
-          type: 'work-card',
-          workCard: {
+        const workCardMessages = response.workItems.map((item, index) => {
+          console.log(`📝 [NivOrchestrator] Creating work card ${index}:`, {
             type: item.type,
-            data: {
-              title: item.title,
-              description: item.description,
-              generatedContent: item.generatedContent,
-              details: getDetailsFromType(item.type)
-            }
-          },
-          timestamp: new Date()
-        }));
+            title: item.title,
+            hasGeneratedContent: !!item.generatedContent,
+            generatedContentKeys: item.generatedContent ? Object.keys(item.generatedContent) : 'none'
+          });
+          
+          return {
+            id: Date.now() + 100 + index,
+            type: 'work-card',
+            workCard: {
+              type: item.type,
+              data: {
+                title: item.title,
+                description: item.description,
+                generatedContent: item.generatedContent,
+                details: getDetailsFromType(item.type)
+              }
+            },
+            timestamp: new Date()
+          };
+        });
         
         // Add all work cards - allow multiple versions of same type
         setTimeout(() => {
@@ -352,17 +369,24 @@ const NivStrategicOrchestrator = ({
           // Also notify parent component for right panel artifacts
           // Only call once per batch to prevent duplicates
           if (onWorkCardCreate) {
-            response.workItems.forEach((item) => {
+            console.log('🎯 [NivOrchestrator] Calling onWorkCardCreate for parent component');
+            response.workItems.forEach((item, index) => {
+              console.log(`🎯 [NivOrchestrator] Sending work item ${index} to parent:`, {
+                type: item.type,
+                title: item.title,
+                hasGeneratedContent: !!item.generatedContent
+              });
+              // FIXED: Use unified structure - no double nesting
               onWorkCardCreate({
                 type: item.type,
-                data: {
-                  title: item.title,
-                  description: item.description,
-                  generatedContent: item.generatedContent,
-                  details: getDetailsFromType(item.type)
-                }
+                title: item.title,
+                description: item.description,
+                generatedContent: item.generatedContent,
+                details: getDetailsFromType(item.type)
               });
             });
+          } else {
+            console.log('⚠️ [NivOrchestrator] No onWorkCardCreate callback provided');
           }
         }, 500);
       }
@@ -383,7 +407,7 @@ const NivStrategicOrchestrator = ({
         inputRef.current?.focus();
       }, 100);
     }
-  }, [input, isProcessing, detectClientMode, detectFeatureIntent, setMessages, messages, onWorkCardCreate]);
+  }, [input, isProcessing, detectConsultationMode, detectFeatureIntent, setMessages, messages, onWorkCardCreate]);
 
   const handleKeyPress = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -457,27 +481,30 @@ const NivStrategicOrchestrator = ({
             gap: '0.5rem'
           }}>
             Niv • Senior PR Strategist
-            {clientMode !== 'NORMAL' && (
+            {clientMode !== 'ADVISORY_MODE' && (
               <span style={{
                 padding: '0.25rem 0.5rem',
                 borderRadius: '4px',
                 fontSize: '11px',
                 fontWeight: '500',
                 background: 
-                  clientMode === 'CRISIS_MODE' ? 'rgba(239, 68, 68, 0.2)' :
-                  clientMode === 'URGENT_FIRE' ? 'rgba(245, 158, 11, 0.2)' :
-                  clientMode === 'STRATEGIC_PLANNING' ? 'rgba(59, 130, 246, 0.2)' :
-                  'rgba(16, 185, 129, 0.2)',
+                  clientMode === 'CRISIS_RESPONSE' ? 'rgba(239, 68, 68, 0.2)' :
+                  clientMode === 'REVIEW_MODE' ? 'rgba(245, 158, 11, 0.2)' :
+                  clientMode === 'ANALYSIS_MODE' ? 'rgba(139, 92, 246, 0.2)' :
+                  clientMode === 'MATERIAL_CREATION' ? 'rgba(16, 185, 129, 0.2)' :
+                  'rgba(59, 130, 246, 0.2)',
                 color:
-                  clientMode === 'CRISIS_MODE' ? '#ef4444' :
-                  clientMode === 'URGENT_FIRE' ? '#f59e0b' :
-                  clientMode === 'STRATEGIC_PLANNING' ? '#3b82f6' :
-                  '#10b981'
+                  clientMode === 'CRISIS_RESPONSE' ? '#ef4444' :
+                  clientMode === 'REVIEW_MODE' ? '#f59e0b' :
+                  clientMode === 'ANALYSIS_MODE' ? '#8b5cf6' :
+                  clientMode === 'MATERIAL_CREATION' ? '#10b981' :
+                  '#3b82f6'
               }}>
-                {clientMode === 'CRISIS_MODE' ? '🚨 Crisis Mode' :
-                 clientMode === 'URGENT_FIRE' ? '⚡ Urgent Mode' :
-                 clientMode === 'STRATEGIC_PLANNING' ? '🎯 Strategic Mode' :
-                 '🔍 Exploring Mode'}
+                {clientMode === 'CRISIS_RESPONSE' ? '🚨 Crisis Response' :
+                 clientMode === 'REVIEW_MODE' ? '📋 Review Mode' :
+                 clientMode === 'ANALYSIS_MODE' ? '📊 Analysis Mode' :
+                 clientMode === 'MATERIAL_CREATION' ? '✨ Creating Materials' :
+                 '🎯 Strategic Advisory'}
               </span>
             )}
           </div>
@@ -489,7 +516,7 @@ const NivStrategicOrchestrator = ({
             gap: '0.25rem'
           }}>
             <Sparkles size={12} />
-            Strategic conversations • Feature orchestration
+Comprehensive PR strategist • Advisory • Analysis • Crisis • Review • Creation
           </div>
         </div>
       </div>
@@ -680,7 +707,7 @@ const NivStrategicOrchestrator = ({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={handleKeyPress}
-          placeholder="Ask Niv for strategic guidance, content creation, or open any feature..."
+          placeholder="Ask Niv for strategic advice, crisis response, material review, analysis, or content creation..."
           style={{
             flex: 1,
             padding: '0.75rem 1rem',

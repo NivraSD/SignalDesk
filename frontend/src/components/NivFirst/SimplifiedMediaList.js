@@ -1,43 +1,27 @@
 import React, { useState } from 'react';
 import { Users, Mail, Star, Filter, Edit2, Save, Plus, Trash2 } from 'lucide-react';
+import { standardizeMediaList } from '../../types/NivContentTypes';
 
 const SimplifiedMediaList = ({ context }) => {
   const [isEditing, setIsEditing] = useState(false);
   
-  // Extract media list from Niv's generated structure
-  const getNivMediaList = () => {
-    console.log('🎯 SimplifiedMediaList: Received context:', context);
+  // Use standardized structure for media list
+  const [mediaList, setMediaList] = useState(() => {
+    console.log('🎯 SimplifiedMediaList: Full context received:', context);
     console.log('🎯 SimplifiedMediaList: generatedContent:', context?.generatedContent);
-    // Check if we have generated content from Niv
-    if (context?.generatedContent) {
-      const generated = context.generatedContent;
-      
-      // Handle media list format
-      if (generated.journalists && Array.isArray(generated.journalists)) {
-        return {
-          title: generated.title || context?.title || 'Media Target List',
-          journalists: generated.journalists,
-          totalContacts: generated.totalContacts,
-          byTier: generated.byTier,
-          outreachStrategy: generated.outreachStrategy
-        };
-      }
-    }
     
-    // Fallback to default journalists
+    // FIXED: Try generatedContent first, then fallback to context itself
+    const rawContent = context?.generatedContent || context;
+    const standardized = standardizeMediaList(rawContent);
+    console.log('🎯 SimplifiedMediaList: Raw content:', rawContent);
+    console.log('🎯 SimplifiedMediaList: Standardized list:', standardized);
+    
+    // Ensure we have the structure we need for rendering
     return {
-      title: context?.title || 'Media Target List',
-      journalists: context?.journalists || [
-        { name: 'Katie Roof', outlet: 'Bloomberg', beat: 'Venture Capital & AI', priority: 'Tier 1', email: '', notes: '' },
-        { name: 'Cade Metz', outlet: 'New York Times', beat: 'AI & Technology', priority: 'Tier 1', email: '', notes: '' },
-        { name: 'Gillian Tan', outlet: 'Bloomberg', beat: 'Private Equity', priority: 'Tier 1', email: '', notes: '' },
-        { name: 'Ryan Mac', outlet: 'Forbes', beat: 'Tech & Investment', priority: 'Tier 2', email: '', notes: '' },
-        { name: 'Berber Jin', outlet: 'Wall Street Journal', beat: 'AI & Markets', priority: 'Tier 1', email: '', notes: '' }
-      ]
+      ...standardized,
+      journalists: standardized.journalists || []
     };
-  };
-  
-  const [mediaList, setMediaList] = useState(getNivMediaList());
+  });
 
   const getPriorityColor = (priority) => {
     if (priority === 'Tier 1') return '#ef4444';
@@ -153,7 +137,7 @@ const SimplifiedMediaList = ({ context }) => {
               }}
             >
               {isEditing ? <Save size={16} /> : <Edit2 size={16} />}
-              {isEditing ? 'Save Changes' : 'Edit List'}
+              {isEditing ? 'Save Changes' : 'Edit Plan'}
             </button>
           </div>
         </div>

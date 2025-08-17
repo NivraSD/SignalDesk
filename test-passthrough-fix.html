@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Passthrough Fix - Niv's ACTUAL Content</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #3b82f6;
+            text-align: center;
+        }
+        .test-section {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 10px;
+            font-weight: 600;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background: #0a0a0a;
+            border-radius: 6px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 500px;
+            overflow-y: auto;
+            border: 2px solid #333;
+        }
+        .success { border-color: #10b981; }
+        .error { border-color: #ef4444; }
+        .warning { border-color: #f59e0b; }
+        .highlight {
+            background: #fbbf24;
+            color: #000;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Passthrough Fix Test - Using Niv's ACTUAL Generated Content</h1>
+    
+    <div class="test-section">
+        <h2>The Problem We're Solving</h2>
+        <p>❌ <strong>Current Issue:</strong> Niv generates real content in chat, but artifacts get fallback templates</p>
+        <p>✅ <strong>This Fix:</strong> Extracts and uses Niv's ACTUAL generated content for artifacts</p>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 1: Media List Only</h2>
+        <p>Request ONLY a media list - should get Niv's actual journalist list, not fallback</p>
+        <button onclick="testMediaListOnly()">Test Media List</button>
+        <div id="media-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 2: Press Release Only</h2>
+        <p>Request ONLY a press release - should get Niv's actual content with real company names</p>
+        <button onclick="testPressReleaseOnly()">Test Press Release</button>
+        <div id="press-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Comparison: Old vs New</h2>
+        <div class="comparison">
+            <div>
+                <h3>Old Niv (Fallback Content)</h3>
+                <button onclick="testOldNiv()">Test Old Version</button>
+                <div id="old-result" class="result"></div>
+            </div>
+            <div>
+                <h3>New Niv (Actual Content)</h3>
+                <button onclick="testNewNiv()">Test New Version</button>
+                <div id="new-result" class="result"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        async function testMediaListOnly() {
+            const resultEl = document.getElementById('media-result');
+            resultEl.className = 'result';
+            resultEl.textContent = 'Testing media list generation with ACTUAL content...';
+            
+            try {
+                // Build context
+                const messages = [
+                    { type: 'user', content: 'I need help with PR for TechVision AI' },
+                    { type: 'assistant', content: 'Tell me about TechVision AI.' },
+                    { type: 'user', content: 'We are launching SmartAnalytics, an AI platform for data analysis' },
+                    { type: 'assistant', content: 'SmartAnalytics sounds innovative. What are your PR goals?' }
+                ];
+                
+                // Request ONLY media list
+                const { data, error } = await supabaseClient.functions.invoke('niv-orchestrator-passthrough-fix', {
+                    body: { 
+                        message: 'Create a media list for tech journalists covering AI and data analytics',
+                        messages,
+                        context: {}
+                    }
+                });
+                
+                if (error) throw error;
+                
+                const workItemCount = data.workItems?.length || 0;
+                const types = data.workItems?.map(w => w.type) || [];
+                const content = JSON.stringify(data.workItems?.[0]?.generatedContent, null, 2);
+                
+                // Check for success criteria
+                const hasOnlyMediaList = workItemCount === 1 && types[0] === 'media-list';
+                const hasRealJournalists = content.includes('"name"') && content.includes('"outlet"');
+                const noFallbackContent = !content.includes('Sarah Johnson') && !content.includes('example.com');
+                
+                if (hasOnlyMediaList && hasRealJournalists && noFallbackContent) {
+                    resultEl.className = 'result success';
+                    resultEl.innerHTML = `<span class="highlight">✅ SUCCESS!</span>
+                    
+• Generated exactly 1 item: ${types[0]}
+• Contains REAL journalist data from Niv
+• No fallback content detected
+
+<strong>Niv's Response:</strong>
+${data.response}
+
+<strong>Generated Content:</strong>
+${content}`;
+                } else {
+                    resultEl.className = 'result error';
+                    resultEl.innerHTML = `<span class="highlight">❌ ISSUES DETECTED:</span>
+                    
+• Item count: ${workItemCount} (expected 1)
+• Types: ${types.join(', ')}
+• Has real journalists: ${hasRealJournalists}
+• No fallback: ${noFallbackContent}
+
+<strong>Full Response:</strong>
+${JSON.stringify(data, null, 2)}`;
+                }
+            } catch (error) {
+                resultEl.className = 'result error';
+                resultEl.textContent = `❌ Error: ${error.message}`;
+            }
+        }
+        
+        async function testPressReleaseOnly() {
+            const resultEl = document.getElementById('press-result');
+            resultEl.className = 'result';
+            resultEl.textContent = 'Testing press release with ACTUAL content...';
+            
+            try {
+                const messages = [
+                    { type: 'user', content: 'We are DataFlow Systems' },
+                    { type: 'assistant', content: 'Tell me about DataFlow Systems.' },
+                    { type: 'user', content: 'We help businesses with real-time data processing' },
+                    { type: 'assistant', content: 'What can I help you with?' }
+                ];
+                
+                const { data, error } = await supabaseClient.functions.invoke('niv-orchestrator-passthrough-fix', {
+                    body: { 
+                        message: 'Create a press release for our new product launch',
+                        messages,
+                        context: {}
+                    }
+                });
+                
+                if (error) throw error;
+                
+                const workItemCount = data.workItems?.length || 0;
+                const content = JSON.stringify(data.workItems?.[0]?.generatedContent, null, 2);
+                const hasCompanyName = content.includes('DataFlow');
+                const hasRealContent = content.includes('"headline"') && content.includes('"body"');
+                
+                if (workItemCount === 1 && hasCompanyName && hasRealContent) {
+                    resultEl.className = 'result success';
+                    resultEl.innerHTML = `<span class="highlight">✅ SUCCESS!</span>
+                    
+• Generated press release with DataFlow Systems
+• Contains Niv's actual generated content
+
+<strong>Generated Content:</strong>
+${content}`;
+                } else {
+                    resultEl.className = 'result error';
+                    resultEl.textContent = `❌ Failed: Count=${workItemCount}, HasCompany=${hasCompanyName}`;
+                }
+            } catch (error) {
+                resultEl.className = 'result error';
+                resultEl.textContent = `❌ Error: ${error.message}`;
+            }
+        }
+        
+        async function testOldNiv() {
+            const resultEl = document.getElementById('old-result');
+            resultEl.className = 'result';
+            resultEl.textContent = 'Testing old version (with fallback content)...';
+            
+            try {
+                const messages = [
+                    { type: 'user', content: 'We are TestCompany' },
+                    { type: 'assistant', content: 'Tell me about TestCompany.' }
+                ];
+                
+                const { data, error } = await supabaseClient.functions.invoke('niv-orchestrator', {
+                    body: { 
+                        message: 'Create a media list',
+                        messages,
+                        context: {}
+                    }
+                });
+                
+                if (error) throw error;
+                
+                resultEl.className = 'result warning';
+                resultEl.innerHTML = `<strong>Old Version Results:</strong>
+• Work items: ${data.workItems?.length || 0}
+• Types: ${data.workItems?.map(w => w.type).join(', ') || 'none'}
+
+<strong>Note the fallback content:</strong>
+${JSON.stringify(data.workItems?.[0]?.generatedContent, null, 2).substring(0, 500)}...`;
+            } catch (error) {
+                resultEl.className = 'result error';
+                resultEl.textContent = `❌ Error: ${error.message}`;
+            }
+        }
+        
+        async function testNewNiv() {
+            const resultEl = document.getElementById('new-result');
+            resultEl.className = 'result';
+            resultEl.textContent = 'Testing new version (with ACTUAL content)...';
+            
+            try {
+                const messages = [
+                    { type: 'user', content: 'We are TestCompany launching ProductX' },
+                    { type: 'assistant', content: 'Tell me about ProductX.' }
+                ];
+                
+                const { data, error } = await supabaseClient.functions.invoke('niv-orchestrator-passthrough-fix', {
+                    body: { 
+                        message: 'Create a media list',
+                        messages,
+                        context: {}
+                    }
+                });
+                
+                if (error) throw error;
+                
+                resultEl.className = 'result success';
+                resultEl.innerHTML = `<strong>New Version Results:</strong>
+• Work items: ${data.workItems?.length || 0}
+• Types: ${data.workItems?.map(w => w.type).join(', ') || 'none'}
+
+<strong>ACTUAL content from Niv:</strong>
+${JSON.stringify(data.workItems?.[0]?.generatedContent, null, 2).substring(0, 500)}...`;
+            } catch (error) {
+                resultEl.className = 'result error';
+                resultEl.textContent = `❌ Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -100,6 +100,55 @@ const PlatformModeSwitcher = ({ currentMode, onModeChange }) => {
         </span>
       </button>
 
+      <button
+        onClick={() => onModeChange('niv-poc')}
+        style={{
+          padding: '8px 16px',
+          background: currentMode === 'niv-poc' 
+            ? 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)' 
+            : 'transparent',
+          border: 'none',
+          borderRadius: '8px',
+          color: currentMode === 'niv-poc' ? 'white' : '#9ca3af',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          fontSize: '14px',
+          fontWeight: '500',
+          transition: 'all 0.2s',
+          position: 'relative'
+        }}
+        onMouseEnter={(e) => {
+          if (currentMode !== 'niv-poc') {
+            e.currentTarget.style.background = 'rgba(139, 92, 246, 0.1)';
+            e.currentTarget.style.color = '#a78bfa';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (currentMode !== 'niv-poc') {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.color = '#9ca3af';
+          }
+        }}
+      >
+        <ChevronRight size={16} />
+        Niv POC
+        <span style={{
+          position: 'absolute',
+          top: '-4px',
+          right: '-4px',
+          background: '#8b5cf6',
+          color: 'white',
+          fontSize: '9px',
+          padding: '2px 4px',
+          borderRadius: '4px',
+          fontWeight: '600'
+        }}>
+          TEST
+        </span>
+      </button>
+
     </div>
   );
 };

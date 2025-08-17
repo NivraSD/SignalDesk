@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Two-Phase Solution Test - Consultation + Generation</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #3b82f6;
+            text-align: center;
+            border-bottom: 2px solid #1e40af;
+            padding-bottom: 10px;
+        }
+        .architecture {
+            background: #1a1a1a;
+            border: 2px solid #3b82f6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        .phase-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .phase {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .phase h2 {
+            color: #60a5fa;
+            margin-top: 0;
+        }
+        .chat-container {
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 15px;
+            height: 300px;
+            overflow-y: auto;
+            margin: 15px 0;
+        }
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 6px;
+        }
+        .user-message {
+            background: #1e40af;
+            text-align: right;
+        }
+        .niv-message {
+            background: #1a1a1a;
+            border: 1px solid #333;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            border: 1px solid #333;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            font-weight: 600;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        button:disabled {
+            background: #374151;
+            cursor: not-allowed;
+        }
+        .generate-button {
+            background: #10b981;
+        }
+        .generate-button:hover {
+            background: #059669;
+        }
+        .context-display {
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+        }
+        .artifact {
+            background: #0a0a0a;
+            border: 2px solid #10b981;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .stage-indicator {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .stage-discovery { background: #dc2626; }
+        .stage-refinement { background: #f59e0b; }
+        .stage-ready { background: #10b981; }
+        .success-message {
+            background: #10b981;
+            color: #fff;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-weight: bold;
+            text-align: center;
+        }
+        .error-message {
+            background: #ef4444;
+            color: #fff;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎯 Two-Phase Solution: Separate Consultation from Generation</h1>
+    
+    <div class="architecture">
+        <h3>✅ The Solution Architecture</h3>
+        <p><strong>Phase 1:</strong> niv-consultant - Pure conversation, builds context, no artifacts</p>
+        <p><strong>Phase 2:</strong> niv-generator - Takes context, generates ONE specific artifact with structured JSON</p>
+        <p><strong>Result:</strong> Clean separation = No more passthrough problems!</p>
+    </div>
+
+    <div class="phase-container">
+        <!-- Phase 1: Consultation -->
+        <div class="phase">
+            <h2>Phase 1: Consultation with Niv
+                <span id="stage" class="stage-indicator stage-discovery">Discovery</span>
+            </h2>
+            <p>Have a conversation to build context. No artifacts generated here.</p>
+            
+            <div id="chat" class="chat-container"></div>
+            
+            <input type="text" id="message" placeholder="Tell Niv about your company and needs..." />
+            <button onclick="sendMessage()">Send Message</button>
+            <button onclick="clearChat()">Clear Chat</button>
+            
+            <div class="context-display">
+                <strong>Extracted Context:</strong>
+                <pre id="context">{}</pre>
+            </div>
+        </div>
+
+        <!-- Phase 2: Generation -->
+        <div class="phase">
+            <h2>Phase 2: Structured Generation</h2>
+            <p>Once context is ready, generate specific artifacts.</p>
+            
+            <div id="generation-options" style="margin: 20px 0;">
+                <button class="generate-button" onclick="generateContent('media-list')" disabled>
+                    Generate Media List
+                </button>
+                <button class="generate-button" onclick="generateContent('press-release')" disabled>
+                    Generate Press Release
+                </button>
+                <button class="generate-button" onclick="generateContent('strategy-plan')" disabled>
+                    Generate Strategy Plan
+                </button>
+            </div>
+            
+            <div id="generation-status"></div>
+            <div id="artifacts"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        let messages = [];
+        let currentContext = {};
+        let currentStage = 'discovery';
+        
+        async function sendMessage() {
+            const input = document.getElementById('message');
+            const message = input.value.trim();
+            if (!message) return;
+            
+            // Add user message to chat
+            addMessageToChat('user', message);
+            messages.push({ type: 'user', content: message });
+            input.value = '';
+            
+            try {
+                // Call consultation endpoint
+                const { data, error } = await supabaseClient.functions.invoke('niv-consultant', {
+                    body: { message, messages, context: currentContext }
+                });
+                
+                if (error) throw error;
+                
+                // Add Niv's response to chat
+                addMessageToChat('niv', data.response);
+                messages.push({ type: 'assistant', content: data.response });
+                
+                // Update context and stage
+                currentContext = data.context || {};
+                currentStage = data.stage || 'discovery';
+                updateContextDisplay();
+                updateStageDisplay();
+                
+                // Enable generation buttons if ready
+                if (data.readyToGenerate) {
+                    enableGenerationButtons();
+                    showGenerationReady();
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                addMessageToChat('error', `Error: ${error.message}`);
+            }
+        }
+        
+        async function generateContent(type) {
+            const statusEl = document.getElementById('generation-status');
+            const artifactsEl = document.getElementById('artifacts');
+            
+            statusEl.innerHTML = `<div class="context-display">Generating ${type}...</div>`;
+            
+            try {
+                // Add any specific requirements from the last message
+                const lastUserMessage = messages.filter(m => m.type === 'user').pop();
+                const requirements = lastUserMessage ? lastUserMessage.content : '';
+                
+                // Call generation endpoint with context
+                const { data, error } = await supabaseClient.functions.invoke('niv-generator', {
+                    body: {
+                        type,
+                        context: {
+                            ...currentContext,
+                            conversationSummary: messages.map(m => m.content).join('\n')
+                        },
+                        requirements
+                    }
+                });
+                
+                if (error) throw error;
+                
+                if (data.success) {
+                    statusEl.innerHTML = `<div class="success-message">✅ ${type} generated successfully!</div>`;
+                    
+                    // Display the artifact
+                    const artifact = data.workItem;
+                    artifactsEl.innerHTML = `
+                        <div class="artifact">
+                            <h3>${artifact.title}</h3>
+                            <p>${artifact.description}</p>
+                            <div class="context-display">
+                                <strong>Generated Content:</strong>
+                                <pre>${JSON.stringify(artifact.generatedContent, null, 2)}</pre>
+                            </div>
+                            <button onclick="saveToWorkspace('${type}')">Save to Workspace</button>
+                        </div>
+                    `;
+                } else {
+                    statusEl.innerHTML = `<div class="error-message">Failed to generate: ${data.error}</div>`;
+                }
+                
+            } catch (error) {
+                console.error('Generation error:', error);
+                statusEl.innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
+            }
+        }
+        
+        function addMessageToChat(type, content) {
+            const chatEl = document.getElementById('chat');
+            const messageEl = document.createElement('div');
+            messageEl.className = `message ${type}-message`;
+            messageEl.textContent = content;
+            chatEl.appendChild(messageEl);
+            chatEl.scrollTop = chatEl.scrollHeight;
+        }
+        
+        function updateContextDisplay() {
+            const contextEl = document.getElementById('context');
+            contextEl.textContent = JSON.stringify(currentContext, null, 2);
+        }
+        
+        function updateStageDisplay() {
+            const stageEl = document.getElementById('stage');
+            stageEl.textContent = currentStage.charAt(0).toUpperCase() + currentStage.slice(1);
+            stageEl.className = `stage-indicator stage-${currentStage}`;
+        }
+        
+        function enableGenerationButtons() {
+            document.querySelectorAll('.generate-button').forEach(btn => {
+                btn.disabled = false;
+            });
+        }
+        
+        function showGenerationReady() {
+            const statusEl = document.getElementById('generation-status');
+            statusEl.innerHTML = `
+                <div class="success-message">
+                    ✅ Context is ready! You can now generate content.
+                </div>
+            `;
+        }
+        
+        function clearChat() {
+            messages = [];
+            currentContext = {};
+            currentStage = 'discovery';
+            document.getElementById('chat').innerHTML = '';
+            document.getElementById('artifacts').innerHTML = '';
+            document.getElementById('generation-status').innerHTML = '';
+            updateContextDisplay();
+            updateStageDisplay();
+            document.querySelectorAll('.generate-button').forEach(btn => {
+                btn.disabled = true;
+            });
+        }
+        
+        function saveToWorkspace(type) {
+            alert(`In production, this would save the ${type} to your workspace and memory vault.`);
+        }
+        
+        // Enter key support
+        document.getElementById('message').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+        
+        // Initial state
+        updateContextDisplay();
+    </script>
+</body>
+</html>

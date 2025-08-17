@@ -31,6 +31,7 @@ import StakeholderIntelligenceHub from "./components/StakeholderIntelligence/Sta
 // New Niv-First components
 import PlatformModeSwitcher from "./components/PlatformModeSwitcher";
 import NivFirstLayout from "./components/NivFirst/NivFirstLayout";
+import NivLayoutPOC from "./components/NivFirst/NivLayoutPOC"; // POC with clean architecture
 
 // Log Supabase initialization for debugging
 console.log('🚀 SignalDesk initialized with Supabase:', supabase ? 'Connected' : 'Not connected');
@@ -207,6 +208,7 @@ function App() {
             {platformMode === 'niv-first' ? (
               <Routes>
                 <Route path="/login" element={<Login />} />
+                <Route path="/niv-poc" element={<NivLayoutPOC />} />
                 <Route
                   path="/*"
                   element={
@@ -215,6 +217,11 @@ function App() {
                     </PrivateRoute>
                   }
                 />
+              </Routes>
+            ) : platformMode === 'niv-poc' ? (
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/*" element={<NivLayoutPOC />} />
               </Routes>
             ) : (
               <AppRoutes />

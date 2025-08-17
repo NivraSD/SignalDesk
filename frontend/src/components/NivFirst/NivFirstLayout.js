@@ -12,19 +12,15 @@ const NivFirstLayout = ({ user, organization }) => {
   const handleWorkCardCreate = useCallback((workCard) => {
     console.log('🎯 NivFirstLayout: handleWorkCardCreate called with:', workCard);
     
-    // Add to generated items sidebar with proper structure
+    // FIXED: Use unified structure - workCard now has flat structure
     const newItem = {
       id: Date.now().toString(),
       type: workCard.type,
-      title: workCard.data?.title || 'Generated Content',
-      description: workCard.data?.description || '',
-      data: {
-        title: workCard.data?.title,
-        description: workCard.data?.description,
-        details: workCard.data?.details,
-        // FIXED: Don't double-nest, pass generatedContent directly
-        generatedContent: workCard.data?.generatedContent
-      },
+      title: workCard.title || 'Generated Content',
+      description: workCard.description || '',
+      // Store everything at root level to match workspace expectations
+      generatedContent: workCard.generatedContent,
+      details: workCard.details,
       timestamp: new Date().toISOString(),
       status: 'ready'
     };
@@ -73,15 +69,13 @@ const NivFirstLayout = ({ user, organization }) => {
   // Handle opening workspace from sidebar
   const handleOpenWorkspace = useCallback((item) => {
     console.log('🎯 Opening workspace with item:', item);
-    console.log('🎯 Item data structure:', item.data);
     
-    // FIXED: Pass the data structure exactly as workspace components expect
+    // FIXED: Pass unified structure - everything is at root level now
     const workspaceContext = {
-      title: item.title || item.data?.title,
-      description: item.description || item.data?.description,
-      generatedContent: item.data?.generatedContent,
-      // Include any other fields that might be needed
-      ...item.data
+      title: item.title,
+      description: item.description,
+      generatedContent: item.generatedContent,
+      details: item.details
     };
     
     console.log('🎯 Workspace context being passed:', workspaceContext);
@@ -221,7 +215,7 @@ const NivFirstLayout = ({ user, organization }) => {
                           color: '#fff',
                           marginBottom: '4px'
                         }}>
-                          {item.data.title}
+                          {item.title}
                         </div>
                         <div style={{
                           fontSize: '11px',

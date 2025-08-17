@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Niv Real Content Generation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            color: white;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .test-section {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px 10px 10px 0;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .result {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .success {
+            border-left: 4px solid #2ecc71;
+        }
+        .error {
+            border-left: 4px solid #e74c3c;
+        }
+        .loading {
+            color: #f39c12;
+        }
+        .work-item {
+            background: rgba(46, 204, 113, 0.2);
+            border: 1px solid #2ecc71;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .work-item h4 {
+            margin-top: 0;
+            color: #2ecc71;
+        }
+        .context-info {
+            background: rgba(52, 152, 219, 0.2);
+            border: 1px solid #3498db;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Niv Real Content Generation Test</h1>
+        
+        <div class="context-info">
+            <h3>🧠 Test Context</h3>
+            <p>This test verifies that Niv generates real, customized content instead of placeholder templates.</p>
+            <p><strong>Expected:</strong> Company name, product details, and industry info extracted from conversation and used in all generated content.</p>
+        </div>
+
+        <div class="test-section">
+            <h3>Test 1: AI Startup Launch with Real Context</h3>
+            <button onclick="testAIStartupLaunch()">Test AI Startup Launch</button>
+            <div id="ai-startup-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Test 2: Fintech Product with Metrics</h3>
+            <button onclick="testFintechProduct()">Test Fintech Product</button>
+            <div id="fintech-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Test 3: Enterprise B2B Solution</h3>
+            <button onclick="testEnterpriseB2B()">Test Enterprise B2B</button>
+            <div id="enterprise-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Test 4: Healthcare Innovation</h3>
+            <button onclick="testHealthcareInnovation()">Test Healthcare Innovation</button>
+            <div id="healthcare-result" class="result"></div>
+        </div>
+    </div>
+
+    <!-- Include Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
+    
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        // Initialize Supabase client
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        async function callNivOrchestrator(message, messages = []) {
+            try {
+                console.log('🔄 Calling Niv Orchestrator via Supabase client...', {
+                    message,
+                    messagesCount: messages.length
+                });
+                
+                // Use Supabase functions.invoke() which handles auth automatically
+                const { data, error } = await supabaseClient.functions.invoke('niv-orchestrator', {
+                    body: {
+                        message: message,
+                        messages: messages,
+                        context: {
+                            testMode: true
+                        },
+                        mode: 'strategic_orchestration'
+                    }
+                });
+
+                if (error) {
+                    console.error('❌ Supabase function error:', error);
+                    throw error;
+                }
+
+                console.log('✅ Supabase function success:', data);
+                return data;
+            } catch (error) {
+                console.error('🚫 Error calling Niv Orchestrator:', error);
+                throw error;
+            }
+        }
+
+        function displayResult(elementId, result, error = null) {
+            const element = document.getElementById(elementId);
+            
+            if (error) {
+                element.className = 'result error';
+                element.textContent = `❌ Error: ${error.message}`;
+                return;
+            }
+
+            element.className = 'result success';
+            
+            let content = `✅ Niv Response:\n${result.response}\n\n`;
+            
+            if (result.workItems && result.workItems.length > 0) {
+                content += `🎯 Generated Work Items (${result.workItems.length}):\n\n`;
+                
+                result.workItems.forEach((item, index) => {
+                    content += `${index + 1}. ${item.title} (${item.type})\n`;
+                    content += `   Description: ${item.description}\n`;
+                    
+                    if (item.generatedContent) {
+                        // Show key content snippets to verify real content
+                        if (item.generatedContent.headline) {
+                            content += `   📰 Headline: ${item.generatedContent.headline}\n`;
+                        }
+                        if (item.generatedContent.journalists) {
+                            const journalistCount = item.generatedContent.journalists.length;
+                            const firstJournalist = item.generatedContent.journalists[0];
+                            content += `   👥 Media Contacts: ${journalistCount} journalists (First: ${firstJournalist?.name} at ${firstJournalist?.outlet})\n`;
+                        }
+                        if (item.generatedContent.title && item.generatedContent.objective) {
+                            content += `   📋 Strategy: ${item.generatedContent.title}\n   🎯 Objective: ${item.generatedContent.objective}\n`;
+                        }
+                        if (item.generatedContent.elevator_pitch) {
+                            content += `   🎪 Elevator Pitch: ${item.generatedContent.elevator_pitch}\n`;
+                        }
+                        if (item.generatedContent.twitter_thread) {
+                            const firstTweet = item.generatedContent.twitter_thread[0];
+                            content += `   🐦 First Tweet: ${firstTweet?.content?.substring(0, 100)}...\n`;
+                        }
+                    }
+                    content += '\n';
+                });
+            }
+
+            element.textContent = content;
+        }
+
+        async function testAIStartupLaunch() {
+            const button = document.querySelector('button[onclick="testAIStartupLaunch()"]');
+            const resultElement = document.getElementById('ai-startup-result');
+            
+            button.disabled = true;
+            resultElement.className = 'result loading';
+            resultElement.textContent = '🔄 Testing AI startup launch with real context...';
+
+            try {
+                // Simulate conversation with rich context
+                const messages = [
+                    { type: 'user', content: 'Hi Niv, I need help with a launch campaign.' },
+                    { type: 'assistant', content: 'I\'d be happy to help with your launch campaign. Tell me more about what you\'re launching.' },
+                    { type: 'user', content: 'We\'re launching IntelliFlow AI, our new artificial intelligence platform for enterprise customers. I\'m Sarah Chen, the CEO.' }
+                ];
+
+                const result = await callNivOrchestrator(
+                    'We need a comprehensive PR package including press release, media plan, and strategic communications plan. IntelliFlow helps enterprise teams automate complex workflows and we\'ve seen 40% efficiency improvements in early tests.',
+                    messages
+                );
+
+                displayResult('ai-startup-result', result);
+            } catch (error) {
+                displayResult('ai-startup-result', null, error);
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        async function testFintechProduct() {
+            const button = document.querySelector('button[onclick="testFintechProduct()"]');
+            const resultElement = document.getElementById('fintech-result');
+            
+            button.disabled = true;
+            resultElement.className = 'result loading';
+            resultElement.textContent = '🔄 Testing fintech product with metrics...';
+
+            try {
+                const messages = [
+                    { type: 'user', content: 'I need PR support for our fintech product launch.' },
+                    { type: 'assistant', content: 'Tell me about your fintech product and launch goals.' },
+                    { type: 'user', content: 'PayFlow Pro helps small businesses manage payments and cash flow. We\'ve reduced payment processing time by 60% and cut costs by 25%. I\'m the founder Mike Rodriguez.' }
+                ];
+
+                const result = await callNivOrchestrator(
+                    'We need all the PR materials for PayFlow Pro - press release, media contacts, social content, everything. We serve small businesses and startups in financial services.',
+                    messages
+                );
+
+                displayResult('fintech-result', result);
+            } catch (error) {
+                displayResult('fintech-result', null, error);
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        async function testEnterpriseB2B() {
+            const button = document.querySelector('button[onclick="testEnterpriseB2B()"]');
+            const resultElement = document.getElementById('enterprise-result');
+            
+            button.disabled = true;
+            resultElement.className = 'result loading';
+            resultElement.textContent = '🔄 Testing enterprise B2B solution...';
+
+            try {
+                const messages = [
+                    { type: 'user', content: 'We need a strategic PR campaign for our enterprise software launch.' },
+                    { type: 'assistant', content: 'What enterprise software are you launching?' },
+                    { type: 'user', content: 'CloudSync Enterprise is our new collaboration platform for large organizations. It helps enterprise customers improve team productivity and reduce costs. We\'ve seen 300% ROI in pilot programs.' }
+                ];
+
+                const result = await callNivOrchestrator(
+                    'Create the full PR package for CloudSync Enterprise - everything from press release to media strategy to social content. We target Fortune 500 companies and have proven enterprise-grade security.',
+                    messages
+                );
+
+                displayResult('enterprise-result', result);
+            } catch (error) {
+                displayResult('enterprise-result', null, error);
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        async function testHealthcareInnovation() {
+            const button = document.querySelector('button[onclick="testHealthcareInnovation()"]');
+            const resultElement = document.getElementById('healthcare-result');
+            
+            button.disabled = true;
+            resultElement.className = 'result loading';
+            resultElement.textContent = '🔄 Testing healthcare innovation...';
+
+            try {
+                const messages = [
+                    { type: 'user', content: 'I need PR help for our healthcare technology announcement.' },
+                    { type: 'assistant', content: 'What healthcare technology are you announcing?' },
+                    { type: 'user', content: 'MediCore Analytics helps healthcare providers analyze patient data and improve outcomes. Our platform reduces diagnostic errors by 35% and speeds up treatment decisions. I\'m Dr. Lisa Zhang, Chief Medical Officer.' }
+                ];
+
+                const result = await callNivOrchestrator(
+                    'We need comprehensive PR materials for MediCore Analytics launch. Create press release, media plan, strategic plan, and social content. We serve hospitals and healthcare systems.',
+                    messages
+                );
+
+                displayResult('healthcare-result', result);
+            } catch (error) {
+                displayResult('healthcare-result', null, error);
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        // Auto-run first test on page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                testAIStartupLaunch();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

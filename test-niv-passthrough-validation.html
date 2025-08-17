@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Niv Passthrough Validation - Test Strategy</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: #0a0a0f;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            background: linear-gradient(135deg, #1e1b4b 0%, #3730a3 100%);
+            border-radius: 12px;
+        }
+        .test-section {
+            background: rgba(15, 15, 30, 0.95);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .test-category {
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 4px solid #3b82f6;
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .test-scenario {
+            background: rgba(16, 185, 129, 0.05);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 8px;
+            padding: 16px;
+            margin: 12px 0;
+        }
+        .failure-mode {
+            background: rgba(239, 68, 68, 0.05);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 8px;
+            padding: 16px;
+            margin: 12px 0;
+        }
+        .code-block {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            padding: 12px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin: 8px 0;
+        }
+        .step {
+            margin: 8px 0;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .step:last-child {
+            border-bottom: none;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-success { background: #10b981; }
+        .status-warning { background: #f59e0b; }
+        .status-error { background: #ef4444; }
+        .highlight {
+            background: rgba(59, 130, 246, 0.2);
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        ul, ol {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+        li {
+            margin: 4px 0;
+        }
+        h1, h2, h3, h4 {
+            color: #ffffff;
+        }
+        h2 {
+            border-bottom: 2px solid rgba(139, 92, 246, 0.3);
+            padding-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧪 Niv Passthrough Validation Test Strategy</h1>
+            <p>Comprehensive testing plan to validate the unified data structure fix for content passthrough from Niv conversation to workspace</p>
+        </div>
+
+        <div class="test-section">
+            <h2>📋 Overview: Data Flow Architecture</h2>
+            <p>The unified data structure fix addresses the double-nesting issue in the following flow:</p>
+            <div class="code-block">
+NivStrategicOrchestrator → handleWorkCardCreate → NivFirstLayout → WorkspaceContainer → SimplifiedContentDraft
+</div>
+            <p><strong>Key Fix:</strong> Content is now passed with a flat structure instead of nested under <code>data.generatedContent</code></p>
+        </div>
+
+        <!-- Test Categories -->
+        <div class="test-section">
+            <h2>🎯 Test Category 1: Content Generation & Passthrough</h2>
+            
+            <div class="test-category">
+                <h3>Scenario 1A: Press Release Generation</h3>
+                <div class="test-scenario">
+                    <h4>Test Input in Niv Chat:</h4>
+                    <div class="code-block">"Create a press release announcing our new AI product launch"</div>
+                    
+                    <h4>Expected Console Logs to Monitor:</h4>
+                    <div class="code-block">
+🚀 Sending message to Niv: Create a press release...
+✅ Niv response received: {response, workItems}
+📝 [NivOrchestrator] Creating work card: {type: 'content-draft', generatedContent: {...}}
+🎯 [NivOrchestrator] Sending work item to parent: {type, title, generatedContent}
+🎯 NivFirstLayout: handleWorkCardCreate called with: {flat structure}
+🎯 NivFirstLayout: Adding new item to sidebar: {unified structure}
+🎯 SimplifiedContentDraft: Received context: {generatedContent at root level}
+                    </div>
+
+                    <h4>Validation Steps:</h4>
+                    <ol>
+                        <li>Type message in Niv chat</li>
+                        <li>Verify work card appears in right sidebar with actual content preview</li>
+                        <li>Click work card to open workspace</li>
+                        <li>Verify press release content displays in SimplifiedContentDraft</li>
+                        <li>Check that content is editable and not showing placeholders</li>
+                    </ol>
+
+                    <h4>Success Criteria:</h4>
+                    <ul>
+                        <li><span class="status-indicator status-success"></span>Work card shows actual content preview (not "Loading..." or placeholders)</li>
+                        <li><span class="status-indicator status-success"></span>Workspace opens with full press release content</li>
+                        <li><span class="status-indicator status-success"></span>Content includes headline, body, and contact info</li>
+                        <li><span class="status-indicator status-success"></span>Word count shows accurate numbers</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="test-category">
+                <h3>Scenario 1B: Media List Generation</h3>
+                <div class="test-scenario">
+                    <h4>Test Input in Niv Chat:</h4>
+                    <div class="code-block">"Create a media list for tech journalists covering AI and startups"</div>
+                    
+                    <h4>Validation Steps:</h4>
+                    <ol>
+                        <li>Verify work card shows journalist count and tier breakdown</li>
+                        <li>Open workspace and check that journalist details are populated</li>
+                        <li>Verify contact information, beats, and outlet details are present</li>
+                    </ol>
+
+                    <h4>Expected Data Structure in Console:</h4>
+                    <div class="code-block">
+generatedContent: {
+  journalists: [
+    { name: "...", outlet: "...", beat: "...", email: "...", tier: 1 }
+  ],
+  totalContacts: 5,
+  tierBreakdown: { tier1: 3, tier2: 2 }
+}
+                    </div>
+                </div>
+            </div>
+
+            <div class="test-category">
+                <h3>Scenario 1C: Strategic Plan Generation</h3>
+                <div class="test-scenario">
+                    <h4>Test Input in Niv Chat:</h4>
+                    <div class="code-block">"Create a 4-week strategic PR plan for our product launch"</div>
+                    
+                    <h4>Validation Steps:</h4>
+                    <ol>
+                        <li>Verify work card shows timeline and milestone count</li>
+                        <li>Open workspace and check that objectives, timeline, and deliverables are present</li>
+                        <li>Verify weekly milestones are properly structured</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🔍 Test Category 2: Edge Cases & Error Handling</h2>
+            
+            <div class="test-category">
+                <h3>Scenario 2A: Null Content Handling</h3>
+                <div class="test-scenario">
+                    <h4>Simulate API Error:</h4>
+                    <p>Temporarily modify the API to return null or empty content</p>
+                    
+                    <h4>Validation Steps:</h4>
+                    <ol>
+                        <li>Ensure graceful degradation (no crashes)</li>
+                        <li>Verify placeholder content or error messages display</li>
+                        <li>Check that retry mechanisms work</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="test-category">
+                <h3>Scenario 2B: Malformed Data Structure</h3>
+                <div class="test-scenario">
+                    <h4>Test with Missing Fields:</h4>
+                    <div class="code-block">
+// Test generatedContent with missing required fields
+generatedContent: {
+  // Missing title, body, etc.
+  partial: "data only"
+}
+                    </div>
+                    
+                    <h4>Validation Steps:</h4>
+                    <ol>
+                        <li>Verify standardizeContentDraft handles missing fields</li>
+                        <li>Check fallback values are applied</li>
+                        <li>Ensure workspace doesn't crash</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="test-category">
+                <h3>Scenario 2C: Large Content Handling</h3>
+                <div class="test-scenario">
+                    <h4>Test Input:</h4>
+                    <div class="code-block">"Create a comprehensive 5000-word thought leadership article on AI ethics"</div>
+                    
+                    <h4>Validation Steps:</h4>
+                    <ol>
+                        <li>Verify large content doesn't break UI layout</li>
+                        <li>Check scrolling and editing performance</li>
+                        <li>Ensure content preview truncation works correctly</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>⚡ Test Category 3: Real-time Content Updates</h2>
+            
+            <div class="test-category">
+                <h3>Scenario 3A: Live Editing Flow</h3>
+                <div class="test-scenario">
+                    <h4>Test Sequence:</h4>
+                    <ol>
+                        <li>Generate initial content via Niv</li>
+                        <li>Open workspace and make edits</li>
+                        <li>Ask Niv to make further modifications</li>
+                        <li>Verify edits don't overwrite user changes</li>
+                    </ol>
+
+                    <h4>Console Monitoring:</h4>
+                    <div class="code-block">
+🔄 Content updated by user
+📝 Niv edit request received
+🎯 Applying Niv suggestions while preserving user edits
+                    </div>
+                </div>
+            </div>
+
+            <div class="test-category">
+                <h3>Scenario 3B: Multiple Content Items</h3>
+                <div class="test-scenario">
+                    <h4>Test Sequence:</h4>
+                    <ol>
+                        <li>Generate multiple content pieces in same conversation</li>
+                        <li>Verify each gets separate work card</li>
+                        <li>Open different workspaces simultaneously</li>
+                        <li>Check content isolation (no cross-contamination)</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🚨 Critical Failure Modes to Monitor</h2>
+            
+            <div class="failure-mode">
+                <h3>🔴 Failure Mode 1: Double-Nesting Returns</h3>
+                <p><strong>Symptom:</strong> Content shows as [object Object] or "undefined"</p>
+                <p><strong>Root Cause:</strong> Reversion to nested structure data.generatedContent.generatedContent</p>
+                <p><strong>Detection:</strong> Check console for nested object references</p>
+                <div class="code-block">
+// Bad - indicates double nesting returned
+generatedContent: {
+  data: {
+    generatedContent: { /* actual content */ }
+  }
+}
+
+// Good - flat structure maintained
+generatedContent: { 
+  title: "...",
+  content: "...",
+  /* direct content properties */
+}
+                </div>
+            </div>
+
+            <div class="failure-mode">
+                <h3>🔴 Failure Mode 2: Content Lost at Handoff Points</h3>
+                <p><strong>Symptom:</strong> Work card appears but workspace is empty</p>
+                <p><strong>Root Cause:</strong> Data lost between components</p>
+                <p><strong>Detection:</strong> Monitor console logs at each handoff point</p>
+                <div class="code-block">
+// Check these specific log points:
+1. 🎯 [NivOrchestrator] Sending work item to parent
+2. 🎯 NivFirstLayout: handleWorkCardCreate called with
+3. 🎯 NivFirstLayout: Adding new item to sidebar
+4. 🎯 SimplifiedContentDraft: Received context
+                </div>
+            </div>
+
+            <div class="failure-mode">
+                <h3>🔴 Failure Mode 3: Type Mismatch Errors</h3>
+                <p><strong>Symptom:</strong> Component crashes or shows incorrect workspace type</p>
+                <p><strong>Root Cause:</strong> Work item type doesn't match workspace mapping</p>
+                <p><strong>Detection:</strong> Monitor getWorkspaceFromType function calls</p>
+            </div>
+
+            <div class="failure-mode">
+                <h3>🔴 Failure Mode 4: Memory Leaks from Retained References</h3>
+                <p><strong>Symptom:</strong> Performance degrades over time</p>
+                <p><strong>Root Cause:</strong> Old content references not cleaned up</p>
+                <p><strong>Detection:</strong> Monitor memory usage in DevTools</p>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🛡️ Defensive Code Requirements</h2>
+            
+            <div class="test-category">
+                <h3>Required Safeguards</h3>
+                <ul>
+                    <li><strong>Null Checks:</strong> Every generatedContent access should have null/undefined checks</li>
+                    <li><strong>Type Validation:</strong> Verify content structure before passing to components</li>
+                    <li><strong>Fallback Values:</strong> Default content when structure is invalid</li>
+                    <li><strong>Error Boundaries:</strong> Prevent crashes from propagating up component tree</li>
+                    <li><strong>Retry Logic:</strong> Handle temporary API failures gracefully</li>
+                </ul>
+            </div>
+
+            <div class="test-category">
+                <h3>Validation Functions Needed</h3>
+                <div class="code-block">
+// Add to NivFirstLayout.js
+const validateWorkCard = (workCard) => {
+  if (!workCard) return false;
+  if (!workCard.type || !workCard.title) return false;
+  if (workCard.generatedContent && typeof workCard.generatedContent !== 'object') return false;
+  return true;
+};
+
+// Add to SimplifiedContentDraft.js  
+const validateContentStructure = (content) => {
+  if (!content) return { title: 'Untitled', content: '' };
+  return {
+    title: content.title || content.headline || 'Untitled',
+    content: content.content || content.body || content.text || ''
+  };
+};
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🧪 Automated Test Execution Plan</h2>
+            
+            <div class="test-category">
+                <h3>Phase 1: Basic Passthrough (30 minutes)</h3>
+                <ol>
+                    <li>Test each content type (press release, media list, strategy)</li>
+                    <li>Verify console logs show correct data structure</li>
+                    <li>Confirm content appears in workspace</li>
+                </ol>
+            </div>
+
+            <div class="test-category">
+                <h3>Phase 2: Edge Cases (45 minutes)</h3>
+                <ol>
+                    <li>Test null/empty content scenarios</li>
+                    <li>Test malformed data structures</li>
+                    <li>Test large content handling</li>
+                    <li>Test rapid generation of multiple items</li>
+                </ol>
+            </div>
+
+            <div class="test-category">
+                <h3>Phase 3: Integration & Performance (30 minutes)</h3>
+                <ol>
+                    <li>Test multiple workspaces open simultaneously</li>
+                    <li>Test editing while Niv generates new content</li>
+                    <li>Monitor memory usage and performance</li>
+                    <li>Test browser refresh scenarios</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>✅ Success Metrics</h2>
+            <div class="test-category">
+                <h3>Quantitative Metrics</h3>
+                <ul>
+                    <li><span class="status-indicator status-success"></span><strong>100% Content Passthrough:</strong> All generated content appears in workspace</li>
+                    <li><span class="status-indicator status-success"></span><strong>Zero Data Loss:</strong> No content lost at any handoff point</li>
+                    <li><span class="status-indicator status-success"></span><strong>&lt;2s Load Time:</strong> Workspace opens with content in under 2 seconds</li>
+                    <li><span class="status-indicator status-success"></span><strong>Zero Crashes:</strong> No component crashes from malformed data</li>
+                </ul>
+            </div>
+
+            <div class="test-category">
+                <h3>Qualitative Metrics</h3>
+                <ul>
+                    <li><span class="status-indicator status-success"></span><strong>Real Content:</strong> No placeholders or "Loading..." text in final workspace</li>
+                    <li><span class="status-indicator status-success"></span><strong>Formatted Properly:</strong> Content maintains formatting and structure</li>
+                    <li><span class="status-indicator status-success"></span><strong>Editable:</strong> User can immediately edit generated content</li>
+                    <li><span class="status-indicator status-success"></span><strong>Responsive UI:</strong> Interface remains smooth during content operations</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🔧 Debug Tools & Monitoring</h2>
+            <div class="code-block">
+// Add this to browser console for detailed logging
+window.DEBUG_NIV_PASSTHROUGH = true;
+
+// Monitor these specific functions:
+- NivStrategicOrchestrator.handleSendMessage
+- NivFirstLayout.handleWorkCardCreate  
+- SimplifiedContentDraft constructor
+- standardizeContentDraft function
+
+// Check these localStorage keys for persistence:
+- localStorage.getItem('niv-generated-items')
+- localStorage.getItem('workspace-context')
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📊 Test Results Template</h2>
+            <div class="test-category">
+                <h3>Test Execution Record</h3>
+                <div class="code-block">
+Date: ___________
+Tester: ___________
+Browser: ___________
+Platform: ___________
+
+CONTENT PASSTHROUGH TESTS:
+[ ] Press Release Generation → Workspace ✓/✗
+[ ] Media List Generation → Workspace ✓/✗  
+[ ] Strategic Plan Generation → Workspace ✓/✗
+
+EDGE CASE TESTS:
+[ ] Null Content Handling ✓/✗
+[ ] Malformed Data Handling ✓/✗
+[ ] Large Content Handling ✓/✗
+
+INTEGRATION TESTS:
+[ ] Multiple Workspaces ✓/✗
+[ ] Real-time Editing ✓/✗
+[ ] Memory Performance ✓/✗
+
+CRITICAL ISSUES FOUND:
+- Issue 1: ___________
+- Issue 2: ___________
+- Issue 3: ___________
+
+OVERALL STATUS: PASS/FAIL
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

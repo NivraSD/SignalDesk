@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Standardized Niv Flow</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0a0f;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #8b5cf6;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            background: rgba(30, 30, 45, 0.4);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .test-button {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .test-button:hover {
+            opacity: 0.9;
+        }
+        .output {
+            background: #000;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success { color: #10b981; }
+        .error { color: #ef4444; }
+        .info { color: #3b82f6; }
+        .warning { color: #f59e0b; }
+        .debug { color: #8b5cf6; }
+        .structure { color: #06b6d4; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Standardized Niv Flow</h1>
+        
+        <div class="test-section">
+            <h2>1. Test Content Generation & Standardization</h2>
+            <button class="test-button" onclick="testMediaList()">
+                Test Media List Generation
+            </button>
+            <button class="test-button" onclick="testStrategicPlan()">
+                Test Strategic Plan Generation
+            </button>
+            <button class="test-button" onclick="testPressRelease()">
+                Test Press Release Generation
+            </button>
+            <button class="test-button" onclick="testAllContent()">
+                Test All Content Types
+            </button>
+            <div id="generation-output" class="output"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. Verify Standardized Structures</h2>
+            <button class="test-button" onclick="verifyStructures()">
+                Verify All Data Structures Match Standards
+            </button>
+            <div id="structure-output" class="output"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>3. Test Complete Flow</h2>
+            <button class="test-button" onclick="testCompleteFlow()">
+                Test: Request → Generate → Standardize → Display
+            </button>
+            <div id="flow-output" class="output"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>4. Live Frontend Test</h2>
+            <button class="test-button" onclick="window.open('http://localhost:3000', '_blank')">
+                Open Frontend
+            </button>
+            <p style="color: #9ca3af; font-size: 14px;">
+                Test in frontend:
+                <br>1. Say: "Create a media list for AI product launch"
+                <br>2. Check console for standardized structure logs
+                <br>3. Click on generated item to open workspace
+                <br>4. Verify no errors and content displays properly
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+
+        function log(elementId, message, type = 'info') {
+            const output = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const colorClass = type;
+            output.innerHTML += `<span class="${colorClass}">[${timestamp}] ${message}</span>\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        async function callNiv(message, context = {}) {
+            const response = await fetch(`${SUPABASE_URL}/functions/v1/niv-orchestrator`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: message,
+                    messages: [],
+                    context: { ...context, offeredToCreate: true },
+                    mode: 'strategic_orchestration'
+                })
+            });
+            return await response.json();
+        }
+
+        async function testMediaList() {
+            const outputId = 'generation-output';
+            log(outputId, '=== Testing Media List Generation ===', 'info');
+            
+            try {
+                const response = await callNiv('Create a comprehensive media list for AI product launch');
+                
+                if (response.workItems && response.workItems.length > 0) {
+                    const mediaList = response.workItems.find(item => item.type === 'media-list');
+                    if (mediaList && mediaList.generatedContent) {
+                        log(outputId, '✅ Media List Generated', 'success');
+                        log(outputId, 'Structure Check:', 'structure');
+                        
+                        const content = mediaList.generatedContent;
+                        log(outputId, `  - Title: ${content.title ? '✅' : '❌'}`, 'structure');
+                        log(outputId, `  - Journalists array: ${content.journalists ? '✅' : '❌'} (${content.journalists?.length || 0} items)`, 'structure');
+                        log(outputId, `  - Total contacts: ${content.totalContacts || 'N/A'}`, 'structure');
+                        
+                        if (content.journalists && content.journalists[0]) {
+                            log(outputId, 'First journalist structure:', 'debug');
+                            const j = content.journalists[0];
+                            log(outputId, `    name: ${j.name || 'missing'}`, 'debug');
+                            log(outputId, `    outlet: ${j.outlet || 'missing'}`, 'debug');
+                            log(outputId, `    beat: ${j.beat || 'missing'}`, 'debug');
+                        }
+                    } else {
+                        log(outputId, '❌ No media list in work items', 'error');
+                    }
+                } else {
+                    log(outputId, '❌ No work items generated', 'error');
+                }
+            } catch (error) {
+                log(outputId, `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testStrategicPlan() {
+            const outputId = 'generation-output';
+            log(outputId, '\n=== Testing Strategic Plan Generation ===', 'info');
+            
+            try {
+                const response = await callNiv('Create a strategic communications plan for our launch');
+                
+                if (response.workItems && response.workItems.length > 0) {
+                    const plan = response.workItems.find(item => item.type === 'strategy-plan');
+                    if (plan && plan.generatedContent) {
+                        log(outputId, '✅ Strategic Plan Generated', 'success');
+                        log(outputId, 'Structure Check:', 'structure');
+                        
+                        const content = plan.generatedContent;
+                        log(outputId, `  - Title: ${content.title ? '✅' : '❌'}`, 'structure');
+                        log(outputId, `  - Objective: ${content.objective ? '✅' : '❌'}`, 'structure');
+                        log(outputId, `  - Timeline: ${content.timeline ? '✅' : '❌'}`, 'structure');
+                        
+                        // Check for milestones (flattened structure)
+                        if (content.timeline?.phases) {
+                            log(outputId, `  - Has phases: ✅ (${content.timeline.phases.length} phases)`, 'structure');
+                            const totalMilestones = content.timeline.phases.reduce((sum, phase) => 
+                                sum + (phase.milestones?.length || 0), 0);
+                            log(outputId, `  - Total milestones across phases: ${totalMilestones}`, 'structure');
+                        } else if (content.timeline?.milestones) {
+                            log(outputId, `  - Has direct milestones: ✅ (${content.timeline.milestones.length} items)`, 'structure');
+                        } else {
+                            log(outputId, `  - Milestones structure: ❌ Missing`, 'warning');
+                        }
+                    } else {
+                        log(outputId, '❌ No strategic plan in work items', 'error');
+                    }
+                } else {
+                    log(outputId, '❌ No work items generated', 'error');
+                }
+            } catch (error) {
+                log(outputId, `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testPressRelease() {
+            const outputId = 'generation-output';
+            log(outputId, '\n=== Testing Press Release Generation ===', 'info');
+            
+            try {
+                const response = await callNiv('Create a press release for our AI product launch');
+                
+                if (response.workItems && response.workItems.length > 0) {
+                    const content = response.workItems.find(item => item.type === 'content-draft');
+                    if (content && content.generatedContent) {
+                        log(outputId, '✅ Press Release Generated', 'success');
+                        log(outputId, 'Structure Check:', 'structure');
+                        
+                        const generated = content.generatedContent;
+                        log(outputId, `  - Has content/body: ${(generated.content || generated.body) ? '✅' : '❌'}`, 'structure');
+                        log(outputId, `  - Content length: ${(generated.content || generated.body || '').length} chars`, 'structure');
+                        log(outputId, `  - Title: ${generated.title || content.title || 'N/A'}`, 'structure');
+                    } else {
+                        log(outputId, '❌ No content draft in work items', 'error');
+                    }
+                } else {
+                    log(outputId, '❌ No work items generated', 'error');
+                }
+            } catch (error) {
+                log(outputId, `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAllContent() {
+            const outputId = 'generation-output';
+            log(outputId, '\n=== Testing All Content Generation ===', 'info');
+            
+            try {
+                const response = await callNiv('Create everything: media list, strategic plan, press release, key messaging, FAQ, and social content');
+                
+                log(outputId, `Total work items generated: ${response.workItems?.length || 0}`, 'info');
+                
+                if (response.workItems && response.workItems.length > 0) {
+                    response.workItems.forEach((item, index) => {
+                        log(outputId, `\n${index + 1}. ${item.type}: ${item.title}`, 'success');
+                        log(outputId, `   Has content: ${!!item.generatedContent}`, 'debug');
+                        
+                        if (item.generatedContent) {
+                            const keys = Object.keys(item.generatedContent);
+                            log(outputId, `   Content keys: ${keys.slice(0, 5).join(', ')}${keys.length > 5 ? '...' : ''}`, 'debug');
+                        }
+                    });
+                } else {
+                    log(outputId, '❌ No work items generated', 'error');
+                }
+            } catch (error) {
+                log(outputId, `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function verifyStructures() {
+            const outputId = 'structure-output';
+            log(outputId, '=== Verifying Standardized Structures ===', 'info');
+            
+            // Expected structures
+            const expectedStructures = {
+                'media-list': ['title', 'description', 'totalContacts', 'journalists'],
+                'strategy-plan': ['title', 'objective', 'timeline', 'keyMessages'],
+                'content-draft': ['content', 'title']
+            };
+            
+            try {
+                const response = await callNiv('Create a media list and strategic plan');
+                
+                if (response.workItems && response.workItems.length > 0) {
+                    response.workItems.forEach(item => {
+                        log(outputId, `\nChecking ${item.type}:`, 'info');
+                        const expected = expectedStructures[item.type];
+                        
+                        if (expected && item.generatedContent) {
+                            expected.forEach(field => {
+                                const hasField = item.generatedContent.hasOwnProperty(field) || 
+                                               (item.generatedContent.timeline && field === 'timeline');
+                                log(outputId, `  ${field}: ${hasField ? '✅' : '❌'}`, hasField ? 'success' : 'warning');
+                            });
+                        } else {
+                            log(outputId, '  No expected structure defined or no content', 'warning');
+                        }
+                    });
+                } else {
+                    log(outputId, '❌ No work items to verify', 'error');
+                }
+            } catch (error) {
+                log(outputId, `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testCompleteFlow() {
+            const outputId = 'flow-output';
+            log(outputId, '=== Testing Complete Flow ===', 'info');
+            
+            try {
+                // Step 1: Request
+                log(outputId, '\n1️⃣ Sending request to Niv...', 'info');
+                const response = await callNiv('I need a media list for my AI startup launch');
+                
+                // Step 2: Verify generation
+                log(outputId, '\n2️⃣ Verifying content generation...', 'info');
+                if (response.workItems && response.workItems.length > 0) {
+                    log(outputId, `✅ Generated ${response.workItems.length} work items`, 'success');
+                    
+                    // Step 3: Check standardization
+                    log(outputId, '\n3️⃣ Checking standardized structure...', 'info');
+                    const mediaList = response.workItems.find(item => item.type === 'media-list');
+                    
+                    if (mediaList && mediaList.generatedContent) {
+                        const content = mediaList.generatedContent;
+                        
+                        // Verify it matches our standard structure
+                        const hasStandardFields = 
+                            content.hasOwnProperty('title') &&
+                            content.hasOwnProperty('journalists') &&
+                            Array.isArray(content.journalists);
+                        
+                        if (hasStandardFields) {
+                            log(outputId, '✅ Content follows standardized structure', 'success');
+                            
+                            // Step 4: Simulate display
+                            log(outputId, '\n4️⃣ Simulating workspace display...', 'info');
+                            if (content.journalists.length > 0) {
+                                log(outputId, `✅ Would display ${content.journalists.length} journalists`, 'success');
+                                log(outputId, `   Title: ${content.title}`, 'debug');
+                                log(outputId, `   First journalist: ${content.journalists[0].name} - ${content.journalists[0].outlet}`, 'debug');
+                            } else {
+                                log(outputId, '⚠️ No journalists to display', 'warning');
+                            }
+                        } else {
+                            log(outputId, '❌ Content does not follow standardized structure', 'error');
+                        }
+                    } else {
+                        log(outputId, '❌ No media list found', 'error');
+                    }
+                } else {
+                    log(outputId, '❌ No work items generated', 'error');
+                }
+                
+                log(outputId, '\n✅ Flow test complete!', 'success');
+                
+            } catch (error) {
+                log(outputId, `❌ Flow test failed: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

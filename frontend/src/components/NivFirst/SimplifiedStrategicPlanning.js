@@ -1,79 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { Calendar, Target, Users, TrendingUp, Clock, CheckCircle, AlertCircle, Edit2, Save } from 'lucide-react';
+import React, { useState } from 'react';
+import { Calendar, Target, Users, TrendingUp, Edit2, Save } from 'lucide-react';
+import { standardizeStrategicPlan } from '../../types/NivContentTypes';
 
 const SimplifiedStrategicPlanning = ({ context }) => {
   const [isEditing, setIsEditing] = useState(false);
   
-  // Extract strategic plan from Niv's generated structure
-  const getNivStrategicPlan = () => {
+  // Use standardized structure for strategic plan
+  const [plan, setPlan] = useState(() => {
     console.log('🎯 SimplifiedStrategicPlanning: Received context:', context);
     console.log('🎯 SimplifiedStrategicPlanning: generatedContent:', context?.generatedContent);
-    // Check if we have generated content from Niv
-    if (context?.generatedContent) {
-      const generated = context.generatedContent;
-      
-      // Handle strategic plan format
-      if (generated.timeline || generated.keyMessages || generated.objective) {
-        return {
-          title: generated.title || context?.title || 'Strategic Communications Plan',
-          objective: generated.objective || 'Successfully execute strategic communications campaign',
-          timeline: generated.timeline || {
-            start: 'Week 1',
-            end: 'Week 4',
-            milestones: []
-          },
-          keyMessages: generated.keyMessages || [],
-          targetAudiences: generated.targetAudiences || [],
-          successMetrics: generated.successMetrics || {},
-          stakeholders: [
-            { name: 'CEO', role: 'Spokesperson', status: 'confirmed' },
-            { name: 'Product Lead', role: 'Technical briefings', status: 'confirmed' },
-            { name: 'Customer Success', role: 'Case studies', status: 'pending' }
-          ],
-          metrics: generated.successMetrics || {
-            targetReach: '10M impressions',
-            tierOneTargets: '5 major outlets',
-            socialEngagement: '50K interactions'
-          }
-        };
-      }
-    }
     
-    // Fallback to default plan
-    return {
-      title: context?.title || 'Q2 Product Launch Strategy',
-      objective: context?.objective || 'Successfully launch new product feature with maximum media coverage',
-      timeline: context?.timeline || {
-        start: 'Week 1',
-        end: 'Week 6',
-        milestones: context?.timeline?.milestones || [
-          { week: 1, task: 'Media list building & relationship warming', status: 'completed' },
-          { week: 2, task: 'Content creation & embargo preparation', status: 'in-progress' },
-          { week: 3, task: 'Tier 1 media briefings under embargo', status: 'pending' },
-          { week: 4, task: 'Broad media outreach & social amplification', status: 'pending' },
-          { week: 5, task: 'Launch day execution & rapid response', status: 'pending' },
-          { week: 6, task: 'Post-launch momentum & follow-up stories', status: 'pending' }
-        ]
-      },
-      keyMessages: context?.keyMessages || [
-        'Revolutionary approach to solving customer pain point',
-        'First-to-market with this specific capability',
-        'Backed by compelling customer success data'
-      ],
-      stakeholders: [
-        { name: 'CEO', role: 'Spokesperson', status: 'confirmed' },
-        { name: 'Product Lead', role: 'Technical briefings', status: 'confirmed' },
-        { name: 'Customer Success', role: 'Case studies', status: 'pending' }
-      ],
-      metrics: {
-        targetReach: '10M impressions',
-        tierOneTargets: '5 major outlets',
-        socialEngagement: '50K interactions'
-      }
-    };
-  };
-  
-  const [plan, setPlan] = useState(getNivStrategicPlan());
+    // FIXED: Try generatedContent first, then fallback to context itself
+    const rawContent = context?.generatedContent || context;
+    const standardized = standardizeStrategicPlan(rawContent);
+    console.log('🎯 SimplifiedStrategicPlanning: Raw content:', rawContent);
+    console.log('🎯 SimplifiedStrategicPlanning: Standardized plan:', standardized);
+    
+    return standardized;
+  });
 
   const getStatusColor = (status) => {
     switch(status) {
@@ -179,7 +123,7 @@ const SimplifiedStrategicPlanning = ({ context }) => {
           </div>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {plan.timeline.milestones.map((milestone, index) => (
+            {(plan.milestones || []).map((milestone, index) => (
               <div key={index} style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -257,7 +201,8 @@ const SimplifiedStrategicPlanning = ({ context }) => {
           </div>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {plan.keyMessages.map((message, index) => (
+            {(Array.isArray(plan.keyMessages) ? plan.keyMessages : 
+              plan.keyMessages?.supporting || []).map((message, index) => (
               <div key={index} style={{
                 padding: '12px',
                 background: 'rgba(16, 185, 129, 0.05)',
@@ -312,7 +257,7 @@ const SimplifiedStrategicPlanning = ({ context }) => {
           </div>
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
-            {plan.stakeholders.map((stakeholder, index) => (
+            {(plan.stakeholders || []).map((stakeholder, index) => (
               <div key={index} style={{
                 padding: '12px',
                 background: 'rgba(139, 92, 246, 0.05)',
@@ -368,7 +313,7 @@ const SimplifiedStrategicPlanning = ({ context }) => {
               textAlign: 'center'
             }}>
               <div style={{ fontSize: '24px', fontWeight: '600', color: '#f59e0b' }}>
-                {plan.metrics.targetReach}
+                {plan.metrics?.targetReach || plan.successMetrics?.reach || '10M impressions'}
               </div>
               <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>
                 Target Reach
@@ -381,7 +326,7 @@ const SimplifiedStrategicPlanning = ({ context }) => {
               textAlign: 'center'
             }}>
               <div style={{ fontSize: '24px', fontWeight: '600', color: '#3b82f6' }}>
-                {plan.metrics.tierOneTargets}
+                {plan.metrics?.tierOneTargets || plan.successMetrics?.coverage || '5 major outlets'}
               </div>
               <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>
                 Tier 1 Outlets
@@ -394,7 +339,7 @@ const SimplifiedStrategicPlanning = ({ context }) => {
               textAlign: 'center'
             }}>
               <div style={{ fontSize: '24px', fontWeight: '600', color: '#10b981' }}>
-                {plan.metrics.socialEngagement}
+                {plan.metrics?.socialEngagement || plan.successMetrics?.engagement || '50K interactions'}
               </div>
               <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>
                 Social Engagement

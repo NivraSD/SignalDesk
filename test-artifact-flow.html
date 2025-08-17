@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Artifact Flow</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #0a0a0f;
+            color: #e8e8e8;
+        }
+        
+        .test-section {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .material-test {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+            margin: 20px 0;
+        }
+        
+        .material-card {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .material-card:hover {
+            transform: translateY(-2px);
+            background: rgba(139, 92, 246, 0.15);
+        }
+        
+        .material-card.tested {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+        }
+        
+        .material-card.failed {
+            border-color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+        
+        button {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        .status {
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        
+        .success { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+        .error { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        .info { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+        
+        .content-preview {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 16px;
+            margin: 12px 0;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 12px;
+            color: #9ca3af;
+        }
+        
+        .workspace-sim {
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid rgba(59, 130, 246, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .workspace-sim.active {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Complete Artifact Flow Test</h1>
+    <p>Testing material generation → artifact creation → workspace display</p>
+    
+    <div class="test-section">
+        <h3>Material Generation Tests</h3>
+        <button onclick="runAllTests()">🚀 Test All Material Types</button>
+        <button onclick="resetTests()">🔄 Reset Tests</button>
+        
+        <div class="material-test" id="materialGrid">
+            <!-- Material cards will be populated here -->
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Workspace Simulation</h3>
+        <div id="workspaceArea">
+            <p style="color: #6b7280;">Click on a successfully generated material above to simulate opening it in workspace</p>
+        </div>
+    </div>
+    
+    <div id="status"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        const materialTypes = [
+            { type: 'social-content', request: 'I need social media content', title: 'Social Media Content' },
+            { type: 'key-messaging', request: 'I need key messaging', title: 'Key Messaging Framework' },
+            { type: 'faq-document', request: 'I need an FAQ document', title: 'FAQ Document' },
+            { type: 'media-list', request: 'I need a media list', title: 'Media List' },
+            { type: 'content-draft', request: 'I need a press release', title: 'Press Release' },
+            { type: 'strategy-plan', request: 'I need a strategic plan', title: 'Strategic Plan' }
+        ];
+        
+        let testResults = {};
+        
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        function initMaterialGrid() {
+            const grid = document.getElementById('materialGrid');
+            grid.innerHTML = materialTypes.map(material => `
+                <div class="material-card" id="card-${material.type}" onclick="testMaterial('${material.type}')">
+                    <h4>${material.title}</h4>
+                    <div style="font-size: 12px; color: #9ca3af; margin: 8px 0;">
+                        Request: "${material.request}"
+                    </div>
+                    <div style="font-size: 12px; color: #6b7280;">
+                        Status: <span id="status-${material.type}">Not tested</span>
+                    </div>
+                    <div class="content-preview" id="preview-${material.type}" style="display: none;"></div>
+                </div>
+            `).join('');
+        }
+        
+        async function testMaterial(materialType) {
+            const material = materialTypes.find(m => m.type === materialType);
+            const card = document.getElementById(`card-${materialType}`);
+            const statusSpan = document.getElementById(`status-${materialType}`);
+            const previewDiv = document.getElementById(`preview-${materialType}`);
+            
+            statusSpan.textContent = 'Testing...';
+            statusSpan.style.color = '#f59e0b';
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/niv-orchestrator`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: material.request,
+                        messages: [],
+                        context: {}
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Check if the correct material was generated
+                const foundMaterial = data.workItems?.find(item => item.type === materialType);
+                
+                if (foundMaterial && foundMaterial.generatedContent) {
+                    statusSpan.textContent = '✅ Generated successfully';
+                    statusSpan.style.color = '#10b981';
+                    card.classList.add('tested');
+                    
+                    // Store test result
+                    testResults[materialType] = {
+                        success: true,
+                        data: foundMaterial,
+                        content: foundMaterial.generatedContent
+                    };
+                    
+                    // Show preview
+                    previewDiv.style.display = 'block';
+                    previewDiv.innerHTML = `
+                        <strong>Generated Content:</strong><br>
+                        Type: ${foundMaterial.type}<br>
+                        Title: ${foundMaterial.title}<br>
+                        Content Keys: ${Object.keys(foundMaterial.generatedContent).join(', ')}<br>
+                        <em>Click card to simulate workspace opening</em>
+                    `;
+                    
+                } else {
+                    statusSpan.textContent = '❌ Failed to generate';
+                    statusSpan.style.color = '#ef4444';
+                    card.classList.add('failed');
+                    testResults[materialType] = { success: false };
+                }
+                
+            } catch (error) {
+                statusSpan.textContent = `❌ Error: ${error.message}`;
+                statusSpan.style.color = '#ef4444';
+                card.classList.add('failed');
+                testResults[materialType] = { success: false, error: error.message };
+            }
+        }
+        
+        async function runAllTests() {
+            updateStatus('🔄 Running all material generation tests...', 'info');
+            
+            for (const material of materialTypes) {
+                await testMaterial(material.type);
+                // Small delay between tests
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            
+            const successCount = Object.values(testResults).filter(r => r.success).length;
+            const totalCount = materialTypes.length;
+            
+            if (successCount === totalCount) {
+                updateStatus(`✅ All tests passed! ${successCount}/${totalCount} materials generated successfully`, 'success');
+            } else {
+                updateStatus(`⚠️ ${successCount}/${totalCount} tests passed. Some materials failed to generate.`, 'error');
+            }
+        }
+        
+        function resetTests() {
+            testResults = {};
+            initMaterialGrid();
+            document.getElementById('workspaceArea').innerHTML = '<p style="color: #6b7280;">Click on a successfully generated material above to simulate opening it in workspace</p>';
+            updateStatus('Tests reset. Ready to run new tests.', 'info');
+        }
+        
+        function simulateWorkspace(materialType) {
+            const result = testResults[materialType];
+            if (!result || !result.success) {
+                updateStatus('❌ Cannot open workspace - material was not generated successfully', 'error');
+                return;
+            }
+            
+            const workspaceArea = document.getElementById('workspaceArea');
+            const material = materialTypes.find(m => m.type === materialType);
+            
+            // Simulate workspace display
+            workspaceArea.innerHTML = `
+                <div class="workspace-sim active">
+                    <h3>🖥️ Workspace Simulation: ${material.title}</h3>
+                    <div style="margin: 16px 0;">
+                        <strong>Artifact passed to workspace:</strong>
+                    </div>
+                    <div class="content-preview">
+                        ${formatContentForWorkspace(result.content)}
+                    </div>
+                    <div style="margin-top: 16px; padding: 12px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; color: #10b981;">
+                        ✅ Artifact successfully received by workspace component!<br>
+                        Content is properly formatted and ready for editing.
+                    </div>
+                </div>
+            `;
+            
+            updateStatus(`✅ Workspace opened for ${material.title} - artifact passing successful!`, 'success');
+        }
+        
+        function formatContentForWorkspace(content) {
+            if (typeof content === 'string') {
+                return content;
+            }
+            
+            if (content.sections) {
+                // Key messaging or FAQ format
+                return Object.entries(content.sections).map(([key, value]) => {
+                    return `<strong>${key}:</strong> ${JSON.stringify(value, null, 2)}`;
+                }).join('<br><br>');
+            }
+            
+            if (content.platforms) {
+                // Social content format
+                return Object.entries(content.platforms).map(([platform, posts]) => {
+                    return `<strong>${platform}:</strong><br>${JSON.stringify(posts, null, 2)}`;
+                }).join('<br><br>');
+            }
+            
+            if (content.journalists) {
+                // Media list format
+                return `<strong>Media Targets:</strong> ${content.journalists.length} journalists<br>
+                        <strong>Tier 1:</strong> ${content.byTier?.tier1 || 0}<br>
+                        Sample: ${content.journalists[0]?.name} - ${content.journalists[0]?.outlet}`;
+            }
+            
+            // Generic format
+            return JSON.stringify(content, null, 2);
+        }
+        
+        // Enhance material card clicks to open workspace
+        document.addEventListener('click', function(e) {
+            const card = e.target.closest('.material-card');
+            if (card && card.classList.contains('tested')) {
+                const materialType = card.id.replace('card-', '');
+                simulateWorkspace(materialType);
+            }
+        });
+        
+        // Initialize
+        window.onload = () => {
+            initMaterialGrid();
+            updateStatus('Ready to test artifact flow', 'info');
+        };
+    </script>
+</body>
+</html>

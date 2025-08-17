@@ -1,48 +1,27 @@
 import React, { useState } from 'react';
 import { FileText, Edit2, Save, Copy, Download, Send } from 'lucide-react';
+import { standardizeContentDraft } from '../../types/NivContentTypes';
 
 const SimplifiedContentDraft = ({ context }) => {
   const [isEditing, setIsEditing] = useState(false);
   
-  // Extract content from Niv's generated structure
-  const getNivContent = () => {
+  // Use standardized structure for content draft
+  const [content, setContent] = useState(() => {
     console.log('🎯 SimplifiedContentDraft: Received context:', context);
     console.log('🎯 SimplifiedContentDraft: generatedContent:', context?.generatedContent);
-    // Check if we have generated content from Niv
-    if (context?.generatedContent) {
-      const generated = context.generatedContent;
-      
-      // Handle press release format
-      if (generated.content) {
-        return {
-          title: generated.title || context?.title || 'Press Release',
-          content: generated.content
-        };
-      }
-      
-      // Handle other content types with structured data
-      if (typeof generated === 'object' && generated.title) {
-        return {
-          title: generated.title,
-          content: generated.content || JSON.stringify(generated, null, 2)
-        };
-      }
-    }
     
-    // Fallback to context fields
+    // FIXED: Try generatedContent first, then fallback to context itself
+    const rawContent = context?.generatedContent || context;
+    const standardized = standardizeContentDraft(rawContent);
+    console.log('🎯 SimplifiedContentDraft: Raw content:', rawContent);
+    console.log('🎯 SimplifiedContentDraft: Standardized content:', standardized);
+    
+    // For simplified view, just extract title and body
     return {
-      title: context?.title || 'Press Release',
-      content: context?.content || `FOR IMMEDIATE RELEASE
-
-AI Investment Summit Brings Together Leading Investors and Technology Pioneers
-
-NEW YORK – [Add your content here]
-
-###`
+      title: standardized.title || context?.title || 'Content Draft',
+      content: standardized.body || standardized.content || ''
     };
-  };
-  
-  const [content, setContent] = useState(getNivContent());
+  });
 
   const handleSave = () => {
     setIsEditing(false);

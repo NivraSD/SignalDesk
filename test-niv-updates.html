@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Niv Updates</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #e5e7eb;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #60a5fa;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .test-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #10b981;
+            margin-bottom: 15px;
+        }
+        button {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .response {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+            white-space: pre-wrap;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .work-items {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 6px;
+        }
+        .work-item {
+            margin-bottom: 10px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+        }
+        .status {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        .pass {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+        .fail {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Niv Updates Test Suite</h1>
+        
+        <div class="test-section">
+            <div class="test-title">Test 1: Short Response (No Fake Experience)</div>
+            <button onclick="testShortResponse()">Test Simple Request</button>
+            <button onclick="testStrategicPlan()">Test Strategic Plan</button>
+            <div id="test1-response" class="response" style="display:none;"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">Test 2: Multiple Work Items</div>
+            <button onclick="testMultipleItems()">Request Multiple Items</button>
+            <div id="test2-response" class="response" style="display:none;"></div>
+            <div id="test2-items" class="work-items" style="display:none;"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">Test 3: Conversation Memory</div>
+            <button onclick="testConversationMemory()">Start Conversation</button>
+            <div id="test3-response" class="response" style="display:none;"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">Test Results</div>
+            <div id="test-results" class="response">
+                <div>✅ No "20 years experience" claims: <span id="no-fake-exp" class="status">Pending</span></div>
+                <div>✅ Responses under 400 tokens: <span id="short-responses" class="status">Pending</span></div>
+                <div>✅ Multiple work items created: <span id="multiple-items" class="status">Pending</span></div>
+                <div>✅ Actual content generated: <span id="content-generated" class="status">Pending</span></div>
+                <div>✅ Conversation context maintained: <span id="context-maintained" class="status">Pending</span></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+        
+        let conversationMessages = [];
+
+        async function callNiv(message, messages = []) {
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/niv-orchestrator`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'apikey': SUPABASE_ANON_KEY
+                    },
+                    body: JSON.stringify({
+                        message,
+                        messages,
+                        context: {
+                            event: 'AI Investment Summit NYC',
+                            attendees: '200 C-suite executives'
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('Error calling Niv:', error);
+                return { 
+                    response: 'Error connecting to Niv', 
+                    error: error.message 
+                };
+            }
+        }
+
+        async function testShortResponse() {
+            const result = await callNiv('Help me with PR strategy for an AI event');
+            const responseDiv = document.getElementById('test1-response');
+            responseDiv.style.display = 'block';
+            responseDiv.textContent = `Response: ${result.response}\n\nLength: ${result.response.length} characters`;
+            
+            // Check for fake experience claims
+            const hasFakeExp = result.response.toLowerCase().includes('20 years') || 
+                               result.response.toLowerCase().includes('my experience') ||
+                               result.response.toLowerCase().includes('leaning in');
+            
+            document.getElementById('no-fake-exp').className = hasFakeExp ? 'status fail' : 'status pass';
+            document.getElementById('no-fake-exp').textContent = hasFakeExp ? 'FAIL' : 'PASS';
+            
+            // Check response length
+            const isShort = result.response.length < 800; // Roughly 400 tokens
+            document.getElementById('short-responses').className = isShort ? 'status pass' : 'status fail';
+            document.getElementById('short-responses').textContent = isShort ? 'PASS' : 'FAIL';
+        }
+
+        async function testStrategicPlan() {
+            const result = await callNiv('Create a strategic plan for the AI Investment Summit');
+            const responseDiv = document.getElementById('test1-response');
+            responseDiv.style.display = 'block';
+            responseDiv.textContent = `Response: ${result.response}\n\nWork Items: ${result.workItems?.length || 0}`;
+            
+            if (result.workItems && result.workItems.length > 0) {
+                responseDiv.innerHTML += '\n\n<strong>Generated Content:</strong>\n';
+                result.workItems.forEach(item => {
+                    responseDiv.innerHTML += `\n${item.title}: ${item.type}\n`;
+                    if (item.generatedContent) {
+                        responseDiv.innerHTML += `Content: ${JSON.stringify(item.generatedContent, null, 2).substring(0, 200)}...\n`;
+                    }
+                });
+            }
+        }
+
+        async function testMultipleItems() {
+            const result = await callNiv('Create a strategic plan, media list, and press release for the AI Investment Summit');
+            const responseDiv = document.getElementById('test2-response');
+            const itemsDiv = document.getElementById('test2-items');
+            
+            responseDiv.style.display = 'block';
+            responseDiv.textContent = `Response: ${result.response}`;
+            
+            if (result.workItems && result.workItems.length > 0) {
+                itemsDiv.style.display = 'block';
+                itemsDiv.innerHTML = '<strong>Work Items Created:</strong>';
+                
+                result.workItems.forEach(item => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'work-item';
+                    itemDiv.innerHTML = `
+                        <strong>${item.title}</strong> (${item.type})<br>
+                        ${item.description}<br>
+                        ${item.generatedContent ? '✅ Content Generated' : '❌ No Content'}
+                    `;
+                    itemsDiv.appendChild(itemDiv);
+                });
+                
+                // Check multiple items test
+                const hasMultiple = result.workItems.length >= 3;
+                document.getElementById('multiple-items').className = hasMultiple ? 'status pass' : 'status fail';
+                document.getElementById('multiple-items').textContent = hasMultiple ? 'PASS' : 'FAIL';
+                
+                // Check content generation
+                const hasContent = result.workItems.some(item => item.generatedContent);
+                document.getElementById('content-generated').className = hasContent ? 'status pass' : 'status fail';
+                document.getElementById('content-generated').textContent = hasContent ? 'PASS' : 'FAIL';
+            }
+        }
+
+        async function testConversationMemory() {
+            // First message
+            conversationMessages = [];
+            const result1 = await callNiv('I need help with an AI investment event in NYC', conversationMessages);
+            conversationMessages.push({ type: 'user', content: 'I need help with an AI investment event in NYC' });
+            conversationMessages.push({ type: 'assistant', content: result1.response });
+            
+            // Follow-up message
+            const result2 = await callNiv('What should be my first step?', conversationMessages);
+            
+            const responseDiv = document.getElementById('test3-response');
+            responseDiv.style.display = 'block';
+            responseDiv.innerHTML = `
+                <strong>First Message:</strong><br>
+                ${result1.response}<br><br>
+                <strong>Follow-up:</strong><br>
+                ${result2.response}<br><br>
+                <strong>Context Length:</strong> ${result2.context?.conversationLength || 0} messages
+            `;
+            
+            // Check if context is maintained
+            const hasContext = result2.context?.conversationLength > 0;
+            document.getElementById('context-maintained').className = hasContext ? 'status pass' : 'status fail';
+            document.getElementById('context-maintained').textContent = hasContext ? 'PASS' : 'FAIL';
+        }
+    </script>
+</body>
+</html>

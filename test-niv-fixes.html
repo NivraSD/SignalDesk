@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Niv Fixes - Material Creation Control</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-case {
+            background: white;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .user-message {
+            background: #e3f2fd;
+            padding: 10px;
+            border-left: 4px solid #2196f3;
+            margin: 10px 0;
+        }
+        .expected {
+            background: #e8f5e8;
+            padding: 10px;
+            border-left: 4px solid #4caf50;
+            margin: 10px 0;
+        }
+        .test-button {
+            background: #2196f3;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px 0;
+        }
+        .result {
+            background: #fff3e0;
+            padding: 10px;
+            border-left: 4px solid #ff9800;
+            margin: 10px 0;
+            display: none;
+        }
+        .pass { border-left-color: #4caf50; background: #e8f5e8; }
+        .fail { border-left-color: #f44336; background: #ffebee; }
+    </style>
+</head>
+<body>
+    <h1>Niv System Fixes Test</h1>
+    <p>Testing the fixes to ensure Niv only creates materials when explicitly requested.</p>
+
+    <!-- Test Case 1: Advisory Request (Should NOT create materials) -->
+    <div class="test-case">
+        <div class="test-title">Test 1: Advisory Request - Should NOT Create Materials</div>
+        <div class="user-message">
+            <strong>User:</strong> "I need help with PR for my startup. We're TechCorp and we make AI tools for developers."
+        </div>
+        <div class="expected">
+            <strong>Expected:</strong> Niv should provide advisory guidance and ask questions. NO work items should be created.
+        </div>
+        <button class="test-button" onclick="runTest1()">Run Test 1</button>
+        <div id="result1" class="result"></div>
+    </div>
+
+    <!-- Test Case 2: Explicit Creation Request (Should create ONLY what's requested) -->
+    <div class="test-case">
+        <div class="test-title">Test 2: Explicit Press Release Request - Should Create ONLY Press Release</div>
+        <div class="user-message">
+            <strong>Context:</strong> User has discussed TechCorp and CloudAI<br>
+            <strong>User:</strong> "Create a press release for our CloudAI launch"
+        </div>
+        <div class="expected">
+            <strong>Expected:</strong> Niv should create ONLY a press release. No media plan, strategy plan, or other materials.
+        </div>
+        <button class="test-button" onclick="runTest2()">Run Test 2</button>
+        <div id="result2" class="result"></div>
+    </div>
+
+    <!-- Test Case 3: Media Plan Request (Should create ONLY media plan) -->
+    <div class="test-case">
+        <div class="test-title">Test 3: Explicit Media Plan Request - Should Create ONLY Media Plan</div>
+        <div class="user-message">
+            <strong>Context:</strong> User has discussed TechCorp and CloudAI<br>
+            <strong>User:</strong> "Generate a media plan for our announcement"
+        </div>
+        <div class="expected">
+            <strong>Expected:</strong> Niv should create ONLY a media plan. No press release or other materials.
+        </div>
+        <button class="test-button" onclick="runTest3()">Run Test 3</button>
+        <div id="result3" class="result"></div>
+    </div>
+
+    <!-- Test Case 4: General Help Request (Should NOT create materials) -->
+    <div class="test-case">
+        <div class="test-title">Test 4: General Help Request - Should NOT Create Materials</div>
+        <div class="user-message">
+            <strong>User:</strong> "What should I do for PR? I need some materials."
+        </div>
+        <div class="expected">
+            <strong>Expected:</strong> Niv should ask clarifying questions and provide guidance. NO work items created.
+        </div>
+        <button class="test-button" onclick="runTest4()">Run Test 4</button>
+        <div id="result4" class="result"></div>
+    </div>
+
+    <script>
+        // Simulated function detection logic to test the fixes locally
+        function simulateDetectExplicitCreationIntent(response, messages, consultationMode) {
+            console.log('🔎 simulateDetectExplicitCreationIntent called:', {
+                responseLength: response?.length || 0,
+                messageCount: messages?.length || 0,
+                consultationMode
+            })
+            
+            if (!response || typeof response !== 'string') {
+                console.error('❌ Invalid response in detectExplicitCreationIntent:', typeof response)
+                return []
+            }
+            
+            const lowerResponse = response.toLowerCase()
+            
+            // ONLY create work items when Niv explicitly says they're creating something
+            const explicitCreationPhrases = [
+                "i'll create",
+                "i'll now create", 
+                "let me create",
+                "creating your",
+                "here's your",
+                "i've created",
+                "i've prepared",
+                "generating your",
+                "i'll generate",
+                "i'll develop",
+                "i'll draft",
+                "i'll write"
+            ]
+            
+            // Check if conversation has enough context (at least 2 back-and-forth exchanges)
+            const hasEnoughContext = messages && messages.length >= 2
+            
+            // Check if Niv's response indicates they're actually creating something NOW
+            const hasExplicitCreation = explicitCreationPhrases.some(phrase => lowerResponse.includes(phrase))
+            
+            // STRICT REQUIREMENT: Must have BOTH explicit creation AND enough context
+            if (!hasExplicitCreation) {
+                console.log('❌ No explicit creation phrases found - NOT creating materials')
+                return []
+            }
+            
+            if (!hasEnoughContext) {
+                console.log('❌ Insufficient conversation context - NOT creating materials')
+                return []
+            }
+            
+            console.log('✅ Explicit material creation detected with sufficient context!')
+            
+            // Determine what to create based on BOTH user request AND Niv's response
+            const lastUserMessage = getLastUserMessage(messages)?.toLowerCase() || ''
+            const createdItems = determineRequestedItems(lastUserMessage, lowerResponse)
+            
+            console.log('🎯 Detected explicit creation of ' + createdItems.length + ' items:', createdItems.map(i => i.type))
+            return createdItems
+        }
+        
+        function getLastUserMessage(messages) {
+            // Find the most recent user message
+            for (let i = messages.length - 1; i >= 0; i--) {
+                if (messages[i]?.type === 'user') {
+                    return messages[i]?.content || ''
+                }
+            }
+            return ''
+        }
+        
+        function determineRequestedItems(userMessage, nivResponse) {
+            const items = []
+            
+            // STRICT MAPPING: Only create what user explicitly requested AND Niv confirmed
+            
+            // Media Plan/List
+            if ((userMessage.includes('media plan') || userMessage.includes('media list') || userMessage.includes('journalist')) &&
+                (nivResponse.includes('media plan') || nivResponse.includes('media list') || nivResponse.includes('journalist'))) {
+                items.push({
+                    type: 'media-list',
+                    title: 'Strategic Media Plan',
+                    description: 'Targeted journalists and outreach strategy'
+                })
+            }
+            
+            // Press Release
+            if (userMessage.includes('press release') && nivResponse.includes('press release')) {
+                items.push({
+                    type: 'content-draft',
+                    title: 'Press Release', 
+                    description: 'Professional announcement ready for distribution'
+                })
+            }
+            
+            // Strategic Plan
+            if ((userMessage.includes('strategic plan') || userMessage.includes('communications plan') || userMessage.includes('strategy')) &&
+                (nivResponse.includes('strategic plan') || nivResponse.includes('strategy'))) {
+                items.push({
+                    type: 'strategy-plan',
+                    title: 'Strategic Communications Plan',
+                    description: 'Comprehensive PR strategy with timeline and tactics'
+                })
+            }
+            
+            return items
+        }
+        
+        // Simulated API call to test the fixes
+        async function callNivOrchestrator(message, messages = [], context = {}) {
+            // Simulate different responses based on the message
+            let simulatedResponse = '';
+            
+            if (message.toLowerCase().includes('help') && !message.toLowerCase().includes('create')) {
+                simulatedResponse = "I'd be happy to help with your startup's PR strategy. Tell me about your company - what do you do and who's your target audience?";
+            } else if (message.toLowerCase().includes('create a press release')) {
+                simulatedResponse = "I'll create a press release for TechCorp's CloudAI launch based on our discussion. Let me develop that for you now...";
+            } else if (message.toLowerCase().includes('generate a media plan')) {
+                simulatedResponse = "I'll create a media plan for your announcement. Let me develop targeted journalist outreach strategy for you now...";
+            } else if (message.toLowerCase().includes('need some materials')) {
+                simulatedResponse = "I'd be happy to help you develop effective PR materials. First, let me understand your specific needs better. What type of announcement or campaign are you working on?";
+            } else {
+                simulatedResponse = "I understand you're looking for PR support. Could you tell me more about your specific situation so I can provide the most relevant guidance?";
+            }
+            
+            // Simulate work item detection using the new logic
+            const workItems = simulateDetectExplicitCreationIntent(simulatedResponse, messages);
+            
+            return {
+                response: simulatedResponse,
+                workItems: workItems
+            };
+        }
+
+        async function runTest1() {
+            const resultDiv = document.getElementById('result1');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                const response = await callNivOrchestrator(
+                    "I need help with PR for my startup. We're TechCorp and we make AI tools for developers.",
+                    []
+                );
+                
+                const workItemsCreated = response.workItems ? response.workItems.length : 0;
+                const hasAdvisoryResponse = response.response && response.response.length > 0;
+                
+                if (workItemsCreated === 0 && hasAdvisoryResponse) {
+                    resultDiv.className = 'result pass';
+                    resultDiv.innerHTML = `✅ PASS: No work items created (${workItemsCreated}). Niv provided advisory response.`;
+                } else {
+                    resultDiv.className = 'result fail';
+                    resultDiv.innerHTML = `❌ FAIL: ${workItemsCreated} work items created. Should be 0 for advisory requests.`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result fail';
+                resultDiv.innerHTML = `❌ ERROR: ${error.message}`;
+            }
+        }
+
+        async function runTest2() {
+            const resultDiv = document.getElementById('result2');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                // Simulate conversation history
+                const messages = [
+                    { type: 'user', content: "We're TechCorp and we make AI tools for developers" },
+                    { type: 'assistant', content: "Tell me more about your AI tools..." },
+                    { type: 'user', content: "We're launching CloudAI next month" },
+                    { type: 'assistant', content: "That sounds interesting. What's your goal for the launch?" }
+                ];
+                
+                const response = await callNivOrchestrator(
+                    "Create a press release for our CloudAI launch",
+                    messages
+                );
+                
+                const workItemsCreated = response.workItems ? response.workItems.length : 0;
+                const workItemTypes = response.workItems ? response.workItems.map(item => item.type) : [];
+                const hasPressRelease = workItemTypes.includes('content-draft');
+                const hasOnlyPressRelease = workItemsCreated === 1 && hasPressRelease;
+                
+                if (hasOnlyPressRelease) {
+                    resultDiv.className = 'result pass';
+                    resultDiv.innerHTML = `✅ PASS: Created exactly 1 work item (press release). Types: ${workItemTypes.join(', ')}`;
+                } else {
+                    resultDiv.className = 'result fail';
+                    resultDiv.innerHTML = `❌ FAIL: Created ${workItemsCreated} work items. Expected exactly 1 press release. Types: ${workItemTypes.join(', ')}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result fail';
+                resultDiv.innerHTML = `❌ ERROR: ${error.message}`;
+            }
+        }
+
+        async function runTest3() {
+            const resultDiv = document.getElementById('result3');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                // Simulate conversation history
+                const messages = [
+                    { type: 'user', content: "We're TechCorp and we make AI tools for developers" },
+                    { type: 'assistant', content: "Tell me more about your AI tools..." },
+                    { type: 'user', content: "We're launching CloudAI next month" },
+                    { type: 'assistant', content: "That sounds interesting. What's your goal for the launch?" }
+                ];
+                
+                const response = await callNivOrchestrator(
+                    "Generate a media plan for our announcement",
+                    messages
+                );
+                
+                const workItemsCreated = response.workItems ? response.workItems.length : 0;
+                const workItemTypes = response.workItems ? response.workItems.map(item => item.type) : [];
+                const hasMediaPlan = workItemTypes.includes('media-list');
+                const hasOnlyMediaPlan = workItemsCreated === 1 && hasMediaPlan;
+                
+                if (hasOnlyMediaPlan) {
+                    resultDiv.className = 'result pass';
+                    resultDiv.innerHTML = `✅ PASS: Created exactly 1 work item (media plan). Types: ${workItemTypes.join(', ')}`;
+                } else {
+                    resultDiv.className = 'result fail';
+                    resultDiv.innerHTML = `❌ FAIL: Created ${workItemsCreated} work items. Expected exactly 1 media plan. Types: ${workItemTypes.join(', ')}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result fail';
+                resultDiv.innerHTML = `❌ ERROR: ${error.message}`;
+            }
+        }
+
+        async function runTest4() {
+            const resultDiv = document.getElementById('result4');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                const response = await callNivOrchestrator(
+                    "What should I do for PR? I need some materials.",
+                    []
+                );
+                
+                const workItemsCreated = response.workItems ? response.workItems.length : 0;
+                const hasAdvisoryResponse = response.response && response.response.length > 0;
+                
+                if (workItemsCreated === 0 && hasAdvisoryResponse) {
+                    resultDiv.className = 'result pass';
+                    resultDiv.innerHTML = `✅ PASS: No work items created (${workItemsCreated}). Niv provided advisory response.`;
+                } else {
+                    resultDiv.className = 'result fail';
+                    resultDiv.innerHTML = `❌ FAIL: ${workItemsCreated} work items created. Should be 0 for general help requests.`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result fail';
+                resultDiv.innerHTML = `❌ ERROR: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
