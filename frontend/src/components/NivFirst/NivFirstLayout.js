@@ -7,7 +7,6 @@ const NivFirstLayout = ({ user, organization }) => {
   const [messages, setMessages] = useState([]);
   const [generatedItems, setGeneratedItems] = useState([]);
   const [activeWorkspace, setActiveWorkspace] = useState(null);
-  const [inputValue, setInputValue] = useState('');
 
   // Handle when Niv creates something
   const handleWorkCardCreate = useCallback((workCard) => {
@@ -87,9 +86,9 @@ const NivFirstLayout = ({ user, organization }) => {
         />
       ) : (
         <>
-          {/* Main Niv Conversation Area */}
+          {/* Main Niv Conversation Area - 70% width */}
           <div style={{
-            flex: 1,
+            width: '70%',
             display: 'flex',
             flexDirection: 'column',
             background: 'linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%)',
@@ -215,59 +214,11 @@ const NivFirstLayout = ({ user, organization }) => {
               ))}
             </div>
 
-            {/* Input Area - Fixed at bottom */}
-            <div style={{
-              padding: '20px 30px',
-              background: 'rgba(15, 15, 30, 0.8)',
-              backdropFilter: 'blur(10px)',
-              borderTop: '1px solid rgba(139, 92, 246, 0.2)'
-            }}>
-              <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-                <input
-                  type="text"
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter' && inputValue.trim()) {
-                      // This would normally trigger sending to Niv
-                      setInputValue('');
-                    }
-                  }}
-                  placeholder="Tell Niv what you need..."
-                  style={{
-                    flex: 1,
-                    background: 'rgba(30, 30, 45, 0.6)',
-                    border: '1px solid rgba(139, 92, 246, 0.2)',
-                    borderRadius: '12px',
-                    padding: '15px 20px',
-                    color: '#fff',
-                    fontSize: '15px',
-                    outline: 'none'
-                  }}
-                />
-                <button style={{
-                  padding: '15px 30px',
-                  background: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
-                  border: 'none',
-                  borderRadius: '12px',
-                  color: 'white',
-                  fontSize: '15px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  transition: 'all 0.3s'
-                }}>
-                  Send
-                </button>
-              </div>
-            </div>
           </div>
 
-          {/* Right Sidebar - Generated Items */}
+          {/* Right Sidebar - Generated Items - 30% width */}
           <div style={{
-            width: '320px',
+            width: '30%',
             background: 'rgba(15, 15, 30, 0.95)',
             borderLeft: '1px solid rgba(139, 92, 246, 0.1)',
             display: 'flex',

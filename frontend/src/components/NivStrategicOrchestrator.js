@@ -204,9 +204,10 @@ const NivStrategicOrchestrator = ({
     setMessages(prev => [...prev, userMsg]);
     
     try {
-      // Get Niv's response first to understand intent
+      // Get Niv's response with full conversation history for context
       const response = await supabaseApiService.callNivChat({
         message: userMessage,
+        messages: messages, // Pass full conversation history
         context: {
           clientMode: detectedMode,
           detectedFeature: detectedFeature,
@@ -285,7 +286,7 @@ const NivStrategicOrchestrator = ({
     } finally {
       setIsProcessing(false);
     }
-  }, [input, isProcessing, detectClientMode, detectFeatureIntent, setMessages, onWorkCardCreate]);
+  }, [input, isProcessing, detectClientMode, detectFeatureIntent, setMessages, onWorkCardCreate, messages]);
 
   const handleKeyPress = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) {

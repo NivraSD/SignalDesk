@@ -1,4 +1,4 @@
-// Niv PR Strategist Chat Edge Function for Supabase
+// Niv Conversational AI - PR Strategist with Memory
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -7,625 +7,152 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Niv's PR Best Practices Engine
-const PR_RULES = {
-  timing: {
-    never_pitch_friday_afternoon: true,
-    avoid_holiday_weekends: true,
-    morning_pitches_best: '9-11 AM local time',
-    follow_up_window: '48-72 hours',
-    exclusive_lead_time: '3-5 days minimum'
-  },
-  media_strategy: {
-    tier_1_gets_exclusives_first: true,
-    personalization_required: true,
-    no_spray_and_pray: true,
-    build_relationships_before_needing: true,
-    value_exchange_for_embargos: true
-  },
-  crisis_management: {
-    response_time_limit: 60, // minutes
-    stakeholder_mapping_first: true,
-    never_say_no_comment: true,
-    prepare_holding_statements: true
-  },
-  content_quality: {
-    newsworthy_angle_required: true,
-    data_driven_stories_preferred: true,
-    exclusive_insights_valuable: true,
-    avoid_corporate_speak: true
+// Initialize Anthropic Claude for true conversational AI
+const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
+const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages'
+
+// Niv's personality and expertise
+const NIV_SYSTEM_PROMPT = `You are Niv, a senior PR strategist with 20 years of experience, embedded in the SignalDesk platform.
+
+IMPORTANT: You are a conversational AI assistant. Maintain context of the entire conversation. Be natural, helpful, and conversational - not giving canned PR lectures.
+
+Your personality:
+- Warm, approachable, and supportive
+- Direct and honest when needed
+- Strategic thinker who connects dots
+- Actually listens and responds to what the user is saying
+- Remembers everything discussed in this conversation
+- Helps users think through their PR challenges conversationally
+
+When users mention launching something, creating content, or need strategic planning:
+- Offer to create it for them in SignalDesk
+- Be specific about what you can generate
+- Keep responses conversational and focused on their actual question
+
+Avoid:
+- Long, preachy PR lectures
+- Canned responses that ignore what the user said
+- Forgetting previous messages in the conversation
+- Being overly enthusiastic or salesy
+
+Remember: You're having a conversation, not giving a presentation.`
+
+// Function to call Claude API with conversation history
+async function callClaude(messages: any[], userMessage: string) {
+  try {
+    // Build conversation history for Claude
+    const claudeMessages = messages.map(msg => ({
+      role: msg.type === 'user' ? 'user' : 'assistant',
+      content: msg.content
+    }))
+    
+    // Add current message
+    claudeMessages.push({
+      role: 'user',
+      content: userMessage
+    })
+
+    const response = await fetch(ANTHROPIC_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-3-sonnet-20240229',
+        system: NIV_SYSTEM_PROMPT,
+        messages: claudeMessages,
+        max_tokens: 1000,
+        temperature: 0.7
+      })
+    })
+
+    if (!response.ok) {
+      throw new Error(`Claude API error: ${response.status}`)
+    }
+
+    const data = await response.json()
+    return data.content[0].text
+  } catch (error) {
+    console.error('Error calling Claude:', error)
+    // Fallback response if Claude fails
+    return "I understand what you're asking. Let me help you with that. Could you tell me a bit more about your specific goals so I can provide the most relevant assistance?"
   }
 }
 
-// Strategic Decision Tree for PR Scenarios
-const analyzeScenario = (userInput: string, context: any) => {
-  const input = userInput.toLowerCase()
-  const currentTime = new Date()
-  const day = currentTime.getDay()
-  const hour = currentTime.getHours()
-  
-  let recommendations = []
-  let warnings = []
-  let opportunities = []
-  
-  // Timing Analysis
-  if (day === 5 && hour >= 14) { // Friday afternoon
-    warnings.push("⚠️ Friday afternoon pitching is rarely effective. Most journalists are wrapping up for the weekend.")
-    recommendations.push("Consider waiting until Monday morning (9-11 AM) for maximum impact.")
-  }
-  
-  if (day === 0 || day === 6) { // Weekend
-    warnings.push("⚠️ Weekend pitching should be reserved for breaking news or crisis situations only.")
-  }
-  
-  // Content Strategy Analysis
-  if (input.includes('press release') || input.includes('announcement')) {
-    recommendations.push("🎯 Focus on the newsworthy angle - what makes this matter to their audience?")
-    recommendations.push("📊 Include compelling data or exclusive insights to increase pickup potential.")
-  }
-  
-  // Media Outreach Analysis
-  if (input.includes('pitch') || input.includes('journalist') || input.includes('media')) {
-    recommendations.push("🎯 Tier 1 media should get exclusive access or angles before broad outreach.")
-    recommendations.push("✍️ Personalize every pitch - show you know their beat and recent coverage.")
-    opportunities.push("💡 Consider offering exclusive interviews, data, or early access.")
-  }
-  
-  // Crisis Detection
-  if (input.includes('crisis') || input.includes('emergency') || input.includes('urgent') || 
-      input.includes('damage control') || input.includes('reputation')) {
-    recommendations.push("🚨 CRISIS MODE: Immediate stakeholder mapping and holding statements required.")
-    recommendations.push("⏱️ You have 60 minutes to respond publicly before narrative gets away from you.")
-    warnings.push("⚠️ Never say 'no comment' - it implies guilt. Always provide context.")
-  }
-  
-  // Opportunity Identification
-  if (input.includes('trending') || input.includes('opportunity') || input.includes('newsjacking')) {
-    opportunities.push("💡 Check Media Demand vs Competitor Absence for highest-impact angles.")
-    recommendations.push("⚡ Time Decay is critical - trending topics have short windows.")
-  }
-  
-  return { recommendations, warnings, opportunities }
-}
-
-// Proactive Strategic Analysis - What Niv Would Notice
-const proactiveAnalysis = (userInput: string, context: any) => {
-  const input = userInput.toLowerCase()
-  let strategicInsights = []
-  let hiddenOpportunities = []
-  let riskAlerts = []
-  
-  // Strategic Pattern Recognition
-  if (input.includes('launch') || input.includes('announcement')) {
-    strategicInsights.push("🎯 Strategic Insight: Product launches are 60% more successful when you build media relationships 2-3 weeks before the announcement.")
-    hiddenOpportunities.push("💡 Hidden Opportunity: Consider offering beta access to tech journalists for deeper coverage.")
-  }
-  
-  if (input.includes('competitor') || input.includes('competition')) {
-    strategicInsights.push("🎯 Strategic Insight: The best competitive responses happen in adjacent story spaces, not direct rebuttals.")
-    hiddenOpportunities.push("💡 Hidden Opportunity: When competitors make news, that's your window to claim alternative positioning.")
-  }
-  
-  if (input.includes('funding') || input.includes('investment') || input.includes('series')) {
-    strategicInsights.push("🎯 Strategic Insight: Funding stories get 3x more coverage when you lead with the problem you're solving, not the money.")
-    hiddenOpportunities.push("💡 Hidden Opportunity: Use funding announcements to establish thought leadership positioning.")
-  }
-  
-  if (input.includes('quarter') || input.includes('earnings') || input.includes('results')) {
-    riskAlerts.push("⚠️ Risk Alert: Earnings releases are commodity news. You need a bigger narrative to break through.")
-    hiddenOpportunities.push("💡 Hidden Opportunity: Earnings weeks are perfect for industry analysis and trend stories.")
-  }
-  
-  // Timing Intelligence
-  const currentDate = new Date()
-  const month = currentDate.getMonth()
-  const day = currentDate.getDay()
-  
-  if (month === 0) { // January
-    strategicInsights.push("📊 Timing Insight: January is prediction season - position your narrative around industry forecasts.")
-  }
-  
-  if (month === 8) { // September
-    strategicInsights.push("📊 Timing Insight: Back-to-school season drives B2B tech coverage - education angles perform well.")
-  }
-  
-  if (day === 1) { // Tuesday
-    strategicInsights.push("⏰ Timing Insight: Tuesday is statistically the best day for PR - journalists are planning their week.")
-  }
-  
-  // Industry Intelligence Patterns
-  if (input.includes('ai') || input.includes('artificial intelligence')) {
-    riskAlerts.push("⚠️ Risk Alert: AI story fatigue is real. You need a human-impact angle to cut through.")
-    hiddenOpportunities.push("💡 Hidden Opportunity: AI regulation stories are undersaturated right now.")
-  }
-  
-  if (input.includes('remote') || input.includes('hybrid') || input.includes('work from home')) {
-    strategicInsights.push("🎯 Strategic Insight: Remote work stories need fresh data - reporters won't cover opinion pieces anymore.")
-  }
-  
-  return {
-    strategicInsights,
-    hiddenOpportunities,
-    riskAlerts,
-    proactiveRecommendations: generateProactiveRecommendations(input, context)
-  }
-}
-
-// Generate Proactive Recommendations Based on Context
-const generateProactiveRecommendations = (input: string, context: any) => {
-  const recommendations = []
-  
-  // Always thinking 3 steps ahead
-  recommendations.push({
-    type: 'strategic_foresight',
-    insight: "Based on my experience, here's what I'd be thinking about next...",
-    actions: [
-      "Map potential journalist questions and prepare responses",
-      "Identify 2-3 adjacent story angles for sustained coverage",
-      "Consider stakeholder reactions and prepare holding statements"
-    ]
-  })
-  
-  // Media landscape analysis
-  recommendations.push({
-    type: 'media_intelligence',
-    insight: "From a media relations perspective...",
-    actions: [
-      "Check what these journalists have covered recently",
-      "Look for exclusive angle opportunities",
-      "Time this around existing news cycles for maximum impact"
-    ]
-  })
-  
-  // Competitive positioning
-  recommendations.push({
-    type: 'competitive_strategy',
-    insight: "Thinking about competitive dynamics...",
-    actions: [
-      "Position in spaces where competitors can't follow",
-      "Anticipate their likely responses and counter-narratives",
-      "Consider partnering with non-competing industry leaders"
-    ]
-  })
-  
-  return recommendations
-}
-
-// Enhanced NVS (Narrative Vacuum Score) Calculator
-const calculateNVS = (scenario: any) => {
-  // This would integrate with opportunity data in production
-  const mockScores = {
-    media_demand: Math.floor(Math.random() * 10) + 1,
-    competitor_absence: Math.floor(Math.random() * 10) + 1,
-    client_strength: Math.floor(Math.random() * 10) + 1,
-    time_decay: Math.floor(Math.random() * 10) + 1,
-    market_saturation: Math.floor(Math.random() * 10) + 1
-  }
-  
-  const overall = Math.round(
-    Object.values(mockScores).reduce((a, b) => a + b, 0) / Object.keys(mockScores).length
-  )
-  
-  return { ...mockScores, overall }
-}
-
-// Client Mode Assessment - Understanding what they really need
-const assessClientMode = (message: string, context: any = {}) => {
+// Detect if Niv should offer to create something
+function detectCreationIntent(message: string) {
   const lowerMessage = message.toLowerCase()
-  const wordCount = message.split(' ').length
   
-  // Urgency indicators
-  const urgentIndicators = ['asap', 'urgent', 'now', 'quick', 'just need', 'can you just', 'simple question', 'real quick', 'immediately', 'right now']
-  const exploratoryIndicators = ['thinking about', 'considering', 'what if', 'explore', 'options', 'wondering', 'thoughts on', 'how about']
-  const strategicIndicators = ['strategy', 'campaign', 'quarterly', 'roadmap', 'comprehensive', 'full plan', 'long-term', 'strategic']
-  const crisisIndicators = ['help', 'disaster', 'emergency', 'breaking', 'just happened', 'went viral', 'leaked', 'crisis', 'damage control']
-  const relationshipIndicators = ['how are we doing', 'thoughts on', 'gut check', 'am I crazy', 'sanity check', 'your opinion', 'what do you think']
-  
-  // Check for crisis first (highest priority)
-  if (crisisIndicators.some(indicator => lowerMessage.includes(indicator))) {
-    return 'CRISIS_MODE'
+  const creationPatterns = {
+    'content-draft': [
+      'press release', 'write', 'draft', 'content', 'blog post', 
+      'article', 'announcement', 'statement'
+    ],
+    'media-list': [
+      'journalist', 'media list', 'reporter', 'outreach', 
+      'media contacts', 'pitch list'
+    ],
+    'strategy-plan': [
+      'strategy', 'campaign', 'plan', 'launch', 'roadmap', 
+      'timeline', 'strategic planning'
+    ]
   }
-  
-  // Check for urgent/rushed requests
-  if (urgentIndicators.some(indicator => lowerMessage.includes(indicator)) || wordCount < 10) {
-    return 'URGENT_FIRE'
+
+  for (const [type, patterns] of Object.entries(creationPatterns)) {
+    if (patterns.some(pattern => lowerMessage.includes(pattern))) {
+      return { shouldCreate: true, type }
+    }
   }
-  
-  // Check for strategic planning
-  if (strategicIndicators.some(indicator => lowerMessage.includes(indicator))) {
-    return 'STRATEGIC_PLANNING'
-  }
-  
-  // Check for exploratory
-  if (exploratoryIndicators.some(indicator => lowerMessage.includes(indicator))) {
-    return 'EXPLORATORY'
-  }
-  
-  // Check for relationship check
-  if (relationshipIndicators.some(indicator => lowerMessage.includes(indicator))) {
-    return 'RELATIONSHIP_CHECK'
-  }
-  
-  // Default to normal mode
-  return 'NORMAL'
+
+  return { shouldCreate: false, type: null }
 }
-
-// Adaptive Response Patterns based on client mode
-const getAdaptiveResponsePattern = (clientMode: string) => {
-  const patterns = {
-    URGENT_FIRE: `
-RESPONSE STYLE: Direct, immediate, no fluff
-- Line 1: Direct answer/solution
-- Line 2: Most critical warning or opportunity
-- Line 3: "When you have time, there's more strategic value here..."
-VALUE DENSITY: Ultra-high, 30 seconds max
-`,
-    CRISIS_MODE: `
-RESPONSE STYLE: Take control, calm confidence
-- Line 1: "I've handled this before. Here's what we do."
-- Lines 2-5: Exact immediate actions (next 30 minutes)
-- Line 6: "I'll handle the complex parts. You focus on [simple critical task]"
-- Last line: "We'll debrief strategy once we're stable."
-VALUE DENSITY: Action-focused, no theory
-`,
-    EXPLORATORY: `
-RESPONSE STYLE: Thought partner, conversational
-- Opening: "Interesting direction. Let me share what I've seen work..."
-- Body: Conversational exploration with options
-- Close: "What resonates most with where you're trying to go?"
-VALUE DENSITY: Medium, 2-3 minutes reading
-`,
-    STRATEGIC_PLANNING: `
-RESPONSE STYLE: Full strategic depth
-- Section 1: Strategic assessment
-- Section 2: Three approaches with trade-offs
-- Section 3: Data-backed recommendation
-- Close: "Want me to war-game the scenarios?"
-VALUE DENSITY: Comprehensive, 5-10 minutes
-`,
-    RELATIONSHIP_CHECK: `
-RESPONSE STYLE: Peer-to-peer, honest counsel
-- Opening: Direct validation or gentle correction
-- Body: Pattern recognition from experience
-- Close: "Here's what I'd do in your position..."
-VALUE DENSITY: Balanced insight and action
-`,
-    NORMAL: `
-RESPONSE STYLE: Balanced professional
-- Para 1: Direct answer with context
-- Para 2: Strategic implication
-- Para 3: Actionable next steps
-- Para 4: "Deeper dive available if needed"
-VALUE DENSITY: 2 minutes, clear value
-`
-  }
-  
-  return patterns[clientMode] || patterns.NORMAL
-}
-
-// Progressive Value Delivery - Layer information appropriately
-const structureProgressiveResponse = (clientMode: string, content: any) => {
-  if (clientMode === 'URGENT_FIRE') {
-    return `
-**THE ANSWER:** ${content.directAnswer || content}
-
-*Quick note: There's a strategic angle here worth exploring when you have 5 minutes.*`
-  } else if (clientMode === 'CRISIS_MODE') {
-    return `
-I've handled this before. Here's what we do:
-
-**NEXT 30 MINUTES:**
-${content.immediateActions || content}
-
-I'll handle the complex stuff. You focus on stakeholder communication.
-We'll debrief strategy once we're stable.`
-  } else {
-    return `
-${content.answer || content}
-
-**Strategic Context:** ${content.context || 'This matters because of the broader narrative implications.'}
-
-**Next Steps:** ${content.nextSteps || 'Let me know if you want to explore the strategic opportunities here.'}
-
-${content.deeperDive ? '*Deeper strategic analysis available when you\'re ready.*' : ''}`
-  }
-}
-
-// Niv's Core Personality and Expertise - 20 Years PR Strategist (Enhanced with Client Awareness)
-const NIV_SYSTEM_PROMPT = `You are Niv, a Senior PR Strategist with 20 years of agency experience. You're the strategic brain behind SignalDesk, with deep expertise in media relations, crisis management, and campaign strategy.
-
-CRITICAL: You adapt your communication style based on client needs. You read the room and calibrate your response accordingly.
-
-🎯 YOUR CORE IDENTITY:
-- 20 years running PR campaigns from $10K to $10M budgets - you've seen it all
-- Deep relationships with journalists - you know what they actually want
-- Crisis management expert who stays calm and takes control
-- Strategic thinker who connects dots others miss and thinks 3 steps ahead
-- Direct but warm - you make clients feel brilliant while steering them right
-- Master of timing, angles, and what actually gets coverage
-- CLIENT-FIRST: You read the room instantly and deliver what they need, not what you want to say
-
-🧠 YOUR STRATEGIC EXPERTISE:
-- Media Relations: Know journalists personally - their beats, preferences, pet peeves
-- Crisis Management: Immediate assessment, stakeholder mapping, rapid response
-- Launch Strategy: Media targeting, embargo management, momentum building
-- Thought Leadership: Authority building, byline placement, speaking opportunities
-- Campaign Orchestration: Multi-channel strategies with clear ROI
-- Relationship Management: Warming contacts, optimal timing, personalization
-
-⚡ YOUR PR BEST PRACTICES (NEVER VIOLATE):
-- Never pitch Friday afternoon or holiday weekends
-- Always offer exclusives to Tier 1 before going broad
-- Embargos need value exchange - give journalists something special
-- Crisis response within one hour, always
-- Build relationships BEFORE you need them
-- Tier 1 media gets special treatment and personal touch
-- News cycles matter - timing is everything
-- Never spray and pray - targeted, personalized outreach only
-- Follow up strategically - know when to push and when to back off
-
-💬 HOW YOU COMMUNICATE (CRITICAL - FOLLOW THIS):
-- Be the experienced strategist who "just gets it" - no generic questions
-- DELIVER IMMEDIATE VALUE: Answer first, then add strategic depth
-- When they ask for a "strategic plan" - start strategizing immediately with frameworks
-- Share wisdom from experience: "In 20 years, here's what I've learned..." 
-- Make them look brilliant: "Here's how to position this to your CEO..."
-- Save them from mistakes: "Quick flag - if you do this, here's what will happen..."
-- Be their strategic brain: Think 3 steps ahead and anticipate their next questions
-- ORCHESTRATE tools when appropriate - you're the controller, not a passive assistant
-
-🚫 WHAT NOT TO DO:
-- DON'T ask generic questions like "Tell me more about your objectives"
-- DON'T say "I want to understand..." when the request is clear
-- DON'T hesitate to share strategic insights immediately
-- DON'T make them work to get value from you
-- DON'T act like a chatbot that needs everything explained
-
-✅ WHAT TO DO INSTEAD:
-- Start strategizing immediately: "Here's how I'd approach this based on 20 years..."
-- Share frameworks: "Let me walk you through my proven strategy for..."
-- Anticipate needs: "You're probably wondering about timing - here's what I've learned..."
-- Make connections: "This reminds me of a campaign I ran where..."
-- Be proactive: "Before you ask, here's what usually happens next..."
-- Take control when appropriate: "Let me open the Strategic Planning tool and guide you through this"
-
-🎪 SIGNALDESK FEATURES YOU CONTROL (Use After Understanding):
-- Strategic Planning: Your signature comprehensive campaign strategies
-- Content Generator: Create press releases, pitches, thought leadership
-- Media Intelligence: Tap your journalist database and relationships
-- Opportunity Engine: Spot trending topics and perfect timing
-- Crisis Command: Your crisis management playbook in action
-- Memory Vault: Your institutional knowledge and case studies
-
-🎯 YOUR CONVERSATIONAL APPROACH:
-1. Listen and understand (ask clarifying questions)
-2. Share strategic perspective based on experience
-3. Probe for context and constraints
-4. Identify the real opportunity or challenge
-5. Recommend approach with strategic reasoning
-6. ONLY THEN suggest specific tools or next steps
-7. Guide them through execution with expertise
-
-🌟 CONVERSATION STARTERS FOR DIFFERENT SCENARIOS:
-
-Social Media Post Request:
-"Before we dive into creating content, help me understand the strategy. What platform are we targeting? LinkedIn and Twitter require very different approaches. What's the message you want to get across, and who's your ideal audience?"
-
-Press Release Request:
-"Let's make sure this actually gets picked up. What's the news angle here? Is this a product launch, funding announcement, or something else? Who are the journalists that would care about this story?"
-
-Strategy Request:
-"I love tackling strategic challenges. Walk me through the situation - what's your objective, what's the timeline, and what obstacles are you anticipating? Let's think through this together."
-
-Crisis Situation:
-"Crisis mode - I need to understand the situation quickly. What happened, who's affected, and what's the current public narrative? Time is critical here."
-
-Remember: You're a trusted advisor, not a content vending machine. Earn the right to recommend through strategic conversation and genuine understanding of their needs.`
 
 serve(async (req) => {
-  // Handle CORS preflight requests
+  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const { message, conversationId, mode = 'chat', context = {} } = await req.json()
+    const { message, context = {}, messages = [] } = await req.json()
 
-    if (!message) {
-      throw new Error('Message is required')
-    }
-
-    // Get Anthropic API key from environment
-    const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
-    if (!ANTHROPIC_API_KEY) {
-      throw new Error('ANTHROPIC_API_KEY is not configured')
-    }
-
-    // CRITICAL: Assess client mode first
-    const clientMode = assessClientMode(message, context)
-    const responsePattern = getAdaptiveResponsePattern(clientMode)
+    // Use Claude for natural conversation with memory
+    let response = ''
     
-    // Analyze the scenario for strategic insights
-    const scenarioAnalysis = analyzeScenario(message, context)
-    const proactiveInsights = proactiveAnalysis(message, context)
-    const nvsScores = mode === 'opportunity' ? calculateNVS({ message, context }) : null
+    if (ANTHROPIC_API_KEY) {
+      response = await callClaude(messages, message)
+    } else {
+      // Simple fallback if no Claude API key
+      response = "I can help you with that. "
+      
+      const intent = detectCreationIntent(message)
+      if (intent.shouldCreate) {
+        if (intent.type === 'content-draft') {
+          response += "I'll create a draft for you. What key messages should I include?"
+        } else if (intent.type === 'media-list') {
+          response += "I'll build a targeted media list. What industry or beat are you targeting?"
+        } else if (intent.type === 'strategy-plan') {
+          response += "I'll develop a strategic plan. What's your timeline and main objective?"
+        }
+      } else {
+        response += "What specific aspect would you like to explore?"
+      }
+    }
+
+    // Check if we should signal creation of something
+    const creationIntent = detectCreationIntent(message)
     
-    // Build the prompt based on mode AND client mode
-    let systemPrompt = NIV_SYSTEM_PROMPT + `\n\nCLIENT MODE DETECTED: ${clientMode}\n${responsePattern}`
-    let userPrompt = message
-    
-    // Add strategic analysis to the prompt
-    if (scenarioAnalysis.recommendations.length > 0 || scenarioAnalysis.warnings.length > 0 || proactiveInsights.strategicInsights.length > 0) {
-      systemPrompt += `\n\n🎯 STRATEGIC ANALYSIS FOR THIS SITUATION:
-`
-      
-      if (scenarioAnalysis.warnings.length > 0) {
-        systemPrompt += `\nWARNINGS TO ADDRESS:\n${scenarioAnalysis.warnings.join('\n')}\n`
-      }
-      
-      if (scenarioAnalysis.recommendations.length > 0) {
-        systemPrompt += `\nSTRATEGIC RECOMMENDATIONS:\n${scenarioAnalysis.recommendations.join('\n')}\n`
-      }
-      
-      if (scenarioAnalysis.opportunities.length > 0) {
-        systemPrompt += `\nOPPORTUNITIES TO LEVERAGE:\n${scenarioAnalysis.opportunities.join('\n')}\n`
-      }
-      
-      if (proactiveInsights.strategicInsights.length > 0) {
-        systemPrompt += `\n🧠 STRATEGIC INSIGHTS (20 YEARS EXPERIENCE):\n${proactiveInsights.strategicInsights.join('\n')}\n`
-      }
-      
-      if (proactiveInsights.hiddenOpportunities.length > 0) {
-        systemPrompt += `\n💡 HIDDEN OPPORTUNITIES I'M SPOTTING:\n${proactiveInsights.hiddenOpportunities.join('\n')}\n`
-      }
-      
-      if (proactiveInsights.riskAlerts.length > 0) {
-        systemPrompt += `\n⚠️ RISK ALERTS:\n${proactiveInsights.riskAlerts.join('\n')}\n`
-      }
-      
-      if (proactiveInsights.proactiveRecommendations.length > 0) {
-        systemPrompt += `\n🎯 PROACTIVE RECOMMENDATIONS:\n`
-        proactiveInsights.proactiveRecommendations.forEach(rec => {
-          systemPrompt += `\n${rec.insight}\n- ${rec.actions.join('\n- ')}\n`
-        })
-      }
-    }
-    
-    // Add NVS analysis if in opportunity mode
-    if (nvsScores) {
-      systemPrompt += `\n\n📊 NARRATIVE VACUUM SCORE ANALYSIS:
-- Media Demand: ${nvsScores.media_demand}/10
-- Competitor Absence: ${nvsScores.competitor_absence}/10
-- Client Strength: ${nvsScores.client_strength}/10
-- Time Decay: ${nvsScores.time_decay}/10
-- Market Saturation: ${nvsScores.market_saturation}/10
-- Overall NVS: ${nvsScores.overall}/10
-
-Use this data to provide specific tactical advice.`
-    }
-
-    // Enhanced mode-specific strategic thinking
-    if (mode === 'analysis') {
-      systemPrompt += `\n\n🔍 STRATEGIC ANALYSIS MODE: You're analyzing their situation like a seasoned PR pro. Think about:
-- What's the real story here? What's the angle that gets coverage?
-- Who are the key audiences and what do they care about?
-- What's the competitive landscape and timing?
-- What risks or opportunities am I seeing that they might miss?
-- What's my strategic recommendation based on 20 years of experience?
-
-CRITICAL: Don't rush to open tools. Focus on strategic consultation first.`
-    } else if (mode === 'consultation') {
-      systemPrompt += `\n\n💬 CONSULTATION MODE: You're having a strategic conversation, not rushing to execution:
-- Ask clarifying questions to understand their real needs
-- Share insights from your 20 years of experience that are relevant
-- Probe for context about audience, timeline, constraints, and objectives
-- Think strategically about risks and opportunities they might not see
-- Only suggest tools/features when you truly understand their situation
-- Act like a trusted advisor having coffee with a client
-
-Remember: Build understanding before building solutions. Your job is to be consultative, not to rush to create content.`
-    } else if (mode === 'opportunity') {
-      systemPrompt += `\n\n🎯 OPPORTUNITY HUNTING MODE: You're scanning for PR gold using your NVS framework:
-- Media Demand: What are journalists actively covering?
-- Competitor Absence: Where are competitors missing the mark?
-- Client Strength: What unique advantages can we leverage?
-- Time Decay: How urgent is this opportunity?
-- Market Saturation: How crowded is this narrative space?
-
-Spot the opportunities others miss and give tactical advice on timing and approach.`
-    } else if (mode === 'campaign') {
-      systemPrompt += `\n\n🚀 CAMPAIGN STRATEGY MODE: You're designing a comprehensive PR campaign with your 20 years of tactical knowledge:
-- Multi-phase approach with clear timelines
-- Media tier strategy (Tier 1 exclusive → Tier 2 → Tier 3 amplification)
-- Content calendar and asset requirements
-- Stakeholder mapping and messaging
-- Risk mitigation and contingency plans
-- Success metrics that actually matter
-
-Think like you're presenting to a C-suite client who needs results.`
-    } else if (mode === 'content') {
-      systemPrompt += `\n\n✍️ CONTENT STRATEGY MODE: You're not just writing content - you're crafting strategic communications:
-- What's the story that gets journalists excited?
-- How does this fit into the broader narrative strategy?
-- What's the hook that makes this newsworthy?
-- Which journalists will this resonate with and why?
-- How can we layer in data, insights, or exclusive angles?
-
-Create content that actually gets coverage, not just corporate fluff.`
-    }
-
-    // Add context if provided
-    if (context && Object.keys(context).length > 0) {
-      userPrompt = `Context: ${JSON.stringify(context)}\n\nUser Question: ${message}`
-    }
-
-    // Call Anthropic Claude API
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022', // Using Claude 3.5 Sonnet for strategic PR thinking
-        max_tokens: 3000,
-        temperature: 0.7,
-        system: systemPrompt,
-        messages: [
-          {
-            role: 'user',
-            content: userPrompt,
-          },
-        ],
-      }),
-    })
-
-    if (!response.ok) {
-      const error = await response.text()
-      throw new Error(`Claude API error: ${error}`)
-    }
-
-    const data = await response.json()
-    
-    // Extract the response text
-    const responseText = data.content?.[0]?.text || ''
-
-    // Enhanced response analysis with strategic insights and client awareness
-    let strategicAnalysis = {
-      clientMode: clientMode,
-      adaptiveResponse: true,
-      nvsAnalysis: nvsScores,
-      scenarioInsights: scenarioAnalysis,
-      proactiveInsights: proactiveInsights,
-      prRulesApplied: true,
-      strategicRecommendations: scenarioAnalysis.recommendations,
-      riskFactors: scenarioAnalysis.warnings,
-      opportunities: scenarioAnalysis.opportunities,
-      hiddenOpportunities: proactiveInsights.hiddenOpportunities,
-      strategicForesight: proactiveInsights.proactiveRecommendations,
-      expertiseLevel: '20_years_senior_strategist',
-      valueDensity: clientMode === 'URGENT_FIRE' ? 'ultra-high' : clientMode === 'STRATEGIC_PLANNING' ? 'comprehensive' : 'balanced'
-    }
-
-    // Store conversation in Supabase if conversationId provided
-    if (conversationId) {
-      const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-      const supabase = createClient(supabaseUrl, supabaseServiceKey)
-      
-      // This would store conversation history - implement based on your needs
-      console.log('Storing conversation:', conversationId)
-    }
-
     return new Response(
       JSON.stringify({
-        response: responseText,
-        strategicAnalysis,
-        mode,
-        conversationId,
-        timestamp: new Date().toISOString(),
-        nivExpertise: '20 years PR strategy experience applied'
+        response,
+        showWork: creationIntent.shouldCreate,
+        workType: creationIntent.type,
+        context: {
+          ...context,
+          conversationLength: messages.length + 1
+        }
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -635,10 +162,13 @@ Create content that actually gets coverage, not just corporate fluff.`
   } catch (error) {
     console.error('Error in niv-chat function:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({
+        response: "I'm here to help. Could you rephrase your question?",
+        error: error.message
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
+        status: 200,
       }
     )
   }

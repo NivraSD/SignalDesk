@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, Bot, Send, Sparkles, ChevronLeft, Maximize2, Minimize2 } from 'lucide-react';
 import MediaIntelligence from '../MediaIntelligence';
 import ContentGenerator from '../ContentGenerator';
-import StrategicPlanning from '../StrategicPlanning';
+import SimplifiedStrategicPlanning from './SimplifiedStrategicPlanning';
 import OpportunityEngine from '../OpportunityEngine';
 import CrisisCommandCenter from '../CrisisCommandCenter';
 import Analytics from '../Analytics';
@@ -24,7 +24,7 @@ const WorkspaceContainer = ({ workspace, nivContext, onClose, onNivRequest }) =>
     const components = {
       'media-intelligence': MediaIntelligence,
       'content-generator': ContentGenerator,
-      'strategic-planning': StrategicPlanning,
+      'strategic-planning': SimplifiedStrategicPlanning,
       'opportunity-engine': OpportunityEngine,
       'crisis-command': CrisisCommandCenter,
       'analytics': Analytics,
