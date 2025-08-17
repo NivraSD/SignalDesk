@@ -12,11 +12,18 @@ const NivFirstLayout = ({ user, organization }) => {
   const handleWorkCardCreate = useCallback((workCard) => {
     console.log('🎯 NivFirstLayout: handleWorkCardCreate called with:', workCard);
     
-    // Add to generated items sidebar
+    // Add to generated items sidebar with proper structure
     const newItem = {
-      id: Date.now(),
-      ...workCard,
-      timestamp: new Date(),
+      id: Date.now().toString(),
+      type: workCard.type,
+      title: workCard.data?.title || 'Generated Content',
+      description: workCard.data?.description || '',
+      data: {
+        ...workCard.data,
+        // Ensure generatedContent is available
+        generatedContent: workCard.data?.generatedContent || {}
+      },
+      timestamp: new Date().toISOString(),
       status: 'ready'
     };
     console.log('🎯 NivFirstLayout: Adding new item to sidebar:', newItem);
@@ -62,12 +69,22 @@ const NivFirstLayout = ({ user, organization }) => {
 
   // Handle opening workspace from sidebar
   const handleOpenWorkspace = useCallback((item) => {
+    console.log('🎯 Opening workspace with item:', item);
+    
+    // Ensure we pass the generatedContent properly
+    const workspaceContext = {
+      ...item.data,
+      // Ensure generatedContent is at the top level for workspace components
+      generatedContent: item.data.generatedContent || item.data,
+      title: item.title || item.data.title,
+      description: item.description || item.data.description
+    };
+    
+    console.log('🎯 Workspace context being passed:', workspaceContext);
+    
     setActiveWorkspace({
       type: getWorkspaceFromType(item.type),
-      context: {
-        ...item.data,
-        ...item.data.generatedContent // Include the generated content
-      },
+      context: workspaceContext,
       nivAssistance: true
     });
   }, []);

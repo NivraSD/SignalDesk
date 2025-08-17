@@ -6,9 +6,12 @@ const SimplifiedGenericContent = ({ context }) => {
   
   // Extract content from Niv's generated structure
   const getNivContent = () => {
+    console.log('🎯 SimplifiedGenericContent: Received context:', context);
+    
     // Check if we have generated content from Niv
     if (context?.generatedContent) {
       const generated = context.generatedContent;
+      console.log('🎯 SimplifiedGenericContent: Using generatedContent:', generated);
       
       // Handle key messaging format
       if (generated.sections && generated.sections.coreMessage) {
