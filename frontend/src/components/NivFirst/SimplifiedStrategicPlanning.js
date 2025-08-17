@@ -6,6 +6,8 @@ const SimplifiedStrategicPlanning = ({ context }) => {
   
   // Extract strategic plan from Niv's generated structure
   const getNivStrategicPlan = () => {
+    console.log('🎯 SimplifiedStrategicPlanning: Received context:', context);
+    console.log('🎯 SimplifiedStrategicPlanning: generatedContent:', context?.generatedContent);
     // Check if we have generated content from Niv
     if (context?.generatedContent) {
       const generated = context.generatedContent;

@@ -19,14 +19,17 @@ const NivFirstLayout = ({ user, organization }) => {
       title: workCard.data?.title || 'Generated Content',
       description: workCard.data?.description || '',
       data: {
-        ...workCard.data,
-        // Ensure generatedContent is available
-        generatedContent: workCard.data?.generatedContent || {}
+        title: workCard.data?.title,
+        description: workCard.data?.description,
+        details: workCard.data?.details,
+        // FIXED: Don't double-nest, pass generatedContent directly
+        generatedContent: workCard.data?.generatedContent
       },
       timestamp: new Date().toISOString(),
       status: 'ready'
     };
     console.log('🎯 NivFirstLayout: Adding new item to sidebar:', newItem);
+    console.log('🎯 NivFirstLayout: GeneratedContent structure:', newItem.data.generatedContent);
     setGeneratedItems(prev => {
       console.log('🎯 NivFirstLayout: Previous items:', prev);
       const updated = [...prev, newItem];
@@ -70,17 +73,19 @@ const NivFirstLayout = ({ user, organization }) => {
   // Handle opening workspace from sidebar
   const handleOpenWorkspace = useCallback((item) => {
     console.log('🎯 Opening workspace with item:', item);
+    console.log('🎯 Item data structure:', item.data);
     
-    // Ensure we pass the generatedContent properly
+    // FIXED: Pass the data structure exactly as workspace components expect
     const workspaceContext = {
-      ...item.data,
-      // Ensure generatedContent is at the top level for workspace components
-      generatedContent: item.data.generatedContent || item.data,
-      title: item.title || item.data.title,
-      description: item.description || item.data.description
+      title: item.title || item.data?.title,
+      description: item.description || item.data?.description,
+      generatedContent: item.data?.generatedContent,
+      // Include any other fields that might be needed
+      ...item.data
     };
     
     console.log('🎯 Workspace context being passed:', workspaceContext);
+    console.log('🎯 GeneratedContent in context:', workspaceContext.generatedContent);
     
     setActiveWorkspace({
       type: getWorkspaceFromType(item.type),

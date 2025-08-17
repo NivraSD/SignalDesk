@@ -6,6 +6,8 @@ const SimplifiedMediaList = ({ context }) => {
   
   // Extract media list from Niv's generated structure
   const getNivMediaList = () => {
+    console.log('🎯 SimplifiedMediaList: Received context:', context);
+    console.log('🎯 SimplifiedMediaList: generatedContent:', context?.generatedContent);
     // Check if we have generated content from Niv
     if (context?.generatedContent) {
       const generated = context.generatedContent;
