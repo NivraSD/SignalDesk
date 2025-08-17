@@ -254,19 +254,38 @@ const NivStrategicOrchestrator = ({
       setMessages(prev => [...prev, assistantMsg]);
       
       // If Niv created work items, create inline work cards for each
-      if (response.workItems && response.workItems.length > 0 && onWorkCardCreate) {
-        // Create a card for each work item with a slight delay between them
+      if (response.workItems && response.workItems.length > 0) {
+        // Add work items as inline cards in the chat
         response.workItems.forEach((item, index) => {
           setTimeout(() => {
-            onWorkCardCreate({
-              type: item.type,
-              data: {
-                title: item.title,
-                description: item.description,
-                generatedContent: item.generatedContent, // Pass the actual generated content
-                details: getDetailsFromType(item.type)
-              }
-            });
+            const workCardMessage = {
+              id: Date.now() + 100 + index,
+              type: 'work-card',
+              workCard: {
+                type: item.type,
+                data: {
+                  title: item.title,
+                  description: item.description,
+                  generatedContent: item.generatedContent,
+                  details: getDetailsFromType(item.type)
+                }
+              },
+              timestamp: new Date()
+            };
+            setMessages(prev => [...prev, workCardMessage]);
+            
+            // Also notify parent component if callback exists
+            if (onWorkCardCreate) {
+              onWorkCardCreate({
+                type: item.type,
+                data: {
+                  title: item.title,
+                  description: item.description,
+                  generatedContent: item.generatedContent,
+                  details: getDetailsFromType(item.type)
+                }
+              });
+            }
           }, 500 + (index * 300)); // Stagger card creation for visual effect
         });
       }
@@ -384,7 +403,7 @@ const NivStrategicOrchestrator = ({
             gap: '0.25rem'
           }}>
             <Sparkles size={12} />
-            20 years experience • Strategic conversations • Feature orchestration
+            Strategic conversations • Feature orchestration
           </div>
         </div>
       </div>
@@ -423,6 +442,74 @@ const NivStrategicOrchestrator = ({
         gap: '1rem'
       }}>
         {messages.map((message) => (
+          message.type === 'work-card' ? (
+            // Inline Work Card
+            <div key={message.id} style={{
+              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%)',
+              border: '1px solid rgba(99, 102, 241, 0.3)',
+              borderRadius: '12px',
+              padding: '16px',
+              marginLeft: '60px',
+              marginRight: '20%',
+              animation: 'slideIn 0.5s ease-out'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                marginBottom: '12px'
+              }}>
+                <div style={{
+                  width: '36px',
+                  height: '36px',
+                  background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Sparkles size={18} color="white" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#fff' }}>
+                    {message.workCard.data.title}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#8b5cf6' }}>
+                    Created by Niv • Click to open in workspace
+                  </div>
+                </div>
+              </div>
+              <div style={{
+                fontSize: '13px',
+                color: '#e0e0e0',
+                lineHeight: '1.5',
+                marginBottom: '12px'
+              }}>
+                {message.workCard.data.description}
+              </div>
+              {message.workCard.data.generatedContent && (
+                <div style={{
+                  padding: '12px',
+                  background: 'rgba(0, 0, 0, 0.3)',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  color: '#9ca3af',
+                  maxHeight: '150px',
+                  overflowY: 'auto'
+                }}>
+                  <div style={{ fontWeight: '600', marginBottom: '8px', color: '#60a5fa' }}>Preview:</div>
+                  <pre style={{ 
+                    margin: 0, 
+                    whiteSpace: 'pre-wrap', 
+                    wordWrap: 'break-word',
+                    fontFamily: 'inherit'
+                  }}>
+                    {JSON.stringify(message.workCard.data.generatedContent, null, 2).substring(0, 300)}...
+                  </pre>
+                </div>
+              )}
+            </div>
+          ) : (
           <div
             key={message.id}
             style={{
@@ -477,6 +564,7 @@ const NivStrategicOrchestrator = ({
               )}
             </div>
           </div>
+          )
         ))}
         <div ref={messagesEndRef} />
       </div>
@@ -489,9 +577,8 @@ const NivStrategicOrchestrator = ({
         display: 'flex',
         gap: '0.75rem'
       }}>
-        <input
+        <textarea
           ref={inputRef}
-          type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={handleKeyPress}
@@ -504,7 +591,12 @@ const NivStrategicOrchestrator = ({
             borderRadius: '8px',
             color: '#e8e8e8',
             fontSize: '14px',
-            outline: 'none'
+            outline: 'none',
+            resize: 'vertical',
+            minHeight: '50px',
+            maxHeight: '150px',
+            fontFamily: 'inherit',
+            lineHeight: '1.5'
           }}
           disabled={isProcessing}
           onFocus={(e) => e.target.style.borderColor = 'rgba(59, 130, 246, 0.5)'}

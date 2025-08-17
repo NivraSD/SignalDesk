@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Bot, Send, Sparkles, ChevronLeft, Maximize2, Minimize2 } from 'lucide-react';
+import supabaseApiService from '../../services/supabaseApiService';
 import SimplifiedMediaList from './SimplifiedMediaList';
 import SimplifiedContentDraft from './SimplifiedContentDraft';
 import SimplifiedStrategicPlanning from './SimplifiedStrategicPlanning';
@@ -35,25 +36,45 @@ const WorkspaceContainer = ({ workspace, nivContext, onClose, onNivRequest }) =>
     return <Component context={workspace.context} />;
   };
 
-  const handleNivSubmit = () => {
+  const handleNivSubmit = async () => {
     if (!nivInput.trim()) return;
+
+    const userMessage = nivInput.trim();
+    setNivInput('');
 
     // Add user message
     setNivMessages(prev => [...prev, {
       type: 'user',
-      content: nivInput
+      content: userMessage
     }]);
 
-    // Simulate Niv response (in production, this would call the API)
-    setTimeout(() => {
+    try {
+      // Call Niv API with workspace context
+      const response = await supabaseApiService.callNivChat({
+        message: userMessage,
+        messages: nivMessages,
+        context: {
+          workspace: workspace.type,
+          workspaceContext: workspace.context,
+          mode: 'workspace_assistance'
+        }
+      });
+
+      // Add Niv's response
       setNivMessages(prev => [...prev, {
         type: 'assistant',
-        content: getNivResponse(nivInput, workspace.type)
+        content: response.response || getNivResponse(userMessage, workspace.type)
       }]);
-    }, 500);
+    } catch (error) {
+      console.error('Error calling Niv:', error);
+      // Fallback to context-aware response
+      setNivMessages(prev => [...prev, {
+        type: 'assistant',
+        content: getNivResponse(userMessage, workspace.type)
+      }]);
+    }
 
-    setNivInput('');
-    onNivRequest({ message: nivInput, workspace: workspace.type });
+    onNivRequest({ message: userMessage, workspace: workspace.type });
   };
 
   const getNivResponse = (input, workspaceType) => {
@@ -271,8 +292,7 @@ const WorkspaceContainer = ({ workspace, nivContext, onClose, onNivRequest }) =>
               display: 'flex',
               gap: '8px'
             }}>
-              <input
-                type="text"
+              <textarea
                 value={nivInput}
                 onChange={(e) => setNivInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleNivSubmit()}
@@ -285,7 +305,12 @@ const WorkspaceContainer = ({ workspace, nivContext, onClose, onNivRequest }) =>
                   borderRadius: '6px',
                   color: '#e5e7eb',
                   fontSize: '13px',
-                  outline: 'none'
+                  outline: 'none',
+                  resize: 'vertical',
+                  minHeight: '36px',
+                  maxHeight: '100px',
+                  fontFamily: 'inherit',
+                  lineHeight: '1.4'
                 }}
                 onFocus={(e) => {
                   e.target.style.borderColor = 'rgba(59, 130, 246, 0.3)';
@@ -297,7 +322,7 @@ const WorkspaceContainer = ({ workspace, nivContext, onClose, onNivRequest }) =>
                 }}
               />
               <button
-                onClick={handleNivSubmit}
+                onClick={() => handleNivSubmit()}
                 disabled={!nivInput.trim()}
                 style={{
                   padding: '8px 12px',

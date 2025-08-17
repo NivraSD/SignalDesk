@@ -154,69 +154,7 @@ const NivFirstLayout = ({ user, organization }) => {
                 onContentGenerate={() => {}}
                 onStrategicPlanGenerate={() => {}}
               />
-              
-              {/* Display inline work cards */}
-              {messages.filter(m => m.type === 'work-card').map(msg => (
-                <div key={msg.id} style={{
-                  background: 'rgba(99, 102, 241, 0.05)',
-                  border: '1px solid rgba(99, 102, 241, 0.2)',
-                  borderRadius: '12px',
-                  padding: '16px',
-                  animation: 'slideIn 0.5s ease-out'
-                }}>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    marginBottom: '8px'
-                  }}>
-                    <div style={{
-                      width: '32px',
-                      height: '32px',
-                      background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                      borderRadius: '8px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
-                      {React.createElement(getItemIcon(msg.workCard.type), { size: 16, color: 'white' })}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#fff' }}>
-                        {msg.workCard.data.title}
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#8b5cf6' }}>
-                        Niv is creating this for you
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{
-                    fontSize: '13px',
-                    color: '#e0e0e0',
-                    lineHeight: '1.5'
-                  }}>
-                    {msg.content}
-                  </div>
-                  {msg.workCard.data.details && (
-                    <div style={{
-                      display: 'flex',
-                      gap: '15px',
-                      marginTop: '12px',
-                      paddingTop: '12px',
-                      borderTop: '1px solid rgba(139, 92, 246, 0.1)'
-                    }}>
-                      {Object.entries(msg.workCard.data.details).map(([key, value]) => (
-                        <div key={key} style={{ fontSize: '12px' }}>
-                          <span style={{ color: '#9ca3af' }}>{key}: </span>
-                          <span style={{ color: '#8b5cf6', fontWeight: '500' }}>{value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
             </div>
-
           </div>
 
           {/* Right Sidebar - Generated Items - 30% width */}

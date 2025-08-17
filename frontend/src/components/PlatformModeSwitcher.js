@@ -100,44 +100,6 @@ const PlatformModeSwitcher = ({ currentMode, onModeChange }) => {
         </span>
       </button>
 
-      {/* Mode Description Tooltip */}
-      <div style={{
-        position: 'absolute',
-        top: '100%',
-        right: 0,
-        marginTop: '8px',
-        background: 'rgba(0, 0, 0, 0.95)',
-        border: '1px solid rgba(59, 130, 246, 0.2)',
-        borderRadius: '8px',
-        padding: '12px',
-        width: '280px',
-        fontSize: '12px',
-        color: '#9ca3af',
-        opacity: 0,
-        pointerEvents: 'none',
-        transition: 'opacity 0.2s',
-        ...(currentMode === 'niv-first' && {
-          opacity: 1,
-          pointerEvents: 'auto'
-        })
-      }}>
-        <div style={{ marginBottom: '8px', color: '#60a5fa', fontWeight: '600' }}>
-          🚀 Niv-First Mode Active
-        </div>
-        <div style={{ lineHeight: '1.4' }}>
-          Experience the new conversational workflow with strategic cards and intelligent orchestration.
-        </div>
-        <div style={{ 
-          marginTop: '8px', 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: '4px',
-          color: '#60a5fa'
-        }}>
-          Switch back anytime
-          <ChevronRight size={12} />
-        </div>
-      </div>
     </div>
   );
 };

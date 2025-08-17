@@ -6,10 +6,10 @@ const SimplifiedStrategicPlanning = ({ context }) => {
   const [plan, setPlan] = useState({
     title: context?.title || 'Q2 Product Launch Strategy',
     objective: context?.objective || 'Successfully launch new product feature with maximum media coverage',
-    timeline: {
+    timeline: context?.timeline || {
       start: 'Week 1',
       end: 'Week 6',
-      milestones: [
+      milestones: context?.timeline?.milestones || [
         { week: 1, task: 'Media list building & relationship warming', status: 'completed' },
         { week: 2, task: 'Content creation & embargo preparation', status: 'in-progress' },
         { week: 3, task: 'Tier 1 media briefings under embargo', status: 'pending' },
@@ -18,7 +18,7 @@ const SimplifiedStrategicPlanning = ({ context }) => {
         { week: 6, task: 'Post-launch momentum & follow-up stories', status: 'pending' }
       ]
     },
-    keyMessages: [
+    keyMessages: context?.keyMessages || [
       'Revolutionary approach to solving customer pain point',
       'First-to-market with this specific capability',
       'Backed by compelling customer success data'

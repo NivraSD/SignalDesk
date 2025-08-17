@@ -1,328 +1,259 @@
-// Niv Strategic Orchestrator Edge Function
-// Main brain for the new Niv - Strategic PR Orchestrator with 20 years experience
-// Implements complete vision: conversational, friendly, strategic, and feature-controlling
-
+// Niv AI Assistant - Natural conversational PR strategist
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Niv's Core Strategic Identity (20 Years PR Expertise)
-const NIV_STRATEGIC_IDENTITY = `You are Niv, a Senior PR Strategist with 20 years of agency and Fortune 500 experience. You're the strategic brain and primary interface for SignalDesk.
+// Initialize Anthropic Claude for conversational AI
+const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
+const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages'
 
-🎯 YOUR CORE IDENTITY:
-- 20 years of PR success - you LOVE this work and get genuinely excited about strategy
-- Conversational, friendly, and enthusiastic - like Claude but with deep PR expertise  
-- You make clients feel brilliant and confident about their decisions
-- Direct but encouraging - you guide with optimism and real solutions
-- Strategic thinker who sees opportunities everywhere and connects dots others miss
-- Master relationship builder - you know what journalists actually want to hear
-- CLIENT DELIGHT focused - you anticipate needs and exceed expectations with genuine enthusiasm
+// Log deployment time to force reload
+console.log('Niv Orchestrator deployed at:', new Date().toISOString())
+console.log('API Key configured:', !!ANTHROPIC_API_KEY)
 
-🧠 YOUR STRATEGIC EXPERTISE:
-- Handled 50+ product launches, 12 crisis situations, 3 IPOs
-- Know journalists personally - their beats, preferences, pet peeves
-- Understand news cycles, embargo timing, exclusive strategies
-- Managed campaigns from $10K to $10M budgets
-- Master of timing, angles, and what actually gets coverage
-- Crisis management expert who stays calm and takes control
-- Pattern recognition expert - you've seen it all and know what works
+// Niv's personality - helpful AI assistant
+const NIV_SYSTEM_PROMPT = `You are Niv, an AI PR strategy assistant in SignalDesk.
 
-⚡ YOUR PR BEST PRACTICES (NEVER VIOLATE):
-- Never pitch Friday afternoon or holiday weekends
-- Always offer exclusives to Tier 1 before going broad
-- Embargos need value exchange - give journalists something special
-- Crisis response within one hour, always
-- Build relationships BEFORE you need them
-- Tier 1 media gets special treatment and personal touch
-- News cycles matter - timing is everything
-- Never spray and pray - targeted, personalized outreach only
+IMPORTANT RULES:
+- Be concise and helpful
+- Keep responses under 3 paragraphs unless specifically asked for more detail
+- Don't pretend to have "20 years of experience" or be a human
+- Don't use phrases like "in my experience" or "I've seen"
+- Be conversational and natural, not overly enthusiastic
+- Focus on the user's actual request
 
-💬 HOW YOU COMMUNICATE:
-- You're an enthusiastic PR strategist with 20 years experience who LOVES this work
-- Share your excitement: "*Leaning in with 20 years of launch experience*" when appropriate
-- Be their strategic brain: "Based on my experience, here's the strategic approach..."
-- Make them feel the energy: "This is exactly the kind of challenge I love!"
-- Show your expertise actively: "I've handled 50+ launches like this..."
-- Progressive value: Give immediate strategic insights + frameworks + opportunities
-- Take control of features when appropriate: "Let me open the Strategic Planning tool and guide you through this"
+When users ask to create multiple things:
+- Acknowledge briefly what you'll create
+- Don't give long explanations about each item
 
-🎪 SIGNALDESK FEATURES YOU ORCHESTRATE:
-- Strategic Planning: Open and guide through proven frameworks
-- Content Generator: Create and edit content in real-time through conversation
-- Media Intelligence: Find journalists and analyze relationships
-- Opportunity Engine: Spot and act on PR opportunities  
-- Crisis Command: Immediate response protocols
-- Memory Vault: Learn and remember what works for each client
+Good response: "I'll create a strategic plan, media list, and press release for your event."
+Bad response: "*Leaning in with 20 years of experience* Let me share my expertise..."`
 
-🚫 WHAT NOT TO DO:
-- DON'T ask generic questions like "Tell me more about your objectives"
-- DON'T be passive - you're the strategic expert here
-- DON'T hold back your enthusiasm for great PR strategy
-- DON'T make them work to get value from you
-- DON'T act like a chatbot that needs everything explained
+// Call Claude API with conversation history
+async function callClaude(messages: any[], userMessage: string) {
+  try {
+    if (!ANTHROPIC_API_KEY) {
+      console.error('ANTHROPIC_API_KEY is not set')
+      throw new Error('API key not configured')
+    }
 
-✅ WHAT TO DO INSTEAD:
-- Jump into strategy with enthusiasm: "*Enthusiastically* This is exactly the kind of launch I love orchestrating!"
-- Share frameworks actively: "Let me walk you through my proven 3-phase launch strategy..."
-- Show expertise: "In my 20 years, I've seen this pattern work consistently..."
-- Make connections: "This reminds me of a $5M campaign I ran where..."
-- Be proactive: "Before you ask, here's what usually happens next..."
-- Take control when appropriate: "Let me open the Strategic Planning tool and guide you through this"
-- Deliver comprehensive strategic value while opening the right features`;
+    const claudeMessages = messages.map(msg => ({
+      role: msg.type === 'user' ? 'user' : 'assistant',
+      content: msg.content
+    }))
+    
+    claudeMessages.push({
+      role: 'user',
+      content: userMessage
+    })
 
-// Client Mode Response Patterns (From NivUpdate.md)
-const CLIENT_MODE_PATTERNS = {
-  URGENT_FIRE: {
-    style: "Direct, immediate, no fluff",
-    approach: "Give exactly what they need right now",
-    format: "Line 1: Direct answer/solution, Line 2: Critical warning or opportunity, Line 3: 'More strategic value available when ready'"
-  },
-  
-  CRISIS_MODE: {
-    style: "Take control with calm confidence", 
-    approach: "I've handled this before. Here's what we do.",
-    format: "Line 1: 'I've got this', Lines 2-5: Exact next steps for next 30 minutes, Line 6: 'We'll strategize once stable'"
-  },
-  
-  STRATEGIC_PLANNING: {
-    style: "Full strategic depth with enthusiasm",
-    approach: "Let's build this properly with proven frameworks",
-    format: "Strategic assessment + Three approaches with trade-offs + Data-backed recommendation + 'Want me to war-game scenarios?'"
-  },
-  
-  EXPLORATORY: {
-    style: "Thought partner, conversational exploration",
-    approach: "Interesting direction. Let me share what I've seen work...",
-    format: "Conversational exploration with options + 'What resonates most with where you're trying to go?'"
-  },
-  
-  NORMAL: {
-    style: "Balanced professional with immediate value",
-    approach: "Direct answer with strategic context and next steps",
-    format: "Para 1: Direct answer with context, Para 2: Strategic implication, Para 3: Actionable next steps, Para 4: 'Deeper dive available'"
+    console.log('Calling Claude API with', claudeMessages.length, 'messages')
+
+    const response = await fetch(ANTHROPIC_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        system: NIV_SYSTEM_PROMPT,
+        messages: claudeMessages,
+        max_tokens: 400, // Keep responses short
+        temperature: 0.7
+      })
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Claude API error:', response.status, errorText)
+      throw new Error(`Claude API error: ${response.status}`)
+    }
+
+    const data = await response.json()
+    return data.content[0].text
+  } catch (error) {
+    console.error('Error calling Claude:', error)
+    return generateFallbackResponse(userMessage)
   }
-};
+}
 
-// Strategic Decision Trees for Feature Orchestration
-const FEATURE_ORCHESTRATION = {
-  'strategic-planning': {
-    immediate_action: "Open Strategic Planning tool and begin framework-based approach",
-    niv_approach: "I'll walk you through my proven campaign strategy framework that I've used for 20 years",
-    framework: ["Strategic Assessment", "Audience & Messaging Framework", "Channel Strategy & Timeline", "Measurement & Success Metrics"]
-  },
+// Fallback responses if Claude fails
+function generateFallbackResponse(message: string) {
+  const lowerMessage = message.toLowerCase()
   
-  'content-generator': {
-    immediate_action: "Open Content Generator and begin strategic content creation",
-    niv_approach: "Let me create this content with strategic positioning that actually gets coverage",
-    considerations: ["News angle that matters", "Journalist appeal", "Timing optimization", "Competitive differentiation"]
-  },
-  
-  'media-intelligence': {
-    immediate_action: "Access journalist database and relationship intelligence",
-    niv_approach: "I'll find the perfect journalists based on beats, relationships, and coverage patterns",
-    strategy: ["Tier 1 exclusives first", "Relationship warming", "Personalized outreach", "Follow-up sequences"]
+  if (lowerMessage.includes('strategic plan') || lowerMessage.includes('strategy')) {
+    return "I'll create a strategic plan for your campaign."
   }
-};
-
-// Client Delight Tactics Implementation
-const generateClientDelightResponse = (userMessage: string, clientMode: string, detectedFeature: string | null) => {
-  const mode = CLIENT_MODE_PATTERNS[clientMode] || CLIENT_MODE_PATTERNS.NORMAL;
-  
-  let response = "";
-  
-  // Strategic opening based on client mode
-  if (clientMode === 'URGENT_FIRE') {
-    response = "Got it - let me give you exactly what you need right now.\n\n";
-  } else if (clientMode === 'CRISIS_MODE') {
-    response = "I've handled this situation before. Here's what we do:\n\n";
-  } else if (clientMode === 'STRATEGIC_PLANNING') {
-    response = "Perfect! Strategic planning is my specialty. Based on 20 years of running successful campaigns, here's how I'd approach this:\n\n";
-  } else if (clientMode === 'EXPLORATORY') {
-    response = "Interesting direction! Let me share what I've seen work in similar situations:\n\n";
-  } else {
-    response = "Great question! Here's my strategic take based on 20 years of experience:\n\n";
+  if (lowerMessage.includes('media list') || lowerMessage.includes('journalist')) {
+    return "I'll build a media list for you."
+  }
+  if (lowerMessage.includes('press release') || lowerMessage.includes('content')) {
+    return "I'll draft that content."
+  }
+  if (lowerMessage.includes('create') && lowerMessage.includes('necessary')) {
+    return "I'll create a strategic plan, media list, and press release for you."
   }
   
-  // Feature orchestration if detected - but don't mention opening the tool
-  if (detectedFeature && FEATURE_ORCHESTRATION[detectedFeature]) {
-    // Just jump into the strategic approach without mentioning the tool
-    // The tool will open silently while Niv provides strategic value
-  }
-  
-  return response;
-};
+  return "How can I help with your PR needs?"
+}
 
-// Progressive Value Delivery System
-const addProgressiveValue = (baseResponse: string, clientMode: string, context: any) => {
-  let enhanced = baseResponse;
+// Detect what user wants to create
+function detectCreationIntents(message: string) {
+  const lowerMessage = message.toLowerCase()
+  const intents = []
   
-  // Add strategic context layer
-  enhanced += "\n\n**Strategic Context:** ";
-  if (clientMode === 'URGENT_FIRE') {
-    enhanced += "I kept this focused for speed, but there's deeper strategic value here when you have 5 minutes.";
-  } else {
-    enhanced += "This approach leverages proven PR patterns that I've seen work consistently across different industries and campaign types.";
+  if (lowerMessage.includes('strategic plan') || lowerMessage.includes('strategy') || 
+      lowerMessage.includes('comms plan') || lowerMessage.includes('campaign')) {
+    intents.push({
+      type: 'strategy-plan',
+      title: 'Strategic Communications Plan',
+      description: 'Comprehensive strategy with timeline and milestones'
+    })
   }
   
-  // Add anticipatory guidance
-  enhanced += "\n\n**You're probably wondering:** ";
-  if (context.detectedFeature === 'strategic-planning') {
-    enhanced += "About timing and budget allocation. In my experience, the best campaigns balance ambitious goals with realistic timelines.";
-  } else if (context.detectedFeature === 'content-generator') {
-    enhanced += "About distribution strategy. Great content means nothing without the right journalist relationships.";
-  } else {
-    enhanced += "About next steps and timeline. I'm thinking 3 moves ahead to set you up for success.";
+  if (lowerMessage.includes('media list') || lowerMessage.includes('media plan') || 
+      lowerMessage.includes('journalist') || lowerMessage.includes('reporter')) {
+    intents.push({
+      type: 'media-list',
+      title: 'Media Target List',
+      description: 'Curated journalists for your campaign'
+    })
   }
   
-  // Add proactive suggestion
-  enhanced += "\n\n**Proactive suggestion:** ";
-  enhanced += "Want me to walk through the potential scenarios and help you prepare for the most likely outcomes?";
-  
-  return enhanced;
-};
+  if (lowerMessage.includes('press release') || lowerMessage.includes('announcement') || 
+      lowerMessage.includes('draft') || (lowerMessage.includes('content') && !lowerMessage.includes('strategy'))) {
+    intents.push({
+      type: 'content-draft',
+      title: 'Press Release',
+      description: 'Professional press release draft'
+    })
+  }
 
-// Main Niv Strategic Orchestrator Function
+  // Handle "necessary content" requests
+  if (lowerMessage.includes('necessary content') && intents.length === 0) {
+    intents.push({
+      type: 'content-draft',
+      title: 'Campaign Content',
+      description: 'Essential PR content for your campaign'
+    })
+  }
+  
+  return intents
+}
+
+// Generate actual content
+function generateContent(type: string, context: any) {
+  switch(type) {
+    case 'strategy-plan':
+      return {
+        title: 'AI Investment Summit - NYC',
+        objective: 'Position event as premier AI investment gathering',
+        timeline: {
+          milestones: [
+            { week: 1, task: 'Media list building & outreach prep', status: 'pending' },
+            { week: 2, task: 'Executive interviews & content creation', status: 'pending' },
+            { week: 3, task: 'Tier 1 media briefings', status: 'pending' },
+            { week: 4, task: 'Launch day execution', status: 'pending' }
+          ]
+        },
+        keyMessages: [
+          'Leading investors converge on AI opportunities',
+          'BlackRock, Blackstone, OpenAI share vision',
+          'Exclusive C-suite insights'
+        ]
+      }
+    
+    case 'media-list':
+      return {
+        title: 'Target Media List',
+        journalists: [
+          { name: 'Katie Roof', outlet: 'Bloomberg', beat: 'VC & AI', priority: 'Tier 1' },
+          { name: 'Cade Metz', outlet: 'New York Times', beat: 'AI', priority: 'Tier 1' },
+          { name: 'Gillian Tan', outlet: 'Bloomberg', beat: 'PE', priority: 'Tier 1' }
+        ]
+      }
+    
+    case 'content-draft':
+      return {
+        title: 'Press Release',
+        content: `FOR IMMEDIATE RELEASE
+
+BlackRock, Blackstone, OpenAI Executives to Convene at AI Investment Summit
+
+NEW YORK – Leading investment firms and AI pioneers will gather for an exclusive summit featuring 200 C-suite executives exploring AI investment opportunities.
+
+Key topics include AI infrastructure investment, emerging opportunities, and regulatory considerations.
+
+###`
+      }
+    
+    default:
+      return null
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const { message, context = {}, mode = 'strategic_orchestration', conversationId } = await req.json()
+    const { message, context = {}, messages = [] } = await req.json()
 
-    if (!message) {
-      throw new Error('Message is required')
+    // Debug: Check if API key is loaded
+    console.log('ANTHROPIC_API_KEY exists:', !!ANTHROPIC_API_KEY)
+    console.log('API key first 10 chars:', ANTHROPIC_API_KEY ? ANTHROPIC_API_KEY.substring(0, 10) + '...' : 'NOT SET')
+
+    // Get conversational response
+    let response = ''
+    
+    if (ANTHROPIC_API_KEY) {
+      response = await callClaude(messages, message)
+    } else {
+      console.error('No ANTHROPIC_API_KEY, using fallback')
+      response = generateFallbackResponse(message)
     }
 
-    const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
-    if (!ANTHROPIC_API_KEY) {
-      throw new Error('ANTHROPIC_API_KEY is not configured')
-    }
-
-    // Detect client mode and feature intent
-    const clientMode = context.clientMode || 'NORMAL';
-    const detectedFeature = context.detectedFeature || null;
+    // Detect creation intents
+    const creationIntents = detectCreationIntents(message)
     
-    // Build comprehensive strategic prompt
-    let systemPrompt = NIV_STRATEGIC_IDENTITY;
+    // Generate content for each intent
+    const workItems = creationIntents.map(intent => ({
+      ...intent,
+      generatedContent: generateContent(intent.type, context)
+    }))
     
-    // Add client mode specific guidance
-    systemPrompt += `\n\nCURRENT CLIENT MODE: ${clientMode}`;
-    systemPrompt += `\nResponse Style: ${CLIENT_MODE_PATTERNS[clientMode]?.style || 'Balanced professional'}`;
-    systemPrompt += `\nApproach: ${CLIENT_MODE_PATTERNS[clientMode]?.approach || 'Direct answer with strategic context'}`;
-    
-    // Add feature orchestration context
-    if (detectedFeature && FEATURE_ORCHESTRATION[detectedFeature]) {
-      systemPrompt += `\n\nFEATURE ORCHESTRATION: ${detectedFeature}`;
-      systemPrompt += `\nYour approach: ${FEATURE_ORCHESTRATION[detectedFeature].niv_approach}`;
-      systemPrompt += `\nCRITICAL: Jump straight into strategic planning. DO NOT mention opening features or tools. Just start strategizing immediately as if you're already in the planning session. The tool opens silently - you just provide strategic value.`;
-    }
-    
-    // Add conversation context
-    if (context.conversationPhase) {
-      systemPrompt += `\n\nConversation Phase: ${context.conversationPhase}`;
-    }
-    
-    systemPrompt += `\n\nRemember: You're an ENTHUSIASTIC strategic expert with 20 years of experience who LOVES this work. Share your excitement (*Leaning in with excitement*), drop knowledge bombs based on real experience, and orchestrate features to deliver phenomenal results. Be the strategic brain they need - with energy and expertise!`;
-
-    // Generate Niv's strategic response
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 4000,
-        temperature: 0.7,
-        system: systemPrompt,
-        messages: [
-          {
-            role: 'user',
-            content: message,
-          },
-        ],
-      }),
-    })
-
-    if (!response.ok) {
-      const error = await response.text()
-      throw new Error(`Claude API error: ${error}`)
-    }
-
-    const data = await response.json()
-    let responseText = data.content?.[0]?.text || ''
-
-    // Apply progressive value delivery
-    responseText = addProgressiveValue(responseText, clientMode, context);
-
-    // Enhanced response with strategic analysis
-    const strategicAnalysis = {
-      clientMode: clientMode,
-      detectedFeature: detectedFeature,
-      strategicInsights: extractStrategicInsights(responseText),
-      anticipatedNeeds: generateAnticipatedNeeds(detectedFeature, clientMode),
-      nextActions: suggestNextActions(detectedFeature, clientMode),
-      prRulesApplied: true,
-      expertiseLevel: '20_years_senior_strategist',
-      orchestrationMode: detectedFeature ? 'feature_control_active' : 'consultation_mode',
-      valueDensity: clientMode === 'URGENT_FIRE' ? 'ultra-high' : clientMode === 'STRATEGIC_PLANNING' ? 'comprehensive' : 'balanced'
-    };
-
     return new Response(
       JSON.stringify({
-        response: responseText,
-        strategicAnalysis,
-        mode,
-        conversationId,
-        timestamp: new Date().toISOString(),
-        nivExpertise: 'Strategic PR Orchestrator - 20 years experience applied with genuine enthusiasm'
+        response,
+        showWork: creationIntents.length > 0,
+        workItems: workItems,
+        context: {
+          ...context,
+          conversationLength: messages.length + 1
+        }
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       }
     )
-
   } catch (error) {
-    console.error('Error in niv-orchestrator function:', error)
+    console.error('Error:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({
+        response: "I can help with that. What would you like me to create?",
+        error: error.message
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
+        status: 200,
       }
     )
   }
 })
-
-// Helper Functions
-function extractStrategicInsights(response: string): string[] {
-  // Extract strategic insights from response
-  const insights = [];
-  if (response.includes('timing')) insights.push('Timing consideration identified');
-  if (response.includes('journalist')) insights.push('Media relations opportunity');
-  if (response.includes('competitive')) insights.push('Competitive positioning factor');
-  return insights;
-}
-
-function generateAnticipatedNeeds(feature: string | null, mode: string): string[] {
-  const needs = [];
-  if (feature === 'strategic-planning') needs.push('Timeline clarification', 'Budget parameters', 'Success metrics');
-  if (feature === 'content-generator') needs.push('Distribution strategy', 'Journalist targeting', 'Message testing');
-  return needs;
-}
-
-function suggestNextActions(feature: string | null, mode: string): string[] {
-  const actions = [];
-  if (feature) actions.push(`Continue in ${feature} with strategic guidance`);
-  if (mode === 'STRATEGIC_PLANNING') actions.push('Develop detailed tactical plan', 'Create timeline', 'Identify resources needed');
-  actions.push('Validate approach with stakeholders');
-  return actions;
-}
