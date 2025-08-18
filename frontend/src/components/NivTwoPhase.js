@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../services/supabaseClient';
+import nivStateManager from './NivFirst/NivStateManager';
 import './NivStrategicOrchestrator.css';
 
 /**
@@ -31,6 +32,20 @@ const NivTwoPhase = ({ onWorkCardCreate }) => {
   const [generationOptions, setGenerationOptions] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedArtifacts, setGeneratedArtifacts] = useState([]);
+
+  // Connect to NivStateManager for artifact visibility
+  useEffect(() => {
+    console.log('🔗 NivTwoPhase: Connecting to NivStateManager');
+    
+    // Subscribe to work items for debugging
+    const unsubscribe = nivStateManager.subscribe('workItems', (event) => {
+      console.log('📦 NivTwoPhase: NivStateManager work items event:', event);
+    });
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
 
   // Phase 1: Consultation
   const handleSendMessage = async () => {
@@ -124,13 +139,29 @@ const NivTwoPhase = ({ onWorkCardCreate }) => {
         // Add to generated artifacts
         setGeneratedArtifacts([...generatedArtifacts, data.workItem]);
 
-        // Create work card with ACTUAL generated content
+        // FIXED: Use NivStateManager directly instead of callback
+        const workItemId = nivStateManager.addWorkItem({
+          type: data.workItem.type,
+          title: data.workItem.title,
+          description: data.workItem.description,
+          generatedContent: data.workItem.generatedContent, // Direct passthrough
+          metadata: {
+            ...data.workItem.metadata,
+            source: 'niv-two-phase',
+            generatedAt: new Date(),
+            phase: 'generation'
+          }
+        });
+
+        console.log('✅ NivTwoPhase: Added work item to NivStateManager:', workItemId);
+
+        // LEGACY: Still call callback if provided for backward compatibility
         if (onWorkCardCreate) {
           onWorkCardCreate({
             type: data.workItem.type,
             title: data.workItem.title,
             description: data.workItem.description,
-            generatedContent: data.workItem.generatedContent, // Direct passthrough
+            generatedContent: data.workItem.generatedContent,
             metadata: data.workItem.metadata
           });
         }
@@ -138,7 +169,7 @@ const NivTwoPhase = ({ onWorkCardCreate }) => {
         // Add success message to chat
         setMessages([...messages, {
           type: 'system',
-          content: `✅ Successfully generated ${type}. Click on the work card to view and edit.`
+          content: `✅ Successfully generated ${type}. Artifact should now be visible in the right panel. Click to open workspace.`
         }]);
       } else {
         throw new Error(data.error || 'Generation failed');
