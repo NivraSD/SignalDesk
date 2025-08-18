@@ -32,6 +32,7 @@ import StakeholderIntelligenceHub from "./components/StakeholderIntelligence/Sta
 import PlatformModeSwitcher from "./components/PlatformModeSwitcher";
 import NivFirstLayout from "./components/NivFirst/NivFirstLayout";
 import NivLayoutPOC from "./components/NivFirst/NivLayoutPOC"; // POC with clean architecture
+import NivSimple from "./pages/NivSimple"; // Simplified Niv interface
 
 // Log Supabase initialization for debugging
 console.log('🚀 SignalDesk initialized with Supabase:', supabase ? 'Connected' : 'Not connected');
@@ -76,6 +77,9 @@ function AppRoutes() {
     <Routes>
       {/* Login route - public */}
       <Route path="/login" element={<Login />} />
+      
+      {/* Niv Simple - public route for testing */}
+      <Route path="/niv-simple" element={<NivSimple />} />
 
       {/* Homepage route - redirect to projects */}
       <Route
