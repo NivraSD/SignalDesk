@@ -236,8 +236,8 @@ Provide analysis including:
                           ? 'https://backend-orchestrator.vercel.app'
                           : 'https://backend-orchestrator.vercel.app');
       
-      // Call backend orchestrator (using complete endpoint with full MCP & Claude integration)
-      const response = await fetch(`${backendUrl}/api/niv-complete`, {
+      // Call backend orchestrator (using multi-mode endpoint)
+      const response = await fetch(`${backendUrl}/api/niv-multimode`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -266,19 +266,17 @@ Provide analysis including:
         conversationId: sessionId
       });
       
-      // Format response to match expected structure
+      // Format response to match expected structure (supports multi-mode)
       return {
         response: data.response,
         message: data.message || data.response,
         chatMessage: data.chatMessage || data.response,
         shouldSave: data.shouldSave || false,
         conversationId: sessionId,
-        workItems: data.artifact ? [{
-          type: 'artifact',
-          id: data.artifact.id,
-          title: data.artifact.title,
-          content: data.artifact.content
-        }] : [],
+        workItems: data.workItems || [],
+        artifacts: data.artifacts || [],
+        scope: data.scope,
+        metadata: data.metadata,
         mcpsTriggered: data.mcpsTriggered,
         mcpInsights: data.mcpInsights
       };

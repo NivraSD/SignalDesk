@@ -1,5 +1,6 @@
 // Multi-Mode Niv: Intelligent PR Strategist
 // Scales from quick advice to complete PR packages
+// Version 1.0 - Deployed
 
 export default async function handler(req, res) {
   // CORS headers
