@@ -490,7 +490,7 @@ function buildResponse(aiResponse, artifactDecision, scope, sessionId) {
   } else if (scope === 'quick') {
     // For quick advice, offer to save if valuable
     if (aiResponse.content.length > 500) {
-      response.chatMessage = aiResponse.content + '\n\n💡 Say "save this" if you'd like to keep this advice as an artifact.';
+      response.chatMessage = aiResponse.content + '\n\n💡 Say "save this" if you\'d like to keep this advice as an artifact.';
     }
   }
   
