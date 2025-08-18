@@ -45,6 +45,8 @@ const NivSimple = () => {
 
       // If an artifact was created, add it to the artifacts list
       if (response.artifact) {
+        console.log('📦 NivSimple: Received artifact from backend:', response.artifact);
+        console.log('📦 NivSimple: Artifact content:', response.artifact.content);
         setArtifacts(prev => [response.artifact, ...prev]);
       }
 

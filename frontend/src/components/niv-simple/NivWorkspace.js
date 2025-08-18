@@ -201,7 +201,11 @@ const NivWorkspace = ({ artifact, onUpdate }) => {
   };
 
   const renderMediaList = (content) => {
-    if (!content.tiers) return null;
+    console.log('🔍 NivWorkspace: Rendering media list with content:', content);
+    if (!content || !content.tiers) {
+      console.error('❌ NivWorkspace: No tiers found in content:', content);
+      return <div>No media list data available</div>;
+    }
 
     return (
       <div>

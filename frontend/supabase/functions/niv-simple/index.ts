@@ -406,13 +406,19 @@ serve(async (req) => {
       };
       
       // Create the artifact
+      const contextString = extractContext(conversationHistory);
+      const generatedContent = generateContent(contentType, contextString);
+      console.log('🔨 niv-simple: Generated content for', contentType, '- Keys:', Object.keys(generatedContent));
+      
       const artifact: Artifact = {
         id: `artifact_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         type: contentType as Artifact['type'],
         title: titles[contentType] || 'PR Content',
         created: new Date().toISOString(),
-        content: generateContent(contentType, JSON.stringify(conversationHistory))
+        content: generatedContent
       };
+      
+      console.log('📦 niv-simple: Created artifact with content keys:', Object.keys(artifact.content));
       
       // Craft the chat message - MUST be brief and NOT include content
       const chatMessages: Record<string, string> = {
