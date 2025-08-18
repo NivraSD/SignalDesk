@@ -119,12 +119,16 @@ export default async function handler(req, res) {
       shouldSave: artifactInfo.shouldCreate,
       artifact,
       // Also include workItems array for frontend compatibility
+      // IMPORTANT: Frontend expects both 'content' at root AND 'generatedContent' object
       workItems: artifact ? [{
-        type: 'artifact',
+        type: artifact.type || 'artifact',  // Use the actual artifact type (press-release, media-list, etc.)
         id: artifact.id,
         title: artifact.title,
-        content: artifact.content,
-        generatedContent: { content: artifact.content },
+        content: artifact.content,  // Direct content for NivWorkspace
+        generatedContent: { 
+          content: artifact.content,  // Also in generatedContent for other components
+          type: artifact.type
+        },
         created: artifact.created
       }] : [],
       sessionId,

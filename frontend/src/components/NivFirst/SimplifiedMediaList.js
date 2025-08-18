@@ -59,6 +59,53 @@ const SimplifiedMediaList = ({ context }) => {
     setMediaList({ ...mediaList, journalists: newJournalists });
   };
 
+  // Check if we have text content instead of structured data
+  const hasStructuredData = mediaList.journalists && mediaList.journalists.length > 0;
+  const textContent = context?.generatedContent?.content || context?.content || '';
+  
+  // If we have text content but no structured data, show the text
+  if (!hasStructuredData && textContent && typeof textContent === 'string') {
+    return (
+      <div style={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        background: '#0a0a0a',
+        color: '#e5e7eb'
+      }}>
+        {/* Header */}
+        <div style={{
+          padding: '24px',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          background: 'rgba(0, 0, 0, 0.5)'
+        }}>
+          <h2 style={{
+            margin: 0,
+            fontSize: '24px',
+            fontWeight: '600',
+            color: '#ffffff'
+          }}>
+            Media List
+          </h2>
+        </div>
+        
+        {/* Text Content */}
+        <div style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: '24px',
+          whiteSpace: 'pre-wrap',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          fontSize: '14px',
+          lineHeight: '1.8',
+          color: '#e5e7eb'
+        }}>
+          {textContent}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{
       height: '100%',
