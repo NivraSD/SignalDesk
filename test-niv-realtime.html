@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Niv Realtime System</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: #2d3748;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .test-section {
+            padding: 30px;
+        }
+        h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        h2 {
+            color: #2d3748;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+        .test-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+        .test-button:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .error {
+            border-left-color: #fc8181;
+            background: #fff5f5;
+            color: #c53030;
+        }
+        .success {
+            border-left-color: #48bb78;
+            background: #f0fff4;
+            color: #22543d;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(102, 126, 234, 0.3);
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        .status-online {
+            background: #48bb78;
+            color: white;
+        }
+        .status-offline {
+            background: #fc8181;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Niv Realtime System Test Suite</h1>
+            <p>Testing the new Supabase Realtime artifact solution</p>
+        </div>
+
+        <div class="test-section">
+            <h2>1. Edge Function Health Check</h2>
+            <button class="test-button" onclick="testHealthCheck()">Test Function Status</button>
+            <div id="health-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. Basic Message Test</h2>
+            <button class="test-button" onclick="testBasicMessage()">Send Test Message</button>
+            <div id="message-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>3. Artifact Creation Test (Enhanced)</h2>
+            <p style="color: #667eea; font-size: 14px;">Now requires 6+ messages and meaningful context before artifacts are created</p>
+            <button class="test-button" onclick="testArtifactCreation()">Test Enhanced Artifact Creation</button>
+            <div id="artifact-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>4. MCP Detection Test</h2>
+            <button class="test-button" onclick="testMCPDetection()">Test MCP Integration</button>
+            <div id="mcp-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>5. Full Workflow Test</h2>
+            <button class="test-button" onclick="testFullWorkflow()">Run Complete Workflow</button>
+            <div id="workflow-result"></div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        const sessionId = `test-session-${Date.now()}`;
+
+        function showResult(elementId, content, isError = false) {
+            const element = document.getElementById(elementId);
+            element.className = isError ? 'result error' : 'result success';
+            element.textContent = typeof content === 'object' ? JSON.stringify(content, null, 2) : content;
+        }
+
+        function showLoading(elementId) {
+            const element = document.getElementById(elementId);
+            element.className = 'result';
+            element.innerHTML = '<div class="loading"></div> Processing...';
+        }
+
+        async function testHealthCheck() {
+            showLoading('health-result');
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/niv-realtime`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+                showResult('health-result', `✅ Function is deployed and responding\nStatus: ${response.status}\nHeaders: ${JSON.stringify([...response.headers.entries()], null, 2)}`);
+            } catch (error) {
+                showResult('health-result', `❌ Error: ${error.message}`, true);
+            }
+        }
+
+        async function testBasicMessage() {
+            showLoading('message-result');
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/niv-realtime`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        message: 'Hello Niv, this is a test message',
+                        sessionId: sessionId,
+                        userId: 'test-user-001',
+                        conversationHistory: []
+                    })
+                });
+                const data = await response.json();
+                showResult('message-result', data);
+            } catch (error) {
+                showResult('message-result', `❌ Error: ${error.message}`, true);
+            }
+        }
+
+        async function testArtifactCreation() {
+            showLoading('artifact-result');
+            try {
+                // Build more extensive conversation history for new requirements
+                const history = [
+                    { role: 'user', content: 'I need help with a PR crisis regarding a data breach' },
+                    { role: 'assistant', content: 'I understand you\'re dealing with a data breach crisis. Let me help you navigate this. First, can you tell me: When was the breach discovered and has it been contained?' },
+                    { role: 'user', content: 'We discovered it yesterday and our IT team says it\'s contained now. About 10,000 customer records were affected.' },
+                    { role: 'assistant', content: 'Thank you for that information. That\'s significant but manageable. What\'s your primary concern right now - media response, customer notification, or regulatory compliance?' },
+                    { role: 'user', content: 'All three, but media is already asking questions. We need to respond today.' },
+                    { role: 'assistant', content: 'Understood. The media pressure makes this time-sensitive. Before I create your crisis response plan, tell me: Have you notified law enforcement yet? And what\'s your company\'s general tone - formal corporate or more approachable?' }
+                ];
+
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/niv-realtime`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        message: 'We\'ve notified authorities. Our tone is professional but approachable. Please create a comprehensive crisis response plan now with immediate actions, media statement, and customer communication strategy.',
+                        sessionId: sessionId,
+                        userId: 'test-user-001',
+                        conversationHistory: history
+                    })
+                });
+                const data = await response.json();
+                showResult('artifact-result', {
+                    ...data,
+                    artifactCreated: data.artifactCreated ? '✅ Artifact created after proper consultation!' : '⚠️ No artifact yet - Niv is still gathering context',
+                    note: 'Notice how Niv now asks questions first before creating artifacts'
+                });
+            } catch (error) {
+                showResult('artifact-result', `❌ Error: ${error.message}`, true);
+            }
+        }
+
+        async function testMCPDetection() {
+            showLoading('mcp-result');
+            try {
+                const testMessages = [
+                    'Help me manage this crisis emergency',
+                    'I need a media list of journalists',
+                    'Create a social media campaign',
+                    'Analyze our competitor strategy'
+                ];
+
+                const results = [];
+                for (const msg of testMessages) {
+                    const response = await fetch(`${SUPABASE_URL}/functions/v1/niv-realtime`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        },
+                        body: JSON.stringify({
+                            message: msg,
+                            sessionId: sessionId,
+                            userId: 'test-user-001',
+                            conversationHistory: []
+                        })
+                    });
+                    const data = await response.json();
+                    results.push({
+                        message: msg,
+                        mcpsDetected: data.mcpsUsed || []
+                    });
+                }
+                showResult('mcp-result', results);
+            } catch (error) {
+                showResult('mcp-result', `❌ Error: ${error.message}`, true);
+            }
+        }
+
+        async function testFullWorkflow() {
+            showLoading('workflow-result');
+            const results = [];
+            
+            try {
+                // Step 1: Initial greeting
+                results.push('Step 1: Sending initial greeting...');
+                let response = await fetch(`${SUPABASE_URL}/functions/v1/niv-realtime`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        message: 'Hi Niv, I need help with PR strategy',
+                        sessionId: sessionId,
+                        userId: 'test-user-001',
+                        conversationHistory: []
+                    })
+                });
+                let data = await response.json();
+                results.push(`✅ Initial response received`);
+
+                // Step 2: Build context
+                const history = [
+                    { role: 'user', content: 'Hi Niv, I need help with PR strategy' },
+                    { role: 'assistant', content: data.message }
+                ];
+
+                results.push('Step 2: Providing context...');
+                response = await fetch(`${SUPABASE_URL}/functions/v1/niv-realtime`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        message: 'We are launching a new AI product next month and need media coverage',
+                        sessionId: sessionId,
+                        userId: 'test-user-001',
+                        conversationHistory: history
+                    })
+                });
+                data = await response.json();
+                results.push(`✅ Context acknowledged`);
+                
+                history.push(
+                    { role: 'user', content: 'We are launching a new AI product next month and need media coverage' },
+                    { role: 'assistant', content: data.message }
+                );
+
+                // Step 3: Request artifact creation
+                results.push('Step 3: Requesting strategic plan artifact...');
+                response = await fetch(`${SUPABASE_URL}/functions/v1/niv-realtime`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        message: 'Please create a comprehensive PR strategic plan for our AI product launch, including media list and timeline',
+                        sessionId: sessionId,
+                        userId: 'test-user-001',
+                        conversationHistory: history
+                    })
+                });
+                data = await response.json();
+                
+                if (data.artifactCreated) {
+                    results.push(`✅ Artifact created successfully!`);
+                    results.push(`   Artifact ID: ${data.artifactId}`);
+                    results.push(`   MCPs used: ${(data.mcpsUsed || []).join(', ')}`);
+                } else {
+                    results.push(`⚠️ No artifact created`);
+                }
+
+                showResult('workflow-result', results.join('\n'));
+            } catch (error) {
+                results.push(`❌ Error: ${error.message}`);
+                showResult('workflow-result', results.join('\n'), true);
+            }
+        }
+
+        // Run health check on load
+        window.addEventListener('load', () => {
+            console.log('Test page loaded. Session ID:', sessionId);
+            testHealthCheck();
+        });
+    </script>
+</body>
+</html>

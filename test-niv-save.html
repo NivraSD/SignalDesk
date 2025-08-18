@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Niv Save Feature</title>
+</head>
+<body>
+    <h1>Test Niv Save Feature</h1>
+    <p>Open this file, then:</p>
+    <ol>
+        <li>Go to: <a href="https://signaldesk-9qdawwene-nivra-sd.vercel.app/niv-simple" target="_blank">https://signaldesk-9qdawwene-nivra-sd.vercel.app/niv-simple</a></li>
+        <li>Open browser console (F12)</li>
+        <li>Ask Niv: "I need a social media strategy for my product launch"</li>
+        <li>Check console for any errors</li>
+        <li>Check if save button appears</li>
+    </ol>
+    
+    <h2>Quick Debug Script</h2>
+    <p>Paste this in console after Niv responds:</p>
+    <pre>
+// Check if the save function exists
+console.log('onSaveAsArtifact exists?', typeof window.onSaveAsArtifact);
+
+// Check message content
+const messages = document.querySelectorAll('[style*="assistant"]');
+messages.forEach((msg, i) => {
+    const content = msg.innerText;
+    console.log(`Message ${i} length:`, content.length);
+    console.log(`Has strategy keyword:`, /strategy|framework|plan/i.test(content));
+    console.log(`Has list items:`, /[•\-]|\d+\./g.test(content));
+});
+
+// Check for save buttons
+const saveButtons = document.querySelectorAll('button');
+const hasSaveButton = Array.from(saveButtons).some(btn => btn.innerText.includes('Save'));
+console.log('Save button found?', hasSaveButton);
+    </pre>
+</body>
+</html>

@@ -9,6 +9,7 @@ const NivLayout = ({
   selectedArtifact,
   loading,
   onSendMessage,
+  onSaveAsArtifact,
   onArtifactSelect,
   onArtifactUpdate,
   onArtifactDelete,
@@ -101,6 +102,7 @@ const NivLayout = ({
           messages={messages}
           loading={loading}
           onSendMessage={onSendMessage}
+          onSaveAsArtifact={onSaveAsArtifact}
         />
       </div>
 

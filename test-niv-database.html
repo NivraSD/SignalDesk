@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Niv Database System</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-weight: 500;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #5a67d8;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .test-section h2 {
+            margin-top: 0;
+            color: #667eea;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        .links {
+            margin: 20px 0;
+        }
+        .links a {
+            color: #667eea;
+            text-decoration: none;
+            margin-right: 20px;
+            font-weight: 500;
+        }
+        .links a:hover {
+            text-decoration: underline;
+        }
+        #results {
+            margin-top: 20px;
+        }
+        .result-item {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Niv Database System Test</h1>
+        <p>Test the new database-driven Niv system without Realtime</p>
+        
+        <div class="links">
+            <a href="http://localhost:3000/niv-database" target="_blank">Open Niv Database Interface →</a>
+            <a href="https://supabase.com/dashboard/project/zskaxjtyuaqazydouifp/editor" target="_blank">Supabase SQL Editor →</a>
+            <a href="https://supabase.com/dashboard/project/zskaxjtyuaqazydouifp/functions" target="_blank">Edge Functions →</a>
+        </div>
+
+        <div class="test-section">
+            <h2>1. Test Database Connection</h2>
+            <button onclick="testDatabaseConnection()">Test Database Tables</button>
+            <div id="db-status"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. Test Edge Function</h2>
+            <button onclick="testEdgeFunction()">Test niv-database Function</button>
+            <div id="edge-status"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>3. Test Complete Flow</h2>
+            <button onclick="testCompleteFlow()">Send Test Message</button>
+            <div id="flow-status"></div>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        function showStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        function addResult(message, data = null) {
+            const results = document.getElementById('results');
+            const item = document.createElement('div');
+            item.className = 'result-item';
+            item.innerHTML = `
+                <strong>${new Date().toLocaleTimeString()}</strong>: ${message}
+                ${data ? `<pre>${JSON.stringify(data, null, 2)}</pre>` : ''}
+            `;
+            results.insertBefore(item, results.firstChild);
+        }
+        
+        async function testDatabaseConnection() {
+            showStatus('db-status', 'Testing database connection...', 'info');
+            
+            try {
+                // Test niv_conversations table
+                const convResponse = await fetch(`${SUPABASE_URL}/rest/v1/niv_conversations?limit=1`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+                
+                // Test niv_artifacts table
+                const artResponse = await fetch(`${SUPABASE_URL}/rest/v1/niv_artifacts?limit=1`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+                
+                if (convResponse.ok && artResponse.ok) {
+                    showStatus('db-status', '✅ Database tables exist and are accessible!', 'success');
+                    addResult('Database test successful', {
+                        conversations_table: 'OK',
+                        artifacts_table: 'OK'
+                    });
+                } else {
+                    const errors = [];
+                    if (!convResponse.ok) errors.push(`niv_conversations: ${convResponse.status}`);
+                    if (!artResponse.ok) errors.push(`niv_artifacts: ${artResponse.status}`);
+                    showStatus('db-status', `❌ Database error: ${errors.join(', ')}`, 'error');
+                    addResult('Database test failed', { errors });
+                }
+            } catch (error) {
+                showStatus('db-status', `❌ Connection error: ${error.message}`, 'error');
+                addResult('Database connection error', { error: error.message });
+            }
+        }
+        
+        async function testEdgeFunction() {
+            showStatus('edge-status', 'Testing Edge Function...', 'info');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/niv-database`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        message: 'Hello, can you help me with PR strategy?',
+                        conversationHistory: [],
+                        sessionId: `test-${Date.now()}`
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    showStatus('edge-status', '✅ Edge Function is working!', 'success');
+                    addResult('Edge Function response received', data);
+                } else {
+                    const error = await response.text();
+                    showStatus('edge-status', `❌ Edge Function error: ${response.status}`, 'error');
+                    addResult('Edge Function error', { status: response.status, error });
+                }
+            } catch (error) {
+                showStatus('edge-status', `❌ Function call failed: ${error.message}`, 'error');
+                addResult('Edge Function call failed', { error: error.message });
+            }
+        }
+        
+        async function testCompleteFlow() {
+            showStatus('flow-status', 'Testing complete flow...', 'info');
+            
+            const sessionId = `test-${Date.now()}`;
+            
+            try {
+                // 1. Send message to Edge Function
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/niv-database`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        message: 'I need a strategic framework for launching a new tech product',
+                        conversationHistory: [],
+                        sessionId: sessionId
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Edge Function error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                addResult('Edge Function response', data);
+                
+                // 2. Save to database
+                const saveResponse = await fetch(`${SUPABASE_URL}/rest/v1/niv_conversations`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Prefer': 'return=representation'
+                    },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        role: 'assistant',
+                        content: data.response || data.message,
+                        mcps_used: []
+                    })
+                });
+                
+                if (!saveResponse.ok) {
+                    throw new Error(`Database save error: ${saveResponse.status}`);
+                }
+                
+                const savedData = await saveResponse.json();
+                addResult('Saved to database', savedData);
+                
+                showStatus('flow-status', '✅ Complete flow working! Check the results below.', 'success');
+                
+            } catch (error) {
+                showStatus('flow-status', `❌ Flow test failed: ${error.message}`, 'error');
+                addResult('Complete flow error', { error: error.message });
+            }
+        }
+        
+        // Auto-test on load
+        window.addEventListener('load', () => {
+            setTimeout(testDatabaseConnection, 500);
+        });
+    </script>
+</body>
+</html>

@@ -178,9 +178,17 @@ const NivWorkspace = ({ artifact, onUpdate }) => {
   };
 
   const renderContent = () => {
+    console.log('🎨 NivWorkspace: renderContent called with artifact:', artifact);
     if (!artifact) return null;
 
     const content = isEditing ? editedContent : artifact.content;
+    console.log('🎨 NivWorkspace: Content to render:', content);
+    console.log('🎨 NivWorkspace: Content type:', artifact.type);
+
+    // Handle flexible document type from saved messages
+    if (artifact.type === 'document' && content.text) {
+      return renderFlexibleDocument(content);
+    }
 
     switch (artifact.type) {
       case 'media-list':
@@ -236,7 +244,13 @@ const NivWorkspace = ({ artifact, onUpdate }) => {
     );
   };
 
-  const renderPressRelease = (content) => (
+  const renderPressRelease = (content) => {
+    console.log('📰 NivWorkspace: Rendering press release with content:', content);
+    if (!content) {
+      console.error('❌ NivWorkspace: No press release content!');
+      return <div>No press release content available</div>;
+    }
+    return (
     <div>
       <div style={workspaceStyles.section}>
         <h3 style={workspaceStyles.sectionTitle}>Headline</h3>
@@ -300,6 +314,7 @@ const NivWorkspace = ({ artifact, onUpdate }) => {
       )}
     </div>
   );
+  };
 
   const renderStrategicPlan = (content) => (
     <div>
@@ -460,6 +475,65 @@ const NivWorkspace = ({ artifact, onUpdate }) => {
       )}
     </div>
   );
+
+  const renderFlexibleDocument = (content) => {
+    console.log('📄 NivWorkspace: Rendering flexible document:', content);
+    
+    // Parse the text to format it nicely
+    const formatText = (text) => {
+      // Split by double newlines for paragraphs
+      const paragraphs = text.split('\n\n');
+      
+      return paragraphs.map((paragraph, index) => {
+        // Check if it's a list
+        if (paragraph.includes('•') || paragraph.includes('-') || /^\d+\./.test(paragraph.trim())) {
+          const items = paragraph.split('\n').filter(item => item.trim());
+          return (
+            <ul key={index} style={workspaceStyles.list}>
+              {items.map((item, i) => (
+                <li key={i} style={workspaceStyles.listItem}>
+                  {item.replace(/^[•\-\d+\.]\s*/, '')}
+                </li>
+              ))}
+            </ul>
+          );
+        }
+        
+        // Check if it's a heading (starts with caps or has colon)
+        if (/^[A-Z][A-Z\s]+:?$/.test(paragraph.trim()) || paragraph.endsWith(':')) {
+          return (
+            <h3 key={index} style={workspaceStyles.sectionTitle}>
+              {paragraph.replace(':', '')}
+            </h3>
+          );
+        }
+        
+        // Regular paragraph
+        return (
+          <div key={index} style={{ ...workspaceStyles.readOnlyText, marginBottom: '16px' }}>
+            {paragraph}
+          </div>
+        );
+      });
+    };
+
+    return (
+      <div>
+        <div style={workspaceStyles.section}>
+          {isEditing ? (
+            <textarea
+              style={{ ...workspaceStyles.textarea, minHeight: '400px' }}
+              value={content.text || ''}
+              onChange={(e) => updateContent('text', e.target.value)}
+              rows={20}
+            />
+          ) : (
+            <div>{formatText(content.text || '')}</div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   const renderGenericContent = (content) => (
     <div style={workspaceStyles.section}>

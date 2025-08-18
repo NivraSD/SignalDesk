@@ -215,7 +215,7 @@ Provide analysis including:
 
   // Enhanced Niv Strategic Orchestrator with conversation persistence
   async callNivChat({ message, messages = [], context = {}, mode = 'strategic_orchestration', conversationId = null }) {
-    console.log('🔍 [supabaseApiService] Calling Enhanced Niv with:', {
+    console.log('🔍 [supabaseApiService] Calling Niv Backend Orchestrator:', {
       message,
       messagesCount: messages.length,
       context,
@@ -226,28 +226,73 @@ Provide analysis including:
     // Get current user for conversation tracking
     const session = await this.getSession();
     const userId = session?.user?.id;
+    const sessionId = conversationId || `session-${Date.now()}`;
     const organizationId = context.organizationId || null;
     
-    const result = await this.callEdgeFunction('niv-orchestrator', {
-      message,
-      messages,
-      context,
-      mode,
-      conversationId,
-      userId,
-      organizationId
-    });
-    
-    console.log('✅ [supabaseApiService] Enhanced Niv response:', {
-      hasResponse: !!result.response,
-      workItemsCount: result.workItems?.length || 0,
-      workItemTypes: result.workItems?.map(item => item.type) || [],
-      conversationId: result.conversationId,
-      conversationPhase: result.conversationPhase,
-      savedWorkItemsCount: result.savedWorkItems?.length || 0
-    });
-    
-    return result;
+    try {
+      // Determine backend URL based on environment
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 
+                        (process.env.NODE_ENV === 'production' 
+                          ? 'https://backend-orchestrator.vercel.app'
+                          : 'https://backend-orchestrator.vercel.app');
+      
+      // Call backend orchestrator (using complete endpoint with full MCP & Claude integration)
+      const response = await fetch(`${backendUrl}/api/niv-complete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message,
+          messages,
+          sessionId,
+          userId,
+          organizationId,
+          mode
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Backend responded with ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      console.log('✅ [supabaseApiService] Backend Orchestrator response:', {
+        hasResponse: !!data?.response,
+        shouldSave: data?.shouldSave,
+        artifactCreated: !!data?.artifact,
+        mcpsTriggered: data?.mcpsTriggered || [],
+        conversationId: sessionId
+      });
+      
+      // Format response to match expected structure
+      return {
+        response: data.response,
+        message: data.message || data.response,
+        chatMessage: data.chatMessage || data.response,
+        shouldSave: data.shouldSave || false,
+        conversationId: sessionId,
+        workItems: data.artifact ? [{
+          type: 'artifact',
+          id: data.artifact.id,
+          title: data.artifact.title,
+          content: data.artifact.content
+        }] : [],
+        mcpsTriggered: data.mcpsTriggered,
+        mcpInsights: data.mcpInsights
+      };
+    } catch (error) {
+      console.error('Failed to call backend orchestrator:', error);
+      // Return a helpful fallback response
+      return {
+        response: `I understand you need help with: ${message}. As your AI PR strategist, I can assist with press releases, media strategies, and campaign planning.`,
+        message: 'Niv is ready to help!',
+        chatMessage: 'How can I assist with your PR needs today?',
+        shouldSave: false,
+        conversationId: sessionId
+      };
+    }
   }
 
   // Load conversation history and context

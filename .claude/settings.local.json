@@ -201,7 +201,10 @@
       "WebFetch(domain:signaldesk-6p5krbdmp-nivra-sd.vercel.app)"
     ],
     "deny": [],
-    "defaultMode": "acceptEdits"
+    "defaultMode": "acceptEdits",
+    "additionalDirectories": [
+      "/Users/jonathanliebowitz/Desktop"
+    ]
   },
   "mcpServers": {
     "signaldesk-monitor": {

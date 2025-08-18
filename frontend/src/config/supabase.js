@@ -8,8 +8,9 @@ if (window.__SUPABASE_CLIENT__) {
 }
 
 // Get from environment variables - NO HARDCODED FALLBACKS FOR SECURITY
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY
+// Trim any whitespace/newlines that might have been accidentally included
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL?.trim()
+const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY?.trim()
 
 // Log configuration (for debugging)
 console.log('🔧 Supabase Configuration:', {

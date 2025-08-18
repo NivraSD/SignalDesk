@@ -1,0 +1,76 @@
+{
+  "mcpServers": {
+    "signaldesk-intelligence": {
+      "command": "node",
+      "args": ["/Users/jonathanliebowitz/Desktop/SignalDesk/mcp-servers/signaldesk-intelligence/dist/index.js"]
+    },
+    "signaldesk-relationships": {
+      "command": "node",
+      "args": ["/Users/jonathanliebowitz/Desktop/SignalDesk/mcp-servers/signaldesk-relationships/dist/index.js"]
+    },
+    "signaldesk-analytics": {
+      "command": "node",
+      "args": ["/Users/jonathanliebowitz/Desktop/SignalDesk/mcp-servers/signaldesk-analytics/dist/index.js"]
+    },
+    "signaldesk-content": {
+      "command": "node",
+      "args": ["/Users/jonathanliebowitz/Desktop/SignalDesk/mcp-servers/signaldesk-content/dist/index.js"]
+    },
+    "signaldesk-campaigns": {
+      "command": "node",
+      "args": ["/Users/jonathanliebowitz/Desktop/SignalDesk/mcp-servers/signaldesk-campaigns/dist/index.js"]
+    },
+    "signaldesk-media": {
+      "command": "node",
+      "args": ["/Users/jonathanliebowitz/Desktop/SignalDesk/mcp-servers/signaldesk-media/dist/index.js"]
+    },
+    "signaldesk-opportunities": {
+      "command": "node",
+      "args": ["/Users/jonathanliebowitz/Desktop/SignalDesk/mcp-servers/signaldesk-opportunities/dist/index.js"]
+    },
+    "signaldesk-memory": {
+      "command": "node",
+      "args": ["/Users/jonathanliebowitz/Desktop/SignalDesk/mcp-servers/signaldesk-memory/dist/index.js"]
+    },
+    "signaldesk-monitor": {
+      "command": "node",
+      "args": ["/Users/jonathanliebowitz/Desktop/SignalDesk/mcp-servers/signaldesk-monitor/dist/index.js"]
+    },
+    "signaldesk-scraper": {
+      "command": "node",
+      "args": ["/Users/jonathanliebowitz/Desktop/SignalDesk/mcp-servers/signaldesk-scraper/dist/index.js"]
+    },
+    "signaldesk-entities": {
+      "command": "node",
+      "args": ["/Users/jonathanliebowitz/Desktop/SignalDesk/mcp-servers/signaldesk-entities/dist/index.js"]
+    },
+    "signaldesk-crisis": {
+      "command": "node",
+      "args": ["/Users/jonathanliebowitz/Desktop/SignalDesk/mcp-servers/signaldesk-crisis/dist/index.js"]
+    },
+    "signaldesk-social": {
+      "command": "node",
+      "args": ["/Users/jonathanliebowitz/Desktop/SignalDesk/mcp-servers/signaldesk-social/dist/index.js"]
+    },
+    "signaldesk-stakeholder-groups": {
+      "command": "node",
+      "args": ["/Users/jonathanliebowitz/Desktop/SignalDesk/mcp-servers/signaldesk-stakeholder-groups/dist/index.js"]
+    },
+    "signaldesk-narratives": {
+      "command": "node",
+      "args": ["/Users/jonathanliebowitz/Desktop/SignalDesk/mcp-servers/signaldesk-narratives/dist/index.js"]
+    },
+    "signaldesk-regulatory": {
+      "command": "node",
+      "args": ["/Users/jonathanliebowitz/Desktop/SignalDesk/mcp-servers/signaldesk-regulatory/dist/index.js"]
+    },
+    "signaldesk-orchestrator": {
+      "command": "node",
+      "args": ["/Users/jonathanliebowitz/Desktop/SignalDesk/mcp-servers/signaldesk-orchestrator/dist/index.js"]
+    },
+    "playwright-mcp-server": {
+      "command": "node",
+      "args": ["/Users/jonathanliebowitz/Desktop/playwright-mcp-server/dist/index.js"]
+    }
+  }
+}

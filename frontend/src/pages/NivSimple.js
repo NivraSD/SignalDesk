@@ -64,6 +64,13 @@ const NivSimple = () => {
     }
   };
 
+  const handleSaveAsArtifact = (artifact) => {
+    console.log('💾 NivSimple: Saving message as artifact:', artifact);
+    setArtifacts(prev => [artifact, ...prev]);
+    // Optionally auto-select the new artifact
+    setSelectedArtifact(artifact);
+  };
+
   const handleArtifactSelect = (artifact) => {
     setSelectedArtifact(artifact);
   };
@@ -96,6 +103,7 @@ const NivSimple = () => {
         selectedArtifact={selectedArtifact}
         loading={loading}
         onSendMessage={handleSendMessage}
+        onSaveAsArtifact={handleSaveAsArtifact}
         onArtifactSelect={handleArtifactSelect}
         onArtifactUpdate={handleArtifactUpdate}
         onArtifactDelete={handleArtifactDelete}

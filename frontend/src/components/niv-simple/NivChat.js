@@ -1,9 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-const NivChat = ({ messages, loading, onSendMessage }) => {
+const NivChat = ({ messages, loading, onSendMessage, onSaveAsArtifact }) => {
   const [inputValue, setInputValue] = useState('');
+  const [savedMessages, setSavedMessages] = useState(new Set());
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
+  
+  // Debug logging
+  console.log('🎯 NivChat mounted with onSaveAsArtifact:', !!onSaveAsArtifact);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -148,6 +152,34 @@ const NivChat = ({ messages, loading, onSendMessage }) => {
     },
     assistantTimestamp: {
       textAlign: 'left'
+    },
+    saveButton: {
+      marginTop: '8px',
+      padding: '6px 12px',
+      backgroundColor: '#10b981',
+      color: 'white',
+      border: 'none',
+      borderRadius: '6px',
+      fontSize: '13px',
+      fontWeight: '500',
+      cursor: 'pointer',
+      transition: 'all 0.2s ease',
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '6px'
+    },
+    savedIndicator: {
+      marginTop: '8px',
+      padding: '6px 12px',
+      backgroundColor: '#f0fdf4',
+      color: '#10b981',
+      border: '1px solid #86efac',
+      borderRadius: '6px',
+      fontSize: '13px',
+      fontWeight: '500',
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '6px'
     }
   };
 
@@ -156,6 +188,114 @@ const NivChat = ({ messages, loading, onSendMessage }) => {
       hour: '2-digit', 
       minute: '2-digit' 
     });
+  };
+
+  // Check if a message contains substantial content worth saving
+  const isSubstantialContent = (content) => {
+    if (!content) return false;
+    
+    // Check for strategic/tactical value indicators
+    const strategicPhrases = [
+      'strategic framework',
+      'tactical approach',
+      'comprehensive plan',
+      'actionable strategy',
+      'here\'s how',
+      'implementation',
+      'step-by-step',
+      'action plan',
+      'campaign',
+      'strategy',
+      'approach',
+      'framework',
+      'methodology',
+      'blueprint',
+      'roadmap',
+      'timeline',
+      'objectives',
+      'kpis',
+      'metrics'
+    ];
+    
+    const lowerContent = content.toLowerCase();
+    const hasStrategicValue = strategicPhrases.some(phrase => lowerContent.includes(phrase));
+    
+    // Check for structural indicators
+    const hasMultipleParagraphs = content.split('\n\n').length > 1;
+    const hasListItems = content.includes('•') || content.includes('-') || /\d+\./.test(content);
+    const hasStructure = content.includes(':') && content.length > 200;
+    const isLongEnough = content.length > 250;
+    
+    // Check for actionable content
+    const hasActionableContent = /\b(step \d|phase \d|first|second|third|next|then|finally)\b/i.test(content);
+    
+    const result = hasStrategicValue || (hasMultipleParagraphs && isLongEnough) || 
+           (hasListItems && hasStructure) || hasActionableContent;
+    
+    console.log('📊 Content analysis:', {
+      length: content.length,
+      hasStrategicValue,
+      hasMultipleParagraphs,
+      hasListItems,
+      hasStructure,
+      isLongEnough,
+      hasActionableContent,
+      result
+    });
+    
+    return result;
+  };
+
+  const handleSaveAsArtifact = (message, index) => {
+    if (onSaveAsArtifact) {
+      // Determine a title based on content
+      let title = 'Strategic Insight';
+      const lowerContent = message.content.toLowerCase();
+      
+      // More intelligent title detection
+      if (lowerContent.includes('media list') || lowerContent.includes('journalist')) {
+        title = 'Media List Strategy';
+      } else if (lowerContent.includes('press release') || lowerContent.includes('announcement')) {
+        title = 'Press Release';
+      } else if (lowerContent.includes('social media') || lowerContent.includes('twitter') || lowerContent.includes('linkedin')) {
+        title = 'Social Media Strategy';
+      } else if (lowerContent.includes('crisis') || lowerContent.includes('damage control')) {
+        title = 'Crisis Management Plan';
+      } else if (lowerContent.includes('campaign') && lowerContent.includes('launch')) {
+        title = 'Launch Campaign Strategy';
+      } else if (lowerContent.includes('opportunity') || lowerContent.includes('opportunities')) {
+        title = 'Opportunity Analysis';
+      } else if (lowerContent.includes('competitive') || lowerContent.includes('competitor')) {
+        title = 'Competitive Analysis';
+      } else if (lowerContent.includes('framework') || lowerContent.includes('methodology')) {
+        title = 'Strategic Framework';
+      } else if (lowerContent.includes('action plan') || lowerContent.includes('tactical')) {
+        title = 'Tactical Action Plan';
+      } else if (lowerContent.includes('message') || lowerContent.includes('talking')) {
+        title = 'Key Messaging';
+      } else if (lowerContent.includes('faq') || lowerContent.includes('question')) {
+        title = 'FAQ Document';
+      } else if (lowerContent.includes('strategy')) {
+        title = 'PR Strategy';
+      } else if (lowerContent.includes('plan')) {
+        title = 'Strategic Plan';
+      }
+
+      // Create artifact from the message
+      const artifact = {
+        id: `artifact_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        type: 'document',
+        title: title,
+        created: new Date().toISOString(),
+        content: {
+          text: message.content,
+          formatted: true
+        }
+      };
+
+      onSaveAsArtifact(artifact);
+      setSavedMessages(prev => new Set(prev).add(index));
+    }
   };
 
   const LoadingMessage = () => (
@@ -223,6 +363,37 @@ const NivChat = ({ messages, loading, onSendMessage }) => {
             >
               {formatTime(message.timestamp || Date.now())}
             </div>
+            {/* Show save button for substantial assistant messages */}
+            {(() => {
+              const shouldShowSave = message.role === 'assistant' && 
+                                    isSubstantialContent(message.content) && 
+                                    onSaveAsArtifact;
+              console.log('🔍 Save button check for message', index, {
+                role: message.role,
+                contentLength: message.content?.length,
+                isSubstantial: message.role === 'assistant' ? isSubstantialContent(message.content) : false,
+                hasHandler: !!onSaveAsArtifact,
+                shouldShow: shouldShowSave
+              });
+              return shouldShowSave;
+            })() && (
+              savedMessages.has(index) ? (
+                <div style={chatStyles.savedIndicator}>
+                  <span>✓</span>
+                  <span>Saved to Workspace</span>
+                </div>
+              ) : (
+                <button
+                  style={chatStyles.saveButton}
+                  onClick={() => handleSaveAsArtifact(message, index)}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#059669'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = '#10b981'}
+                >
+                  <span>💾</span>
+                  <span>Save to Workspace</span>
+                </button>
+              )
+            )}
           </div>
         ))}
         

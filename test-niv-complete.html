@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Niv Complete System</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 40px;
+            max-width: 900px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; margin-bottom: 10px; }
+        h2 { color: #667eea; margin-top: 30px; }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: all 0.3s;
+        }
+        button:hover { 
+            background: #5a67d8; 
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .success { 
+            color: #10b981; 
+            font-weight: bold;
+            padding: 10px;
+            background: #d1fae5;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .error { 
+            color: #ef4444; 
+            font-weight: bold;
+            padding: 10px;
+            background: #fee2e2;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .info { 
+            color: #667eea; 
+            margin: 20px 0;
+            padding: 15px;
+            background: #ede9fe;
+            border-radius: 6px;
+        }
+        .step {
+            padding: 15px;
+            margin: 15px 0;
+            border-left: 4px solid #667eea;
+            background: #f9fafb;
+        }
+        .step-number {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        code {
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+        .test-section {
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Complete Niv System Setup & Test</h1>
+        <p>Follow these steps to get your Niv AI PR strategist working properly.</p>
+        
+        <h2>📋 Step 1: Run Database Function in Supabase</h2>
+        <div class="step">
+            <span class="step-number">1</span>
+            <strong>Go to Supabase SQL Editor</strong><br>
+            <a href="https://supabase.com/dashboard/project/zskaxjtyuaqazydouifp/sql/new" target="_blank">
+                Click here to open SQL Editor
+            </a>
+        </div>
+        <div class="step">
+            <span class="step-number">2</span>
+            <strong>Copy the SQL code from CREATE_DATABASE_FUNCTION.sql</strong><br>
+            The file is in: <code>/Users/jonathanliebowitz/Desktop/SignalDesk/CREATE_DATABASE_FUNCTION.sql</code>
+        </div>
+        <div class="step">
+            <span class="step-number">3</span>
+            <strong>Paste and run the SQL</strong><br>
+            Click "Run" button in SQL Editor. You should see "Success" message.
+        </div>
+        
+        <h2>🧪 Step 2: Test Database Function</h2>
+        <div class="test-section">
+            <button onclick="testDatabaseFunction()">Test Database Function</button>
+            <div id="db-test-result"></div>
+        </div>
+        
+        <h2>🎯 Step 3: Clear Storage & Open Niv Interface</h2>
+        <div class="test-section">
+            <p>This will clear any saved preferences and open the unified Niv interface.</p>
+            <button onclick="clearAndGo()">Clear Storage & Open Niv</button>
+            <div id="clear-result"></div>
+        </div>
+        
+        <h2>✅ Step 4: Test Artifact Creation</h2>
+        <div class="info">
+            <strong>Once in the Niv interface, test with these messages:</strong>
+            <ul>
+                <li>"I need a press release for our new CEO announcement"</li>
+                <li>"Help me create a media strategy for product launch"</li>
+                <li>"Draft an announcement for our Series A funding"</li>
+            </ul>
+            <p>These should trigger artifact creation and appear in the right panel.</p>
+        </div>
+        
+        <h2>🔧 Troubleshooting</h2>
+        <div class="info">
+            <strong>If things aren't working:</strong>
+            <ol>
+                <li>Check browser console for errors (F12)</li>
+                <li>Verify the SQL function was created successfully in Supabase</li>
+                <li>Make sure your Supabase API keys are correct in <code>.env</code></li>
+                <li>Try hard refresh: Cmd+Shift+R (Mac) or Ctrl+Shift+R (Windows)</li>
+            </ol>
+        </div>
+    </div>
+    
+    <script>
+        // Supabase configuration - using your project details
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+        
+        async function testDatabaseFunction() {
+            const resultDiv = document.getElementById('db-test-result');
+            resultDiv.innerHTML = '<p>Testing database function...</p>';
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/niv_chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        user_message: 'Test message for press release',
+                        session_id: 'test-' + Date.now()
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ Database function is working!<br>
+                            Response: ${data.response || data.message || 'Function executed successfully'}
+                        </div>
+                    `;
+                } else {
+                    const error = await response.text();
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            ❌ Database function not found or error occurred.<br>
+                            Please run the SQL script in Supabase first.<br>
+                            Error: ${error}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ Failed to test database function.<br>
+                        Error: ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        function clearAndGo() {
+            const resultDiv = document.getElementById('clear-result');
+            
+            // Clear all localStorage
+            localStorage.clear();
+            resultDiv.innerHTML = '<div class="success">✅ Storage cleared!</div>';
+            
+            // Wait a moment then redirect
+            setTimeout(() => {
+                resultDiv.innerHTML += '<p>Opening Niv interface in 2 seconds...</p>';
+                setTimeout(() => {
+                    window.location.href = 'http://localhost:3000';
+                }, 2000);
+            }, 500);
+        }
+    </script>
+</body>
+</html>

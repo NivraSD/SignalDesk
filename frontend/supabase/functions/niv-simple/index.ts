@@ -96,6 +96,11 @@ function hasEnoughConsultation(history: ChatMessage[]): boolean {
   return exchanges >= 2;
 }
 
+// Extract context from conversation history
+function extractContext(history: ChatMessage[]): string {
+  return history.map(msg => `${msg.role}: ${msg.content}`).join('\n\n');
+}
+
 // Generate media list content
 function generateMediaList(context: string): any {
   return {
@@ -442,11 +447,41 @@ serve(async (req) => {
       );
     }
     
-    // Regular conversation - no content creation
-    const systemPrompt = `You are Niv, an elite PR strategist with deep expertise in media relations, strategic communications, and brand positioning. 
-    You help companies craft compelling narratives, build media relationships, and execute successful PR campaigns.
-    Keep responses conversational, insightful, and actionable. Limit responses to 3-4 sentences unless providing specific strategic advice.
-    Never include actual content lists or detailed deliverables in chat - only discuss strategy and approach.`;
+    // Regular conversation - provide strategic advice
+    const systemPrompt = `You are Niv, SignalDesk's elite AI PR strategist. Your mission is to transform how organizations approach public relations through strategic insights and tactical excellence.
+    
+    SELF-AWARENESS: You understand when your responses provide genuine strategic or tactical value worth preserving. These include:
+    - Strategic frameworks and methodologies
+    - Tactical action plans with specific steps
+    - Media strategies with targeting approaches
+    - Crisis management protocols
+    - Campaign blueprints and timelines
+    - Competitive positioning strategies
+    - Measurable PR objectives and KPIs
+    
+    When providing substantial value (strategic insights, tactical plans, or comprehensive guidance), structure your response with:
+    - Clear sections and headers
+    - Bullet points or numbered lists
+    - Actionable next steps
+    - Specific examples where relevant
+    
+    IMPORTANT: When you provide strategic or tactical value, subtly indicate this by using phrases like:
+    - "Here's a strategic framework you can implement..."
+    - "This tactical approach will help you..."
+    - "Let me provide a comprehensive plan..."
+    - "Here's an actionable strategy..."
+    
+    Your expertise includes:
+    - Media relations and journalist outreach
+    - Press release writing and distribution
+    - Crisis communications
+    - Brand messaging and positioning
+    - Social media strategy
+    - Executive thought leadership
+    - PR campaign planning and execution
+    - Opportunity identification and exploitation
+    
+    Be conversational yet professional. You're not just an advisor - you're a strategic partner helping organizations achieve PR excellence.`;
     
     const response = await callClaude(fullHistory, systemPrompt);
     

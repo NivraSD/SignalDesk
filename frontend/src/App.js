@@ -33,6 +33,9 @@ import PlatformModeSwitcher from "./components/PlatformModeSwitcher";
 import NivFirstLayout from "./components/NivFirst/NivFirstLayout";
 import NivLayoutPOC from "./components/NivFirst/NivLayoutPOC"; // POC with clean architecture
 import NivSimple from "./pages/NivSimple"; // Simplified Niv interface
+import NivRealtime from "./pages/NivRealtime"; // Realtime artifact system
+import NivDatabase from "./pages/NivDatabase"; // Database-driven Niv (no realtime needed)
+import NivDirect from "./pages/NivDirect"; // Direct API integration - most reliable
 
 // Log Supabase initialization for debugging
 console.log('🚀 SignalDesk initialized with Supabase:', supabase ? 'Connected' : 'Not connected');
@@ -78,8 +81,9 @@ function AppRoutes() {
       {/* Login route - public */}
       <Route path="/login" element={<Login />} />
       
-      {/* Niv Simple - public route for testing */}
-      <Route path="/niv-simple" element={<NivSimple />} />
+      {/* Niv - AI PR Strategist (uses Niv-First UI) */}
+      <Route path="/niv" element={<RailwayDraggable />} />
+      <Route path="/niv-direct" element={<NivDirect />} />
 
       {/* Homepage route - redirect to projects */}
       <Route
@@ -187,49 +191,25 @@ function AppRoutes() {
 }
 
 function App() {
-  const [platformMode, setPlatformMode] = useState(() => {
-    // Load saved preference or default to classic
-    return localStorage.getItem('platformMode') || 'classic';
-  });
-
-  useEffect(() => {
-    // Save preference when it changes
-    localStorage.setItem('platformMode', platformMode);
-  }, [platformMode]);
-
+  // REMOVED platform mode switcher - using Niv-First only
+  
   return (
     <BrowserRouter>
       <AuthProvider>
         <ProjectProvider>
           <IntelligenceProvider>
-            {/* Platform Mode Switcher - Always visible */}
-            <PlatformModeSwitcher 
-              currentMode={platformMode}
-              onModeChange={setPlatformMode}
-            />
-            
-            {/* Render different layouts based on mode */}
-            {platformMode === 'niv-first' ? (
-              <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route path="/niv-poc" element={<NivLayoutPOC />} />
-                <Route
-                  path="/*"
-                  element={
-                    <PrivateRoute>
-                      <NivFirstLayout />
-                    </PrivateRoute>
-                  }
-                />
-              </Routes>
-            ) : platformMode === 'niv-poc' ? (
-              <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route path="/*" element={<NivLayoutPOC />} />
-              </Routes>
-            ) : (
-              <AppRoutes />
-            )}
+            {/* Using Niv-First layout ONLY - no switcher */}
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route
+                path="/*"
+                element={
+                  <PrivateRoute>
+                    <NivFirstLayout />
+                  </PrivateRoute>
+                }
+              />
+            </Routes>
           </IntelligenceProvider>
         </ProjectProvider>
       </AuthProvider>
