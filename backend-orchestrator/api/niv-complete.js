@@ -1,4 +1,6 @@
-// Complete Niv Orchestrator - Simplified without SDK dependencies
+// Multi-Mode Niv: Fixed to only create artifacts when explicitly requested
+// Replaces the old niv-complete logic with intelligent scope detection
+
 export default async function handler(req, res) {
   // CORS headers
   const corsHeaders = {
@@ -7,17 +9,14 @@ export default async function handler(req, res) {
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };
 
-  // Set CORS headers
   Object.entries(corsHeaders).forEach(([key, value]) => {
     res.setHeader(key, value);
   });
 
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
-  // Only accept POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -29,445 +28,393 @@ export default async function handler(req, res) {
       sessionId = `session-${Date.now()}`,
       userId = null,
       organizationId = null,
-      mode = 'strategic'
+      mode = 'auto'  // auto, quick, single, package, analysis
     } = req.body;
 
-    console.log('🎯 Niv Complete Orchestrator:', { 
-      message: message.substring(0, 100), 
-      sessionId,
-      hasClaudeKey: !!process.env.CLAUDE_API_KEY
+    console.log('🎯 Fixed Multi-Mode Niv:', { 
+      message: message.substring(0, 100),
+      mode,
+      sessionId 
     });
 
-    // MCP Detection
-    const mcpTriggers = detectMCPs(message);
-    console.log('🔌 MCPs detected:', mcpTriggers);
+    // Step 1: Determine scope if auto mode
+    const scope = mode === 'auto' ? determineScope(message, messages) : mode;
+    console.log('📊 Detected scope:', scope);
 
-    // Get AI response
-    let aiResponse;
-    const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;
+    // Step 2: Get AI response
+    const response = await generateScopedResponse(message, messages, scope);
     
-    if (CLAUDE_API_KEY) {
-      try {
-        console.log('📡 Calling Claude API...');
-        
-        const systemPrompt = buildSystemPrompt(mcpTriggers);
-        
-        const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': CLAUDE_API_KEY,
-            'anthropic-version': '2023-06-01',
-          },
-          body: JSON.stringify({
-            model: 'claude-3-5-sonnet-20241022',  // Using latest Sonnet model
-            max_tokens: 3000,
-            temperature: 0.7,
-            system: systemPrompt,
-            messages: [
-              ...messages.map(m => ({
-                role: m.role === 'user' ? 'user' : 'assistant',
-                content: m.content
-              })),
-              { role: 'user', content: message }
-            ]
-          })
-        });
-
-        if (claudeResponse.ok) {
-          const data = await claudeResponse.json();
-          console.log('✅ Claude responded successfully');
-          aiResponse = data.content[0].text;
-        } else {
-          const errorText = await claudeResponse.text();
-          console.error('❌ Claude API error:', errorText);
-          aiResponse = generateStrategicFallback(message, mcpTriggers);
-        }
-      } catch (error) {
-        console.error('❌ Claude call failed:', error.message);
-        aiResponse = generateStrategicFallback(message, mcpTriggers);
-      }
-    } else {
-      console.log('⚠️ No Claude API key, using strategic fallback');
-      aiResponse = generateStrategicFallback(message, mcpTriggers);
-    }
-
-    // Artifact detection
-    const artifactInfo = analyzeForArtifact(message, aiResponse);
+    // Step 3: Determine artifact creation - ONLY if explicitly requested or single deliverable
+    const artifactDecision = decideArtifacts(message, scope, response);
     
-    let artifact = null;
-    let chatMessage = aiResponse;
-    
-    if (artifactInfo.shouldCreate) {
-      artifact = {
-        id: `artifact_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        type: artifactInfo.type,
-        title: artifactInfo.title,
-        content: aiResponse,
-        created: new Date().toISOString(),
-        mcpsUsed: mcpTriggers
-      };
-      
-      chatMessage = `I've created a ${artifactInfo.type.replace('-', ' ')} for you. ${mcpTriggers.length > 0 ? `This leverages: ${mcpTriggers.join(', ')}.` : ''} Check the workspace panel.`;
-    }
+    // Step 4: Create response structure
+    const result = buildResponse(response, artifactDecision, scope, sessionId);
 
-    // Response - Include both artifact AND workItems for compatibility
-    const response = {
-      response: aiResponse,
-      message: aiResponse,
-      chatMessage: chatMessage,
-      shouldSave: artifactInfo.shouldCreate,
-      artifact,
-      // Also include workItems array for frontend compatibility
-      // IMPORTANT: Frontend expects both 'content' at root AND 'generatedContent' object
-      workItems: artifact ? [{
-        type: artifact.type || 'artifact',  // Use the actual artifact type (press-release, media-list, etc.)
-        id: artifact.id,
-        title: artifact.title,
-        content: artifact.content,  // Direct content for NivWorkspace
-        generatedContent: { 
-          content: artifact.content,  // Also in generatedContent for other components
-          type: artifact.type
-        },
-        created: artifact.created
-      }] : [],
-      sessionId,
-      mcpsTriggered: mcpTriggers,
-      mcpInsights: buildMCPInsights(mcpTriggers, message),
-      metadata: {
-        model: 'claude-3.5-sonnet',
-        mcpsActive: mcpTriggers.length,
-        artifactCreated: !!artifact
-      }
-    };
-
-    console.log('🚀 Response ready:', {
-      sessionId,
-      mcps: mcpTriggers.length,
-      artifact: !!artifact,
-      responseLength: aiResponse.length
+    console.log('✅ Fixed response ready:', {
+      scope,
+      artifactsCreated: result.artifacts?.length || 0,
+      explicitSave: artifactDecision.explicitSave
     });
 
-    return res.status(200).json(response);
+    return res.status(200).json(result);
 
   } catch (error) {
     console.error('❌ Handler error:', error);
-    
     return res.status(200).json({
-      response: `I understand you need help with: "${req.body.message}". Let me assist you with strategic PR guidance.`,
-      message: 'Ready to help.',
-      chatMessage: 'How can I assist with your PR strategy?',
+      response: "I understand you need PR assistance. Let me help you with that.",
+      message: "Ready to assist with your PR needs.",
+      chatMessage: "How can I help with your PR strategy today?",
       shouldSave: false,
-      mcpsTriggered: [],
+      artifacts: [],
+      workItems: [],
       error: error.message
     });
   }
 }
 
-// MCP Detection
-function detectMCPs(message) {
+// ============================================
+// SCOPE DETECTION
+// ============================================
+
+function determineScope(message, conversationHistory) {
   const lower = message.toLowerCase();
-  const mcps = [];
   
-  const mcpMap = {
-    'crisis': ['crisis', 'emergency', 'urgent', 'damage', 'scandal'],
-    'social': ['social', 'twitter', 'linkedin', 'viral', 'trending'],
-    'narratives': ['narrative', 'story', 'messaging', 'positioning'],
-    'stakeholders': ['stakeholder', 'investor', 'employee', 'customer'],
-    'regulatory': ['regulatory', 'compliance', 'government', 'SEC', 'FDA'],
-    'orchestrator': ['strategy', 'campaign', 'launch', 'comprehensive']
+  // Explicit indicators
+  const indicators = {
+    quick: {
+      keywords: ['think', 'advice', 'should i', 'is this', 'quick', 'opinion', 'feedback', 'suggest', 'what do you'],
+      weight: 1
+    },
+    single: {
+      keywords: ['write a', 'create a', 'draft a', 'need a', 'make a', 'generate a', 'give me a'],
+      weight: 2
+    },
+    package: {
+      keywords: ['everything', 'complete package', 'full campaign', 'all materials', 'comprehensive', 'entire', 'launching', 'announcing'],
+      weight: 3
+    },
+    analysis: {
+      keywords: ['analyze', 'assess', 'review', 'evaluate', 'audit', 'performance', 'metrics'],
+      weight: 2
+    }
   };
+
+  let scores = { quick: 0, single: 0, package: 0, analysis: 0 };
   
-  for (const [mcp, triggers] of Object.entries(mcpMap)) {
-    if (triggers.some(t => lower.includes(t))) {
-      mcps.push(mcp);
+  // Score based on keywords
+  for (const [scope, config] of Object.entries(indicators)) {
+    for (const keyword of config.keywords) {
+      if (lower.includes(keyword)) {
+        scores[scope] += config.weight;
+      }
     }
   }
+
+  // Context analysis
+  const hasTimeline = /next (week|month|tuesday|monday|friday)|tomorrow|today|asap|urgent/i.test(message);
+  const hasMultipleRequests = (message.match(/and|also|plus|with|including/g) || []).length > 2;
+  const isHighStakes = /ipo|acquisition|merger|crisis|scandal|ceo|layoff|funding|series [a-z]/i.test(lower);
   
-  // Default to orchestrator for complex requests
-  if (mcps.length === 0 && lower.split(' ').length > 10) {
-    mcps.push('orchestrator');
-  }
+  // Adjust scores based on context
+  if (hasTimeline && isHighStakes) scores.package += 3;
+  if (hasMultipleRequests) scores.package += 2;
+  if (message.length < 50) scores.quick += 2;
+  if (message.includes('?')) scores.quick += 1;
   
-  return mcps;
+  // Find highest score
+  const maxScore = Math.max(...Object.values(scores));
+  if (maxScore === 0) return 'quick'; // Default to quick for unclear requests
+  
+  return Object.keys(scores).find(key => scores[key] === maxScore);
 }
 
-// Build system prompt with MCP context
-function buildSystemPrompt(mcpTriggers) {
-  let prompt = `You are Niv, an elite AI PR strategist with 20 years of experience. You've managed PR for Fortune 500 companies, handled international crises, and launched countless successful campaigns.
+// ============================================
+// SCOPED RESPONSE GENERATION
+// ============================================
 
-Your core expertise:
-• Press releases and media relations
-• Crisis communications and reputation management  
-• Brand positioning and narrative development
-• Executive thought leadership
-• Social media strategy
-• Stakeholder engagement
-• Regulatory communications
-
-`;
-
-  if (mcpTriggers.length > 0) {
-    prompt += `\nFor this request, you're leveraging specialized intelligence from:\n`;
-    
-    const mcpDescriptions = {
-      'crisis': '**Crisis Management**: Real-time assessment, rapid response, stakeholder messaging',
-      'social': '**Social Intelligence**: Sentiment analysis, influencer mapping, viral strategies',
-      'narratives': '**Narrative Intelligence**: Message frameworks, story development, perception shaping',
-      'stakeholders': '**Stakeholder Analysis**: Interest mapping, engagement strategies, coalition building',
-      'regulatory': '**Regulatory Intelligence**: Compliance messaging, policy navigation, government relations',
-      'orchestrator': '**Strategic Orchestration**: Multi-channel campaigns, resource optimization, timeline planning'
-    };
-    
-    mcpTriggers.forEach(mcp => {
-      if (mcpDescriptions[mcp]) {
-        prompt += `${mcpDescriptions[mcp]}\n`;
-      }
+async function generateScopedResponse(message, history, scope) {
+  const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;
+  
+  // Build scope-specific system prompt
+  const systemPrompt = buildScopedPrompt(scope);
+  
+  if (!CLAUDE_API_KEY) {
+    return generateScopedFallback(message, scope);
+  }
+  
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': CLAUDE_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: scope === 'package' ? 4000 : scope === 'quick' ? 500 : 2000,
+        temperature: 0.7,
+        system: systemPrompt,
+        messages: [
+          ...history.map(m => ({
+            role: m.role === 'user' ? 'user' : 'assistant',
+            content: m.content
+          })),
+          { role: 'user', content: message }
+        ]
+      })
     });
-  }
-  
-  prompt += `\nProvide strategic, detailed, actionable responses. For content creation (press releases, plans, etc.), deliver complete, professional-grade materials ready for immediate use. Include specific examples, timelines, and tactical steps.`;
-  
-  return prompt;
-}
 
-// Analyze for artifact creation
-function analyzeForArtifact(message, response) {
-  // Don't create artifacts for short responses
-  if (response.length < 600) {
-    return { shouldCreate: false };
-  }
-  
-  const lower = message.toLowerCase();
-  
-  const artifactTypes = [
-    { keywords: ['press release', 'announcement'], type: 'press-release', minLength: 800 },
-    { keywords: ['media list', 'journalist'], type: 'media-list', minLength: 600 },
-    { keywords: ['crisis', 'emergency'], type: 'crisis-response', minLength: 900 },
-    { keywords: ['strategy', 'campaign'], type: 'strategic-plan', minLength: 900 },
-    { keywords: ['ceo', 'executive'], type: 'executive-comms', minLength: 700 },
-    { keywords: ['launch', 'product'], type: 'launch-plan', minLength: 800 },
-    { keywords: ['social media', 'viral'], type: 'social-strategy', minLength: 700 }
-  ];
-  
-  for (const type of artifactTypes) {
-    if (type.keywords.some(k => lower.includes(k)) && response.length >= type.minLength) {
+    if (response.ok) {
+      const data = await response.json();
       return {
-        shouldCreate: true,
-        type: type.type,
-        title: createTitle(message, type.type)
+        content: data.content[0].text,
+        scope
       };
     }
+  } catch (error) {
+    console.error('Claude API error:', error);
   }
   
-  return { shouldCreate: false };
+  return generateScopedFallback(message, scope);
 }
 
-// Create artifact title
-function createTitle(message, type) {
-  let title = message.substring(0, 50).trim();
+function buildScopedPrompt(scope) {
+  let basePrompt = `You are Niv, an elite AI PR strategist with 20 years of experience at the highest levels of public relations.`;
   
-  // Remove common prefixes
-  ['i need', 'help me', 'create', 'write', 'draft'].forEach(prefix => {
-    if (title.toLowerCase().startsWith(prefix)) {
-      title = title.substring(prefix.length).trim();
-    }
-  });
-  
-  // Capitalize
-  title = title.charAt(0).toUpperCase() + title.slice(1);
-  
-  // Add type if not redundant
-  const typeLabel = type.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-  if (!title.toLowerCase().includes(type.split('-')[0])) {
-    title = `${typeLabel}: ${title}`;
-  }
-  
-  return title;
-}
+  // Scope-specific instructions
+  const scopeInstructions = {
+    quick: `
+Provide concise, actionable advice. Be direct and specific.
+- Answer in 2-3 paragraphs maximum
+- Focus on the immediate question
+- Don't create extensive content unless asked
+- Offer to elaborate if needed`,
+    
+    single: `
+Create one specific deliverable that fully addresses the request.
+- Provide a complete, professional-grade output
+- Include all necessary sections and details
+- Make it immediately usable
+- Don't create multiple items unless explicitly asked`,
+    
+    package: `
+Create a COMPLETE PR package with all necessary components.
+Structure your response as multiple deliverables:
 
-// Build MCP insights
-function buildMCPInsights(mcpTriggers, message) {
-  const insights = {};
-  
-  const capabilities = {
-    'crisis': ['Real-time threat assessment', 'Response strategy', 'Stakeholder prioritization'],
-    'social': ['Sentiment tracking', 'Influencer identification', 'Viral optimization'],
-    'narratives': ['Message development', 'Story architecture', 'Perception management'],
-    'stakeholders': ['Interest mapping', 'Coalition building', 'Engagement planning'],
-    'regulatory': ['Compliance strategy', 'Policy navigation', 'Government relations'],
-    'orchestrator': ['Campaign coordination', 'Resource allocation', 'Timeline optimization']
+1. PRIMARY DELIVERABLE (Press Release, Statement, etc.)
+2. MEDIA STRATEGY (List, Pitches, Timeline)
+3. STAKEHOLDER COMMUNICATIONS (Internal, Investors, Customers)
+4. SOCIAL MEDIA PLAN (Platform-specific content)
+5. SUPPORTING MATERIALS (FAQs, Talking Points, Backgrounders)
+
+Make each component complete and actionable.`,
+    
+    analysis: `
+Provide strategic analysis with actionable insights.
+- Assess the current situation
+- Identify opportunities and risks
+- Provide specific recommendations
+- Include metrics and benchmarks where relevant
+- Suggest next steps`
   };
   
-  mcpTriggers.forEach(mcp => {
-    insights[mcp] = {
-      name: mcp.charAt(0).toUpperCase() + mcp.slice(1),
-      capabilities: capabilities[mcp] || [],
-      applied: true
-    };
-  });
-  
-  return insights;
+  return basePrompt + (scopeInstructions[scope] || scopeInstructions.quick);
 }
 
-// Strategic fallback
-function generateStrategicFallback(message, mcpTriggers) {
+// ============================================
+// ARTIFACT DECISION LOGIC
+// ============================================
+
+function decideArtifacts(message, scope, response) {
+  const lower = message.toLowerCase();
+  const explicitSave = lower.includes('save') || lower.includes('artifact') || lower.includes('keep') || lower.includes('save this');
+  
+  switch(scope) {
+    case 'quick':
+      // ONLY create artifact if explicitly requested
+      if (explicitSave) {
+        return {
+          shouldCreate: true,
+          explicitSave: true,
+          artifacts: [{
+            type: 'advice',
+            title: 'PR Advice: ' + message.substring(0, 50),
+            content: response.content
+          }]
+        };
+      }
+      return { shouldCreate: false, explicitSave: false, artifacts: [] };
+    
+    case 'single':
+      // Always create one artifact for deliverables
+      const deliverableType = detectDeliverableType(message);
+      return {
+        shouldCreate: true,
+        explicitSave: false,
+        artifacts: [{
+          type: deliverableType,
+          title: formatTitle(deliverableType, message),
+          content: response.content
+        }]
+      };
+    
+    case 'package':
+      // Create multiple artifacts for package (simplified)
+      return {
+        shouldCreate: true,
+        explicitSave: false,
+        artifacts: [{
+          type: 'pr-package',
+          title: 'Complete PR Package: ' + message.substring(0, 50),
+          content: response.content
+        }],
+        isPackage: true
+      };
+    
+    case 'analysis':
+      // Create artifact if analysis is substantial or explicitly requested
+      if (response.content.length > 1000 || explicitSave) {
+        return {
+          shouldCreate: true,
+          explicitSave: explicitSave,
+          artifacts: [{
+            type: 'strategic-analysis',
+            title: 'Strategic Analysis: ' + message.substring(0, 50),
+            content: response.content
+          }]
+        };
+      }
+      return { shouldCreate: false, explicitSave: false, artifacts: [] };
+    
+    default:
+      return { shouldCreate: false, explicitSave: false, artifacts: [] };
+  }
+}
+
+function detectDeliverableType(message) {
   const lower = message.toLowerCase();
   
-  if (lower.includes('press release')) {
-    return `# Press Release Framework
+  if (lower.includes('press release')) return 'press-release';
+  if (lower.includes('media list')) return 'media-list';
+  if (lower.includes('statement')) return 'statement';
+  if (lower.includes('talking points')) return 'talking-points';
+  if (lower.includes('faq')) return 'faq';
+  if (lower.includes('social')) return 'social-content';
+  if (lower.includes('pitch')) return 'pitch';
+  if (lower.includes('strategy')) return 'strategy';
+  
+  return 'pr-content';
+}
 
-## HEADLINE
-[Company] Announces [Major News] to [Impact/Benefit]
+function formatTitle(type, message) {
+  const typeLabels = {
+    'press-release': 'Press Release',
+    'media-list': 'Media List',
+    'statement': 'Statement',
+    'talking-points': 'Talking Points',
+    'faq': 'FAQ Document',
+    'social-content': 'Social Media Content',
+    'pitch': 'Media Pitch',
+    'strategy': 'PR Strategy'
+  };
+  
+  const label = typeLabels[type] || 'PR Content';
+  const context = message.substring(0, 50).replace(/^(write|create|draft|need)\\s+(a\\s+)?/i, '');
+  
+  return `${label}: ${context}`;
+}
 
-## SUBHEADLINE  
-[Expanding detail that reinforces the main announcement]
+// ============================================
+// RESPONSE BUILDING
+// ============================================
 
-## DATELINE
-[CITY, State] – [Month Day, Year] – 
-
-## LEAD PARAGRAPH
-[Company name], a [brief company description], today announced [the news] that will [key benefit/impact]. This [announcement/launch/partnership] represents [significance to industry/customers].
-
-## BODY SECTION 1: The Details
-[Expand on the announcement with specific details, features, capabilities, or scope. Include data points, statistics, or concrete examples that validate the importance.]
-
-## BODY SECTION 2: Strategic Context
-"[Powerful quote from CEO/Executive that provides vision and strategic context]," said [Name], [Title] at [Company]. "[Additional sentence about why this matters to stakeholders]."
-
-## BODY SECTION 3: Market Impact
-[Discuss the broader implications for the industry, market, or customers. Include relevant market data or trends that contextualize the announcement.]
-
-## BODY SECTION 4: Availability & Next Steps
-[Specific details about timing, availability, pricing if relevant, and how interested parties can learn more or take action.]
-
-## ABOUT [COMPANY]
-[100-150 word boilerplate describing the company, its mission, key achievements, and market position]
-
-## MEDIA CONTACT
-[Name]
-[Title]
-[Email]
-[Phone]
-[Company Website]
-
-### PR DISTRIBUTION STRATEGY
-- **Tier 1**: Exclusive briefings with top-tier media 24 hours before
-- **Tier 2**: Embargoed release to trade publications 
-- **Tier 3**: Wire distribution at market open
-- **Digital**: Social media cascade across all channels
-- **Internal**: Employee announcement 1 hour before public`;
+function buildResponse(aiResponse, artifactDecision, scope, sessionId) {
+  const response = {
+    response: aiResponse.content,
+    message: aiResponse.content,
+    chatMessage: aiResponse.content,
+    shouldSave: artifactDecision.shouldCreate,
+    sessionId,
+    scope,
+    metadata: {
+      scope,
+      artifactsCreated: artifactDecision.artifacts?.length || 0,
+      explicitSave: artifactDecision.explicitSave,
+      isPackage: artifactDecision.isPackage || false
+    }
+  };
+  
+  // Add artifacts if created
+  if (artifactDecision.shouldCreate) {
+    response.artifacts = artifactDecision.artifacts.map(artifact => ({
+      id: `artifact_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      ...artifact,
+      created: new Date().toISOString()
+    }));
+    
+    // For frontend compatibility, also include workItems
+    response.workItems = response.artifacts.map(artifact => ({
+      type: artifact.type,
+      id: artifact.id,
+      title: artifact.title,
+      content: artifact.content,
+      generatedContent: { 
+        content: artifact.content,
+        type: artifact.type
+      },
+      created: artifact.created
+    }));
+    
+    // Add appropriate chat message
+    if (scope === 'single') {
+      response.chatMessage = aiResponse.content + '\\n\\n✅ This has been saved as an artifact for your use.';
+    } else if (artifactDecision.explicitSave) {
+      response.chatMessage = '✅ I\\'ve saved this as an artifact. You can view and edit it in the workspace panel.';
+    }
+  } else if (scope === 'quick') {
+    // For quick advice, offer to save if valuable
+    if (aiResponse.content.length > 500) {
+      response.chatMessage = aiResponse.content + '\\n\\n💡 Say "save this" if you\\'d like to keep this advice as an artifact.';
+    }
   }
   
-  if (lower.includes('crisis')) {
-    return `# Crisis Response Protocol
+  // Legacy compatibility
+  response.artifact = response.artifacts?.[0] || null;
+  response.mcpsTriggered = [];
+  response.mcpInsights = {};
+  
+  return response;
+}
 
-## IMMEDIATE ACTIONS (First Hour)
+// ============================================
+// FALLBACK RESPONSES
+// ============================================
 
-### 1. Assess & Contain
-- Gather all facts from reliable sources
-- Identify scope and potential escalation
-- Implement immediate containment measures
-- Document timeline of events
-
-### 2. Activate Crisis Team
-- CEO/President
-- Head of Communications  
-- Legal Counsel
-- Operations Lead
-- HR (if employee-related)
-- Designated Spokesperson
-
-### 3. Stakeholder Mapping
-**Internal:**
-- Employees (all-hands within 2 hours)
-- Board of Directors
-- Key investors
-
-**External:**
-- Affected customers/users
-- Media (prepare holding statement)
-- Regulators (if applicable)
-- Partners/vendors
-
-## COMMUNICATION FRAMEWORK
-
-### Holding Statement (Issue within 90 minutes)
-"We are aware of [situation] and take this matter extremely seriously. We are investigating the circumstances and will provide updates as more information becomes available. [If applicable: The safety and security of our customers/employees is our top priority.]"
-
-### Key Messages
-1. **Acknowledgment**: We recognize the seriousness
-2. **Action**: Here's what we're doing
-3. **Accountability**: We take responsibility
-4. **Resolution**: Path forward and timeline
-
-### Media Response Strategy
-- Single designated spokesperson
-- No speculation, stick to facts
-- Regular update cadence (every 4-6 hours initially)
-- Monitor social media sentiment continuously
-
-## RECOVERY PLAN
-1. Root cause analysis
-2. Corrective actions implementation  
-3. Stakeholder confidence rebuilding
-4. Lessons learned documentation
-5. Crisis preparedness improvements`;
+function generateScopedFallback(message, scope) {
+  let content = '';
+  
+  switch(scope) {
+    case 'quick':
+      content = `I understand you're looking for quick PR advice on: "${message}"\\n\\nHere's my immediate guidance: [Specific advice would go here based on the question]\\n\\nWould you like me to elaborate on any aspect of this?`;
+      break;
+    
+    case 'single':
+      const type = detectDeliverableType(message);
+      content = `I'll create a ${type.replace('-', ' ')} for you.\\n\\n[Complete ${type} would be generated here]\\n\\nThis is a complete, ready-to-use deliverable. Let me know if you need any adjustments.`;
+      break;
+    
+    case 'package':
+      content = `# COMPLETE PR PACKAGE\\n\\n## 1. PRIMARY DELIVERABLE\\n[Main content here]\\n\\n## 2. MEDIA STRATEGY\\n[Media list and approach]\\n\\n## 3. STAKEHOLDER COMMUNICATIONS\\n[Internal and external comms]\\n\\n`;
+      break;
+    
+    case 'analysis':
+      content = `# Strategic PR Analysis\\n\\n## Current Situation\\n[Analysis would go here]\\n\\n## Opportunities\\n[Identified opportunities]\\n\\n## Recommendations\\n[Specific action items]\\n\\n`;
+      break;
+    
+    default:
+      content = `I can help you with: "${message}". As your PR strategist, I'm ready to provide advice, create deliverables, or develop complete PR packages based on your needs.`;
   }
   
-  return `# Strategic PR Guidance
-
-Based on your request: "${message}"
-
-${mcpTriggers.length > 0 ? `## Leveraging MCP Intelligence: ${mcpTriggers.join(', ')}\n\n` : ''}
-
-## Strategic Recommendations
-
-### Immediate Actions
-1. **Define Clear Objectives**
-   - What specific outcome do you need?
-   - Who is your target audience?
-   - What's your timeline?
-
-2. **Develop Core Messaging**
-   - Primary value proposition
-   - Supporting proof points
-   - Differentiation factors
-
-3. **Identify Key Channels**
-   - Media relations (earned)
-   - Social media (owned)
-   - Influencer partnerships (paid)
-   - Executive platforms (shared)
-
-### Tactical Execution
-
-**Media Strategy**
-- Develop targeted media list
-- Create compelling pitch angles
-- Prepare spokesperson briefing
-- Schedule strategic embargoes
-
-**Content Development**
-- Press materials
-- Social media assets
-- Executive talking points
-- Q&A documentation
-
-**Measurement Framework**
-- Media coverage quality/quantity
-- Message penetration
-- Stakeholder sentiment
-- Business impact metrics
-
-## Next Steps
-
-Please provide more specific details about:
-- Your company/organization
-- The specific announcement or situation
-- Target audiences
-- Timeline and constraints
-- Desired outcomes
-
-This will allow me to create detailed, actionable materials tailored to your exact needs.`;
+  return { content, scope };
 }
