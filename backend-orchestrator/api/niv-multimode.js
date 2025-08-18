@@ -39,7 +39,7 @@ export default async function handler(req, res) {
     });
 
     // Step 1: Determine scope if auto mode
-    const scope = mode === 'auto' ? await determineScope(message, messages) : mode;
+    const scope = mode === 'auto' ? determineScope(message, messages) : mode;
     console.log('📊 Detected scope:', scope);
 
     // Step 2: Check Opportunity Engine signals (mock for now)
@@ -80,7 +80,7 @@ export default async function handler(req, res) {
 // SCOPE DETECTION
 // ============================================
 
-async function determineScope(message, conversationHistory) {
+function determineScope(message, conversationHistory) {
   const lower = message.toLowerCase();
   
   // Explicit indicators
