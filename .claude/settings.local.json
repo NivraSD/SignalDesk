@@ -197,7 +197,8 @@
       "WebFetch(domain:signaldesk-3oodwmgd7-nivra-sd.vercel.app)",
       "Bash(supabase secrets:*)",
       "Bash(supabase functions serve:*)",
-      "WebFetch(domain:signaldesk-1anaw4ccm-nivra-sd.vercel.app)"
+      "WebFetch(domain:signaldesk-1anaw4ccm-nivra-sd.vercel.app)",
+      "WebFetch(domain:signaldesk-6p5krbdmp-nivra-sd.vercel.app)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

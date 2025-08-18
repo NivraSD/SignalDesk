@@ -324,50 +324,16 @@ const NivStrategicOrchestrator = ({
       };
       setMessages(prev => [...prev, assistantMsg]);
       
-      // If Niv created work items, create inline work cards for each
+      // If Niv created work items, send them ONLY to the right panel (NOT in chat)
       if (response.workItems && response.workItems.length > 0) {
-        console.log('📦 [NivOrchestrator] Processing work items:', response.workItems);
-        // Add work items as inline cards in the chat
-        const workCardMessages = response.workItems.map((item, index) => {
-          console.log(`📝 [NivOrchestrator] Creating work card ${index}:`, {
-            type: item.type,
-            title: item.title,
-            hasGeneratedContent: !!item.generatedContent,
-            generatedContentKeys: item.generatedContent ? Object.keys(item.generatedContent) : 'none'
-          });
-          
-          return {
-            id: Date.now() + 100 + index,
-            type: 'work-card',
-            workCard: {
-              type: item.type,
-              data: {
-                title: item.title,
-                description: item.description,
-                generatedContent: item.generatedContent,
-                details: getDetailsFromType(item.type)
-              }
-            },
-            timestamp: new Date()
-          };
-        });
+        console.log('📦 [NivOrchestrator] Processing work items for RIGHT PANEL ONLY:', response.workItems);
         
-        // Add all work cards - allow multiple versions of same type
+        // REMOVED: Creating work-card messages in chat
+        // Work items should ONLY appear in right panel, not as chat messages
+        
+        // Send to right panel artifacts ONLY
         setTimeout(() => {
-          setMessages(prev => {
-            // Allow all new cards - don't prevent same types, but prevent exact duplicates within same response
-            const newCards = workCardMessages.filter((card, index, array) => {
-              // Only prevent if exact same title AND type in this batch
-              return !array.slice(0, index).some(prevCard => 
-                prevCard.workCard.type === card.workCard.type && 
-                prevCard.workCard.data.title === card.workCard.data.title
-              );
-            });
-            return [...prev, ...newCards];
-          });
-          
-          // Also notify parent component for right panel artifacts
-          // Only call once per batch to prevent duplicates
+          // Only notify parent component for right panel artifacts
           if (onWorkCardCreate) {
             console.log('🎯 [NivOrchestrator] Calling onWorkCardCreate for parent component');
             response.workItems.forEach((item, index) => {

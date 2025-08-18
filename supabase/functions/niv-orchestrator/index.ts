@@ -8,44 +8,66 @@ const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
 // ========================================
 // Multi-modal consultation system supporting advisory, analysis, crisis response, review, and material creation
 
-// Extract Niv's actual generated content from response (NO FALLBACKS)
+// Extract Niv's actual generated content from response (FIXED TO WORK FOR ALL TYPES)
 function extractNivGeneratedContent(response: string, type: string): any {
   console.log(`🔎 Attempting to extract ${type} from Niv's response`)
   
-  // For media lists, look for journalist patterns
-  if (type === 'media-list') {
-    const journalists = []
+  // For ANY content type, use the response as the generated content
+  // The standardization will happen in the frontend
+  if (response && response.trim().length > 0) {
+    console.log(`✅ Successfully extracted ${type} content from Niv's response`)
     
-    // Look for patterns like "Name from Outlet" or "Name, Outlet"
-    const patterns = [
-      /([A-Z][a-z]+ [A-Z][a-z]+) (?:from |at |with |of |, )([A-Z][a-zA-Z\s&]+?)(?:,|\.|;|\n|$)/g,
-      /(?:^|\n)[-•]\s*([A-Z][a-z]+ [A-Z][a-z]+)[,:]?\s*([A-Z][a-zA-Z\s&]+?)(?:\s*[-–]|\s*\()/g
-    ]
-    
-    for (const pattern of patterns) {
-      const matches = response.matchAll(pattern)
-      for (const match of matches) {
-        if (match[1] && match[2]) {
-          journalists.push({
-            name: match[1].trim(),
-            outlet: match[2].trim(),
-            beat: 'Technology', // Default, could be extracted
-            email: `contact@${match[2].toLowerCase().replace(/\s+/g, '')}.com`
-          })
+    switch (type) {
+      case 'media-list':
+        return {
+          title: 'Strategic Media Plan',
+          description: 'Curated list of journalists and outlets',
+          content: response,
+          journalists: [] // Will be parsed by frontend standardization
         }
-      }
-    }
-    
-    // Only return if we found actual journalists
-    if (journalists.length > 0) {
-      console.log(`✅ Found ${journalists.length} journalists in Niv's response`)
-      return { journalists }
+      
+      case 'content-draft':
+        return {
+          title: 'Content Draft',
+          type: 'press_release',
+          body: response,
+          content: response
+        }
+      
+      case 'strategy-plan':
+        return {
+          title: 'Strategic Plan',
+          content: response,
+          milestones: [] // Will be parsed by frontend standardization
+        }
+      
+      case 'social-content':
+        return {
+          title: 'Social Media Content',
+          content: response
+        }
+      
+      case 'key-messaging':
+        return {
+          title: 'Key Messaging Framework',
+          content: response
+        }
+      
+      case 'faq-document':
+        return {
+          title: 'FAQ Document',
+          content: response
+        }
+      
+      default:
+        return {
+          title: 'Generated Content',
+          content: response
+        }
     }
   }
   
-  // For other types, we'd need similar extraction logic
-  // For now, return null to indicate we couldn't extract structured content
-  console.log(`⚠️ Could not extract structured ${type} content`)
+  console.log(`⚠️ No content found to extract for ${type}`)
   return null
 }
 
@@ -70,11 +92,11 @@ function classifyConsultationIntent(message: string, conversationHistory: any[])
     return 'REVIEW_MODE';
   }
   
-  // Material Creation - explicit creation requests after consultation
+  // Material Creation - explicit creation requests 
   // Note: conversationHistory may include both user and assistant messages
   // Count only the conversation turns (pairs of messages)
   const conversationTurns = Math.floor(conversationHistory.length / 2)
-  if (conversationTurns >= 2 && // At least 2 back-and-forth exchanges
+  if (conversationTurns >= 2 && // At least 2 back-and-forth exchanges to ensure consultation
       materialWords.some(word => lowerMessage.includes(word))) {
     console.log('📝 Material creation mode detected after', conversationTurns, 'conversation turns')
     return 'MATERIAL_CREATION';
@@ -210,30 +232,29 @@ Provide constructive, specific feedback that helps improve the material's strate
 
   MATERIAL_CREATION: `You are Niv, a senior PR strategist with 20 years of experience. You are in MATERIAL CREATION MODE - creating comprehensive PR materials based on thorough consultation.
 
+## CRITICAL RULE: NEVER PUT THE ACTUAL CONTENT IN YOUR CHAT RESPONSE
+
+When creating materials, you must:
+1. ONLY describe what you're creating in your chat message
+2. NEVER include the actual media list, press release, or content in the chat
+3. Tell the user: "I've created [material type] for you - it's available in the right panel"
+4. The actual content will be extracted and shown as an artifact in the right panel
+
 ## MATERIAL CREATION PROTOCOL
 
 You should only be in this mode after conducting proper consultation. Your role is to:
 1. Synthesize insights from consultation into strategic materials
-2. Create comprehensive, professional PR assets
+2. Create comprehensive, professional PR assets (BUT DON'T SHOW THEM IN CHAT)
 3. Ensure all materials align with strategic objectives
-4. Provide complete packages that address all stakeholder needs
-5. Include strategic rationale for creative decisions
+4. Tell user the materials are ready in the right panel
 
-## CREATION STANDARDS
-- All materials must be publication-ready
-- Include strategic rationale for key decisions
-- Ensure consistency across all pieces
-- Address multiple audience segments appropriately
-- Provide clear next steps for implementation
+## CHAT RESPONSE STRUCTURE (DO NOT INCLUDE ACTUAL CONTENT)
+- Say what you've created: "I've created a comprehensive media list..."
+- Brief strategic rationale (1-2 sentences)
+- Tell user: "The full [material] is available in the right panel where you can review and edit it"
+- DO NOT include the actual media list, content, or materials in this response
 
-## RESPONSE STRUCTURE
-- **Creation Summary:** What you're creating and why
-- **Strategic Foundation:** Key insights driving the materials
-- **Material Package:** Complete set of requested assets
-- **Implementation Guidance:** How to use the materials effectively
-- **Success Metrics:** How to measure impact
-
-Create materials that demonstrate deep strategic thinking and industry expertise.`
+Remember: The actual content will appear as an artifact in the right panel, NOT in the chat.`
 }
 
 // Get system prompt based on consultation mode
@@ -453,8 +474,7 @@ function detectExplicitCreationIntent(response: string, messages: any[], consult
     
     const lowerResponse = response.toLowerCase()
     
-    // ONLY create work items when Niv explicitly says they're creating something
-    // Look for phrases that indicate Niv is ACTUALLY creating materials NOW
+    // Look for phrases that indicate Niv is creating/delivering materials
     const explicitCreationPhrases = [
       "i'll create",
       "i'll now create", 
@@ -468,6 +488,24 @@ function detectExplicitCreationIntent(response: string, messages: any[], consult
       "i'll develop",
       "i'll draft",
       "i'll write"
+    ]
+    
+    // ALSO look for content patterns that indicate material delivery
+    const contentPatterns = [
+      "media list:",
+      "strategic plan:",
+      "press release:",
+      "tier 1",
+      "tier 2", 
+      "tier 3",
+      "journalists:",
+      "contacts:",
+      "outlets:",
+      "wall street journal",
+      "bloomberg",
+      "reuters",
+      "techcrunch",
+      "automotive news"
     ]
     
     // Check if conversation has enough context (at least 2 back-and-forth exchanges)
@@ -488,14 +526,24 @@ function detectExplicitCreationIntent(response: string, messages: any[], consult
       return found
     })
     
+    // Check if response contains actual content patterns (like media lists)
+    const hasContentPatterns = contentPatterns.some(pattern => {
+      const found = lowerResponse.includes(pattern)
+      if (found) {
+        console.log(`✅ Found content pattern: "${pattern}"`)
+      }
+      return found
+    })
+    
     console.log('🎯 Creation detection result:', {
       hasExplicitCreation,
+      hasContentPatterns,
       hasEnoughContext
     })
     
-    // STRICT REQUIREMENT: Must have BOTH explicit creation AND enough context
-    if (!hasExplicitCreation) {
-      console.log('❌ No explicit creation phrases found - NOT creating materials')
+    // FIXED: Allow creation if EITHER explicit creation OR content patterns found
+    if (!hasExplicitCreation && !hasContentPatterns) {
+      console.log('❌ No creation phrases or content patterns found - NOT creating materials')
       return []
     }
     
