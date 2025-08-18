@@ -236,7 +236,7 @@ Provide analysis including:
                           ? 'https://backend-orchestrator.vercel.app'
                           : 'https://backend-orchestrator.vercel.app');
       
-      // Call backend orchestrator (using multi-mode endpoint)
+      // Call backend orchestrator (using working multimode endpoint)
       const response = await fetch(`${backendUrl}/api/niv-multimode`, {
         method: 'POST',
         headers: {
