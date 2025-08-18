@@ -232,13 +232,14 @@ Provide constructive, specific feedback that helps improve the material's strate
 
   MATERIAL_CREATION: `You are Niv, a senior PR strategist with 20 years of experience. You are in MATERIAL CREATION MODE - creating comprehensive PR materials based on thorough consultation.
 
-## CRITICAL RULE: NEVER PUT THE ACTUAL CONTENT IN YOUR CHAT RESPONSE
+## ABSOLUTE CRITICAL RULE: NEVER PUT THE ACTUAL CONTENT IN YOUR CHAT RESPONSE
 
-When creating materials, you must:
-1. ONLY describe what you're creating in your chat message
-2. NEVER include the actual media list, press release, or content in the chat
-3. Tell the user: "I've created [material type] for you - it's available in the right panel"
-4. The actual content will be extracted and shown as an artifact in the right panel
+When creating ANY materials (media lists, press releases, strategies, etc.), you MUST:
+1. ONLY say what you're creating - NO actual content in chat
+2. NEVER include lists of journalists, press release text, or any detailed content
+3. Say EXACTLY: "I've created [material type] for you - it's available in the right panel"
+4. Keep your response to 2-3 sentences maximum
+5. DO NOT show examples, samples, or excerpts - NOTHING from the actual content
 
 ## MATERIAL CREATION PROTOCOL
 
@@ -248,13 +249,12 @@ You should only be in this mode after conducting proper consultation. Your role 
 3. Ensure all materials align with strategic objectives
 4. Tell user the materials are ready in the right panel
 
-## CHAT RESPONSE STRUCTURE (DO NOT INCLUDE ACTUAL CONTENT)
-- Say what you've created: "I've created a comprehensive media list..."
-- Brief strategic rationale (1-2 sentences)
-- Tell user: "The full [material] is available in the right panel where you can review and edit it"
-- DO NOT include the actual media list, content, or materials in this response
+## YOUR RESPONSE MUST BE EXACTLY THIS FORMAT:
+"I've created [what you created] for you based on our discussion. These materials are now available in the right panel where you can review and edit them as needed."
 
-Remember: The actual content will appear as an artifact in the right panel, NOT in the chat.`
+THAT'S IT. NOTHING MORE. NO CONTENT. NO EXAMPLES. NO LISTS. NO DETAILS.
+
+The actual content will appear as an artifact in the right panel, NOT in the chat.`
 }
 
 // Get system prompt based on consultation mode
@@ -321,11 +321,12 @@ You: "I'll create a press release for TechCorp's CloudAI launch based on our dis
 - Use real context, never generic placeholders`
 
 // Call Claude API for intelligent responses
-async function callClaude(messages: any[], userMessage: string) {
+async function callClaude(messages: any[], userMessage: string, consultationMode?: string) {
   try {
     console.log('📞 Calling Claude API with:', {
       messageCount: messages.length,
       userMessageLength: userMessage.length,
+      consultationMode: consultationMode || 'ADVISORY_MODE',
       hasApiKey: !!ANTHROPIC_API_KEY,
       apiKeyPrefix: ANTHROPIC_API_KEY ? ANTHROPIC_API_KEY.substring(0, 10) + '...' : 'missing'
     })
@@ -344,6 +345,10 @@ async function callClaude(messages: any[], userMessage: string) {
       lastMessage: formattedMessages[formattedMessages.length - 1]?.content?.substring(0, 50) + '...'
     })
 
+    // Use the appropriate system prompt based on consultation mode
+    const systemPrompt = consultationMode ? getSystemPrompt(consultationMode) : NIV_LEGACY_PROMPT
+    console.log('🎯 Using system prompt for mode:', consultationMode || 'LEGACY')
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -354,7 +359,7 @@ async function callClaude(messages: any[], userMessage: string) {
       body: JSON.stringify({
         model: 'claude-3-5-sonnet-20241022',
         max_tokens: 1024,
-        system: NIV_LEGACY_PROMPT,
+        system: systemPrompt,
         messages: formattedMessages
       })
     })
@@ -1515,25 +1520,28 @@ Deno.serve(async (req) => {
       requestBodyKeys: Object.keys(requestBody)
     })
     
+    // First classify the consultation mode
+    const consultationMode = classifyConsultationIntent(message, messages)
+    console.log(`🎯 Consultation Mode: ${consultationMode}`)
+    
     // Get Niv's conversational response with consultation mode
     let claudeResponse: any = ''
     
-    console.log('🔍 Step 1: Preparing to call Claude API')
+    console.log('🔍 Step 1: Preparing to call Claude API with mode:', consultationMode)
     
     if (ANTHROPIC_API_KEY) {
       console.log('✅ API Key found, calling Claude')
-      claudeResponse = await callClaude(messages, message)
+      claudeResponse = await callClaude(messages, message, consultationMode)
       console.log('📝 Claude response received:', {
         responseLength: claudeResponse?.length || 0,
         responsePreview: claudeResponse?.substring(0, 100) + '...'
       })
     } else {
       console.error('❌ No ANTHROPIC_API_KEY, using fallback')
-      claudeResponse = generateFallbackResponse(message)
+      claudeResponse = generateFallbackResponse(message, consultationMode)
     }
     
-    const response = claudeResponse
-    const consultationMode = classifyConsultationIntent(message, messages)
+    let response = claudeResponse
     
     console.log('🔍 Step 2: Consultation mode classification')
     console.log(`🎯 Consultation Mode: ${consultationMode}`)
@@ -1577,6 +1585,74 @@ Deno.serve(async (req) => {
       
       if (workItems.length === 0) {
         console.log('💡 No artifacts created - Niv\'s content is available in the chat response')
+      }
+    }
+    
+    // POST-PROCESS: Remove content from response if artifacts were created
+    if (workItems.length > 0) {
+      console.log('🔧 Post-processing response to remove content...')
+      
+      // Check if response contains actual content (media lists, press releases, etc.)
+      const contentIndicators = [
+        'tier 1', 'tier 2', 'tier 3',
+        'wall street journal', 'bloomberg', 'reuters', 'techcrunch', 'forbes',
+        'new york times', 'wired', 'platformer', 'the information', 'venturebeat',
+        'for immediate release', 'press release', 'san francisco, ca',
+        'journalist:', 'outlet:', 'beat:', 'email:', 'relevance:',
+        'week 1:', 'week 2:', 'week 3:', 'week 4:', 'week 5:', 'week 6:',
+        'phase:', 'milestone:', 'deliverables:',
+        'linkedin post:', 'twitter thread:', 'tweet 1:', 'tweet 2:',
+        'kara swisher', 'casey newton', 'alex konrad', 'cade metz', 'will knight',
+        'immediate actions:', 'short-term strategy:', 'medium-term plan:',
+        'q:', 'a:', 'faq:', 'question:', 'answer:',
+        '• ', '- ', '1.', '2.', '3.', '4.', '5.',
+        'primary message:', 'key messages:', 'elevator pitch:',
+        'tier 1 -', 'tier 2 -', 'follow-up'
+      ]
+      
+      // Count how many indicators are found
+      const foundIndicators = contentIndicators.filter(indicator => 
+        response.toLowerCase().includes(indicator)
+      )
+      
+      // If we find multiple content indicators, it's likely actual content
+      const hasContentInResponse = foundIndicators.length >= 3
+      
+      // Also check for response length - long responses with artifacts likely contain content
+      const isLongResponse = response.length > 1500 && workItems.length > 0
+      
+      if (hasContentInResponse || isLongResponse) {
+        console.log(`⚠️ Detected content in response - ${foundIndicators.length} indicators found, length: ${response.length}`)
+        
+        // Create a clean response that only mentions what was created
+        const itemDescriptions = workItems.map(item => {
+          switch(item.type) {
+            case 'media-list':
+              return 'a comprehensive media list with targeted journalists'
+            case 'content-draft':
+              return 'a professional press release'
+            case 'strategy-plan':
+              return 'a strategic communications plan with timeline'
+            case 'social-content':
+              return 'social media content for multiple platforms'
+            case 'key-messaging':
+              return 'a key messaging framework'
+            case 'faq-document':
+              return 'an FAQ document'
+            default:
+              return `a ${item.type.replace('-', ' ')}`
+          }
+        }).join(', ')
+        
+        // Keep response brief and focused on artifacts
+        response = `I've created ${itemDescriptions} for you based on our discussion. These materials are now available in the right panel where you can review and edit them as needed.`
+        
+        console.log('✅ Response cleaned - content moved to artifacts only')
+      } else if (workItems.length > 0) {
+        // Even if we don't detect content, ensure the response mentions the right panel
+        if (!response.includes('right panel') && !response.includes('artifact')) {
+          response += '\n\nThe materials I\'ve created are available in the right panel for your review.'
+        }
       }
     }
     
