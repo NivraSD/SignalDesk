@@ -25,7 +25,7 @@ const NivFirstLayout = ({ user, organization }) => {
       status: 'ready'
     };
     console.log('🎯 NivFirstLayout: Adding new item to sidebar:', newItem);
-    console.log('🎯 NivFirstLayout: GeneratedContent structure:', newItem.data.generatedContent);
+    console.log('🎯 NivFirstLayout: GeneratedContent structure:', newItem.generatedContent);
     setGeneratedItems(prev => {
       console.log('🎯 NivFirstLayout: Previous items:', prev);
       const updated = [...prev, newItem];
