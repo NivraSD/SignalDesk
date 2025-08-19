@@ -2,6 +2,50 @@
 
 _Generated: August 19, 2025_
 
+## 🚨 CRITICAL: DEPLOYMENT INSTRUCTIONS - READ THIS FIRST 🚨
+
+### THE ONLY CORRECT DEPLOYMENT METHOD
+
+**DO THIS:**
+1. The SignalDesk frontend is located at `/Users/jonathanliebowitz/Desktop/SignalDesk/frontend`
+2. The frontend is a React app with its OWN package.json in the frontend folder
+3. To deploy: `cd frontend && vercel --prod`
+4. The backend is SEPARATE at `backend-orchestrator.vercel.app`
+5. NO RAILWAY - Railway is DEAD, GONE, DELETED. Never reference Railway.
+
+**DO NOT DO THIS:**
+- ❌ DO NOT deploy from SignalDesk root directory
+- ❌ DO NOT look for package.json in the root
+- ❌ DO NOT reference Railway (it doesn't exist anymore)
+- ❌ DO NOT create new MCP deployments on Vercel
+- ❌ DO NOT use Claude 3.5 - USE CLAUDE SONNET 4
+
+### CORRECT PROJECT STRUCTURE
+```
+/Users/jonathanliebowitz/Desktop/SignalDesk/
+├── frontend/               <-- THIS HAS ITS OWN package.json
+│   ├── package.json        <-- Frontend dependencies HERE
+│   ├── src/
+│   ├── public/
+│   └── vercel.json
+├── backend/                <-- Legacy, NOT USED for deployment
+├── backend-orchestrator/   <-- Deployed separately on Vercel
+└── mcp-servers/           <-- Local only, accessed via Supabase mcp-bridge
+```
+
+### CORRECT URLS
+- **Frontend**: `https://signaldesk.vercel.app` (or specific deployment URLs)
+- **Backend**: `https://backend-orchestrator.vercel.app`
+- **Supabase**: `https://zskaxjtyuaqazydouifp.supabase.co`
+- **NO RAILWAY URL EXISTS** - If you see `railway.app` anywhere, DELETE IT
+
+### PROJECTS THAT SHOULD NEVER BE CREATED
+- ❌ `signaldesk-opportunities` - DO NOT CREATE (use mcp-bridge instead)
+- ❌ `signaldesk-orchestrator` - DO NOT CREATE (use mcp-bridge instead)  
+- ❌ `signaldesk-media` - DO NOT CREATE (use mcp-bridge instead)
+- ❌ ANY individual MCP project on Vercel - They run locally or via Supabase mcp-bridge
+- ❌ ANY Railway project - Railway is DEAD
+
 ## Executive Summary
 
 **MAJOR UPDATE**: SignalDesk V2 is now fully deployed to production with complete Supabase Edge Functions integration, four-module dashboard, and comprehensive onboarding system. The platform successfully bridges frontend, backend APIs, and serverless functions to deliver a unified PR intelligence platform.
@@ -39,7 +83,7 @@ After 48+ hours of intensive development, the SignalDesk platform has evolved fr
   - `monitor-intelligence-simple`: Intelligence gathering and monitoring
   - `mcp-bridge`: Bridge to MCP servers for advanced processing
 - **Database**: Supabase PostgreSQL with real-time subscriptions
-- **AI Engine**: Claude 3.5 Sonnet (claude-3-5-sonnet-20241022)
+- **AI Engine**: Claude Sonnet 4 (NOT 3.5 - MUST USE SONNET 4)
 - **Authentication**: Supabase Auth
 - **Storage**: Supabase Storage for file management
 
@@ -309,28 +353,47 @@ Niv: [Comprehensive PR package with multiple components]
 
 ## Deployment Status (UPDATED: August 19, 2025)
 
-### ✅ Production URLs - ALL LIVE
+### ✅ PRODUCTION URLS - THESE ARE THE ONLY VALID URLS
 
-- **Frontend**: https://signaldesk.vercel.app (Deployed)
-- **Backend**: https://backend-orchestrator.vercel.app (Deployed)
-- **Database**: Supabase hosted PostgreSQL (Active)
-- **Edge Functions**: 
-  - assess-opportunities-simple (Deployed)
-  - monitor-intelligence-simple (Deployed)
-  - mcp-bridge (Deployed)
+- **Frontend**: https://signaldesk.vercel.app (Main production)
+- **Backend**: https://backend-orchestrator.vercel.app (Niv and API endpoints)
+- **Database**: Supabase PostgreSQL at `zskaxjtyuaqazydouifp.supabase.co`
+- **Edge Functions** (Supabase): 
+  - `assess-opportunities-simple`
+  - `monitor-intelligence-simple`
+  - `mcp-bridge`
 
-### Environment Variables
+### ⚠️ VERCEL DEPLOYMENT ISSUES & FIXES
+
+**PROBLEM**: Vercel looks for package.json in wrong directory
+**SOLUTION**: 
+```bash
+cd /Users/jonathanliebowitz/Desktop/SignalDesk/frontend
+vercel link --project signaldesk
+vercel --prod
+```
+
+**IF DEPLOYMENT FAILS**:
+1. Make sure you're IN the frontend directory
+2. Check that .vercel/project.json exists
+3. Ensure vercel.json is in frontend folder
+4. NEVER run vercel from root directory
+
+### CORRECT Environment Variables
 
 ```bash
-# Backend
-CLAUDE_API_KEY=sk-ant-...        # Claude AI access
-SUPABASE_URL=https://...         # Database connection
-SUPABASE_ANON_KEY=eyJ...         # Public database access
-
-# Frontend
-REACT_APP_SUPABASE_URL=https://...
-REACT_APP_SUPABASE_ANON_KEY=eyJ...
+# Frontend (.env and .env.production)
+REACT_APP_SUPABASE_URL=https://zskaxjtyuaqazydouifp.supabase.co
+REACT_APP_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0
 REACT_APP_BACKEND_URL=https://backend-orchestrator.vercel.app
+REACT_APP_MCP_BRIDGE_ENABLED=true
+
+# Backend (backend-orchestrator on Vercel)
+CLAUDE_API_KEY=[Your Claude Sonnet 4 API key]  # NOT 3.5!
+SUPABASE_URL=https://zskaxjtyuaqazydouifp.supabase.co
+SUPABASE_ANON_KEY=[Same as above]
+
+# NO RAILWAY ENVIRONMENT VARIABLES - DELETE ANY IF FOUND
 ```
 
 ## Success Metrics
