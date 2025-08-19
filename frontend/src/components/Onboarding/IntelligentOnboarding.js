@@ -1,754 +1,895 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createClient } from '@supabase/supabase-js';
 import './IntelligentOnboarding.css';
+
+// MCP-Driven Intelligent Onboarding
+// Uses real MCPs to discover WHO and WHAT to monitor
 
 const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
 const IntelligentOnboarding = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
-  const [organizationIntelligence, setOrganizationIntelligence] = useState(null);
-  const [deploymentPlan, setDeploymentPlan] = useState(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [discoveredProfile, setDiscoveredProfile] = useState(null);
+  const [mcpRecommendations, setMcpRecommendations] = useState(null);
   
   const [formData, setFormData] = useState({
-    // Step 1: Organization Basics
+    // Step 1: Basic Organization Info (Minimal - MCPs will discover the rest)
     organization: {
       name: '',
-      domain: '', // Website domain for entity recognition
+      website: '', // Primary input - MCPs will analyze this
+      description: '', // Brief description to help MCPs
+    },
+    
+    // Step 2: MCP-Discovered Profile (Auto-populated)
+    profile: {
       industry: '',
-      subIndustry: '',
-      size: 'medium', // small, medium, large, enterprise
-      marketPosition: 'challenger', // leader, challenger, follower, niche
-      publicPrivate: 'private',
-      headquarters: '',
-      operatingRegions: []
+      size: '',
+      competitors: [],
+      stakeholders: [],
+      topics: [],
+      events: [],
+      journalists: [],
+      influencers: [],
+      regulatoryBodies: [],
+      narratives: [],
     },
     
-    // Step 2: Strategic Objectives
-    objectives: {
-      primaryGoal: '', // e.g., "Increase brand awareness", "Crisis management", "IPO preparation"
-      kpis: {
-        mediaValue: { enabled: true, target: 1000000, timeframe: 'quarterly' },
-        sentimentScore: { enabled: true, target: 80, threshold: 60 },
-        shareOfVoice: { enabled: true, target: 25 },
-        journalistEngagement: { enabled: true, target: 50 },
-        crisisResponseTime: { enabled: true, target: 15 }, // minutes
+    // Step 3: Monitoring Configuration (Based on MCP recommendations)
+    monitoring: {
+      // WHO to monitor (discovered by MCPs)
+      whoToMonitor: {
+        competitors: [],         // From intelligence MCP
+        journalists: [],         // From media MCP
+        influencers: [],        // From social MCP
+        investors: [],          // From stakeholder-groups MCP
+        regulators: [],         // From regulatory MCP
+        partners: [],           // From relationships MCP
+        customers: [],          // From analytics MCP
+        employees: [],          // From monitor MCP
       },
-      criticalStakeholders: [], // Will be populated by entity MCP
-      competitiveSet: [], // Will be populated by intelligence MCP
-      narrativeGoals: []
-    },
-    
-    // Step 3: Intelligence Configuration
-    intelligence: {
-      monitoringScope: {
-        competitors: true,
-        regulators: true,
-        journalists: true,
-        analysts: true,
-        activists: false,
-        investors: false,
-        customers: true,
-        employees: false
+      
+      // WHAT to monitor (discovered by MCPs)
+      whatToMonitor: {
+        industryTrends: [],     // From intelligence MCP
+        competitorMoves: [],    // From intelligence MCP
+        marketOpportunities: [], // From opportunities MCP
+        narrativeVacuums: [],   // From narratives MCP
+        crisisSignals: [],      // From crisis MCP
+        regulatoryChanges: [],  // From regulatory MCP
+        events: [],             // From opportunities MCP (speaking, conferences, etc.)
+        mediaRequests: [],      // From media MCP (HARO, journalist queries)
+        socialTrends: [],       // From social MCP
+        cascadeEvents: [],      // From scraper MCP
       },
-      alertThresholds: {
-        crisis: 90, // 0-100 severity score
-        opportunity: 70,
-        competitorAction: 60,
-        regulatoryChange: 80,
-        sentimentShift: 15 // percentage change
-      },
-      cascadePrediction: {
-        enabled: true,
-        horizons: ['1hour', '4hours', '24hours', '7days'],
-        minimumConfidence: 70
+      
+      // Monitoring priorities (set by user based on MCP recommendations)
+      priorities: {
+        realTimeAlerts: true,
+        competitiveIntel: true,
+        opportunityDetection: true,
+        crisisMonitoring: true,
+        narrativeTracking: true,
+        eventTracking: true,
+        regulatoryTracking: false,
+        socialMonitoring: true,
       }
     },
     
-    // Step 4: MCP Activation Strategy
-    mcpStrategy: {
-      priority: 'balanced', // aggressive, balanced, conservative
-      activeMCPs: {
-        // Critical MCPs (always on)
-        'signaldesk-monitor': { enabled: true, priority: 0.9 },
-        'signaldesk-intelligence': { enabled: true, priority: 0.9 },
-        'signaldesk-orchestrator': { enabled: true, priority: 1.0 },
-        
-        // High Priority MCPs
-        'signaldesk-opportunities': { enabled: true, priority: 0.8 },
-        'signaldesk-entities': { enabled: true, priority: 0.8 },
-        'signaldesk-crisis': { enabled: true, priority: 1.0 },
-        'signaldesk-regulatory': { enabled: true, priority: 0.9 },
-        
-        // Medium Priority MCPs
-        'signaldesk-relationships': { enabled: true, priority: 0.7 },
-        'signaldesk-media': { enabled: true, priority: 0.7 },
-        'signaldesk-social': { enabled: true, priority: 0.8 },
-        'signaldesk-narratives': { enabled: true, priority: 0.8 },
-        'signaldesk-stakeholder-groups': { enabled: true, priority: 0.7 },
-        
-        // Support MCPs
-        'signaldesk-content': { enabled: true, priority: 0.5 },
-        'signaldesk-campaigns': { enabled: true, priority: 0.6 },
-        'signaldesk-analytics': { enabled: true, priority: 0.6 },
-        'signaldesk-memory': { enabled: true, priority: 0.5 },
-        'signaldesk-scraper': { enabled: false, priority: 0.4 }
-      },
-      resourceAllocation: {
-        maxConcurrentMCPs: 8,
-        cpuThreshold: 80,
-        memoryThreshold: 75,
-        apiRateLimit: 1000 // requests per hour
-      }
-    },
-    
-    // Step 5: System Settings
-    settings: {
-      automation: {
-        autoResponse: false,
-        requireApproval: true,
-        draftGeneration: true,
-        scheduledReports: 'daily'
-      },
-      integrations: {
-        slack: { enabled: false, webhook: '' },
-        email: { enabled: true, addresses: [] },
-        teams: { enabled: false, webhook: '' }
-      },
-      dataRetention: {
-        intelligenceHistory: 90, // days
-        analyticsData: 365,
-        memoryVault: 'unlimited'
-      }
+    // Step 4: Goals & Objectives (Enhanced with MCP insights)
+    goals: {
+      primary: '', // e.g., "thought_leadership", "crisis_prevention", "market_expansion"
+      secondary: [],
+      kpis: [],
+      timeline: '3_months', // 1_month, 3_months, 6_months, 1_year
     }
   });
 
-  // Fetch organization intelligence when domain is entered
-  const fetchOrganizationIntelligence = async (domain) => {
-    if (!domain) return;
+  // Call MCPs to analyze organization when website is entered
+  const analyzeOrganization = async () => {
+    if (!formData.organization.website || !formData.organization.name) return;
     
-    setIsLoading(true);
+    setIsAnalyzing(true);
     try {
-      // Call entity MCP to gather intelligence about the organization
-      const { data } = await supabase.functions.invoke('mcp-bridge', {
-        body: {
-          server: 'entities',
-          method: 'enrich_entity_profile',
-          params: { domain, type: 'organization' },
-          organizationId: 'onboarding-temp'
-        }
+      // Step 1: Use Scraper MCP to analyze website and get real data
+      const scraperData = await callMCP('scraper', 'scrape', {
+        url: formData.organization.website
       });
+      
+      // Step 2: Use Intelligence MCP to discover competitors from GitHub
+      const competitorData = await callMCP('intelligence', 'gather', {
+        organization: {
+          name: formData.organization.name,
+          url: formData.organization.website,
+          industry: extractIndustry(formData.organization.description)
+        },
+        keywords: extractKeywords(formData.organization.description),
+        stakeholder: 'competitors'
+      });
+      
+      // Step 3: Use News MCP to find industry news and events
+      const newsData = await callMCP('news', 'gather', {
+        organization: {
+          name: formData.organization.name,
+          industry: extractIndustry(formData.organization.description)
+        },
+        keywords: extractKeywords(formData.organization.description),
+        stakeholder: 'media'
+      });
+      
+      // Step 4: Use Media MCP to discover relevant journalists
+      const mediaData = await callMCP('media', 'discover', {
+        organization: {
+          name: formData.organization.name,
+          industry: extractIndustry(formData.organization.description)
+        },
+        keywords: extractKeywords(formData.organization.description),
+        stakeholder: 'tech_journalists'
+      });
+      
+      // Process and compile discovered profile from REAL MCP data
+      const profile = processRealMCPData({
+        scraperData,
+        competitorData,
+        newsData,
+        mediaData
+      });
+      
+      // Generate MCP recommendations based on discovered profile
+      const recommendations = generateMCPRecommendations(profile);
+      
+      setDiscoveredProfile(profile);
+      setMcpRecommendations(recommendations);
+      
+      // Auto-populate form with discovered data
+      setFormData(prev => ({
+        ...prev,
+        profile,
+        monitoring: {
+          whoToMonitor: {
+            competitors: profile.competitors.map(c => c.name),
+            journalists: profile.journalists.map(j => j.name),
+            influencers: profile.influencers.map(i => i.name),
+            investors: [],
+            regulators: profile.regulatoryBodies.map(r => r.name),
+            partners: [],
+            customers: [],
+            employees: [],
+          },
+          whatToMonitor: {
+            industryTrends: profile.topics,
+            competitorMoves: profile.competitors.map(c => `${c.name} activities`),
+            marketOpportunities: profile.opportunities,
+            narrativeVacuums: profile.narratives.filter(n => n.type === 'vacuum'),
+            crisisSignals: ['data breach', 'executive departure', 'lawsuit', 'regulatory action'],
+            regulatoryChanges: [],
+            events: profile.events.map(e => e.name),
+            mediaRequests: profile.mediaOpportunities,
+            socialTrends: profile.socialTrends,
+            cascadeEvents: profile.cascadeIndicators,
+          },
+          priorities: recommendations.priorities
+        }
+      }));
+      
+    } catch (error) {
+      console.error('Organization analysis error:', error);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
-      if (data && data.result) {
-        setOrganizationIntelligence(data.result);
-        
-        // Auto-populate discovered information
-        setFormData(prev => ({
-          ...prev,
-          objectives: {
-            ...prev.objectives,
-            criticalStakeholders: data.result.stakeholders || [],
-            competitiveSet: data.result.competitors || []
-          }
+  // Process real MCP data into actionable intelligence
+  const processRealMCPData = (mcpData) => {
+    const profile = {
+      industry: '',
+      size: 'medium',
+      competitors: [],
+      stakeholders: [],
+      topics: [],
+      events: [],
+      journalists: [],
+      influencers: [],
+      regulatoryBodies: [],
+      narratives: [],
+      opportunities: [],
+      mediaOpportunities: [],
+      socialTrends: [],
+      cascadeIndicators: []
+    };
+
+    // Process Scraper data (real website analysis)
+    if (mcpData.scraperData?.signals) {
+      const signals = mcpData.scraperData.signals;
+      
+      // Extract industry from website content
+      if (signals.meta?.description) {
+        profile.industry = extractIndustry(signals.meta.description);
+      }
+      
+      // Identify growth indicators
+      if (signals.jobs?.growthIndicator === 'high') {
+        profile.size = 'growth-stage';
+        profile.topics.push('rapid growth', 'hiring', 'expansion');
+      }
+      
+      // Extract cascade indicators from patterns
+      if (mcpData.scraperData.patterns) {
+        profile.cascadeIndicators = mcpData.scraperData.patterns.map(p => ({
+          pattern: p.pattern,
+          confidence: p.confidence,
+          indicators: p.indicators
         }));
       }
-    } catch (error) {
-      console.error('Error fetching organization intelligence:', error);
     }
-    setIsLoading(false);
-  };
 
-  // Generate deployment plan based on configuration
-  const generateDeploymentPlan = () => {
-    const plan = {
-      phases: [],
-      estimatedTime: 0,
-      mcpSequence: [],
-      immediateActions: [],
-      monitoringTargets: [],
-      expectedOutcomes: []
-    };
-
-    // Phase 1: Core Infrastructure (Immediate)
-    plan.phases.push({
-      name: 'Core Infrastructure Setup',
-      duration: '< 1 minute',
-      mcps: ['signaldesk-orchestrator', 'signaldesk-memory', 'signaldesk-monitor'],
-      actions: [
-        'Initialize orchestrator for MCP coordination',
-        'Set up memory vault for context storage',
-        'Activate real-time monitoring system'
-      ]
-    });
-
-    // Phase 2: Intelligence Gathering (First 5 minutes)
-    plan.phases.push({
-      name: 'Intelligence Gathering',
-      duration: '5 minutes',
-      mcps: ['signaldesk-intelligence', 'signaldesk-entities', 'signaldesk-relationships'],
-      actions: [
-        `Scan ${formData.organization.industry} landscape`,
-        `Profile ${formData.objectives.competitiveSet.length} competitors`,
-        `Map journalist relationships in ${formData.organization.operatingRegions.join(', ')}`,
-        'Identify current narratives and trends'
-      ]
-    });
-
-    // Phase 3: Opportunity Discovery (First hour)
-    plan.phases.push({
-      name: 'Opportunity Discovery',
-      duration: '1 hour',
-      mcps: ['signaldesk-opportunities', 'signaldesk-media', 'signaldesk-social'],
-      actions: [
-        'Discover immediate PR opportunities',
-        'Analyze editorial calendars',
-        'Track trending topics relevant to your industry',
-        'Identify journalist interests and gaps'
-      ]
-    });
-
-    // Phase 4: Protective Monitoring (Continuous)
-    if (formData.mcpStrategy.activeMCPs['signaldesk-crisis'].enabled) {
-      plan.phases.push({
-        name: 'Protective Monitoring',
-        duration: 'Continuous',
-        mcps: ['signaldesk-crisis', 'signaldesk-regulatory', 'signaldesk-narratives'],
-        actions: [
-          'Monitor for crisis signals',
-          'Track regulatory changes',
-          'Detect narrative shifts',
-          'Set up cascade prediction models'
-        ]
+    // Process Intelligence MCP data (real GitHub competitors)
+    if (mcpData.competitorData?.insights) {
+      profile.competitors = mcpData.competitorData.insights.slice(0, 5).map(insight => {
+        // Parse real GitHub repository data
+        const parts = insight.title?.split('/') || [];
+        const metrics = insight.insight?.match(/(\d+)\s*stars.*?(\d+)\s*recent commits/);
+        
+        return {
+          name: parts[0] || 'Unknown',
+          repository: parts[1] || '',
+          description: insight.insight || '',
+          stars: metrics ? parseInt(metrics[1]) : 0,
+          recentActivity: metrics ? parseInt(metrics[2]) : 0,
+          relevance: insight.relevance || 'medium',
+          url: insight.data?.url || `https://github.com/${insight.title}`,
+          actionableInsight: generateCompetitorInsight(insight)
+        };
       });
     }
 
-    // Calculate MCP activation sequence based on priority
-    const activeMCPs = Object.entries(formData.mcpStrategy.activeMCPs)
-      .filter(([_, config]) => config.enabled)
-      .sort((a, b) => b[1].priority - a[1].priority)
-      .map(([name, config]) => ({ name, priority: config.priority }));
-    
-    plan.mcpSequence = activeMCPs;
-    plan.estimatedTime = '5-10 minutes for initial setup, then continuous monitoring';
-    
-    // Expected outcomes
-    plan.expectedOutcomes = [
-      `${activeMCPs.length} MCPs actively monitoring your ecosystem`,
-      'Real-time alerts for opportunities and threats',
-      'Automated intelligence reports every 24 hours',
-      'Predictive cascade analysis for major events',
-      `Average response time: ${formData.objectives.kpis.crisisResponseTime.target} minutes for critical issues`
-    ];
+    // Process News MCP data (real news and opportunities)
+    if (mcpData.newsData?.data) {
+      const newsInfo = mcpData.newsData.data;
+      
+      // Extract industry trends from real news
+      if (newsInfo.industryNews) {
+        const trends = new Set();
+        newsInfo.industryNews.forEach(article => {
+          // Extract topics from article titles and descriptions
+          const text = `${article.title} ${article.description}`.toLowerCase();
+          if (text.includes('ai')) trends.add('Artificial Intelligence');
+          if (text.includes('cloud')) trends.add('Cloud Computing');
+          if (text.includes('security')) trends.add('Cybersecurity');
+          if (text.includes('data')) trends.add('Data Analytics');
+          if (text.includes('blockchain')) trends.add('Blockchain');
+          if (text.includes('sustainability')) trends.add('Sustainability');
+        });
+        profile.topics = Array.from(trends);
+      }
+      
+      // Extract media opportunities from real news data
+      if (newsInfo.opportunities) {
+        profile.mediaOpportunities = newsInfo.opportunities.map(opp => ({
+          title: opp.title,
+          outlet: opp.outlet,
+          deadline: opp.deadline,
+          type: opp.type,
+          action: opp.suggestedAction,
+          url: opp.url
+        }));
+        
+        // Extract events from opportunities
+        profile.events = newsInfo.opportunities
+          .filter(o => o.title.toLowerCase().includes('conference') || 
+                      o.title.toLowerCase().includes('summit') ||
+                      o.title.toLowerCase().includes('panel'))
+          .map(o => ({
+            name: o.title,
+            type: 'speaking_opportunity',
+            deadline: o.deadline,
+            urgency: o.relevance
+          }));
+      }
+      
+      // Extract breaking news patterns
+      if (newsInfo.breakingNews) {
+        profile.narratives = newsInfo.breakingNews.map(news => ({
+          title: news.title,
+          type: news.category === 'breaking_news' ? 'emerging' : 'ongoing',
+          urgency: news.urgency,
+          suggestedAction: news.suggestedAction
+        }));
+      }
+    }
 
-    setDeploymentPlan(plan);
+    // Process Media MCP data (real journalists)
+    if (mcpData.mediaData?.data?.journalists) {
+      profile.journalists = mcpData.mediaData.data.journalists.map(j => ({
+        name: j.name || 'Unknown',
+        outlet: j.outlet || j.platform || 'Independent',
+        beat: j.beat || j.topics?.join(', ') || 'General',
+        relevance: j.relevance || 'medium',
+        contact: j.contact || j.handle || '',
+        actionableInsight: `Pitch ${j.beat || 'relevant'} stories to ${j.name}`
+      }));
+    }
+
+    // Extract social trends from media data
+    if (mcpData.mediaData?.data?.trends) {
+      profile.socialTrends = mcpData.mediaData.data.trends.map(t => ({
+        topic: t.topic || t.hashtag,
+        platform: t.platform,
+        engagement: t.engagement || t.volume,
+        sentiment: t.sentiment
+      }));
+    }
+
+    // Generate actionable opportunities from all data
+    profile.opportunities = generateOpportunities(profile);
+
+    return profile;
   };
 
-  // Step renderers
-  const renderStep1 = () => (
-    <div className="step-content">
-      <h2>Organization Profile</h2>
-      <p className="step-description">Tell us about your organization so we can customize our intelligence gathering.</p>
-      
-      <div className="form-grid">
-        <div className="form-group">
-          <label>Organization Name *</label>
-          <input
-            type="text"
-            value={formData.organization.name}
-            onChange={(e) => setFormData({...formData, organization: {...formData.organization, name: e.target.value}})}
-            placeholder="e.g., Acme Corporation"
-          />
-        </div>
-        
-        <div className="form-group">
-          <label>Website Domain *</label>
-          <input
-            type="text"
-            value={formData.organization.domain}
-            onChange={(e) => {
-              setFormData({...formData, organization: {...formData.organization, domain: e.target.value}});
-              if (e.target.value.includes('.')) {
-                fetchOrganizationIntelligence(e.target.value);
-              }
-            }}
-            placeholder="e.g., acme.com"
-          />
-          {isLoading && <span className="loading-indicator">🔍 Gathering intelligence...</span>}
-        </div>
-
-        <div className="form-group">
-          <label>Industry *</label>
-          <select
-            value={formData.organization.industry}
-            onChange={(e) => setFormData({...formData, organization: {...formData.organization, industry: e.target.value}})}
-          >
-            <option value="">Select Industry</option>
-            <option value="technology">Technology</option>
-            <option value="healthcare">Healthcare</option>
-            <option value="finance">Financial Services</option>
-            <option value="retail">Retail</option>
-            <option value="manufacturing">Manufacturing</option>
-            <option value="energy">Energy</option>
-            <option value="media">Media & Entertainment</option>
-            <option value="education">Education</option>
-            <option value="government">Government</option>
-            <option value="nonprofit">Non-Profit</option>
-          </select>
-        </div>
-
-        <div className="form-group">
-          <label>Market Position</label>
-          <select
-            value={formData.organization.marketPosition}
-            onChange={(e) => setFormData({...formData, organization: {...formData.organization, marketPosition: e.target.value}})}
-          >
-            <option value="leader">Market Leader</option>
-            <option value="challenger">Challenger</option>
-            <option value="follower">Follower</option>
-            <option value="niche">Niche Player</option>
-          </select>
-        </div>
-
-        <div className="form-group">
-          <label>Company Size</label>
-          <select
-            value={formData.organization.size}
-            onChange={(e) => setFormData({...formData, organization: {...formData.organization, size: e.target.value}})}
-          >
-            <option value="startup">Startup (1-50)</option>
-            <option value="small">Small (51-200)</option>
-            <option value="medium">Medium (201-1000)</option>
-            <option value="large">Large (1001-5000)</option>
-            <option value="enterprise">Enterprise (5000+)</option>
-          </select>
-        </div>
-
-        <div className="form-group">
-          <label>Headquarters</label>
-          <input
-            type="text"
-            value={formData.organization.headquarters}
-            onChange={(e) => setFormData({...formData, organization: {...formData.organization, headquarters: e.target.value}})}
-            placeholder="e.g., San Francisco, CA"
-          />
-        </div>
-      </div>
-
-      {organizationIntelligence && (
-        <div className="intelligence-preview">
-          <h3>🔍 What we discovered about {formData.organization.name}:</h3>
-          <div className="intelligence-content">
-            <p><strong>Industry Position:</strong> {organizationIntelligence.position}</p>
-            <p><strong>Key Competitors:</strong> {organizationIntelligence.competitors?.join(', ')}</p>
-            <p><strong>Recent News:</strong> {organizationIntelligence.recentNews}</p>
-            <p><strong>Sentiment:</strong> {organizationIntelligence.sentiment}</p>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  const renderStep2 = () => (
-    <div className="step-content">
-      <h2>Strategic Objectives</h2>
-      <p className="step-description">Define your PR and communication goals.</p>
-      
-      <div className="form-group">
-        <label>Primary Goal</label>
-        <select
-          value={formData.objectives.primaryGoal}
-          onChange={(e) => setFormData({...formData, objectives: {...formData.objectives, primaryGoal: e.target.value}})}
-        >
-          <option value="">Select Primary Goal</option>
-          <option value="brand_awareness">Increase Brand Awareness</option>
-          <option value="thought_leadership">Establish Thought Leadership</option>
-          <option value="crisis_preparedness">Crisis Preparedness</option>
-          <option value="ipo_preparation">IPO/M&A Preparation</option>
-          <option value="reputation_repair">Reputation Repair</option>
-          <option value="product_launch">Product Launch Support</option>
-          <option value="regulatory_navigation">Regulatory Navigation</option>
-          <option value="competitive_positioning">Competitive Positioning</option>
-        </select>
-      </div>
-
-      <div className="kpi-grid">
-        <h3>Key Performance Indicators</h3>
-        {Object.entries(formData.objectives.kpis).map(([key, kpi]) => (
-          <div key={key} className="kpi-item">
-            <label>
-              <input
-                type="checkbox"
-                checked={kpi.enabled}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  objectives: {
-                    ...formData.objectives,
-                    kpis: {
-                      ...formData.objectives.kpis,
-                      [key]: { ...kpi, enabled: e.target.checked }
-                    }
-                  }
-                })}
-              />
-              {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-            </label>
-            {kpi.enabled && (
-              <input
-                type="number"
-                value={kpi.target}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  objectives: {
-                    ...formData.objectives,
-                    kpis: {
-                      ...formData.objectives.kpis,
-                      [key]: { ...kpi, target: parseInt(e.target.value) }
-                    }
-                  }
-                })}
-                placeholder="Target"
-              />
-            )}
-          </div>
-        ))}
-      </div>
-
-      {formData.objectives.competitiveSet.length > 0 && (
-        <div className="detected-items">
-          <h3>Detected Competitors</h3>
-          <div className="chip-container">
-            {formData.objectives.competitiveSet.map((competitor, idx) => (
-              <span key={idx} className="chip">{competitor}</span>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  const renderStep3 = () => (
-    <div className="step-content">
-      <h2>Intelligence Configuration</h2>
-      <p className="step-description">Configure what and how we monitor.</p>
-      
-      <div className="monitoring-grid">
-        <h3>Monitoring Scope</h3>
-        {Object.entries(formData.intelligence.monitoringScope).map(([key, enabled]) => (
-          <label key={key} className="monitoring-item">
-            <input
-              type="checkbox"
-              checked={enabled}
-              onChange={(e) => setFormData({
-                ...formData,
-                intelligence: {
-                  ...formData.intelligence,
-                  monitoringScope: {
-                    ...formData.intelligence.monitoringScope,
-                    [key]: e.target.checked
-                  }
-                }
-              })}
-            />
-            {key.charAt(0).toUpperCase() + key.slice(1)}
-          </label>
-        ))}
-      </div>
-
-      <div className="threshold-grid">
-        <h3>Alert Thresholds (0-100)</h3>
-        {Object.entries(formData.intelligence.alertThresholds).map(([key, value]) => (
-          <div key={key} className="threshold-item">
-            <label>{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</label>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={value}
-              onChange={(e) => setFormData({
-                ...formData,
-                intelligence: {
-                  ...formData.intelligence,
-                  alertThresholds: {
-                    ...formData.intelligence.alertThresholds,
-                    [key]: parseInt(e.target.value)
-                  }
-                }
-              })}
-            />
-            <span>{value}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="cascade-config">
-        <h3>Cascade Prediction</h3>
-        <label>
-          <input
-            type="checkbox"
-            checked={formData.intelligence.cascadePrediction.enabled}
-            onChange={(e) => setFormData({
-              ...formData,
-              intelligence: {
-                ...formData.intelligence,
-                cascadePrediction: {
-                  ...formData.intelligence.cascadePrediction,
-                  enabled: e.target.checked
-                }
-              }
-            })}
-          />
-          Enable cascade prediction (predict 2nd and 3rd order effects)
-        </label>
-      </div>
-    </div>
-  );
-
-  const renderStep4 = () => (
-    <div className="step-content">
-      <h2>MCP Activation Strategy</h2>
-      <p className="step-description">Choose which intelligence modules to activate.</p>
-      
-      <div className="mcp-grid">
-        {Object.entries(formData.mcpStrategy.activeMCPs).map(([mcp, config]) => (
-          <div key={mcp} className={`mcp-card ${config.priority >= 0.9 ? 'critical' : config.priority >= 0.7 ? 'high' : 'medium'}`}>
-            <div className="mcp-header">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={config.enabled}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    mcpStrategy: {
-                      ...formData.mcpStrategy,
-                      activeMCPs: {
-                        ...formData.mcpStrategy.activeMCPs,
-                        [mcp]: { ...config, enabled: e.target.checked }
-                      }
-                    }
-                  })}
-                />
-                {mcp.replace('signaldesk-', '').toUpperCase()}
-              </label>
-              <span className="priority-badge">Priority: {config.priority}</span>
-            </div>
-            <p className="mcp-description">{getMCPDescription(mcp)}</p>
-          </div>
-        ))}
-      </div>
-
-      <button 
-        className="generate-plan-btn"
-        onClick={generateDeploymentPlan}
-      >
-        Preview Deployment Plan
-      </button>
-    </div>
-  );
-
-  const renderStep5 = () => (
-    <div className="step-content">
-      <h2>Review & Deploy</h2>
-      <p className="step-description">Review your configuration and deployment plan.</p>
-      
-      {deploymentPlan && (
-        <div className="deployment-plan">
-          <h3>📋 Deployment Plan</h3>
-          
-          <div className="plan-phases">
-            {deploymentPlan.phases.map((phase, idx) => (
-              <div key={idx} className="phase-card">
-                <h4>{phase.name}</h4>
-                <p className="phase-duration">⏱ {phase.duration}</p>
-                <div className="phase-mcps">
-                  {phase.mcps.map(mcp => (
-                    <span key={mcp} className="mcp-chip">{mcp.replace('signaldesk-', '')}</span>
-                  ))}
-                </div>
-                <ul className="phase-actions">
-                  {phase.actions.map((action, i) => (
-                    <li key={i}>{action}</li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-
-          <div className="expected-outcomes">
-            <h4>Expected Outcomes</h4>
-            <ul>
-              {deploymentPlan.expectedOutcomes.map((outcome, idx) => (
-                <li key={idx}>{outcome}</li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="activation-sequence">
-            <h4>MCP Activation Sequence</h4>
-            <div className="sequence-timeline">
-              {deploymentPlan.mcpSequence.map((mcp, idx) => (
-                <div key={idx} className="sequence-item">
-                  <span className="sequence-number">{idx + 1}</span>
-                  <span className="sequence-name">{mcp.name.replace('signaldesk-', '')}</span>
-                  <span className="sequence-priority">{mcp.priority}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="final-actions">
-        <button 
-          className="edit-config-btn"
-          onClick={() => setCurrentStep(1)}
-        >
-          ← Edit Configuration
-        </button>
-        
-        <button 
-          className="deploy-btn"
-          onClick={deployConfiguration}
-          disabled={isLoading}
-        >
-          {isLoading ? 'Deploying...' : '🚀 Deploy SignalDesk'}
-        </button>
-      </div>
-    </div>
-  );
-
-  const getMCPDescription = (mcp) => {
-    const descriptions = {
-      'signaldesk-monitor': 'Real-time stakeholder monitoring and alert generation',
-      'signaldesk-intelligence': 'Market intelligence and competitor analysis',
-      'signaldesk-orchestrator': 'Cross-MCP coordination and intelligence sharing',
-      'signaldesk-opportunities': 'PR opportunity discovery and analysis',
-      'signaldesk-entities': 'Entity recognition and profile enrichment',
-      'signaldesk-crisis': 'Crisis detection and response coordination',
-      'signaldesk-regulatory': 'Regulatory monitoring and compliance tracking',
-      'signaldesk-relationships': 'Journalist and influencer relationship management',
-      'signaldesk-media': 'Media outreach and pitch generation',
-      'signaldesk-social': 'Social media monitoring and engagement',
-      'signaldesk-narratives': 'Narrative tracking and control',
-      'signaldesk-stakeholder-groups': 'Coalition and group dynamics analysis',
-      'signaldesk-content': 'Content generation and localization',
-      'signaldesk-campaigns': 'Campaign planning and orchestration',
-      'signaldesk-analytics': 'Performance analytics and ROI measurement',
-      'signaldesk-memory': 'Knowledge management and context storage',
-      'signaldesk-scraper': 'Web scraping and data extraction'
-    };
-    return descriptions[mcp] || 'Intelligence gathering and analysis';
+  // Generate actionable competitor insights
+  const generateCompetitorInsight = (competitorData) => {
+    const stars = competitorData.data?.stars || 0;
+    const activity = competitorData.data?.recentCommits || 0;
+    
+    if (stars > 100000) {
+      return 'Major market leader - analyze their strategy and differentiation points';
+    } else if (stars > 10000) {
+      return 'Strong competitor - monitor for partnership or competitive positioning';
+    } else if (activity > 10) {
+      return 'Active development - track for emerging features and market moves';
+    } else {
+      return 'Monitor for market positioning and potential acquisition';
+    }
   };
 
-  const deployConfiguration = async () => {
-    setIsLoading(true);
+  // Generate opportunities from discovered data
+  const generateOpportunities = (profile) => {
+    const opportunities = [];
     
-    try {
-      // Save configuration to localStorage
-      localStorage.setItem('signaldesk_onboarding', JSON.stringify(formData));
-      
-      // Initialize MCPs via orchestrator
-      const { data } = await supabase.functions.invoke('mcp-bridge', {
-        body: {
-          server: 'orchestrator',
-          method: 'initialize_organization',
-          params: {
-            organization: formData.organization,
-            objectives: formData.objectives,
-            intelligence: formData.intelligence,
-            mcpStrategy: formData.mcpStrategy,
-            settings: formData.settings
-          },
-          organizationId: `org-${Date.now()}`
-        }
-      });
-
-      if (error) throw error;
-
-      // Start critical MCPs immediately
-      const criticalMCPs = Object.entries(formData.mcpStrategy.activeMCPs)
-        .filter(([_, config]) => config.enabled && config.priority >= 0.9)
-        .map(([name]) => name);
-
-      for (const mcp of criticalMCPs) {
-        await supabase.functions.invoke('mcp-bridge', {
-          body: {
-            server: mcp.replace('signaldesk-', ''),
-            method: 'start_monitoring',
-            params: formData,
-            organizationId: formData.organization.name
-          }
+    // Competitive opportunities
+    if (profile.competitors.length > 0) {
+      const weakCompetitor = profile.competitors.find(c => c.recentActivity < 5);
+      if (weakCompetitor) {
+        opportunities.push({
+          type: 'competitive',
+          title: `Competitor ${weakCompetitor.name} showing reduced activity`,
+          action: 'Opportunity to gain market share with increased visibility',
+          urgency: 'high'
         });
       }
-
-      // Navigate to dashboard
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 2000);
-      
-    } catch (error) {
-      console.error('Deployment error:', error);
-      alert('Error deploying configuration. Please try again.');
     }
     
-    setIsLoading(false);
-  };
-
-  const handleNext = () => {
-    if (currentStep === 4 && !deploymentPlan) {
-      generateDeploymentPlan();
+    // Media opportunities
+    if (profile.mediaOpportunities.length > 0) {
+      opportunities.push({
+        type: 'media',
+        title: `${profile.mediaOpportunities.length} journalist queries available`,
+        action: 'Respond to media requests for immediate coverage',
+        urgency: 'critical'
+      });
     }
-    setCurrentStep(prev => Math.min(prev + 1, 5));
+    
+    // Event opportunities
+    if (profile.events.length > 0) {
+      opportunities.push({
+        type: 'event',
+        title: `${profile.events.length} speaking opportunities identified`,
+        action: 'Apply for speaking slots to establish thought leadership',
+        urgency: 'high'
+      });
+    }
+    
+    // Narrative opportunities
+    if (profile.narratives.some(n => n.type === 'emerging')) {
+      opportunities.push({
+        type: 'narrative',
+        title: 'Emerging narrative detected in your industry',
+        action: 'Position as thought leader on emerging topic',
+        urgency: 'medium'
+      });
+    }
+    
+    return opportunities;
   };
 
-  const handlePrevious = () => {
-    setCurrentStep(prev => Math.max(prev - 1, 1));
+  // Call MCP through Supabase bridge
+  const callMCP = async (server, method, params) => {
+    try {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/mcp-bridge`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({
+          server,
+          method,
+          params,
+          organizationId: 'onboarding'
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.result || data;
+      }
+    } catch (error) {
+      console.error(`MCP ${server}.${method} error:`, error);
+    }
+    return null;
+  };
+
+  // Helper functions
+  const extractIndustry = (description) => {
+    const text = description.toLowerCase();
+    if (text.includes('finance') || text.includes('bank')) return 'finance';
+    if (text.includes('health') || text.includes('medical')) return 'healthcare';
+    if (text.includes('retail') || text.includes('shop')) return 'retail';
+    if (text.includes('education') || text.includes('learn')) return 'education';
+    return 'technology'; // default
+  };
+
+  const extractKeywords = (description) => {
+    const words = description.toLowerCase().split(/\s+/);
+    const stopWords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for'];
+    return words.filter(w => w.length > 3 && !stopWords.includes(w)).slice(0, 5);
+  };
+
+  const generateMCPRecommendations = (profile) => {
+    const recommendations = {
+      priorities: {
+        realTimeAlerts: true,
+        competitiveIntel: profile.competitors.length > 0,
+        opportunityDetection: profile.opportunities.length > 0,
+        crisisMonitoring: true,
+        narrativeTracking: profile.narratives.length > 0,
+        eventTracking: profile.events.length > 0,
+        regulatoryTracking: profile.regulatoryBodies.length > 0,
+        socialMonitoring: profile.socialTrends.length > 0,
+      },
+      suggestedMCPs: [],
+      insights: []
+    };
+
+    // Generate actionable recommendations
+    if (profile.competitors.length > 3) {
+      recommendations.insights.push(`🎯 ${profile.competitors.length} active competitors detected - competitive intelligence critical`);
+    }
+    
+    if (profile.events.length > 0) {
+      recommendations.insights.push(`📅 ${profile.events.length} speaking opportunities available for thought leadership`);
+    }
+    
+    if (profile.journalists.length > 0) {
+      recommendations.insights.push(`📰 ${profile.journalists.length} relevant journalists identified for media outreach`);
+    }
+    
+    if (profile.mediaOpportunities.length > 0) {
+      recommendations.insights.push(`🚀 ${profile.mediaOpportunities.length} immediate media opportunities - act fast!`);
+    }
+    
+    if (profile.cascadeIndicators.length > 0) {
+      recommendations.insights.push(`⚡ Cascade event patterns detected - monitor for ripple effects`);
+    }
+
+    return recommendations;
+  };
+
+  const handleSubmit = async () => {
+    setIsAnalyzing(true);
+    try {
+      // Save configuration
+      const config = {
+        organization: formData.organization,
+        profile: discoveredProfile,
+        monitoring: formData.monitoring,
+        goals: formData.goals,
+        mcpRecommendations,
+        createdAt: new Date().toISOString()
+      };
+      
+      localStorage.setItem('signaldesk_config', JSON.stringify(config));
+      localStorage.setItem('signaldesk_org_id', formData.organization.name);
+      
+      navigate('/intelligence-hub');
+    } catch (error) {
+      console.error('Configuration save error:', error);
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   return (
-    <div className="comprehensive-onboarding">
-      <div className="onboarding-header">
-        <h1>SignalDesk Intelligence Setup</h1>
+    <div className="simplified-onboarding">
+      <div className="onboarding-container">
+        <div className="onboarding-header">
+          <h1>🎯 Intelligent Organization Analysis</h1>
+          <p>MCPs will analyze your organization to discover WHO and WHAT to monitor</p>
+        </div>
+
         <div className="progress-bar">
-          <div className="progress-fill" style={{ width: `${(currentStep / 5) * 100}%` }} />
+          <div className="progress-fill" style={{ width: `${(currentStep / 4) * 100}%` }}></div>
         </div>
-        <div className="step-indicators">
-          {['Organization', 'Objectives', 'Intelligence', 'MCPs', 'Deploy'].map((label, idx) => (
-            <div
-              key={idx}
-              className={`step-indicator ${currentStep === idx + 1 ? 'active' : ''} ${currentStep > idx + 1 ? 'completed' : ''}`}
-            >
-              <span className="step-number">{idx + 1}</span>
-              <span className="step-label">{label}</span>
+
+        {currentStep === 1 && (
+          <div className="onboarding-step">
+            <h2>Tell us about your organization</h2>
+            <p>Our MCPs will analyze this information to build your intelligence profile</p>
+            
+            <div className="form-group">
+              <label>Organization Name *</label>
+              <input
+                type="text"
+                placeholder="e.g., Acme Corp"
+                value={formData.organization.name}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  organization: { ...formData.organization, name: e.target.value }
+                })}
+              />
             </div>
-          ))}
-        </div>
+
+            <div className="form-group">
+              <label>Website URL *</label>
+              <input
+                type="url"
+                placeholder="https://www.example.com"
+                value={formData.organization.website}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  organization: { ...formData.organization, website: e.target.value }
+                })}
+                onBlur={analyzeOrganization}
+              />
+              <small>MCPs will analyze your website to understand your business</small>
+            </div>
+
+            <div className="form-group">
+              <label>Brief Description</label>
+              <textarea
+                placeholder="What does your organization do? (helps MCPs understand context)"
+                value={formData.organization.description}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  organization: { ...formData.organization, description: e.target.value }
+                })}
+                rows={3}
+              />
+            </div>
+
+            <button 
+              className="next-button"
+              onClick={() => {
+                analyzeOrganization();
+                setCurrentStep(2);
+              }}
+              disabled={!formData.organization.name || !formData.organization.website}
+            >
+              Analyze Organization →
+            </button>
+          </div>
+        )}
+
+        {currentStep === 2 && (
+          <div className="onboarding-step">
+            <h2>MCP Analysis Results</h2>
+            {isAnalyzing ? (
+              <div className="analyzing">
+                <div className="spinner"></div>
+                <p>MCPs are analyzing your organization...</p>
+                <small>🔍 Scraping website for insights...</small>
+                <small>🎯 Discovering competitors on GitHub...</small>
+                <small>📰 Finding relevant journalists and media...</small>
+                <small>📅 Identifying events and opportunities...</small>
+              </div>
+            ) : discoveredProfile ? (
+              <div className="discovered-profile">
+                <div className="profile-section">
+                  <h3>🏢 Organization Profile</h3>
+                  <p><strong>Industry:</strong> {discoveredProfile.industry}</p>
+                  <p><strong>Size:</strong> {discoveredProfile.size}</p>
+                  {discoveredProfile.cascadeIndicators.length > 0 && (
+                    <p><strong>Growth Signals:</strong> {discoveredProfile.cascadeIndicators[0].pattern}</p>
+                  )}
+                </div>
+
+                <div className="profile-section">
+                  <h3>🎯 Real Competitors Found ({discoveredProfile.competitors.length})</h3>
+                  <ul>
+                    {discoveredProfile.competitors.map((c, i) => (
+                      <li key={i}>
+                        <strong>{c.name}</strong>
+                        {c.repository && <span> / {c.repository}</span>}
+                        <br/>
+                        <small>{c.description}</small>
+                        <br/>
+                        <span className="metrics">
+                          ⭐ {c.stars.toLocaleString()} stars | 
+                          📊 {c.recentActivity} recent commits
+                        </span>
+                        <br/>
+                        <em className="insight">{c.actionableInsight}</em>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="profile-section">
+                  <h3>📰 Media Opportunities ({discoveredProfile.mediaOpportunities.length})</h3>
+                  <ul>
+                    {discoveredProfile.mediaOpportunities.slice(0, 3).map((m, i) => (
+                      <li key={i}>
+                        <strong>{m.title}</strong>
+                        <br/>
+                        <small>{m.outlet} - Deadline: {new Date(m.deadline).toLocaleDateString()}</small>
+                        <br/>
+                        <em>{m.action}</em>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="profile-section">
+                  <h3>📅 Events & Speaking Opportunities ({discoveredProfile.events.length})</h3>
+                  <ul>
+                    {discoveredProfile.events.map((e, i) => (
+                      <li key={i}>
+                        <strong>{e.name}</strong> - {e.type} ({e.urgency} priority)
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="profile-section">
+                  <h3>🚀 Immediate Opportunities ({discoveredProfile.opportunities.length})</h3>
+                  {discoveredProfile.opportunities.map((opp, i) => (
+                    <div key={i} className={`opportunity ${opp.urgency}`}>
+                      <strong>{opp.title}</strong>
+                      <p>{opp.action}</p>
+                      <span className="urgency-badge">{opp.urgency}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="profile-section">
+                  <h3>💡 MCP Intelligence Insights</h3>
+                  {mcpRecommendations?.insights.map((insight, i) => (
+                    <p key={i}>{insight}</p>
+                  ))}
+                </div>
+
+                <button className="next-button" onClick={() => setCurrentStep(3)}>
+                  Configure Monitoring →
+                </button>
+              </div>
+            ) : (
+              <p>Enter your organization details to begin analysis</p>
+            )}
+          </div>
+        )}
+
+        {currentStep === 3 && (
+          <div className="onboarding-step">
+            <h2>Configure What to Monitor</h2>
+            <p>Based on MCP analysis, we recommend monitoring:</p>
+
+            <div className="monitoring-config">
+              <h3>WHO to Monitor</h3>
+              <div className="monitor-grid">
+                {Object.entries(formData.monitoring.whoToMonitor).map(([key, value]) => (
+                  value.length > 0 && (
+                    <div key={key} className="monitor-item">
+                      <input type="checkbox" defaultChecked id={`who-${key}`} />
+                      <label htmlFor={`who-${key}`}>
+                        <strong>{key}:</strong> {value.length} identified
+                        <br/>
+                        <small>{value.slice(0, 3).join(', ')}</small>
+                      </label>
+                    </div>
+                  )
+                ))}
+              </div>
+
+              <h3>WHAT to Monitor</h3>
+              <div className="monitor-grid">
+                {Object.entries(formData.monitoring.whatToMonitor).map(([key, value]) => (
+                  value.length > 0 && (
+                    <div key={key} className="monitor-item">
+                      <input type="checkbox" defaultChecked id={`what-${key}`} />
+                      <label htmlFor={`what-${key}`}>
+                        <strong>{key.replace(/([A-Z])/g, ' $1').trim()}:</strong> {value.length} items
+                      </label>
+                    </div>
+                  )
+                ))}
+              </div>
+
+              <button className="next-button" onClick={() => setCurrentStep(4)}>
+                Set Goals →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {currentStep === 4 && (
+          <div className="onboarding-step">
+            <h2>Define Your Intelligence Goals</h2>
+            
+            <div className="form-group">
+              <label>Primary Goal</label>
+              <select
+                value={formData.goals.primary}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  goals: { ...formData.goals, primary: e.target.value }
+                })}
+              >
+                <option value="">Select primary goal</option>
+                <option value="thought_leadership">Establish Thought Leadership</option>
+                <option value="brand_awareness">Increase Brand Awareness</option>
+                <option value="crisis_prevention">Crisis Prevention & Management</option>
+                <option value="competitive_advantage">Gain Competitive Advantage</option>
+                <option value="investor_relations">Enhance Investor Relations</option>
+                <option value="market_expansion">Support Market Expansion</option>
+                <option value="talent_acquisition">Boost Talent Acquisition</option>
+                <option value="event_visibility">Maximize Event Visibility</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Timeline</label>
+              <select
+                value={formData.goals.timeline}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  goals: { ...formData.goals, timeline: e.target.value }
+                })}
+              >
+                <option value="1_month">1 Month Sprint</option>
+                <option value="3_months">3 Month Campaign</option>
+                <option value="6_months">6 Month Strategy</option>
+                <option value="1_year">Annual Plan</option>
+              </select>
+            </div>
+
+            <button 
+              className="complete-button"
+              onClick={handleSubmit}
+              disabled={isAnalyzing || !formData.goals.primary}
+            >
+              {isAnalyzing ? 'Setting up...' : 'Launch Intelligence Platform'}
+            </button>
+          </div>
+        )}
       </div>
 
-      <div className="onboarding-content">
-        {currentStep === 1 && renderStep1()}
-        {currentStep === 2 && renderStep2()}
-        {currentStep === 3 && renderStep3()}
-        {currentStep === 4 && renderStep4()}
-        {currentStep === 5 && renderStep5()}
-      </div>
-
-      <div className="onboarding-footer">
-        {currentStep > 1 && (
-          <button onClick={handlePrevious} className="btn-secondary">
-            Previous
-          </button>
-        )}
-        {currentStep < 5 && (
-          <button onClick={handleNext} className="btn-primary">
-            Next
-          </button>
-        )}
-      </div>
+      <style jsx>{`
+        .analyzing {
+          text-align: center;
+          padding: 40px;
+        }
+        
+        .analyzing small {
+          display: block;
+          margin: 5px 0;
+          color: #666;
+        }
+        
+        .spinner {
+          width: 50px;
+          height: 50px;
+          border: 3px solid #f3f3f3;
+          border-top: 3px solid #007bff;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin: 20px auto;
+        }
+        
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        
+        .profile-section {
+          margin: 20px 0;
+          padding: 15px;
+          background: #f8f9fa;
+          border-radius: 8px;
+        }
+        
+        .profile-section h3 {
+          margin-top: 0;
+          color: #333;
+        }
+        
+        .profile-section ul {
+          list-style: none;
+          padding-left: 0;
+        }
+        
+        .profile-section li {
+          padding: 10px 0;
+          border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .metrics {
+          color: #666;
+          font-size: 0.9em;
+        }
+        
+        .insight {
+          color: #007bff;
+          font-size: 0.9em;
+        }
+        
+        .opportunity {
+          padding: 10px;
+          margin: 10px 0;
+          border-radius: 5px;
+          border-left: 4px solid;
+        }
+        
+        .opportunity.critical {
+          border-color: #dc3545;
+          background: #f8d7da;
+        }
+        
+        .opportunity.high {
+          border-color: #ffc107;
+          background: #fff3cd;
+        }
+        
+        .opportunity.medium {
+          border-color: #28a745;
+          background: #d4edda;
+        }
+        
+        .urgency-badge {
+          display: inline-block;
+          padding: 2px 8px;
+          border-radius: 3px;
+          font-size: 0.8em;
+          font-weight: bold;
+          text-transform: uppercase;
+        }
+        
+        .monitor-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+          gap: 15px;
+          margin: 15px 0;
+        }
+        
+        .monitor-item {
+          display: flex;
+          align-items: flex-start;
+          padding: 10px;
+          background: #f8f9fa;
+          border-radius: 5px;
+        }
+        
+        .monitor-item input {
+          margin-right: 10px;
+          margin-top: 3px;
+        }
+        
+        .monitor-item label {
+          flex: 1;
+        }
+        
+        .monitor-item small {
+          color: #666;
+          font-size: 0.85em;
+        }
+        
+        .discovered-profile {
+          max-height: 60vh;
+          overflow-y: auto;
+          padding: 20px;
+        }
+      `}</style>
     </div>
   );
 };
