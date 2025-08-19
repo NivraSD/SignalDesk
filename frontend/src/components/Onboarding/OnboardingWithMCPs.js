@@ -135,6 +135,53 @@ const OnboardingWithMCPs = () => {
     }, 2000);
   };
 
+  // Map frontend service IDs to actual MCP server names
+  const getMCPServerName = (serviceId) => {
+    const mapping = {
+      'media_monitoring': 'media',
+      'competitor_analysis': 'intelligence',
+      'opportunity_scanner': 'opportunities',
+      'trend_analysis': 'news',
+      'stakeholder_mapping': 'relationships',
+      'narrative_tracking': 'social'
+    };
+    return mapping[serviceId] || serviceId;
+  };
+
+  // Get appropriate method for each MCP
+  const getMCPMethod = (serviceId) => {
+    const methods = {
+      'media_monitoring': 'discover',
+      'competitor_analysis': 'gather',
+      'opportunity_scanner': 'discover',
+      'trend_analysis': 'gather',
+      'stakeholder_mapping': 'analyze',
+      'narrative_tracking': 'monitor'
+    };
+    return methods[serviceId] || 'analyze';
+  };
+
+  // Prepare parameters for each MCP
+  const getMCPParams = (serviceId, config) => {
+    const baseParams = {
+      organization: config.organization,
+      keywords: [config.organization.name, ...(config.organization.industry ? [config.organization.industry] : [])]
+    };
+
+    switch(serviceId) {
+      case 'media_monitoring':
+        return { ...baseParams, stakeholder: 'tech_journalists' };
+      case 'competitor_analysis':
+        return { ...baseParams, stakeholder: 'competitors' };
+      case 'opportunity_scanner':
+        return { ...baseParams, limit: 10 };
+      case 'trend_analysis':
+        return { ...baseParams, stakeholder: 'media' };
+      default:
+        return baseParams;
+    }
+  };
+
   const callMCPService = async (serviceId, config) => {
     // Use Supabase mcp-bridge Edge Function
     const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co';
@@ -145,17 +192,12 @@ const OnboardingWithMCPs = () => {
       const response = await fetch(`${SUPABASE_URL}/functions/v1/mcp-bridge`, {
         method: 'POST',
         headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          server: serviceId.replace('_', '-'), // Convert underscore to dash
-          method: 'analyze',
-          params: {
-            organization: config.organization,
-            goals: config.goals,
-            stakeholders: config.stakeholders
-          },
+          server: getMCPServerName(serviceId),
+          method: getMCPMethod(serviceId),
+          params: getMCPParams(serviceId, config),
           organizationId: config.organization.name || 'onboarding'
         })
       });
@@ -167,28 +209,33 @@ const OnboardingWithMCPs = () => {
         }
       }
     } catch (error) {
-      console.log(`MCP ${serviceId} via mcp-bridge failed, using simulation`);
+      console.error(`❌ MCP ${serviceId} failed - NO FALLBACK DATA`);
+      throw new Error(`${serviceId} unavailable - real MCP service not responding`);
     }
     
-    // Fallback to simulated response
-    return simulateMCPResponse(serviceId, config);
+    // NO FALLBACK - Fail fast when MCPs unavailable
+    throw new Error(`${serviceId} unavailable - MCP service not responding`);
   };
 
   const processServiceResponse = (serviceId, data) => {
     // Process real MCP responses based on service type
     switch(serviceId) {
       case 'media_monitoring':
+        // Media MCP returns journalists array in data
+        const journalists = data.data?.journalists || data.journalists || data.queries || [];
         return {
-          count: data.queries?.length || 0,
-          summary: `Found ${data.queries?.length || 0} media opportunities`,
-          data: data.queries
+          count: journalists.length,
+          summary: `Found ${journalists.length} media opportunities`,
+          data: journalists
         };
       
       case 'competitor_analysis':
+        // Intelligence MCP returns insights array
+        const competitors = data.insights || data.competitors || [];
         return {
-          count: data.competitors?.length || 0,
-          summary: `Tracking ${data.competitors?.length || 0} competitors`,
-          data: data.competitors
+          count: competitors.length,
+          summary: `Tracking ${competitors.length} competitors`,
+          data: competitors
         };
       
       case 'opportunity_scanner':
