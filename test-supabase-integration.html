@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Supabase Edge Functions Integration</title>
+    <style>
+        body {
+            font-family: 'SF Mono', 'Monaco', monospace;
+            background: #0F172A;
+            color: #E2E8F0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #6366F1;
+            border-bottom: 2px solid #6366F1;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            background: #1F2937;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .test-section h2 {
+            color: #10B981;
+            margin-top: 0;
+        }
+        .result {
+            background: #374151;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        button {
+            background: #6366F1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #4F46E5;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .status.success {
+            background: #10B981;
+            color: white;
+        }
+        .status.error {
+            background: #EF4444;
+            color: white;
+        }
+        .status.pending {
+            background: #F59E0B;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 SignalDesk Supabase Edge Functions Test</h1>
+        
+        <div class="test-section">
+            <h2>🔗 Connection Status</h2>
+            <div id="connectionStatus" class="result">
+                <pre>Checking connection...</pre>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🎯 Test Assess Opportunities</h2>
+            <button onclick="testAssessOpportunities()">Run Test</button>
+            <div id="assessResult" class="result">
+                <pre>Click button to test...</pre>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🔍 Test Monitor Intelligence</h2>
+            <button onclick="testMonitorIntelligence()">Run Test</button>
+            <div id="monitorResult" class="result">
+                <pre>Click button to test...</pre>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🌉 Test MCP Bridge</h2>
+            <button onclick="testMCPBridge()">Run Test</button>
+            <div id="mcpResult" class="result">
+                <pre>Click button to test...</pre>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📊 Configuration Check</h2>
+            <div id="configCheck" class="result">
+                <pre>Loading configuration...</pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+
+        // Test organization ID (use real one from onboarding or create test)
+        const TEST_ORG_ID = 'test-org-001';
+
+        async function checkConnection() {
+            const statusDiv = document.getElementById('connectionStatus');
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+                
+                if (response.ok) {
+                    statusDiv.innerHTML = '<span class="status success">✅ Connected to Supabase</span>';
+                } else {
+                    statusDiv.innerHTML = '<span class="status error">❌ Connection failed</span>';
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<span class="status error">❌ Error: ${error.message}</span>`;
+            }
+        }
+
+        async function testAssessOpportunities() {
+            const resultDiv = document.getElementById('assessResult');
+            resultDiv.innerHTML = '<span class="status pending">⏳ Testing...</span>';
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/assess-opportunities`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'apikey': SUPABASE_ANON_KEY
+                    },
+                    body: JSON.stringify({
+                        organizationId: TEST_ORG_ID,
+                        forceRefresh: true
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <span class="status success">✅ Success</span>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else if (data.error) {
+                    resultDiv.innerHTML = `
+                        <span class="status error">❌ Error</span>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <span class="status success">✅ Response received</span>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <span class="status error">❌ Error</span>
+                    <pre>${error.message}</pre>
+                `;
+            }
+        }
+
+        async function testMonitorIntelligence() {
+            const resultDiv = document.getElementById('monitorResult');
+            resultDiv.innerHTML = '<span class="status pending">⏳ Testing...</span>';
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/monitor-intelligence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'apikey': SUPABASE_ANON_KEY
+                    },
+                    body: JSON.stringify({
+                        organizationId: TEST_ORG_ID
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <span class="status success">✅ Success</span>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else if (data.error) {
+                    resultDiv.innerHTML = `
+                        <span class="status error">❌ Error</span>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <span class="status success">✅ Response received</span>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <span class="status error">❌ Error</span>
+                    <pre>${error.message}</pre>
+                `;
+            }
+        }
+
+        async function testMCPBridge() {
+            const resultDiv = document.getElementById('mcpResult');
+            resultDiv.innerHTML = '<span class="status pending">⏳ Testing...</span>';
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/mcp-bridge`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'apikey': SUPABASE_ANON_KEY
+                    },
+                    body: JSON.stringify({
+                        server: 'opportunities',
+                        method: 'assess',
+                        params: {
+                            keywords: ['AI', 'technology', 'innovation']
+                        },
+                        organizationId: TEST_ORG_ID
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success || data.fallback) {
+                    resultDiv.innerHTML = `
+                        <span class="status ${data.success ? 'success' : 'pending'}">
+                            ${data.success ? '✅ Success' : '⚠️ Using Fallback'}
+                        </span>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else if (data.error) {
+                    resultDiv.innerHTML = `
+                        <span class="status error">❌ Error</span>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <span class="status success">✅ Response received</span>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <span class="status error">❌ Error</span>
+                    <pre>${error.message}</pre>
+                `;
+            }
+        }
+
+        function checkConfiguration() {
+            const configDiv = document.getElementById('configCheck');
+            
+            // Check localStorage for onboarding data
+            const onboardingData = localStorage.getItem('signaldesk_onboarding');
+            const organizationData = localStorage.getItem('signaldesk_organization');
+            
+            let configHTML = '';
+            
+            if (onboardingData) {
+                const config = JSON.parse(onboardingData);
+                configHTML += `<h3>✅ Onboarding Configuration Found</h3>`;
+                configHTML += `<pre>${JSON.stringify(config.opportunities, null, 2)}</pre>`;
+            } else {
+                configHTML += `<h3>⚠️ No Onboarding Data</h3>`;
+                configHTML += `<p>Please complete onboarding first</p>`;
+            }
+            
+            if (organizationData) {
+                const org = JSON.parse(organizationData);
+                configHTML += `<h3>✅ Organization Data Found</h3>`;
+                configHTML += `<pre>Organization ID: ${org.id || 'Not set'}</pre>`;
+            }
+            
+            configDiv.innerHTML = configHTML;
+        }
+
+        // Run checks on page load
+        checkConnection();
+        checkConfiguration();
+    </script>
+</body>
+</html>

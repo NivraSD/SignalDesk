@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Supabase Client Integration</title>
+    <style>
+        body {
+            font-family: 'SF Mono', 'Monaco', monospace;
+            background: #0F172A;
+            color: #E2E8F0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #6366F1;
+            border-bottom: 2px solid #6366F1;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            background: #1F2937;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .test-section h2 {
+            color: #10B981;
+            margin-top: 0;
+        }
+        .result {
+            background: #374151;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        button {
+            background: #6366F1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #4F46E5;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .status.success {
+            background: #10B981;
+            color: white;
+        }
+        .status.error {
+            background: #EF4444;
+            color: white;
+        }
+        .status.pending {
+            background: #F59E0B;
+            color: white;
+        }
+    </style>
+    <!-- Import Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 SignalDesk Supabase Client Test</h1>
+        
+        <div class="test-section">
+            <h2>🔗 Connection Status</h2>
+            <div id="connectionStatus" class="result">
+                <pre>Checking connection...</pre>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🎯 Test Assess Opportunities (via Client)</h2>
+            <button onclick="testAssessOpportunities()">Run Test</button>
+            <div id="assessResult" class="result">
+                <pre>Click button to test...</pre>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🔍 Test Monitor Intelligence (via Client)</h2>
+            <button onclick="testMonitorIntelligence()">Run Test</button>
+            <div id="monitorResult" class="result">
+                <pre>Click button to test...</pre>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🌉 Test MCP Bridge (via Client)</h2>
+            <button onclick="testMCPBridge()">Run Test</button>
+            <div id="mcpResult" class="result">
+                <pre>Click button to test...</pre>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📊 Test Database Query</h2>
+            <button onclick="testDatabaseQuery()">Run Test</button>
+            <div id="dbResult" class="result">
+                <pre>Click button to test...</pre>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>💾 Configuration Check</h2>
+            <div id="configCheck" class="result">
+                <pre>Loading configuration...</pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Supabase client
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+        
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Test organization ID
+        const TEST_ORG_ID = 'test-org-001';
+
+        async function checkConnection() {
+            const statusDiv = document.getElementById('connectionStatus');
+            try {
+                // Test connection by checking auth status
+                const { data, error } = await supabaseClient.auth.getSession();
+                
+                if (!error) {
+                    statusDiv.innerHTML = '<span class="status success">✅ Connected to Supabase</span>';
+                    console.log('Supabase connection successful');
+                } else {
+                    statusDiv.innerHTML = `<span class="status error">❌ Connection error: ${error.message}</span>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<span class="status error">❌ Error: ${error.message}</span>`;
+            }
+        }
+
+        async function testAssessOpportunities() {
+            const resultDiv = document.getElementById('assessResult');
+            resultDiv.innerHTML = '<span class="status pending">⏳ Testing...</span>';
+            
+            try {
+                console.log('Calling assess-opportunities-simple function...');
+                const { data, error } = await supabaseClient.functions.invoke('assess-opportunities-simple', {
+                    body: {
+                        organizationId: TEST_ORG_ID,
+                        forceRefresh: true
+                    }
+                });
+                
+                console.log('Response:', { data, error });
+                
+                if (error) {
+                    resultDiv.innerHTML = `
+                        <span class="status error">❌ Error</span>
+                        <pre>${JSON.stringify(error, null, 2)}</pre>
+                    `;
+                } else if (data) {
+                    resultDiv.innerHTML = `
+                        <span class="status success">✅ Success</span>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <span class="status pending">⚠️ Empty response</span>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = `
+                    <span class="status error">❌ Error</span>
+                    <pre>${error.message}\n${error.stack}</pre>
+                `;
+            }
+        }
+
+        async function testMonitorIntelligence() {
+            const resultDiv = document.getElementById('monitorResult');
+            resultDiv.innerHTML = '<span class="status pending">⏳ Testing...</span>';
+            
+            try {
+                console.log('Calling monitor-intelligence-simple function...');
+                const { data, error } = await supabaseClient.functions.invoke('monitor-intelligence-simple', {
+                    body: {
+                        organizationId: TEST_ORG_ID
+                    }
+                });
+                
+                console.log('Response:', { data, error });
+                
+                if (error) {
+                    resultDiv.innerHTML = `
+                        <span class="status error">❌ Error</span>
+                        <pre>${JSON.stringify(error, null, 2)}</pre>
+                    `;
+                } else if (data) {
+                    resultDiv.innerHTML = `
+                        <span class="status success">✅ Success</span>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <span class="status pending">⚠️ Empty response</span>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = `
+                    <span class="status error">❌ Error</span>
+                    <pre>${error.message}</pre>
+                `;
+            }
+        }
+
+        async function testMCPBridge() {
+            const resultDiv = document.getElementById('mcpResult');
+            resultDiv.innerHTML = '<span class="status pending">⏳ Testing...</span>';
+            
+            try {
+                console.log('Calling mcp-bridge function...');
+                const { data, error } = await supabaseClient.functions.invoke('mcp-bridge', {
+                    body: {
+                        server: 'opportunities',
+                        method: 'assess',
+                        params: {
+                            keywords: ['AI', 'technology', 'innovation']
+                        },
+                        organizationId: TEST_ORG_ID
+                    }
+                });
+                
+                console.log('Response:', { data, error });
+                
+                if (error) {
+                    resultDiv.innerHTML = `
+                        <span class="status error">❌ Error</span>
+                        <pre>${JSON.stringify(error, null, 2)}</pre>
+                    `;
+                } else if (data) {
+                    const status = data.success ? 'success' : (data.fallback ? 'pending' : 'error');
+                    const statusText = data.success ? '✅ Success' : (data.fallback ? '⚠️ Using Fallback' : '❌ Error');
+                    resultDiv.innerHTML = `
+                        <span class="status ${status}">${statusText}</span>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <span class="status pending">⚠️ Empty response</span>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = `
+                    <span class="status error">❌ Error</span>
+                    <pre>${error.message}</pre>
+                `;
+            }
+        }
+
+        async function testDatabaseQuery() {
+            const resultDiv = document.getElementById('dbResult');
+            resultDiv.innerHTML = '<span class="status pending">⏳ Testing database access...</span>';
+            
+            try {
+                // Try to query organizations table
+                console.log('Querying organizations table...');
+                const { data, error } = await supabaseClient
+                    .from('organizations')
+                    .select('*')
+                    .limit(5);
+                
+                console.log('Database response:', { data, error });
+                
+                if (error) {
+                    // Try a simpler query
+                    console.log('First query failed, trying simpler query...');
+                    const { data: simpleData, error: simpleError } = await supabaseClient
+                        .from('organizations')
+                        .select('id, name')
+                        .limit(1);
+                    
+                    if (simpleError) {
+                        resultDiv.innerHTML = `
+                            <span class="status error">❌ Database Error</span>
+                            <pre>${JSON.stringify(simpleError, null, 2)}</pre>
+                            <p>Note: This might be normal if tables haven't been created yet.</p>
+                        `;
+                    } else {
+                        resultDiv.innerHTML = `
+                            <span class="status success">✅ Database Connected (Limited Access)</span>
+                            <pre>${JSON.stringify(simpleData, null, 2)}</pre>
+                        `;
+                    }
+                } else {
+                    resultDiv.innerHTML = `
+                        <span class="status success">✅ Database Connected</span>
+                        <pre>Found ${data ? data.length : 0} organizations</pre>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                console.error('Database error:', error);
+                resultDiv.innerHTML = `
+                    <span class="status error">❌ Error</span>
+                    <pre>${error.message}</pre>
+                `;
+            }
+        }
+
+        function checkConfiguration() {
+            const configDiv = document.getElementById('configCheck');
+            
+            // Check localStorage for onboarding data
+            const onboardingData = localStorage.getItem('signaldesk_onboarding');
+            const organizationData = localStorage.getItem('signaldesk_organization');
+            
+            let configHTML = '';
+            
+            if (onboardingData) {
+                const config = JSON.parse(onboardingData);
+                configHTML += `<h3>✅ Onboarding Configuration Found</h3>`;
+                
+                // Show opportunity configuration
+                if (config.opportunities) {
+                    const enabledOpps = Object.keys(config.opportunities)
+                        .filter(key => config.opportunities[key] && config.opportunities[key].enabled);
+                    configHTML += `<p>Enabled Opportunities: ${enabledOpps.join(', ')}</p>`;
+                }
+                
+                // Show stakeholder configuration
+                if (config.intelligence) {
+                    configHTML += `<p>Stakeholders: ${config.intelligence.stakeholders || 'Not configured'}</p>`;
+                }
+            } else {
+                configHTML += `<h3>⚠️ No Onboarding Data</h3>`;
+                configHTML += `<p>Please complete onboarding first at http://localhost:3001</p>`;
+            }
+            
+            if (organizationData) {
+                const org = JSON.parse(organizationData);
+                configHTML += `<h3>✅ Organization Data Found</h3>`;
+                configHTML += `<pre>Organization ID: ${org.id || 'Not set'}\nName: ${org.name || 'Not set'}</pre>`;
+            }
+            
+            configDiv.innerHTML = configHTML;
+        }
+
+        // Run checks on page load
+        checkConnection();
+        checkConfiguration();
+        
+        // Log Supabase client for debugging
+        console.log('Supabase client initialized:', supabaseClient);
+    </script>
+</body>
+</html>

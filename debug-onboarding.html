@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Onboarding Step 5</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 40px;
+            background: #1F2937;
+            color: #E2E8F0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        pre {
+            background: #374151;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            color: #10B981;
+        }
+        button {
+            padding: 12px 24px;
+            background: #6366F1;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #5558E0;
+        }
+        .info {
+            background: #374151;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .success {
+            color: #10B981;
+        }
+        .error {
+            color: #EF4444;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Debug Onboarding Step 5</h1>
+        
+        <div class="info">
+            <h2>What Step 5 Should Show:</h2>
+            <ul>
+                <li class="success">✅ Title: "Intelligence Hub Setup"</li>
+                <li class="success">✅ Subtitle: "Tell us who and what to monitor for strategic intelligence"</li>
+                <li class="success">✅ Field 1: Key Stakeholders to Track (textarea)</li>
+                <li class="success">✅ Field 2: Strategic Topics & Trends (textarea)</li>
+                <li class="success">✅ Field 3: Priority Media Outlets (input)</li>
+                <li class="success">✅ Field 4: Critical Keywords & Phrases (input)</li>
+                <li class="success">✅ Field 5: Alert Frequency (select)</li>
+            </ul>
+        </div>
+        
+        <div class="info">
+            <h2>Commands to run in Browser Console (F12):</h2>
+            <pre>
+// 1. Clear everything
+localStorage.clear();
+sessionStorage.clear();
+
+// 2. Force reload without cache
+location.reload(true);
+            </pre>
+        </div>
+        
+        <button onclick="clearEverything()">Clear Everything & Reload App</button>
+        
+        <button onclick="checkFile()">Check ComprehensiveOnboarding.js</button>
+        
+        <div id="result" class="info" style="display: none;">
+            <h3>Result:</h3>
+            <pre id="resultContent"></pre>
+        </div>
+    </div>
+    
+    <script>
+        function clearEverything() {
+            // Clear all storage
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Clear IndexedDB if present
+            if (window.indexedDB) {
+                indexedDB.databases().then(dbs => {
+                    dbs.forEach(db => {
+                        indexedDB.deleteDatabase(db.name);
+                    });
+                });
+            }
+            
+            // Clear service worker cache
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(registrations => {
+                    registrations.forEach(registration => {
+                        registration.unregister();
+                    });
+                });
+            }
+            
+            // Clear caches
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => {
+                        caches.delete(name);
+                    });
+                });
+            }
+            
+            alert('All caches cleared! Redirecting to app with cache-busting...');
+            
+            // Redirect with timestamp to bypass any CDN/proxy caching
+            window.location.href = 'http://localhost:3000?_t=' + Date.now() + '&nocache=true';
+        }
+        
+        async function checkFile() {
+            try {
+                const response = await fetch('http://localhost:3000/static/js/bundle.js');
+                const text = await response.text();
+                
+                const hasOldText = text.includes('Activate Intelligence Systems');
+                const hasNewText = text.includes('Intelligence Hub Setup');
+                const hasStakeholders = text.includes('Key Stakeholders to Track');
+                
+                const resultDiv = document.getElementById('result');
+                const resultContent = document.getElementById('resultContent');
+                
+                let result = 'Bundle Check Results:\n';
+                result += `Old text (MCP Systems): ${hasOldText ? '❌ FOUND' : '✅ NOT FOUND'}\n`;
+                result += `New text (Intelligence Hub): ${hasNewText ? '✅ FOUND' : '❌ NOT FOUND'}\n`;
+                result += `Stakeholders field: ${hasStakeholders ? '✅ FOUND' : '❌ NOT FOUND'}\n`;
+                
+                if (hasOldText) {
+                    result += '\n⚠️ OLD CODE STILL IN BUNDLE - Try clearing node_modules/.cache';
+                }
+                
+                resultContent.textContent = result;
+                resultDiv.style.display = 'block';
+            } catch (error) {
+                alert('Error checking file: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

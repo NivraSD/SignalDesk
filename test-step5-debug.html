@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Step 5 Debug Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #0f0;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #0f0;
+        }
+        .error {
+            color: #f00;
+            border-color: #f00;
+        }
+        .success {
+            color: #0f0;
+        }
+        button {
+            background: #333;
+            color: #0f0;
+            border: 1px solid #0f0;
+            padding: 10px 20px;
+            margin: 10px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #444;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 2px solid #0f0;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Step 5 Debug Test</h1>
+    
+    <div id="results"></div>
+    
+    <button onclick="clearAllCaches()">Clear All Browser Storage</button>
+    <button onclick="openApp()">Open App in New Window</button>
+    <button onclick="inspectDOM()">Inspect DOM Content</button>
+    
+    <iframe id="appFrame" src="" style="display:none;"></iframe>
+
+    <script>
+        const log = (message, isError = false) => {
+            const div = document.createElement('div');
+            div.className = `test-result ${isError ? 'error' : 'success'}`;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            document.getElementById('results').appendChild(div);
+            console.log(message);
+        };
+
+        function clearAllCaches() {
+            try {
+                // Clear localStorage
+                localStorage.clear();
+                log('✅ localStorage cleared');
+                
+                // Clear sessionStorage
+                sessionStorage.clear();
+                log('✅ sessionStorage cleared');
+                
+                // Clear cookies
+                document.cookie.split(";").forEach(function(c) { 
+                    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+                });
+                log('✅ Cookies cleared');
+                
+                // Clear IndexedDB
+                if (window.indexedDB) {
+                    indexedDB.databases().then(databases => {
+                        databases.forEach(db => {
+                            indexedDB.deleteDatabase(db.name);
+                            log(`✅ IndexedDB ${db.name} cleared`);
+                        });
+                    });
+                }
+                
+                // Clear Cache Storage
+                if ('caches' in window) {
+                    caches.keys().then(names => {
+                        names.forEach(name => {
+                            caches.delete(name);
+                            log(`✅ Cache ${name} cleared`);
+                        });
+                    });
+                }
+                
+                log('🎉 All browser storage cleared! Refresh the page to see changes.');
+            } catch (error) {
+                log(`❌ Error clearing caches: ${error.message}`, true);
+            }
+        }
+
+        function openApp() {
+            const url = 'http://localhost:3001';
+            window.open(url, '_blank');
+            log(`📱 Opening app at ${url}`);
+        }
+
+        function inspectDOM() {
+            const iframe = document.getElementById('appFrame');
+            iframe.style.display = 'block';
+            iframe.src = 'http://localhost:3001';
+            
+            iframe.onload = () => {
+                setTimeout(() => {
+                    try {
+                        // Try to access iframe content (may fail due to CORS)
+                        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                        
+                        // Look for Step 5 content
+                        const step5Elements = iframeDoc.querySelectorAll('[class*="step-content"]');
+                        log(`Found ${step5Elements.length} step-content elements`);
+                        
+                        // Look for MCP elements
+                        const mcpElements = iframeDoc.querySelectorAll('[class*="mcp"]');
+                        log(`Found ${mcpElements.length} MCP-related elements`);
+                        
+                        // Look for text content
+                        const bodyText = iframeDoc.body.innerText;
+                        if (bodyText.includes('MCP Systems')) {
+                            log('❌ Found "MCP Systems" in DOM', true);
+                        }
+                        if (bodyText.includes('Key Stakeholders')) {
+                            log('✅ Found "Key Stakeholders" in DOM');
+                        }
+                        
+                    } catch (error) {
+                        log('⚠️ Cannot access iframe content due to CORS. Open the app directly to inspect.', true);
+                    }
+                }, 2000);
+            };
+        }
+
+        // Auto-run on load
+        window.onload = () => {
+            log('🚀 Debug test loaded');
+            log('📍 Current localStorage keys: ' + Object.keys(localStorage).join(', '));
+            
+            // Check for any cached onboarding data
+            const onboardingData = localStorage.getItem('signaldesk_onboarding');
+            if (onboardingData) {
+                try {
+                    const data = JSON.parse(onboardingData);
+                    log('📦 Found cached onboarding data with step 5: ' + JSON.stringify(data.intelligence));
+                } catch (e) {
+                    log('❌ Error parsing onboarding data', true);
+                }
+            }
+        };
+    </script>
+</body>
+</html>

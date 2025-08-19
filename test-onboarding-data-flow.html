@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Onboarding Data Flow</title>
+    <style>
+        body {
+            font-family: 'SF Mono', 'Monaco', monospace;
+            background: #0F172A;
+            color: #E2E8F0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #6366F1;
+            border-bottom: 2px solid #6366F1;
+            padding-bottom: 10px;
+        }
+        .section {
+            background: #1F2937;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .section h2 {
+            color: #10B981;
+            margin-top: 0;
+        }
+        .data-display {
+            background: #374151;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .status.active {
+            background: #10B981;
+            color: white;
+        }
+        .status.inactive {
+            background: #EF4444;
+            color: white;
+        }
+        button {
+            background: #6366F1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #4F46E5;
+        }
+        .opportunity-card {
+            background: #374151;
+            border: 1px solid #4B5563;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .opportunity-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .opp-type {
+            background: #6366F1;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+        }
+        .weight {
+            color: #10B981;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 SignalDesk Onboarding Data Flow Test</h1>
+        
+        <div class="section">
+            <h2>📦 Stored Configuration</h2>
+            <div id="storedConfig" class="data-display">
+                <pre>Loading...</pre>
+            </div>
+            <button onclick="refreshData()">🔄 Refresh</button>
+            <button onclick="clearData()">🗑️ Clear All Data</button>
+        </div>
+
+        <div class="section">
+            <h2>⚙️ Opportunity Configuration</h2>
+            <div id="opportunityConfig"></div>
+        </div>
+
+        <div class="section">
+            <h2>👥 Stakeholder Configuration</h2>
+            <div id="stakeholderConfig" class="data-display">
+                <pre>Loading...</pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🎯 Active Opportunities (Based on Config)</h2>
+            <div id="activeOpportunities"></div>
+        </div>
+
+        <div class="section">
+            <h2>✅ Data Flow Validation</h2>
+            <div id="validation"></div>
+        </div>
+    </div>
+
+    <script>
+        function loadData() {
+            // Load onboarding data
+            const onboardingData = localStorage.getItem('signaldesk_onboarding');
+            const organizationData = localStorage.getItem('signaldesk_organization');
+            
+            // Display stored configuration
+            const configDiv = document.getElementById('storedConfig');
+            if (onboardingData) {
+                const data = JSON.parse(onboardingData);
+                configDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                
+                // Display opportunity configuration
+                displayOpportunityConfig(data.opportunities);
+                
+                // Display stakeholder configuration
+                displayStakeholderConfig(data.intelligence);
+                
+                // Simulate active opportunities based on config
+                displayActiveOpportunities(data.opportunities);
+                
+                // Validate data flow
+                validateDataFlow(data);
+            } else {
+                configDiv.innerHTML = '<pre>No onboarding data found. Please complete onboarding first.</pre>';
+            }
+        }
+
+        function displayOpportunityConfig(opportunities) {
+            const div = document.getElementById('opportunityConfig');
+            const oppTypes = ['trending', 'news_hook', 'competitor_gap', 'journalist_interest', 
+                             'editorial_calendar', 'award', 'speaking'];
+            
+            let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">';
+            
+            oppTypes.forEach(type => {
+                const config = opportunities[type];
+                if (config) {
+                    const status = config.enabled ? 'active' : 'inactive';
+                    html += `
+                        <div class="opportunity-card">
+                            <div class="opportunity-header">
+                                <span class="opp-type">${type.replace('_', ' ')}</span>
+                                <span class="status ${status}">${status}</span>
+                            </div>
+                            <div>Weight: <span class="weight">${config.weight}%</span></div>
+                        </div>
+                    `;
+                }
+            });
+            
+            html += '</div>';
+            html += `<div style="margin-top: 20px;">
+                        <p>⏱️ Response Time: <strong>${opportunities.responseTime || 'Not set'}</strong></p>
+                        <p>📊 Minimum Score: <strong>${opportunities.minimumScore || 70}</strong></p>
+                        <p>🌊 Cascade Monitoring: <strong>${opportunities.cascadeMonitoring ? 'Enabled' : 'Disabled'}</strong></p>
+                     </div>`;
+            
+            div.innerHTML = html;
+        }
+
+        function displayStakeholderConfig(intelligence) {
+            const div = document.getElementById('stakeholderConfig');
+            if (!intelligence) {
+                div.innerHTML = '<pre>No intelligence configuration found</pre>';
+                return;
+            }
+            
+            let html = '<pre>';
+            html += `Stakeholders: ${intelligence.stakeholders || 'Not configured'}\n`;
+            html += `Topics: ${intelligence.topics || 'Not configured'}\n`;
+            html += `Media Outlets: ${intelligence.mediaOutlets || 'Not configured'}\n`;
+            html += `Keywords: ${intelligence.keywords || 'Not configured'}\n`;
+            html += `Alert Frequency: ${intelligence.alertFrequency || 'realtime'}`;
+            html += '</pre>';
+            
+            div.innerHTML = html;
+        }
+
+        function displayActiveOpportunities(opportunities) {
+            const div = document.getElementById('activeOpportunities');
+            
+            // Simulate opportunities based on enabled types
+            const mockOpps = [
+                { type: 'trending', title: 'AI Ethics Trending Topic', score: 85 },
+                { type: 'news_hook', title: 'Breaking Industry News', score: 78 },
+                { type: 'competitor_gap', title: 'Competitor Weakness Detected', score: 82 },
+                { type: 'journalist_interest', title: 'Reporter Seeking Sources', score: 75 },
+                { type: 'award', title: 'Innovation Award Deadline', score: 65 },
+                { type: 'speaking', title: 'Conference Panel Opportunity', score: 70 },
+                { type: 'editorial_calendar', title: 'Q2 Trends Feature', score: 68 }
+            ];
+            
+            let html = '';
+            mockOpps.forEach(opp => {
+                const config = opportunities[opp.type];
+                if (config && config.enabled) {
+                    const adjustedScore = Math.round(opp.score * (config.weight / 100));
+                    html += `
+                        <div class="opportunity-card">
+                            <div class="opportunity-header">
+                                <span class="opp-type">${opp.type.replace('_', ' ')}</span>
+                                <span>Score: <span class="weight">${adjustedScore}</span></span>
+                            </div>
+                            <div>${opp.title}</div>
+                            <div style="font-size: 12px; color: #9CA3AF;">
+                                Base: ${opp.score} × Weight: ${config.weight}% = Final: ${adjustedScore}
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            
+            div.innerHTML = html || '<p>No active opportunities based on current configuration</p>';
+        }
+
+        function validateDataFlow(data) {
+            const div = document.getElementById('validation');
+            const checks = [];
+            
+            // Check if opportunity configuration exists
+            if (data.opportunities) {
+                checks.push('✅ Opportunity configuration found');
+                
+                // Check if at least one opportunity type is enabled
+                const enabledTypes = Object.keys(data.opportunities).filter(key => 
+                    data.opportunities[key] && data.opportunities[key].enabled
+                );
+                if (enabledTypes.length > 0) {
+                    checks.push(`✅ ${enabledTypes.length} opportunity types enabled`);
+                } else {
+                    checks.push('⚠️ No opportunity types enabled');
+                }
+            } else {
+                checks.push('❌ Opportunity configuration missing');
+            }
+            
+            // Check intelligence configuration
+            if (data.intelligence) {
+                checks.push('✅ Intelligence configuration found');
+                if (data.intelligence.stakeholders) {
+                    checks.push('✅ Stakeholders configured');
+                }
+                if (data.intelligence.topics) {
+                    checks.push('✅ Topics configured');
+                }
+            } else {
+                checks.push('⚠️ Intelligence configuration missing');
+            }
+            
+            // Check organization data
+            const orgData = localStorage.getItem('signaldesk_organization');
+            if (orgData) {
+                checks.push('✅ Organization data stored');
+            } else {
+                checks.push('❌ Organization data missing');
+            }
+            
+            div.innerHTML = checks.map(check => `<div>${check}</div>`).join('');
+        }
+
+        function refreshData() {
+            loadData();
+        }
+
+        function clearData() {
+            if (confirm('Clear all onboarding data?')) {
+                localStorage.removeItem('signaldesk_onboarding');
+                localStorage.removeItem('signaldesk_organization');
+                loadData();
+            }
+        }
+
+        // Load data on page load
+        loadData();
+        
+        // Auto-refresh every 5 seconds
+        setInterval(loadData, 5000);
+    </script>
+</body>
+</html>

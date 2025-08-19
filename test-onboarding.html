@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Comprehensive Onboarding</title>
+</head>
+<body>
+    <h1>Testing Comprehensive Onboarding</h1>
+    <p>Click the button below to clear localStorage and test the new onboarding:</p>
+    
+    <button onclick="clearAndRedirect()">Clear Storage & Test Onboarding</button>
+    
+    <script>
+        function clearAndRedirect() {
+            // Clear all localStorage
+            localStorage.clear();
+            
+            // Specifically remove organization data
+            localStorage.removeItem('signaldesk_organization');
+            localStorage.removeItem('signaldesk_onboarding');
+            
+            alert('Storage cleared! Redirecting to app...');
+            
+            // Redirect to the app
+            window.location.href = 'http://localhost:3000';
+        }
+    </script>
+</body>
+</html>

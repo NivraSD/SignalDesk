@@ -198,7 +198,8 @@
       "Bash(supabase secrets:*)",
       "Bash(supabase functions serve:*)",
       "WebFetch(domain:signaldesk-1anaw4ccm-nivra-sd.vercel.app)",
-      "WebFetch(domain:signaldesk-6p5krbdmp-nivra-sd.vercel.app)"
+      "WebFetch(domain:signaldesk-6p5krbdmp-nivra-sd.vercel.app)",
+      "Bash(PGPASSWORD=MUmjKBxTiecMPpYVgwGsZEKyFfyFbxqV psql -h crossover.proxy.rlwy.net -p 56706 -U postgres -d railway -c \"\\d opportunities\")"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

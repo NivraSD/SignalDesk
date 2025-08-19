@@ -37,6 +37,9 @@ import NivRealtime from "./pages/NivRealtime"; // Realtime artifact system
 import NivDatabase from "./pages/NivDatabase"; // Database-driven Niv (no realtime needed)
 import NivDirect from "./pages/NivDirect"; // Direct API integration - most reliable
 
+// New Four-Module Layout
+import FourModuleLayout from "./components/RailwayUI/FourModuleLayout";
+
 // Log Supabase initialization for debugging
 console.log('🚀 SignalDesk initialized with Supabase:', supabase ? 'Connected' : 'Not connected');
 
@@ -191,21 +194,21 @@ function AppRoutes() {
 }
 
 function App() {
-  // REMOVED platform mode switcher - using Niv-First only
+  // Using new Four-Module Layout as the main interface
   
   return (
     <BrowserRouter>
       <AuthProvider>
         <ProjectProvider>
           <IntelligenceProvider>
-            {/* Using Niv-First layout ONLY - no switcher */}
+            {/* New Four-Module Layout with Niv Strategic Advisor */}
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route
                 path="/*"
                 element={
                   <PrivateRoute>
-                    <NivFirstLayout />
+                    <FourModuleLayout />
                   </PrivateRoute>
                 }
               />

@@ -1,0 +1,623 @@
+/* Shared Module Styles */
+
+/* Stakeholder Monitoring Grid - NEW */
+.stakeholder-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.stakeholder-card {
+  background: #374151;
+  padding: 20px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.stakeholder-card:hover {
+  border-color: #6366F1;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+}
+
+.stakeholder-card.active {
+  border-color: #10B981;
+  background: linear-gradient(135deg, #37415150, #10B98110);
+}
+
+.stakeholder-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.stakeholder-info {
+  flex: 1;
+}
+
+.stakeholder-name {
+  font-weight: 600;
+  color: #E2E8F0;
+  margin-bottom: 5px;
+}
+
+.stakeholder-stats {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: #9CA3AF;
+}
+
+.stakeholder-count {
+  color: #9CA3AF;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.status-indicator.active {
+  color: #10B981;
+}
+
+.status-indicator.monitoring {
+  color: #F59E0B;
+}
+
+/* Module Container */
+.intelligence-module,
+.opportunity-module,
+.execution-module,
+.memoryvault-module {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  color: #E2E8F0;
+}
+
+/* Module Header */
+.module-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #334155;
+  margin-bottom: 2rem;
+}
+
+.module-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0;
+  color: #F1F5F9;
+}
+
+.module-icon {
+  font-size: 1.5rem;
+}
+
+/* Module Tabs */
+.module-tabs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.tab {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid #475569;
+  color: #94A3B8;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.tab:hover {
+  background: #334155;
+  color: #E2E8F0;
+  border-color: #64748B;
+}
+
+.tab.active {
+  background: #4F46E5;
+  color: white;
+  border-color: #4F46E5;
+}
+
+/* Module Body */
+.module-body {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+/* Section Title */
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #F1F5F9;
+  margin: 0 0 1.5rem 0;
+}
+
+/* Cards and Grids */
+.mcp-grid,
+.monitors-grid,
+.campaigns-grid,
+.template-grid,
+.patterns-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.mcp-card,
+.monitor-card,
+.campaign-card,
+.opportunity-card,
+.pattern-card,
+.category-card {
+  background: #1E293B;
+  border: 1px solid #334155;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  transition: all 0.2s ease;
+}
+
+.mcp-card:hover,
+.monitor-card:hover,
+.campaign-card:hover,
+.opportunity-card:hover,
+.pattern-card:hover,
+.category-card:hover {
+  background: #293548;
+  border-color: #475569;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Status Indicators */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 0.5rem;
+}
+
+.status-dot.connected,
+.status-indicator.connected {
+  background: #10B981;
+  color: #10B981;
+}
+
+.status-dot.disconnected {
+  background: #EF4444;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  font-size: 0.75rem;
+  color: #94A3B8;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: #64748B;
+}
+
+.empty-state h3 {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+  color: #94A3B8;
+}
+
+.empty-state p {
+  margin-bottom: 1.5rem;
+}
+
+/* Buttons */
+.primary-btn {
+  padding: 0.625rem 1.25rem;
+  background: #4F46E5;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.primary-btn:hover {
+  background: #4338CA;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+}
+
+.primary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.secondary-btn {
+  padding: 0.625rem 1.25rem;
+  background: #334155;
+  color: #E2E8F0;
+  border: 1px solid #475569;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.secondary-btn:hover {
+  background: #475569;
+  border-color: #64748B;
+}
+
+.action-btn {
+  padding: 0.375rem 0.75rem;
+  background: transparent;
+  color: #94A3B8;
+  border: 1px solid #334155;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+  background: #334155;
+  color: #E2E8F0;
+  border-color: #475569;
+}
+
+/* Forms */
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #CBD5E1;
+}
+
+.form-input,
+.form-textarea,
+.form-select,
+.search-input {
+  width: 100%;
+  padding: 0.625rem 1rem;
+  background: #0F172A;
+  border: 1px solid #334155;
+  border-radius: 0.5rem;
+  color: #E2E8F0;
+  font-size: 0.875rem;
+}
+
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus,
+.search-input:focus {
+  outline: none;
+  border-color: #4F46E5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+/* Loading State */
+.module-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #64748B;
+}
+
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid #334155;
+  border-top-color: #4F46E5;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Intelligence Module Specific */
+.findings-list,
+.alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.finding-card,
+.alert-card {
+  background: #1E293B;
+  border: 1px solid #334155;
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.finding-header,
+.alert-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.finding-type,
+.alert-priority {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  background: #334155;
+  border-radius: 0.25rem;
+}
+
+.alert-card.high {
+  border-left: 3px solid #EF4444;
+}
+
+.alert-card.medium {
+  border-left: 3px solid #F59E0B;
+}
+
+.alert-card.low {
+  border-left: 3px solid #3B82F6;
+}
+
+/* Opportunity Module Specific */
+.queue-filters {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.filter-select {
+  padding: 0.5rem 1rem;
+  background: #1E293B;
+  border: 1px solid #334155;
+  border-radius: 0.5rem;
+  color: #E2E8F0;
+  cursor: pointer;
+}
+
+.opportunities-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.opp-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.opp-type-badge {
+  padding: 0.25rem 0.75rem;
+  background: #334155;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+}
+
+.opp-scores {
+  display: flex;
+  gap: 2rem;
+  margin: 1rem 0;
+  padding: 1rem;
+  background: #0F172A;
+  border-radius: 0.5rem;
+}
+
+.score-item {
+  text-align: center;
+}
+
+.score-label {
+  display: block;
+  font-size: 0.75rem;
+  color: #64748B;
+  margin-bottom: 0.25rem;
+}
+
+.score-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.opp-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+/* Execution Module Specific */
+.generator-workspace {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 2rem;
+}
+
+.template-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  background: #1E293B;
+  border: 1px solid #334155;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.template-card:hover {
+  background: #293548;
+  border-color: #4F46E5;
+}
+
+.template-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.tone-selector {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.tone-option {
+  padding: 0.5rem 1rem;
+  background: #1E293B;
+  border: 1px solid #334155;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tone-option:hover,
+.tone-option.active {
+  background: #4F46E5;
+  border-color: #4F46E5;
+  color: white;
+}
+
+/* MemoryVault Module Specific */
+.memory-categories {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.category-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.memories-list,
+.pattern-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.memory-item,
+.pattern-item {
+  background: #1E293B;
+  border: 1px solid #334155;
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.memory-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  color: #94A3B8;
+}
+
+.memory-content {
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+}
+
+.memory-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.75rem;
+  color: #64748B;
+}
+
+.pattern-card.success {
+  border-left: 3px solid #10B981;
+}
+
+.pattern-card.warning {
+  border-left: 3px solid #F59E0B;
+}
+
+.pattern-card.emerging {
+  border-left: 3px solid #3B82F6;
+}
+
+.success-rate {
+  color: #10B981;
+}
+
+.failure-rate {
+  color: #EF4444;
+}
+
+/* Search Bar */
+.search-bar {
+  display: flex;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.search-btn {
+  padding: 0.625rem 1.25rem;
+  background: #4F46E5;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.search-btn:hover {
+  background: #4338CA;
+}
+
+/* Analytics and Stats */
+.analytics-grid,
+.insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.analytics-card,
+.insight-stat {
+  background: #1E293B;
+  border: 1px solid #334155;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #4F46E5;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: #94A3B8;
+}
