@@ -18,7 +18,7 @@ interface MCPRequest {
 
 // MCP Server endpoints (configured via environment variables)
 const MCP_SERVERS = {
-  opportunities: Deno.env.get('MCP_OPPORTUNITIES_URL') || 'http://localhost:3010',
+  opportunities: Deno.env.get('MCP_OPPORTUNITIES_URL') || 'https://signaldesk-opportunities.vercel.app',
   orchestrator: Deno.env.get('MCP_ORCHESTRATOR_URL') || 'http://localhost:3011',
   cascade: Deno.env.get('MCP_CASCADE_URL') || 'http://localhost:3012',
   alerting: Deno.env.get('MCP_ALERTING_URL') || 'http://localhost:3013',
@@ -34,16 +34,14 @@ async function callMCPServer(server: string, method: string, params: any) {
   }
 
   try {
-    const response = await fetch(`${url}/rpc`, {
+    const response = await fetch(`${url}/api`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        jsonrpc: '2.0',
         method: method,
-        params: params,
-        id: crypto.randomUUID()
+        params: params
       })
     })
 
@@ -53,11 +51,11 @@ async function callMCPServer(server: string, method: string, params: any) {
 
     const data = await response.json()
     
-    if (data.error) {
-      throw new Error(data.error.message || 'MCP server error')
+    if (!data.success) {
+      throw new Error(data.error || 'MCP server error')
     }
 
-    return data.result
+    return data.data
   } catch (error) {
     console.error(`Error calling MCP server ${server}:`, error)
     throw error
@@ -88,26 +86,31 @@ serve(async (req) => {
 
     console.log(`🔌 MCP Bridge: Calling ${server}.${method} for org ${organizationId}`)
 
-    // Get organization configuration
-    const { data: orgData, error: orgError } = await supabase
-      .from('organizations')
-      .select('*')
-      .eq('id', organizationId)
-      .single()
-
-    if (orgError || !orgData) {
-      throw new Error('Organization not found')
+    // Try to get organization configuration, but don't fail if not found
+    let orgData = null
+    try {
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('*')
+        .eq('id', organizationId)
+        .single()
+      
+      if (!error && data) {
+        orgData = data
+      }
+    } catch (e) {
+      console.log('Organization not in database, using defaults')
     }
 
-    // Add organization context to params
+    // Add organization context to params (use defaults if no org data)
     const enrichedParams = {
       ...params,
       organization: {
         id: organizationId,
-        name: orgData.name,
-        industry: orgData.industry,
-        size: orgData.size,
-        configuration: orgData.configuration
+        name: orgData?.name || 'Test Organization',
+        industry: orgData?.industry || params.industry || 'technology',
+        size: orgData?.size || 'medium',
+        configuration: orgData?.configuration || {}
       }
     }
 

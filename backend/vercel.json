@@ -5,7 +5,7 @@
   "installCommand": "cd frontend && npm ci",
   "build": {
     "env": {
-      "REACT_APP_API_URL": "https://signaldesk-production.up.railway.app/api",
+      "REACT_APP_API_URL": "https://backend-orchestrator.vercel.app/api",
       "CI": "false",
       "GENERATE_SOURCEMAP": "false",
       "REACT_APP_BUILD_ID": "v3.3-optimized",
@@ -96,7 +96,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://signaldesk-production.up.railway.app"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://backend-orchestrator.vercel.app https://zskaxjtyuaqazydouifp.supabase.co"
         }
       ]
     }

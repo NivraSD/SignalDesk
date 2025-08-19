@@ -2,6 +2,9 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ErrorCode, ListToolsRequestSchema, McpError, } from "@modelcontextprotocol/sdk/types.js";
 import { Client } from "pg";
+// Environment detection for dual-mode operation
+const IS_MCP_MODE = process.argv.includes('--mcp');
+const IS_API_MODE = !IS_MCP_MODE;
 const TOOLS = [
     {
         name: "discover_opportunities",

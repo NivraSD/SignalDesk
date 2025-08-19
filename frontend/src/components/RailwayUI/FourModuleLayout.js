@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import ComprehensiveOnboarding from '../Onboarding/ComprehensiveOnboarding';
-import IntelligenceModule from '../Modules/IntelligenceModule';
+import OnboardingWithMCPs from '../Onboarding/OnboardingWithMCPs';
+import IntelligenceHubV4 from '../Modules/IntelligenceHubV4';
 import OpportunityModule from '../Modules/OpportunityModule';
 import ExecutionModule from '../Modules/ExecutionModule';
 import MemoryVaultModule from '../Modules/MemoryVaultModule';
@@ -79,7 +79,7 @@ const FourModuleLayout = () => {
   const renderActiveModule = () => {
     switch (activeModule) {
       case 'intelligence':
-        return <IntelligenceModule organizationId={organizationData?.id} />;
+        return <IntelligenceHubV4 organizationId={organizationData?.id} />;
       case 'opportunity':
         return <OpportunityModule organizationId={organizationData?.id} />;
       case 'execution':
@@ -87,12 +87,12 @@ const FourModuleLayout = () => {
       case 'memoryvault':
         return <MemoryVaultModule organizationId={organizationData?.id} />;
       default:
-        return <IntelligenceModule organizationId={organizationData?.id} />;
+        return <IntelligenceHubV4 organizationId={organizationData?.id} />;
     }
   };
 
   if (showOnboarding) {
-    return <ComprehensiveOnboarding onComplete={handleOnboardingComplete} />;
+    return <OnboardingWithMCPs />;
   }
 
   return (

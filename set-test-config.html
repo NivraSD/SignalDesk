@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Set Test Configuration</title>
+    <style>
+        body {
+            font-family: 'SF Mono', 'Monaco', monospace;
+            background: #0F172A;
+            color: #E2E8F0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #6366F1;
+            border-bottom: 2px solid #6366F1;
+            padding-bottom: 10px;
+        }
+        .config-section {
+            background: #1F2937;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        button {
+            background: #6366F1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #4F46E5;
+        }
+        .status {
+            padding: 15px;
+            background: #374151;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .success {
+            color: #10B981;
+        }
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Set Test Configuration</h1>
+        
+        <div class="config-section">
+            <h2>Test Onboarding Configuration</h2>
+            <p>This will save a test configuration to localStorage as if you completed onboarding.</p>
+            <button onclick="setTestConfig()">Set Test Configuration</button>
+            <button onclick="clearConfig()">Clear Configuration</button>
+            <div id="status" class="status">
+                <pre>Click button to set test configuration...</pre>
+            </div>
+        </div>
+
+        <div class="config-section">
+            <h2>Current Configuration</h2>
+            <div id="current" class="status">
+                <pre>Loading...</pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function setTestConfig() {
+            const testConfig = {
+                organization: {
+                    id: 'test-org-001',
+                    name: 'Test Organization',
+                    industry: 'technology',
+                    size: 'medium'
+                },
+                intelligence: {
+                    keywords: 'AI, cloud computing, serverless, edge functions',
+                    topics: 'Artificial Intelligence, Cloud Infrastructure, Developer Tools',
+                    stakeholders: 'Tech journalists, Industry analysts, Developer community, Enterprise customers'
+                },
+                opportunities: {
+                    trending: { enabled: true, weight: 85 },
+                    news_hook: { enabled: true, weight: 90 },
+                    competitor_gap: { enabled: true, weight: 75 },
+                    journalist_interest: { enabled: true, weight: 80 },
+                    editorial_calendar: { enabled: false, weight: 60 },
+                    award: { enabled: false, weight: 50 },
+                    speaking: { enabled: true, weight: 70 },
+                    cascadeMonitoring: true,
+                    cascadeTypes: ['regulatory_change', 'competitor_crisis', 'technology_breakthrough'],
+                    responseTime: '< 4 hours',
+                    minimumScore: 70
+                },
+                execution: {
+                    automatedDrafting: true,
+                    approvalRequired: true,
+                    distributionChannels: ['email', 'social', 'wire'],
+                    responseTemplates: true
+                },
+                memoryVault: {
+                    storeInteractions: true,
+                    analyzePatterns: true,
+                    improveSuggestions: true
+                }
+            };
+
+            localStorage.setItem('signaldesk_onboarding', JSON.stringify(testConfig));
+            
+            document.getElementById('status').innerHTML = `
+                <pre class="success">✅ Test configuration saved to localStorage!
+                
+You can now:
+1. Go back to the MCP test page
+2. Click "Test with User Config"
+3. See your weighted opportunities based on this configuration</pre>
+            `;
+            
+            showCurrentConfig();
+        }
+
+        function clearConfig() {
+            localStorage.removeItem('signaldesk_onboarding');
+            document.getElementById('status').innerHTML = `
+                <pre>❌ Configuration cleared from localStorage</pre>
+            `;
+            showCurrentConfig();
+        }
+
+        function showCurrentConfig() {
+            const config = localStorage.getItem('signaldesk_onboarding');
+            const currentDiv = document.getElementById('current');
+            
+            if (config) {
+                const parsed = JSON.parse(config);
+                currentDiv.innerHTML = `<pre>${JSON.stringify(parsed, null, 2)}</pre>`;
+            } else {
+                currentDiv.innerHTML = '<pre>No configuration found in localStorage</pre>';
+            }
+        }
+
+        // Show current config on load
+        showCurrentConfig();
+    </script>
+</body>
+</html>

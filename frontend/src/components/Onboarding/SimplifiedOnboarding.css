@@ -1,0 +1,215 @@
+/* Goals Section Styling */
+.goals-section {
+  margin-top: 20px;
+}
+
+.goals-section h3 {
+  color: #9CA3AF;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 15px;
+  margin-top: 25px;
+}
+
+.goals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.goal-card {
+  background: #374151;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+}
+
+.goal-card:hover {
+  border-color: #6366F1;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+}
+
+.goal-card.selected {
+  background: linear-gradient(135deg, #37415150, #10B98110);
+  border-color: #10B981;
+}
+
+.goal-icon {
+  font-size: 32px;
+}
+
+.goal-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #E2E8F0;
+}
+
+/* Always-On Features */
+.always-on-features {
+  background: #374151;
+  border-radius: 12px;
+  padding: 25px;
+  margin-top: 30px;
+}
+
+.always-on-features h3 {
+  color: #6366F1;
+  margin-bottom: 20px;
+}
+
+.feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.feature-item {
+  display: flex;
+  gap: 15px;
+  align-items: flex-start;
+}
+
+.feature-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.feature-item strong {
+  color: #E2E8F0;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.feature-item p {
+  color: #9CA3AF;
+  font-size: 14px;
+  margin: 0;
+}
+
+/* System Plan */
+.system-plan {
+  display: grid;
+  gap: 20px;
+}
+
+.plan-section {
+  background: #374151;
+  border-radius: 12px;
+  padding: 25px;
+}
+
+.plan-section h3 {
+  margin-bottom: 15px;
+  font-size: 18px;
+}
+
+.plan-section.immediate h3 {
+  color: #F59E0B;
+}
+
+.plan-section.ongoing h3 {
+  color: #6366F1;
+}
+
+.plan-section.deliverables h3 {
+  color: #10B981;
+}
+
+.plan-section.timeline h3 {
+  color: #8B5CF6;
+}
+
+.plan-section ul {
+  list-style: none;
+  padding: 0;
+}
+
+.plan-section li {
+  color: #E2E8F0;
+  padding: 8px 0;
+  padding-left: 25px;
+  position: relative;
+}
+
+.plan-section li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: #6366F1;
+}
+
+.timeline-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.timeline-item {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px;
+  background: #2D3748;
+  border-radius: 8px;
+}
+
+.timeline-time {
+  background: #8B5CF6;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 80px;
+  text-align: center;
+}
+
+.timeline-action {
+  color: #E2E8F0;
+  flex: 1;
+}
+
+.final-message {
+  margin-top: 30px;
+}
+
+.message-box {
+  background: linear-gradient(135deg, #6366F120, #8B5CF620);
+  border: 2px solid #6366F1;
+  border-radius: 12px;
+  padding: 25px;
+}
+
+.message-box h3 {
+  color: #6366F1;
+  margin-bottom: 15px;
+}
+
+.message-box p {
+  color: #E2E8F0;
+  line-height: 1.6;
+}
+
+.deploy-btn {
+  background: linear-gradient(135deg, #10B981, #059669) !important;
+  font-size: 18px !important;
+  padding: 16px 32px !important;
+}
+
+.deploy-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
+}
+
+/* Import base styles */
+@import './IntelligentOnboarding.css';

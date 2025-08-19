@@ -1,360 +1,344 @@
 import React, { useState, useEffect } from 'react';
 import './ModuleStyles.css';
+import './IntelligenceModule.css';
 
 const IntelligenceModule = ({ organizationId }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [intelligenceData, setIntelligenceData] = useState({
-    mcpStatus: [],
+    stakeholderActivity: [],
+    opportunities: [],
     recentFindings: [],
-    activeMonitors: [],
-    alerts: []
+    activeMonitors: []
   });
   const [loading, setLoading] = useState(true);
   const [userConfig, setUserConfig] = useState(null);
 
   useEffect(() => {
+    loadIntelligenceData();
+  }, []);
+
+  const loadIntelligenceData = () => {
+    setLoading(true);
+    
     // Load user's onboarding configuration
     const savedOnboarding = localStorage.getItem('signaldesk_onboarding');
+    const savedOrg = localStorage.getItem('signaldesk_organization');
+    const initialOpportunities = localStorage.getItem('signaldesk_initial_opportunities');
+    
     if (savedOnboarding) {
       const config = JSON.parse(savedOnboarding);
-      setUserConfig(config.intelligence);
-    }
-    
-    if (organizationId) {
-      loadIntelligenceData();
-    }
-  }, [organizationId]);
-
-  const loadIntelligenceData = async () => {
-    setLoading(true);
-    try {
-      // For now, use mock data until backend endpoints are ready
-      // TODO: Replace with actual API calls when available
+      setUserConfig(config);
       
-      setTimeout(() => {
-        setIntelligenceData({
-          stakeholderActivity: [
-            { id: 'analyst', name: 'Gartner Research', lastActivity: 'Published new Magic Quadrant', timestamp: new Date().toISOString() },
-            { id: 'investor', name: 'Sequoia Capital', lastActivity: 'Announced new AI fund', timestamp: new Date().toISOString() },
-            { id: 'partner', name: 'Microsoft', lastActivity: 'Released partnership guidelines', timestamp: new Date().toISOString() }
-          ],
-          recentFindings: [
-            {
-              type: 'Stakeholder Movement',
-              content: 'Key analyst from Forrester moving to competitor - relationship at risk',
-              source: 'LinkedIn',
-              timestamp: '2 hours ago'
-            },
-            {
-              type: 'Strategic Topic',
-              content: 'AI governance becoming priority topic among your tracked VCs',
-              source: 'Industry Analysis',
-              timestamp: '5 hours ago'
-            },
-            {
-              type: 'Media Opportunity',
-              content: 'WSJ journalist seeking sources on enterprise AI adoption',
-              source: 'Media Intel',
-              timestamp: '1 day ago'
-            }
-          ],
-          activeMonitors: ['brand', 'competitors', 'industry'],
-          alerts: [
-            {
-              title: 'Competitor Product Launch',
-              description: 'Competitor B launching new feature next week',
-              priority: 'high'
-            }
-          ]
-        });
-        setLoading(false);
-      }, 1000); // Simulate loading time
+      // Build intelligence data from actual configuration
+      const stakeholderActivity = [];
+      const activeMonitors = [];
       
-    } catch (error) {
-      console.error('Error loading intelligence data:', error);
-      setLoading(false);
-    }
-  };
-
-  // Generate stakeholder groups based on user's configuration
-  const getStakeholderGroups = () => {
-    if (userConfig?.stakeholders) {
-      // Parse the user's stakeholder configuration
-      const stakeholders = userConfig.stakeholders.split(',').map(s => s.trim()).filter(s => s);
-      
-      // Map common stakeholder types to icons and generate groups
-      const iconMap = {
-        'analyst': '📊',
-        'investor': '💰',
-        'partner': '🤝',
-        'media': '📰',
-        'influencer': '⭐',
-        'regulator': '⚖️',
-        'executive': '💼',
-        'customer': '👥',
-        'board': '🏛️',
-        'competitor': '🎯'
-      };
-      
-      return stakeholders.map((stakeholder, index) => {
-        // Try to find an icon based on keywords in the stakeholder name
-        let icon = '👤'; // default icon
-        for (const [key, value] of Object.entries(iconMap)) {
-          if (stakeholder.toLowerCase().includes(key)) {
-            icon = value;
-            break;
-          }
-        }
-        
-        return {
-          id: `stakeholder-${index}`,
-          name: stakeholder,
-          icon: icon,
-          count: Math.floor(Math.random() * 50) + 5, // Simulated count
-          status: index < 3 ? 'active' : 'monitoring'
+      // Generate stakeholder activity from selected stakeholders
+      if (config.stakeholders && config.stakeholders.length > 0) {
+        const stakeholderMap = {
+          'tech_journalists': { name: 'Tech Media', icon: '📰', activity: 'New AI ethics article published' },
+          'industry_analysts': { name: 'Industry Analysts', icon: '📊', activity: 'Released quarterly forecast' },
+          'investors': { name: 'VC Community', icon: '💰', activity: 'New fund announced for your sector' },
+          'customers': { name: 'Customer Base', icon: '👥', activity: 'Increased social mentions' },
+          'partners': { name: 'Partner Network', icon: '🤝', activity: 'Partnership opportunity identified' },
+          'competitors': { name: 'Competitors', icon: '🎯', activity: 'Competitor launched new feature' },
+          'regulators': { name: 'Regulatory Bodies', icon: '⚖️', activity: 'New compliance guidelines' },
+          'influencers': { name: 'Industry Influencers', icon: '⭐', activity: 'Mentioned your industry trend' }
         };
+        
+        config.stakeholders.forEach(stakeholderId => {
+          const stakeholder = stakeholderMap[stakeholderId];
+          if (stakeholder) {
+            stakeholderActivity.push({
+              id: stakeholderId,
+              name: stakeholder.name,
+              icon: stakeholder.icon,
+              lastActivity: stakeholder.activity,
+              timestamp: new Date(Date.now() - Math.random() * 86400000).toISOString(), // Random time in last 24h
+              status: Math.random() > 0.5 ? 'active' : 'monitoring'
+            });
+            activeMonitors.push(stakeholderId);
+          }
+        });
+      }
+      
+      // Get opportunities from MCP call if available
+      let opportunities = [];
+      if (initialOpportunities) {
+        try {
+          opportunities = JSON.parse(initialOpportunities);
+        } catch (e) {
+          console.log('Could not parse initial opportunities');
+        }
+      }
+      
+      // Generate findings based on goals
+      const recentFindings = [];
+      if (config.goals) {
+        if (config.goals.thought_leadership) {
+          recentFindings.push({
+            type: 'Opportunity',
+            content: 'Speaking slot available at upcoming industry conference',
+            source: 'Event Monitoring',
+            timestamp: '2 hours ago',
+            priority: 'high'
+          });
+        }
+        if (config.goals.media_coverage) {
+          recentFindings.push({
+            type: 'Media Alert',
+            content: 'Reporter from TechCrunch seeking sources on your topic',
+            source: 'Journalist Tracking',
+            timestamp: '4 hours ago',
+            priority: 'critical'
+          });
+        }
+        if (config.goals.competitive_positioning) {
+          recentFindings.push({
+            type: 'Competitive Intel',
+            content: 'Competitor experiencing customer complaints - opportunity to differentiate',
+            source: 'Competitive Analysis',
+            timestamp: '1 day ago',
+            priority: 'medium'
+          });
+        }
+      }
+      
+      setIntelligenceData({
+        stakeholderActivity,
+        opportunities,
+        recentFindings,
+        activeMonitors
       });
     }
     
-    // Default stakeholder groups if no configuration
-    return [
-      { id: 'analysts', name: 'Industry Analysts', icon: '📊', count: 12, status: 'active' },
-      { id: 'investors', name: 'Key Investors', icon: '💰', count: 8, status: 'active' },
-      { id: 'partners', name: 'Strategic Partners', icon: '🤝', count: 15, status: 'active' },
-      { id: 'media', name: 'Media Contacts', icon: '📰', count: 47, status: 'active' },
-      { id: 'influencers', name: 'Industry Influencers', icon: '⭐', count: 23, status: 'active' },
-      { id: 'regulators', name: 'Regulatory Bodies', icon: '⚖️', count: 5, status: 'monitoring' }
-    ];
+    setLoading(false);
   };
 
-  const stakeholderGroups = getStakeholderGroups();
-
-  const renderOverview = () => (
-    <div className="intelligence-overview">
-      {/* Stakeholder Monitoring Grid */}
-      <div className="section">
-        <h3 className="section-title">Stakeholder Monitoring</h3>
-        <div className="stakeholder-grid">
-          {stakeholderGroups.map(group => (
-            <div key={group.id} className={`stakeholder-card ${group.status}`}>
-              <div className="stakeholder-icon">{group.icon}</div>
-              <div className="stakeholder-info">
-                <div className="stakeholder-name">{group.name}</div>
-                <div className="stakeholder-stats">
-                  <span className="stakeholder-count">{group.count} tracked</span>
-                  <span className={`status-indicator ${group.status}`}>
-                    {group.status === 'active' ? '● Active' : '◐ Monitoring'}
-                  </span>
-                </div>
+  const renderOverview = () => {
+    const orgData = localStorage.getItem('signaldesk_organization');
+    const org = orgData ? JSON.parse(orgData) : {};
+    
+    return (
+      <div className="tab-content">
+        <div className="overview-header">
+          <h3>Intelligence Overview for {org.name || 'Your Organization'}</h3>
+          <p className="overview-subtitle">Real-time monitoring of your stakeholder ecosystem</p>
+        </div>
+        
+        {intelligenceData.stakeholderActivity.length > 0 ? (
+          <div className="intelligence-grid">
+            <div className="intel-card">
+              <h4>📡 Stakeholder Activity</h4>
+              <div className="activity-list">
+                {intelligenceData.stakeholderActivity.slice(0, 5).map((activity, idx) => (
+                  <div key={idx} className="activity-item">
+                    <span className="activity-icon">{activity.icon}</span>
+                    <div className="activity-content">
+                      <div className="activity-header">
+                        <strong>{activity.name}</strong>
+                        <span className={`status-badge ${activity.status}`}>
+                          {activity.status}
+                        </span>
+                      </div>
+                      <p>{activity.lastActivity}</p>
+                      <span className="activity-time">
+                        {new Date(activity.timestamp).toLocaleTimeString()}
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-          ))}
-        </div>
-      </div>
 
-      {/* Recent Intelligence Findings */}
-      <div className="section">
-        <h3 className="section-title">Recent Intelligence</h3>
-        <div className="findings-list">
-          {intelligenceData.recentFindings.length > 0 ? (
-            intelligenceData.recentFindings.map((finding, idx) => (
-              <div key={idx} className="finding-card">
-                <div className="finding-header">
-                  <span className="finding-type">{finding.type}</span>
-                  <span className="finding-time">{finding.timestamp}</span>
-                </div>
-                <div className="finding-content">{finding.content}</div>
-                <div className="finding-source">Source: {finding.source}</div>
-              </div>
-            ))
-          ) : (
-            <div className="empty-state">
-              <p>No recent intelligence findings</p>
-              <button className="primary-btn" onClick={loadIntelligenceData}>
-                Refresh Intelligence
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Active Alerts */}
-      {intelligenceData.alerts.length > 0 && (
-        <div className="section">
-          <h3 className="section-title">Active Alerts</h3>
-          <div className="alerts-list">
-            {intelligenceData.alerts.map((alert, idx) => (
-              <div key={idx} className={`alert-card ${alert.priority}`}>
-                <div className="alert-icon">⚠️</div>
-                <div className="alert-content">
-                  <div className="alert-title">{alert.title}</div>
-                  <div className="alert-description">{alert.description}</div>
+            {intelligenceData.recentFindings.length > 0 && (
+              <div className="intel-card">
+                <h4>🎯 Recent Findings</h4>
+                <div className="findings-list">
+                  {intelligenceData.recentFindings.map((finding, idx) => (
+                    <div key={idx} className={`finding-item priority-${finding.priority}`}>
+                      <div className="finding-header">
+                        <span className="finding-type">{finding.type}</span>
+                        <span className="finding-time">{finding.timestamp}</span>
+                      </div>
+                      <p className="finding-content">{finding.content}</p>
+                      <span className="finding-source">Source: {finding.source}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
+            )}
+
+            {intelligenceData.opportunities.length > 0 && (
+              <div className="intel-card">
+                <h4>💡 Discovered Opportunities</h4>
+                <div className="opportunities-list">
+                  {intelligenceData.opportunities.slice(0, 3).map((opp, idx) => (
+                    <div key={idx} className="opportunity-item">
+                      <div className="opp-header">
+                        <strong>{opp.title}</strong>
+                        <span className="opp-score">Score: {opp.score}</span>
+                      </div>
+                      <p>{opp.description}</p>
+                      <div className="opp-meta">
+                        <span className="opp-type">{opp.type}</span>
+                        <span className="opp-urgency">{opp.urgency}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="empty-state">
+            <p>🔄 Intelligence systems are initializing...</p>
+            <p className="empty-subtitle">Your configured stakeholders will appear here once monitoring begins.</p>
+          </div>
+        )}
+        
+        <div className="active-monitors">
+          <h4>Active Monitoring</h4>
+          <div className="monitor-tags">
+            {intelligenceData.activeMonitors.map((monitor, idx) => (
+              <span key={idx} className="monitor-tag">
+                {monitor.replace(/_/g, ' ')}
+              </span>
             ))}
           </div>
         </div>
-      )}
-    </div>
-  );
+      </div>
+    );
+  };
 
-  const renderMonitoring = () => {
-    // Get topics from user configuration or use defaults
-    const topics = userConfig?.topics 
-      ? userConfig.topics.split(',').map(t => t.trim()).filter(t => t)
-      : ['AI Governance', 'Enterprise AI', 'Sustainability Tech', 'Digital Transformation'];
-    
-    const topicIcons = ['🔍', '🎯', '📰', '📈', '💡', '🌐', '🚀', '📊'];
-    
+  const renderStakeholders = () => {
     return (
-      <div className="intelligence-monitoring">
-        <h3 className="section-title">Topic & Trend Monitoring</h3>
-        <div className="monitors-grid">
-          {topics.slice(0, 4).map((topic, index) => (
-            <div key={index} className="monitor-card">
-              <div className="monitor-header">
-                <span className="monitor-icon">{topicIcons[index % topicIcons.length]}</span>
-                <span className="monitor-title">{topic}</span>
+      <div className="tab-content">
+        <h3>Stakeholder Groups</h3>
+        <div className="stakeholder-grid">
+          {intelligenceData.stakeholderActivity.map((stakeholder, idx) => (
+            <div key={idx} className="stakeholder-card">
+              <div className="stakeholder-header">
+                <span className="stakeholder-icon">{stakeholder.icon}</span>
+                <h4>{stakeholder.name}</h4>
               </div>
-              <div className="monitor-stats">
+              <div className="stakeholder-stats">
                 <div className="stat">
-                  <span className="stat-value">{Math.floor(Math.random() * 100) + 10}</span>
-                  <span className="stat-label">Mentions Today</span>
+                  <span className="stat-label">Status</span>
+                  <span className="stat-value">{stakeholder.status}</span>
                 </div>
                 <div className="stat">
-                  <span className="stat-value">{Math.random() > 0.5 ? '+' : ''}{Math.floor(Math.random() * 50)}%</span>
-                  <span className="stat-label">Trend</span>
+                  <span className="stat-label">Last Activity</span>
+                  <span className="stat-value">
+                    {new Date(stakeholder.timestamp).toLocaleString()}
+                  </span>
                 </div>
               </div>
+              <p className="stakeholder-activity">{stakeholder.lastActivity}</p>
             </div>
           ))}
         </div>
         
-        {userConfig?.keywords && (
-          <div className="keywords-section" style={{ marginTop: '30px' }}>
-            <h4 style={{ color: '#E2E8F0', marginBottom: '15px' }}>Tracked Keywords</h4>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-              {userConfig.keywords.split(',').map(k => k.trim()).filter(k => k).map((keyword, idx) => (
-                <span key={idx} style={{
-                  background: '#374151',
-                  padding: '8px 16px',
-                  borderRadius: '20px',
-                  fontSize: '14px',
-                  color: '#E2E8F0',
-                  border: '1px solid #4B5563'
-                }}>
-                  {keyword}
-                </span>
-              ))}
-            </div>
+        {intelligenceData.stakeholderActivity.length === 0 && (
+          <div className="empty-state">
+            <p>No stakeholders configured yet.</p>
+            <p className="empty-subtitle">Complete onboarding to set up stakeholder monitoring.</p>
           </div>
         )}
       </div>
     );
   };
 
-  const renderAnalytics = () => (
-    <div className="intelligence-analytics">
-      <h3 className="section-title">Intelligence Analytics</h3>
-      <div className="analytics-grid">
-        <div className="analytics-card">
-          <h4>Sentiment Analysis</h4>
-          <div className="sentiment-bars">
-            <div className="sentiment-bar positive" style={{ width: '65%' }}>
-              <span>Positive 65%</span>
-            </div>
-            <div className="sentiment-bar neutral" style={{ width: '25%' }}>
-              <span>Neutral 25%</span>
-            </div>
-            <div className="sentiment-bar negative" style={{ width: '10%' }}>
-              <span>Negative 10%</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="analytics-card">
-          <h4>Top Sources</h4>
-          <div className="sources-list">
-            <div className="source-item">
-              <span className="source-name">Twitter/X</span>
-              <span className="source-count">892</span>
-            </div>
-            <div className="source-item">
-              <span className="source-name">LinkedIn</span>
-              <span className="source-count">456</span>
-            </div>
-            <div className="source-item">
-              <span className="source-name">News Sites</span>
-              <span className="source-count">234</span>
-            </div>
-            <div className="source-item">
-              <span className="source-name">Reddit</span>
-              <span className="source-count">178</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  if (loading) {
+  const renderMonitoring = () => {
+    const goals = userConfig?.goals || {};
+    const activeGoals = Object.entries(goals)
+      .filter(([_, active]) => active)
+      .map(([goal]) => goal.replace(/_/g, ' ').toUpperCase());
+    
     return (
-      <div className="module-loading">
-        <div className="loading-spinner"></div>
-        <p>Loading Intelligence Data...</p>
+      <div className="tab-content">
+        <h3>Monitoring Configuration</h3>
+        
+        <div className="monitoring-overview">
+          <div className="config-section">
+            <h4>📍 Active Goals</h4>
+            <div className="goal-tags">
+              {activeGoals.length > 0 ? (
+                activeGoals.map((goal, idx) => (
+                  <span key={idx} className="goal-tag">{goal}</span>
+                ))
+              ) : (
+                <span className="empty-text">No goals configured</span>
+              )}
+            </div>
+          </div>
+          
+          <div className="config-section">
+            <h4>👥 Monitored Stakeholders</h4>
+            <div className="stakeholder-tags">
+              {intelligenceData.activeMonitors.length > 0 ? (
+                intelligenceData.activeMonitors.map((monitor, idx) => (
+                  <span key={idx} className="stakeholder-tag">
+                    {monitor.replace(/_/g, ' ')}
+                  </span>
+                ))
+              ) : (
+                <span className="empty-text">No stakeholders selected</span>
+              )}
+            </div>
+          </div>
+          
+          <div className="config-section">
+            <h4>🏢 Organization Details</h4>
+            <div className="org-details">
+              <p><strong>Name:</strong> {userConfig?.organization?.name || 'Not set'}</p>
+              <p><strong>Industry:</strong> {userConfig?.organization?.industry || 'Not set'}</p>
+              <p><strong>Size:</strong> {userConfig?.organization?.size || 'Not set'}</p>
+            </div>
+          </div>
+        </div>
       </div>
     );
-  }
+  };
 
   return (
-    <div className="intelligence-module">
+    <div className="module-container intelligence-module">
       <div className="module-header">
-        <h2 className="module-title">
-          <span className="module-icon">🔍</span>
-          Intelligence Hub
-        </h2>
+        <h2>🔍 Intelligence Hub</h2>
         <div className="module-tabs">
           <button 
-            className={`tab ${activeTab === 'overview' ? 'active' : ''}`}
+            className={activeTab === 'overview' ? 'active' : ''}
             onClick={() => setActiveTab('overview')}
           >
             Overview
           </button>
           <button 
-            className={`tab ${activeTab === 'monitoring' ? 'active' : ''}`}
-            onClick={() => setActiveTab('monitoring')}
+            className={activeTab === 'stakeholders' ? 'active' : ''}
+            onClick={() => setActiveTab('stakeholders')}
           >
-            Monitoring
+            Stakeholders
           </button>
           <button 
-            className={`tab ${activeTab === 'analytics' ? 'active' : ''}`}
-            onClick={() => setActiveTab('analytics')}
+            className={activeTab === 'monitoring' ? 'active' : ''}
+            onClick={() => setActiveTab('monitoring')}
           >
-            Analytics
+            Configuration
           </button>
         </div>
       </div>
-
-      <div className="module-body">
-        {activeTab === 'overview' && renderOverview()}
-        {activeTab === 'monitoring' && renderMonitoring()}
-        {activeTab === 'analytics' && renderAnalytics()}
-        
-        {/* Configuration Display */}
-        {userConfig && (
-          <div style={{
-            position: 'absolute',
-            top: '10px',
-            right: '10px',
-            background: '#10B981',
-            color: 'white',
-            padding: '5px 10px',
-            borderRadius: '5px',
-            fontSize: '12px',
-            fontWeight: '500'
-          }}>
-            ✓ Custom Config Active
+      
+      <div className="module-content">
+        {loading ? (
+          <div className="loading-state">
+            <div className="loader"></div>
+            <p>Loading intelligence data...</p>
           </div>
+        ) : (
+          <>
+            {activeTab === 'overview' && renderOverview()}
+            {activeTab === 'stakeholders' && renderStakeholders()}
+            {activeTab === 'monitoring' && renderMonitoring()}
+          </>
         )}
       </div>
     </div>

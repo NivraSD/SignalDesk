@@ -39,6 +39,7 @@ import NivDirect from "./pages/NivDirect"; // Direct API integration - most reli
 
 // New Four-Module Layout
 import FourModuleLayout from "./components/RailwayUI/FourModuleLayout";
+import SystemInitializer from "./components/SystemInitializer";
 
 // Log Supabase initialization for debugging
 console.log('🚀 SignalDesk initialized with Supabase:', supabase ? 'Connected' : 'Not connected');
@@ -204,6 +205,7 @@ function App() {
             {/* New Four-Module Layout with Niv Strategic Advisor */}
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route path="/initialize" element={<SystemInitializer />} />
               <Route
                 path="/*"
                 element={

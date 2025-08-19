@@ -9,6 +9,10 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { Client } from "pg";
 
+// Environment detection for dual-mode operation
+const IS_MCP_MODE = process.argv.includes('--mcp');
+const IS_API_MODE = !IS_MCP_MODE;
+
 const TOOLS: Tool[] = [
   {
     name: "discover_opportunities",

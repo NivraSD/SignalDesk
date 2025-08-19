@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test MCP Cloud Connection</title>
+    <style>
+        body {
+            font-family: 'SF Mono', 'Monaco', monospace;
+            background: #0F172A;
+            color: #E2E8F0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #6366F1;
+            border-bottom: 2px solid #6366F1;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            background: #1F2937;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .test-section h2 {
+            color: #10B981;
+            margin-top: 0;
+        }
+        .result {
+            background: #374151;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        button {
+            background: #6366F1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #4F46E5;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .status.success {
+            background: #10B981;
+            color: white;
+        }
+        .status.error {
+            background: #EF4444;
+            color: white;
+        }
+        .status.pending {
+            background: #F59E0B;
+            color: white;
+        }
+        .flow-diagram {
+            background: #1F2937;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            text-align: center;
+            font-family: monospace;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>🌐 MCP Cloud Connection Test</h1>
+        
+        <div class="flow-diagram">
+            <h3>Connection Flow:</h3>
+            <pre>
+Browser (This Page)
+    ↓
+Supabase Edge Function (mcp-bridge)
+    ↓
+Vercel MCP (signaldesk-opportunities)
+    ↓
+Data Response
+            </pre>
+        </div>
+
+        <div class="test-section">
+            <h2>1️⃣ Test Direct MCP Connection (Cloud)</h2>
+            <button onclick="testDirectMCP()">Test Direct Connection</button>
+            <div id="directResult" class="result">
+                <pre>Click button to test direct connection to cloud MCP...</pre>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>2️⃣ Test via Supabase Edge Function</h2>
+            <button onclick="testViaBridge()">Test via MCP Bridge</button>
+            <div id="bridgeResult" class="result">
+                <pre>Click button to test connection through Supabase Edge Function...</pre>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>3️⃣ Test with Onboarding Config</h2>
+            <button onclick="testWithConfig()">Test with User Config</button>
+            <div id="configResult" class="result">
+                <pre>Click button to test with your onboarding configuration...</pre>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📊 Connection Status</h2>
+            <div id="statusSummary" class="result">
+                <pre>Waiting for tests...</pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Supabase client
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+        
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Test direct connection to cloud MCP
+        async function testDirectMCP() {
+            const resultDiv = document.getElementById('directResult');
+            resultDiv.innerHTML = '<span class="status pending">⏳ Testing direct connection...</span>';
+            
+            try {
+                const response = await fetch('https://signaldesk-opportunities.vercel.app/api', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        method: 'discover_opportunities',
+                        params: {
+                            industry: 'technology',
+                            keywords: ['AI', 'PR'],
+                            limit: 3
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <span class="status success">✅ Direct Connection Success</span>
+                        <p>Mode: ${data.mode}</p>
+                        <p>Opportunities found: ${data.data.length}</p>
+                        <pre>${JSON.stringify(data.data, null, 2)}</pre>
+                    `;
+                    updateStatus('direct', true);
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <span class="status error">❌ Direct Connection Failed</span>
+                    <pre>${error.message}</pre>
+                `;
+                updateStatus('direct', false);
+            }
+        }
+
+        // Test via Supabase Edge Function bridge
+        async function testViaBridge() {
+            const resultDiv = document.getElementById('bridgeResult');
+            resultDiv.innerHTML = '<span class="status pending">⏳ Testing via Edge Function...</span>';
+            
+            try {
+                const { data, error } = await supabaseClient.functions.invoke('mcp-bridge', {
+                    body: {
+                        server: 'opportunities',
+                        method: 'discover_opportunities',
+                        params: {
+                            industry: 'technology',
+                            keywords: ['cloud', 'serverless'],
+                            limit: 3
+                        },
+                        organizationId: 'test-org-001'
+                    }
+                });
+                
+                if (error) throw error;
+                
+                if (data && data.success) {
+                    resultDiv.innerHTML = `
+                        <span class="status success">✅ Edge Function Bridge Success</span>
+                        <p>Server: ${data.server}</p>
+                        <p>Method: ${data.method}</p>
+                        <p>Results:</p>
+                        <pre>${JSON.stringify(data.result, null, 2)}</pre>
+                    `;
+                    updateStatus('bridge', true);
+                } else {
+                    throw new Error(data?.error || 'Bridge connection failed');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <span class="status error">❌ Edge Function Bridge Failed</span>
+                    <pre>${error.message}</pre>
+                    <p>This might be normal if the Edge Function hasn't been updated yet.</p>
+                `;
+                updateStatus('bridge', false);
+            }
+        }
+
+        // Test with user's onboarding configuration
+        async function testWithConfig() {
+            const resultDiv = document.getElementById('configResult');
+            resultDiv.innerHTML = '<span class="status pending">⏳ Testing with your configuration...</span>';
+            
+            // Get onboarding config from localStorage
+            const onboardingData = localStorage.getItem('signaldesk_onboarding');
+            
+            if (!onboardingData) {
+                resultDiv.innerHTML = `
+                    <span class="status error">❌ No onboarding data found</span>
+                    <p>Please complete onboarding first at http://localhost:3001</p>
+                `;
+                return;
+            }
+            
+            const config = JSON.parse(onboardingData);
+            const keywords = config.intelligence?.keywords?.split(',').map(k => k.trim()) || [];
+            const industry = config.organization?.industry || 'technology';
+            
+            try {
+                const { data, error } = await supabaseClient.functions.invoke('mcp-bridge', {
+                    body: {
+                        server: 'opportunities',
+                        method: 'discover_opportunities',
+                        params: {
+                            industry: industry,
+                            keywords: keywords,
+                            limit: 5
+                        },
+                        organizationId: config.organization?.id || 'test-org'
+                    }
+                });
+                
+                if (error) throw error;
+                
+                if (data && data.success) {
+                    // Apply opportunity weights from config
+                    const opportunities = data.result || [];
+                    const weighted = opportunities.map(opp => {
+                        const typeConfig = config.opportunities?.[opp.type];
+                        if (typeConfig && typeConfig.enabled) {
+                            opp.adjustedScore = Math.round(opp.score * (typeConfig.weight / 100));
+                        } else {
+                            opp.adjustedScore = 0;
+                        }
+                        return opp;
+                    });
+                    
+                    resultDiv.innerHTML = `
+                        <span class="status success">✅ Configuration Applied</span>
+                        <p>Industry: ${industry}</p>
+                        <p>Keywords: ${keywords.join(', ')}</p>
+                        <p>Weighted Opportunities:</p>
+                        <pre>${JSON.stringify(weighted, null, 2)}</pre>
+                    `;
+                    updateStatus('config', true);
+                } else {
+                    throw new Error('Failed to apply configuration');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <span class="status error">❌ Configuration Test Failed</span>
+                    <pre>${error.message}</pre>
+                `;
+                updateStatus('config', false);
+            }
+        }
+
+        // Update status summary
+        const statusResults = {};
+        function updateStatus(test, success) {
+            statusResults[test] = success;
+            
+            const summaryDiv = document.getElementById('statusSummary');
+            let html = '<h3>Test Results:</h3>';
+            
+            html += `<p>✅ Direct MCP: ${statusResults.direct ? 'Working' : 'Not tested'}</p>`;
+            html += `<p>✅ Edge Function Bridge: ${statusResults.bridge ? 'Working' : 'Not tested'}</p>`;
+            html += `<p>✅ With Configuration: ${statusResults.config ? 'Working' : 'Not tested'}</p>`;
+            
+            if (statusResults.direct && statusResults.bridge && statusResults.config) {
+                html += '<h3 style="color: #10B981;">🎉 Full Stack Connected!</h3>';
+                html += '<p>Your onboarding → Edge Functions → Cloud MCP pipeline is working!</p>';
+            }
+            
+            summaryDiv.innerHTML = html;
+        }
+    </script>
+</body>
+</html>

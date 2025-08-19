@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Intelligence Data Flow</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #0F172A;
+            color: #E2E8F0;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #6366F1;
+            border-bottom: 2px solid #374151;
+            padding-bottom: 10px;
+        }
+        .section {
+            background: #1F2937;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 12px;
+            border: 1px solid #374151;
+        }
+        .section h2 {
+            color: #10B981;
+            margin-top: 0;
+        }
+        pre {
+            background: #111827;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            color: #D1D5DB;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .status.success {
+            background: #10B981;
+            color: white;
+        }
+        .status.error {
+            background: #EF4444;
+            color: white;
+        }
+        .status.warning {
+            background: #F59E0B;
+            color: white;
+        }
+        button {
+            background: #6366F1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #4F46E5;
+        }
+        .stakeholder-card {
+            background: #374151;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .stakeholder-icon {
+            font-size: 24px;
+        }
+        .stakeholder-info {
+            flex: 1;
+        }
+        .stakeholder-name {
+            font-weight: bold;
+            color: #E2E8F0;
+        }
+        .stakeholder-activity {
+            color: #9CA3AF;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 SignalDesk Intelligence Data Flow Test</h1>
+    
+    <div class="section">
+        <h2>1. Current LocalStorage Data</h2>
+        <div id="localStorage-status"></div>
+        <pre id="localStorage-content"></pre>
+    </div>
+
+    <div class="section">
+        <h2>2. Simulated Intelligence Module Data</h2>
+        <div id="intelligence-status"></div>
+        <div id="stakeholder-display"></div>
+        <pre id="intelligence-data"></pre>
+    </div>
+
+    <div class="section">
+        <h2>3. Test Actions</h2>
+        <button onclick="setTestData()">Set Test Configuration</button>
+        <button onclick="simulateOnboarding()">Simulate Complete Onboarding</button>
+        <button onclick="clearData()">Clear All Data</button>
+        <button onclick="testIntelligenceLoad()">Test Intelligence Module Load</button>
+    </div>
+
+    <div class="section">
+        <h2>4. Test Results</h2>
+        <div id="test-results"></div>
+    </div>
+
+    <script>
+        // Check localStorage data
+        function checkLocalStorage() {
+            const statusDiv = document.getElementById('localStorage-status');
+            const contentDiv = document.getElementById('localStorage-content');
+            
+            const keys = [
+                'signaldesk_onboarding',
+                'signaldesk_organization',
+                'signaldesk_completed',
+                'signaldesk_initialized',
+                'signaldesk_initial_opportunities'
+            ];
+            
+            let hasData = false;
+            let dataObj = {};
+            
+            keys.forEach(key => {
+                const value = localStorage.getItem(key);
+                if (value) {
+                    hasData = true;
+                    try {
+                        dataObj[key] = JSON.parse(value);
+                    } catch (e) {
+                        dataObj[key] = value;
+                    }
+                } else {
+                    dataObj[key] = null;
+                }
+            });
+            
+            if (hasData) {
+                statusDiv.innerHTML = '<div class="status success">✅ LocalStorage contains SignalDesk data</div>';
+            } else {
+                statusDiv.innerHTML = '<div class="status warning">⚠️ No SignalDesk data found in localStorage</div>';
+            }
+            
+            contentDiv.textContent = JSON.stringify(dataObj, null, 2);
+        }
+
+        // Simulate what IntelligenceModule does
+        function testIntelligenceLoad() {
+            const statusDiv = document.getElementById('intelligence-status');
+            const displayDiv = document.getElementById('stakeholder-display');
+            const dataDiv = document.getElementById('intelligence-data');
+            const resultsDiv = document.getElementById('test-results');
+            
+            // Load user's onboarding configuration
+            const savedOnboarding = localStorage.getItem('signaldesk_onboarding');
+            const savedOrg = localStorage.getItem('signaldesk_organization');
+            const initialOpportunities = localStorage.getItem('signaldesk_initial_opportunities');
+            
+            if (savedOnboarding) {
+                const config = JSON.parse(savedOnboarding);
+                statusDiv.innerHTML = '<div class="status success">✅ Configuration loaded successfully</div>';
+                
+                // Build intelligence data from actual configuration
+                const stakeholderActivity = [];
+                
+                // Stakeholder map (same as in IntelligenceModule)
+                const stakeholderMap = {
+                    'tech_journalists': { name: 'Tech Media', icon: '📰', activity: 'New AI ethics article published' },
+                    'industry_analysts': { name: 'Industry Analysts', icon: '📊', activity: 'Released quarterly forecast' },
+                    'investors': { name: 'VC Community', icon: '💰', activity: 'New fund announced for your sector' },
+                    'customers': { name: 'Customer Base', icon: '👥', activity: 'Increased social mentions' },
+                    'partners': { name: 'Partner Network', icon: '🤝', activity: 'Partnership opportunity identified' },
+                    'competitors': { name: 'Competitors', icon: '🎯', activity: 'Competitor launched new feature' },
+                    'regulators': { name: 'Regulatory Bodies', icon: '⚖️', activity: 'New compliance guidelines' },
+                    'influencers': { name: 'Industry Influencers', icon: '⭐', activity: 'Mentioned your industry trend' }
+                };
+                
+                // Generate stakeholder display
+                displayDiv.innerHTML = '<h3>Stakeholders Being Monitored:</h3>';
+                
+                if (config.stakeholders && config.stakeholders.length > 0) {
+                    config.stakeholders.forEach(stakeholderId => {
+                        const stakeholder = stakeholderMap[stakeholderId];
+                        if (stakeholder) {
+                            stakeholderActivity.push({
+                                id: stakeholderId,
+                                name: stakeholder.name,
+                                icon: stakeholder.icon,
+                                lastActivity: stakeholder.activity
+                            });
+                            
+                            displayDiv.innerHTML += `
+                                <div class="stakeholder-card">
+                                    <span class="stakeholder-icon">${stakeholder.icon}</span>
+                                    <div class="stakeholder-info">
+                                        <div class="stakeholder-name">${stakeholder.name}</div>
+                                        <div class="stakeholder-activity">${stakeholder.activity}</div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    });
+                    
+                    resultsDiv.innerHTML = '<div class="status success">✅ Intelligence data successfully generated from configuration</div>';
+                } else {
+                    displayDiv.innerHTML += '<p style="color: #F59E0B;">No stakeholders configured</p>';
+                    resultsDiv.innerHTML = '<div class="status warning">⚠️ No stakeholders found in configuration</div>';
+                }
+                
+                // Display the full intelligence data
+                const intelligenceData = {
+                    userConfig: config,
+                    stakeholderActivity,
+                    organization: savedOrg ? JSON.parse(savedOrg) : null,
+                    opportunities: initialOpportunities ? JSON.parse(initialOpportunities) : []
+                };
+                
+                dataDiv.textContent = JSON.stringify(intelligenceData, null, 2);
+            } else {
+                statusDiv.innerHTML = '<div class="status error">❌ No onboarding configuration found</div>';
+                resultsDiv.innerHTML = '<div class="status error">❌ Cannot load intelligence data without configuration</div>';
+            }
+        }
+
+        // Set test data
+        function setTestData() {
+            const testConfig = {
+                organization: {
+                    name: 'Test Company',
+                    domain: 'test.com',
+                    industry: 'technology',
+                    size: 'medium'
+                },
+                goals: {
+                    thought_leadership: true,
+                    media_coverage: true,
+                    competitive_positioning: true
+                },
+                stakeholders: ['tech_journalists', 'industry_analysts', 'investors', 'competitors']
+            };
+            
+            localStorage.setItem('signaldesk_onboarding', JSON.stringify(testConfig));
+            localStorage.setItem('signaldesk_organization', JSON.stringify(testConfig.organization));
+            localStorage.setItem('signaldesk_completed', 'true');
+            
+            alert('Test data set! Refreshing display...');
+            checkLocalStorage();
+            testIntelligenceLoad();
+        }
+
+        // Simulate complete onboarding
+        function simulateOnboarding() {
+            const fullConfig = {
+                organization: {
+                    name: 'Acme Corp',
+                    domain: 'acme.com',
+                    industry: 'technology',
+                    size: 'large'
+                },
+                goals: {
+                    thought_leadership: true,
+                    media_coverage: true,
+                    competitive_positioning: true,
+                    investor_relations: true,
+                    market_expansion: false,
+                    crisis_preparedness: false
+                },
+                stakeholders: [
+                    'tech_journalists',
+                    'industry_analysts',
+                    'investors',
+                    'customers',
+                    'partners',
+                    'competitors'
+                ]
+            };
+            
+            // Simulate opportunities from MCP
+            const mockOpportunities = [
+                {
+                    title: "AI Ethics Panel Discussion",
+                    description: "Upcoming conference seeking speakers on AI ethics",
+                    type: "speaking",
+                    score: 85,
+                    urgency: "high"
+                },
+                {
+                    title: "TechCrunch Feature Story",
+                    description: "Reporter looking for sources on your technology",
+                    type: "media",
+                    score: 92,
+                    urgency: "critical"
+                }
+            ];
+            
+            localStorage.setItem('signaldesk_onboarding', JSON.stringify(fullConfig));
+            localStorage.setItem('signaldesk_organization', JSON.stringify(fullConfig.organization));
+            localStorage.setItem('signaldesk_completed', 'true');
+            localStorage.setItem('signaldesk_initialized', 'true');
+            localStorage.setItem('signaldesk_initial_opportunities', JSON.stringify(mockOpportunities));
+            
+            alert('Complete onboarding simulated! Refreshing display...');
+            checkLocalStorage();
+            testIntelligenceLoad();
+        }
+
+        // Clear all data
+        function clearData() {
+            const keys = Object.keys(localStorage).filter(k => k.includes('signaldesk'));
+            keys.forEach(key => localStorage.removeItem(key));
+            alert('All SignalDesk data cleared!');
+            checkLocalStorage();
+            document.getElementById('stakeholder-display').innerHTML = '';
+            document.getElementById('intelligence-data').textContent = '';
+        }
+
+        // Initial load
+        checkLocalStorage();
+        
+        // Auto-refresh every 3 seconds
+        setInterval(() => {
+            checkLocalStorage();
+        }, 3000);
+    </script>
+</body>
+</html>
