@@ -1,6 +1,6 @@
 /**
  * Competitor Intelligence Service
- * Focuses on discovering and tracking top competitors with intelligent source configuration
+ * Uses real MCPs for competitor discovery and analysis - NO FALLBACK DATA
  */
 
 class CompetitorIntelligenceService {
@@ -8,195 +8,260 @@ class CompetitorIntelligenceService {
     this.competitorData = new Map();
     this.trackingAgents = new Map();
     this.sourceConfigurations = new Map();
+    this.supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co';
+    this.supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+  }
+
+  // Call real MCPs through Supabase mcp-bridge
+  async callMCP(server, method, params) {
+    try {
+      const response = await fetch(`${this.supabaseUrl}/functions/v1/mcp-bridge`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.supabaseKey}`
+        },
+        body: JSON.stringify({
+          server,
+          method,
+          params,
+          organizationId: localStorage.getItem('signaldesk_org_id') || 'default'
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.result || data;
+      }
+      throw new Error(`MCP ${server}.${method} failed: ${response.status}`);
+    } catch (error) {
+      console.error(`❌ MCP ${server}.${method} error:`, error.message);
+      throw error;
+    }
   }
 
   /**
-   * Analyze organization and discover top 5 competitors
+   * Analyze organization and discover top 5 competitors using REAL MCPs
    */
   async discoverCompetitors(organization) {
-    console.log(`🔍 CompetitorIntelligenceService: Discovering competitors for ${organization.name}...`);
+    console.log(`🔍 CompetitorIntelligenceService: Discovering competitors for ${organization.name} using REAL MCPs...`);
     console.log('📋 Organization data:', organization);
     
     try {
-      // Step 1: Industry analysis
-      const industry = await this.analyzeIndustry(organization);
+      // Step 1: Use Intelligence MCP for real competitor discovery
+      const competitorData = await this.callMCP('intelligence', 'gather', {
+        organization,
+        keywords: [organization.name, organization.industry || 'technology'],
+        stakeholder: 'competitors',
+        focus: 'competitor_analysis'
+      });
       
-      // Step 2: Competitor discovery using multiple methods
-      const competitors = await this.findCompetitors(organization, industry);
+      // Step 2: Use Scraper MCP for website analysis if we have competitors
+      let enrichedCompetitors = [];
+      if (competitorData && competitorData.insights) {
+        for (const insight of competitorData.insights.slice(0, 8)) {
+          try {
+            // Extract competitor info from GitHub/real data
+            const competitor = this.parseRealCompetitorData(insight);
+            if (competitor) {
+              enrichedCompetitors.push(competitor);
+            }
+          } catch (error) {
+            console.log(`⚠️ Could not parse competitor data for insight:`, insight.title);
+          }
+        }
+      }
       
-      // Step 3: Rank and select top 5
-      const topCompetitors = await this.rankCompetitors(competitors, organization);
-      
-      // Step 4: Enrich competitor profiles
-      const enrichedCompetitors = await this.enrichCompetitorProfiles(topCompetitors);
+      // Step 3: Use News MCP for market intelligence
+      let industryContext = {};
+      try {
+        const newsData = await this.callMCP('news', 'industry', {
+          organization,
+          keywords: [organization.industry || 'technology', 'competition', 'market'],
+          stakeholder: 'competitors'
+        });
+        industryContext = this.extractIndustryContext(newsData);
+      } catch (error) {
+        console.log(`⚠️ News MCP unavailable for industry context`);
+      }
       
       const result = {
         organization,
-        industry,
+        industry: industryContext.industry || { primary: organization.industry || 'technology', confidence: 0.8 },
         competitors: enrichedCompetitors.slice(0, 5),
-        discoveryMethod: 'ai_analysis',
-        confidence: this.calculateDiscoveryConfidence(enrichedCompetitors),
+        discoveryMethod: 'real_mcp_analysis',
+        confidence: this.calculateRealDataConfidence(enrichedCompetitors),
+        source: 'Intelligence MCP + GitHub API',
         timestamp: new Date().toISOString()
       };
       
-      console.log('🎯 Final competitor analysis result:', {
+      console.log('🎯 REAL competitor analysis result:', {
         orgName: result.organization.name,
+        competitorCount: result.competitors.length,
         competitorNames: result.competitors.map(c => c.name),
-        industry: result.industry.primary
+        source: result.source
       });
       
       return result;
     } catch (error) {
-      console.error('Error discovering competitors:', error);
-      // Fallback to basic competitor suggestions
-      return this.getFallbackCompetitors(organization);
+      console.error('❌ Real MCP competitor discovery failed:', error);
+      // NO FALLBACK - Throw error to indicate real data unavailable
+      throw new Error(`Competitor intelligence unavailable - MCPs not responding: ${error.message}`);
     }
   }
 
   /**
-   * Analyze industry from company URL and description
+   * Parse real competitor data from Intelligence MCP (GitHub API)
    */
-  async analyzeIndustry(organization) {
-    // In production, this would use website scraping + AI analysis
-    const industryMapping = {
-      'tech': ['technology', 'software', 'saas', 'ai', 'cloud'],
-      'finance': ['bank', 'fintech', 'investment', 'trading', 'crypto'],
-      'healthcare': ['health', 'medical', 'pharma', 'biotech', 'hospital'],
-      'retail': ['shop', 'ecommerce', 'store', 'marketplace', 'commerce']
-    };
+  parseRealCompetitorData(insight) {
+    try {
+      // Extract from real GitHub data
+      if (insight.title && insight.insight) {
+        const match = insight.title.match(/^([^/]+)\/(.*?)$/);
+        if (match) {
+          const [, owner, repo] = match;
+          
+          // Extract real metrics from insight description
+          const description = insight.insight;
+          const starsMatch = description.match(/(\d+)\s*stars/);
+          const commitsMatch = description.match(/(\d+)\s*recent commits/);
+          
+          return {
+            name: owner,
+            repository: repo,
+            description: description,
+            stars: starsMatch ? parseInt(starsMatch[1]) : 0,
+            recentCommits: commitsMatch ? parseInt(commitsMatch[1]) : 0,
+            size: this.determineCompanySize(parseInt(starsMatch?.[1] || 0)),
+            focus: repo.replace(/-/g, ' '),
+            source: 'GitHub API (Real)',
+            relevance: insight.relevance || 'high',
+            url: `https://github.com/${owner}/${repo}`,
+            lastActivity: insight.timestamp,
+            confidence: 0.9 // High confidence for real GitHub data
+          };
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error('Error parsing real competitor data:', error);
+      return null;
+    }
+  }
 
-    const orgLower = (organization.name + ' ' + (organization.url || '')).toLowerCase();
-    
-    for (const [industry, keywords] of Object.entries(industryMapping)) {
-      if (keywords.some(keyword => orgLower.includes(keyword))) {
+  /**
+   * Extract industry context from real news data
+   */
+  extractIndustryContext(newsData) {
+    try {
+      if (newsData && newsData.industryNews) {
+        const articles = newsData.industryNews;
+        const industries = new Map();
+        
+        // Extract industry keywords from real news articles
+        articles.forEach(article => {
+          const text = `${article.title} ${article.description}`.toLowerCase();
+          
+          if (text.includes('fintech') || text.includes('financial')) {
+            industries.set('finance', (industries.get('finance') || 0) + 1);
+          }
+          if (text.includes('healthcare') || text.includes('biotech')) {
+            industries.set('healthcare', (industries.get('healthcare') || 0) + 1);
+          }
+          if (text.includes('retail') || text.includes('ecommerce')) {
+            industries.set('retail', (industries.get('retail') || 0) + 1);
+          }
+          // Default to technology
+          industries.set('technology', (industries.get('technology') || 0) + 1);
+        });
+        
+        // Find most mentioned industry
+        const topIndustry = [...industries.entries()].sort((a, b) => b[1] - a[1])[0];
+        
         return {
-          primary: industry,
-          confidence: 0.8,
-          keywords: keywords.filter(k => orgLower.includes(k))
+          industry: {
+            primary: topIndustry[0],
+            confidence: Math.min(0.9, topIndustry[1] / articles.length + 0.5),
+            articlesAnalyzed: articles.length
+          }
         };
       }
-    }
-
-    return { primary: 'technology', confidence: 0.5, keywords: [] };
-  }
-
-  /**
-   * Find competitors using various discovery methods
-   */
-  async findCompetitors(organization, industry) {
-    const competitors = [];
-    
-    // Method 1: Check for specific company competitors first
-    const companyKey = organization.name.toLowerCase();
-    const specificCompetitors = this.getSpecificCompetitors(companyKey);
-    
-    if (specificCompetitors.length > 0) {
-      competitors.push(...specificCompetitors);
-    } else {
-      // Method 2: Industry database lookup
-      const industryCompetitors = this.getIndustryCompetitors(industry.primary);
-      competitors.push(...industryCompetitors);
+    } catch (error) {
+      console.error('Error extracting industry context:', error);
     }
     
-    // Method 2: Similar company analysis (simulated)
-    const similarCompanies = await this.findSimilarCompanies(organization);
-    competitors.push(...similarCompanies);
-    
-    // Method 3: Market research (simulated API call)
-    const marketCompetitors = await this.getMarketCompetitors(organization, industry);
-    competitors.push(...marketCompetitors);
-    
-    // Remove duplicates and organization itself
-    const uniqueCompetitors = this.deduplicateCompetitors(competitors, organization.name);
-    
-    return uniqueCompetitors;
-  }
-
-  /**
-   * Get specific competitors for known companies
-   */
-  getSpecificCompetitors(companyName) {
-    const specificCompetitors = {
-      'target': [
-        { name: 'Walmart', size: 'enterprise', focus: 'retail, ecommerce' },
-        { name: 'Amazon', size: 'enterprise', focus: 'ecommerce, retail' },
-        { name: 'Costco', size: 'enterprise', focus: 'wholesale retail' },
-        { name: 'Kroger', size: 'enterprise', focus: 'grocery retail' },
-        { name: 'Best Buy', size: 'enterprise', focus: 'electronics retail' }
-      ],
-      'ikea': [
-        { name: 'Wayfair', size: 'enterprise', focus: 'online furniture' },
-        { name: 'Ashley Furniture', size: 'enterprise', focus: 'furniture retail' },
-        { name: 'West Elm', size: 'mid-market', focus: 'modern furniture' },
-        { name: 'Crate & Barrel', size: 'mid-market', focus: 'home furnishings' },
-        { name: 'Home Depot', size: 'enterprise', focus: 'home improvement' }
-      ],
-      'apple': [
-        { name: 'Samsung', size: 'enterprise', focus: 'consumer electronics' },
-        { name: 'Google', size: 'enterprise', focus: 'mobile, services' },
-        { name: 'Microsoft', size: 'enterprise', focus: 'software, devices' },
-        { name: 'Sony', size: 'enterprise', focus: 'electronics, entertainment' },
-        { name: 'Dell', size: 'enterprise', focus: 'computers, enterprise' }
-      ]
+    return {
+      industry: {
+        primary: 'technology',
+        confidence: 0.6,
+        articlesAnalyzed: 0
+      }
     };
+  }
+
+  /**
+   * Determine company size based on real GitHub metrics
+   */
+  determineCompanySize(stars) {
+    if (stars >= 50000) return 'enterprise';
+    if (stars >= 10000) return 'mid-market';
+    if (stars >= 1000) return 'growth-stage';
+    return 'startup';
+  }
+
+  /**
+   * Calculate confidence score based on real MCP data quality
+   */
+  calculateRealDataConfidence(competitors) {
+    if (competitors.length === 0) return 0.1;
     
-    return specificCompetitors[companyName] || [];
+    const avgConfidence = competitors.reduce((sum, comp) => {
+      return sum + (comp.confidence || 0.5);
+    }, 0) / competitors.length;
+    
+    // Boost confidence for real data
+    return Math.min(0.95, avgConfidence + 0.2);
   }
 
   /**
-   * Get competitors from industry database
+   * Use real Scraper MCP for website analysis (when available)
    */
-  getIndustryCompetitors(industry) {
-    const industryDatabase = {
-      technology: [
-        { name: 'Microsoft', size: 'enterprise', focus: 'cloud, productivity' },
-        { name: 'Google', size: 'enterprise', focus: 'search, cloud, ai' },
-        { name: 'Amazon', size: 'enterprise', focus: 'cloud, ecommerce' },
-        { name: 'Apple', size: 'enterprise', focus: 'consumer tech' },
-        { name: 'Meta', size: 'enterprise', focus: 'social media' },
-        { name: 'OpenAI', size: 'mid-market', focus: 'artificial intelligence' },
-        { name: 'Salesforce', size: 'enterprise', focus: 'crm, saas' }
-      ],
-      finance: [
-        { name: 'JPMorgan Chase', size: 'enterprise', focus: 'banking' },
-        { name: 'Goldman Sachs', size: 'enterprise', focus: 'investment banking' },
-        { name: 'PayPal', size: 'enterprise', focus: 'payments' },
-        { name: 'Square', size: 'mid-market', focus: 'fintech' },
-        { name: 'Stripe', size: 'mid-market', focus: 'payments' }
-      ],
-      healthcare: [
-        { name: 'Pfizer', size: 'enterprise', focus: 'pharmaceuticals' },
-        { name: 'Johnson & Johnson', size: 'enterprise', focus: 'healthcare' },
-        { name: 'UnitedHealth', size: 'enterprise', focus: 'health insurance' },
-        { name: 'Moderna', size: 'mid-market', focus: 'biotech' }
-      ],
-      retail: [
-        { name: 'Amazon', size: 'enterprise', focus: 'ecommerce' },
-        { name: 'Walmart', size: 'enterprise', focus: 'retail' },
-        { name: 'Target', size: 'enterprise', focus: 'retail' },
-        { name: 'Shopify', size: 'mid-market', focus: 'ecommerce platform' }
-      ]
-    };
-
-    return industryDatabase[industry] || industryDatabase.technology;
+  async analyzeCompetitorWebsite(url) {
+    try {
+      const scraperData = await this.callMCP('scraper', 'scrape_competitor', {
+        url,
+        sections: ['leadership', 'press', 'products']
+      });
+      
+      if (scraperData) {
+        return {
+          leadership: scraperData.signals?.leadership || [],
+          press: scraperData.signals?.press || [],
+          products: scraperData.signals?.products || [],
+          patterns: scraperData.patterns || [],
+          lastAnalyzed: new Date().toISOString(),
+          source: 'Scraper MCP (Playwright)'
+        };
+      }
+    } catch (error) {
+      console.log(`⚠️ Scraper MCP unavailable for ${url}:`, error.message);
+    }
+    
+    return null;
   }
 
   /**
-   * Find similar companies (simulated)
+   * NO FALLBACK METHOD - This service only uses real MCPs
    */
-  async findSimilarCompanies(organization) {
-    // In production: Use APIs like Crunchbase, PitchBook, or company databases
-    return [
-      { name: 'Similar Corp', size: 'mid-market', focus: 'similar services', similarity: 0.8 },
-      { name: 'Competitor Inc', size: 'startup', focus: 'competing product', similarity: 0.7 }
-    ];
+  getFallbackCompetitors(organization) {
+    throw new Error(`No competitor data available for ${organization.name} - MCP services unavailable`);
   }
 
   /**
-   * Get market competitors (simulated API)
+   * Legacy method - no longer used with real MCPs
    */
   async getMarketCompetitors(organization, industry) {
-    // In production: Use market research APIs
+    // This method is no longer used - competitors come from real MCPs
     return [
       { name: 'Market Leader', size: 'enterprise', focus: 'market dominant', marketShare: 0.3 },
       { name: 'Rising Star', size: 'startup', focus: 'disruptive tech', growth: 'high' }

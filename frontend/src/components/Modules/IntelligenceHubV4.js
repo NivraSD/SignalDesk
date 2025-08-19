@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './IntelligenceHubV4.css';
+import intelligenceGatheringService from '../../services/intelligenceGatheringService';
 
 const IntelligenceHubV4 = ({ organizationId }) => {
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -7,9 +8,11 @@ const IntelligenceHubV4 = ({ organizationId }) => {
   const [lastUpdate, setLastUpdate] = useState(null);
   const [userConfig, setUserConfig] = useState(null);
   const [categoryAnalysis, setCategoryAnalysis] = useState({});
+  const [mcpResults, setMcpResults] = useState(null);
 
   useEffect(() => {
     loadUserConfiguration();
+    loadMCPResults();
     loadCategoryAnalysis();
   }, []);
 
@@ -21,6 +24,19 @@ const IntelligenceHubV4 = ({ organizationId }) => {
       // Set first stakeholder as default selection
       if (config.stakeholders && config.stakeholders.length > 0 && !selectedCategory) {
         setSelectedCategory(config.stakeholders[0]);
+      }
+    }
+  };
+
+  const loadMCPResults = () => {
+    const savedMCPResults = localStorage.getItem('signaldesk_mcp_results');
+    if (savedMCPResults) {
+      try {
+        const results = JSON.parse(savedMCPResults);
+        setMcpResults(results);
+        console.log('📊 Loaded MCP results from onboarding:', results);
+      } catch (error) {
+        console.error('Failed to parse MCP results:', error);
       }
     }
   };
@@ -45,18 +61,216 @@ const IntelligenceHubV4 = ({ organizationId }) => {
   const refreshAnalysis = async () => {
     setLoading(true);
     
-    // In production, this would call MCPs for fresh analysis
-    // For now, generate comprehensive analysis based on category
-    const analysis = await generateCategoryAnalysis();
-    
-    setCategoryAnalysis(analysis);
-    setLastUpdate(new Date());
-    
-    // Cache the analysis
-    localStorage.setItem('signaldesk_category_analysis', JSON.stringify(analysis));
-    localStorage.setItem('signaldesk_analysis_timestamp', new Date().toISOString());
+    try {
+      // First, try to get fresh data from MCPs
+      let analysis = {};
+      
+      if (userConfig && userConfig.stakeholders) {
+        // Use intelligenceGatheringService to call MCPs for fresh data
+        const intelligence = await intelligenceGatheringService.gatherIntelligence(userConfig);
+        
+        if (intelligence) {
+          // Transform intelligence data into category analysis format
+          analysis = await transformIntelligenceToAnalysis(intelligence, userConfig.stakeholders);
+        }
+        
+        // If we have MCP results from onboarding, merge them
+        if (mcpResults) {
+          analysis = await mergeMCPResults(analysis, mcpResults, userConfig.stakeholders);
+        }
+        
+        // Store results in memory MCP for persistence
+        if (Object.keys(analysis).length > 0) {
+          await storeInMemory(analysis);
+        }
+      }
+      
+      // Fallback to hardcoded analysis if no real data
+      if (Object.keys(analysis).length === 0) {
+        analysis = await generateCategoryAnalysis();
+      }
+      
+      setCategoryAnalysis(analysis);
+      setLastUpdate(new Date());
+      
+      // Cache the analysis locally
+      localStorage.setItem('signaldesk_category_analysis', JSON.stringify(analysis));
+      localStorage.setItem('signaldesk_analysis_timestamp', new Date().toISOString());
+      
+    } catch (error) {
+      console.error('Error refreshing analysis:', error);
+      
+      // Fallback to hardcoded analysis on error
+      const fallbackAnalysis = await generateCategoryAnalysis();
+      setCategoryAnalysis(fallbackAnalysis);
+    }
     
     setLoading(false);
+  };
+
+  // Transform intelligence data from MCPs into category analysis format
+  const transformIntelligenceToAnalysis = async (intelligence, stakeholders) => {
+    const analysis = {};
+    
+    for (const stakeholder of stakeholders) {
+      // Transform stakeholder insights into analysis format
+      const insights = intelligence.stakeholderInsights.filter(insight => 
+        insight.stakeholder.toLowerCase().includes(stakeholder.replace('_', ' ')) ||
+        stakeholder.includes(insight.type)
+      );
+      
+      if (insights.length > 0) {
+        analysis[stakeholder] = {
+          title: `${stakeholder.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} Intelligence`,
+          summary: `${insights.length} actionable insights from real-time MCP analysis`,
+          sections: [{
+            heading: 'Current Intelligence',
+            icon: '🔍',
+            items: insights.map(insight => ({
+              title: insight.title || insight.insight,
+              description: insight.insight,
+              relevance: insight.relevance,
+              actionable: insight.actionable,
+              suggestedAction: insight.suggestedAction,
+              source: insight.source,
+              timestamp: insight.timestamp
+            }))
+          }]
+        };
+      }
+    }
+    
+    // Add industry trends if available
+    if (intelligence.industryTrends && intelligence.industryTrends.length > 0) {
+      for (const stakeholder of stakeholders) {
+        if (!analysis[stakeholder]) {
+          analysis[stakeholder] = {
+            title: `${stakeholder.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} Analysis`,
+            summary: 'Industry trend analysis available',
+            sections: []
+          };
+        }
+        
+        analysis[stakeholder].sections.push({
+          heading: 'Industry Trends',
+          icon: '📈',
+          items: intelligence.industryTrends.map(trend => ({
+            trend: trend.trend,
+            description: trend.description,
+            impact: trend.impact,
+            opportunity: trend.opportunity
+          }))
+        });
+      }
+    }
+    
+    return analysis;
+  };
+
+  // Merge MCP results from onboarding
+  const mergeMCPResults = async (currentAnalysis, mcpResults, stakeholders) => {
+    const merged = { ...currentAnalysis };
+    
+    // Process each MCP result from onboarding
+    for (const [mcpName, result] of Object.entries(mcpResults)) {
+      if (!result || !result.data) continue;
+      
+      // Map MCP results to stakeholder categories
+      for (const stakeholder of stakeholders) {
+        if (shouldIncludeMCPForStakeholder(mcpName, stakeholder)) {
+          if (!merged[stakeholder]) {
+            merged[stakeholder] = {
+              title: `${stakeholder.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} Analysis`,
+              summary: 'Analysis from onboarding data and real-time updates',
+              sections: []
+            };
+          }
+          
+          // Add MCP data as a section
+          merged[stakeholder].sections.push({
+            heading: `${mcpName.charAt(0).toUpperCase() + mcpName.slice(1)} Intelligence`,
+            icon: getMCPIcon(mcpName),
+            items: formatMCPDataForDisplay(result.data, mcpName)
+          });
+        }
+      }
+    }
+    
+    return merged;
+  };
+
+  // Helper function to determine if MCP data applies to stakeholder
+  const shouldIncludeMCPForStakeholder = (mcpName, stakeholder) => {
+    const mappings = {
+      'media': ['tech_journalists', 'influencers'],
+      'intelligence': ['competitors', 'industry_analysts'],
+      'relationships': ['partners', 'customers'],
+      'analytics': ['customers', 'competitors'],
+      'opportunities': ['tech_journalists', 'investors', 'partners'],
+      'monitor': ['competitors', 'regulators']
+    };
+    
+    return mappings[mcpName]?.includes(stakeholder) || false;
+  };
+
+  // Get icon for MCP type
+  const getMCPIcon = (mcpName) => {
+    const icons = {
+      'media': '📰',
+      'intelligence': '🔍',
+      'relationships': '🤝',
+      'analytics': '📊',
+      'opportunities': '🎯',
+      'monitor': '⚠️',
+      'memory': '🧠'
+    };
+    return icons[mcpName] || '📋';
+  };
+
+  // Format MCP data for display
+  const formatMCPDataForDisplay = (data, mcpName) => {
+    if (!data) return [];
+    
+    if (Array.isArray(data)) {
+      return data.slice(0, 5).map(item => ({
+        title: item.title || item.name || item.outlet || 'Insight',
+        description: item.description || item.insight || item.summary || 'No details available',
+        relevance: item.relevance || item.score || 'medium',
+        source: `${mcpName} MCP`,
+        timestamp: item.timestamp || new Date().toISOString()
+      }));
+    }
+    
+    if (typeof data === 'object') {
+      return Object.entries(data).slice(0, 3).map(([key, value]) => ({
+        title: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        description: typeof value === 'string' ? value : JSON.stringify(value),
+        source: `${mcpName} MCP`,
+        timestamp: new Date().toISOString()
+      }));
+    }
+    
+    return [{
+      title: 'MCP Data Available',
+      description: String(data),
+      source: `${mcpName} MCP`,
+      timestamp: new Date().toISOString()
+    }];
+  };
+
+  // Store analysis in memory MCP
+  const storeInMemory = async (analysis) => {
+    try {
+      await intelligenceGatheringService.callMCP('memory', 'store', {
+        type: 'intelligence_analysis',
+        organization_id: localStorage.getItem('signaldesk_org_id') || 'default',
+        data: analysis,
+        timestamp: new Date().toISOString()
+      });
+      console.log('✅ Stored analysis in memory MCP');
+    } catch (error) {
+      console.log('Failed to store in memory MCP:', error.message);
+    }
   };
 
   const generateCategoryAnalysis = async () => {

@@ -1,4 +1,5 @@
 {
+  "public": true,
   "name": "signaldesk-orchestrator",
   "version": 2,
   "builds": [

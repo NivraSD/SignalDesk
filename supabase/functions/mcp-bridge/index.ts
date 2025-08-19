@@ -16,28 +16,46 @@ interface MCPRequest {
   organizationId: string
 }
 
-// MCP Server endpoints (configured via environment variables)
+// MCP Server endpoints - Using REAL Supabase Edge Functions (no fallback data)
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || 'https://zskaxjtyuaqazydouifp.supabase.co'
+
 const MCP_SERVERS = {
-  opportunities: Deno.env.get('MCP_OPPORTUNITIES_URL') || 'https://signaldesk-opportunities.vercel.app',
-  orchestrator: Deno.env.get('MCP_ORCHESTRATOR_URL') || 'http://localhost:3011',
-  cascade: Deno.env.get('MCP_CASCADE_URL') || 'http://localhost:3012',
-  alerting: Deno.env.get('MCP_ALERTING_URL') || 'http://localhost:3013',
-  memory: Deno.env.get('MCP_MEMORY_URL') || 'http://localhost:3014',
-  competitive: Deno.env.get('MCP_COMPETITIVE_URL') || 'http://localhost:3015',
-  execution: Deno.env.get('MCP_EXECUTION_URL') || 'http://localhost:3016'
+  // Real API-powered MCPs (Supabase Edge Functions)
+  intelligence: `${SUPABASE_URL}/functions/v1/github-intelligence`,
+  media: `${SUPABASE_URL}/functions/v1/media-intelligence`, 
+  news: `${SUPABASE_URL}/functions/v1/news-intelligence`,
+  scraper: `${SUPABASE_URL}/functions/v1/scraper-intelligence`,
+  
+  // Legacy Vercel MCPs (will be migrated to real APIs)
+  opportunities: Deno.env.get('MCP_OPPORTUNITIES_URL') || 'https://signaldesk-opportunities-kx25xtoju-nivra-sd.vercel.app/api',
+  orchestrator: Deno.env.get('MCP_ORCHESTRATOR_URL') || 'https://signaldesk-orchestrator-45s67pqct-nivra-sd.vercel.app/api',
+  relationships: Deno.env.get('MCP_RELATIONSHIPS_URL') || 'https://signaldesk-relationships.vercel.app/api',
+  analytics: Deno.env.get('MCP_ANALYTICS_URL') || 'https://signaldesk-analytics-gx48otgi8-nivra-sd.vercel.app/api',
+  content: Deno.env.get('MCP_CONTENT_URL') || 'https://signaldesk-content.vercel.app/api',
+  campaigns: Deno.env.get('MCP_CAMPAIGNS_URL') || 'https://signaldesk-campaigns.vercel.app/api',
+  memory: Deno.env.get('MCP_MEMORY_URL') || 'https://signaldesk-memory-c8pocnr1n-nivra-sd.vercel.app/api',
+  monitor: Deno.env.get('MCP_MONITOR_URL') || 'https://signaldesk-monitor-1oq1q1rsi-nivra-sd.vercel.app/api',
+  cascade: Deno.env.get('MCP_CASCADE_URL') || 'https://signaldesk-scraper.vercel.app/api',
+  entities: Deno.env.get('MCP_ENTITIES_URL') || 'https://signaldesk-entities.vercel.app/api',
+  crisis: Deno.env.get('MCP_CRISIS_URL') || 'https://signaldesk-crisis.vercel.app/api',
+  social: Deno.env.get('MCP_SOCIAL_URL') || 'https://signaldesk-social.vercel.app/api',
+  'stakeholder-groups': Deno.env.get('MCP_STAKEHOLDER_GROUPS_URL') || 'https://signaldesk-stakeholder-groups.vercel.app/api',
+  narratives: Deno.env.get('MCP_NARRATIVES_URL') || 'https://signaldesk-narratives.vercel.app/api',
+  regulatory: Deno.env.get('MCP_REGULATORY_URL') || 'https://signaldesk-regulatory.vercel.app/api'
 }
 
 async function callMCPServer(server: string, method: string, params: any) {
-  const url = MCP_SERVERS[server]
-  if (!url) {
+  const serverUrl = MCP_SERVERS[server]
+  
+  if (!serverUrl) {
     throw new Error(`Unknown MCP server: ${server}`)
   }
-
+  
   try {
-    const response = await fetch(`${url}/api`, {
+    const response = await fetch(serverUrl, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         method: method,
@@ -46,13 +64,13 @@ async function callMCPServer(server: string, method: string, params: any) {
     })
 
     if (!response.ok) {
-      throw new Error(`MCP server returned ${response.status}`)
+      throw new Error(`MCP server ${server} returned ${response.status}`)
     }
 
     const data = await response.json()
     
     if (!data.success) {
-      throw new Error(data.error || 'MCP server error')
+      throw new Error(data.error || `MCP server ${server} error`)
     }
 
     return data.data
@@ -166,14 +184,18 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('❌ Error in MCP bridge:', error)
+    
+    // FAIL FAST - NO FALLBACK DATA
     return new Response(
       JSON.stringify({ 
+        success: false,
         error: error.message,
-        fallback: 'MCP servers not available. Using fallback processing.'
+        service: 'MCP Bridge',
+        message: `${server} MCP service unavailable - no fallback data available`
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 // Return 200 with fallback message instead of error
+        status: 503 // Service unavailable when MCPs fail
       }
     )
   }

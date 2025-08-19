@@ -4,8 +4,41 @@
 class IntelligenceGatheringService {
   constructor() {
     this.baseUrl = process.env.REACT_APP_BACKEND_URL || 'https://backend-orchestrator.vercel.app';
+    this.supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co';
+    this.supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
     this.cache = new Map();
     this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
+  }
+
+  // Call MCP servers through Supabase mcp-bridge
+  async callMCP(server, method, params) {
+    try {
+      const response = await fetch(`${this.supabaseUrl}/functions/v1/mcp-bridge`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.supabaseKey}`
+        },
+        body: JSON.stringify({
+          server,
+          method,
+          params,
+          organizationId: localStorage.getItem('signaldesk_org_id') || 'default'
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.result && data.result.data) {
+          return data.result.data;
+        } else if (data.result) {
+          return data.result;
+        }
+      }
+    } catch (error) {
+      console.log(`MCP ${server}.${method} failed, using fallback`);
+    }
+    return null;
   }
 
   // Main method to gather all intelligence based on configuration
@@ -31,343 +64,184 @@ class IntelligenceGatheringService {
       }
     }
 
-    // Gather industry-specific intelligence
-    if (config.organization?.industry) {
-      const industryData = await this.getIndustryIntelligence(config.organization.industry);
-      if (industryData) {
-        intelligence.industryTrends = industryData;
-      }
-    }
-
-    // Gather competitive intelligence if tracking competitors
-    if (config.stakeholders?.includes('competitors')) {
-      const competitiveData = await this.getCompetitiveIntelligence(config.organization);
-      if (competitiveData) {
-        intelligence.competitiveIntel = competitiveData;
-      }
-    }
-
-    // Gather media opportunities if media coverage is a goal
-    if (config.goals?.media_coverage) {
-      const mediaOps = await this.getMediaOpportunities(config.organization);
-      if (mediaOps) {
-        intelligence.mediaOpportunities = mediaOps;
-      }
-    }
+    // ALL intelligence now comes from MCPs only
+    // No hardcoded industry trends, competitive data, or media opportunities
+    // Real data is gathered via stakeholder-specific MCP calls above
 
     return intelligence;
+  }
+
+  // Transform MCP data into standardized insights
+  transformMCPData(mcpData, stakeholderId, mcpType) {
+    const insights = [];
+    
+    try {
+      switch(mcpType) {
+        case 'media':
+          if (mcpData.journalists) {
+            insights.push(...mcpData.journalists.map(j => ({
+              stakeholder: 'Tech Media',
+              type: 'media_opportunity',
+              title: j.outlet || j.name || 'Media Contact',
+              insight: `${j.name || 'Journalist'} covers ${j.beat || 'industry topics'}`,
+              relevance: j.relevance || 'high',
+              actionable: true,
+              suggestedAction: `Pitch ${j.name || 'journalist'} with relevant ${j.beat || 'industry'} story`,
+              source: 'Media MCP',
+              timestamp: new Date().toISOString()
+            })));
+          }
+          break;
+          
+        case 'intelligence':
+          if (mcpData.insights) {
+            insights.push(...mcpData.insights.map(i => ({
+              stakeholder: stakeholderId === 'competitors' ? 'Competitors' : 'Industry Intelligence',
+              type: i.type || 'intelligence',
+              title: i.title || 'Intelligence Insight',
+              insight: i.insight || 'Strategic intelligence available',
+              relevance: i.relevance || 'medium',
+              actionable: i.actionable !== false,
+              suggestedAction: i.action || 'Review and analyze implications',
+              source: 'Intelligence MCP',
+              timestamp: new Date().toISOString()
+            })));
+          }
+          break;
+          
+        case 'opportunities':
+          if (mcpData.opportunities) {
+            insights.push(...mcpData.opportunities.map(o => ({
+              stakeholder: 'Opportunities',
+              type: 'opportunity',
+              title: o.title || 'New Opportunity',
+              insight: o.description || 'Opportunity available for engagement',
+              relevance: 'high',
+              actionable: true,
+              suggestedAction: o.suggested_action || 'Evaluate and pursue',
+              source: 'Opportunities MCP',
+              timestamp: new Date().toISOString()
+            })));
+          }
+          break;
+          
+        case 'analytics':
+          if (mcpData.sentiment || mcpData.analysis) {
+            insights.push({
+              stakeholder: 'Customer Intelligence',
+              type: 'analytics',
+              title: 'Customer Analytics',
+              insight: `Sentiment: ${mcpData.sentiment?.overall || 'positive'}, Reach: ${mcpData.reach?.total || 'growing'}`,
+              relevance: 'medium',
+              actionable: true,
+              suggestedAction: 'Review customer feedback and engagement metrics',
+              source: 'Analytics MCP',
+              timestamp: new Date().toISOString()
+            });
+          }
+          break;
+          
+        case 'relationships':
+          if (mcpData.health || mcpData.recommendations) {
+            insights.push({
+              stakeholder: 'Relationships',
+              type: 'relationship',
+              title: 'Relationship Health',
+              insight: 'Relationship analysis available with actionable recommendations',
+              relevance: 'medium',
+              actionable: true,
+              suggestedAction: 'Review relationship recommendations',
+              source: 'Relationships MCP',
+              timestamp: new Date().toISOString()
+            });
+          }
+          break;
+          
+        case 'monitor':
+          if (mcpData.alerts) {
+            insights.push(...mcpData.alerts.map(a => ({
+              stakeholder: 'Monitoring',
+              type: 'alert',
+              title: a.title || 'System Alert',
+              insight: a.description || a.message || 'Monitoring alert triggered',
+              relevance: a.level === 'warning' ? 'high' : 'medium',
+              actionable: true,
+              suggestedAction: 'Review alert and take appropriate action',
+              source: 'Monitor MCP',
+              timestamp: a.timestamp || new Date().toISOString()
+            })));
+          }
+          break;
+      }
+      
+      // If no specific transformation worked, try to extract generic data
+      if (insights.length === 0 && typeof mcpData === 'object') {
+        insights.push({
+          stakeholder: stakeholderId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+          type: 'general',
+          title: `${mcpType.toUpperCase()} Intelligence`,
+          insight: `Data available from ${mcpType} MCP`,
+          relevance: 'medium',
+          actionable: true,
+          suggestedAction: 'Review available intelligence data',
+          source: `${mcpType} MCP`,
+          timestamp: new Date().toISOString()
+        });
+      }
+      
+    } catch (error) {
+      console.log(`Error transforming ${mcpType} MCP data:`, error.message);
+    }
+    
+    return insights;
   }
 
   // Get real intelligence for specific stakeholder groups
   async getStakeholderIntelligence(stakeholderId, config) {
     const insights = [];
     
-    switch(stakeholderId) {
-      case 'tech_journalists':
-        // Fetch real journalist activity and opportunities
-        insights.push({
-          stakeholder: 'Tech Media',
-          type: 'opportunity',
-          title: 'Trending Tech Topics',
-          insight: 'AI regulation and data privacy are hot topics this week. 3 major outlets seeking expert commentary.',
-          relevance: this.calculateRelevance(config, ['media_coverage', 'thought_leadership']),
-          actionable: true,
-          suggestedAction: 'Prepare expert commentary on AI ethics and data governance',
-          source: 'Media monitoring',
-          timestamp: new Date().toISOString()
-        });
-        
-        // Add real-time media queries if available
-        const mediaQueries = await this.fetchMediaQueries(config.organization?.industry);
-        if (mediaQueries && mediaQueries.length > 0) {
-          insights.push(...mediaQueries.map(query => ({
-            stakeholder: 'Tech Media',
-            type: 'media_query',
-            title: query.outlet,
-            insight: query.topic,
-            deadline: query.deadline,
-            relevance: 'high',
-            actionable: true,
-            suggestedAction: `Respond to ${query.outlet} query by ${query.deadline}`,
-            source: 'HARO/ProfNet',
-            timestamp: new Date().toISOString()
-          })));
-        }
-        break;
-
-      case 'industry_analysts':
-        insights.push({
-          stakeholder: 'Industry Analysts',
-          type: 'research',
-          title: 'New Industry Report',
-          insight: `Gartner released ${config.organization?.industry || 'technology'} sector forecast. Your space is identified as high-growth.`,
-          relevance: this.calculateRelevance(config, ['competitive_positioning']),
-          actionable: true,
-          suggestedAction: 'Reference analyst insights in upcoming communications',
-          source: 'Analyst reports',
-          timestamp: new Date().toISOString()
-        });
-        break;
-
-      case 'investors':
-        insights.push({
-          stakeholder: 'VC Community',
-          type: 'funding',
-          title: 'Investment Trends',
-          insight: `$${Math.floor(Math.random() * 500 + 100)}M invested in ${config.organization?.industry || 'tech'} startups this quarter. Focus on AI and sustainability.`,
-          relevance: this.calculateRelevance(config, ['investor_relations']),
-          actionable: true,
-          suggestedAction: 'Highlight AI capabilities and ESG initiatives in investor communications',
-          source: 'Investment tracking',
-          timestamp: new Date().toISOString()
-        });
-        break;
-
-      case 'competitors':
-        const competitorInsights = await this.getCompetitorActivity(config.organization);
-        insights.push(...competitorInsights);
-        break;
-
-      case 'customers':
-        insights.push({
-          stakeholder: 'Customer Base',
-          type: 'sentiment',
-          title: 'Customer Sentiment Analysis',
-          insight: 'Social mentions up 23% this week. Positive sentiment around product reliability.',
-          relevance: this.calculateRelevance(config, ['brand_awareness']),
-          actionable: true,
-          suggestedAction: 'Amplify positive customer testimonials',
-          source: 'Social listening',
-          timestamp: new Date().toISOString()
-        });
-        break;
-
-      case 'partners':
-        insights.push({
-          stakeholder: 'Partner Network',
-          type: 'partnership',
-          title: 'Partnership Opportunities',
-          insight: '3 potential strategic partners identified based on complementary offerings',
-          relevance: this.calculateRelevance(config, ['market_expansion']),
-          actionable: true,
-          suggestedAction: 'Initiate partnership discussions with identified companies',
-          source: 'Partner analysis',
-          timestamp: new Date().toISOString()
-        });
-        break;
-
-      case 'regulators':
-        insights.push({
-          stakeholder: 'Regulatory Bodies',
-          type: 'compliance',
-          title: 'Regulatory Update',
-          insight: `New ${config.organization?.industry || 'industry'} compliance guidelines take effect next quarter`,
-          relevance: 'high',
-          actionable: true,
-          suggestedAction: 'Review and update compliance documentation',
-          source: 'Regulatory monitoring',
-          timestamp: new Date().toISOString()
-        });
-        break;
-
-      case 'influencers':
-        insights.push({
-          stakeholder: 'Industry Influencers',
-          type: 'influence',
-          title: 'Influencer Activity',
-          insight: `Top ${config.organization?.industry || 'tech'} influencers discussing trends aligned with your positioning`,
-          relevance: this.calculateRelevance(config, ['thought_leadership']),
-          actionable: true,
-          suggestedAction: 'Engage with influencer content and share insights',
-          source: 'Influencer tracking',
-          timestamp: new Date().toISOString()
-        });
-        break;
-    }
-
-    return insights;
-  }
-
-  // Fetch real media queries (simulated for now, would connect to actual APIs)
-  async fetchMediaQueries(industry) {
-    // In production, this would call HARO API or similar
-    return [
-      {
-        outlet: 'TechCrunch',
-        topic: 'Looking for sources on AI implementation challenges',
-        deadline: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-        contact: 'reporter@techcrunch.com'
-      },
-      {
-        outlet: 'Forbes',
-        topic: `Expert commentary needed on ${industry} digital transformation`,
-        deadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-        contact: 'contributor@forbes.com'
-      }
-    ];
-  }
-
-  // Get competitive intelligence
-  async getCompetitiveIntelligence(organization) {
-    return this.getCompetitorActivity(organization);
-  }
-
-  // Get competitor activity
-  async getCompetitorActivity(organization) {
-    return [
-      {
-        stakeholder: 'Competitors',
-        type: 'competitive',
-        title: 'Competitor Launch',
-        insight: 'Main competitor announced new feature similar to your roadmap item',
-        relevance: 'critical',
-        actionable: true,
-        suggestedAction: 'Accelerate differentiation strategy and highlight unique value props',
-        source: 'Competitive monitoring',
-        timestamp: new Date().toISOString()
-      },
-      {
-        stakeholder: 'Competitors',
-        type: 'competitive',
-        title: 'Market Position Shift',
-        insight: 'Competitor experiencing negative reviews - opportunity to capture market share',
-        relevance: 'high',
-        actionable: true,
-        suggestedAction: 'Launch targeted campaign highlighting your strengths in affected areas',
-        source: 'Market analysis',
-        timestamp: new Date().toISOString()
-      }
-    ];
-  }
-
-  // Get industry-specific intelligence
-  async getIndustryIntelligence(industry) {
-    const trends = [
-      {
-        trend: `${industry.charAt(0).toUpperCase() + industry.slice(1)} AI Adoption`,
-        description: 'AI implementation accelerating across the sector',
-        impact: 'high',
-        opportunity: 'Position as AI-forward leader in the space'
-      },
-      {
-        trend: 'Sustainability Focus',
-        description: 'ESG requirements becoming mandatory for enterprise contracts',
-        impact: 'medium',
-        opportunity: 'Highlight environmental initiatives'
-      },
-      {
-        trend: 'Remote Work Evolution',
-        description: 'Hybrid work models becoming permanent',
-        impact: 'medium',
-        opportunity: 'Showcase remote collaboration capabilities'
-      }
-    ];
-
-    return trends;
-  }
-
-  // Get media opportunities
-  async getMediaOpportunities(organization) {
-    return [
-      {
-        type: 'speaking',
-        event: 'TechSummit 2024',
-        topic: `Future of ${organization?.industry || 'Technology'}`,
-        deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-        visibility: 'high',
-        audience: '5000+ industry leaders'
-      },
-      {
-        type: 'podcast',
-        show: 'The Innovation Hour',
-        topic: 'Industry disruption and transformation',
-        availability: 'Next 2 weeks',
-        visibility: 'medium',
-        audience: '50K+ downloads per episode'
-      },
-      {
-        type: 'article',
-        publication: 'Industry Weekly',
-        topic: 'Thought leadership piece on market trends',
-        deadline: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-        visibility: 'high',
-        audience: 'C-suite executives'
-      }
-    ];
-  }
-
-  // Calculate relevance based on goals
-  calculateRelevance(config, relevantGoals) {
-    if (!config.goals) return 'medium';
-    
-    const activeRelevantGoals = relevantGoals.filter(goal => config.goals[goal]);
-    if (activeRelevantGoals.length > 1) return 'critical';
-    if (activeRelevantGoals.length === 1) return 'high';
-    return 'medium';
-  }
-
-  // Search for specific intelligence
-  async searchIntelligence(query, filters = {}) {
-    // This would connect to various search APIs and databases
-    const results = {
-      news: [],
-      social: [],
-      research: [],
-      opportunities: []
+    // Call appropriate MCPs based on stakeholder type
+    const mcpMappings = {
+      'tech_journalists': { mcp: 'media', method: 'discover' },
+      'media': { mcp: 'media', method: 'discover' },
+      'competitors': { mcp: 'intelligence', method: 'gather' },
+      'industry_analysts': { mcp: 'intelligence', method: 'gather' },
+      'investors': { mcp: 'opportunities', method: 'discover' },
+      'customers': { mcp: 'analytics', method: 'analyze' },
+      'partners': { mcp: 'relationships', method: 'assess' },
+      'regulators': { mcp: 'monitor', method: 'check' },
+      'influencers': { mcp: 'media', method: 'discover' }
     };
-
-    // Simulate search results (in production, would use real APIs)
-    if (query) {
-      results.news = [
-        {
-          title: `Latest developments in ${query}`,
-          source: 'TechNews',
-          date: new Date().toLocaleDateString(),
-          relevance: 'high'
-        }
-      ];
-
-      results.social = [
-        {
-          platform: 'LinkedIn',
-          engagement: 'High discussion around ' + query,
-          sentiment: 'positive',
-          trending: true
-        }
-      ];
+    
+    const mapping = mcpMappings[stakeholderId];
+    if (mapping) {
+      const mcpData = await this.callMCP(mapping.mcp, mapping.method, {
+        industry: config.organization?.industry || 'tech',
+        stakeholder: stakeholderId,
+        keywords: config.keywords || [],
+        organization: config.organization
+      });
+      
+      if (mcpData) {
+        // Transform MCP data into standardized insights
+        const transformedInsights = this.transformMCPData(mcpData, stakeholderId, mapping.mcp);
+        insights.push(...transformedInsights);
+      }
     }
-
-    return results;
+    
+    // Return MCP insights if we have them
+    if (insights.length > 0) {
+      console.log(`✅ Retrieved ${insights.length} insights from MCPs for ${stakeholderId}`);
+      return insights;
+    }
+    
+    // NO FALLBACK DATA - Throw error when MCP data unavailable
+    console.log(`❌ No MCP data available for ${stakeholderId} - failing fast`);
+    throw new Error(`${stakeholderId} intelligence unavailable - MCP service not responding`);
+    // END OF FUNCTION - No fallback data available
   }
 
-  // Get real-time alerts based on configuration
-  async getRealTimeAlerts(config) {
-    const alerts = [];
-
-    // Check for critical updates
-    if (config.goals?.crisis_preparedness) {
-      // Monitor for potential crisis indicators
-      alerts.push({
-        level: 'info',
-        title: 'Crisis Monitoring Active',
-        message: 'No threats detected. Systems monitoring 24/7.',
-        timestamp: new Date().toISOString()
-      });
-    }
-
-    if (config.goals?.media_coverage) {
-      // Check for media mentions
-      alerts.push({
-        level: 'opportunity',
-        title: 'Media Opportunity Detected',
-        message: 'Reporter seeking sources in your industry - respond within 24 hours',
-        actionRequired: true,
-        timestamp: new Date().toISOString()
-      });
-    }
-
-    return alerts;
-  }
+  // ALL FALLBACK METHODS REMOVED - ONLY REAL MCP DATA
 
   // Cache management
   getCached(key) {
