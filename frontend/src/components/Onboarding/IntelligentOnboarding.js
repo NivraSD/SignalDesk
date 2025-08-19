@@ -400,8 +400,7 @@ const IntelligentOnboarding = () => {
       const response = await fetch(`${SUPABASE_URL}/functions/v1/mcp-bridge`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           server,

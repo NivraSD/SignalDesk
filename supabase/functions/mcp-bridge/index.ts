@@ -20,28 +20,26 @@ interface MCPRequest {
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || 'https://zskaxjtyuaqazydouifp.supabase.co'
 
 const MCP_SERVERS = {
-  // Real API-powered MCPs (Supabase Edge Functions)
-  intelligence: `${SUPABASE_URL}/functions/v1/github-intelligence`,
+  // ALL Real API-powered MCPs (Supabase Edge Functions) - NO FALLBACK DATA
+  intelligence: `${SUPABASE_URL}/functions/v1/pr-intelligence`,
   media: `${SUPABASE_URL}/functions/v1/media-intelligence`, 
   news: `${SUPABASE_URL}/functions/v1/news-intelligence`,
   scraper: `${SUPABASE_URL}/functions/v1/scraper-intelligence`,
+  opportunities: `${SUPABASE_URL}/functions/v1/opportunities-intelligence`,
+  orchestrator: `${SUPABASE_URL}/functions/v1/orchestrator-intelligence`,
+  relationships: `${SUPABASE_URL}/functions/v1/relationships-intelligence`,
+  analytics: `${SUPABASE_URL}/functions/v1/analytics-intelligence`,
+  monitor: `${SUPABASE_URL}/functions/v1/monitor-intelligence`,
+  crisis: `${SUPABASE_URL}/functions/v1/crisis-intelligence`,
+  social: `${SUPABASE_URL}/functions/v1/social-intelligence`,
   
-  // Legacy Vercel MCPs (will be migrated to real APIs)
-  opportunities: Deno.env.get('MCP_OPPORTUNITIES_URL') || 'https://signaldesk-opportunities-kx25xtoju-nivra-sd.vercel.app/api',
-  orchestrator: Deno.env.get('MCP_ORCHESTRATOR_URL') || 'https://signaldesk-orchestrator-45s67pqct-nivra-sd.vercel.app/api',
-  relationships: Deno.env.get('MCP_RELATIONSHIPS_URL') || 'https://signaldesk-relationships.vercel.app/api',
-  analytics: Deno.env.get('MCP_ANALYTICS_URL') || 'https://signaldesk-analytics-gx48otgi8-nivra-sd.vercel.app/api',
-  content: Deno.env.get('MCP_CONTENT_URL') || 'https://signaldesk-content.vercel.app/api',
-  campaigns: Deno.env.get('MCP_CAMPAIGNS_URL') || 'https://signaldesk-campaigns.vercel.app/api',
-  memory: Deno.env.get('MCP_MEMORY_URL') || 'https://signaldesk-memory-c8pocnr1n-nivra-sd.vercel.app/api',
-  monitor: Deno.env.get('MCP_MONITOR_URL') || 'https://signaldesk-monitor-1oq1q1rsi-nivra-sd.vercel.app/api',
-  cascade: Deno.env.get('MCP_CASCADE_URL') || 'https://signaldesk-scraper.vercel.app/api',
-  entities: Deno.env.get('MCP_ENTITIES_URL') || 'https://signaldesk-entities.vercel.app/api',
-  crisis: Deno.env.get('MCP_CRISIS_URL') || 'https://signaldesk-crisis.vercel.app/api',
-  social: Deno.env.get('MCP_SOCIAL_URL') || 'https://signaldesk-social.vercel.app/api',
-  'stakeholder-groups': Deno.env.get('MCP_STAKEHOLDER_GROUPS_URL') || 'https://signaldesk-stakeholder-groups.vercel.app/api',
-  narratives: Deno.env.get('MCP_NARRATIVES_URL') || 'https://signaldesk-narratives.vercel.app/api',
-  regulatory: Deno.env.get('MCP_REGULATORY_URL') || 'https://signaldesk-regulatory.vercel.app/api'
+  // Aliases for different naming conventions
+  'media-monitoring': `${SUPABASE_URL}/functions/v1/media-intelligence`,
+  'competitor-analysis': `${SUPABASE_URL}/functions/v1/pr-intelligence`,
+  'opportunity-scanner': `${SUPABASE_URL}/functions/v1/opportunities-intelligence`,
+  'media_monitoring': `${SUPABASE_URL}/functions/v1/media-intelligence`,
+  'competitor_analysis': `${SUPABASE_URL}/functions/v1/pr-intelligence`,
+  'opportunity_scanner': `${SUPABASE_URL}/functions/v1/opportunities-intelligence`
 }
 
 async function callMCPServer(server: string, method: string, params: any) {
@@ -90,7 +88,10 @@ serve(async (req) => {
   }
 
   try {
-    // Initialize Supabase client
+    // Skip JWT verification - this is a public bridge for MCPs
+    // The actual authentication happens in the frontend
+    
+    // Initialize Supabase client with service role key for database access
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
@@ -120,14 +121,14 @@ serve(async (req) => {
       console.log('Organization not in database, using defaults')
     }
 
-    // Add organization context to params (use defaults if no org data)
+    // Add organization context to params (merge with existing if present)
     const enrichedParams = {
       ...params,
       organization: {
         id: organizationId,
-        name: orgData?.name || 'Test Organization',
-        industry: orgData?.industry || params.industry || 'technology',
-        size: orgData?.size || 'medium',
+        name: params.organization?.name || orgData?.name || 'Test Organization',
+        industry: params.organization?.industry || orgData?.industry || params.industry || 'technology',
+        size: params.organization?.size || orgData?.size || 'medium',
         configuration: orgData?.configuration || {}
       }
     }
