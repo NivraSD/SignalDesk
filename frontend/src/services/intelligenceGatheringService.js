@@ -16,9 +16,9 @@ class IntelligenceGatheringService {
       const response = await fetch(`${this.supabaseUrl}/functions/v1/mcp-bridge`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.supabaseKey}`
+          'Content-Type': 'application/json'
         },
+        mode: 'cors',
         body: JSON.stringify({
           server,
           method,

@@ -208,6 +208,7 @@ const OnboardingWithMCPs = () => {
         headers: { 
           'Content-Type': 'application/json'
         },
+        mode: 'cors',
         body: JSON.stringify({
           server: getMCPServerName(serviceId),
           method: getMCPMethod(serviceId),
