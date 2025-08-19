@@ -58,9 +58,16 @@ const OnboardingWithMCPs = () => {
   ];
 
   const mcpServices = [
-    { id: 'competitor_analysis', name: 'Competitive Analysis', icon: '🎯' },
+    { id: 'orchestrator', name: 'Strategic Orchestrator', icon: '🎭' },
     { id: 'media_monitoring', name: 'Media Intelligence', icon: '📰' },
-    { id: 'opportunity_scanner', name: 'Opportunity Detection', icon: '💡' }
+    { id: 'competitor_analysis', name: 'Competitive Analysis', icon: '🎯' },
+    { id: 'opportunity_scanner', name: 'Opportunity Detection', icon: '💡' },
+    { id: 'sentiment_analysis', name: 'Sentiment Analysis', icon: '😊' },
+    { id: 'trend_detection', name: 'Trend Detection', icon: '📈' },
+    { id: 'stakeholder_mapping', name: 'Stakeholder Mapping', icon: '🗺️' },
+    { id: 'content_optimizer', name: 'Content Optimization', icon: '✍️' },
+    { id: 'risk_assessment', name: 'Risk Assessment', icon: '⚠️' },
+    { id: 'cascade_prediction', name: 'Impact Prediction', icon: '🔮' }
   ];
 
   const runMCPAnalysis = async () => {
