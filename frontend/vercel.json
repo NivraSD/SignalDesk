@@ -11,6 +11,6 @@
     "CI": "false"
   },
   "rewrites": [
-    {"source": "/(.*)", "destination": "/index.html"}
+    {"source": "/((?!static|favicon\\.ico|logo|manifest\\.json).*)", "destination": "/index.html"}
   ]
 }
