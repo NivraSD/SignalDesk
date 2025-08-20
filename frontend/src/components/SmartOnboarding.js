@@ -16,6 +16,7 @@ const SmartOnboarding = ({ onComplete }) => {
     // Step 1: Basic Identity (CRITICAL - System Needs)
     organization: {
       name: initialOrgData?.organizationName || '',
+      website: '',
       industry: '',
       description: initialOrgData?.organizationDescription || ''
     },
@@ -118,9 +119,41 @@ const SmartOnboarding = ({ onComplete }) => {
   ];
 
   const industries = [
-    'Technology', 'Healthcare', 'Finance', 'Retail', 
-    'Manufacturing', 'Media', 'Energy', 'Education', 
-    'Non-Profit', 'Government', 'Consumer Goods', 'Other'
+    // Technology & Software
+    'Technology', 'Software/SaaS', 'Artificial Intelligence', 'Cybersecurity', 'Blockchain/Crypto',
+    'Gaming', 'Cloud Computing', 'IoT/Hardware', 'Telecommunications',
+    
+    // Healthcare & Life Sciences  
+    'Healthcare', 'Biotechnology', 'Pharmaceuticals', 'Medical Devices', 'Health Tech',
+    'Mental Health', 'Telemedicine', 'Clinical Research',
+    
+    // Finance & Business Services
+    'Finance', 'Banking', 'Insurance', 'Investment Management', 'Fintech', 
+    'Accounting', 'Consulting', 'Legal Services', 'Real Estate',
+    
+    // Consumer & Retail
+    'Retail', 'E-commerce', 'Consumer Goods', 'Food & Beverage', 'Fashion',
+    'Beauty & Cosmetics', 'Luxury Goods', 'Sports & Recreation',
+    
+    // Media & Entertainment
+    'Media', 'Entertainment', 'Publishing', 'Advertising/Marketing', 'Public Relations',
+    'Social Media', 'Gaming/Esports', 'Music', 'Film/TV Production',
+    
+    // Industrial & Infrastructure
+    'Manufacturing', 'Automotive', 'Aerospace', 'Defense', 'Construction',
+    'Logistics/Supply Chain', 'Transportation', 'Agriculture',
+    
+    // Energy & Environment
+    'Energy', 'Oil & Gas', 'Renewable Energy', 'Clean Tech', 'Sustainability',
+    'Environmental Services', 'Utilities',
+    
+    // Education & Public Sector
+    'Education', 'EdTech', 'Higher Education', 'K-12 Education', 'Professional Training',
+    'Government', 'Non-Profit', 'NGO', 'Public Policy',
+    
+    // Other Sectors
+    'Travel & Hospitality', 'Restaurants', 'Fitness & Wellness', 'Pet Care',
+    'Human Resources', 'Other'
   ];
 
   const strategicGoals = [
@@ -321,6 +354,18 @@ const SmartOnboarding = ({ onComplete }) => {
           autoFocus
         />
         <span className="field-hint">We'll automatically find your competitors</span>
+      </div>
+
+      <div className="form-section">
+        <label className="required">Organization Website</label>
+        <input
+          type="url"
+          placeholder="e.g., https://www.example.com"
+          value={formData.organization.website || ''}
+          onChange={(e) => updateField('organization', 'website', e.target.value)}
+          className="smart-input"
+        />
+        <span className="field-hint">Helps distinguish from similarly named organizations</span>
       </div>
 
       <div className="form-section">
