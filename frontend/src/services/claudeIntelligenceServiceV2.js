@@ -57,16 +57,20 @@ class ClaudeIntelligenceServiceV2 {
     const keywords = config.intelligence?.keywords || config.monitoring?.keywords || [];
     
     console.log('👥 Stakeholders found:', stakeholders);
+    console.log('👥 Stakeholders details:', JSON.stringify(stakeholders, null, 2));
     console.log('📝 Topics found:', additionalTopics);
     console.log('🔑 Keywords found:', keywords);
     console.log('📊 Intelligence config:', config.intelligence);
+    console.log('📊 Full intelligence details:', JSON.stringify(config.intelligence, null, 2));
     
     // Use industry-specific competitors if user didn't provide any
     const userCompetitors = config.targets?.competitors || config.competitors || [];
     const competitors = userCompetitors.length > 0 ? userCompetitors : industryData.primary.slice(0, 5);
     
     console.log('🏢 User competitors:', userCompetitors);
+    console.log('🏢 Industry data primary:', industryData.primary);
     console.log('🏢 Using competitors:', competitors);
+    console.log('🏢 Competitor names:', competitors.map(c => typeof c === 'string' ? c : c.name));
     
     // Enhanced organization object with ALL context and industry data
     const fullOrganization = {

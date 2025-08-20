@@ -1,8 +1,8 @@
 // Industry-specific competitor mapping
 const industryCompetitors = {
   automotive: {
-    primary: ['Tesla', 'Toyota', 'Volkswagen', 'General Motors', 'Ford', 'Stellantis', 'Mercedes-Benz', 'BMW', 'Hyundai-Kia', 'Honda', 'Nissan'],
-    emerging: ['Rivian', 'Lucid Motors', 'BYD', 'NIO', 'XPeng', 'Li Auto', 'Polestar', 'Fisker'],
+    primary: ['Tesla', 'Volkswagen', 'General Motors', 'Ford', 'Stellantis', 'Mercedes-Benz', 'BMW', 'Hyundai-Kia', 'Honda', 'Nissan', 'BYD'],
+    emerging: ['Rivian', 'Lucid Motors', 'NIO', 'XPeng', 'Li Auto', 'Polestar', 'Fisker', 'Canoo'],
     keywords: ['electric vehicles', 'autonomous driving', 'hybrid technology', 'manufacturing', 'supply chain', 'sustainability', 'battery technology', 'charging infrastructure'],
     topics: ['EV adoption', 'autonomous vehicles', 'sustainability initiatives', 'supply chain resilience', 'manufacturing innovation']
   },
