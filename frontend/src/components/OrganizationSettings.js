@@ -66,31 +66,11 @@ const OrganizationSettings = ({ onClose, onOrganizationChange }) => {
   };
 
   const createNewOrganization = () => {
-    if (!newOrgData.name) return;
-
-    // Store the new organization data temporarily
-    const tempOrgData = {
-      organizationName: newOrgData.name,
-      organizationType: newOrgData.type,
-      organizationDescription: newOrgData.description || `${newOrgData.name} - ${newOrgData.type}`,
-      isNewOrg: true
-    };
-
-    // Save to localStorage for the onboarding process to pick up
-    localStorage.setItem('signaldesk_temp_org', JSON.stringify(tempOrgData));
-    
     // Clear current organization to trigger onboarding
     localStorage.removeItem('signaldesk_organization');
     localStorage.removeItem('signaldesk_onboarding');
     
     // Navigate to the onboarding flow
-    navigate('/initialize');
-  };
-
-  const runFullOnboarding = () => {
-    // Clear current organization to trigger onboarding
-    localStorage.removeItem('signaldesk_organization');
-    localStorage.removeItem('signaldesk_onboarding');
     navigate('/initialize');
   };
 
@@ -177,67 +157,12 @@ const OrganizationSettings = ({ onClose, onOrganizationChange }) => {
           {/* Create New Organization */}
           <div className="new-org-section">
             <h3>Create New Organization</h3>
-            <p className="section-note">Creating a new organization will start the full onboarding process to configure intelligence gathering.</p>
-            {!isCreatingNew ? (
-              <button 
-                className="create-org-btn"
-                onClick={() => setIsCreatingNew(true)}
-              >
-                + Add New Organization (Full Setup)
-              </button>
-            ) : (
-              <div className="new-org-form">
-                <input
-                  type="text"
-                  placeholder="Organization Name"
-                  value={newOrgData.name}
-                  onChange={(e) => setNewOrgData({...newOrgData, name: e.target.value})}
-                  className="org-input"
-                />
-                <select
-                  value={newOrgData.type}
-                  onChange={(e) => setNewOrgData({...newOrgData, type: e.target.value})}
-                  className="org-select"
-                >
-                  <option value="company">Company</option>
-                  <option value="nonprofit">Non-Profit</option>
-                  <option value="government">Government</option>
-                  <option value="personal">Personal Brand</option>
-                </select>
-                <textarea
-                  placeholder="Description (optional)"
-                  value={newOrgData.description}
-                  onChange={(e) => setNewOrgData({...newOrgData, description: e.target.value})}
-                  className="org-textarea"
-                  rows="3"
-                />
-                <div className="form-actions">
-                  <button 
-                    className="cancel-btn"
-                    onClick={() => setIsCreatingNew(false)}
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    className="save-btn"
-                    onClick={createNewOrganization}
-                    disabled={!newOrgData.name}
-                  >
-                    Start Onboarding
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Advanced Options */}
-          <div className="advanced-section">
-            <h3>Advanced</h3>
+            <p className="section-note">Start the onboarding process to configure a new organization with intelligence gathering.</p>
             <button 
-              className="onboarding-btn"
-              onClick={runFullOnboarding}
+              className="create-org-btn"
+              onClick={createNewOrganization}
             >
-              Run Full Onboarding Setup
+              + Add New Organization
             </button>
           </div>
         </div>

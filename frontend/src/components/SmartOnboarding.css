@@ -224,6 +224,32 @@
   box-shadow: 0 0 0 3px rgba(0, 255, 204, 0.1);
 }
 
+/* Validation Errors */
+.smart-input.error,
+.smart-select.error,
+.smart-textarea.error {
+  border-color: #ff4444;
+  background: rgba(255, 0, 0, 0.05);
+}
+
+.error-message {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #ff4444;
+  font-weight: 500;
+}
+
+.error-banner {
+  padding: 12px;
+  background: rgba(255, 0, 0, 0.1);
+  border: 1px solid #ff4444;
+  border-radius: 8px;
+  color: #ff6666;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
 .smart-textarea {
   resize: vertical;
   min-height: 80px;
@@ -547,6 +573,105 @@
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.5);
   letter-spacing: 0.5px;
+}
+
+/* Stakeholder Selection */
+.stakeholder-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.stakeholder-group {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.group-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.group-header label {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.stakeholder-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.stakeholder-chip {
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+  text-align: center;
+}
+
+.stakeholder-chip:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(0, 255, 204, 0.4);
+  transform: scale(1.02);
+}
+
+.stakeholder-chip.selected {
+  background: rgba(0, 255, 204, 0.15);
+  border-color: #00ffcc;
+  color: #ffffff;
+  box-shadow: 0 0 15px rgba(0, 255, 204, 0.3);
+}
+
+.chip-check {
+  margin-left: 6px;
+  color: #00ffcc;
+  font-weight: bold;
+}
+
+.selection-summary {
+  margin-top: 20px;
+  padding: 12px;
+  background: rgba(0, 255, 204, 0.05);
+  border: 1px solid rgba(0, 255, 204, 0.2);
+  border-radius: 8px;
+  text-align: center;
+  color: #00ffcc;
+  font-weight: 500;
+}
+
+/* Info Box */
+.info-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(0, 255, 136, 0.05);
+  border: 1px solid rgba(0, 255, 136, 0.2);
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.info-box p {
+  margin: 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.5;
+}
+
+.info-box strong {
+  color: #00ff88;
 }
 
 /* Navigation */

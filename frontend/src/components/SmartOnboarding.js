@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './SmartOnboarding.css';
+import { IntelligenceIcon, OpportunityIcon, ExecutionIcon, MemoryIcon, RocketIcon, CompetitorIcon, StakeholderIcon, MediaIcon } from './Icons/NeonIcons';
 
 const SmartOnboarding = ({ onComplete }) => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [aiSuggestions, setAiSuggestions] = useState({});
+  const [validationErrors, setValidationErrors] = useState({});
   
   // Check for temp org data from settings
   const tempOrgData = localStorage.getItem('signaldesk_temp_org');
@@ -23,7 +24,6 @@ const SmartOnboarding = ({ onComplete }) => {
     
     // Step 2: Strategic Focus (CRITICAL - Directs Analysis)
     goals: {
-      // PR-specific goals that change how system analyzes
       thought_leadership: false,
       crisis_prevention: false,
       media_coverage: false,
@@ -34,38 +34,31 @@ const SmartOnboarding = ({ onComplete }) => {
       partnerships: false
     },
     
-    // Step 3: Monitoring Priorities (USER VALUE - What They Care About)
+    // Step 3: Additional Monitoring (OPTIONAL - Supplements auto-discovery)
     monitoring: {
-      // What events/topics to track (not WHO, but WHAT)
-      topics: [],
-      keywords: [],
-      // Example topics they can select or add:
-      // - "AI regulation changes"
-      // - "Sustainability initiatives" 
-      // - "Market consolidation"
-      // - "Technology breakthroughs"
-      // - "Customer sentiment shifts"
+      additionalTopics: [],  // Changed from primary topics
+      keywords: []
     },
     
-    // Step 4: Key Stakeholders (USER VALUE - Who Matters)
+    // Step 4: Key Stakeholders (SELECTION - Pre-mapped by industry)
     stakeholders: {
-      media: [],        // Specific journalists, publications
-      influencers: [],  // Industry thought leaders
-      regulators: [],   // Government bodies, agencies
-      investors: [],    // Analysts, VCs, funds
-      communities: [],  // Customer groups, forums
-      partners: []      // Strategic partners to track
+      media: [],
+      influencers: [],
+      regulators: [],
+      investors: [],
+      communities: [],
+      partners: []
     },
     
-    // Step 5: Response Configuration (CRITICAL - How to Act)
+    // Step 5: Response Configuration
     response: {
-      urgency: 'balanced',  // 'immediate', 'balanced', 'strategic'
-      opportunityThreshold: 70,  // Min score to alert (0-100)
+      urgency: 'balanced',
+      opportunityThreshold: 70,
       alertChannels: {
-        critical: true,    // High priority alerts
-        opportunities: true,  // New opportunities
-        threats: true,     // Risk warnings
-        trends: false      // Trend reports
+        critical: true,
+        opportunities: true,
+        threats: true,
+        trends: false
       },
       responseTime: '< 4 hours'
     }
@@ -85,35 +78,35 @@ const SmartOnboarding = ({ onComplete }) => {
       id: 1, 
       title: 'Organization Basics', 
       subtitle: 'Just the essentials we need',
-      icon: '🎯',
+      Icon: IntelligenceIcon,
       color: '#00ffcc'
     },
     { 
       id: 2, 
-      title: 'Strategic PR Goals', 
+      title: 'Strategic Goals', 
       subtitle: 'What are you trying to achieve?',
-      icon: '🚀',
+      Icon: OpportunityIcon,
       color: '#ff00ff'
     },
     { 
       id: 3, 
-      title: 'Monitoring Priorities', 
-      subtitle: 'What events and topics matter to you?',
-      icon: '👁️',
+      title: 'Additional Monitoring', 
+      subtitle: 'Specific topics to track (optional)',
+      Icon: MediaIcon,
       color: '#00ff88'
     },
     { 
       id: 4, 
       title: 'Key Stakeholders', 
-      subtitle: 'Who influences your success?',
-      icon: '🎭',
+      subtitle: 'Select who matters to you',
+      Icon: StakeholderIcon,
       color: '#8800ff'
     },
     { 
       id: 5, 
       title: 'Alert Settings', 
       subtitle: 'How should we notify you?',
-      icon: '⚡',
+      Icon: RocketIcon,
       color: '#00ffcc'
     }
   ];
@@ -156,75 +149,84 @@ const SmartOnboarding = ({ onComplete }) => {
     'Human Resources', 'Other'
   ];
 
+  // Pre-mapped stakeholders by industry category
+  const stakeholdersByIndustry = {
+    'Technology': {
+      media: ['TechCrunch', 'The Verge', 'Wired', 'Ars Technica', 'VentureBeat', 'The Information', 'Protocol', 'Recode'],
+      influencers: ['Benedict Evans', 'Mary Meeker', 'Ben Thompson', 'Kara Swisher', 'Casey Newton'],
+      regulators: ['FTC', 'FCC', 'EU Commission', 'DOJ Antitrust', 'State Privacy Boards'],
+      investors: ['Sequoia Capital', 'Andreessen Horowitz', 'Benchmark', 'Accel', 'Y Combinator']
+    },
+    'Finance': {
+      media: ['Wall Street Journal', 'Financial Times', 'Bloomberg', 'CNBC', 'Reuters', 'Forbes'],
+      influencers: ['Warren Buffett', 'Ray Dalio', 'Mohamed El-Erian', 'Nouriel Roubini'],
+      regulators: ['SEC', 'FINRA', 'Federal Reserve', 'CFPB', 'OCC', 'FDIC'],
+      investors: ['BlackRock', 'Vanguard', 'State Street', 'JP Morgan', 'Goldman Sachs']
+    },
+    'Healthcare': {
+      media: ['STAT News', 'FiercePharma', 'Modern Healthcare', 'Becker\'s Hospital Review', 'MedCity News'],
+      influencers: ['Eric Topol', 'Atul Gawande', 'Robert Pearl', 'Leana Wen'],
+      regulators: ['FDA', 'CDC', 'CMS', 'NIH', 'WHO'],
+      investors: ['OrbiMed', 'Venrock', 'NEA', 'Polaris Partners', 'Arch Venture']
+    },
+    'default': {
+      media: ['Wall Street Journal', 'New York Times', 'Bloomberg', 'Reuters', 'Forbes', 'Business Insider'],
+      influencers: ['Industry analysts', 'Academic experts', 'Trade association leaders'],
+      regulators: ['FTC', 'SEC', 'DOJ', 'State regulators'],
+      investors: ['Major institutional investors', 'Private equity firms', 'Venture capital firms']
+    }
+  };
+
   const strategicGoals = [
     { 
       id: 'thought_leadership', 
       name: 'Thought Leadership', 
       desc: 'Position executives as industry experts',
-      icon: '🎓' 
+      Icon: IntelligenceIcon
     },
     { 
       id: 'crisis_prevention', 
       name: 'Crisis Prevention', 
       desc: 'Early warning system for PR risks',
-      icon: '🛡️' 
+      Icon: MediaIcon
     },
     { 
       id: 'media_coverage', 
       name: 'Media Coverage', 
       desc: 'Maximize positive press mentions',
-      icon: '📰' 
+      Icon: MediaIcon
     },
     { 
       id: 'investor_relations', 
       name: 'Investor Relations', 
       desc: 'Manage investor sentiment',
-      icon: '💰' 
+      Icon: OpportunityIcon
     },
     { 
       id: 'product_launches', 
       name: 'Product Launches', 
       desc: 'Amplify new product announcements',
-      icon: '🚀' 
+      Icon: RocketIcon
     },
     { 
       id: 'competitive_positioning', 
       name: 'Competitive Edge', 
       desc: 'Win the narrative against competitors',
-      icon: '⚔️' 
+      Icon: CompetitorIcon
     },
     { 
       id: 'reputation_management', 
       name: 'Reputation Management', 
       desc: 'Protect and enhance brand image',
-      icon: '✨' 
+      Icon: ExecutionIcon
     },
     { 
       id: 'partnerships', 
       name: 'Strategic Partnerships', 
       desc: 'Identify collaboration opportunities',
-      icon: '🤝' 
+      Icon: StakeholderIcon
     }
   ];
-
-  const topicSuggestions = {
-    'Technology': [
-      'AI regulation', 'Data privacy laws', 'Open source trends',
-      'Tech layoffs', 'Startup funding', 'IPO activity'
-    ],
-    'Healthcare': [
-      'FDA approvals', 'Clinical trial results', 'Healthcare policy',
-      'Drug pricing', 'Telehealth adoption', 'Medical breakthroughs'
-    ],
-    'Finance': [
-      'Interest rate changes', 'Regulatory compliance', 'Fintech innovation',
-      'Cryptocurrency regulation', 'Banking consolidation', 'ESG investing'
-    ],
-    'default': [
-      'Industry consolidation', 'Regulatory changes', 'Market trends',
-      'Technology disruption', 'Sustainability', 'Economic indicators'
-    ]
-  };
 
   const updateField = (section, field, value) => {
     setFormData(prev => ({
@@ -233,6 +235,11 @@ const SmartOnboarding = ({ onComplete }) => {
         ...prev[section],
         [field]: value
       }
+    }));
+    // Clear validation error for this field
+    setValidationErrors(prev => ({
+      ...prev,
+      [`${section}.${field}`]: undefined
     }));
   };
 
@@ -246,12 +253,67 @@ const SmartOnboarding = ({ onComplete }) => {
     }));
   };
 
-  const handleNext = () => {
-    if (currentStep < totalSteps) {
-      // Generate AI suggestions after step 1
-      if (currentStep === 1 && formData.organization.name) {
-        generateAISuggestions();
+  const toggleStakeholder = (category, stakeholder) => {
+    setFormData(prev => ({
+      ...prev,
+      stakeholders: {
+        ...prev.stakeholders,
+        [category]: prev.stakeholders[category].includes(stakeholder) ?
+          prev.stakeholders[category].filter(s => s !== stakeholder) :
+          [...prev.stakeholders[category], stakeholder]
       }
+    }));
+  };
+
+  const validateStep = (step) => {
+    const errors = {};
+    
+    switch(step) {
+      case 1:
+        if (!formData.organization.name.trim()) {
+          errors['organization.name'] = 'Organization name is required';
+        }
+        if (!formData.organization.website.trim()) {
+          errors['organization.website'] = 'Website URL is required';
+        }
+        if (!formData.organization.industry) {
+          errors['organization.industry'] = 'Please select your industry';
+        }
+        break;
+        
+      case 2:
+        const selectedGoals = Object.values(formData.goals).filter(v => v).length;
+        if (selectedGoals === 0) {
+          errors['goals'] = 'Please select at least one strategic goal';
+        }
+        break;
+        
+      case 3:
+        // Step 3 is optional - no validation needed
+        break;
+        
+      case 4:
+        const totalStakeholders = Object.values(formData.stakeholders).flat().length;
+        if (totalStakeholders < 3) {
+          errors['stakeholders'] = 'Please select at least 3 stakeholders to monitor';
+        }
+        break;
+        
+      case 5:
+        // Alert settings have defaults - no validation needed
+        break;
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleNext = () => {
+    if (!validateStep(currentStep)) {
+      return;
+    }
+    
+    if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
     } else {
       handleComplete();
@@ -262,24 +324,6 @@ const SmartOnboarding = ({ onComplete }) => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
-  };
-
-  const generateAISuggestions = () => {
-    // Generate smart suggestions based on organization and industry
-    const industry = formData.organization.industry;
-    const suggestions = {
-      topics: topicSuggestions[industry] || topicSuggestions['default'],
-      stakeholders: {
-        media: industry === 'Technology' ? 
-          ['TechCrunch', 'The Verge', 'Wired', 'Ars Technica'] :
-          ['Wall Street Journal', 'Bloomberg', 'Reuters', 'Forbes'],
-        influencers: ['Industry analysts', 'Thought leaders', 'Academic experts'],
-        regulators: industry === 'Finance' ? 
-          ['SEC', 'FINRA', 'Federal Reserve', 'CFPB'] :
-          ['FTC', 'Industry regulators', 'State agencies']
-      }
-    };
-    setAiSuggestions(suggestions);
   };
 
   const handleComplete = async () => {
@@ -295,10 +339,14 @@ const SmartOnboarding = ({ onComplete }) => {
         },
         intelligence: {
           stakeholders: formData.stakeholders,
-          topics: formData.monitoring.topics,
+          topics: formData.monitoring.additionalTopics,
           keywords: formData.monitoring.keywords,
           alertFrequency: formData.response.urgency === 'immediate' ? 'realtime' : 
                          formData.response.urgency === 'strategic' ? 'daily' : 'hourly'
+        },
+        monitoring: {
+          topics: formData.monitoring.additionalTopics,
+          keywords: formData.monitoring.keywords
         },
         opportunities: {
           minimumScore: formData.response.opportunityThreshold,
@@ -330,7 +378,7 @@ const SmartOnboarding = ({ onComplete }) => {
         }
       }, 500);
     } catch (error) {
-      console.error('Error saving onboarding:', error);
+      console.error('Failed to complete onboarding:', error);
     } finally {
       setLoading(false);
     }
@@ -350,9 +398,12 @@ const SmartOnboarding = ({ onComplete }) => {
           placeholder="e.g., OpenAI, Tesla, Spotify"
           value={formData.organization.name}
           onChange={(e) => updateField('organization', 'name', e.target.value)}
-          className="smart-input"
+          className={`smart-input ${validationErrors['organization.name'] ? 'error' : ''}`}
           autoFocus
         />
+        {validationErrors['organization.name'] && (
+          <span className="error-message">{validationErrors['organization.name']}</span>
+        )}
         <span className="field-hint">We'll automatically find your competitors</span>
       </div>
 
@@ -363,8 +414,11 @@ const SmartOnboarding = ({ onComplete }) => {
           placeholder="e.g., https://www.example.com"
           value={formData.organization.website || ''}
           onChange={(e) => updateField('organization', 'website', e.target.value)}
-          className="smart-input"
+          className={`smart-input ${validationErrors['organization.website'] ? 'error' : ''}`}
         />
+        {validationErrors['organization.website'] && (
+          <span className="error-message">{validationErrors['organization.website']}</span>
+        )}
         <span className="field-hint">Helps distinguish from similarly named organizations</span>
       </div>
 
@@ -373,13 +427,16 @@ const SmartOnboarding = ({ onComplete }) => {
         <select
           value={formData.organization.industry}
           onChange={(e) => updateField('organization', 'industry', e.target.value)}
-          className="smart-select"
+          className={`smart-select ${validationErrors['organization.industry'] ? 'error' : ''}`}
         >
           <option value="">Select your industry</option>
           {industries.map(ind => (
             <option key={ind} value={ind}>{ind}</option>
           ))}
         </select>
+        {validationErrors['organization.industry'] && (
+          <span className="error-message">{validationErrors['organization.industry']}</span>
+        )}
         <span className="field-hint">Helps us understand your competitive landscape</span>
       </div>
 
@@ -403,6 +460,10 @@ const SmartOnboarding = ({ onComplete }) => {
         <p>Select all that apply. This helps us analyze intelligence through the right lens.</p>
       </div>
 
+      {validationErrors['goals'] && (
+        <div className="error-banner">{validationErrors['goals']}</div>
+      )}
+
       <div className="goals-selection">
         {strategicGoals.map(goal => (
           <div
@@ -411,7 +472,9 @@ const SmartOnboarding = ({ onComplete }) => {
             onClick={() => toggleGoal(goal.id)}
           >
             <div className="goal-header">
-              <span className="goal-icon">{goal.icon}</span>
+              <span className="goal-icon">
+                <goal.Icon size={24} color={formData.goals[goal.id] ? '#00ffcc' : 'rgba(255,255,255,0.5)'} />
+              </span>
               <div className="goal-info">
                 <h4>{goal.name}</h4>
                 <p>{goal.desc}</p>
@@ -433,47 +496,30 @@ const SmartOnboarding = ({ onComplete }) => {
   const renderStep3 = () => (
     <div className="smart-step">
       <div className="step-intro">
-        <h3>What should we monitor for you?</h3>
-        <p>Tell us what topics and events you care about. We'll track these across all sources.</p>
+        <h3>Additional monitoring topics (Optional)</h3>
+        <p>We automatically track your industry, competitors, and relevant news. Add any specific topics you want to monitor.</p>
       </div>
 
-      {aiSuggestions.topics && (
-        <div className="ai-suggestions">
-          <label>Suggested topics for {formData.organization.industry}</label>
-          <div className="suggestion-chips">
-            {aiSuggestions.topics.map(topic => (
-              <button
-                key={topic}
-                className={`chip ${formData.monitoring.topics.includes(topic) ? 'selected' : ''}`}
-                onClick={() => {
-                  const topics = formData.monitoring.topics.includes(topic) ?
-                    formData.monitoring.topics.filter(t => t !== topic) :
-                    [...formData.monitoring.topics, topic];
-                  updateField('monitoring', 'topics', topics);
-                }}
-              >
-                {topic}
-                {formData.monitoring.topics.includes(topic) && <span className="chip-remove">×</span>}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      <div className="info-box">
+        <MediaIcon size={20} color="#00ff88" />
+        <p>Our AI automatically discovers and tracks competitors, industry news, and relevant events. The topics below are <strong>additional</strong> areas you'd like us to monitor.</p>
+      </div>
 
       <div className="form-section">
-        <label>Custom Topics to Monitor</label>
+        <label>Additional Topics to Monitor (Optional)</label>
         <textarea
-          placeholder="Enter topics to track (one per line)
+          placeholder="Enter any specific topics you want to track (one per line)
 Examples:
-• Product launches in our space
-• Executive changes at competitors
-• Industry award announcements
-• Regulatory proposals"
-          value={formData.monitoring.topics.join('\n')}
-          onChange={(e) => updateField('monitoring', 'topics', e.target.value.split('\n').filter(t => t.trim()))}
+• Specific conference names
+• Niche technology areas
+• Regional market changes
+• Internal campaign names"
+          value={formData.monitoring.additionalTopics.join('\n')}
+          onChange={(e) => updateField('monitoring', 'additionalTopics', e.target.value.split('\n').filter(t => t.trim()))}
           className="smart-textarea"
           rows="5"
         />
+        <span className="field-hint">These supplement our automatic industry monitoring</span>
       </div>
 
       <div className="form-section">
@@ -485,98 +531,134 @@ Examples:
           onChange={(e) => updateField('monitoring', 'keywords', e.target.value.split(',').map(k => k.trim()).filter(k => k))}
           className="smart-input"
         />
+        <span className="field-hint">Exact terms to always track</span>
       </div>
     </div>
   );
 
-  const renderStep4 = () => (
-    <div className="smart-step">
-      <div className="step-intro">
-        <h3>Who are your key stakeholders?</h3>
-        <p>We'll pay special attention to these voices and track their sentiment.</p>
+  const renderStep4 = () => {
+    // Get relevant stakeholders based on industry
+    const industryKey = ['Technology', 'Software/SaaS', 'Artificial Intelligence', 'Cybersecurity'].includes(formData.organization.industry) ? 'Technology' :
+                       ['Finance', 'Banking', 'Insurance', 'Fintech'].includes(formData.organization.industry) ? 'Finance' :
+                       ['Healthcare', 'Biotechnology', 'Pharmaceuticals'].includes(formData.organization.industry) ? 'Healthcare' :
+                       'default';
+    
+    const stakeholders = stakeholdersByIndustry[industryKey];
+
+    return (
+      <div className="smart-step">
+        <div className="step-intro">
+          <h3>Who are your key stakeholders?</h3>
+          <p>Select the voices that matter most to your organization. We'll track their coverage and sentiment.</p>
+        </div>
+
+        {validationErrors['stakeholders'] && (
+          <div className="error-banner">{validationErrors['stakeholders']}</div>
+        )}
+
+        <div className="stakeholder-sections">
+          {/* Media & Journalists */}
+          <div className="stakeholder-group">
+            <div className="group-header">
+              <MediaIcon size={20} color="#00ffcc" />
+              <label>Media & Publications ({formData.stakeholders.media.length} selected)</label>
+            </div>
+            <div className="stakeholder-grid">
+              {stakeholders.media.map(outlet => (
+                <div
+                  key={outlet}
+                  className={`stakeholder-chip ${formData.stakeholders.media.includes(outlet) ? 'selected' : ''}`}
+                  onClick={() => toggleStakeholder('media', outlet)}
+                >
+                  {outlet}
+                  {formData.stakeholders.media.includes(outlet) && <span className="chip-check">✓</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Industry Influencers */}
+          <div className="stakeholder-group">
+            <div className="group-header">
+              <StakeholderIcon size={20} color="#ff00ff" />
+              <label>Industry Influencers ({formData.stakeholders.influencers.length} selected)</label>
+            </div>
+            <div className="stakeholder-grid">
+              {stakeholders.influencers.map(influencer => (
+                <div
+                  key={influencer}
+                  className={`stakeholder-chip ${formData.stakeholders.influencers.includes(influencer) ? 'selected' : ''}`}
+                  onClick={() => toggleStakeholder('influencers', influencer)}
+                >
+                  {influencer}
+                  {formData.stakeholders.influencers.includes(influencer) && <span className="chip-check">✓</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Regulators */}
+          <div className="stakeholder-group">
+            <div className="group-header">
+              <ExecutionIcon size={20} color="#00ff88" />
+              <label>Regulatory Bodies ({formData.stakeholders.regulators.length} selected)</label>
+            </div>
+            <div className="stakeholder-grid">
+              {stakeholders.regulators.map(regulator => (
+                <div
+                  key={regulator}
+                  className={`stakeholder-chip ${formData.stakeholders.regulators.includes(regulator) ? 'selected' : ''}`}
+                  onClick={() => toggleStakeholder('regulators', regulator)}
+                >
+                  {regulator}
+                  {formData.stakeholders.regulators.includes(regulator) && <span className="chip-check">✓</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Investors */}
+          <div className="stakeholder-group">
+            <div className="group-header">
+              <OpportunityIcon size={20} color="#8800ff" />
+              <label>Key Investors ({formData.stakeholders.investors.length} selected)</label>
+            </div>
+            <div className="stakeholder-grid">
+              {stakeholders.investors.map(investor => (
+                <div
+                  key={investor}
+                  className={`stakeholder-chip ${formData.stakeholders.investors.includes(investor) ? 'selected' : ''}`}
+                  onClick={() => toggleStakeholder('investors', investor)}
+                >
+                  {investor}
+                  {formData.stakeholders.investors.includes(investor) && <span className="chip-check">✓</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="selection-summary">
+          Total stakeholders selected: {Object.values(formData.stakeholders).flat().length}
+        </div>
       </div>
-
-      <div className="stakeholder-sections">
-        <div className="stakeholder-group">
-          <label>
-            <span className="stakeholder-icon">📰</span>
-            Media & Journalists
-          </label>
-          <textarea
-            placeholder="Publications and journalists that matter to you
-Examples: TechCrunch, Sarah Johnson at WSJ, Bloomberg Technology"
-            value={formData.stakeholders.media.join('\n')}
-            onChange={(e) => {
-              const media = e.target.value.split('\n').filter(m => m.trim());
-              setFormData(prev => ({
-                ...prev,
-                stakeholders: { ...prev.stakeholders, media }
-              }));
-            }}
-            className="smart-textarea"
-            rows="3"
-          />
-        </div>
-
-        <div className="stakeholder-group">
-          <label>
-            <span className="stakeholder-icon">⭐</span>
-            Industry Influencers
-          </label>
-          <textarea
-            placeholder="Thought leaders and analysts who shape opinions
-Examples: Gartner analysts, industry experts, popular bloggers"
-            value={formData.stakeholders.influencers.join('\n')}
-            onChange={(e) => {
-              const influencers = e.target.value.split('\n').filter(i => i.trim());
-              setFormData(prev => ({
-                ...prev,
-                stakeholders: { ...prev.stakeholders, influencers }
-              }));
-            }}
-            className="smart-textarea"
-            rows="3"
-          />
-        </div>
-
-        <div className="stakeholder-group">
-          <label>
-            <span className="stakeholder-icon">🏛️</span>
-            Regulators & Agencies
-          </label>
-          <textarea
-            placeholder="Government bodies and regulatory agencies
-Examples: SEC, FDA, FTC, European Commission"
-            value={formData.stakeholders.regulators.join('\n')}
-            onChange={(e) => {
-              const regulators = e.target.value.split('\n').filter(r => r.trim());
-              setFormData(prev => ({
-                ...prev,
-                stakeholders: { ...prev.stakeholders, regulators }
-              }));
-            }}
-            className="smart-textarea"
-            rows="3"
-          />
-        </div>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const renderStep5 = () => (
     <div className="smart-step">
       <div className="step-intro">
         <h3>How should we alert you?</h3>
-        <p>Configure when and how you want to be notified about opportunities and risks.</p>
+        <p>Configure when and how you want to be notified about PR opportunities and risks.</p>
       </div>
 
       <div className="form-section">
         <label>Response Urgency</label>
-        <div className="radio-group">
+        <div className="urgency-options">
           {[
-            { value: 'immediate', label: 'Immediate', desc: 'Real-time alerts for all opportunities' },
-            { value: 'balanced', label: 'Balanced', desc: 'Smart filtering, alert on high-value items' },
-            { value: 'strategic', label: 'Strategic', desc: 'Daily digest of curated opportunities' }
+            { value: 'immediate', label: 'Real-time', desc: 'Alert me immediately for time-sensitive opportunities' },
+            { value: 'balanced', label: 'Balanced', desc: 'Smart batching based on importance' },
+            { value: 'strategic', label: 'Strategic', desc: 'Daily digest for planning' }
           ].map(option => (
             <label key={option.value} className="radio-option">
               <input
@@ -597,7 +679,7 @@ Examples: SEC, FDA, FTC, European Commission"
 
       <div className="form-section">
         <label>Opportunity Threshold</label>
-        <div className="threshold-control">
+        <div className="threshold-slider">
           <input
             type="range"
             min="50"
@@ -663,8 +745,8 @@ Examples: SEC, FDA, FTC, European Commission"
             <span className="stat-label">PR Goals</span>
           </div>
           <div className="summary-stat">
-            <span className="stat-value">{formData.monitoring.topics.length}</span>
-            <span className="stat-label">Topics Tracked</span>
+            <span className="stat-value">{formData.monitoring.additionalTopics.length}</span>
+            <span className="stat-label">Additional Topics</span>
           </div>
           <div className="summary-stat">
             <span className="stat-value">
@@ -691,12 +773,7 @@ Examples: SEC, FDA, FTC, European Commission"
   return (
     <div className="smart-onboarding">
       <div className="onboarding-container">
-        <div className="onboarding-header">
-          <h1>SignalDesk Setup</h1>
-          <p>Intelligent PR Platform</p>
-        </div>
-
-        <div className="progress-indicator">
+        <div className="progress-header">
           <div className="progress-bar">
             <div 
               className="progress-fill"
@@ -719,7 +796,11 @@ Examples: SEC, FDA, FTC, European Commission"
 
         <div className="step-container">
           <div className="step-header">
-            <span className="step-icon">{steps[currentStep - 1].icon}</span>
+            <span className="step-icon">
+              {steps[currentStep - 1].Icon && (
+                <steps[currentStep - 1].Icon size={32} color={steps[currentStep - 1].color} />
+              )}
+            </span>
             <div>
               <h2>{steps[currentStep - 1].title}</h2>
               <p>{steps[currentStep - 1].subtitle}</p>
