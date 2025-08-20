@@ -394,25 +394,23 @@ const IntelligentOnboarding = () => {
     return opportunities;
   };
 
-  // Call MCP through Supabase bridge
+  // Call Edge Functions directly
   const callMCP = async (server, method, params) => {
     try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/mcp-bridge`, {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/${server}-intelligence`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          server,
           method,
-          params,
-          organizationId: 'onboarding'
+          params
         })
       });
 
       if (response.ok) {
         const data = await response.json();
-        return data.result || data;
+        return data.success ? data.data : data;
       }
     } catch (error) {
       console.error(`MCP ${server}.${method} error:`, error);

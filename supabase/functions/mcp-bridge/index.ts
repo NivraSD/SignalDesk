@@ -6,7 +6,10 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-requested-with',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Credentials': 'false',
+  'Access-Control-Max-Age': '86400'
 }
 
 interface MCPRequest {
@@ -175,10 +178,15 @@ serve(async (req) => {
         success: true,
         result: result,
         server: server,
-        method: method
+        method: method,
+        timestamp: new Date().toISOString()
       }),
       { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate'
+        },
         status: 200
       }
     )

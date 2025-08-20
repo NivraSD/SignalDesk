@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalDesk Vercel - Real Competitor Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            transform: translateY(-2px);
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .competitor {
+            padding: 10px;
+            margin: 5px 0;
+            background: #f0f0f0;
+            border-radius: 4px;
+            border-left: 4px solid #667eea;
+        }
+        .success { color: #28a745; font-weight: bold; }
+        .error { color: #dc3545; font-weight: bold; }
+        .github-repo { 
+            background: #ffebee; 
+            border-left-color: #dc3545;
+        }
+        .real-company {
+            background: #e8f5e9;
+            border-left-color: #28a745;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 SignalDesk Vercel - Real Competitor Intelligence Test</h1>
+        <p><strong>Testing:</strong> https://signaldesk-nivra-sd.vercel.app/</p>
+        <p><strong>Goal:</strong> Verify we get REAL companies (Lyft, Grab) not GitHub repos!</p>
+        
+        <div class="test-section">
+            <h2>Direct Edge Function Test</h2>
+            <button onclick="testCompetitors('Uber', 'transportation')">Test Uber</button>
+            <button onclick="testCompetitors('Tesla', 'automotive')">Test Tesla</button>
+            <button onclick="testCompetitors('Netflix', 'entertainment')">Test Netflix</button>
+            <button onclick="testCompetitors('Apple', 'technology')">Test Apple</button>
+            <button onclick="testCompetitors('Shopify', 'ecommerce')">Test Shopify</button>
+            <button onclick="testCompetitors('DoorDash', 'food delivery')">Test DoorDash</button>
+            <div id="edge-results" class="results"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Live Vercel Frontend</h2>
+            <p>Open the Vercel app below and navigate to Onboarding to test real competitor data:</p>
+            <button onclick="document.getElementById('vercel-frame').src='https://signaldesk-nivra-sd.vercel.app/'">
+                Load Vercel App
+            </button>
+            <iframe id="vercel-frame" src="about:blank"></iframe>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        
+        async function testCompetitors(company, industry) {
+            const resultsDiv = document.getElementById('edge-results');
+            resultsDiv.innerHTML = `<p>Testing ${company} competitors...</p>`;
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/mcp-bridge`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        server: 'intelligence',
+                        method: 'gather',
+                        params: {
+                            organization: {
+                                name: company,
+                                industry: industry
+                            }
+                        },
+                        organizationId: 'vercel-test'
+                    })
+                });
+                
+                const data = await response.json();
+                console.log(`${company} response:`, data);
+                
+                if (data.success && data.result?.insights) {
+                    const insights = data.result.insights;
+                    const summary = data.result.summary;
+                    
+                    let html = `<h3>${company} - Found ${summary.totalCompetitors} competitors</h3>`;
+                    
+                    // Check for GitHub repos (BAD!)
+                    let githubCount = 0;
+                    let realCount = 0;
+                    
+                    insights.forEach(insight => {
+                        const isGitHub = insight.title.includes('/') || 
+                                        insight.title.includes('-android') ||
+                                        insight.title.includes('github');
+                        
+                        if (isGitHub) {
+                            githubCount++;
+                            html += `<div class="competitor github-repo">❌ ${insight.title} (GitHub repo - BAD!)</div>`;
+                        } else {
+                            realCount++;
+                            html += `<div class="competitor real-company">✅ ${insight.title} (Real company - GOOD!)</div>`;
+                        }
+                    });
+                    
+                    if (githubCount > 0) {
+                        html = `<p class="error">⚠️ Found ${githubCount} GitHub repos! Should be 0!</p>` + html;
+                    } else {
+                        html = `<p class="success">✅ SUCCESS: All ${realCount} competitors are real companies!</p>` + html;
+                    }
+                    
+                    resultsDiv.innerHTML = html;
+                } else {
+                    resultsDiv.innerHTML = `<p class="error">Failed to get competitors for ${company}</p>`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Auto-test Uber on load
+        window.addEventListener('load', () => {
+            console.log('🚀 Testing Vercel deployment');
+            testCompetitors('Uber', 'transportation');
+        });
+    </script>
+</body>
+</html>

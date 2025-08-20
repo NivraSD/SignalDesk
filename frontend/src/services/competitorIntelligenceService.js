@@ -12,26 +12,23 @@ class CompetitorIntelligenceService {
     this.supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
   }
 
-  // Call real MCPs through Supabase mcp-bridge
+  // Call Edge Functions directly
   async callMCP(server, method, params) {
     try {
-      const response = await fetch(`${this.supabaseUrl}/functions/v1/mcp-bridge`, {
+      const response = await fetch(`${this.supabaseUrl}/functions/v1/${server}-intelligence`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.supabaseKey}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          server,
           method,
-          params,
-          organizationId: localStorage.getItem('signaldesk_org_id') || 'default'
+          params
         })
       });
 
       if (response.ok) {
         const data = await response.json();
-        return data.result || data;
+        return data.success ? data.data : data;
       }
       throw new Error(`MCP ${server}.${method} failed: ${response.status}`);
     } catch (error) {

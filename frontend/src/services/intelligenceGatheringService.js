@@ -199,8 +199,8 @@ class IntelligenceGatheringService {
     const mcpMappings = {
       'tech_journalists': { mcp: 'media', method: 'discover' },
       'media': { mcp: 'media', method: 'discover' },
-      'competitors': { mcp: 'intelligence', method: 'gather' },
-      'industry_analysts': { mcp: 'intelligence', method: 'gather' },
+      'competitors': { mcp: 'pr', method: 'gather' },
+      'industry_analysts': { mcp: 'pr', method: 'gather' },
       'investors': { mcp: 'opportunities', method: 'discover' },
       'customers': { mcp: 'analytics', method: 'analyze' },
       'partners': { mcp: 'relationships', method: 'assess' },

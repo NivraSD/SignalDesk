@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple MCP Test - REAL DATA ONLY</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .result { background: #f0f0f0; padding: 10px; margin: 10px 0; white-space: pre-wrap; }
+        .success { background: #d4edda; }
+        .error { background: #f8d7da; }
+        button { padding: 10px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Direct MCP Test - No Mock Data</h1>
+    
+    <button onclick="testOpportunities()">Test Opportunities MCP</button>
+    <button onclick="testIntelligence()">Test Intelligence MCP</button>
+    <button onclick="testNews()">Test News MCP</button>
+    <button onclick="testScraper()">Test Scraper MCP</button>
+    
+    <div id="results"></div>
+    
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        
+        async function callMCP(server, method, params) {
+            const response = await fetch(`${SUPABASE_URL}/functions/v1/mcp-bridge`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    server,
+                    method, 
+                    params,
+                    organizationId: 'test'
+                })
+            });
+            return response.json();
+        }
+        
+        async function testOpportunities() {
+            const resultsDiv = document.getElementById('results');
+            try {
+                const result = await callMCP('opportunities', 'discover', {
+                    organization: { name: 'Microsoft' },
+                    keywords: ['AI', 'cloud'],
+                    limit: 5
+                });
+                
+                if (result.success && result.result?.opportunities) {
+                    resultsDiv.innerHTML = '<div class="result success">✅ REAL Opportunities:\n' + 
+                        result.result.opportunities.map(o => 
+                            `- [${o.urgency}] ${o.title} (Score: ${o.score})`
+                        ).join('\n') + '</div>';
+                } else {
+                    resultsDiv.innerHTML = '<div class="result error">Error: ' + JSON.stringify(result) + '</div>';
+                }
+            } catch (e) {
+                resultsDiv.innerHTML = '<div class="result error">Error: ' + e.message + '</div>';
+            }
+        }
+        
+        async function testIntelligence() {
+            const resultsDiv = document.getElementById('results');
+            try {
+                const result = await callMCP('intelligence', 'gather', {
+                    organization: { name: 'OpenAI' },
+                    keywords: ['AI', 'GPT'],
+                    stakeholder: 'competitors'
+                });
+                
+                if (result.success && result.result?.insights) {
+                    resultsDiv.innerHTML = '<div class="result success">✅ REAL Competitors:\n' + 
+                        result.result.insights.map(i => 
+                            `- ${i.title}: ${i.data?.stars || 0} stars`
+                        ).join('\n') + '</div>';
+                } else {
+                    resultsDiv.innerHTML = '<div class="result error">Error: ' + JSON.stringify(result) + '</div>';
+                }
+            } catch (e) {
+                resultsDiv.innerHTML = '<div class="result error">Error: ' + e.message + '</div>';
+            }
+        }
+        
+        async function testNews() {
+            const resultsDiv = document.getElementById('results');
+            try {
+                const result = await callMCP('news', 'gather', {
+                    organization: { name: 'OpenAI' },
+                    keywords: ['OpenAI'],
+                    stakeholder: 'media'
+                });
+                
+                if (result.success && result.result?.industryNews) {
+                    resultsDiv.innerHTML = '<div class="result success">✅ REAL News:\n' + 
+                        result.result.industryNews.slice(0, 5).map(n => 
+                            `- ${n.title} (${n.source})`
+                        ).join('\n') + '</div>';
+                } else {
+                    resultsDiv.innerHTML = '<div class="result error">Error: ' + JSON.stringify(result) + '</div>';
+                }
+            } catch (e) {
+                resultsDiv.innerHTML = '<div class="result error">Error: ' + e.message + '</div>';
+            }
+        }
+        
+        async function testScraper() {
+            const resultsDiv = document.getElementById('results');
+            try {
+                const result = await callMCP('scraper', 'scrape', {
+                    url: 'https://openai.com'
+                });
+                
+                if (result.success && result.result?.signals) {
+                    resultsDiv.innerHTML = '<div class="result success">✅ REAL Website Data:\n' + 
+                        `Title: ${result.result.signals.meta?.title || 'N/A'}\n` +
+                        `Description: ${result.result.signals.meta?.description || 'N/A'}</div>';
+                } else {
+                    resultsDiv.innerHTML = '<div class="result error">Error: ' + JSON.stringify(result) + '</div>';
+                }
+            } catch (e) {
+                resultsDiv.innerHTML = '<div class="result error">Error: ' + e.message + '</div>';
+            }
+        }
+        
+        // Auto-test on load
+        window.addEventListener('load', () => {
+            console.log('Simple MCP Test - Real Data Only');
+        });
+    </script>
+</body>
+</html>

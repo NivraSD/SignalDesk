@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalDesk - Real Competitor Intelligence Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .test-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            transition: transform 0.2s;
+        }
+        .test-btn:hover {
+            transform: translateY(-2px);
+        }
+        .test-btn:active {
+            transform: translateY(0);
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .competitor-card {
+            padding: 15px;
+            margin: 10px 0;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .competitor-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .competitor-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .competitor-insight {
+            color: #666;
+            font-size: 14px;
+            margin: 5px 0;
+        }
+        .competitor-action {
+            color: #667eea;
+            font-size: 13px;
+            font-style: italic;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #e0e0e0;
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .warning {
+            color: #ffc107;
+            font-weight: bold;
+        }
+        .github-warning {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 SignalDesk Real Competitor Intelligence Test</h1>
+        <p><strong>Goal:</strong> Verify we're getting REAL company competitors (Lyft, Grab, Didi) not GitHub repos!</p>
+        
+        <div class="test-section">
+            <h2>Test Company Competitors</h2>
+            <p>Click each button to test competitor intelligence for different companies:</p>
+            
+            <button class="test-btn" onclick="testCompetitors('Uber', 'transportation')">
+                🚗 Test Uber Competitors
+            </button>
+            
+            <button class="test-btn" onclick="testCompetitors('Tesla', 'automotive')">
+                🔋 Test Tesla Competitors
+            </button>
+            
+            <button class="test-btn" onclick="testCompetitors('Netflix', 'entertainment')">
+                🎬 Test Netflix Competitors
+            </button>
+            
+            <button class="test-btn" onclick="testCompetitors('Spotify', 'music')">
+                🎵 Test Spotify Competitors
+            </button>
+            
+            <button class="test-btn" onclick="testCompetitors('OpenAI', 'artificial intelligence')">
+                🤖 Test OpenAI Competitors
+            </button>
+            
+            <div id="competitor-results" class="results"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Direct MCP Bridge Test</h2>
+            <button class="test-btn" onclick="testMCPBridge()">
+                🔌 Test MCP Bridge Directly
+            </button>
+            <div id="mcp-results" class="results"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Frontend Integration Test</h2>
+            <button class="test-btn" onclick="testFrontendIntegration()">
+                🖥️ Test Frontend Component
+            </button>
+            <div id="frontend-results" class="results"></div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const FRONTEND_URL = 'http://localhost:3001';
+        
+        async function testCompetitors(company, industry) {
+            const resultsDiv = document.getElementById('competitor-results');
+            resultsDiv.innerHTML = `<p>Testing ${company} competitors...</p>`;
+            
+            try {
+                // Use direct Supabase URL with proper headers
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/mcp-bridge`, {
+                    method: 'POST',
+                    mode: 'cors', // Explicitly set CORS mode
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        server: 'intelligence',
+                        method: 'gather',
+                        params: {
+                            organization: {
+                                name: company,
+                                industry: industry
+                            }
+                        },
+                        organizationId: 'test-org-123'
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log(`${company} competitors:`, data);
+                
+                if (data.success && data.result?.insights) {
+                    const insights = data.result.insights;
+                    const summary = data.result.summary;
+                    
+                    // Check for GitHub repos (bad!)
+                    const githubRepos = insights.filter(i => 
+                        i.title.includes('/') || 
+                        i.title.includes('-') && i.title.toLowerCase().includes('android') ||
+                        i.data?.companyName?.includes('/')
+                    );
+                    
+                    // Check for real companies (good!)
+                    const realCompanies = insights.filter(i => 
+                        !i.title.includes('/') && 
+                        !(i.title.includes('-') && i.title.toLowerCase().includes('android'))
+                    );
+                    
+                    let html = `<h3>${company} Competitor Analysis</h3>`;
+                    
+                    // Stats
+                    html += `
+                        <div class="stats">
+                            <div class="stat-card">
+                                <div class="stat-value">${summary.totalCompetitors}</div>
+                                <div class="stat-label">Total Competitors</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">${realCompanies.length}</div>
+                                <div class="stat-label">Real Companies</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">${githubRepos.length}</div>
+                                <div class="stat-label">GitHub Repos (Bad!)</div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Warnings
+                    if (githubRepos.length > 0) {
+                        html += `
+                            <div class="github-warning">
+                                ⚠️ WARNING: Found ${githubRepos.length} GitHub repositories in results!
+                                This should be 0 - we want real companies only!
+                                <br>GitHub repos found: ${githubRepos.map(r => r.title).join(', ')}
+                            </div>
+                        `;
+                    } else {
+                        html += `
+                            <p class="success">✅ SUCCESS: No GitHub repositories found! Only real companies!</p>
+                        `;
+                    }
+                    
+                    // Display competitors
+                    html += `<h4>Competitors Found:</h4>`;
+                    insights.forEach(insight => {
+                        const isGitHub = insight.title.includes('/') || 
+                                        (insight.title.includes('-') && insight.title.toLowerCase().includes('android'));
+                        
+                        html += `
+                            <div class="competitor-card">
+                                <div class="competitor-name">
+                                    ${isGitHub ? '❌' : '✅'} ${insight.title}
+                                </div>
+                                <div class="competitor-insight">
+                                    ${insight.insight}
+                                </div>
+                                <div class="competitor-action">
+                                    ${insight.suggestedAction}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    resultsDiv.innerHTML = html;
+                } else {
+                    resultsDiv.innerHTML = `
+                        <p class="error">❌ Failed to get competitor data</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <p class="error">❌ Error: ${error.message}</p>
+                `;
+            }
+        }
+        
+        async function testMCPBridge() {
+            const resultsDiv = document.getElementById('mcp-results');
+            resultsDiv.innerHTML = '<p>Testing MCP Bridge...</p>';
+            
+            try {
+                // Test multiple servers
+                const servers = ['intelligence', 'media', 'opportunities', 'social'];
+                let html = '<h3>MCP Bridge Server Tests</h3>';
+                
+                for (const server of servers) {
+                    const response = await fetch(`${SUPABASE_URL}/functions/v1/mcp-bridge`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            server: server,
+                            method: 'gather',
+                            params: {
+                                organization: {
+                                    name: 'TestCompany',
+                                    industry: 'technology'
+                                }
+                            },
+                            organizationId: 'test-org-123'
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    const status = data.success ? '✅' : '❌';
+                    html += `<p>${status} ${server}: ${data.success ? 'Working' : data.error}</p>`;
+                }
+                
+                resultsDiv.innerHTML = html;
+            } catch (error) {
+                resultsDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function testFrontendIntegration() {
+            const resultsDiv = document.getElementById('frontend-results');
+            resultsDiv.innerHTML = '<p>Testing frontend integration...</p>';
+            
+            try {
+                const response = await fetch(`${FRONTEND_URL}/api/mcp/bridge`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        server: 'intelligence',
+                        method: 'gather',
+                        params: {
+                            organization: {
+                                name: 'Uber',
+                                industry: 'transportation'
+                            }
+                        },
+                        organizationId: 'frontend-test'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultsDiv.innerHTML = `
+                        <p class="success">✅ Frontend integration working!</p>
+                        <pre>${JSON.stringify(data.result?.summary, null, 2)}</pre>
+                    `;
+                } else {
+                    resultsDiv.innerHTML = `
+                        <p class="error">❌ Frontend integration failed</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <p class="warning">⚠️ Frontend not accessible at ${FRONTEND_URL}</p>
+                    <p>Make sure the frontend is running on port 3001</p>
+                `;
+            }
+        }
+        
+        // Auto-test Uber on load
+        window.addEventListener('load', () => {
+            console.log('🚀 SignalDesk Real Competitor Intelligence Test Ready');
+            console.log('Testing Uber competitors automatically...');
+            testCompetitors('Uber', 'transportation');
+        });
+    </script>
+</body>
+</html>

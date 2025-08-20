@@ -488,9 +488,8 @@ I'll ask the right strategic questions once I know the format.`,
       
       // Check for intelligence needs
       if (userInput.toLowerCase().includes('competitor') || userInput.toLowerCase().includes('market')) {
-        const intelligence = await supabaseApiService.callEdgeFunction('mcp-bridge', {
-          mcp: 'intelligence',
-          tool: 'market_narrative_tracking',
+        const intelligence = await supabaseApiService.callEdgeFunction('pr-intelligence', {
+          method: 'gather',
           params: { keywords: extractKeywords(userInput) }
         });
         if (intelligence?.success) {
@@ -500,9 +499,8 @@ I'll ask the right strategic questions once I know the format.`,
       
       // Check for journalist/media needs
       if (userInput.toLowerCase().includes('journalist') || userInput.toLowerCase().includes('media') || userInput.toLowerCase().includes('reporter')) {
-        const relationships = await supabaseApiService.callEdgeFunction('mcp-bridge', {
-          mcp: 'relationships',
-          tool: 'find_best_journalists',
+        const relationships = await supabaseApiService.callEdgeFunction('relationships-intelligence', {
+          method: 'assess',
           params: { beat: extractBeat(userInput) }
         });
         if (relationships?.success) {
@@ -512,9 +510,8 @@ I'll ask the right strategic questions once I know the format.`,
       
       // Check for metrics/analytics needs
       if (userInput.toLowerCase().includes('metric') || userInput.toLowerCase().includes('performance') || userInput.toLowerCase().includes('analytic')) {
-        const analytics = await supabaseApiService.callEdgeFunction('mcp-bridge', {
-          mcp: 'analytics',
-          tool: 'generate_performance_dashboard',
+        const analytics = await supabaseApiService.callEdgeFunction('analytics-intelligence', {
+          method: 'analyze',
           params: { period: '30d' }
         });
         if (analytics?.success) {

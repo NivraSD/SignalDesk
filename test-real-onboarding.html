@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Real Onboarding - NO MOCK DATA</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; }
+        h2 { color: #007bff; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        .result {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+        }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+        .warning { background: #fff3cd; border-color: #ffeeba; }
+        .real-data { 
+            background: #d1ecf1; 
+            border-color: #bee5eb;
+            font-weight: bold;
+        }
+        .fake-data {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+            font-weight: bold;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Real Data Onboarding Test - NO FALLBACK</h1>
+    <p>Testing that onboarding uses ONLY real MCP data, no mock/fallback data allowed.</p>
+
+    <div class="test-section">
+        <h2>1. Test Real MCPs</h2>
+        <button onclick="testMCPs()">Test All MCPs</button>
+        <div id="mcp-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Test Onboarding Analysis</h2>
+        <input type="text" id="org-name" placeholder="Organization Name" value="OpenAI" style="margin: 5px; padding: 8px;">
+        <input type="url" id="org-website" placeholder="Website URL" value="https://openai.com" style="margin: 5px; padding: 8px;">
+        <button onclick="testOnboarding()">Analyze Organization</button>
+        <div id="onboarding-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Verify No Mock Data</h2>
+        <button onclick="verifyNoMockData()">Verify All Data is Real</button>
+        <div id="verification-results"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+
+        async function callMCP(server, method, params) {
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/mcp-bridge`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        server,
+                        method,
+                        params,
+                        organizationId: 'test-real-data'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok || !data.success) {
+                    throw new Error(data.error || data.message || 'MCP call failed');
+                }
+                
+                return data.result || data;
+            } catch (error) {
+                console.error(`MCP ${server}.${method} error:`, error);
+                throw error;
+            }
+        }
+
+        function checkForMockData(data) {
+            const mockIndicators = [
+                'Mock response',
+                'mock data',
+                'example.com',
+                'Test Organization',
+                'Sample Company',
+                'Demo ',
+                'Placeholder',
+                'Lorem ipsum',
+                'codecrafters-io/build-your-own-x' // Known mock competitor
+            ];
+            
+            const dataStr = JSON.stringify(data).toLowerCase();
+            const foundMock = mockIndicators.filter(indicator => 
+                dataStr.includes(indicator.toLowerCase())
+            );
+            
+            return foundMock;
+        }
+
+        async function testMCPs() {
+            const resultsDiv = document.getElementById('mcp-results');
+            resultsDiv.innerHTML = '<div class="loading"></div> Testing MCPs...';
+            
+            const mcps = [
+                { server: 'intelligence', method: 'gather', params: { 
+                    organization: { name: 'Microsoft', industry: 'technology' },
+                    keywords: ['cloud', 'azure'],
+                    stakeholder: 'competitors'
+                }},
+                { server: 'opportunities', method: 'discover', params: {
+                    organization: { name: 'Microsoft', industry: 'technology' },
+                    keywords: ['AI', 'cloud'],
+                    limit: 5
+                }},
+                { server: 'news', method: 'gather', params: {
+                    organization: { name: 'Microsoft' },
+                    keywords: ['microsoft', 'technology'],
+                    stakeholder: 'media'
+                }},
+                { server: 'media', method: 'discover', params: {
+                    organization: { name: 'Microsoft' },
+                    keywords: ['technology', 'AI'],
+                    stakeholder: 'tech_journalists'
+                }},
+                { server: 'scraper', method: 'scrape', params: {
+                    url: 'https://microsoft.com'
+                }}
+            ];
+            
+            let html = '';
+            
+            for (const mcp of mcps) {
+                try {
+                    html += `<h3>Testing ${mcp.server}.${mcp.method}...</h3>`;
+                    const result = await callMCP(mcp.server, mcp.method, mcp.params);
+                    
+                    // Check for mock data
+                    const mockFound = checkForMockData(result);
+                    
+                    if (mockFound.length > 0) {
+                        html += `<div class="result fake-data">❌ MOCK DATA DETECTED!
+Mock indicators found: ${mockFound.join(', ')}
+
+Data received:
+${JSON.stringify(result, null, 2)}</div>`;
+                    } else if (result && Object.keys(result).length > 0) {
+                        // Verify it's real data
+                        let isReal = false;
+                        
+                        if (mcp.server === 'intelligence' && result.insights) {
+                            // Check for real GitHub data
+                            isReal = result.insights.some(i => 
+                                i.title && i.title.includes('/') && 
+                                i.data && (i.data.stars > 0 || i.data.url)
+                            );
+                        } else if (mcp.server === 'opportunities' && result.opportunities) {
+                            // Check for real opportunities with URLs and timestamps
+                            isReal = result.opportunities.some(o => 
+                                o.url && o.timestamp && o.source && o.score > 0
+                            );
+                        } else if (mcp.server === 'news' && result.data) {
+                            // Check for real news with sources
+                            isReal = (result.data.industryNews?.length > 0 || 
+                                     result.data.breakingNews?.length > 0) &&
+                                     result.data.industryNews?.some(n => n.url && n.source);
+                        } else if (mcp.server === 'media' && result.data) {
+                            // Check for real journalist data
+                            isReal = result.data.journalists?.length > 0 &&
+                                    result.data.journalists.some(j => j.name && j.outlet);
+                        } else if (mcp.server === 'scraper' && result.signals) {
+                            // Check for real website data
+                            isReal = result.signals && (result.signals.meta || result.signals.leadership);
+                        }
+                        
+                        if (isReal) {
+                            html += `<div class="result real-data">✅ REAL DATA CONFIRMED!
+${JSON.stringify(result, null, 2).substring(0, 1000)}...</div>`;
+                        } else {
+                            html += `<div class="result warning">⚠️ Data received but unable to verify if real:
+${JSON.stringify(result, null, 2).substring(0, 500)}...</div>`;
+                        }
+                    } else {
+                        html += `<div class="result error">❌ No data received or MCP unavailable</div>`;
+                    }
+                } catch (error) {
+                    html += `<div class="result error">❌ Error: ${error.message}</div>`;
+                }
+            }
+            
+            resultsDiv.innerHTML = html;
+        }
+
+        async function testOnboarding() {
+            const resultsDiv = document.getElementById('onboarding-results');
+            const orgName = document.getElementById('org-name').value;
+            const orgWebsite = document.getElementById('org-website').value;
+            
+            if (!orgName || !orgWebsite) {
+                resultsDiv.innerHTML = '<div class="result error">Please enter organization name and website</div>';
+                return;
+            }
+            
+            resultsDiv.innerHTML = '<div class="loading"></div> Analyzing organization with real MCPs...';
+            
+            try {
+                // Step 1: Scrape website
+                const scraperData = await callMCP('scraper', 'scrape', { url: orgWebsite });
+                
+                // Step 2: Discover competitors
+                const competitorData = await callMCP('intelligence', 'gather', {
+                    organization: { name: orgName, website: orgWebsite },
+                    keywords: [orgName, 'technology'],
+                    stakeholder: 'competitors'
+                });
+                
+                // Step 3: Find opportunities
+                const opportunityData = await callMCP('opportunities', 'discover', {
+                    organization: { name: orgName },
+                    keywords: [orgName, 'AI', 'technology'],
+                    limit: 10
+                });
+                
+                // Step 4: Get news
+                const newsData = await callMCP('news', 'gather', {
+                    organization: { name: orgName },
+                    keywords: [orgName],
+                    stakeholder: 'media'
+                });
+                
+                // Check all data for mock indicators
+                const allData = { scraperData, competitorData, opportunityData, newsData };
+                const mockFound = checkForMockData(allData);
+                
+                let html = '<h3>Organization Analysis Results:</h3>';
+                
+                if (mockFound.length > 0) {
+                    html += `<div class="result fake-data">❌ MOCK DATA DETECTED IN ONBOARDING!
+Mock indicators: ${mockFound.join(', ')}</div>`;
+                }
+                
+                // Display real data found
+                if (competitorData?.insights?.length > 0) {
+                    html += `<div class="result real-data">✅ Real Competitors Found:
+${competitorData.insights.map(c => `- ${c.title}: ${c.insight}`).join('\n')}</div>`;
+                }
+                
+                if (opportunityData?.opportunities?.length > 0) {
+                    html += `<div class="result real-data">✅ Real Opportunities Found:
+${opportunityData.opportunities.map(o => `- [${o.urgency}] ${o.title} (Score: ${o.score})`).join('\n')}</div>`;
+                }
+                
+                if (newsData?.data?.industryNews?.length > 0) {
+                    html += `<div class="result real-data">✅ Real News Found:
+${newsData.data.industryNews.slice(0, 3).map(n => `- ${n.title} (${n.source})`).join('\n')}</div>`;
+                }
+                
+                if (scraperData?.signals) {
+                    html += `<div class="result real-data">✅ Real Website Data:
+- Title: ${scraperData.signals.meta?.title || 'N/A'}
+- Description: ${scraperData.signals.meta?.description || 'N/A'}
+- Growth Indicator: ${scraperData.signals.jobs?.growthIndicator || 'N/A'}</div>`;
+                }
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="result error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function verifyNoMockData() {
+            const resultsDiv = document.getElementById('verification-results');
+            resultsDiv.innerHTML = '<div class="loading"></div> Verifying no mock data in system...';
+            
+            let html = '<h3>System Verification:</h3>';
+            
+            // Check if local MCPs are running
+            try {
+                // Try to access local MCP endpoints (should fail)
+                const localPorts = [3010, 3011, 3012, 3013, 3014, 3015, 3016, 3017, 3018, 3019];
+                let localMCPsFound = false;
+                
+                for (const port of localPorts) {
+                    try {
+                        const response = await fetch(`http://localhost:${port}/health`, { 
+                            method: 'GET',
+                            mode: 'no-cors' // Just check if it exists
+                        });
+                        localMCPsFound = true;
+                        html += `<div class="result fake-data">❌ Local MCP running on port ${port} - may serve mock data!</div>`;
+                    } catch (e) {
+                        // Good - local MCP not accessible
+                    }
+                }
+                
+                if (!localMCPsFound) {
+                    html += `<div class="result success">✅ No local MCPs detected - all data from real APIs</div>`;
+                }
+                
+                // Test a complex query that would expose mock data
+                const testResult = await callMCP('opportunities', 'discover', {
+                    organization: { name: 'TestCompany123456789' }, // Unlikely to have real data
+                    keywords: ['nonexistent', 'fakekeyword'],
+                    limit: 5
+                });
+                
+                if (testResult?.opportunities?.length > 0) {
+                    // If we get opportunities for a fake company, it's mock data
+                    const mockFound = checkForMockData(testResult);
+                    if (mockFound.length > 0) {
+                        html += `<div class="result fake-data">❌ System returning mock data for non-existent company!</div>`;
+                    } else {
+                        html += `<div class="result warning">⚠️ System returned data for non-existent company - verify if real</div>`;
+                    }
+                } else {
+                    html += `<div class="result success">✅ System correctly returns no data for non-existent company</div>`;
+                }
+                
+            } catch (error) {
+                html += `<div class="result error">Error during verification: ${error.message}</div>`;
+            }
+            
+            resultsDiv.innerHTML = html;
+        }
+
+        // Auto-run tests on page load
+        window.addEventListener('load', () => {
+            console.log('Testing real data onboarding - no mock data allowed!');
+        });
+    </script>
+</body>
+</html>

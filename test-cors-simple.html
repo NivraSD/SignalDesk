@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple CORS Test</title>
+</head>
+<body>
+    <h1>Testing SignalDesk Edge Functions CORS</h1>
+    <button onclick="testDirect()">Test Direct Edge Function</button>
+    <button onclick="testMCPBridge()">Test MCP Bridge</button>
+    <div id="results"></div>
+    
+    <script>
+        async function testDirect() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = 'Testing direct Edge Function...';
+            
+            try {
+                const response = await fetch('https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/pr-intelligence', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        method: 'gather',
+                        params: {
+                            organization: {
+                                name: 'Uber',
+                                industry: 'transportation'
+                            }
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                resultsDiv.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                resultsDiv.innerHTML = 'Error: ' + error.message;
+            }
+        }
+        
+        async function testMCPBridge() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = 'Testing MCP Bridge...';
+            
+            try {
+                const response = await fetch('https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/mcp-bridge', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        server: 'intelligence',
+                        method: 'gather',
+                        params: {
+                            organization: {
+                                name: 'Uber',
+                                industry: 'transportation'
+                            }
+                        },
+                        organizationId: 'test-123'
+                    })
+                });
+                
+                const data = await response.json();
+                resultsDiv.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                resultsDiv.innerHTML = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

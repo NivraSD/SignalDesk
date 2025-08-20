@@ -11,6 +11,11 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { Client } from "pg";
 
+// API Keys for external data sources
+const NEWS_API_KEY = process.env.NEWS_API_KEY;
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
+const REDDIT_API_KEY = process.env.REDDIT_API_KEY;
+
 const TOOLS: Tool[] = [
   {
     name: "competitor_move_detection",
@@ -182,6 +187,68 @@ const TOOLS: Tool[] = [
   }
 ];
 
+// API Utility Functions
+async function callNewsAPI(endpoint: string, params: Record<string, string>) {
+  if (!NEWS_API_KEY) {
+    throw new Error('NewsAPI key not configured');
+  }
+
+  const url = new URL(`https://newsapi.org/v2${endpoint}`);
+  url.searchParams.append('apiKey', NEWS_API_KEY);
+  
+  Object.entries(params).forEach(([key, value]) => {
+    url.searchParams.append(key, value);
+  });
+
+  const response = await fetch(url.toString());
+
+  if (!response.ok) {
+    throw new Error(`NewsAPI error: ${response.status} ${response.statusText}`);
+  }
+
+  return await response.json();
+}
+
+async function searchGoogle(query: string) {
+  if (!GOOGLE_API_KEY) {
+    throw new Error('Google API key not configured');
+  }
+
+  const url = new URL('https://www.googleapis.com/customsearch/v1');
+  url.searchParams.append('key', GOOGLE_API_KEY);
+  url.searchParams.append('cx', '017576662512468239146:omuauf_lfve'); // Custom search engine ID
+  url.searchParams.append('q', query);
+  url.searchParams.append('num', '10');
+
+  const response = await fetch(url.toString());
+
+  if (!response.ok) {
+    throw new Error(`Google API error: ${response.status} ${response.statusText}`);
+  }
+
+  return await response.json();
+}
+
+async function searchReddit(subreddit: string, query: string) {
+  try {
+    const url = `https://www.reddit.com/r/${subreddit}/search.json?q=${encodeURIComponent(query)}&sort=hot&limit=10`;
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'SignalDesk Intelligence Bot 1.0'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Reddit API error: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Reddit search error:', error);
+    return { data: { children: [] } };
+  }
+}
+
 class IntelligenceServer {
   private server: Server;
   private db: Client | null = null;
@@ -304,86 +371,309 @@ class IntelligenceServer {
           case "competitor_move_detection": {
             const { competitors, timeframe = 'week', move_types = ['hiring', 'product', 'campaign'] } = args as any;
             
-            let interval = '7 days';
-            if (timeframe === '24h') interval = '1 day';
-            if (timeframe === 'month') interval = '30 days';
+            const moves = [];
+            
+            try {
+              // Search for each competitor across multiple sources
+              for (const competitor of competitors) {
+                console.log(`🔍 Searching for moves by ${competitor}`);
+                
+                // Search NewsAPI for recent announcements
+                const newsSearchTerms = [
+                  `"${competitor}" AND (announces OR launches OR hires OR partnership OR funding)`,
+                  `"${competitor}" AND (CEO OR executive OR appointment OR departure)`,
+                  `"${competitor}" AND (product OR feature OR service OR expansion)`
+                ];
+                
+                for (const searchTerm of newsSearchTerms) {
+                  try {
+                    const newsResponse = await callNewsAPI('/everything', {
+                      'q': searchTerm,
+                      'language': 'en',
+                      'sortBy': 'publishedAt',
+                      'pageSize': '10',
+                      'from': this.getTimeframeDate(timeframe)
+                    });
 
-            const result = await this.db!.query(`
-              SELECT * FROM competitor_moves 
-              WHERE competitor_name = ANY($1::text[])
-              AND move_type = ANY($2::text[])
-              AND detected_at >= NOW() - INTERVAL '${interval}'
-              ORDER BY impact_score DESC, detected_at DESC
-            `, [competitors, move_types]);
+                    for (const article of newsResponse.articles || []) {
+                      const moveType = this.detectMoveType(article, move_types);
+                      if (moveType) {
+                        moves.push({
+                          competitor_name: competitor,
+                          move_type: moveType,
+                          description: article.title,
+                          detailed_description: article.description,
+                          impact_score: this.calculateImpactScore(article, competitor),
+                          source_url: article.url,
+                          source_name: article.source?.name || 'News',
+                          detected_at: article.publishedAt,
+                          author: article.author
+                        });
+                      }
+                    }
+                  } catch (error) {
+                    console.error(`NewsAPI search error for ${competitor}:`, error);
+                  }
+                }
 
-            // If no data exists, create sample data
-            if (result.rows.length === 0) {
-              await this.createSampleCompetitorMoves(competitors);
-              const retryResult = await this.db!.query(`
-                SELECT * FROM competitor_moves 
-                WHERE competitor_name = ANY($1::text[])
-                AND move_type = ANY($2::text[])
-                AND detected_at >= NOW() - INTERVAL '${interval}'
-                ORDER BY impact_score DESC, detected_at DESC
-              `, [competitors, move_types]);
-              
+                // Search Google for additional company information
+                try {
+                  const googleQuery = `"${competitor}" AND (press release OR announcement OR news) site:businesswire.com OR site:prnewswire.com`;
+                  const googleResponse = await searchGoogle(googleQuery);
+                  
+                  for (const item of googleResponse.items || []) {
+                    const moveType = this.detectMoveTypeFromText(item.title + ' ' + item.snippet, move_types);
+                    if (moveType) {
+                      moves.push({
+                        competitor_name: competitor,
+                        move_type: moveType,
+                        description: item.title,
+                        detailed_description: item.snippet,
+                        impact_score: this.calculateImpactFromText(item.title + ' ' + item.snippet),
+                        source_url: item.link,
+                        source_name: 'Press Release',
+                        detected_at: new Date().toISOString(),
+                        author: 'PR Wire'
+                      });
+                    }
+                  }
+                } catch (error) {
+                  console.error(`Google search error for ${competitor}:`, error);
+                }
+
+                // Search Reddit for discussion and sentiment
+                try {
+                  const subreddits = ['business', 'technology', 'startups', 'investing'];
+                  for (const subreddit of subreddits) {
+                    const redditResponse = await searchReddit(subreddit, competitor);
+                    
+                    for (const post of redditResponse.data?.children || []) {
+                      const postData = post.data;
+                      if (postData.title && postData.created_utc > this.getTimeframeTimestamp(timeframe)) {
+                        const moveType = this.detectMoveTypeFromText(postData.title + ' ' + postData.selftext, move_types);
+                        if (moveType) {
+                          moves.push({
+                            competitor_name: competitor,
+                            move_type: moveType,
+                            description: postData.title,
+                            detailed_description: postData.selftext || 'Reddit discussion',
+                            impact_score: Math.min(postData.score || 0, 100),
+                            source_url: `https://reddit.com${postData.permalink}`,
+                            source_name: `Reddit r/${subreddit}`,
+                            detected_at: new Date(postData.created_utc * 1000).toISOString(),
+                            author: postData.author
+                          });
+                        }
+                      }
+                    }
+                  }
+                } catch (error) {
+                  console.error(`Reddit search error for ${competitor}:`, error);
+                }
+              }
+
+              // Store moves in database
+              for (const move of moves) {
+                await this.storeCompetitorMove(move);
+              }
+
+              // Sort by impact score and recency
+              moves.sort((a, b) => {
+                const scoreA = a.impact_score * (new Date(a.detected_at).getTime() / 1000000000);
+                const scoreB = b.impact_score * (new Date(b.detected_at).getTime() / 1000000000);
+                return scoreB - scoreA;
+              });
+
+              const topMoves = moves.slice(0, 20); // Return top 20 moves
+
               return {
                 content: [{
                   type: "text",
-                  text: `Competitor Moves Detected (${timeframe}):\n\n${retryResult.rows.map((move: any) => 
-                    `${move.competitor_name} - ${move.move_type}\nImpact Score: ${move.impact_score}/100\n${move.description}\nDetected: ${move.detected_at}\n`
-                  ).join('\n---\n')}`
+                  text: `🎯 Competitor Intelligence Report (${timeframe})\n` +
+                        `Found ${topMoves.length} significant moves across ${competitors.length} competitors:\n\n` +
+                        topMoves.map(move => 
+                          `🏢 ${move.competitor_name} - ${move.move_type.toUpperCase()}\n` +
+                          `📰 ${move.description}\n` +
+                          `💡 ${move.detailed_description}\n` +
+                          `📊 Impact Score: ${move.impact_score}/100\n` +
+                          `📅 ${new Date(move.detected_at).toLocaleDateString()}\n` +
+                          `🔗 Source: ${move.source_name}\n` +
+                          `${move.source_url}\n`
+                        ).join('\n---\n') +
+                        `\n\n📈 Recommended Actions:\n` +
+                        `• Monitor high-impact moves (80+ score) for strategic response\n` +
+                        `• Track hiring patterns for talent acquisition intelligence\n` +
+                        `• Analyze product launches for competitive positioning\n` +
+                        `• Set up alerts for breaking news about these competitors`
+                }]
+              };
+
+            } catch (error) {
+              console.error('Competitor intelligence error:', error);
+              return {
+                content: [{
+                  type: "text",
+                  text: `❌ Error gathering competitor intelligence: ${error instanceof Error ? error.message : 'Unknown error'}\n\n` +
+                        `This may be due to API rate limits or connectivity issues. ` +
+                        `Try again in a few minutes or check your API key configuration.`
                 }]
               };
             }
-
-            return {
-              content: [{
-                type: "text",
-                text: `Competitor Moves Detected (${timeframe}):\n\n${result.rows.map((move: any) => 
-                  `${move.competitor_name} - ${move.move_type}\nImpact Score: ${move.impact_score}/100\n${move.description}\nDetected: ${move.detected_at}\n`
-                ).join('\n---\n')}`
-              }]
-            };
           }
 
           case "market_narrative_tracking": {
             const { industry, keywords = [], sentiment_analysis = true } = args as any;
             
-            const result = await this.db!.query(`
-              SELECT * FROM market_narratives 
-              WHERE industry ILIKE $1
-              ORDER BY created_at DESC
-              LIMIT 10
-            `, [`%${industry}%`]);
+            const narratives = [];
+            
+            try {
+              console.log(`📊 Tracking market narratives for ${industry}`);
+              
+              // Build search terms for the industry
+              const searchTerms = [
+                `"${industry}" AND (trend OR growth OR market OR future)`,
+                `"${industry}" AND (regulation OR policy OR government)`,
+                `"${industry}" AND (innovation OR disruption OR technology)`,
+                ...keywords.map((keyword: string) => `"${industry}" AND "${keyword}"`)
+              ];
+              
+              // Search NewsAPI for industry narratives
+              for (const searchTerm of searchTerms) {
+                try {
+                  const newsResponse = await callNewsAPI('/everything', {
+                    'q': searchTerm,
+                    'language': 'en',
+                    'sortBy': 'publishedAt',
+                    'pageSize': '15',
+                    'from': new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // Last 2 weeks
+                  });
 
-            if (result.rows.length === 0) {
-              await this.createSampleMarketNarratives(industry);
-              const retryResult = await this.db!.query(`
-                SELECT * FROM market_narratives 
-                WHERE industry ILIKE $1
-                ORDER BY created_at DESC
-                LIMIT 10
-              `, [`%${industry}%`]);
+                  for (const article of newsResponse.articles || []) {
+                    const narrative = this.extractNarrative(article, industry);
+                    if (narrative) {
+                      narratives.push({
+                        industry,
+                        narrative_text: narrative.text,
+                        sentiment_score: sentiment_analysis ? this.calculateSentiment(article) : null,
+                        trend_direction: this.detectTrend(article),
+                        source_count: 1,
+                        source_name: article.source?.name || 'News',
+                        source_url: article.url,
+                        article_title: article.title,
+                        published_at: article.publishedAt,
+                        author: article.author,
+                        themes: narrative.themes
+                      });
+                    }
+                  }
+                } catch (error) {
+                  console.error(`NewsAPI error for ${searchTerm}:`, error);
+                }
+              }
+
+              // Search Google for industry analysis and reports
+              try {
+                const googleQuery = `"${industry} market" OR "${industry} trends" OR "${industry} outlook" site:mckinsey.com OR site:bcg.com OR site:deloitte.com`;
+                const googleResponse = await searchGoogle(googleQuery);
+                
+                for (const item of googleResponse.items || []) {
+                  const narrative = this.extractNarrativeFromText(item.title, item.snippet, industry);
+                  if (narrative) {
+                    narratives.push({
+                      industry,
+                      narrative_text: narrative.text,
+                      sentiment_score: sentiment_analysis ? this.calculateSentimentFromText(item.title + ' ' + item.snippet) : null,
+                      trend_direction: this.detectTrendFromText(item.title + ' ' + item.snippet),
+                      source_count: 1,
+                      source_name: 'Industry Report',
+                      source_url: item.link,
+                      article_title: item.title,
+                      published_at: new Date().toISOString(),
+                      author: 'Consulting Firm',
+                      themes: narrative.themes
+                    });
+                  }
+                }
+              } catch (error) {
+                console.error(`Google search error for ${industry}:`, error);
+              }
+
+              // Search Reddit for market discussions
+              try {
+                const businessSubreddits = ['business', 'investing', 'entrepreneur', 'technology', 'futurology'];
+                for (const subreddit of businessSubreddits) {
+                  const redditResponse = await searchReddit(subreddit, industry);
+                  
+                  for (const post of redditResponse.data?.children || []) {
+                    const postData = post.data;
+                    if (postData.title && postData.created_utc > (Date.now() / 1000) - (14 * 24 * 60 * 60)) {
+                      const narrative = this.extractNarrativeFromText(postData.title, postData.selftext, industry);
+                      if (narrative && postData.score > 10) { // Only high-engagement posts
+                        narratives.push({
+                          industry,
+                          narrative_text: narrative.text,
+                          sentiment_score: sentiment_analysis ? this.calculateSentimentFromText(postData.title + ' ' + postData.selftext) : null,
+                          trend_direction: this.detectTrendFromText(postData.title + ' ' + postData.selftext),
+                          source_count: 1,
+                          source_name: `Reddit r/${subreddit}`,
+                          source_url: `https://reddit.com${postData.permalink}`,
+                          article_title: postData.title,
+                          published_at: new Date(postData.created_utc * 1000).toISOString(),
+                          author: postData.author,
+                          themes: narrative.themes,
+                          engagement_score: postData.score
+                        });
+                      }
+                    }
+                  }
+                }
+              } catch (error) {
+                console.error(`Reddit search error for ${industry}:`, error);
+              }
+
+              // Aggregate similar narratives and calculate trends
+              const aggregatedNarratives = this.aggregateNarratives(narratives);
+              
+              // Store narratives in database
+              for (const narrative of aggregatedNarratives) {
+                await this.storeMarketNarrative(narrative);
+              }
 
               return {
                 content: [{
                   type: "text",
-                  text: `Market Narratives for ${industry}:\n\n${retryResult.rows.map((narrative: any) => 
-                    `Trend: ${narrative.trend_direction}\n${narrative.narrative_text}\n${sentiment_analysis ? `Sentiment Score: ${narrative.sentiment_score}/10` : ''}\nSources: ${narrative.source_count}\n`
-                  ).join('\n---\n')}`
+                  text: `📊 Market Narrative Analysis: ${industry}\n` +
+                        `Analyzed ${narratives.length} sources across news, reports, and social media\n\n` +
+                        `🔍 Key Narratives Found:\n\n` +
+                        aggregatedNarratives.map((narrative: any) => 
+                          `📈 ${narrative.trend_direction?.toUpperCase()} TREND\n` +
+                          `🗣️ ${narrative.narrative_text}\n` +
+                          `${sentiment_analysis ? `😊 Sentiment: ${narrative.sentiment_score}/10\n` : ''}` +
+                          `📰 Sources: ${narrative.source_count} mentions\n` +
+                          `🏷️ Themes: ${narrative.themes?.join(', ') || 'General'}\n` +
+                          `🔗 Latest Source: ${narrative.source_name}\n`
+                        ).join('\n---\n') +
+                        `\n\n💡 Strategic Insights:\n` +
+                        `• ${this.generateStrategicInsights(aggregatedNarratives, industry as string)}\n\n` +
+                        `📈 Recommended Actions:\n` +
+                        `• Monitor ${aggregatedNarratives.filter((n: any) => n.trend_direction === 'positive').length} positive trends for opportunity positioning\n` +
+                        `• Address ${aggregatedNarratives.filter((n: any) => n.trend_direction === 'concerning').length} concerning narratives with strategic messaging\n` +
+                        `• Prepare thought leadership content around emerging themes\n` +
+                        `• Set up alerts for narrative shifts in this industry`
+                }]
+              };
+
+            } catch (error) {
+              console.error('Market narrative tracking error:', error);
+              return {
+                content: [{
+                  type: "text",
+                  text: `❌ Error tracking market narratives: ${error instanceof Error ? error.message : 'Unknown error'}\n\n` +
+                        `This may be due to API rate limits or connectivity issues. ` +
+                        `Try again in a few minutes or check your API key configuration.`
                 }]
               };
             }
-
-            return {
-              content: [{
-                type: "text",
-                text: `Market Narratives for ${industry}:\n\n${result.rows.map((narrative: any) => 
-                  `Trend: ${narrative.trend_direction}\n${narrative.narrative_text}\n${sentiment_analysis ? `Sentiment Score: ${narrative.sentiment_score}/10` : ''}\nSources: ${narrative.source_count}\n`
-                ).join('\n---\n')}`
-              }]
-            };
           }
 
           case "emerging_topic_identification": {
@@ -473,40 +763,185 @@ class IntelligenceServer {
           case "executive_movement_tracking": {
             const { industries = [], executive_levels = [], company_size = 'all' } = args as any;
             
-            const result = await this.db!.query(`
-              SELECT * FROM executive_movements 
-              WHERE announcement_date >= CURRENT_DATE - INTERVAL '30 days'
-              ORDER BY impact_score DESC, announcement_date DESC
-              LIMIT 20
-            `);
-
-            if (result.rows.length === 0) {
-              await this.createSampleExecutiveMovements();
-              const retryResult = await this.db!.query(`
-                SELECT * FROM executive_movements 
-                WHERE announcement_date >= CURRENT_DATE - INTERVAL '30 days'
-                ORDER BY impact_score DESC, announcement_date DESC
-                LIMIT 20
-              `);
+            const movements = [];
+            
+            try {
+              console.log(`👔 Tracking executive movements in ${industries.join(', ') || 'all industries'}`);
               
+              // Build search terms for executive movements
+              const searchTerms = [
+                'CEO OR "chief executive" OR "executive appointment" OR "joins as" OR "named as"',
+                'CTO OR "chief technology" OR "chief technical officer"',
+                'CFO OR "chief financial officer" OR "head of finance"',
+                'CMO OR "chief marketing" OR "head of marketing"',
+                'COO OR "chief operating" OR "head of operations"',
+                '"executive departure" OR "steps down" OR "resigns" OR "leaving"'
+              ];
+
+              // If specific industries provided, add them to search
+              if (industries.length > 0) {
+                const industryTerms = industries.map((industry: string) => 
+                  searchTerms.map(term => `(${term}) AND "${industry}"`)
+                ).flat();
+                searchTerms.push(...industryTerms);
+              }
+              
+              // Search NewsAPI for executive movements
+              for (const searchTerm of searchTerms) {
+                try {
+                  const newsResponse = await callNewsAPI('/everything', {
+                    'q': searchTerm,
+                    'language': 'en',
+                    'sortBy': 'publishedAt',
+                    'pageSize': '10',
+                    'from': new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // Last 30 days
+                  });
+
+                  for (const article of newsResponse.articles || []) {
+                    const movement = this.extractExecutiveMovement(article);
+                    if (movement) {
+                      movements.push({
+                        ...movement,
+                        source_url: article.url,
+                        source_name: article.source?.name || 'News',
+                        published_at: article.publishedAt,
+                        author: article.author,
+                        article_title: article.title,
+                        description: article.description
+                      });
+                    }
+                  }
+                } catch (error) {
+                  console.error(`NewsAPI search error for ${searchTerm}:`, error);
+                }
+              }
+
+              // Search Google for press releases about executive changes
+              try {
+                const googleQueries = [
+                  'executive appointment OR "named CEO" OR "joins as" site:businesswire.com OR site:prnewswire.com',
+                  'executive departure OR "steps down" OR "resigns" site:businesswire.com OR site:prnewswire.com'
+                ];
+
+                for (const query of googleQueries) {
+                  const googleResponse = await searchGoogle(query);
+                  
+                  for (const item of googleResponse.items || []) {
+                    const movement = this.extractExecutiveMovementFromText(item.title, item.snippet);
+                    if (movement) {
+                      movements.push({
+                        ...movement,
+                        source_url: item.link,
+                        source_name: 'Press Release',
+                        published_at: new Date().toISOString(),
+                        author: 'PR Wire',
+                        article_title: item.title,
+                        description: item.snippet
+                      });
+                    }
+                  }
+                }
+              } catch (error) {
+                console.error(`Google search error for executive movements:`, error);
+              }
+
+              // Search Reddit for executive movement discussions
+              try {
+                const businessSubreddits = ['business', 'investing', 'technology', 'startups'];
+                for (const subreddit of businessSubreddits) {
+                  const redditResponse = await searchReddit(subreddit, 'CEO OR executive OR appointment OR resignation');
+                  
+                  for (const post of redditResponse.data?.children || []) {
+                    const postData = post.data;
+                    if (postData.title && postData.created_utc > (Date.now() / 1000) - (30 * 24 * 60 * 60)) {
+                      const movement = this.extractExecutiveMovementFromText(postData.title, postData.selftext);
+                      if (movement && postData.score > 20) { // Only high-engagement posts
+                        movements.push({
+                          ...movement,
+                          source_url: `https://reddit.com${postData.permalink}`,
+                          source_name: `Reddit r/${subreddit}`,
+                          published_at: new Date(postData.created_utc * 1000).toISOString(),
+                          author: postData.author,
+                          article_title: postData.title,
+                          description: postData.selftext || '',
+                          engagement_score: postData.score
+                        });
+                      }
+                    }
+                  }
+                }
+              } catch (error) {
+                console.error(`Reddit search error for executive movements:`, error);
+              }
+
+              // Filter by executive levels if specified
+              let filteredMovements = movements;
+              if (executive_levels.length > 0) {
+                filteredMovements = movements.filter(movement => 
+                  executive_levels.some((level: any) => 
+                    movement.position?.toLowerCase().includes(level.toLowerCase()) ||
+                    movement.executive_level === level
+                  )
+                );
+              }
+
+              // Store movements in database
+              for (const movement of filteredMovements) {
+                await this.storeExecutiveMovement(movement);
+              }
+
+              // Sort by impact score and recency
+              filteredMovements.sort((a, b) => {
+                const scoreA = a.impact_score * (new Date(a.published_at).getTime() / 1000000000);
+                const scoreB = b.impact_score * (new Date(b.published_at).getTime() / 1000000000);
+                return scoreB - scoreA;
+              });
+
+              const topMovements = filteredMovements.slice(0, 25); // Return top 25 movements
+
               return {
                 content: [{
                   type: "text",
-                  text: `Recent Executive Movements:\n\n${retryResult.rows.map((movement: any) => 
-                    `${movement.executive_name}\n${movement.previous_company} → ${movement.new_company}\nPosition: ${movement.position}\nIndustry: ${movement.industry}\nImpact Score: ${movement.impact_score}/100\n`
-                  ).join('\n---\n')}`
+                  text: `👔 Executive Movement Intelligence Report\n` +
+                        `Found ${topMovements.length} significant executive movements in the last 30 days\n\n` +
+                        `${executive_levels.length > 0 ? `Filtered for: ${executive_levels.join(', ')}\n` : ''}` +
+                        `${industries.length > 0 ? `Industries: ${industries.join(', ')}\n` : ''}\n` +
+                        topMovements.map(movement => 
+                          `👤 ${movement.executive_name || 'Executive'}\n` +
+                          `🏢 ${movement.movement_type === 'departure' ? 
+                            `Leaving ${movement.previous_company || movement.company}` : 
+                            `${movement.previous_company ? `${movement.previous_company} → ` : ''}${movement.new_company || movement.company}`}\n` +
+                          `💼 Position: ${movement.position}\n` +
+                          `🏭 Industry: ${movement.industry}\n` +
+                          `📊 Impact Score: ${movement.impact_score}/100\n` +
+                          `📅 ${new Date(movement.published_at).toLocaleDateString()}\n` +
+                          `🔗 Source: ${movement.source_name}\n` +
+                          `${movement.source_url}\n`
+                        ).join('\n---\n') +
+                        `\n\n📈 Insights:\n` +
+                        `• ${topMovements.filter(m => m.movement_type === 'appointment').length} new appointments detected\n` +
+                        `• ${topMovements.filter(m => m.movement_type === 'departure').length} executive departures identified\n` +
+                        `• ${topMovements.filter(m => m.impact_score >= 80).length} high-impact movements (80+ score)\n` +
+                        `• Most active industries: ${this.getTopIndustries(topMovements)}\n\n` +
+                        `🎯 Recommended Actions:\n` +
+                        `• Monitor high-impact appointments for partnership opportunities\n` +
+                        `• Track departures for potential talent acquisition\n` +
+                        `• Prepare executive briefings for industry shifts\n` +
+                        `• Set up alerts for C-suite changes in target companies`
+                }]
+              };
+
+            } catch (error) {
+              console.error('Executive movement tracking error:', error);
+              return {
+                content: [{
+                  type: "text",
+                  text: `❌ Error tracking executive movements: ${error instanceof Error ? error.message : 'Unknown error'}\n\n` +
+                        `This may be due to API rate limits or connectivity issues. ` +
+                        `Try again in a few minutes or check your API key configuration.`
                 }]
               };
             }
-
-            return {
-              content: [{
-                type: "text",
-                text: `Recent Executive Movements:\n\n${result.rows.map((movement: any) => 
-                  `${movement.executive_name}\n${movement.previous_company} → ${movement.new_company}\nPosition: ${movement.position}\nIndustry: ${movement.industry}\nImpact Score: ${movement.impact_score}/100\n`
-                ).join('\n---\n')}`
-              }]
-            };
           }
 
           case "partnership_opportunity_detection": {
@@ -596,6 +1031,609 @@ Publication Types to Target: ${publication_types.join(', ') || 'trade publicatio
         );
       }
     });
+  }
+
+  private getTimeframeDate(timeframe: string): string {
+    const now = new Date();
+    switch (timeframe) {
+      case '24h':
+        return new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      case 'week':
+        return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      case 'month':
+        return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      default:
+        return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    }
+  }
+
+  private getTimeframeTimestamp(timeframe: string): number {
+    const now = Date.now() / 1000; // Unix timestamp
+    switch (timeframe) {
+      case '24h':
+        return now - (24 * 60 * 60);
+      case 'week':
+        return now - (7 * 24 * 60 * 60);
+      case 'month':
+        return now - (30 * 24 * 60 * 60);
+      default:
+        return now - (7 * 24 * 60 * 60);
+    }
+  }
+
+  private detectMoveType(article: any, allowedTypes: string[]): string | null {
+    const text = `${article.title} ${article.description}`.toLowerCase();
+    
+    // Check for hiring moves
+    if (allowedTypes.includes('hiring') && 
+        (text.includes('hire') || text.includes('appointment') || text.includes('joins') || 
+         text.includes('ceo') || text.includes('cto') || text.includes('executive'))) {
+      return 'hiring';
+    }
+    
+    // Check for product moves
+    if (allowedTypes.includes('product') && 
+        (text.includes('launch') || text.includes('release') || text.includes('product') || 
+         text.includes('feature') || text.includes('service'))) {
+      return 'product';
+    }
+    
+    // Check for campaign moves
+    if (allowedTypes.includes('campaign') && 
+        (text.includes('campaign') || text.includes('marketing') || text.includes('announce'))) {
+      return 'campaign';
+    }
+    
+    // Check for partnership moves
+    if (allowedTypes.includes('partnership') && 
+        (text.includes('partner') || text.includes('collaboration') || text.includes('alliance'))) {
+      return 'partnership';
+    }
+    
+    // Check for funding moves
+    if (allowedTypes.includes('funding') && 
+        (text.includes('funding') || text.includes('investment') || text.includes('funding round') || 
+         text.includes('series') || text.includes('venture'))) {
+      return 'funding';
+    }
+    
+    return null;
+  }
+
+  private detectMoveTypeFromText(text: string, allowedTypes: string[]): string | null {
+    const lowerText = text.toLowerCase();
+    
+    // Similar logic but for plain text
+    if (allowedTypes.includes('hiring') && 
+        (lowerText.includes('hire') || lowerText.includes('appointment') || lowerText.includes('joins') || 
+         lowerText.includes('ceo') || lowerText.includes('cto') || lowerText.includes('executive'))) {
+      return 'hiring';
+    }
+    
+    if (allowedTypes.includes('product') && 
+        (lowerText.includes('launch') || lowerText.includes('release') || lowerText.includes('product') || 
+         lowerText.includes('feature') || lowerText.includes('service'))) {
+      return 'product';
+    }
+    
+    if (allowedTypes.includes('campaign') && 
+        (lowerText.includes('campaign') || lowerText.includes('marketing') || lowerText.includes('announce'))) {
+      return 'campaign';
+    }
+    
+    if (allowedTypes.includes('partnership') && 
+        (lowerText.includes('partner') || lowerText.includes('collaboration') || lowerText.includes('alliance'))) {
+      return 'partnership';
+    }
+    
+    if (allowedTypes.includes('funding') && 
+        (lowerText.includes('funding') || lowerText.includes('investment') || lowerText.includes('funding round') || 
+         lowerText.includes('series') || lowerText.includes('venture'))) {
+      return 'funding';
+    }
+    
+    return null;
+  }
+
+  private calculateImpactScore(article: any, competitor: string): number {
+    let score = 50; // Base score
+    
+    const text = `${article.title} ${article.description}`.toLowerCase();
+    const companyInTitle = article.title?.toLowerCase().includes(competitor.toLowerCase());
+    
+    // Higher score if company is in the title
+    if (companyInTitle) score += 20;
+    
+    // Score based on content significance
+    if (text.includes('ceo') || text.includes('merger') || text.includes('acquisition')) score += 30;
+    if (text.includes('funding') || text.includes('investment')) score += 25;
+    if (text.includes('launch') || text.includes('product')) score += 15;
+    if (text.includes('partnership') || text.includes('alliance')) score += 10;
+    
+    // Score based on source credibility
+    const source = article.source?.name?.toLowerCase() || '';
+    if (source.includes('reuters') || source.includes('bloomberg') || source.includes('wsj')) score += 15;
+    if (source.includes('techcrunch') || source.includes('verge')) score += 10;
+    
+    return Math.min(score, 100);
+  }
+
+  private calculateImpactFromText(text: string): number {
+    let score = 40; // Base score for text-only
+    
+    const lowerText = text.toLowerCase();
+    
+    if (lowerText.includes('ceo') || lowerText.includes('merger') || lowerText.includes('acquisition')) score += 30;
+    if (lowerText.includes('funding') || lowerText.includes('investment')) score += 25;
+    if (lowerText.includes('launch') || lowerText.includes('product')) score += 15;
+    if (lowerText.includes('partnership') || lowerText.includes('alliance')) score += 10;
+    
+    return Math.min(score, 100);
+  }
+
+  private async storeCompetitorMove(move: any) {
+    try {
+      await this.db!.query(
+        `INSERT INTO competitor_moves (competitor_name, move_type, description, impact_score, source_url, detected_at, metadata)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         ON CONFLICT (competitor_name, description, detected_at) DO NOTHING`,
+        [
+          move.competitor_name,
+          move.move_type,
+          move.description,
+          move.impact_score,
+          move.source_url,
+          move.detected_at,
+          JSON.stringify({
+            detailed_description: move.detailed_description,
+            source_name: move.source_name,
+            author: move.author
+          })
+        ]
+      );
+    } catch (error) {
+      console.error('Error storing competitor move:', error);
+    }
+  }
+
+  private extractNarrative(article: any, industry: string): { text: string; themes: string[] } | null {
+    const title = article.title || '';
+    const description = article.description || '';
+    const text = `${title} ${description}`.toLowerCase();
+    
+    // Check if article is relevant to industry
+    if (!text.includes(industry.toLowerCase())) {
+      return null;
+    }
+    
+    // Extract key themes
+    const themes = [];
+    if (text.includes('growth') || text.includes('expand')) themes.push('Growth');
+    if (text.includes('regulation') || text.includes('policy')) themes.push('Regulation');
+    if (text.includes('innovation') || text.includes('technology')) themes.push('Innovation');
+    if (text.includes('investment') || text.includes('funding')) themes.push('Investment');
+    if (text.includes('competition') || text.includes('market share')) themes.push('Competition');
+    if (text.includes('customer') || text.includes('consumer')) themes.push('Customer Behavior');
+    
+    return {
+      text: title,
+      themes: themes.length > 0 ? themes : ['General']
+    };
+  }
+
+  private extractNarrativeFromText(title: string, snippet: string, industry: string): { text: string; themes: string[] } | null {
+    const text = `${title} ${snippet}`.toLowerCase();
+    
+    // Check if content is relevant to industry
+    if (!text.includes(industry.toLowerCase())) {
+      return null;
+    }
+    
+    // Extract key themes
+    const themes = [];
+    if (text.includes('growth') || text.includes('expand')) themes.push('Growth');
+    if (text.includes('regulation') || text.includes('policy')) themes.push('Regulation');
+    if (text.includes('innovation') || text.includes('technology')) themes.push('Innovation');
+    if (text.includes('investment') || text.includes('funding')) themes.push('Investment');
+    if (text.includes('competition') || text.includes('market share')) themes.push('Competition');
+    if (text.includes('customer') || text.includes('consumer')) themes.push('Customer Behavior');
+    
+    return {
+      text: title,
+      themes: themes.length > 0 ? themes : ['General']
+    };
+  }
+
+  private calculateSentiment(article: any): number {
+    const text = `${article.title} ${article.description}`.toLowerCase();
+    
+    let score = 5; // Neutral baseline
+    
+    // Positive indicators
+    if (text.includes('growth') || text.includes('success') || text.includes('breakthrough')) score += 2;
+    if (text.includes('launch') || text.includes('expand') || text.includes('opportunity')) score += 1;
+    if (text.includes('innovation') || text.includes('advancement')) score += 1;
+    
+    // Negative indicators
+    if (text.includes('crisis') || text.includes('decline') || text.includes('fail')) score -= 2;
+    if (text.includes('concern') || text.includes('challenge') || text.includes('problem')) score -= 1;
+    if (text.includes('regulation') || text.includes('restriction')) score -= 1;
+    
+    return Math.max(1, Math.min(10, score));
+  }
+
+  private calculateSentimentFromText(text: string): number {
+    const lowerText = text.toLowerCase();
+    
+    let score = 5; // Neutral baseline
+    
+    // Positive indicators
+    if (lowerText.includes('growth') || lowerText.includes('success') || lowerText.includes('breakthrough')) score += 2;
+    if (lowerText.includes('launch') || lowerText.includes('expand') || lowerText.includes('opportunity')) score += 1;
+    if (lowerText.includes('innovation') || lowerText.includes('advancement')) score += 1;
+    
+    // Negative indicators
+    if (lowerText.includes('crisis') || lowerText.includes('decline') || lowerText.includes('fail')) score -= 2;
+    if (lowerText.includes('concern') || lowerText.includes('challenge') || lowerText.includes('problem')) score -= 1;
+    if (lowerText.includes('regulation') || lowerText.includes('restriction')) score -= 1;
+    
+    return Math.max(1, Math.min(10, score));
+  }
+
+  private detectTrend(article: any): string {
+    const text = `${article.title} ${article.description}`.toLowerCase();
+    
+    if (text.includes('growth') || text.includes('increase') || text.includes('rise') || text.includes('boom')) {
+      return 'positive';
+    }
+    if (text.includes('decline') || text.includes('fall') || text.includes('crisis') || text.includes('concern')) {
+      return 'concerning';
+    }
+    if (text.includes('stable') || text.includes('maintain') || text.includes('steady')) {
+      return 'stable';
+    }
+    
+    return 'neutral';
+  }
+
+  private detectTrendFromText(text: string): string {
+    const lowerText = text.toLowerCase();
+    
+    if (lowerText.includes('growth') || lowerText.includes('increase') || lowerText.includes('rise') || lowerText.includes('boom')) {
+      return 'positive';
+    }
+    if (lowerText.includes('decline') || lowerText.includes('fall') || lowerText.includes('crisis') || lowerText.includes('concern')) {
+      return 'concerning';
+    }
+    if (lowerText.includes('stable') || lowerText.includes('maintain') || lowerText.includes('steady')) {
+      return 'stable';
+    }
+    
+    return 'neutral';
+  }
+
+  private aggregateNarratives(narratives: any[]): any[] {
+    // Group by similar themes and sentiment
+    const grouped = new Map();
+    
+    for (const narrative of narratives) {
+      const key = `${narrative.trend_direction}_${narrative.themes?.[0] || 'General'}`;
+      
+      if (!grouped.has(key)) {
+        grouped.set(key, {
+          ...narrative,
+          source_count: 1,
+          sources: [narrative.source_name]
+        });
+      } else {
+        const existing = grouped.get(key);
+        existing.source_count += 1;
+        existing.sources.push(narrative.source_name);
+        // Update sentiment with running average
+        if (narrative.sentiment_score && existing.sentiment_score) {
+          existing.sentiment_score = (existing.sentiment_score + narrative.sentiment_score) / 2;
+        }
+      }
+    }
+    
+    return Array.from(grouped.values()).sort((a, b) => b.source_count - a.source_count);
+  }
+
+  private generateStrategicInsights(narratives: any[], industry: any): string {
+    const totalNarratives = narratives.length;
+    const positiveCount = narratives.filter(n => n.trend_direction === 'positive').length;
+    const concerningCount = narratives.filter(n => n.trend_direction === 'concerning').length;
+    
+    if (positiveCount > concerningCount) {
+      return `The ${industry} sector shows predominantly positive momentum (${positiveCount}/${totalNarratives} positive narratives). Consider aggressive market positioning and thought leadership.`;
+    } else if (concerningCount > positiveCount) {
+      return `The ${industry} sector faces significant challenges (${concerningCount}/${totalNarratives} concerning narratives). Focus on defensive communications and crisis preparedness.`;
+    } else {
+      return `The ${industry} sector shows mixed signals. Balanced approach needed with both opportunity capture and risk mitigation strategies.`;
+    }
+  }
+
+  private async storeMarketNarrative(narrative: any) {
+    try {
+      await this.db!.query(
+        `INSERT INTO market_narratives (industry, narrative_text, sentiment_score, trend_direction, source_count, metadata)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (industry, narrative_text) DO UPDATE SET
+         source_count = market_narratives.source_count + 1,
+         metadata = $6`,
+        [
+          narrative.industry,
+          narrative.narrative_text,
+          narrative.sentiment_score,
+          narrative.trend_direction,
+          narrative.source_count,
+          JSON.stringify({
+            themes: narrative.themes,
+            source_name: narrative.source_name,
+            source_url: narrative.source_url,
+            author: narrative.author
+          })
+        ]
+      );
+    } catch (error) {
+      console.error('Error storing market narrative:', error);
+    }
+  }
+
+  private extractExecutiveMovement(article: any): any | null {
+    const title = article.title || '';
+    const description = article.description || '';
+    const text = `${title} ${description}`.toLowerCase();
+    
+    // Check if it's an executive movement
+    const executiveTerms = ['ceo', 'cto', 'cfo', 'cmo', 'coo', 'chief', 'executive', 'president', 'director'];
+    const movementTerms = ['appoint', 'join', 'hire', 'name', 'resign', 'depart', 'leave', 'step down'];
+    
+    const hasExecutive = executiveTerms.some(term => text.includes(term));
+    const hasMovement = movementTerms.some(term => text.includes(term));
+    
+    if (!hasExecutive || !hasMovement) {
+      return null;
+    }
+    
+    // Extract executive details
+    const movement = {
+      executive_name: this.extractExecutiveName(title, description),
+      position: this.extractPosition(title, description),
+      company: this.extractCompany(title, description),
+      new_company: null as string | null,
+      previous_company: null as string | null,
+      industry: this.inferIndustry(title, description),
+      movement_type: this.detectMovementType(text),
+      impact_score: this.calculateExecutiveImpactScore(title, description),
+      executive_level: this.determineExecutiveLevel(title, description)
+    };
+    
+    // Try to extract company transitions
+    const transition = this.extractCompanyTransition(title, description);
+    if (transition) {
+      movement.previous_company = transition.from;
+      movement.new_company = transition.to;
+    }
+    
+    return movement;
+  }
+
+  private extractExecutiveMovementFromText(title: string, snippet: string): any | null {
+    const text = `${title} ${snippet}`.toLowerCase();
+    
+    // Check if it's an executive movement
+    const executiveTerms = ['ceo', 'cto', 'cfo', 'cmo', 'coo', 'chief', 'executive', 'president', 'director'];
+    const movementTerms = ['appoint', 'join', 'hire', 'name', 'resign', 'depart', 'leave', 'step down'];
+    
+    const hasExecutive = executiveTerms.some(term => text.includes(term));
+    const hasMovement = movementTerms.some(term => text.includes(term));
+    
+    if (!hasExecutive || !hasMovement) {
+      return null;
+    }
+    
+    return {
+      executive_name: this.extractExecutiveName(title, snippet),
+      position: this.extractPosition(title, snippet),
+      company: this.extractCompany(title, snippet),
+      new_company: null as string | null,
+      previous_company: null as string | null,
+      industry: this.inferIndustry(title, snippet),
+      movement_type: this.detectMovementType(text),
+      impact_score: this.calculateExecutiveImpactScore(title, snippet),
+      executive_level: this.determineExecutiveLevel(title, snippet)
+    };
+  }
+
+  private extractExecutiveName(title: string, description: string): string {
+    // Simple name extraction - looks for capitalized words near executive terms
+    const text = title + ' ' + description;
+    const namePattern = /([A-Z][a-z]+ [A-Z][a-z]+)/g;
+    const names = text.match(namePattern);
+    
+    if (names && names.length > 0) {
+      // Return the first name found (usually the executive)
+      return names[0];
+    }
+    
+    return 'Executive Name Not Extracted';
+  }
+
+  private extractPosition(title: string, description: string): string {
+    const text = `${title} ${description}`.toLowerCase();
+    
+    const positions = [
+      'chief executive officer', 'ceo',
+      'chief technology officer', 'cto',
+      'chief financial officer', 'cfo',
+      'chief marketing officer', 'cmo',
+      'chief operating officer', 'coo',
+      'president', 'vice president', 'vp',
+      'head of', 'director of', 'senior director'
+    ];
+    
+    for (const position of positions) {
+      if (text.includes(position)) {
+        return position.toUpperCase();
+      }
+    }
+    
+    return 'Executive Position';
+  }
+
+  private extractCompany(title: string, description: string): string {
+    // Simple company extraction - looks for capitalized words or known patterns
+    const text = title + ' ' + description;
+    
+    // Look for patterns like "at Company" or "Company announces"
+    const companyPatterns = [
+      /at ([A-Z][a-zA-Z\s]+)(?=\s|$|,|\.)/g,
+      /([A-Z][a-zA-Z\s]+) announces/gi,
+      /([A-Z][a-zA-Z\s]+) appoints/gi,
+      /([A-Z][a-zA-Z\s]+) names/gi
+    ];
+    
+    for (const pattern of companyPatterns) {
+      const matches = text.match(pattern);
+      if (matches && matches.length > 0) {
+        return matches[0].replace(/^(at|announces|appoints|names)\s*/gi, '').trim();
+      }
+    }
+    
+    return 'Company Name Not Extracted';
+  }
+
+  private extractCompanyTransition(title: string, description: string): { from: string; to: string } | null {
+    const text = `${title} ${description}`;
+    
+    // Look for transition patterns like "from X to Y" or "leaves X for Y"
+    const transitionPatterns = [
+      /from\s+([^to]+?)\s+to\s+([^\.]+)/gi,
+      /leaves?\s+([^for]+?)\s+for\s+([^\.]+)/gi,
+      /([^to]+?)\s+to\s+([^\.]+)/gi
+    ];
+    
+    for (const pattern of transitionPatterns) {
+      const match = text.match(pattern);
+      if (match) {
+        return {
+          from: match[1]?.trim() || '',
+          to: match[2]?.trim() || ''
+        };
+      }
+    }
+    
+    return null;
+  }
+
+  private inferIndustry(title: string, description: string): string {
+    const text = `${title} ${description}`.toLowerCase();
+    
+    const industries = {
+      'technology': ['tech', 'software', 'ai', 'digital', 'data', 'cloud', 'cyber'],
+      'finance': ['bank', 'financial', 'investment', 'capital', 'fund', 'insurance'],
+      'healthcare': ['health', 'medical', 'pharma', 'biotech', 'hospital', 'drug'],
+      'retail': ['retail', 'commerce', 'shopping', 'consumer', 'brand'],
+      'energy': ['energy', 'oil', 'renewable', 'solar', 'gas', 'utility'],
+      'automotive': ['auto', 'car', 'vehicle', 'transport', 'mobility'],
+      'media': ['media', 'entertainment', 'news', 'television', 'streaming']
+    };
+    
+    for (const [industry, keywords] of Object.entries(industries)) {
+      if (keywords.some(keyword => text.includes(keyword))) {
+        return industry.charAt(0).toUpperCase() + industry.slice(1);
+      }
+    }
+    
+    return 'General';
+  }
+
+  private detectMovementType(text: string): string {
+    const departureTerms = ['resign', 'depart', 'leave', 'step down', 'exit'];
+    const appointmentTerms = ['appoint', 'join', 'hire', 'name', 'promote'];
+    
+    if (departureTerms.some(term => text.includes(term))) {
+      return 'departure';
+    }
+    if (appointmentTerms.some(term => text.includes(term))) {
+      return 'appointment';
+    }
+    
+    return 'movement';
+  }
+
+  private calculateExecutiveImpactScore(title: string, description: string): number {
+    let score = 40; // Base score
+    
+    const text = `${title} ${description}`.toLowerCase();
+    
+    // High-impact positions
+    if (text.includes('ceo') || text.includes('chief executive')) score += 30;
+    if (text.includes('cto') || text.includes('chief technology')) score += 25;
+    if (text.includes('cfo') || text.includes('chief financial')) score += 25;
+    if (text.includes('president')) score += 20;
+    
+    // Company size indicators
+    if (text.includes('fortune') || text.includes('unicorn') || text.includes('billion')) score += 20;
+    if (text.includes('startup') || text.includes('series')) score += 10;
+    
+    // Industry significance
+    if (text.includes('first') || text.includes('inaugural') || text.includes('historic')) score += 15;
+    
+    return Math.min(score, 100);
+  }
+
+  private determineExecutiveLevel(title: string, description: string): string {
+    const text = `${title} ${description}`.toLowerCase();
+    
+    if (text.includes('ceo') || text.includes('chief executive') || text.includes('president')) {
+      return 'C-suite';
+    }
+    if (text.includes('cto') || text.includes('cfo') || text.includes('cmo') || text.includes('coo')) {
+      return 'C-suite';
+    }
+    if (text.includes('vp') || text.includes('vice president')) {
+      return 'VP';
+    }
+    if (text.includes('director') || text.includes('head of')) {
+      return 'Director';
+    }
+    
+    return 'Senior';
+  }
+
+  private getTopIndustries(movements: any[]): string {
+    const industryCount = new Map();
+    
+    for (const movement of movements) {
+      const industry = movement.industry || 'Unknown';
+      industryCount.set(industry, (industryCount.get(industry) || 0) + 1);
+    }
+    
+    const sorted = Array.from(industryCount.entries()).sort((a, b) => b[1] - a[1]);
+    return sorted.slice(0, 3).map(([industry, count]) => `${industry} (${count})`).join(', ');
+  }
+
+  private async storeExecutiveMovement(movement: any) {
+    try {
+      await this.db!.query(
+        `INSERT INTO executive_movements (executive_name, previous_company, new_company, position, industry, announcement_date, impact_score)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         ON CONFLICT (executive_name, position, announcement_date) DO NOTHING`,
+        [
+          movement.executive_name,
+          movement.previous_company,
+          movement.new_company || movement.company,
+          movement.position,
+          movement.industry,
+          movement.published_at ? new Date(movement.published_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          movement.impact_score
+        ]
+      );
+    } catch (error) {
+      console.error('Error storing executive movement:', error);
+    }
   }
 
   private async createSampleCompetitorMoves(competitors: string[]) {

@@ -215,7 +215,11 @@
       "WebFetch(domain:signaldesk-1p4md4thy-nivra-sd.vercel.app)",
       "WebFetch(domain:signaldesk-gxnt8epl8-nivra-sd.vercel.app)",
       "WebFetch(domain:sproutsocial.com)",
-      "WebFetch(domain:docs.github.com)"
+      "WebFetch(domain:docs.github.com)",
+      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/verify-real-competitors.sh)",
+      "WebFetch(domain:signaldesk-hrvdlioc2-nivra-sd.vercel.app)",
+      "WebFetch(domain:signaldesk-kiqanh498-nivra-sd.vercel.app)",
+      "WebFetch(domain:signaldesk-qhypx15fz-nivra-sd.vercel.app)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",
