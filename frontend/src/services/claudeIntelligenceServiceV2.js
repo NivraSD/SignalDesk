@@ -18,7 +18,8 @@ class ClaudeIntelligenceServiceV2 {
     
     // Cache for recent analyses to avoid redundant calls
     this.analysisCache = new Map();
-    this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
+    this.cacheTimeout = 2 * 60 * 1000; // 2 minutes - shorter cache for real-time experience
+    this.pendingRequests = new Map(); // Track pending requests to prevent duplicates
   }
 
   async gatherAndAnalyze(config, timeframe = '24h', options = {}) {
@@ -32,7 +33,29 @@ class ClaudeIntelligenceServiceV2 {
       console.log('📦 Using cached analysis');
       return cached;
     }
+
+    // Check if request is already pending to prevent duplicates
+    if (this.pendingRequests.has(cacheKey)) {
+      console.log('⏳ Request already pending, waiting for result...');
+      return await this.pendingRequests.get(cacheKey);
+    }
     
+    // Create a promise for this request to prevent duplicates
+    const analysisPromise = this.performAnalysis(organization, goals, timeframe, options);
+    this.pendingRequests.set(cacheKey, analysisPromise);
+    
+    try {
+      const result = await analysisPromise;
+      // Cache the result
+      this.cacheAnalysis(cacheKey, result);
+      return result;
+    } finally {
+      // Clean up pending request
+      this.pendingRequests.delete(cacheKey);
+    }
+  }
+
+  async performAnalysis(organization, goals, timeframe, options) {
     console.log('🎯 Gathering intelligence with specialized personas');
     console.log('🎯 Active goals:', Object.entries(goals).filter(([k,v]) => v).map(([k]) => k));
     
@@ -51,10 +74,7 @@ class ClaudeIntelligenceServiceV2 {
       criticalAnalyses
     );
     
-    // Step 4: Cache the results
-    this.cacheAnalysis(cacheKey, synthesizedIntelligence);
-    
-    // Step 5: Store key insights in memory
+    // Step 4: Store key insights in memory
     await this.storeKeyInsights(synthesizedIntelligence, organization);
     
     return synthesizedIntelligence;
