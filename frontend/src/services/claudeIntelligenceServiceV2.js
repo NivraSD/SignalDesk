@@ -1,6 +1,8 @@
 // Claude Intelligence Service V2
 // Enhanced with specialized personas, organizational context, and memory integration
 
+import { getIndustryCompetitors, detectIndustryFromOrganization } from '../utils/industryCompetitors';
+
 class ClaudeIntelligenceServiceV2 {
   constructor() {
     this.supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co';
@@ -23,11 +25,44 @@ class ClaudeIntelligenceServiceV2 {
   }
 
   async gatherAndAnalyze(config, timeframe = '24h', options = {}) {
+    // Extract ALL onboarding data, not just organization and goals
     const organization = config.organization || {};
     const goals = config.goals || {};
+    const orgName = config.organizationName || organization.name || '';
     
-    // Check cache first
-    const cacheKey = `${organization.id}_${timeframe}_${JSON.stringify(goals)}`;
+    // Properly detect industry - check config first, then detect from name
+    let industry = config.industry || detectIndustryFromOrganization(orgName);
+    console.log(`🏭 Industry detection for ${orgName}: ${industry}`);
+    
+    // Get industry-specific competitors and keywords
+    const industryData = getIndustryCompetitors(industry);
+    
+    const website = config.website || '';
+    const stakeholders = config.stakeholders || [];
+    const additionalTopics = config.additionalTopics || [];
+    
+    // Use industry-specific competitors if user didn't provide any
+    const userCompetitors = config.competitors || [];
+    const competitors = userCompetitors.length > 0 ? userCompetitors : industryData.primary.slice(0, 5);
+    
+    // Enhanced organization object with ALL context and industry data
+    const fullOrganization = {
+      ...organization,
+      name: orgName,
+      industry: industry,
+      website: website,
+      competitors: competitors,
+      stakeholders: stakeholders,
+      topics: [...additionalTopics, ...industryData.topics],
+      keywords: industryData.keywords,
+      emergingCompetitors: industryData.emerging.slice(0, 3)
+    };
+    
+    console.log('🎯 Full organization context:', fullOrganization);
+    console.log('🏢 Tracking competitors:', fullOrganization.competitors);
+    
+    // Check cache first with full context
+    const cacheKey = `${fullOrganization.name}_${industry}_${timeframe}_${JSON.stringify(goals)}`;
     const cached = this.getCachedAnalysis(cacheKey);
     if (cached && !options.forceRefresh) {
       console.log('📦 Using cached analysis');
@@ -41,7 +76,7 @@ class ClaudeIntelligenceServiceV2 {
     }
     
     // Create a promise for this request to prevent duplicates
-    const analysisPromise = this.performAnalysis(organization, goals, timeframe, options);
+    const analysisPromise = this.performAnalysis(fullOrganization, goals, timeframe, options);
     this.pendingRequests.set(cacheKey, analysisPromise);
     
     try {
@@ -57,9 +92,10 @@ class ClaudeIntelligenceServiceV2 {
 
   async performAnalysis(organization, goals, timeframe, options) {
     console.log('🎯 Gathering intelligence with specialized personas');
+    console.log('📊 Organization:', organization.name, '| Industry:', organization.industry);
     console.log('🎯 Active goals:', Object.entries(goals).filter(([k,v]) => v).map(([k]) => k));
     
-    // Step 1: Gather raw data from MCPs
+    // Step 1: Gather raw data from MCPs with FULL context
     const mcpData = await this.orchestrateMCPs(organization, timeframe);
     
     // Step 2: Determine which analyses need second opinions
