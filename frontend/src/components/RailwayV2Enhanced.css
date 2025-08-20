@@ -262,6 +262,8 @@
   flex-direction: column;
   z-index: 900;
   transition: transform 0.3s ease;
+  overflow: hidden;
+  height: calc(100vh - 80px); /* Explicit height */
 }
 
 .niv-panel.minimized {
@@ -279,6 +281,22 @@
   flex-shrink: 0;
 }
 
+.niv-panel .niv-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.niv-panel .niv-icon {
+  font-size: 24px;
+}
+
+.niv-panel .niv-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
 .niv-minimize-btn {
   background: transparent;
   border: 1px solid rgba(136, 0, 255, 0.3);
@@ -287,33 +305,106 @@
   padding: 4px 8px;
   cursor: pointer;
   transition: all 0.2s ease;
+  font-size: 14px;
 }
 
 .niv-minimize-btn:hover {
   background: rgba(136, 0, 255, 0.2);
   border-color: #8800ff;
+  box-shadow: 0 0 10px rgba(136, 0, 255, 0.5);
 }
 
-/* Niv Panel Content */
-.niv-panel-content {
+/* Override NivStrategicAdvisor styles when embedded */
+.niv-panel .niv-strategic-advisor {
+  flex: 1;
+  height: 100%;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Ensure proper layout without duplicate header */
+.niv-panel .niv-strategic-advisor.embedded {
+  height: 100%;
+}
+
+.niv-panel .niv-strategic-advisor .niv-messages {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 20px;
+  background: rgba(0, 0, 0, 0.2);
+  min-height: 0; /* Critical for flex child scrolling */
 }
 
-/* Niv Scrollbar */
-.niv-panel-content::-webkit-scrollbar {
+/* Fix scrollbar for messages */
+.niv-panel .niv-messages::-webkit-scrollbar {
   width: 6px;
 }
 
-.niv-panel-content::-webkit-scrollbar-track {
+.niv-panel .niv-messages::-webkit-scrollbar-track {
   background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
 }
 
-.niv-panel-content::-webkit-scrollbar-thumb {
-  background: rgba(136, 0, 255, 0.3);
+.niv-panel .niv-messages::-webkit-scrollbar-thumb {
+  background: rgba(136, 0, 255, 0.4);
   border-radius: 3px;
+}
+
+.niv-panel .niv-messages::-webkit-scrollbar-thumb:hover {
+  background: rgba(136, 0, 255, 0.6);
+}
+
+/* Fix input area */
+.niv-panel .niv-strategic-advisor .niv-input-area {
+  flex-shrink: 0;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border-top: 1px solid rgba(136, 0, 255, 0.2);
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+/* Ensure messages have proper styling */
+.niv-panel .message {
+  margin-bottom: 16px;
+  display: flex;
+  gap: 12px;
+  animation: slideIn 0.3s ease;
+}
+
+.niv-panel .message.user {
+  flex-direction: row-reverse;
+}
+
+.niv-panel .message-text {
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: rgba(136, 0, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.niv-panel .message.user .message-text {
+  background: rgba(0, 255, 136, 0.1);
+}
+
+.niv-panel .message-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(136, 0, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: #8800ff;
+  flex-shrink: 0;
 }
 
 /* Intelligence Display V2 Specific */

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './NivStrategicAdvisor.css';
 
-const NivStrategicAdvisor = ({ activeModule, organizationData, onModuleSwitch }) => {
+const NivStrategicAdvisor = ({ activeModule, organizationData, onModuleSwitch, embedded = false }) => {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
@@ -181,20 +181,22 @@ What specific strategic challenge would you like to explore? For example:
   ];
 
   return (
-    <div className="niv-strategic-advisor">
-      <div className="niv-header">
-        <div className="niv-title">
-          <span className="niv-icon">🤖</span>
-          <div className="niv-info">
-            <h3>Niv - Strategic Advisor</h3>
-            <p className="niv-subtitle">Interprets • Validates • Guides • Connects</p>
+    <div className={`niv-strategic-advisor ${embedded ? 'embedded' : ''}`}>
+      {!embedded && (
+        <div className="niv-header">
+          <div className="niv-title">
+            <span className="niv-icon">🤖</span>
+            <div className="niv-info">
+              <h3>Niv - Strategic Advisor</h3>
+              <p className="niv-subtitle">Interprets • Validates • Guides • Connects</p>
+            </div>
+          </div>
+          <div className="niv-status">
+            <span className="status-indicator online"></span>
+            <span>Online</span>
           </div>
         </div>
-        <div className="niv-status">
-          <span className="status-indicator online"></span>
-          <span>Online</span>
-        </div>
-      </div>
+      )}
 
       <div className="niv-messages">
         {messages.map((message, index) => (
@@ -281,17 +283,19 @@ What specific strategic challenge would you like to explore? For example:
         </button>
       </div>
 
-      <div className="niv-footer">
-        <div className="module-context">
-          Active Module: <span className="module-name">{activeModule}</span>
+      {!embedded && (
+        <div className="niv-footer">
+          <div className="module-context">
+            Active Module: <span className="module-name">{activeModule}</span>
+          </div>
+          <div className="niv-capabilities">
+            <span title="Interprets Intelligence">🔍</span>
+            <span title="Validates Opportunities">✓</span>
+            <span title="Guides Execution">🎯</span>
+            <span title="Connects Patterns">🔗</span>
+          </div>
         </div>
-        <div className="niv-capabilities">
-          <span title="Interprets Intelligence">🔍</span>
-          <span title="Validates Opportunities">✓</span>
-          <span title="Guides Execution">🎯</span>
-          <span title="Connects Patterns">🔗</span>
-        </div>
-      </div>
+      )}
     </div>
   );
 };

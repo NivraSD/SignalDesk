@@ -110,18 +110,18 @@ const RailwayV2Enhanced = () => {
             <button 
               className="niv-minimize-btn"
               onClick={() => setNivMinimized(!nivMinimized)}
+              title={nivMinimized ? 'Expand' : 'Minimize'}
             >
               {nivMinimized ? '◀' : '▶'}
             </button>
           </div>
           
           {!nivMinimized && (
-            <div className="niv-panel-content">
-              <NivStrategicAdvisor 
-                organizationId={organizationData?.id}
-                embedded={true}
-              />
-            </div>
+            <NivStrategicAdvisor 
+              organizationId={organizationData?.id}
+              activeModule={activeModule}
+              embedded={true}
+            />
           )}
         </div>
       </div>
