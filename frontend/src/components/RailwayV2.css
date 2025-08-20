@@ -298,7 +298,18 @@
   -webkit-text-fill-color: transparent;
 }
 
-/* Floating Niv */
+/* Niv Assistant Positioning */
+.niv-strategic-advisor {
+  position: fixed !important;
+  right: 20px !important;
+  top: 80px !important;
+  bottom: 20px !important;
+  width: 400px !important;
+  max-width: 90vw !important;
+  z-index: 999 !important;
+}
+
+/* Floating Niv Toggle */
 .niv-floating {
   position: fixed;
   bottom: 32px;

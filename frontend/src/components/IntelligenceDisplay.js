@@ -19,6 +19,9 @@ const IntelligenceDisplay = ({ organizationId }) => {
       console.log('🎯 Fetching intelligence for Railway V2...');
       const intelligence = await claudeIntelligenceServiceV2.gatherAndAnalyze(config, timeframe, { forceRefresh: true });
       console.log('✅ Intelligence received:', intelligence);
+      console.log('🔍 Competitor data:', intelligence?.competitor);
+      console.log('🔍 Stakeholder data:', intelligence?.stakeholder);
+      console.log('🔍 Executive summary:', intelligence?.executive_summary);
       setIntelligenceData(intelligence);
     } catch (err) {
       console.error('❌ Intelligence fetch failed:', err);
@@ -36,6 +39,19 @@ const IntelligenceDisplay = ({ organizationId }) => {
 
   const renderCompetitorIntelligence = () => {
     const data = intelligenceData?.competitor || {};
+    
+    // Debug: Show raw data if no formatted movements
+    if (!data.key_movements || data.key_movements.length === 0) {
+      return (
+        <div className="intelligence-section">
+          <div className="debug-panel">
+            <h3>📊 Raw Competitor Intelligence Data</h3>
+            <pre>{JSON.stringify(data, null, 2)}</pre>
+          </div>
+        </div>
+      );
+    }
+    
     return (
       <div className="intelligence-section">
         <div className="intel-cards">
@@ -202,6 +218,22 @@ const IntelligenceDisplay = ({ organizationId }) => {
         return renderCompetitorIntelligence();
     }
   };
+
+  // Show raw data for debugging
+  if (intelligenceData && !intelligenceData.competitor?.key_movements?.length) {
+    return (
+      <div className="intelligence-display">
+        <div className="debug-panel">
+          <h3>🔍 Intelligence Data Structure (Debug View)</h3>
+          <p>Data is being fetched but may not be in expected format. Raw data:</p>
+          <pre>{JSON.stringify(intelligenceData, null, 2).substring(0, 2000)}...</pre>
+          <button onClick={fetchIntelligence} className="refresh-btn">
+            Refresh Data
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="intelligence-display">

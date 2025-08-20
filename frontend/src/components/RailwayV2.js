@@ -92,26 +92,6 @@ const RailwayV2 = () => {
             {renderModule()}
           </div>
         </div>
-
-        {/* Quick Stats Bar */}
-        <div className="stats-bar">
-          <div className="stat-item">
-            <span className="stat-label">Active Insights</span>
-            <span className="stat-value">24</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-label">Opportunities</span>
-            <span className="stat-value">7</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-label">Tasks</span>
-            <span className="stat-value">12</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-label">Score</span>
-            <span className="stat-value">94%</span>
-          </div>
-        </div>
       </main>
 
       {/* Niv Strategic Advisor */}
