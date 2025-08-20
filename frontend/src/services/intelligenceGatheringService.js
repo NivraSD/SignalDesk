@@ -89,6 +89,7 @@ class IntelligenceGatheringService {
           break;
           
         case 'intelligence':
+        case 'pr':  // Handle both 'intelligence' and 'pr' MCP types
           if (mcpData.insights) {
             insights.push(...mcpData.insights.map(i => ({
               stakeholder: stakeholderId === 'competitors' ? 'Competitors' : 'Industry Intelligence',
@@ -97,9 +98,10 @@ class IntelligenceGatheringService {
               insight: i.insight || 'Strategic intelligence available',
               relevance: i.relevance || 'medium',
               actionable: i.actionable !== false,
-              suggestedAction: i.action || 'Review and analyze implications',
-              source: 'Intelligence MCP',
-              timestamp: new Date().toISOString()
+              suggestedAction: i.suggestedAction || i.action || 'Review and analyze implications',
+              source: i.source || 'PR Intelligence MCP',
+              data: i.data,  // Include any additional data
+              timestamp: i.timestamp || new Date().toISOString()
             })));
           }
           break;
@@ -149,6 +151,57 @@ class IntelligenceGatheringService {
               source: 'Relationships MCP',
               timestamp: new Date().toISOString()
             });
+          }
+          break;
+          
+        case 'news':
+          // Handle news-intelligence Edge Function response
+          if (mcpData.industryNews || mcpData.breakingNews || mcpData.trends) {
+            // Add industry news
+            if (mcpData.industryNews) {
+              insights.push(...mcpData.industryNews.slice(0, 5).map(n => ({
+                stakeholder: 'News & Trends',
+                type: 'industry_news',
+                title: n.title,
+                insight: n.description || 'Industry news update',
+                relevance: n.relevance || 'medium',
+                actionable: true,
+                suggestedAction: 'Monitor for PR angles and opportunities',
+                source: n.source || 'News Intelligence',
+                url: n.url,
+                timestamp: n.publishedAt || new Date().toISOString()
+              })));
+            }
+            // Add breaking news
+            if (mcpData.breakingNews) {
+              insights.push(...mcpData.breakingNews.slice(0, 3).map(n => ({
+                stakeholder: 'Breaking News',
+                type: 'breaking_news',
+                title: n.title,
+                insight: n.description || 'Breaking news alert',
+                relevance: 'high',
+                actionable: true,
+                suggestedAction: 'Assess impact and prepare response if needed',
+                source: n.source || 'News Intelligence',
+                url: n.url,
+                timestamp: n.publishedAt || new Date().toISOString()
+              })));
+            }
+            // Add trending topics
+            if (mcpData.trends) {
+              insights.push(...mcpData.trends.slice(0, 3).map(t => ({
+                stakeholder: 'Trending Topics',
+                type: 'trend',
+                title: t.title,
+                insight: `${t.comments || 0} comments, ${t.score || 0} engagement`,
+                relevance: 'high',
+                actionable: true,
+                suggestedAction: 'Consider joining the conversation',
+                source: t.source || 'Social Media',
+                url: t.url,
+                timestamp: t.publishedAt || new Date().toISOString()
+              })));
+            }
           }
           break;
           
