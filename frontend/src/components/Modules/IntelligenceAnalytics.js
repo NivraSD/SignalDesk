@@ -314,6 +314,13 @@ const IntelligenceAnalytics = () => {
     const cascadeEffects = [];
     const vulnerabilities = [];
 
+    // Calculate share of voice for vulnerability assessment
+    const totalMentions = raw.competitiveIntel?.reduce((sum, c) => 
+      sum + (c.data?.mentions || 0), 0) || 0;
+    const ourMentions = raw.stakeholderInsights?.filter(i => 
+      i.insight?.includes(organizationData?.name)).length || 0;
+    const shareOfVoice = totalMentions > 0 ? Math.round((ourMentions / totalMentions) * 100) : 0;
+
     // Predict competitor moves
     if (raw.competitiveIntel?.length > 0) {
       predictions.push({
