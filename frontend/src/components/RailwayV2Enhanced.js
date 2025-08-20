@@ -6,12 +6,17 @@ import ExecutionModule from './Modules/ExecutionModule';
 import MemoryVaultModule from './Modules/MemoryVaultModule';
 import NivStrategicAdvisor from './Niv/NivStrategicAdvisor';
 import OrganizationSettings from './OrganizationSettings';
+import IntelligenceSettings from './IntelligenceSettings';
+import { IntelligenceIcon, OpportunityIcon, ExecutionIcon, MemoryIcon, RefreshIcon, SettingsIcon } from './Icons/NeonIcons';
 
 const RailwayV2Enhanced = () => {
   const [activeModule, setActiveModule] = useState('intelligence');
   const [organizationData, setOrganizationData] = useState(null);
   const [nivMinimized, setNivMinimized] = useState(false);
   const [showOrgSettings, setShowOrgSettings] = useState(false);
+  const [showIntelSettings, setShowIntelSettings] = useState(false);
+  const [timeframe, setTimeframe] = useState('24h');
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     // Get organization data
@@ -22,16 +27,20 @@ const RailwayV2Enhanced = () => {
   }, []);
 
   const modules = [
-    { id: 'intelligence', name: 'Intelligence', icon: '🎯', color: '#00ffcc' },
-    { id: 'opportunities', name: 'Opportunities', icon: '💎', color: '#ff00ff' },
-    { id: 'execution', name: 'Execution', icon: '🚀', color: '#00ff88' },
-    { id: 'memory', name: 'Memory', icon: '🧠', color: '#8800ff' }
+    { id: 'intelligence', name: 'Intelligence', Icon: IntelligenceIcon, color: '#00ffcc' },
+    { id: 'opportunities', name: 'Opportunities', Icon: OpportunityIcon, color: '#ff00ff' },
+    { id: 'execution', name: 'Execution', Icon: ExecutionIcon, color: '#00ff88' },
+    { id: 'memory', name: 'Memory', Icon: MemoryIcon, color: '#8800ff' }
   ];
 
   const renderModule = () => {
     switch(activeModule) {
       case 'intelligence':
-        return <IntelligenceDisplayV2 organizationId={organizationData?.id} />;
+        return <IntelligenceDisplayV2 
+          organizationId={organizationData?.id} 
+          timeframe={timeframe}
+          refreshTrigger={refreshKey}
+        />;
       case 'opportunities':
         return <OpportunityModule organizationId={organizationData?.id} />;
       case 'execution':
@@ -39,7 +48,11 @@ const RailwayV2Enhanced = () => {
       case 'memory':
         return <MemoryVaultModule organizationId={organizationData?.id} />;
       default:
-        return <IntelligenceDisplayV2 organizationId={organizationData?.id} />;
+        return <IntelligenceDisplayV2 
+          organizationId={organizationData?.id} 
+          timeframe={timeframe}
+          refreshTrigger={refreshKey}
+        />;
     }
   };
 
@@ -68,7 +81,9 @@ const RailwayV2Enhanced = () => {
                              module.id === 'execution' ? '0, 255, 136' : '136, 0, 255'
               }}
             >
-              <span className="nav-icon">{module.icon}</span>
+              <span className="nav-icon">
+                <module.Icon size={20} color={activeModule === module.id ? module.color : 'rgba(255,255,255,0.7)'} />
+              </span>
               <span className="nav-text">{module.name}</span>
               <div className="neon-glow"></div>
             </button>
@@ -95,15 +110,50 @@ const RailwayV2Enhanced = () => {
           <div className="module-container">
             <div className="module-header">
               <h2 className="module-title">
-                {modules.find(m => m.id === activeModule)?.icon} {' '}
+                <span className="module-icon">
+                  {modules.find(m => m.id === activeModule)?.Icon && 
+                    React.createElement(modules.find(m => m.id === activeModule).Icon, {
+                      size: 24,
+                      color: modules.find(m => m.id === activeModule)?.color
+                    })
+                  }
+                </span>
                 {modules.find(m => m.id === activeModule)?.name} Hub
               </h2>
               <div className="module-actions">
+                {activeModule === 'intelligence' && (
+                  <>
+                    <select 
+                      value={timeframe} 
+                      onChange={(e) => setTimeframe(e.target.value)}
+                      className="action-select timeframe"
+                    >
+                      <option value="24h">24 Hours</option>
+                      <option value="7d">7 Days</option>
+                      <option value="30d">30 Days</option>
+                    </select>
+                    <button 
+                      className="action-btn refresh"
+                      onClick={() => setRefreshKey(prev => prev + 1)}
+                      title="Refresh Intelligence"
+                    >
+                      <RefreshIcon size={16} color="#00ff88" />
+                      <span>Refresh</span>
+                    </button>
+                  </>
+                )}
                 <button 
                   className="action-btn settings"
-                  onClick={() => setShowOrgSettings(true)}
+                  onClick={() => {
+                    if (activeModule === 'intelligence') {
+                      setShowIntelSettings(true);
+                    } else {
+                      setShowOrgSettings(true);
+                    }
+                  }}
                 >
-                  ⚙ Settings
+                  <SettingsIcon size={16} color="#00ffcc" />
+                  <span>Settings</span>
                 </button>
               </div>
             </div>
@@ -148,6 +198,17 @@ const RailwayV2Enhanced = () => {
             setOrganizationData(org);
             // Reload the page to refresh with new organization
             window.location.reload();
+          }}
+        />
+      )}
+
+      {/* Intelligence Settings Modal */}
+      {showIntelSettings && (
+        <IntelligenceSettings
+          onClose={() => setShowIntelSettings(false)}
+          onSave={(config) => {
+            setShowIntelSettings(false);
+            // Configuration is saved to localStorage, page will reload
           }}
         />
       )}

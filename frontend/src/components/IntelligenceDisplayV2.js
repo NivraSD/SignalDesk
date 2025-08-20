@@ -1,22 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import './IntelligenceDisplay.css';
 import claudeIntelligenceServiceV2 from '../services/claudeIntelligenceServiceV2';
+import { CompetitorIcon, StakeholderIcon, MediaIcon, PredictiveIcon, RocketIcon, ScanIcon, AnalyzeIcon, SynthesizeIcon } from './Icons/NeonIcons';
 
-const IntelligenceDisplayV2 = ({ organizationId }) => {
+const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigger = 0 }) => {
   const [loading, setLoading] = useState(false);
   const [intelligenceData, setIntelligenceData] = useState(null);
   const [activeTab, setActiveTab] = useState('competitor');
-  const [timeframe, setTimeframe] = useState('24h');
+  const [loadingStage, setLoadingStage] = useState('');
 
   useEffect(() => {
     fetchIntelligence();
-  }, [timeframe]);
+  }, [timeframe, refreshTrigger]);
 
   const fetchIntelligence = async () => {
     setLoading(true);
+    setLoadingStage('initializing');
+    
     try {
       const config = JSON.parse(localStorage.getItem('signaldesk_onboarding') || '{}');
       console.log('🎯 Fetching PR intelligence...');
+      
+      // Simulate loading stages for better UX
+      setTimeout(() => setLoadingStage('scanning'), 1000);
+      setTimeout(() => setLoadingStage('analyzing'), 3000);
+      setTimeout(() => setLoadingStage('synthesizing'), 5000);
+      
       const intelligence = await claudeIntelligenceServiceV2.gatherAndAnalyze(config, timeframe, { forceRefresh: true });
       console.log('✅ Intelligence received:', intelligence);
       setIntelligenceData(intelligence);
@@ -24,14 +33,15 @@ const IntelligenceDisplayV2 = ({ organizationId }) => {
       console.error('❌ Intelligence fetch failed:', err);
     } finally {
       setLoading(false);
+      setLoadingStage('');
     }
   };
 
   const tabs = [
-    { id: 'competitor', name: 'Competitive PR', icon: '⚔️', color: '#ff00ff' },
-    { id: 'stakeholder', name: 'Stakeholder Relations', icon: '👥', color: '#00ffcc' },
-    { id: 'narrative', name: 'Media Narrative', icon: '📰', color: '#00ff88' },
-    { id: 'predictive', name: 'PR Predictions', icon: '🔮', color: '#8800ff' }
+    { id: 'competitor', name: 'Competitive PR', Icon: CompetitorIcon, color: '#ff00ff' },
+    { id: 'stakeholder', name: 'Stakeholder Relations', Icon: StakeholderIcon, color: '#00ffcc' },
+    { id: 'narrative', name: 'Media Narrative', Icon: MediaIcon, color: '#00ff88' },
+    { id: 'predictive', name: 'PR Predictions', Icon: PredictiveIcon, color: '#8800ff' }
   ];
 
   const renderAnalysis = (analysisData, type) => {
@@ -181,37 +191,86 @@ const IntelligenceDisplayV2 = ({ organizationId }) => {
               onClick={() => setActiveTab(tab.id)}
               style={{ '--tab-color': tab.color }}
             >
-              <span className="tab-icon">{tab.icon}</span>
+              <span className="tab-icon">
+                <tab.Icon size={18} color={activeTab === tab.id ? tab.color : 'rgba(255,255,255,0.6)'} />
+              </span>
               <span className="tab-name">{tab.name}</span>
             </button>
           ))}
-        </div>
-        
-        <div className="intel-controls">
-          <div className="timeframe-selector">
-            <select 
-              value={timeframe} 
-              onChange={(e) => setTimeframe(e.target.value)}
-              className="timeframe-select"
-            >
-              <option value="24h">24 Hours</option>
-              <option value="7d">7 Days</option>
-              <option value="30d">30 Days</option>
-            </select>
-          </div>
-          <button onClick={fetchIntelligence} className="refresh-btn" disabled={loading}>
-            {loading ? '⌛' : '🔄'} Refresh
-          </button>
         </div>
       </div>
 
       {/* Content Area */}
       <div className="intel-content">
         {loading ? (
-          <div className="loading-state">
-            <div className="loading-spinner"></div>
-            <p>Synthesizing PR intelligence from multiple sources...</p>
-            <p className="loading-sub">This may take 30-60 seconds for comprehensive analysis</p>
+          <div className="loading-state enhanced">
+            <div className="loading-stages">
+              <div className={`loading-stage ${loadingStage === 'initializing' ? 'active' : loadingStage && loadingStage !== 'initializing' ? 'completed' : ''}`}>
+                <div className="stage-icon">
+                  <RocketIcon size={32} color={loadingStage === 'initializing' ? '#00ff88' : 'rgba(255,255,255,0.4)'} />
+                </div>
+                <div className="stage-content">
+                  <h4>Initializing Intelligence Engine</h4>
+                  <p>Connecting to data sources...</p>
+                </div>
+                <div className="stage-progress">
+                  <div className="progress-bar">
+                    <div className={`progress-fill ${loadingStage === 'initializing' ? 'animating' : loadingStage && loadingStage !== 'initializing' ? 'complete' : ''}`}></div>
+                  </div>
+                </div>
+              </div>
+
+              <div className={`loading-stage ${loadingStage === 'scanning' ? 'active' : ['analyzing', 'synthesizing'].includes(loadingStage) ? 'completed' : ''}`}>
+                <div className="stage-icon">
+                  <ScanIcon size={32} color={loadingStage === 'scanning' ? '#00ffcc' : ['analyzing', 'synthesizing'].includes(loadingStage) ? '#00ff88' : 'rgba(255,255,255,0.4)'} />
+                </div>
+                <div className="stage-content">
+                  <h4>Scanning Media Landscape</h4>
+                  <p>Analyzing competitors, news, and social signals...</p>
+                </div>
+                <div className="stage-progress">
+                  <div className="progress-bar">
+                    <div className={`progress-fill ${loadingStage === 'scanning' ? 'animating' : ['analyzing', 'synthesizing'].includes(loadingStage) ? 'complete' : ''}`}></div>
+                  </div>
+                </div>
+              </div>
+
+              <div className={`loading-stage ${loadingStage === 'analyzing' ? 'active' : loadingStage === 'synthesizing' ? 'completed' : ''}`}>
+                <div className="stage-icon">
+                  <AnalyzeIcon size={32} color={loadingStage === 'analyzing' ? '#00ff88' : loadingStage === 'synthesizing' ? '#00ff88' : 'rgba(255,255,255,0.4)'} />
+                </div>
+                <div className="stage-content">
+                  <h4>Analyzing PR Opportunities</h4>
+                  <p>Identifying trends and strategic insights...</p>
+                </div>
+                <div className="stage-progress">
+                  <div className="progress-bar">
+                    <div className={`progress-fill ${loadingStage === 'analyzing' ? 'animating' : loadingStage === 'synthesizing' ? 'complete' : ''}`}></div>
+                  </div>
+                </div>
+              </div>
+
+              <div className={`loading-stage ${loadingStage === 'synthesizing' ? 'active' : ''}`}>
+                <div className="stage-icon">
+                  <SynthesizeIcon size={32} color={loadingStage === 'synthesizing' ? '#8800ff' : 'rgba(255,255,255,0.4)'} />
+                </div>
+                <div className="stage-content">
+                  <h4>Synthesizing Intelligence Report</h4>
+                  <p>Generating actionable recommendations...</p>
+                </div>
+                <div className="stage-progress">
+                  <div className="progress-bar">
+                    <div className={`progress-fill ${loadingStage === 'synthesizing' ? 'animating' : ''}`}></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="loading-footer">
+              <div className="pulse-animation"></div>
+              <p className="loading-message">Building comprehensive PR intelligence report</p>
+              <p className="loading-sub">Analysis typically completes in 30-60 seconds</p>
+            </div>
           </div>
         ) : intelligenceData ? (
           renderContent()

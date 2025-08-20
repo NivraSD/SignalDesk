@@ -11,6 +11,17 @@
   overflow: hidden; /* Prevent page scrolling */
 }
 
+/* Global Typography */
+.railway-v2 h1, .railway-v2 h2, .railway-v2 h3, .railway-v2 h4 {
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.railway-v2 code, .railway-v2 .mono {
+  font-family: 'JetBrains Mono', 'Monaco', monospace;
+}
+
 /* Fixed Header */
 .railway-header {
   display: flex;
@@ -34,12 +45,32 @@
 }
 
 .logo-text {
-  font-size: 24px;
-  font-weight: 800;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 26px;
+  font-weight: 700;
   background: linear-gradient(135deg, #00ffcc, #00ff88);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  letter-spacing: 2px;
+  letter-spacing: -0.5px;
+  text-transform: uppercase;
+  position: relative;
+}
+
+.logo-text::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #00ffcc, transparent);
+  opacity: 0.5;
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0%, 100% { transform: translateX(-100%); }
+  50% { transform: translateX(100%); }
 }
 
 .logo-version {
@@ -91,11 +122,22 @@
 
 .nav-icon {
   font-size: 20px;
+  position: relative;
+  display: inline-block;
+  filter: saturate(0) brightness(1.5);
+  transition: filter 0.3s ease;
+}
+
+.nav-button.active .nav-icon,
+.nav-button:hover .nav-icon {
+  filter: saturate(1) brightness(1.2) drop-shadow(0 0 8px currentColor);
 }
 
 .nav-text {
-  font-weight: 600;
-  letter-spacing: 0.5px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  font-size: 14px;
 }
 
 .neon-glow {
@@ -179,33 +221,99 @@
 
 /* Module Title */
 .module-title {
-  font-size: 20px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 22px;
   font-weight: 600;
   color: #ffffff;
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.module-icon {
+  display: inline-flex;
+  align-items: center;
+  filter: drop-shadow(0 0 10px currentColor);
 }
 
 /* Module Actions */
 .module-actions {
   display: flex;
   gap: 12px;
+  align-items: center;
 }
 
 .action-btn {
-  padding: 8px 16px;
+  padding: 10px 16px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
+  border-radius: 8px;
   color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 14px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
 }
 
 .action-btn:hover {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.3);
   color: #ffffff;
+}
+
+/* Refresh Button */
+.action-btn.refresh {
+  background: rgba(0, 255, 136, 0.1);
+  border-color: rgba(0, 255, 136, 0.3);
+  color: #00ff88;
+}
+
+.action-btn.refresh:hover {
+  background: rgba(0, 255, 136, 0.2);
+  border-color: #00ff88;
+  box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+}
+
+/* Settings Button */
+.action-btn.settings {
+  background: rgba(0, 255, 204, 0.1);
+  border-color: rgba(0, 255, 204, 0.3);
+  color: #00ffcc;
+}
+
+.action-btn.settings:hover {
+  background: rgba(0, 255, 204, 0.2);
+  border-color: #00ffcc;
+  box-shadow: 0 0 15px rgba(0, 255, 204, 0.3);
+}
+
+/* Timeframe Select */
+.action-select {
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 14px;
+  height: 38px;
+  transition: all 0.2s ease;
+}
+
+.action-select:hover {
+  background: rgba(0, 0, 0, 0.5);
+  border-color: rgba(0, 255, 204, 0.3);
+}
+
+.action-select:focus {
+  outline: none;
+  border-color: #00ffcc;
+  box-shadow: 0 0 0 2px rgba(0, 255, 204, 0.1);
 }
 
 /* Main Layout Container */
