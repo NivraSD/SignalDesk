@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import './IntelligenceCommand.css';
-import intelligenceGatheringService from '../../services/intelligenceGatheringService';
+import './IntelligenceAnalytics.css';
+import claudeIntelligenceServiceV2 from '../../services/claudeIntelligenceServiceV2';
 
 const IntelligenceAnalytics = () => {
   const [activeView, setActiveView] = useState('competitors');
@@ -27,17 +27,35 @@ const IntelligenceAnalytics = () => {
     try {
       const config = JSON.parse(localStorage.getItem('signaldesk_onboarding') || '{}');
       
-      // Gather intelligence with 24-hour lookback
-      const intelligence = await intelligenceGatheringService.gatherIntelligence({
-        ...config,
-        timeframe: timeframe,
-        lookback: timeframe === '24h' ? 24 : timeframe === '7d' ? 168 : 720
+      // Use Claude Intelligence Service V2 with specialized personas
+      const synthesizedIntelligence = await claudeIntelligenceServiceV2.gatherAndAnalyze(config, timeframe, {
+        forceRefresh: false // Use cache when available
       });
       
-      // Process into analytical insights
-      const analysis = await analyzeIntelligence(intelligence, config);
+      // Transform Claude's analysis into our view structure
+      const analysis = {
+        competitors: synthesizedIntelligence.competitor || analyzeCompetitorMovements(synthesizedIntelligence.raw_mcp_data),
+        stakeholders: synthesizedIntelligence.stakeholder || analyzeStakeholderActivity(synthesizedIntelligence.raw_mcp_data, config),
+        narrative: synthesizedIntelligence.narrative || analyzeNarrativeMarket(synthesizedIntelligence.raw_mcp_data),
+        campaigns: analyzeCampaignPerformance(synthesizedIntelligence.raw_mcp_data),
+        predictive: synthesizedIntelligence.predictive || generatePredictiveInsights(synthesizedIntelligence.raw_mcp_data),
+        executive_summary: synthesizedIntelligence.executive_summary
+      };
+      
       setIntelligenceData(analysis);
       setLastAnalysis(new Date());
+    } catch (error) {
+      console.error('Intelligence analysis failed:', error);
+      // Fallback to basic analysis if Claude fails
+      const config = JSON.parse(localStorage.getItem('signaldesk_onboarding') || '{}');
+      const fallbackData = {
+        competitors: analyzeCompetitorMovements({}),
+        stakeholders: analyzeStakeholderActivity({}, config),
+        narrative: analyzeNarrativeMarket({}),
+        campaigns: analyzeCampaignPerformance({}),
+        predictive: generatePredictiveInsights({})
+      };
+      setIntelligenceData(fallbackData);
     } finally {
       setLoading(false);
     }
