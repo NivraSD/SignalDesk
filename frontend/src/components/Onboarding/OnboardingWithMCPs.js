@@ -27,7 +27,10 @@ const OnboardingWithMCPs = () => {
 
   const industries = [
     'Technology', 'Healthcare', 'Finance', 'Retail', 'Manufacturing',
-    'Education', 'Media', 'Energy', 'Transportation', 'Real Estate'
+    'Education', 'Media', 'Energy', 'Transportation', 'Real Estate',
+    'Biotechnology', 'Pharmaceuticals', 'Telecommunications', 'Aerospace',
+    'Agriculture', 'Automotive', 'Construction', 'Food & Beverage',
+    'Insurance', 'Legal', 'Logistics', 'Mining', 'Sports & Entertainment'
   ];
 
   const organizationSizes = [
@@ -43,18 +46,30 @@ const OnboardingWithMCPs = () => {
     { key: 'competitive_positioning', label: 'Competitive Positioning', icon: '🏆' },
     { key: 'investor_relations', label: 'Investor Relations', icon: '💰' },
     { key: 'market_expansion', label: 'Market Expansion', icon: '🌍' },
-    { key: 'crisis_preparedness', label: 'Crisis Preparedness', icon: '🛡️' }
+    { key: 'crisis_preparedness', label: 'Crisis Preparedness', icon: '🛡️' },
+    { key: 'brand_building', label: 'Brand Building', icon: '🎨' },
+    { key: 'customer_acquisition', label: 'Customer Acquisition', icon: '🎯' },
+    { key: 'talent_acquisition', label: 'Talent Acquisition', icon: '👥' },
+    { key: 'product_launch', label: 'Product Launch', icon: '🚀' },
+    { key: 'regulatory_compliance', label: 'Regulatory Compliance', icon: '⚖️' },
+    { key: 'social_impact', label: 'Social Impact & ESG', icon: '🌱' }
   ];
 
   const stakeholderOptions = [
-    { id: 'tech_journalists', name: 'Tech Media', icon: '📰', description: 'Monitor journalist queries and media opportunities' },
+    { id: 'media', name: 'Media & Journalists', icon: '📰', description: 'Monitor journalist queries and media opportunities' },
     { id: 'industry_analysts', name: 'Industry Analysts', icon: '📊', description: 'Track analyst reports and market insights' },
-    { id: 'investors', name: 'VC Community', icon: '💰', description: 'Follow investment trends and opportunities' },
-    { id: 'customers', name: 'Customer Base', icon: '👥', description: 'Analyze customer sentiment and feedback' },
-    { id: 'partners', name: 'Partner Network', icon: '🤝', description: 'Identify partnership opportunities' },
+    { id: 'investors', name: 'Investors & VCs', icon: '💰', description: 'Follow investment trends and opportunities' },
+    { id: 'customers', name: 'Customers', icon: '👥', description: 'Analyze customer sentiment and feedback' },
+    { id: 'partners', name: 'Partners', icon: '🤝', description: 'Identify partnership opportunities' },
     { id: 'competitors', name: 'Competitors', icon: '🎯', description: 'Monitor competitive landscape' },
-    { id: 'regulators', name: 'Regulatory Bodies', icon: '⚖️', description: 'Track compliance and regulations' },
-    { id: 'influencers', name: 'Industry Influencers', icon: '⭐', description: 'Follow thought leaders and trends' }
+    { id: 'regulators', name: 'Regulators', icon: '⚖️', description: 'Track compliance and regulations' },
+    { id: 'influencers', name: 'Influencers', icon: '⭐', description: 'Follow thought leaders and trends' },
+    { id: 'employees', name: 'Employees', icon: '👔', description: 'Internal communications and culture' },
+    { id: 'board', name: 'Board & Executives', icon: '🏛️', description: 'Executive and board communications' },
+    { id: 'suppliers', name: 'Suppliers & Vendors', icon: '📦', description: 'Supply chain relationships' },
+    { id: 'community', name: 'Local Community', icon: '🏘️', description: 'Community relations and impact' },
+    { id: 'activists', name: 'Activists & NGOs', icon: '📢', description: 'Social and environmental groups' },
+    { id: 'academics', name: 'Academic Institutions', icon: '🎓', description: 'Research partnerships and talent' }
   ];
 
   const mcpServices = [
@@ -202,6 +217,7 @@ const OnboardingWithMCPs = () => {
 
   const callMCPService = async (serviceId, config) => {
     const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co';
+    const SUPABASE_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
     
     try {
       // Call Edge Function directly (no mcp-bridge)
@@ -209,7 +225,8 @@ const OnboardingWithMCPs = () => {
       const response = await fetch(`${SUPABASE_URL}/functions/v1/${mcpName}-intelligence`, {
         method: 'POST',
         headers: { 
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_KEY}`
         },
         body: JSON.stringify({
           method: getMCPMethod(serviceId),
@@ -462,17 +479,40 @@ const OnboardingWithMCPs = () => {
             <div className="form-group">
               <label>Industry *</label>
               <select
-                value={formData.organization.industry}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  organization: { ...formData.organization, industry: e.target.value }
-                })}
+                value={formData.organization.industry === 'other' || !industries.map(i => i.toLowerCase()).includes(formData.organization.industry) ? 'other' : formData.organization.industry}
+                onChange={(e) => {
+                  if (e.target.value === 'other') {
+                    setFormData({
+                      ...formData,
+                      organization: { ...formData.organization, industry: 'other', customIndustry: '' }
+                    });
+                  } else {
+                    setFormData({
+                      ...formData,
+                      organization: { ...formData.organization, industry: e.target.value, customIndustry: undefined }
+                    });
+                  }
+                }}
               >
                 <option value="">Select Industry</option>
                 {industries.map(ind => (
                   <option key={ind} value={ind.toLowerCase()}>{ind}</option>
                 ))}
+                <option value="other">Other (specify below)</option>
               </select>
+              {(formData.organization.industry === 'other' || (!industries.map(i => i.toLowerCase()).includes(formData.organization.industry) && formData.organization.industry)) && (
+                <input
+                  type="text"
+                  placeholder="Enter your industry"
+                  className="custom-industry-input"
+                  style={{ marginTop: '10px' }}
+                  value={formData.organization.customIndustry || formData.organization.industry}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    organization: { ...formData.organization, industry: e.target.value, customIndustry: e.target.value }
+                  })}
+                />
+              )}
             </div>
             <div className="form-group">
               <label>Organization Size *</label>
