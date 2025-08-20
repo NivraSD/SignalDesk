@@ -1,0 +1,494 @@
+/* RailwayV2 Enhanced CSS - Fixed Layout with Proper Scrolling */
+
+.railway-v2 {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #0a0a0f 0%, #1a0033 50%, #000515 100%);
+  color: #ffffff;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  position: relative;
+  overflow: hidden; /* Prevent page scrolling */
+}
+
+/* Fixed Header */
+.railway-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 40px;
+  background: rgba(10, 10, 15, 0.95);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0, 255, 204, 0.2);
+  position: relative;
+  z-index: 1000;
+  flex-shrink: 0;
+  height: 80px;
+}
+
+/* Logo */
+.railway-logo {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.logo-text {
+  font-size: 24px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #00ffcc, #00ff88);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: 2px;
+}
+
+.logo-version {
+  font-size: 12px;
+  padding: 2px 8px;
+  background: rgba(0, 255, 136, 0.2);
+  border: 1px solid #00ff88;
+  border-radius: 4px;
+  color: #00ff88;
+}
+
+/* Navigation */
+.railway-nav {
+  display: flex;
+  gap: 16px;
+}
+
+.nav-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.nav-button.active {
+  background: linear-gradient(135deg, 
+    rgba(var(--neon-rgb, 0, 255, 204), 0.2),
+    rgba(var(--neon-rgb, 0, 255, 204), 0.1));
+  border-color: var(--neon-color, #00ffcc);
+  color: #ffffff;
+  box-shadow: 
+    inset 0 0 20px rgba(var(--neon-rgb, 0, 255, 204), 0.2),
+    0 0 30px var(--neon-color, #00ffcc);
+}
+
+.nav-button:hover {
+  transform: translateY(-2px);
+  border-color: var(--neon-color, #00ffcc);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2), 0 0 20px var(--neon-color, #00ffcc);
+}
+
+.nav-icon {
+  font-size: 20px;
+}
+
+.nav-text {
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.neon-glow {
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: var(--neon-color, #00ffcc);
+  border-radius: 8px;
+  opacity: 0;
+  filter: blur(10px);
+  z-index: -1;
+  transition: opacity 0.3s ease;
+}
+
+.nav-button.active .neon-glow {
+  opacity: 0.4;
+}
+
+/* Status */
+.railway-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  background: rgba(0, 255, 136, 0.1);
+  border: 1px solid rgba(0, 255, 136, 0.3);
+  border-radius: 20px;
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #00ff88;
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
+@keyframes statusPulse {
+  0%, 100% { 
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7);
+  }
+  50% { 
+    opacity: 0.7;
+    box-shadow: 0 0 0 10px rgba(0, 255, 136, 0);
+  }
+}
+
+/* Module Title */
+.module-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+}
+
+/* Module Actions */
+.module-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.action-btn {
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.action-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+}
+
+/* Main Layout Container */
+.railway-body {
+  flex: 1;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+  height: calc(100vh - 80px); /* Full height minus header */
+}
+
+/* Main Content Area */
+.railway-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 30px;
+  margin-right: 400px; /* Space for Niv panel */
+  overflow: hidden;
+}
+
+.railway-content.niv-collapsed {
+  margin-right: 0; /* Full width when Niv is minimized */
+}
+
+/* Module Container with Internal Scrolling */
+.module-container {
+  background: rgba(20, 20, 30, 0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 255, 204, 0.1);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.module-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(0, 255, 204, 0.1);
+  flex-shrink: 0;
+  background: rgba(10, 10, 15, 0.3);
+}
+
+.module-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px;
+}
+
+/* Custom Scrollbar for Module Content */
+.module-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.module-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.module-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 204, 0.3);
+  border-radius: 4px;
+}
+
+.module-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 204, 0.5);
+}
+
+/* Niv Panel - Fixed Right Side */
+.niv-panel {
+  position: fixed;
+  right: 0;
+  top: 80px; /* Start below header */
+  bottom: 0;
+  width: 400px;
+  background: rgba(15, 15, 25, 0.95);
+  backdrop-filter: blur(20px);
+  border-left: 1px solid rgba(136, 0, 255, 0.3);
+  display: flex;
+  flex-direction: column;
+  z-index: 900;
+  transition: transform 0.3s ease;
+}
+
+.niv-panel.minimized {
+  transform: translateX(360px); /* Show only 40px */
+}
+
+/* Niv Panel Header with Minimize */
+.niv-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: rgba(136, 0, 255, 0.1);
+  border-bottom: 1px solid rgba(136, 0, 255, 0.2);
+  flex-shrink: 0;
+}
+
+.niv-minimize-btn {
+  background: transparent;
+  border: 1px solid rgba(136, 0, 255, 0.3);
+  color: #8800ff;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.niv-minimize-btn:hover {
+  background: rgba(136, 0, 255, 0.2);
+  border-color: #8800ff;
+}
+
+/* Niv Panel Content */
+.niv-panel-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px;
+}
+
+/* Niv Scrollbar */
+.niv-panel-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.niv-panel-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.niv-panel-content::-webkit-scrollbar-thumb {
+  background: rgba(136, 0, 255, 0.3);
+  border-radius: 3px;
+}
+
+/* Intelligence Display V2 Specific */
+.intelligence-v2 {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.intelligence-v2 .intel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid rgba(0, 255, 136, 0.1);
+  flex-shrink: 0;
+}
+
+/* Fixed Tab and Control Alignment */
+.intelligence-v2 .intel-tabs {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex: 1;
+}
+
+.intelligence-v2 .intel-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.intelligence-v2 .intel-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.intelligence-v2 .intel-tab.active {
+  background: linear-gradient(135deg, 
+    rgba(var(--tab-rgb, 0, 255, 204), 0.2),
+    rgba(var(--tab-rgb, 0, 255, 204), 0.1));
+  border-color: var(--tab-color, #00ffcc);
+  color: #ffffff;
+  box-shadow: 0 0 20px var(--tab-color, #00ffcc);
+}
+
+/* Time Selector and Refresh on Same Plane */
+.intelligence-v2 .timeframe-selector {
+  position: relative;
+}
+
+.intelligence-v2 .timeframe-select {
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.intelligence-v2 .refresh-btn {
+  padding: 8px 12px;
+  background: rgba(0, 255, 136, 0.1);
+  border: 1px solid rgba(0, 255, 136, 0.3);
+  border-radius: 6px;
+  color: #00ff88;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.intelligence-v2 .refresh-btn:hover {
+  background: rgba(0, 255, 136, 0.2);
+  border-color: #00ff88;
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+}
+
+.intelligence-v2 .refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Intelligence Content Scrollable */
+.intelligence-v2 .intel-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 10px;
+}
+
+/* Executive Summary */
+.intelligence-v2 .executive-summary {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 2px solid rgba(0, 255, 136, 0.2);
+}
+
+/* Loading State */
+.intelligence-v2 .loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid rgba(0, 255, 204, 0.2);
+  border-top-color: #00ffcc;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 1400px) {
+  .niv-panel {
+    width: 350px;
+  }
+  
+  .railway-content {
+    margin-right: 350px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .niv-panel {
+    width: 300px;
+  }
+  
+  .railway-content {
+    margin-right: 300px;
+  }
+}
+
+/* Animated Background */
+.railway-bg-animation {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  opacity: 0.4;
+  background-image: 
+    radial-gradient(circle at 20% 80%, rgba(0, 255, 204, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 0, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(136, 0, 255, 0.1) 0%, transparent 50%);
+  animation: bgPulse 20s ease-in-out infinite;
+  z-index: 0;
+}
+
+@keyframes bgPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.6; }
+}

@@ -38,7 +38,7 @@ import NivDatabase from "./pages/NivDatabase"; // Database-driven Niv (no realti
 import NivDirect from "./pages/NivDirect"; // Direct API integration - most reliable
 
 // New Railway V2 with Neon Effects
-import RailwayV2 from "./components/RailwayV2";
+import RailwayV2Enhanced from "./components/RailwayV2Enhanced";
 import SystemInitializer from "./components/SystemInitializer";
 
 // Log Supabase initialization for debugging
@@ -99,7 +99,7 @@ function App() {
                 path="/*"
                 element={
                   <PrivateRoute>
-                    <RailwayV2 />
+                    <RailwayV2Enhanced />
                   </PrivateRoute>
                 }
               />
