@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import './RailwayV2.css';
-import IntelligenceHub from './Modules/IntelligenceHub';
+import IntelligenceDisplay from './IntelligenceDisplay';
 import OpportunityModule from './Modules/OpportunityModule';
 import ExecutionModule from './Modules/ExecutionModule';
 import MemoryVaultModule from './Modules/MemoryVaultModule';
+import NivStrategicAdvisor from './Niv/NivStrategicAdvisor';
 
 const RailwayV2 = () => {
   const [activeModule, setActiveModule] = useState('intelligence');
   const [organizationData, setOrganizationData] = useState(null);
+  const [showNiv, setShowNiv] = useState(true);
 
   useEffect(() => {
     // Get organization data
@@ -27,7 +29,7 @@ const RailwayV2 = () => {
   const renderModule = () => {
     switch(activeModule) {
       case 'intelligence':
-        return <IntelligenceHub organizationId={organizationData?.id} />;
+        return <IntelligenceDisplay organizationId={organizationData?.id} />;
       case 'opportunities':
         return <OpportunityModule organizationId={organizationData?.id} />;
       case 'execution':
@@ -35,7 +37,7 @@ const RailwayV2 = () => {
       case 'memory':
         return <MemoryVaultModule organizationId={organizationData?.id} />;
       default:
-        return <IntelligenceHub organizationId={organizationData?.id} />;
+        return <IntelligenceDisplay organizationId={organizationData?.id} />;
     }
   };
 
@@ -112,13 +114,23 @@ const RailwayV2 = () => {
         </div>
       </main>
 
-      {/* Floating Niv Assistant */}
-      <div className="niv-floating">
-        <button className="niv-trigger">
-          <span className="niv-icon">🤖</span>
-          <span className="niv-pulse"></span>
-        </button>
-      </div>
+      {/* Niv Strategic Advisor */}
+      {showNiv && (
+        <NivStrategicAdvisor 
+          organizationId={organizationData?.id}
+          onClose={() => setShowNiv(false)}
+        />
+      )}
+      
+      {/* Niv Toggle Button */}
+      {!showNiv && (
+        <div className="niv-floating">
+          <button className="niv-trigger" onClick={() => setShowNiv(true)}>
+            <span className="niv-icon">🤖</span>
+            <span className="niv-pulse"></span>
+          </button>
+        </div>
+      )}
     </div>
   );
 };
