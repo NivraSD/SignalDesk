@@ -37,8 +37,8 @@ import NivRealtime from "./pages/NivRealtime"; // Realtime artifact system
 import NivDatabase from "./pages/NivDatabase"; // Database-driven Niv (no realtime needed)
 import NivDirect from "./pages/NivDirect"; // Direct API integration - most reliable
 
-// New Four-Module Layout
-import FourModuleLayout from "./components/RailwayUI/FourModuleLayout";
+// New Railway V2 with Neon Effects
+import RailwayV2 from "./components/RailwayV2";
 import SystemInitializer from "./components/SystemInitializer";
 
 // Log Supabase initialization for debugging
@@ -81,23 +81,17 @@ function PrivateRoute({ children }) {
 // AppRoutes function removed - using FourModuleLayout instead
 
 function App() {
-  // Using FourModuleLayout V2 with Intelligence Hub
-  console.log("🚀🚀🚀 FOUR MODULE LAYOUT V2 - DEPLOYED:", new Date().toISOString());
-  console.log("✅ IntelligenceHub, OpportunityModule, ExecutionModule, MemoryVault");
-  
-  // Check localStorage to debug
-  const orgData = localStorage.getItem('signaldesk_organization');
-  console.log("📊 Organization data exists:", !!orgData);
-  if (orgData) {
-    console.log("📊 Organization:", JSON.parse(orgData).name);
-  }
+  // BRAND NEW RailwayV2 with Neon Effects and Intelligence
+  console.log("⚡⚡⚡ RAILWAY V2 NEON INTERFACE - DEPLOYED:", new Date().toISOString());
+  console.log("🎯 Modern Railway design with neon buttons");
+  console.log("💎 Intelligence Hub with practical insights");
   
   return (
     <BrowserRouter>
       <AuthProvider>
         <ProjectProvider>
           <IntelligenceProvider>
-            {/* Four Module Layout with Intelligence Hub */}
+            {/* RailwayV2 - Modern Neon Interface */}
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/initialize" element={<SystemInitializer />} />
@@ -105,7 +99,7 @@ function App() {
                 path="/*"
                 element={
                   <PrivateRoute>
-                    <FourModuleLayout />
+                    <RailwayV2 />
                   </PrivateRoute>
                 }
               />
@@ -118,4 +112,4 @@ function App() {
 }
 
 export default App;
-// CACHE BUST: Railway Draggable UI with Neon Effects - 2025-08-20T14:31:00Z
+// CACHE BUST: RailwayV2 Neon Interface - 2025-08-20T15:00:00Z
