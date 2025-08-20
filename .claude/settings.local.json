@@ -227,7 +227,8 @@
       "Bash(PGPASSWORD=your_postgres_password_here node scripts/populate-intelligence-indexes.js)",
       "Bash(/dev/null)",
       "Bash(./test-claude-api.sh:*)",
-      "Bash(do if grep -q \"claude-3\" \"$file\")"
+      "Bash(do if grep -q \"claude-3\" \"$file\")",
+      "WebFetch(domain:signaldesk-8hvuat0fo-nivra-sd.vercel.app)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",
