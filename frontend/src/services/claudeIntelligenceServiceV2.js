@@ -269,7 +269,12 @@ class ClaudeIntelligenceServiceV2 {
             console.log(`📝 ${intelligenceType} analyzed by:`, data.personas_used.join(', '));
           }
           return data.analysis;
+        } else {
+          console.log(`⚠️ Claude V2 returned success=false for ${intelligenceType}:`, data.error);
         }
+      } else {
+        const errorText = await response.text();
+        console.error(`❌ Claude V2 HTTP error for ${intelligenceType} (${response.status}):`, errorText);
       }
       return null;
     } catch (error) {
