@@ -40,14 +40,14 @@ const SmartOnboarding = ({ onComplete }) => {
       keywords: []
     },
     
-    // Step 4: Key Stakeholders (SELECTION - Pre-mapped by industry)
+    // Step 4: Key Stakeholders (BROAD GROUPS - not specific names)
     stakeholders: {
+      competitors: [],
       media: [],
       influencers: [],
       regulators: [],
       investors: [],
-      communities: [],
-      partners: []
+      customers: []
     },
     
     // Step 5: Response Configuration
@@ -149,33 +149,93 @@ const SmartOnboarding = ({ onComplete }) => {
     'Human Resources', 'Other'
   ];
 
-  // Pre-mapped stakeholders by industry category
-  const stakeholdersByIndustry = {
-    'Technology': {
-      media: ['TechCrunch', 'The Verge', 'Wired', 'Ars Technica', 'VentureBeat', 'The Information', 'Protocol', 'Recode'],
-      influencers: ['Benedict Evans', 'Mary Meeker', 'Ben Thompson', 'Kara Swisher', 'Casey Newton'],
-      regulators: ['FTC', 'FCC', 'EU Commission', 'DOJ Antitrust', 'State Privacy Boards'],
-      investors: ['Sequoia Capital', 'Andreessen Horowitz', 'Benchmark', 'Accel', 'Y Combinator']
+  // Broad stakeholder groups (not specific names)
+  const stakeholderGroups = [
+    {
+      category: 'competitors',
+      label: 'Competitors',
+      Icon: CompetitorIcon,
+      color: '#ff00ff',
+      options: [
+        'Direct Competitors',
+        'Indirect Competitors', 
+        'Emerging Startups',
+        'Market Leaders',
+        'International Players',
+        'Adjacent Market Players'
+      ]
     },
-    'Finance': {
-      media: ['Wall Street Journal', 'Financial Times', 'Bloomberg', 'CNBC', 'Reuters', 'Forbes'],
-      influencers: ['Warren Buffett', 'Ray Dalio', 'Mohamed El-Erian', 'Nouriel Roubini'],
-      regulators: ['SEC', 'FINRA', 'Federal Reserve', 'CFPB', 'OCC', 'FDIC'],
-      investors: ['BlackRock', 'Vanguard', 'State Street', 'JP Morgan', 'Goldman Sachs']
+    {
+      category: 'media',
+      label: 'Media & Press',
+      Icon: MediaIcon,
+      color: '#00ffcc',
+      options: [
+        'Industry Publications',
+        'National Media',
+        'Tech Press',
+        'Trade Journals',
+        'Local Media',
+        'Podcasts & YouTube'
+      ]
     },
-    'Healthcare': {
-      media: ['STAT News', 'FiercePharma', 'Modern Healthcare', 'Becker\'s Hospital Review', 'MedCity News'],
-      influencers: ['Eric Topol', 'Atul Gawande', 'Robert Pearl', 'Leana Wen'],
-      regulators: ['FDA', 'CDC', 'CMS', 'NIH', 'WHO'],
-      investors: ['OrbiMed', 'Venrock', 'NEA', 'Polaris Partners', 'Arch Venture']
+    {
+      category: 'influencers',
+      label: 'Thought Leaders',
+      Icon: StakeholderIcon,
+      color: '#ff00ff',
+      options: [
+        'Industry Analysts',
+        'Academic Experts',
+        'Conference Speakers',
+        'Social Media Influencers',
+        'Bloggers & Writers',
+        'Community Leaders'
+      ]
     },
-    'default': {
-      media: ['Wall Street Journal', 'New York Times', 'Bloomberg', 'Reuters', 'Forbes', 'Business Insider'],
-      influencers: ['Industry analysts', 'Academic experts', 'Trade association leaders'],
-      regulators: ['FTC', 'SEC', 'DOJ', 'State regulators'],
-      investors: ['Major institutional investors', 'Private equity firms', 'Venture capital firms']
+    {
+      category: 'regulators',
+      label: 'Regulatory Bodies',
+      Icon: ExecutionIcon,
+      color: '#00ff88',
+      options: [
+        'Federal Agencies',
+        'State Regulators',
+        'International Bodies',
+        'Industry Associations',
+        'Standards Organizations',
+        'Compliance Bodies'
+      ]
+    },
+    {
+      category: 'investors',
+      label: 'Investment Community',
+      Icon: OpportunityIcon,
+      color: '#8800ff',
+      options: [
+        'Venture Capitalists',
+        'Private Equity',
+        'Institutional Investors',
+        'Retail Investors',
+        'Analysts',
+        'Rating Agencies'
+      ]
+    },
+    {
+      category: 'customers',
+      label: 'Customer Groups',
+      Icon: MemoryIcon,
+      color: '#00ffcc',
+      options: [
+        'Enterprise Customers',
+        'SMB Customers',
+        'Consumer Segments',
+        'User Communities',
+        'Beta Testers',
+        'Advisory Boards'
+      ]
     }
-  };
+  ];
 
   const strategicGoals = [
     { 
@@ -537,109 +597,47 @@ Examples:
   );
 
   const renderStep4 = () => {
-    // Get relevant stakeholders based on industry
-    const industryKey = ['Technology', 'Software/SaaS', 'Artificial Intelligence', 'Cybersecurity'].includes(formData.organization.industry) ? 'Technology' :
-                       ['Finance', 'Banking', 'Insurance', 'Fintech'].includes(formData.organization.industry) ? 'Finance' :
-                       ['Healthcare', 'Biotechnology', 'Pharmaceuticals'].includes(formData.organization.industry) ? 'Healthcare' :
-                       'default';
-    
-    const stakeholders = stakeholdersByIndustry[industryKey];
-
     return (
       <div className="smart-step">
         <div className="step-intro">
-          <h3>Who are your key stakeholders?</h3>
-          <p>Select the voices that matter most to your organization. We'll track their coverage and sentiment.</p>
+          <h3>Which stakeholder groups should we monitor?</h3>
+          <p>Select the groups you want to track. We'll automatically monitor ALL relevant entities within each selected category.</p>
         </div>
 
         {validationErrors['stakeholders'] && (
           <div className="error-banner">{validationErrors['stakeholders']}</div>
         )}
 
+        <div className="info-box">
+          <IntelligenceIcon size={20} color="#00ffcc" />
+          <p>When you select a group like "Direct Competitors" or "Industry Publications", we automatically track <strong>ALL</strong> entities in that category - both the ones we discover and any you know about.</p>
+        </div>
+
         <div className="stakeholder-sections">
-          {/* Media & Journalists */}
-          <div className="stakeholder-group">
-            <div className="group-header">
-              <MediaIcon size={20} color="#00ffcc" />
-              <label>Media & Publications ({formData.stakeholders.media.length} selected)</label>
+          {stakeholderGroups.map(group => (
+            <div key={group.category} className="stakeholder-group">
+              <div className="group-header">
+                <group.Icon size={20} color={group.color} />
+                <label>{group.label} ({formData.stakeholders[group.category]?.length || 0} selected)</label>
+              </div>
+              <div className="stakeholder-grid">
+                {group.options.map(option => (
+                  <div
+                    key={option}
+                    className={`stakeholder-chip ${formData.stakeholders[group.category]?.includes(option) ? 'selected' : ''}`}
+                    onClick={() => toggleStakeholder(group.category, option)}
+                  >
+                    {option}
+                    {formData.stakeholders[group.category]?.includes(option) && <span className="chip-check">✓</span>}
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="stakeholder-grid">
-              {stakeholders.media.map(outlet => (
-                <div
-                  key={outlet}
-                  className={`stakeholder-chip ${formData.stakeholders.media.includes(outlet) ? 'selected' : ''}`}
-                  onClick={() => toggleStakeholder('media', outlet)}
-                >
-                  {outlet}
-                  {formData.stakeholders.media.includes(outlet) && <span className="chip-check">✓</span>}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Industry Influencers */}
-          <div className="stakeholder-group">
-            <div className="group-header">
-              <StakeholderIcon size={20} color="#ff00ff" />
-              <label>Industry Influencers ({formData.stakeholders.influencers.length} selected)</label>
-            </div>
-            <div className="stakeholder-grid">
-              {stakeholders.influencers.map(influencer => (
-                <div
-                  key={influencer}
-                  className={`stakeholder-chip ${formData.stakeholders.influencers.includes(influencer) ? 'selected' : ''}`}
-                  onClick={() => toggleStakeholder('influencers', influencer)}
-                >
-                  {influencer}
-                  {formData.stakeholders.influencers.includes(influencer) && <span className="chip-check">✓</span>}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Regulators */}
-          <div className="stakeholder-group">
-            <div className="group-header">
-              <ExecutionIcon size={20} color="#00ff88" />
-              <label>Regulatory Bodies ({formData.stakeholders.regulators.length} selected)</label>
-            </div>
-            <div className="stakeholder-grid">
-              {stakeholders.regulators.map(regulator => (
-                <div
-                  key={regulator}
-                  className={`stakeholder-chip ${formData.stakeholders.regulators.includes(regulator) ? 'selected' : ''}`}
-                  onClick={() => toggleStakeholder('regulators', regulator)}
-                >
-                  {regulator}
-                  {formData.stakeholders.regulators.includes(regulator) && <span className="chip-check">✓</span>}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Investors */}
-          <div className="stakeholder-group">
-            <div className="group-header">
-              <OpportunityIcon size={20} color="#8800ff" />
-              <label>Key Investors ({formData.stakeholders.investors.length} selected)</label>
-            </div>
-            <div className="stakeholder-grid">
-              {stakeholders.investors.map(investor => (
-                <div
-                  key={investor}
-                  className={`stakeholder-chip ${formData.stakeholders.investors.includes(investor) ? 'selected' : ''}`}
-                  onClick={() => toggleStakeholder('investors', investor)}
-                >
-                  {investor}
-                  {formData.stakeholders.investors.includes(investor) && <span className="chip-check">✓</span>}
-                </div>
-              ))}
-            </div>
-          </div>
+          ))}
         </div>
 
         <div className="selection-summary">
-          Total stakeholders selected: {Object.values(formData.stakeholders).flat().length}
+          Total stakeholder groups selected: {Object.values(formData.stakeholders).flat().length}
         </div>
       </div>
     );
@@ -797,9 +795,12 @@ Examples:
         <div className="step-container">
           <div className="step-header">
             <span className="step-icon">
-              {steps[currentStep - 1].Icon && (
-                <steps[currentStep - 1].Icon size={32} color={steps[currentStep - 1].color} />
-              )}
+              {steps[currentStep - 1].Icon && 
+                React.createElement(steps[currentStep - 1].Icon, {
+                  size: 32,
+                  color: steps[currentStep - 1].color
+                })
+              }
             </span>
             <div>
               <h2>{steps[currentStep - 1].title}</h2>
