@@ -27,6 +27,123 @@
   word-wrap: break-word;
 }
 
+/* V2 Intelligence Display Enhancements */
+.intelligence-v2 .intel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(0, 255, 136, 0.1);
+}
+
+.intelligence-v2 .intel-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.intelligence-v2 .insights-panel,
+.intelligence-v2 .recommendations-panel,
+.intelligence-v2 .analysis-panel {
+  margin-bottom: 24px;
+}
+
+.intelligence-v2 .insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.intelligence-v2 .insight-card {
+  background: rgba(0, 255, 136, 0.05);
+  border: 1px solid rgba(0, 255, 136, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  gap: 12px;
+}
+
+.intelligence-v2 .recommendations-list {
+  margin-top: 12px;
+}
+
+.intelligence-v2 .recommendation-item {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  background: rgba(255, 0, 255, 0.05);
+  border: 1px solid rgba(255, 0, 255, 0.2);
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.intelligence-v2 .rec-number {
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 0, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: #ff00ff;
+  flex-shrink: 0;
+}
+
+.intelligence-v2 .analysis-content {
+  background: rgba(0, 136, 255, 0.05);
+  border: 1px solid rgba(0, 136, 255, 0.2);
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 12px;
+}
+
+.intelligence-v2 .risk-opp-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.intelligence-v2 .risks-panel,
+.intelligence-v2 .opportunities-panel {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.intelligence-v2 .confidence-panel {
+  margin-top: 24px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+}
+
+.intelligence-v2 .confidence-bar {
+  position: relative;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.intelligence-v2 .confidence-fill {
+  height: 100%;
+  transition: width 0.5s ease;
+}
+
+.intelligence-v2 .confidence-value {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-weight: bold;
+  color: #fff;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }

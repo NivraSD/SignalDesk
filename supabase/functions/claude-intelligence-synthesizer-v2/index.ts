@@ -22,53 +22,53 @@ console.log('🔑 API Key length:', ANTHROPIC_API_KEY?.length || 0)
 // Initialize Supabase client for memory access
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY || '')
 
-// Define specialized analysis personas
+// Define specialized PR analysis personas
 const ANALYSIS_PERSONAS = {
   competitive_strategist: {
-    name: "Strategic Competitive Analyst",
-    expertise: "Competitive dynamics, market positioning, strategic moves",
-    perspective: "Focus on competitive advantages, market share implications, and strategic responses",
-    tone: "Analytical, strategic, forward-looking",
+    name: "Competitive PR Strategist",
+    expertise: "Competitive PR positioning, media narrative control, thought leadership differentiation",
+    perspective: "Focus on PR competitive advantages, share of voice, media positioning, and narrative dominance",
+    tone: "Strategic, media-focused, narrative-driven",
     prompts: {
-      system: `You are a senior competitive intelligence strategist with 20 years of experience analyzing market dynamics and competitor strategies. You specialize in identifying strategic patterns, predicting competitor moves, and recommending counter-strategies. You think in terms of game theory, market positioning, and sustainable competitive advantages.`,
-      analysis_framework: `Analyze through these lenses:
-1. Strategic Intent - What are competitors really trying to achieve?
-2. Capability Gaps - Where are they strong/weak relative to us?
-3. Market Impact - How will their moves affect market dynamics?
-4. Response Options - What strategic responses should we consider?
-5. Time Horizons - Immediate threats vs long-term positioning`
+      system: `You are a senior competitive PR strategist specializing in media positioning and narrative control. You analyze competitor PR strategies, media coverage patterns, and identify opportunities for narrative dominance. You think in terms of share of voice, media sentiment, thought leadership positioning, and PR campaign effectiveness.`,
+      analysis_framework: `Analyze through PR-focused lenses:
+1. Media Positioning - How are competitors controlling the narrative?
+2. Share of Voice - Who dominates media coverage and why?
+3. PR Vulnerabilities - Where can we outmaneuver their messaging?
+4. Media Response Strategies - What PR campaigns should we launch?
+5. Thought Leadership Gaps - What stories aren't being told?`
     }
   },
   
   stakeholder_psychologist: {
-    name: "Stakeholder Relations Expert",
-    expertise: "Behavioral psychology, relationship dynamics, influence mapping",
-    perspective: "Understanding motivations, predicting reactions, building coalitions",
-    tone: "Empathetic, insightful, relationship-focused",
+    name: "Stakeholder Communications Expert",
+    expertise: "Stakeholder messaging, influencer relations, community management",
+    perspective: "Building PR coalitions, managing stakeholder narratives, crisis prevention",
+    tone: "Empathetic, strategic, communications-focused",
     prompts: {
-      system: `You are a stakeholder psychology expert who specializes in understanding motivations, predicting behaviors, and building strategic relationships. You have deep expertise in organizational psychology, influence dynamics, and coalition building. You see stakeholders as complex actors with multiple motivations.`,
-      analysis_framework: `Analyze stakeholders through:
-1. Motivation Mapping - What drives each stakeholder group?
-2. Influence Networks - Who influences whom?
-3. Sentiment Triggers - What causes sentiment shifts?
-4. Coalition Potential - Which groups could align?
-5. Engagement Psychology - How to effectively engage each group`
+      system: `You are a stakeholder communications expert specializing in targeted messaging, influencer relations, and community narrative management. You excel at crafting messages that resonate with different audiences, building media coalitions, and preventing PR crises through proactive stakeholder engagement.`,
+      analysis_framework: `Analyze stakeholder communications through:
+1. Message Resonance - What PR messages work for each group?
+2. Influencer Mapping - Which voices shape public opinion?
+3. Narrative Alignment - How to align stakeholder communications?
+4. Crisis Prevention - What stakeholder issues could become PR crises?
+5. Engagement Campaigns - What PR campaigns for each stakeholder?`
     }
   },
   
   narrative_architect: {
-    name: "Narrative Strategy Architect",
-    expertise: "Media dynamics, narrative construction, message resonance",
-    perspective: "Building compelling narratives that advance strategic goals",
-    tone: "Creative, persuasive, narrative-focused",
+    name: "Media Narrative Strategist",
+    expertise: "Media storytelling, journalist relations, viral content strategy",
+    perspective: "Crafting PR narratives that dominate news cycles and shape public opinion",
+    tone: "Creative, media-savvy, newsworthy",
     prompts: {
-      system: `You are a master narrative strategist who understands how stories shape perception and drive action. You specialize in crafting narratives that resonate with target audiences, counter opposing narratives, and advance strategic objectives. You think in terms of story arcs, emotional resonance, and narrative momentum.`,
-      analysis_framework: `Analyze narratives through:
-1. Narrative Power - Which stories are gaining traction?
-2. Emotional Resonance - What emotions do narratives evoke?
-3. Narrative Gaps - What stories aren't being told?
-4. Counter-Narratives - How to reshape unfavorable narratives?
-5. Amplification Strategies - How to strengthen our narratives`
+      system: `You are a media narrative strategist who specializes in crafting stories that journalists want to cover. You understand news cycles, viral content mechanics, and how to position stories for maximum media pickup. You excel at creating PR narratives that dominate headlines and shape public discourse.`,
+      analysis_framework: `Analyze media narratives through:
+1. News Value - What makes our story newsworthy?
+2. Journalist Angles - What angles will media cover?
+3. Viral Potential - How can we create shareable PR content?
+4. News Cycle Timing - When to launch PR campaigns?
+5. Media Domination - How to own the narrative?`
     }
   },
   
@@ -236,7 +236,16 @@ ${persona.prompts.analysis_framework}
 ANALYSIS REQUEST:
 ${prompt}
 
-Provide analysis in JSON format with clear structure and actionable insights.`
+CRITICAL: Return your analysis as a valid JSON object with this structure:
+{
+  "key_insights": ["insight1", "insight2", "insight3"],
+  "recommendations": ["action1", "action2", "action3"],
+  "analysis": "Detailed analysis text here",
+  "confidence_level": 85,
+  "risks": ["risk1", "risk2"],
+  "opportunities": ["opp1", "opp2"]
+}
+Output ONLY the JSON object, no markdown, no explanations.`
 
   try {
     // Primary analysis
@@ -261,8 +270,21 @@ Format as JSON with your assessment including a "confidence_level" field.`
         
         const secondOpinion = await callClaude(secondOpinionPrompt, 'claude-sonnet-4-20250514')
         
-        const primaryData = JSON.parse(primaryAnalysis)
-        const secondaryData = JSON.parse(secondOpinion)
+        // Safely parse JSON responses
+        let primaryData, secondaryData
+        try {
+          primaryData = JSON.parse(primaryAnalysis)
+        } catch (e) {
+          console.error('Failed to parse primary analysis:', e)
+          primaryData = { analysis_text: primaryAnalysis, status: 'text_response' }
+        }
+        
+        try {
+          secondaryData = JSON.parse(secondOpinion)
+        } catch (e) {
+          console.error('Failed to parse second opinion:', e)
+          secondaryData = { assessment: secondOpinion, confidence_level: 70 }
+        }
         
         return {
           primary_analysis: primaryData,
@@ -272,11 +294,33 @@ Format as JSON with your assessment including a "confidence_level" field.`
       } catch (error) {
         console.error('Second opinion processing failed:', error)
         // Return primary analysis only if second opinion fails
-        return JSON.parse(primaryAnalysis)
+        // Try to parse the analysis, handle potential formatting issues
+    try {
+      return JSON.parse(primaryAnalysis)
+    } catch (parseError) {
+      console.error('Failed to parse primary analysis as JSON:', parseError)
+      // Return a structured response with the raw text
+      return {
+        analysis_text: primaryAnalysis,
+        status: 'text_response',
+        note: 'Claude returned text instead of JSON'
+      }
+    }
       }
     }
     
-    return JSON.parse(primaryAnalysis)
+    // Try to parse the analysis, handle potential formatting issues
+    try {
+      return JSON.parse(primaryAnalysis)
+    } catch (parseError) {
+      console.error('Failed to parse primary analysis as JSON:', parseError)
+      // Return a structured response with the raw text
+      return {
+        analysis_text: primaryAnalysis,
+        status: 'text_response',
+        note: 'Claude returned text instead of JSON'
+      }
+    }
   } catch (error) {
     console.error(`Analysis error with persona ${persona.name}:`, error)
     // Return fallback analysis structure
