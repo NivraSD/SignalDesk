@@ -28,13 +28,27 @@ const AutomatedOrganizationSetup = ({ onSetupComplete }) => {
     document.head.appendChild(style);
     return () => document.head.removeChild(style);
   }, []);
+  
+  // Check for temporary organization data from settings
   const [step, setStep] = useState(1);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  
+  // Initialize with temp org data if available
+  const tempOrgData = localStorage.getItem('signaldesk_temp_org');
+  const initialOrgData = tempOrgData ? JSON.parse(tempOrgData) : null;
+  
   const [orgData, setOrgData] = useState({
-    name: '',
+    name: initialOrgData?.organizationName || '',
     url: '',
-    description: ''
+    description: initialOrgData?.organizationDescription || ''
   });
+  
+  // Clear temp data after loading
+  React.useEffect(() => {
+    if (tempOrgData) {
+      localStorage.removeItem('signaldesk_temp_org');
+    }
+  }, [tempOrgData]);
   
   const [discoveredData, setDiscoveredData] = useState({
     industry: '',

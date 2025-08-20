@@ -68,24 +68,23 @@ const OrganizationSettings = ({ onClose, onOrganizationChange }) => {
   const createNewOrganization = () => {
     if (!newOrgData.name) return;
 
-    const newOrg = {
-      id: newOrgData.name.toLowerCase().replace(/\s+/g, '-'),
-      name: newOrgData.name,
-      type: newOrgData.type,
-      description: newOrgData.description
+    // Store the new organization data temporarily
+    const tempOrgData = {
+      organizationName: newOrgData.name,
+      organizationType: newOrgData.type,
+      organizationDescription: newOrgData.description || `${newOrgData.name} - ${newOrgData.type}`,
+      isNewOrg: true
     };
 
-    // Add to organizations list
-    const updatedOrgs = [...organizations, newOrg];
-    localStorage.setItem('signaldesk_organizations', JSON.stringify(updatedOrgs));
-    setOrganizations(updatedOrgs);
-
-    // Switch to the new organization
-    switchOrganization(newOrg);
+    // Save to localStorage for the onboarding process to pick up
+    localStorage.setItem('signaldesk_temp_org', JSON.stringify(tempOrgData));
     
-    // Reset form
-    setIsCreatingNew(false);
-    setNewOrgData({ name: '', type: 'company', description: '' });
+    // Clear current organization to trigger onboarding
+    localStorage.removeItem('signaldesk_organization');
+    localStorage.removeItem('signaldesk_onboarding');
+    
+    // Navigate to the onboarding flow
+    navigate('/initialize');
   };
 
   const runFullOnboarding = () => {
@@ -143,12 +142,13 @@ const OrganizationSettings = ({ onClose, onOrganizationChange }) => {
           {/* Create New Organization */}
           <div className="new-org-section">
             <h3>Create New Organization</h3>
+            <p className="section-note">Creating a new organization will start the full onboarding process to configure intelligence gathering.</p>
             {!isCreatingNew ? (
               <button 
                 className="create-org-btn"
                 onClick={() => setIsCreatingNew(true)}
               >
-                + Add New Organization
+                + Add New Organization (Full Setup)
               </button>
             ) : (
               <div className="new-org-form">
@@ -188,7 +188,7 @@ const OrganizationSettings = ({ onClose, onOrganizationChange }) => {
                     onClick={createNewOrganization}
                     disabled={!newOrgData.name}
                   >
-                    Create Organization
+                    Start Onboarding
                   </button>
                 </div>
               </div>
