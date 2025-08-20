@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import OnboardingWithMCPs from '../Onboarding/OnboardingWithMCPs';
-import IntelligenceCommand from '../Modules/IntelligenceCommand';
+import IntelligenceAnalytics from '../Modules/IntelligenceAnalytics';
 import OpportunityModule from '../Modules/OpportunityModule';
 import ExecutionModule from '../Modules/ExecutionModule';
 import MemoryVaultModule from '../Modules/MemoryVaultModule';
@@ -79,7 +79,7 @@ const FourModuleLayout = () => {
   const renderActiveModule = () => {
     switch (activeModule) {
       case 'intelligence':
-        return <IntelligenceCommand organizationId={organizationData?.id} />;
+        return <IntelligenceAnalytics organizationId={organizationData?.id} />;
       case 'opportunity':
         return <OpportunityModule organizationId={organizationData?.id} />;
       case 'execution':
@@ -87,7 +87,7 @@ const FourModuleLayout = () => {
       case 'memoryvault':
         return <MemoryVaultModule organizationId={organizationData?.id} />;
       default:
-        return <IntelligenceCommand organizationId={organizationData?.id} />;
+        return <IntelligenceAnalytics organizationId={organizationData?.id} />;
     }
   };
 
