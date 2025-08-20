@@ -21,13 +21,16 @@ const FourModuleLayout = () => {
       try {
         // Check if we have saved organization data in localStorage
         const savedOrg = localStorage.getItem('signaldesk_organization');
+        console.log('🔍 FourModuleLayout checking org:', !!savedOrg);
         
         if (savedOrg) {
           const orgData = JSON.parse(savedOrg);
+          console.log('✅ Found org data:', orgData.name);
           setOrganizationData(orgData);
           setShowOnboarding(false);
         } else {
           // No organization set up, show onboarding
+          console.log('⚠️ No org data, showing onboarding');
           setShowOnboarding(true);
         }
       } catch (error) {

@@ -38,7 +38,7 @@ import NivDatabase from "./pages/NivDatabase"; // Database-driven Niv (no realti
 import NivDirect from "./pages/NivDirect"; // Direct API integration - most reliable
 
 // New Four-Module Layout
-// import FourModuleLayout from "./components/RailwayUI/FourModuleLayout";
+import FourModuleLayout from "./components/RailwayUI/FourModuleLayout";
 import SystemInitializer from "./components/SystemInitializer";
 
 // Log Supabase initialization for debugging
@@ -81,16 +81,23 @@ function PrivateRoute({ children }) {
 // AppRoutes function removed - using FourModuleLayout instead
 
 function App() {
-  // Using Railway Draggable UI with neon styling
-  console.log("🚀🚀🚀 RAILWAY DRAGGABLE UI ACTIVE - DEPLOYED:", new Date().toISOString());
-  console.log("✅ This is the Railway-style UI with draggable panels and neon effects");
+  // Using FourModuleLayout V2 with Intelligence Hub
+  console.log("🚀🚀🚀 FOUR MODULE LAYOUT V2 - DEPLOYED:", new Date().toISOString());
+  console.log("✅ IntelligenceHub, OpportunityModule, ExecutionModule, MemoryVault");
+  
+  // Check localStorage to debug
+  const orgData = localStorage.getItem('signaldesk_organization');
+  console.log("📊 Organization data exists:", !!orgData);
+  if (orgData) {
+    console.log("📊 Organization:", JSON.parse(orgData).name);
+  }
   
   return (
     <BrowserRouter>
       <AuthProvider>
         <ProjectProvider>
           <IntelligenceProvider>
-            {/* Railway Draggable UI with Niv Integration */}
+            {/* Four Module Layout with Intelligence Hub */}
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/initialize" element={<SystemInitializer />} />
@@ -98,7 +105,7 @@ function App() {
                 path="/*"
                 element={
                   <PrivateRoute>
-                    <RailwayDraggable />
+                    <FourModuleLayout />
                   </PrivateRoute>
                 }
               />
