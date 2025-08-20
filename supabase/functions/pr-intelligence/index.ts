@@ -70,8 +70,9 @@ function getIndustryCompetitors(industry: string): string[] {
     }
   }
   
-  // Default tech companies if no match
-  return ['Google', 'Microsoft', 'Apple', 'Amazon', 'Meta']
+  // Return empty array if no match - let the frontend handle industry detection
+  console.log(`⚠️ No competitors found for industry: ${industry}`)
+  return []
 }
 
 async function findRealCompetitors(organization: string, industry?: string) {

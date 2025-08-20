@@ -25,9 +25,21 @@ class ClaudeIntelligenceServiceV2 {
   }
 
   async gatherAndAnalyze(config, timeframe = '24h', options = {}) {
+    console.log('🔍 RAW CONFIG RECEIVED:', config);
+    console.log('🔍 Config structure:', {
+      hasOrganization: !!config.organization,
+      hasGoals: !!config.goals,
+      hasIntelligence: !!config.intelligence,
+      hasMonitoring: !!config.monitoring,
+      hasTargets: !!config.targets
+    });
+    
     // Extract ALL onboarding data - FIXED to match actual structure
     const organization = config.organization || {};
     const goals = config.goals || {};
+    
+    console.log('📋 Organization object:', organization);
+    console.log('🎯 Goals object:', goals);
     
     // Get org details from the CORRECT location in the config structure
     const orgName = organization.name || config.organizationName || '';
@@ -44,9 +56,17 @@ class ClaudeIntelligenceServiceV2 {
     const additionalTopics = config.intelligence?.topics || config.monitoring?.topics || config.additionalTopics || [];
     const keywords = config.intelligence?.keywords || config.monitoring?.keywords || [];
     
+    console.log('👥 Stakeholders found:', stakeholders);
+    console.log('📝 Topics found:', additionalTopics);
+    console.log('🔑 Keywords found:', keywords);
+    console.log('📊 Intelligence config:', config.intelligence);
+    
     // Use industry-specific competitors if user didn't provide any
     const userCompetitors = config.targets?.competitors || config.competitors || [];
     const competitors = userCompetitors.length > 0 ? userCompetitors : industryData.primary.slice(0, 5);
+    
+    console.log('🏢 User competitors:', userCompetitors);
+    console.log('🏢 Using competitors:', competitors);
     
     // Enhanced organization object with ALL context and industry data
     const fullOrganization = {

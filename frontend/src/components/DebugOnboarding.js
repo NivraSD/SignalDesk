@@ -32,18 +32,19 @@ const DebugOnboarding = () => {
     <div style={{ 
       position: 'fixed', 
       bottom: 20, 
-      right: 20, 
-      background: '#1a1a2e', 
-      border: '1px solid #00ffcc',
-      borderRadius: 10,
+      left: 20,  // Changed to LEFT side for better visibility
+      background: 'linear-gradient(135deg, #ff00ff, #8800ff)', 
+      border: '3px solid #00ffcc',
+      borderRadius: 15,
       padding: 20,
       maxWidth: 500,
-      maxHeight: 400,
+      maxHeight: 500,
       overflow: 'auto',
-      zIndex: 9999,
+      zIndex: 99999,  // Higher z-index
       color: '#fff',
-      fontSize: 12,
-      fontFamily: 'monospace'
+      fontSize: 14,
+      fontFamily: 'monospace',
+      boxShadow: '0 0 50px rgba(0,255,204,0.5)'
     }}>
       <h3 style={{ color: '#00ffcc', margin: '0 0 10px 0' }}>🔍 Debug Panel</h3>
       
