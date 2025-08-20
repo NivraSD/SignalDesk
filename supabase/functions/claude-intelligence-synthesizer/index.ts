@@ -10,7 +10,7 @@ const corsHeaders = {
   'Access-Control-Max-Age': '86400'
 }
 
-const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') || 'sk-ant-api03-vE2YiKFpHTNEzO4dR2kCovCeL_YNlMcW3xR55TojftoD5w4MjdT0ppMR4nzmQ8sUJDKlw84LLqdT9Fh-LD3Pgw-hhBjqQAA'
+const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
 
 async function analyzeWithClaude(prompt: string) {
   try {

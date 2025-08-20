@@ -17,7 +17,7 @@ export default async function handler(req, res) {
     console.log('Claude proxy request for intelligence type:', req.body.intelligenceType);
     
     // Claude API key from environment variable (set in Vercel dashboard)
-    const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY || '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';
+    const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;
     
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',

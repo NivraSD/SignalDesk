@@ -11,7 +11,7 @@ const corsHeaders = {
   'Access-Control-Max-Age': '86400'
 }
 
-const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') || 'sk-ant-api03-vE2YiKFpHTNEzO4dR2kCovCeL_YNlMcW3xR55TojftoD5w4MjdT0ppMR4nzmQ8sUJDKlw84LLqdT9Fh-LD3Pgw-hhBjqQAA'
+const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || 'https://zskaxjtyuaqazydouifp.supabase.co'
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
