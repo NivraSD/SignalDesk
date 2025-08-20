@@ -251,15 +251,34 @@ class IntelligenceGatheringService {
     
     // Call appropriate MCPs based on stakeholder type
     const mcpMappings = {
+      // Media stakeholders
       'tech_journalists': { mcp: 'media', method: 'discover' },
       'media': { mcp: 'media', method: 'discover' },
+      'influencers': { mcp: 'media', method: 'discover' },
+      
+      // Competitive & Industry
       'competitors': { mcp: 'pr', method: 'gather' },
       'industry_analysts': { mcp: 'pr', method: 'gather' },
+      
+      // Financial stakeholders
       'investors': { mcp: 'opportunities', method: 'discover' },
+      'board': { mcp: 'opportunities', method: 'discover' },
+      
+      // Customer & Partner relationships
       'customers': { mcp: 'analytics', method: 'analyze' },
       'partners': { mcp: 'relationships', method: 'assess' },
+      'suppliers': { mcp: 'relationships', method: 'assess' },
+      
+      // Regulatory & Compliance
       'regulators': { mcp: 'monitor', method: 'check' },
-      'influencers': { mcp: 'media', method: 'discover' }
+      'activists': { mcp: 'monitor', method: 'check' },
+      
+      // Internal stakeholders
+      'employees': { mcp: 'analytics', method: 'analyze' },
+      
+      // Community & Academic
+      'community': { mcp: 'media', method: 'discover' },
+      'academics': { mcp: 'relationships', method: 'assess' }
     };
     
     const mapping = mcpMappings[stakeholderId];
@@ -284,9 +303,9 @@ class IntelligenceGatheringService {
       return insights;
     }
     
-    // NO FALLBACK DATA - Throw error when MCP data unavailable
-    console.log(`❌ No MCP data available for ${stakeholderId} - failing fast`);
-    throw new Error(`${stakeholderId} intelligence unavailable - MCP service not responding`);
+    // Return empty array instead of throwing error
+    console.log(`⚠️ No MCP data available for ${stakeholderId} - returning empty array`);
+    return [];
     // END OF FUNCTION - No fallback data available
   }
 
