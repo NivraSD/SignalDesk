@@ -94,6 +94,29 @@ const OrganizationSettings = ({ onClose, onOrganizationChange }) => {
     navigate('/initialize');
   };
 
+  const deleteOrganization = (orgId) => {
+    if (window.confirm('Are you sure you want to delete this organization? This cannot be undone.')) {
+      // Remove from organizations list
+      const updatedOrgs = organizations.filter(org => org.id !== orgId);
+      localStorage.setItem('signaldesk_organizations', JSON.stringify(updatedOrgs));
+      setOrganizations(updatedOrgs);
+      
+      // If deleting current org, clear it
+      if (currentOrg?.id === orgId) {
+        localStorage.removeItem('signaldesk_organization');
+        localStorage.removeItem('signaldesk_onboarding');
+        setCurrentOrg(null);
+        
+        // Switch to first available org or trigger onboarding
+        if (updatedOrgs.length > 0) {
+          switchOrganization(updatedOrgs[0]);
+        } else {
+          navigate('/initialize');
+        }
+      }
+    }
+  };
+
   return (
     <div className="org-settings-overlay">
       <div className="org-settings-modal">
@@ -133,7 +156,19 @@ const OrganizationSettings = ({ onClose, onOrganizationChange }) => {
                     <h4>{org.name}</h4>
                     <p>{org.description}</p>
                   </div>
-                  <button className="switch-btn">Switch</button>
+                  <div className="org-actions">
+                    <button className="switch-btn">Switch</button>
+                    <button 
+                      className="delete-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteOrganization(org.id);
+                      }}
+                      title="Delete organization"
+                    >
+                      🗑
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

@@ -99,7 +99,12 @@ const RailwayV2Enhanced = () => {
                 {modules.find(m => m.id === activeModule)?.name} Hub
               </h2>
               <div className="module-actions">
-                <button className="action-btn settings">⚙ Settings</button>
+                <button 
+                  className="action-btn settings"
+                  onClick={() => setShowOrgSettings(true)}
+                >
+                  ⚙ Settings
+                </button>
               </div>
             </div>
             

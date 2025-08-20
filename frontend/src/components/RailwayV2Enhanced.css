@@ -461,6 +461,7 @@
   gap: 12px;
   align-items: center;
   flex: 1;
+  height: 42px; /* Fixed height for alignment */
 }
 
 .intelligence-v2 .intel-controls {
@@ -468,6 +469,7 @@
   gap: 12px;
   align-items: center;
   flex-shrink: 0;
+  height: 42px; /* Match tabs height */
 }
 
 .intelligence-v2 .intel-tab {
@@ -482,6 +484,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
+  height: 100%; /* Full height of parent */
 }
 
 .intelligence-v2 .intel-tab.active {
@@ -499,20 +502,21 @@
 }
 
 .intelligence-v2 .timeframe-select {
-  padding: 8px 12px;
+  padding: 10px 12px;
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
+  border-radius: 8px;
   color: #ffffff;
   cursor: pointer;
   font-size: 14px;
+  height: 42px; /* Match tabs height */
 }
 
 .intelligence-v2 .refresh-btn {
-  padding: 8px 12px;
+  padding: 10px 12px;
   background: rgba(0, 255, 136, 0.1);
   border: 1px solid rgba(0, 255, 136, 0.3);
-  border-radius: 6px;
+  border-radius: 8px;
   color: #00ff88;
   cursor: pointer;
   font-size: 14px;
@@ -520,6 +524,8 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  height: 42px; /* Match tabs height */
+  white-space: nowrap;
 }
 
 .intelligence-v2 .refresh-btn:hover {

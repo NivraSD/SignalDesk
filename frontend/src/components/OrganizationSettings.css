@@ -124,6 +124,27 @@
   background: rgba(0, 255, 204, 0.05);
   border: 1px solid rgba(0, 255, 204, 0.2);
   border-radius: 12px;
+  position: relative;
+}
+
+.delete-current-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  padding: 6px 10px;
+  background: rgba(255, 0, 0, 0.1);
+  border: 1px solid rgba(255, 0, 0, 0.3);
+  border-radius: 6px;
+  color: #ff4444;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.delete-current-btn:hover {
+  background: rgba(255, 0, 0, 0.2);
+  border-color: #ff4444;
+  box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
 }
 
 .org-icon {
@@ -174,7 +195,7 @@
 .org-option {
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: space-between;
   padding: 16px;
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -209,6 +230,12 @@
   margin: 0;
 }
 
+.org-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 .switch-btn {
   padding: 8px 20px;
   background: linear-gradient(135deg, rgba(0, 255, 204, 0.2), rgba(0, 255, 204, 0.1));
@@ -218,6 +245,23 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+.delete-btn {
+  padding: 8px 12px;
+  background: rgba(255, 0, 0, 0.1);
+  border: 1px solid rgba(255, 0, 0, 0.3);
+  border-radius: 8px;
+  color: #ff4444;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.delete-btn:hover {
+  background: rgba(255, 0, 0, 0.2);
+  border-color: #ff4444;
+  box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
 }
 
 .switch-btn:hover {
