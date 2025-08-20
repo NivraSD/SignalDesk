@@ -78,7 +78,7 @@ serve(async (req) => {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: model || 'claude-3-haiku-20240307',
+        model: model || 'claude-sonnet-4-20250514',
         max_tokens: max_tokens || 1000,
         temperature: temperature || 0.7,
         messages: messages
@@ -102,7 +102,7 @@ serve(async (req) => {
           .insert({
             user_id: userId,
             organization_id: organizationId,
-            model: model || 'claude-3-haiku-20240307',
+            model: model || 'claude-sonnet-4-20250514',
             prompt_tokens: data.usage?.input_tokens || 0,
             completion_tokens: data.usage?.output_tokens || 0,
             total_tokens: (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0),

@@ -15,6 +15,10 @@ const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || 'https://zskaxjtyuaqazydouifp.supabase.co'
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
+// Log API key status for debugging
+console.log('🔑 ANTHROPIC_API_KEY exists:', !!ANTHROPIC_API_KEY)
+console.log('🔑 API Key length:', ANTHROPIC_API_KEY?.length || 0)
+
 // Initialize Supabase client for memory access
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY || '')
 
@@ -236,7 +240,7 @@ Provide analysis in JSON format with clear structure and actionable insights.`
 
   try {
     // Primary analysis
-    const primaryAnalysis = await callClaude(fullPrompt, 'claude-3-sonnet-20240229')
+    const primaryAnalysis = await callClaude(fullPrompt, 'claude-sonnet-4-20250514')
     
     // Second opinion for critical insights
     if (requiresSecondOpinion) {
@@ -255,7 +259,7 @@ Please:
 
 Format as JSON with your assessment including a "confidence_level" field.`
         
-        const secondOpinion = await callClaude(secondOpinionPrompt, 'claude-3-haiku-20240307')
+        const secondOpinion = await callClaude(secondOpinionPrompt, 'claude-sonnet-4-20250514')
         
         const primaryData = JSON.parse(primaryAnalysis)
         const secondaryData = JSON.parse(secondOpinion)
@@ -304,7 +308,12 @@ function getFallbackAnalysis(personaName: string, prompt: string, context: any) 
 }
 
 // Call Claude API
-async function callClaude(prompt: string, model: string = 'claude-3-haiku-20240307') {
+async function callClaude(prompt: string, model: string = 'claude-sonnet-4-20250514') {
+  if (!ANTHROPIC_API_KEY) {
+    console.error('❌ ANTHROPIC_API_KEY is not set!')
+    throw new Error('API key not configured')
+  }
+  
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',

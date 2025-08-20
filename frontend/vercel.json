@@ -1,4 +1,5 @@
 {
+  "root": "frontend",
   "buildCommand": "npm ci --legacy-peer-deps && npm run build",
   "outputDirectory": "build",
   "framework": "create-react-app",

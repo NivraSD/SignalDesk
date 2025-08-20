@@ -225,7 +225,9 @@
       "WebFetch(domain:signaldesk-4sh2n8jtb-nivra-sd.vercel.app)",
       "Bash(PGPASSWORD=MUmjKBxTiecMPpYVgwGsZEKyFfyFbxqV psql -h crossover.proxy.rlwy.net -p 56706 -U postgres -d railway -f backend/src/db/create_intelligence_tables.sql)",
       "Bash(PGPASSWORD=your_postgres_password_here node scripts/populate-intelligence-indexes.js)",
-      "Bash(/dev/null)"
+      "Bash(/dev/null)",
+      "Bash(./test-claude-api.sh:*)",
+      "Bash(do if grep -q \"claude-3\" \"$file\")"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",
