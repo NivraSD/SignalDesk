@@ -4,6 +4,57 @@
 
 SignalDesk has evolved from a traditional PR tool into an **intelligent orchestration platform** powered by Claude AI and 17 specialized MCP servers. The platform now features real-time intelligence gathering, predictive opportunity detection, and autonomous content generation - all orchestrated through Niv, our AI strategic advisor.
 
+**Key Transformation**: From feature-centric platform to **Niv-first orchestration system** where AI is the primary interface, supported by MemoryVault persistent intelligence and 17 specialized MCP agents.
+
+---
+
+## Core Foundation Architecture
+
+The platform is built on four interconnected pillars:
+
+1. **Onboarding System** → Captures initial context
+2. **MemoryVault** → Stores and organizes everything permanently  
+3. **MCP Integration** → Gathers real-time intelligence
+4. **Opportunity Engine** → Detects and scores opportunities
+
+```
+Onboarding → Stores in → MemoryVault
+     ↓              ↑
+Configures Feeds
+     ↓              ↑  
+MCP Integration → Discovers → Opportunity Engine
+```
+
+### MemoryVault: The Persistent Intelligence Brain
+
+```javascript
+MemoryVault {
+  // Company Context (from Onboarding)
+  organization: {
+    profile, objectives, differentiators,
+    competitors, stakeholders
+  },
+
+  // Intelligence History (from MCPs)
+  intelligence: {
+    patterns, cascade_effects, successful_responses,
+    competitor_moves, market_changes
+  },
+
+  // Campaign Performance (from Execution)  
+  campaigns: {
+    templates, successful_pitches, media_relationships,
+    content_that_worked, timing_patterns
+  },
+
+  // Opportunity Patterns (from Engine)
+  opportunities: {
+    detected, acted_upon, outcomes,
+    window_timings, success_factors
+  }
+}
+```
+
 ---
 
 ## Major Platform Evolution
@@ -68,72 +119,54 @@ Complete AI agent ecosystem deployed:
 
 ## New Technical Infrastructure
 
-### 4. Supabase Edge Functions (15+ New Functions)
+### 4. Supabase Edge Functions (Production Ready)
 
-**Strategic Planning Suite**:
+**Core Intelligence Functions**:
+- `claude-intelligence-synthesizer-v2` - Advanced intelligence analysis with specialized personas
 - `strategic-planning` - Long-term strategy development
-- `claude-intelligence-synthesizer-v2` - Advanced intelligence analysis
-- `pr-intelligence` - PR-specific intelligence gathering
-
-**Real-Time Communication**:
 - `niv-realtime` - Real-time AI chat interface
 - `niv-chat` - Conversational AI interface
-- `niv-complete` - Full orchestration interface
-
-**Intelligence Processing**:
-- `monitor-intelligence` - Automated monitoring
 - `mcp-bridge` - MCP integration layer
-- `claude-integration` - Core Claude API integration
 
-### 5. Database Schema Expansion
+**Current Status**: All functions deployed and operational with robust error handling
 
-**New Tables Added**:
-```sql
--- Intelligence & Monitoring
-CREATE TABLE intelligence_targets (...);
-CREATE TABLE intelligence_findings (...);
-CREATE TABLE monitoring_alerts (...);
-CREATE TABLE source_indexes (...);
+### 5. Database Schema (Supabase PostgreSQL)
 
--- Opportunity Management
-CREATE TABLE opportunities (...);
-CREATE TABLE opportunity_analysis (...);
+**Current Implementation**:
+- **Row-Level Security (RLS)** enabled on all tables
+- **Real-time subscriptions** for live updates
+- **Connection pooling** for serverless compatibility
+- **Vector embeddings** for semantic search capabilities
 
--- Strategic Planning
-CREATE TABLE strategic_plans (...);
-CREATE TABLE campaign_workflows (...);
-
--- MCP Integration
-CREATE TABLE mcp_configurations (...);
-CREATE TABLE mcp_sync_status (...);
-```
+**Schema designed for**:
+- MemoryVault persistent intelligence storage
+- MCP data synchronization and caching
+- Opportunity tracking and analysis
+- User authentication and organization management
 
 ---
 
 ## Component Architecture Overhaul
 
-### 6. 100+ New React Components
+### 6. React Component Architecture
 
-**Intelligence Modules**:
-- `IntelligenceHub.js` - Main intelligence dashboard
-- `IntelligenceAnalytics.js` - Advanced analytics
-- `OpportunityModule.js` - Opportunity detection interface
-- `MemoryVaultModule.js` - Knowledge management
+**Core Modules (Four-Module Layout)**:
+- `IntelligenceHub.js` - Real-time strategic intelligence dashboard
+- `OpportunityModule.js` - AI-powered opportunity detection
+- `ExecutionModule.js` - Campaign and content execution
+- `MemoryVaultModule.js` - Persistent knowledge management
 
-**Niv Integration**:
-- `NivStrategicAdvisor.js` - AI strategic consultation
-- `NivRealtimeChat.js` - Real-time AI communication
-- `NivCommandCenter.js` - Central AI orchestration
+**AI Integration Layer**:
+- `NivStrategicAdvisor.js` - AI strategic consultation sidebar
+- `OnboardingWithMCPs.js` - MCP-integrated setup process
+- `FourModuleLayout.js` - Main application container
 
-**Monitoring & Analytics**:
+**Intelligence Components**:
+- `IntelligenceAnalytics.js` - Advanced analytics (legacy)
 - `MonitoringAnalytics.js` - Real-time monitoring dashboard
 - `AISentimentMonitor.js` - Sentiment analysis interface
-- `LiveFeed/` - Real-time data streaming components
 
-**Onboarding & Configuration**:
-- `OnboardingWithMCPs.js` - MCP-integrated onboarding
-- `AutomatedOrganizationSetup.js` - AI-powered setup
-- `IntelligenceConfiguration.js` - Intelligence customization
+**Current Status**: Clean, production-ready components with professional UI/UX
 
 ### 7. Advanced UI/UX Improvements
 
@@ -196,23 +229,25 @@ CREATE TABLE mcp_sync_status (...);
 - Real-time conversation management
 - Context-aware response generation
 
-### 12. Vercel Deployment Architecture
+### 12. Vercel Deployment (Production)
 
-**Production Infrastructure**:
-- Automatic git-based deployments
-- Edge function optimization
-- Environment variable management
-- Performance monitoring
-- Global CDN distribution
+**Current Infrastructure**:
+- Automatic git-based deployments from main branch
+- Supabase-only backend architecture (no separate API server needed)
+- Environment variables configured for production
+- Global CDN distribution via Vercel Edge Network
 
-### 13. MCP Bridge System
+**Recent Fixes**: Resolved deployment issues and Intelligence Hub now connects to real data
 
-**Local-to-Cloud Integration**:
-- MCP proxy for web access
-- Real-time data synchronization
-- Authentication management
-- Error handling and fallbacks
-- Performance optimization
+### 13. MCP Integration Status
+
+**Current Implementation**:
+- 17 MCP servers configured in claude-desktop-config.json
+- MCPs provide real-time intelligence data to Intelligence Hub
+- Data flows through `claudeIntelligenceServiceV2.js` service
+- Fallback handling when MCP services are unavailable
+
+**Status**: Production-ready with robust error handling
 
 ---
 
@@ -249,25 +284,25 @@ CREATE TABLE mcp_sync_status (...);
 
 ## Performance Metrics
 
-### 17. Platform Statistics
+### 17. Current Platform Status
 
 **Intelligence Processing**:
-- 17 MCP servers active
-- 15+ Edge Functions deployed
-- 5 intelligence domains monitored
-- Real-time data updates every 2 minutes
+- 17 MCP servers configured and functional
+- 5+ Supabase Edge Functions deployed
+- 5 intelligence domains: Competitor, Stakeholder, Narrative, Campaign, Predictive
+- Real-time data synthesis through Claude Intelligence Service V2
 
-**User Experience**:
-- 100+ new React components
-- Sub-2 second page load times
-- Real-time collaboration features
-- Mobile-responsive design
+**Production Deployment**:
+- Vercel hosting with automatic git deployment
+- Supabase backend with PostgreSQL database
+- Professional UI with resolved visibility issues
+- Four-module layout with clean navigation
 
-**AI Capabilities**:
-- Advanced Claude integration
-- Multi-modal content generation
-- Predictive analytics
-- Autonomous orchestration
+**Recent Achievements**:
+- Fixed Intelligence Hub 500 errors
+- Connected to real MCP data (no more fallback data)
+- Deployed specialized Claude analysis personas
+- Professional UI/UX with visible, functional interface
 
 ---
 
@@ -356,31 +391,46 @@ Learning Integration → MemoryVault Storage
 
 ## Business Impact
 
-### 22. Key Achievements
+### 22. Platform Capabilities
 
-**Operational Efficiency**:
-- 80% reduction in manual intelligence gathering
-- 60% faster opportunity identification
-- 90% automation of routine PR tasks
-- Real-time crisis response capabilities
+**Intelligence Automation**:
+- Real-time competitor and market monitoring
+- AI-powered stakeholder sentiment analysis
+- Narrative opportunity detection with Claude synthesis
+- Predictive analytics with cascade effect modeling
 
-**Strategic Advantages**:
-- Predictive intelligence capabilities
-- Competitive advantage identification
-- Narrative vacuum exploitation
-- Cascade effect prediction
+**Technical Achievements**:
+- Functional Intelligence Hub with live data connections
+- 17 MCP agents providing specialized intelligence
+- Claude-powered analysis with expert personas
+- Production-ready Supabase + Vercel architecture
 
 **User Experience**:
-- Intuitive AI-first interface
-- Real-time collaboration
-- Mobile accessibility
-- Comprehensive analytics
+- Clean, professional interface (resolved visibility issues)
+- Four-module navigation system
+- Real-time data updates without manual refresh
+- AI-first workflow with Niv strategic advisor integration
 
 ---
 
-**Platform Status**: Production Ready
+## Current Status & Next Steps
+
+**Platform Status**: ✅ Production Ready
 **Last Updated**: January 2025
 **Version**: 2.0
 **Architecture**: Niv-First Orchestration Platform
 
-This represents a complete transformation from traditional PR tooling to an intelligent, predictive, and autonomous strategic communication platform powered by advanced AI capabilities.
+### Recent Major Fixes:
+- ✅ Intelligence Hub now connects to real data (resolved 500 errors)
+- ✅ Professional UI with visible, functional interface
+- ✅ Claude Intelligence Service V2 with specialized personas
+- ✅ MCP integration providing live intelligence data
+- ✅ Supabase Edge Functions deployed and operational
+
+### Immediate Priorities:
+- Enhance MemoryVault database schema for persistent intelligence
+- Expand MCP data processing capabilities
+- Optimize Claude synthesis performance
+- Implement advanced analytics dashboards
+
+**SignalDesk V2** represents a complete architectural transformation from traditional PR tooling to an AI-first intelligent orchestration platform, where Niv serves as the primary interface coordinating 17 specialized MCP agents to deliver real-time strategic intelligence and automated opportunity detection.
