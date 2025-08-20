@@ -5,11 +5,13 @@ import OpportunityModule from './Modules/OpportunityModule';
 import ExecutionModule from './Modules/ExecutionModule';
 import MemoryVaultModule from './Modules/MemoryVaultModule';
 import NivStrategicAdvisor from './Niv/NivStrategicAdvisor';
+import OrganizationSettings from './OrganizationSettings';
 
 const RailwayV2Enhanced = () => {
   const [activeModule, setActiveModule] = useState('intelligence');
   const [organizationData, setOrganizationData] = useState(null);
   const [nivMinimized, setNivMinimized] = useState(false);
+  const [showOrgSettings, setShowOrgSettings] = useState(false);
 
   useEffect(() => {
     // Get organization data
@@ -74,8 +76,15 @@ const RailwayV2Enhanced = () => {
         </nav>
 
         <div className="railway-status">
+          <button 
+            className="org-settings-btn"
+            onClick={() => setShowOrgSettings(true)}
+            title="Organization Settings"
+          >
+            <span className="settings-icon">⚙</span>
+            <span className="org-name">{organizationData?.name || 'Select Organization'}</span>
+          </button>
           <div className="status-indicator active"></div>
-          <span>{organizationData?.name || 'System Active'}</span>
         </div>
       </header>
 
@@ -125,6 +134,18 @@ const RailwayV2Enhanced = () => {
           )}
         </div>
       </div>
+
+      {/* Organization Settings Modal */}
+      {showOrgSettings && (
+        <OrganizationSettings
+          onClose={() => setShowOrgSettings(false)}
+          onOrganizationChange={(org) => {
+            setOrganizationData(org);
+            // Reload the page to refresh with new organization
+            window.location.reload();
+          }}
+        />
+      )}
     </div>
   );
 };
