@@ -40,6 +40,7 @@ import NivDirect from "./pages/NivDirect"; // Direct API integration - most reli
 // New Railway V2 with Neon Effects
 import RailwayV2Enhanced from "./components/RailwayV2Enhanced";
 import SystemInitializer from "./components/SystemInitializer";
+import RailwayOnboarding from "./components/RailwayOnboarding";
 
 // Log Supabase initialization for debugging
 console.log('🚀 SignalDesk initialized with Supabase:', supabase ? 'Connected' : 'Not connected');
@@ -94,7 +95,8 @@ function App() {
             {/* RailwayV2 - Modern Neon Interface */}
             <Routes>
               <Route path="/login" element={<Login />} />
-              <Route path="/initialize" element={<SystemInitializer />} />
+              <Route path="/initialize" element={<RailwayOnboarding />} />
+              <Route path="/onboarding" element={<RailwayOnboarding />} />
               <Route
                 path="/*"
                 element={
