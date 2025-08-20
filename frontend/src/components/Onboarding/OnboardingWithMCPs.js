@@ -149,12 +149,12 @@ const OnboardingWithMCPs = () => {
     }, 2000);
   };
 
-  // Map frontend service IDs to actual MCP server names
+  // Map frontend service IDs to actual Edge Function names (without -intelligence suffix)
   const getMCPServerName = (serviceId) => {
     const mapping = {
       'orchestrator': 'orchestrator',
       'media_monitoring': 'media',
-      'competitor_analysis': 'intelligence', 
+      'competitor_analysis': 'pr', // Maps to pr-intelligence Edge Function
       'opportunity_scanner': 'opportunities',
       'sentiment_analysis': 'analytics',
       'trend_detection': 'news',

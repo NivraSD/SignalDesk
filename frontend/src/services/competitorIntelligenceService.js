@@ -45,8 +45,8 @@ class CompetitorIntelligenceService {
     console.log('📋 Organization data:', organization);
     
     try {
-      // Step 1: Use Intelligence MCP for real competitor discovery
-      const competitorData = await this.callMCP('intelligence', 'gather', {
+      // Step 1: Use PR Intelligence MCP for real competitor discovery
+      const competitorData = await this.callMCP('pr', 'gather', {
         organization,
         keywords: [organization.name, organization.industry || 'technology'],
         stakeholder: 'competitors',

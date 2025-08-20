@@ -99,7 +99,7 @@ const IntelligentOnboarding = () => {
       });
       
       // Step 2: Use Intelligence MCP to discover competitors from GitHub
-      const competitorData = await callMCP('intelligence', 'gather', {
+      const competitorData = await callMCP('pr', 'gather', {
         organization: {
           name: formData.organization.name,
           url: formData.organization.website,
