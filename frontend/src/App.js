@@ -38,7 +38,7 @@ import NivDatabase from "./pages/NivDatabase"; // Database-driven Niv (no realti
 import NivDirect from "./pages/NivDirect"; // Direct API integration - most reliable
 
 // New Four-Module Layout
-import FourModuleLayout from "./components/RailwayUI/FourModuleLayout";
+// import FourModuleLayout from "./components/RailwayUI/FourModuleLayout";
 import SystemInitializer from "./components/SystemInitializer";
 
 // Log Supabase initialization for debugging
@@ -81,16 +81,16 @@ function PrivateRoute({ children }) {
 // AppRoutes function removed - using FourModuleLayout instead
 
 function App() {
-  // Using new Four-Module Layout as the main interface
-  console.log("🚀🚀🚀 V2 FOUR-MODULE LAYOUT ACTIVE - DEPLOYED:", new Date().toISOString());
-  console.log("✅ This is the CORRECT V2 version with FourModuleLayout");
+  // Using Railway Draggable UI with neon styling
+  console.log("🚀🚀🚀 RAILWAY DRAGGABLE UI ACTIVE - DEPLOYED:", new Date().toISOString());
+  console.log("✅ This is the Railway-style UI with draggable panels and neon effects");
   
   return (
     <BrowserRouter>
       <AuthProvider>
         <ProjectProvider>
           <IntelligenceProvider>
-            {/* New Four-Module Layout with Niv Strategic Advisor */}
+            {/* Railway Draggable UI with Niv Integration */}
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/initialize" element={<SystemInitializer />} />
@@ -98,7 +98,7 @@ function App() {
                 path="/*"
                 element={
                   <PrivateRoute>
-                    <FourModuleLayout />
+                    <RailwayDraggable />
                   </PrivateRoute>
                 }
               />
@@ -111,4 +111,4 @@ function App() {
 }
 
 export default App;
-// CACHE BUST: Force V2 Four-Module Layout - 2025-08-20T14:15:00Z
+// CACHE BUST: Railway Draggable UI with Neon Effects - 2025-08-20T14:31:00Z
