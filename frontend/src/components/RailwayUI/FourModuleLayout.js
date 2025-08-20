@@ -6,6 +6,7 @@ import OpportunityModule from '../Modules/OpportunityModule';
 import ExecutionModule from '../Modules/ExecutionModule';
 import MemoryVaultModule from '../Modules/MemoryVaultModule';
 import NivStrategicAdvisor from '../Niv/NivStrategicAdvisor';
+import DebugOnboarding from '../DebugOnboarding'; // Temporary debug panel
 import './FourModuleLayout.css';
 
 const FourModuleLayout = () => {
@@ -160,6 +161,9 @@ const FourModuleLayout = () => {
           </div>
         )}
       </div>
+      
+      {/* Debug Panel - Temporary */}
+      {!showOnboarding && <DebugOnboarding />}
     </div>
   );
 }

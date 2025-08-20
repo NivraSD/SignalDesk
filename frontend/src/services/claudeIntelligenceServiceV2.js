@@ -25,24 +25,27 @@ class ClaudeIntelligenceServiceV2 {
   }
 
   async gatherAndAnalyze(config, timeframe = '24h', options = {}) {
-    // Extract ALL onboarding data, not just organization and goals
+    // Extract ALL onboarding data - FIXED to match actual structure
     const organization = config.organization || {};
     const goals = config.goals || {};
-    const orgName = config.organizationName || organization.name || '';
     
-    // Properly detect industry - check config first, then detect from name
-    let industry = config.industry || detectIndustryFromOrganization(orgName);
+    // Get org details from the CORRECT location in the config structure
+    const orgName = organization.name || config.organizationName || '';
+    const industry = organization.industry || config.industry || detectIndustryFromOrganization(orgName);
+    const website = organization.website || config.website || '';
+    
     console.log(`🏭 Industry detection for ${orgName}: ${industry}`);
     
     // Get industry-specific competitors and keywords
     const industryData = getIndustryCompetitors(industry);
     
-    const website = config.website || '';
-    const stakeholders = config.stakeholders || [];
-    const additionalTopics = config.additionalTopics || [];
+    // Get stakeholders and topics from intelligence section
+    const stakeholders = config.intelligence?.stakeholders || config.stakeholders || [];
+    const additionalTopics = config.intelligence?.topics || config.monitoring?.topics || config.additionalTopics || [];
+    const keywords = config.intelligence?.keywords || config.monitoring?.keywords || [];
     
     // Use industry-specific competitors if user didn't provide any
-    const userCompetitors = config.competitors || [];
+    const userCompetitors = config.targets?.competitors || config.competitors || [];
     const competitors = userCompetitors.length > 0 ? userCompetitors : industryData.primary.slice(0, 5);
     
     // Enhanced organization object with ALL context and industry data
@@ -54,8 +57,9 @@ class ClaudeIntelligenceServiceV2 {
       competitors: competitors,
       stakeholders: stakeholders,
       topics: [...additionalTopics, ...industryData.topics],
-      keywords: industryData.keywords,
-      emergingCompetitors: industryData.emerging.slice(0, 3)
+      keywords: [...keywords, ...industryData.keywords],
+      emergingCompetitors: industryData.emerging.slice(0, 3),
+      industryContext: industryData // Include full industry data for reference
     };
     
     console.log('🎯 Full organization context:', fullOrganization);
