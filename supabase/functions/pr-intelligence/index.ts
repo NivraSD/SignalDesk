@@ -1,7 +1,8 @@
 // PR Intelligence MCP - Real competitive intelligence for PR professionals
-// NO GitHub repos - only actual companies and business intelligence
+// Uses IntelligenceCore for unified intelligence gathering
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { intelligenceCore } from "../_shared/IntelligenceCore.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -282,6 +283,10 @@ serve(async (req) => {
   }
 
   try {
+    // Allow both authenticated and public access for now
+    const authHeader = req.headers.get('Authorization')
+    console.log(`🎯 PR Intelligence: Auth present: ${!!authHeader}`)
+    
     const { method, params } = await req.json()
     console.log(`🎯 PR Intelligence: ${method} called`)
     
@@ -290,16 +295,34 @@ serve(async (req) => {
     switch (method) {
       case 'gather':
       case 'analyze': {
-        const organization = params.organization?.name || 'Company'
-        const industry = params.organization?.industry
+        const organization = params.organization || {}
+        const orgName = organization.name || 'Company'
         
-        // Find real competitors (not GitHub repos!)
-        const competitors = await findRealCompetitors(organization, industry)
+        // Use IntelligenceCore to get unified configuration
+        const config = await intelligenceCore.getOrganizationConfig(organization)
+        console.log(`Using IntelligenceCore config for ${orgName}:`, config.industry, config.competitors.length + ' competitors')
+        
+        // Gather intelligence from all sources
+        const intelligence = await intelligenceCore.gatherIntelligence(config)
+        
+        // Also find additional competitors using our existing logic
+        const additionalCompetitors = await findRealCompetitors(orgName, config.industry)
+        
+        // Merge competitors from IntelligenceCore and our search
+        const allCompetitors = [
+          ...config.competitors.map(name => ({ name, source: 'IntelligenceCore', relevance: 'high' })),
+          ...additionalCompetitors.filter(c => !config.competitors.includes(c.name))
+        ]
         
         // Get detailed intelligence for top competitors
         const insights = []
-        for (const competitor of competitors.slice(0, 10)) {
+        for (const competitor of allCompetitors.slice(0, 15)) {
           const intel = await getCompetitorIntelligence(competitor)
+          
+          // Check if this competitor has mentions in the intelligence news
+          const competitorMentions = intelligence.news.filter(article =>
+            article.title?.includes(competitor.name) || article.description?.includes(competitor.name)
+          )
           
           // Format as PR-useful insight
           insights.push({
@@ -307,30 +330,62 @@ serve(async (req) => {
             title: competitor.name,
             insight: intel.recentMoves.length > 0 
               ? `${competitor.name}: ${intel.recentMoves[0].title}`
-              : `${competitor.name} - Active competitor in ${industry || 'market'}`,
-            relevance: competitor.relevance === 'known' ? 'high' : 'medium',
+              : competitorMentions.length > 0
+                ? `${competitor.name}: ${competitorMentions[0].title}`
+                : `${competitor.name} - Key player in ${config.industry}`,
+            relevance: competitor.relevance === 'high' ? 'critical' : 'high',
             actionable: true,
             suggestedAction: generatePRAction(competitor.name, intel),
-            source: competitor.source || 'News Analysis',
+            source: competitor.source || 'Industry Intelligence',
             data: {
               companyName: competitor.name,
-              latestNews: competitor.latestNews || intel.recentMoves[0],
+              latestNews: competitor.latestNews || intel.recentMoves[0] || competitorMentions[0],
               executiveChanges: intel.executiveChanges,
               moveType: intel.recentMoves[0]?.type,
-              articleUrl: competitor.articleUrl || intel.recentMoves[0]?.url
+              articleUrl: competitor.articleUrl || intel.recentMoves[0]?.url || competitorMentions[0]?.url,
+              mentions: competitorMentions.length
             },
             timestamp: new Date().toISOString()
           })
         }
         
+        // Add any alerts as high-priority insights
+        if (intelligence.alerts?.length > 0) {
+          for (const alert of intelligence.alerts.slice(0, 3)) {
+            insights.unshift({
+              type: 'alert',
+              title: 'Critical Industry Alert',
+              insight: alert.title,
+              relevance: 'critical',
+              actionable: true,
+              suggestedAction: 'Immediate assessment and response strategy required',
+              source: alert.source,
+              data: {
+                alertType: alert.type,
+                severity: alert.severity,
+                url: alert.url
+              },
+              timestamp: alert.timestamp
+            })
+          }
+        }
+        
         result = {
           insights,
           summary: {
-            totalCompetitors: insights.length,
+            industry: config.industry,
+            totalCompetitors: insights.filter(i => i.type === 'competitive').length,
             withRecentNews: insights.filter(i => i.data.latestNews).length,
-            executiveChanges: insights.filter(i => i.data.executiveChanges?.length > 0).length
+            executiveChanges: insights.filter(i => i.data.executiveChanges?.length > 0).length,
+            alerts: intelligence.alerts?.length || 0,
+            opportunities: intelligence.opportunities?.length || 0
           },
-          recommendations: generateStrategicRecommendations(organization, insights)
+          recommendations: generateStrategicRecommendations(orgName, insights),
+          intelligenceConfig: {
+            industry: config.industry,
+            monitoringKeywords: config.keywords.slice(0, 10),
+            topCompetitors: config.competitors.slice(0, 5)
+          }
         }
         break
       }

@@ -1,5 +1,7 @@
 // News Intelligence MCP - REAL multi-source news scanning
+// Uses IntelligenceCore for unified intelligence gathering
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { intelligenceCore } from "../_shared/IntelligenceCore.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -235,27 +237,38 @@ async function fetchHackerNews(query: string) {
 
 // Main aggregation function
 async function gatherAllNews(params: any) {
-  const organization = params?.organization?.name || ''
-  const industry = params?.organization?.industry || 'technology'
-  const keywords = params?.keywords || []
+  const organization = params?.organization || {}
+  const orgName = organization.name || ''
   
-  // Build search query
-  const searchTerms = [organization, industry, ...keywords].filter(Boolean)
+  // Use IntelligenceCore to get unified configuration
+  const config = await intelligenceCore.getOrganizationConfig(organization)
+  console.log(`Using IntelligenceCore config: ${config.industry}, ${config.keywords.length} keywords`)
+  
+  // Gather intelligence from IntelligenceCore sources (RSS feeds)
+  const coreIntelligence = await intelligenceCore.gatherIntelligence(config)
+  
+  // Build enhanced search query using IntelligenceCore config
+  const searchTerms = [
+    orgName,
+    ...config.keywords.slice(0, 5),
+    ...config.competitors.slice(0, 3)
+  ].filter(Boolean)
   const query = searchTerms.join(' OR ')
   
-  console.log(`Gathering news for query: ${query}`)
+  console.log(`Enhanced news query: ${query}`)
   
   // Fetch from all sources in parallel
   const [newsApiArticles, googleArticles, bingArticles, redditArticles, hnArticles] = await Promise.all([
-    fetchNewsAPI(query, industry.toLowerCase()),
+    fetchNewsAPI(query, config.industry),
     fetchGoogleNewsRSS(query),
     fetchBingNews(query),
     fetchRedditTrends(query),
     fetchHackerNews(query)
   ])
   
-  // Combine and deduplicate
+  // Combine and deduplicate - include IntelligenceCore news
   const allArticles = [
+    ...coreIntelligence.news || [],
     ...newsApiArticles,
     ...googleArticles,
     ...bingArticles,
@@ -271,28 +284,37 @@ async function gatherAllNews(params: any) {
   })
   
   // Categorize articles
-  const industryNews = allArticles.filter(a => a.type === 'industry_news')
+  const industryNews = allArticles.filter(a => a.type === 'industry_news' || !a.type)
   const breakingNews = allArticles.filter(a => a.type === 'breaking_news')
   const trends = allArticles.filter(a => a.type === 'social_trend' || a.type === 'tech_trend')
   
-  // Identify opportunities (high engagement or trending topics)
-  const opportunities = allArticles
-    .filter(a => a.score > 100 || a.comments > 50 || a.points > 100)
-    .map(a => ({
-      ...a,
-      opportunity_type: 'trending_topic',
-      suggested_action: 'Consider creating content or commentary on this trending topic'
-    }))
+  // Combine opportunities from IntelligenceCore and our own detection
+  const opportunities = [
+    ...coreIntelligence.opportunities || [],
+    ...allArticles
+      .filter(a => a.score > 100 || a.comments > 50 || a.points > 100)
+      .map(a => ({
+        ...a,
+        opportunity_type: 'trending_topic',
+        suggested_action: 'Consider creating content or commentary on this trending topic'
+      }))
+  ]
   
   return {
     industryNews: industryNews.slice(0, 20),
     breakingNews: breakingNews.slice(0, 10),
-    opportunities: opportunities.slice(0, 10),
+    opportunities: opportunities.slice(0, 15),
     trends: trends.slice(0, 15),
+    alerts: coreIntelligence.alerts || [],
+    competitorActivity: coreIntelligence.competitors || [],
     totalArticles: allArticles.length,
     totalBreaking: breakingNews.length,
     totalOpportunities: opportunities.length,
+    industry: config.industry,
+    monitoredCompetitors: config.competitors.slice(0, 10),
+    monitoredKeywords: config.keywords.slice(0, 10),
     sources: [
+      coreIntelligence.news?.length > 0 && 'Industry RSS Feeds',
       newsApiArticles.length > 0 && 'NewsAPI',
       googleArticles.length > 0 && 'Google News',
       bingArticles.length > 0 && 'Bing News',
