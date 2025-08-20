@@ -78,121 +78,7 @@ function PrivateRoute({ children }) {
   return token || user ? children : <Navigate to="/login" />;
 }
 
-// Create a wrapper component for the routes that need auth
-function AppRoutes() {
-  return (
-    <Routes>
-      {/* Login route - public */}
-      <Route path="/login" element={<Login />} />
-      
-      {/* Niv - AI PR Strategist (uses Niv-First UI) */}
-      <Route path="/niv" element={<RailwayDraggable />} />
-      <Route path="/niv-direct" element={<NivDirect />} />
-
-      {/* Homepage route - redirect to projects */}
-      <Route
-        path="/"
-        element={
-          <PrivateRoute>
-            <Navigate to="/projects" replace />
-          </PrivateRoute>
-        }
-      />
-
-      {/* Projects route - redirect to demo project */}
-      <Route
-        path="/projects"
-        element={
-          <PrivateRoute>
-            <Navigate to="/projects/demo-project" replace />
-          </PrivateRoute>
-        }
-      />
-      
-      {/* Create new project - still uses Layout */}
-      <Route
-        element={
-          <PrivateRoute>
-            <Layout />
-          </PrivateRoute>
-        }
-      >
-        <Route path="/projects/new" element={<CreateProject />} />
-        <Route path="/analytics" element={<Analytics />} />
-      </Route>
-
-      {/* Use RailwayDraggable for main project view - Draggable and resizable UI */}
-      <Route
-        path="/projects/:projectId"
-        element={
-          <PrivateRoute>
-            <RailwayDraggable />
-          </PrivateRoute>
-        }
-      />
-      
-      {/* Alternative UI versions for comparison */}
-      <Route
-        path="/projects/:projectId/unified"
-        element={
-          <PrivateRoute>
-            <UnifiedPlatform />
-          </PrivateRoute>
-        }
-      />
-      
-      <Route
-        path="/projects/:projectId/railway-panels"
-        element={
-          <PrivateRoute>
-            <RailwayPlatform />
-          </PrivateRoute>
-        }
-      />
-      
-      <Route
-        path="/projects/:projectId/canvas"
-        element={
-          <PrivateRoute>
-            <RailwayCanvas />
-          </PrivateRoute>
-        }
-      />
-      
-      {/* Legacy routes with Layout */}
-      <Route
-        path="/projects/:projectId/*"
-        element={
-          <PrivateRoute>
-            <Layout />
-          </PrivateRoute>
-        }
-      >
-        <Route path="unified" element={<UnifiedPlatform />} />
-        <Route path="memoryvault-old" element={<MemoryVault />} />
-        <Route path="ai-assistant" element={<AIAssistant />} />
-        <Route path="content-generator" element={<ContentGenerator />} />
-        <Route path="media-list" element={<MediaIntelligence />} />
-        <Route
-          path="strategic-planning"
-          element={<StrategicPlanning />}
-        />
-        <Route
-          path="campaign-execution/:campaignId"
-          element={<CampaignExecutionDashboard />}
-        />
-        <Route path="monitoring" element={<Monitoring />} />
-        <Route path="stakeholder-intelligence" element={<StakeholderIntelligenceHub />} />
-        <Route path="crisis-command" element={<CrisisCommandCenter />} />
-        <Route path="reports" element={<Reports />} />
-        <Route path="settings" element={<ProjectManagement />} />
-      </Route>
-
-      {/* Catch all - redirect to projects */}
-      <Route path="*" element={<Navigate to="/projects" replace />} />
-    </Routes>
-  );
-}
+// AppRoutes function removed - using FourModuleLayout instead
 
 function App() {
   // Using new Four-Module Layout as the main interface
@@ -223,4 +109,4 @@ function App() {
 }
 
 export default App;
-// CACHE BUST: Adaptive Niv Platform v2.2 - FIX REACT ERROR - Wed Aug 14 16:25:00 EDT 2025
+// CACHE BUST: Force V2 Four-Module Layout - 2025-08-20T14:15:00Z
