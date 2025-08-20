@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Check SignalDesk Storage</title>
+</head>
+<body>
+    <h1>SignalDesk Local Storage Check</h1>
+    <div id="results"></div>
+    
+    <button onclick="clearOnboarding()">Clear Onboarding Data</button>
+    <button onclick="window.location.href='https://signaldesk.vercel.app'">Go to SignalDesk</button>
+    
+    <script>
+        // Check what's in localStorage
+        const results = document.getElementById('results');
+        
+        // Check organization data
+        const orgData = localStorage.getItem('signaldesk_organization');
+        const onboardingData = localStorage.getItem('signaldesk_onboarding');
+        
+        results.innerHTML = `
+            <h2>Organization Data:</h2>
+            <pre>${orgData ? JSON.stringify(JSON.parse(orgData), null, 2) : 'Not found'}</pre>
+            
+            <h2>Onboarding Data:</h2>
+            <pre>${onboardingData ? JSON.stringify(JSON.parse(onboardingData), null, 2) : 'Not found'}</pre>
+            
+            <h2>All SignalDesk Keys:</h2>
+            <ul>
+                ${Object.keys(localStorage)
+                    .filter(key => key.includes('signaldesk'))
+                    .map(key => `<li>${key}: ${localStorage.getItem(key)?.substring(0, 100)}...</li>`)
+                    .join('')}
+            </ul>
+        `;
+        
+        function clearOnboarding() {
+            localStorage.removeItem('signaldesk_organization');
+            localStorage.removeItem('signaldesk_onboarding');
+            alert('Onboarding data cleared! Refresh SignalDesk to see onboarding again.');
+            location.reload();
+        }
+    </script>
+</body>
+</html>
