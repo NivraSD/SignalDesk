@@ -10,29 +10,24 @@ class IntelligenceGatheringService {
     this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
   }
 
-  // Call MCP servers through Supabase mcp-bridge
+  // Call MCP Edge Functions directly
   async callMCP(server, method, params) {
     try {
-      const response = await fetch(`${this.supabaseUrl}/functions/v1/mcp-bridge`, {
+      const response = await fetch(`${this.supabaseUrl}/functions/v1/${server}-intelligence`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        mode: 'cors',
         body: JSON.stringify({
-          server,
           method,
-          params,
-          organizationId: localStorage.getItem('signaldesk_org_id') || 'default'
+          params
         })
       });
 
       if (response.ok) {
         const data = await response.json();
-        if (data.result && data.result.data) {
-          return data.result.data;
-        } else if (data.result) {
-          return data.result;
+        if (data.success && data.data) {
+          return data.data;
         }
       }
     } catch (error) {

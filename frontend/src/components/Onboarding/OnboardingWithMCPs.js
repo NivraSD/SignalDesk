@@ -152,12 +152,16 @@ const OnboardingWithMCPs = () => {
   // Map frontend service IDs to actual MCP server names
   const getMCPServerName = (serviceId) => {
     const mapping = {
+      'orchestrator': 'orchestrator',
       'media_monitoring': 'media',
-      'competitor_analysis': 'intelligence',
+      'competitor_analysis': 'intelligence', 
       'opportunity_scanner': 'opportunities',
-      'trend_analysis': 'news',
+      'sentiment_analysis': 'analytics',
+      'trend_detection': 'news',
       'stakeholder_mapping': 'relationships',
-      'narrative_tracking': 'social'
+      'content_optimizer': 'content',
+      'risk_assessment': 'crisis',
+      'cascade_prediction': 'monitor'
     };
     return mapping[serviceId] || serviceId;
   };
@@ -197,30 +201,26 @@ const OnboardingWithMCPs = () => {
   };
 
   const callMCPService = async (serviceId, config) => {
-    // Use Supabase mcp-bridge Edge Function
     const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co';
-    const SUPABASE_ANON_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
     
     try {
-      // Call the Supabase mcp-bridge Edge Function
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/mcp-bridge`, {
+      // Call Edge Function directly (no mcp-bridge)
+      const mcpName = getMCPServerName(serviceId);
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/${mcpName}-intelligence`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json'
         },
-        mode: 'cors',
         body: JSON.stringify({
-          server: getMCPServerName(serviceId),
           method: getMCPMethod(serviceId),
-          params: getMCPParams(serviceId, config),
-          organizationId: config.organization.name || 'onboarding'
+          params: getMCPParams(serviceId, config)
         })
       });
       
       if (response.ok) {
         const data = await response.json();
-        if (data.result) {
-          return processServiceResponse(serviceId, data.result);
+        if (data.success && data.data) {
+          return processServiceResponse(serviceId, data.data);
         }
       }
     } catch (error) {
