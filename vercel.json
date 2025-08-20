@@ -1,7 +1,12 @@
 {
+  "functions": {
+    "api/**/*.js": {
+      "maxDuration": 30
+    }
+  },
   "buildCommand": "cd frontend && npm ci --legacy-peer-deps && npm run build",
   "outputDirectory": "frontend/build",
-  "framework": "create-react-app",
+  "framework": null,
   "installCommand": "cd frontend && npm install --legacy-peer-deps",
   "env": {
     "REACT_APP_SUPABASE_URL": "https://zskaxjtyuaqazydouifp.supabase.co",
