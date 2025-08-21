@@ -25,6 +25,33 @@ class ClaudeIntelligenceServiceV2 {
     this.pendingRequests = new Map(); // Track pending requests to prevent duplicates
   }
 
+  /**
+   * Helper function to extract stakeholders as an array from either array or object format
+   */
+  extractStakeholdersArray(stakeholders) {
+    if (!stakeholders) return [];
+    
+    // If it's already an array, return it
+    if (Array.isArray(stakeholders)) {
+      return stakeholders;
+    }
+    
+    // If it's an object with stakeholder groups, flatten all values
+    if (typeof stakeholders === 'object') {
+      const allStakeholders = [];
+      for (const [category, items] of Object.entries(stakeholders)) {
+        if (Array.isArray(items)) {
+          allStakeholders.push(...items);
+        } else if (typeof items === 'string') {
+          allStakeholders.push(items);
+        }
+      }
+      return allStakeholders;
+    }
+    
+    return [];
+  }
+
   async gatherAndAnalyze(config, timeframe = '24h', options = {}) {
     console.log('🔍 RAW CONFIG RECEIVED:', config);
     console.log('🔍 Config structure:', {
@@ -200,7 +227,7 @@ class ClaudeIntelligenceServiceV2 {
           
           // Rich stakeholder data from AI
           stakeholders: [...new Set([
-            ...(organization.stakeholders || []), 
+            ...this.extractStakeholdersArray(organization.stakeholders), 
             ...fullAnalysis.stakeholder_groups.slice(0, 6)
           ])],
           
@@ -272,7 +299,7 @@ class ClaudeIntelligenceServiceV2 {
         return {
           ...organization,
           competitors: [...new Set([...(organization.competitors || []), ...(enhanced.competitors || [])])],
-          stakeholders: [...new Set([...(organization.stakeholders || []), ...(enhanced.stakeholders || [])])],
+          stakeholders: [...new Set([...this.extractStakeholdersArray(organization.stakeholders), ...this.extractStakeholdersArray(enhanced.stakeholders)])],
           topics: [...new Set([...(organization.topics || []), ...(enhanced.topics || [])])],
           keywords: [...new Set([...(organization.keywords || []), ...(enhanced.keywords || [])])],
           industryInsights: enhanced.industryInsights || {},
