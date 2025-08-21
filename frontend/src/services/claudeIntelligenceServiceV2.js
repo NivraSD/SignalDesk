@@ -6,6 +6,7 @@ import aiIndustryExpansionService from './aiIndustryExpansionService';
 import organizationProfileService from './organizationProfileService';
 import tabIntelligenceService from './tabIntelligenceService';
 import intelligentDiscoveryService from './intelligentDiscoveryService';
+import intelligenceOrchestratorService from './intelligenceOrchestratorService';
 
 class ClaudeIntelligenceServiceV2 {
   constructor() {
@@ -66,9 +67,30 @@ class ClaudeIntelligenceServiceV2 {
     const website = config.organization?.website || config.website || '';
     const description = config.organization?.description || '';
     const goals = config.goals || {};
+    const industry = config.organization?.industry || config.industry || '';
     
     console.log(`🏢 Analyzing ${orgName}`);
     console.log('🎯 Goals:', Object.keys(goals).filter(k => goals[k]));
+    
+    // Try using the Intelligence Orchestrator for optimal 4-phase flow
+    if (orgName) {
+      console.log('🚀 Using Intelligence Orchestrator for optimal 4-phase flow');
+      try {
+        const orchestratedResult = await intelligenceOrchestratorService.orchestrateIntelligence(
+          { name: orgName, industry: industry },
+          'full'
+        );
+        
+        if (orchestratedResult.success) {
+          console.log('✅ Orchestrator succeeded, using optimized intelligence');
+          
+          // Transform orchestrated result to match expected format
+          return this.transformOrchestratedResult(orchestratedResult, config);
+        }
+      } catch (error) {
+        console.log('⚠️ Orchestrator failed, falling back to original flow:', error);
+      }
+    }
     
     // Step 1: Intelligent Discovery (replaces broken onboarding)
     let discoveredIntelligence;
@@ -711,6 +733,76 @@ class ClaudeIntelligenceServiceV2 {
         fallback_mode: true,
         personas_used: [],
         confidence_scores: {}
+      }
+    };
+  }
+
+  /**
+   * Transform orchestrated result to match the expected format
+   */
+  transformOrchestratedResult(orchestratedResult, config) {
+    const insights = orchestratedResult.insights || {};
+    const intelligence = orchestratedResult.intelligence || {};
+    const stats = orchestratedResult.stats || {};
+    
+    // Build the response in the expected format
+    return {
+      // Tab content
+      tabIntelligence: {
+        competition: {
+          competitors: insights.competitive?.competitors || [],
+          positioning: insights.competitive?.positioning || {},
+          advantages: insights.competitive?.advantages || [],
+          threats: insights.competitive?.threats || [],
+          recommendations: insights.competitive?.recommendations || []
+        },
+        stakeholders: {
+          groups: insights.stakeholder?.groups || [],
+          sentiment: insights.stakeholder?.sentiment || {},
+          concerns: insights.stakeholder?.concerns || [],
+          communications: insights.stakeholder?.communications || []
+        },
+        topics: {
+          trends: intelligence.industry_trends || [],
+          emerging: intelligence.emerging_topics || [],
+          discussions: intelligence.discussions || []
+        },
+        predictions: insights.predictive || {}
+      },
+      
+      // Executive overview
+      executiveOverview: intelligence.executive_summary || {
+        key_insights: intelligence.key_insights || [],
+        critical_actions: intelligence.critical_actions || [],
+        opportunities: insights.opportunity?.immediate || [],
+        risks: insights.risk?.immediate || []
+      },
+      
+      // MCP data (from orchestrator)
+      raw_mcp_data: {
+        competitors_identified: stats.competitors || 0,
+        websites_scraped: stats.websites || 0,
+        articles_processed: stats.articles || 0,
+        sources_used: stats.sources || 0
+      },
+      
+      // Analysis metadata
+      analysis_metadata: {
+        timestamp: orchestratedResult.timestamp || new Date().toISOString(),
+        orchestrator_used: true,
+        phases_completed: orchestratedResult.phases || {},
+        organization: orchestratedResult.organization,
+        industry: orchestratedResult.industry,
+        confidence_scores: intelligence.confidence_scores || {}
+      },
+      
+      // Profile data
+      profile: {
+        organization: config.organization || {},
+        goals: config.goals || {},
+        stakeholders: insights.stakeholder?.groups || [],
+        topics: intelligence.topics || [],
+        keywords: intelligence.keywords || []
       }
     };
   }
