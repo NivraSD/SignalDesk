@@ -1,0 +1,28 @@
+// Add this code after line 427 in pr-intelligence/index.ts
+// Right after: const config = await intelligenceCore.getOrganizationConfig(organization)
+
+// DEBUG: Log what IntelligenceCore returns
+console.log('DEBUG - Organization:', organization)
+console.log('DEBUG - Config from IntelligenceCore:', {
+  industry: config.industry,
+  competitorCount: config.competitors?.length || 0,
+  competitors: config.competitors || [],
+  keywords: config.keywords?.slice(0, 5) || []
+})
+
+// TEMPORARY FIX: If no competitors from IntelligenceCore, add them directly
+if (config.competitors.length === 0 && organization.industry === 'conglomerate') {
+  console.log('DEBUG - Applying conglomerate competitor fix')
+  config.competitors = [
+    'Mitsubishi Corporation',
+    'Sumitomo Corporation', 
+    'Itochu Corporation',
+    'Marubeni Corporation',
+    'Sojitz',
+    'Toyota Tsusho',
+    'Berkshire Hathaway',
+    'General Electric',
+    'Siemens',
+    '3M'
+  ]
+}

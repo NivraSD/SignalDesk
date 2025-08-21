@@ -232,7 +232,8 @@
       "WebFetch(domain:signaldesk-pn23ejb5x-nivra-sd.vercel.app)",
       "Bash(CI=false npm run build)",
       "WebFetch(domain:signaldesk-gjbulgow5-nivra-sd.vercel.app)",
-      "WebFetch(domain:signaldesk-og2zsu368-nivra-sd.vercel.app)"
+      "WebFetch(domain:signaldesk-og2zsu368-nivra-sd.vercel.app)",
+      "Bash(docker:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

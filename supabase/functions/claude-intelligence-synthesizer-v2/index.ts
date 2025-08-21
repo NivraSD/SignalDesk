@@ -12,6 +12,8 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 // Log API key status for debugging
 console.log('🔑 ANTHROPIC_API_KEY exists:', !!ANTHROPIC_API_KEY)
 console.log('🔑 API Key length:', ANTHROPIC_API_KEY?.length || 0)
+console.log('🔑 API Key starts with:', ANTHROPIC_API_KEY?.substring(0, 10))
+console.log('🔑 All env vars:', Object.keys(Deno.env.toObject()))
 
 // Initialize Supabase client for memory access
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY || '')
@@ -273,8 +275,12 @@ async function enhanceOrganizationData(organization: any, goals: any, enhancemen
     }
   }
   
-  if (!ANTHROPIC_API_KEY) {
+  // Try to get the key again in case it wasn't available at startup
+  const apiKey = ANTHROPIC_API_KEY || Deno.env.get('ANTHROPIC_API_KEY')
+  
+  if (!apiKey) {
     console.error('❌ ANTHROPIC_API_KEY not configured, returning built-in data')
+    console.error('Available env vars:', Object.keys(Deno.env.toObject()))
     return baseData
   }
 
@@ -308,7 +314,7 @@ Output ONLY the JSON object, no markdown, no explanations.`
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
+        'x-api-key': apiKey,
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
@@ -489,11 +495,26 @@ function getFallbackAnalysis(personaName: string, prompt: string, context: any) 
   }
 }
 
-// Call Claude API
-async function callClaude(prompt: string, model: string = 'claude-sonnet-4-20250514') {
-  if (!ANTHROPIC_API_KEY) {
+// Helper function for exponential backoff delay
+async function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+// Call Claude API with retry logic for 529 errors
+async function callClaude(prompt: string, model: string = 'claude-sonnet-4-20250514', retryCount: number = 0): Promise<string> {
+  // Try to get the key again in case it wasn't available at startup
+  const apiKey = ANTHROPIC_API_KEY || Deno.env.get('ANTHROPIC_API_KEY')
+  
+  if (!apiKey) {
     console.error('❌ ANTHROPIC_API_KEY is not set!')
     throw new Error('API key not configured')
+  }
+  
+  // Add delay if this is a retry (exponential backoff)
+  if (retryCount > 0) {
+    const waitTime = Math.min(1000 * Math.pow(2, retryCount - 1), 10000) // Max 10 seconds
+    console.log(`⏱️ Waiting ${waitTime}ms before retry ${retryCount}/3...`)
+    await delay(waitTime)
   }
   
   try {
@@ -501,7 +522,7 @@ async function callClaude(prompt: string, model: string = 'claude-sonnet-4-20250
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
+        'x-api-key': apiKey,
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
@@ -517,7 +538,20 @@ async function callClaude(prompt: string, model: string = 'claude-sonnet-4-20250
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('Claude API error:', response.status, errorText)
+      console.error(`Claude API error ${response.status}:`, errorText)
+      
+      // Handle 529 (overloaded) with retry
+      if (response.status === 529 && retryCount < 3) {
+        console.log(`🔄 Claude overloaded, retrying (${retryCount + 1}/3)...`)
+        return callClaude(prompt, model, retryCount + 1)
+      }
+      
+      // Handle 503 (service unavailable) with retry
+      if (response.status === 503 && retryCount < 3) {
+        console.log(`🔄 Claude unavailable, retrying (${retryCount + 1}/3)...`)
+        return callClaude(prompt, model, retryCount + 1)
+      }
+      
       throw new Error(`Claude API error: ${response.status} - ${errorText}`)
     }
 
@@ -528,9 +562,20 @@ async function callClaude(prompt: string, model: string = 'claude-sonnet-4-20250
       throw new Error('Invalid Claude API response structure')
     }
     
+    if (retryCount > 0) {
+      console.log('✅ Claude API call successful after retry')
+    }
+    
     return data.content[0].text
   } catch (error) {
     console.error('Claude API call failed:', error)
+    
+    // If it's a network error and we haven't retried too much, retry
+    if (retryCount < 3 && (error.message.includes('fetch') || error.message.includes('network'))) {
+      console.log(`🔄 Network error, retrying (${retryCount + 1}/3)...`)
+      return callClaude(prompt, model, retryCount + 1)
+    }
+    
     throw error
   }
 }
@@ -622,6 +667,16 @@ async function orchestrateAnalysis(
       requiresSecondOpinion = true // Executive decisions need validation
       break
       
+    case 'comprehensive':
+      // For comprehensive analysis, use all key personas
+      personasToUse = [
+        ANALYSIS_PERSONAS.executive_synthesizer,
+        ANALYSIS_PERSONAS.competitive_strategist,
+        ANALYSIS_PERSONAS.stakeholder_psychologist
+      ]
+      requiresSecondOpinion = false // Already using multiple perspectives
+      break
+      
     default:
       personasToUse = [
         ANALYSIS_PERSONAS.competitive_strategist,
@@ -667,12 +722,27 @@ IMPORTANT CONTEXT:
 
 Analyze this intelligence data through the lens of our strategic goals and provide actionable PR insights.`
 
-  // Perform analysis with each persona
-  const analyses = await Promise.all(
-    personasToUse.map(persona => 
-      analyzeWithPersona(persona, analysisPrompt, context, requiresSecondOpinion)
-    )
-  )
+  // Perform analysis with each persona SEQUENTIALLY to avoid overload
+  const analyses = []
+  for (let i = 0; i < personasToUse.length; i++) {
+    const persona = personasToUse[i]
+    console.log(`🎭 Analyzing with persona ${i + 1}/${personasToUse.length}: ${persona.name}`)
+    
+    // Add delay between personas to avoid overloading Claude
+    if (i > 0) {
+      console.log('⏱️ Waiting 2 seconds before next persona...')
+      await delay(2000)
+    }
+    
+    try {
+      const analysis = await analyzeWithPersona(persona, analysisPrompt, context, requiresSecondOpinion)
+      analyses.push(analysis)
+    } catch (error) {
+      console.error(`Failed to analyze with ${persona.name}:`, error.message)
+      // Continue with other personas even if one fails
+      analyses.push(null)
+    }
+  }
   
   // Combine analyses if multiple personas used
   const combinedAnalysis = personasToUse.length > 1 

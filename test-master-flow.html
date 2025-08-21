@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MASTER INTELLIGENCE FLOW - Complete Pipeline</title>
+    <style>
+        body { font-family: 'Courier New', monospace; padding: 20px; background: #000; color: #00ff00; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 { color: #00ff00; text-shadow: 0 0 10px #00ff00; }
+        .phase { margin: 20px 0; padding: 15px; border: 1px solid #00ff00; background: #001100; }
+        .phase h2 { color: #00ffff; margin-top: 0; }
+        button { background: #00ff00; color: #000; padding: 12px 24px; margin: 5px; cursor: pointer; border: none; font-weight: bold; }
+        button:hover { background: #00ffff; }
+        button:disabled { background: #333; color: #666; cursor: not-allowed; }
+        .status { padding: 10px; margin: 10px 0; border-left: 3px solid #00ff00; background: #001100; }
+        .error { border-color: #ff0000; color: #ff0000; }
+        .success { border-color: #00ff00; }
+        .warning { border-color: #ffaa00; color: #ffaa00; }
+        pre { background: #000; padding: 10px; overflow: auto; border: 1px solid #333; max-height: 300px; }
+        .data-item { margin: 5px 0; padding: 5px; background: #0a0a0a; }
+        .tabs { margin: 20px 0; }
+        .tab { display: inline-block; padding: 10px 20px; background: #001100; border: 1px solid #00ff00; cursor: pointer; }
+        .tab.active { background: #00ff00; color: #000; }
+        .tab-content { display: none; padding: 20px; background: #001100; border: 1px solid #00ff00; }
+        .tab-content.active { display: block; }
+        input, select { padding: 8px; background: #001100; color: #00ff00; border: 1px solid #00ff00; margin: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 MASTER INTELLIGENCE FLOW</h1>
+        <p>Complete 4-Phase Intelligence Gathering Pipeline</p>
+        
+        <div>
+            <input type="text" id="orgName" value="Mitsui & Co." placeholder="Organization name" size="30">
+            <select id="industryHint">
+                <option value="">Auto-detect</option>
+                <option value="conglomerate">Conglomerate</option>
+                <option value="technology">Technology</option>
+                <option value="finance">Finance</option>
+                <option value="energy">Energy</option>
+                <option value="healthcare">Healthcare</option>
+            </select>
+            <button onclick="runMasterFlow()">🎯 RUN COMPLETE MASTER FLOW</button>
+            <button onclick="testPhases()">🧪 Test Each Phase</button>
+        </div>
+        
+        <!-- PHASE 1: DISCOVERY -->
+        <div class="phase">
+            <h2>PHASE 1: INTELLIGENT DISCOVERY</h2>
+            <button onclick="runPhase1()" id="phase1-btn">Run Discovery</button>
+            <div id="phase1-status"></div>
+            <div id="phase1-result"></div>
+        </div>
+        
+        <!-- PHASE 2: SOURCE MAPPING -->
+        <div class="phase">
+            <h2>PHASE 2: SOURCE MAPPING</h2>
+            <button onclick="runPhase2()" id="phase2-btn" disabled>Map Sources</button>
+            <div id="phase2-status"></div>
+            <div id="phase2-result"></div>
+        </div>
+        
+        <!-- PHASE 3: DATA GATHERING -->
+        <div class="phase">
+            <h2>PHASE 3: PARALLEL DATA GATHERING</h2>
+            <button onclick="runPhase3()" id="phase3-btn" disabled>Gather All Data</button>
+            <div id="phase3-status"></div>
+            <div id="phase3-result"></div>
+        </div>
+        
+        <!-- PHASE 4: SYNTHESIS -->
+        <div class="phase">
+            <h2>PHASE 4: INTELLIGENT SYNTHESIS</h2>
+            <button onclick="runPhase4()" id="phase4-btn" disabled>Synthesize Intelligence</button>
+            <div id="phase4-status"></div>
+            <div id="phase4-result"></div>
+        </div>
+        
+        <!-- RESULTS TABS -->
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('overview')">Overview</div>
+            <div class="tab" onclick="showTab('discovery')">Discovery</div>
+            <div class="tab" onclick="showTab('sources')">Sources</div>
+            <div class="tab" onclick="showTab('gathered')">Gathered Data</div>
+            <div class="tab" onclick="showTab('synthesis')">Final Intelligence</div>
+        </div>
+        
+        <div id="overview" class="tab-content active"></div>
+        <div id="discovery" class="tab-content"></div>
+        <div id="sources" class="tab-content"></div>
+        <div id="gathered" class="tab-content"></div>
+        <div id="synthesis" class="tab-content"></div>
+    </div>
+    
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const NEWS_API_KEY = '44466831285e41dfa4c1fb4bf6f1a92f';
+        
+        // Helper function to fetch Google News directly
+        async function fetchGoogleNewsDirect(keyword) {
+            try {
+                // Direct fetch to Google News RSS
+                const proxyUrl = 'https://api.allorigins.win/raw?url=';
+                const googleUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(keyword)}&hl=en-US&gl=US&ceid=US:en`;
+                
+                const response = await fetch(proxyUrl + encodeURIComponent(googleUrl));
+                const xml = await response.text();
+                
+                const items = xml.match(/<item>([\s\S]*?)<\/item>/gi) || [];
+                const articles = [];
+                
+                for (const item of items.slice(0, 5)) {
+                    const title = item.match(/<title>(.*?)<\/title>/)?.[1] || '';
+                    const link = item.match(/<link>(.*?)<\/link>/)?.[1] || '';
+                    
+                    if (title && link) {
+                        articles.push({
+                            title: title.replace(/<!\[CDATA\[|\]\]>/g, ''),
+                            url: link,
+                            source: { name: 'Google News' },
+                            publishedAt: new Date().toISOString()
+                        });
+                    }
+                }
+                
+                console.log(`Google News Direct for "${keyword}":`, articles.length, 'articles');
+                return articles;
+            } catch (error) {
+                console.error('Google News direct fetch error:', error);
+                return [];
+            }
+        }
+        
+        // Global storage for flow data
+        let flowData = {
+            discovery: null,
+            sources: null,
+            gathered: null,
+            synthesis: null
+        };
+        
+        function showTab(name) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(name).classList.add('active');
+        }
+        
+        // PHASE 1: Intelligent Discovery
+        async function runPhase1() {
+            const orgName = document.getElementById('orgName').value;
+            const industryHint = document.getElementById('industryHint').value;
+            const status = document.getElementById('phase1-status');
+            const result = document.getElementById('phase1-result');
+            
+            status.innerHTML = '<div class="status">🔍 Running intelligent discovery...</div>';
+            
+            try {
+                // Call the intelligent-discovery Edge Function with auth header
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligent-discovery`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0'
+                    },
+                    body: JSON.stringify({
+                        organization: orgName,
+                        industry_hint: industryHint
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    flowData.discovery = data.data;
+                    
+                    result.innerHTML = `
+                        <div class="success">✅ Discovery Complete</div>
+                        <div class="data-item"><strong>Category:</strong> ${data.data.primary_category}</div>
+                        <div class="data-item"><strong>Sub-categories:</strong> ${data.data.sub_categories?.join(', ')}</div>
+                        <div class="data-item"><strong>Competitors:</strong> ${data.data.competitors?.length || 0} found</div>
+                        <div class="data-item"><strong>Scrape targets:</strong> ${data.data.scrape_targets?.length || 0} websites</div>
+                        <div class="data-item"><strong>Keywords:</strong> ${data.data.search_keywords?.join(', ')}</div>
+                    `;
+                    
+                    document.getElementById('phase2-btn').disabled = false;
+                    
+                    // Update discovery tab
+                    document.getElementById('discovery').innerHTML = `
+                        <h3>Discovery Results</h3>
+                        <pre>${JSON.stringify(data.data, null, 2)}</pre>
+                    `;
+                } else {
+                    throw new Error(data.error || 'Discovery failed');
+                }
+            } catch (error) {
+                status.innerHTML = `<div class="status error">❌ Discovery failed: ${error.message}</div>`;
+                
+                // Fallback for testing
+                if (orgName.toLowerCase().includes('mitsui')) {
+                    flowData.discovery = {
+                        organization: orgName,
+                        primary_category: 'conglomerate',
+                        sub_categories: ['trading', 'energy', 'infrastructure'],
+                        competitors: ['Mitsubishi Corporation', 'Sumitomo Corporation', 'Itochu Corporation'],
+                        search_keywords: ['sogo shosha', 'Japanese trading house'],
+                        scrape_targets: [
+                            'https://www.mitsui.com',
+                            'https://www.mitsubishicorp.com',
+                            'https://www.sumitomocorp.com'
+                        ]
+                    };
+                    document.getElementById('phase2-btn').disabled = false;
+                    result.innerHTML = '<div class="warning">Using fallback discovery data</div>';
+                }
+            }
+        }
+        
+        // PHASE 2: Source Mapping
+        async function runPhase2() {
+            const status = document.getElementById('phase2-status');
+            const result = document.getElementById('phase2-result');
+            
+            if (!flowData.discovery) {
+                status.innerHTML = '<div class="status error">Run Phase 1 first!</div>';
+                return;
+            }
+            
+            status.innerHTML = '<div class="status">🗺️ Mapping sources from MasterSourceRegistry...</div>';
+            
+            // Map discovery to actual sources
+            // In production, this would call a source-mapper Edge Function
+            // For now, we'll map based on categories
+            
+            const categories = flowData.discovery.mapped_registry_categories || 
+                             flowData.discovery.sub_categories || 
+                             [flowData.discovery.primary_category];
+            
+            flowData.sources = {
+                rss_feeds: [],
+                scrape_urls: flowData.discovery.scrape_targets || [],
+                api_queries: {
+                    newsapi: flowData.discovery.search_keywords || [],
+                    google_news: [flowData.discovery.organization]
+                }
+            };
+            
+            // Add RSS feeds based on categories
+            if (categories.includes('finance') || categories.includes('conglomerate')) {
+                flowData.sources.rss_feeds.push(
+                    'https://www.ft.com/rss/home',
+                    'https://feeds.bloomberg.com/markets/news.rss',
+                    'https://feeds.reuters.com/reuters/businessNews'
+                );
+            }
+            if (categories.includes('energy')) {
+                flowData.sources.rss_feeds.push(
+                    'https://oilprice.com/rss/main',
+                    'https://www.energyvoice.com/feed/'
+                );
+            }
+            
+            result.innerHTML = `
+                <div class="success">✅ Source Mapping Complete</div>
+                <div class="data-item"><strong>RSS Feeds:</strong> ${flowData.sources.rss_feeds.length}</div>
+                <div class="data-item"><strong>Websites to scrape:</strong> ${flowData.sources.scrape_urls.length}</div>
+                <div class="data-item"><strong>API keywords:</strong> ${flowData.sources.api_queries.newsapi.length}</div>
+            `;
+            
+            document.getElementById('phase3-btn').disabled = false;
+            
+            // Update sources tab
+            document.getElementById('sources').innerHTML = `
+                <h3>Mapped Sources</h3>
+                <h4>RSS Feeds:</h4>
+                ${flowData.sources.rss_feeds.map(f => `<div class="data-item">${f}</div>`).join('')}
+                <h4>Scrape Targets:</h4>
+                ${flowData.sources.scrape_urls.map(u => `<div class="data-item">${u}</div>`).join('')}
+                <h4>Search Keywords:</h4>
+                ${flowData.sources.api_queries.newsapi.map(k => `<div class="data-item">${k}</div>`).join('')}
+            `;
+        }
+        
+        // PHASE 3: Parallel Data Gathering
+        async function runPhase3() {
+            const status = document.getElementById('phase3-status');
+            const result = document.getElementById('phase3-result');
+            
+            if (!flowData.sources) {
+                status.innerHTML = '<div class="status error">Run Phase 2 first!</div>';
+                return;
+            }
+            
+            status.innerHTML = '<div class="status">🌐 Gathering from ALL sources in parallel...</div>';
+            
+            flowData.gathered = {
+                scraper: {},
+                news: [],
+                rss: []
+            };
+            
+            try {
+                // Parallel gathering from all sources
+                const promises = [];
+                
+                // 1. Scrape ALL websites (not just one!)
+                for (const url of flowData.sources.scrape_urls) {
+                    status.innerHTML += `<div class="status">Scraping ${url}...</div>`;
+                    
+                    promises.push(
+                        fetch(`${SUPABASE_URL}/functions/v1/scraper-intelligence`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                method: 'scrape',
+                                params: { url }
+                            })
+                        }).then(r => r.json()).then(data => {
+                            const domain = new URL(url).hostname;
+                            flowData.gathered.scraper[domain] = data.data;
+                            return data;
+                        }).catch(e => {
+                            console.error(`Scrape error for ${url}:`, e);
+                            return null;
+                        })
+                    );
+                }
+                
+                // 2. Fetch news from multiple sources
+                // 2a. Try NewsAPI top-headlines (doesn't require paid plan)
+                promises.push(
+                    fetch(`https://newsapi.org/v2/top-headlines?category=business&language=en&pageSize=20&apiKey=${NEWS_API_KEY}`)
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.status === 'ok' && data.articles) {
+                                flowData.gathered.news = data.articles || [];
+                                console.log('NewsAPI headlines:', data.articles.length);
+                            }
+                            return data;
+                        })
+                        .catch(e => {
+                            console.error('NewsAPI error:', e);
+                            return null;
+                        })
+                );
+                
+                // 2b. Google News RSS (FREE, no API key needed)
+                for (const keyword of flowData.sources.api_queries.newsapi.slice(0, 3)) {
+                    const googleNewsUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(keyword)}&hl=en-US&gl=US&ceid=US:en`;
+                    promises.push(
+                        fetch(`/api/fetch-rss?url=${encodeURIComponent(googleNewsUrl)}`)
+                            .then(r => r.text())
+                            .then(xml => {
+                                // Parse RSS XML
+                                const items = xml.match(/<item>([\s\S]*?)<\/item>/gi) || [];
+                                const articles = [];
+                                
+                                for (const item of items.slice(0, 10)) {
+                                    const title = item.match(/<title>(.*?)<\/title>/)?.[1] || '';
+                                    const link = item.match(/<link>(.*?)<\/link>/)?.[1] || '';
+                                    const pubDate = item.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || '';
+                                    
+                                    if (title && link) {
+                                        articles.push({
+                                            title: title.replace(/<!\[CDATA\[|\]\]>/g, ''),
+                                            url: link,
+                                            source: { name: 'Google News' },
+                                            publishedAt: pubDate || new Date().toISOString()
+                                        });
+                                    }
+                                }
+                                
+                                // Add to news array
+                                if (!flowData.gathered.news) flowData.gathered.news = [];
+                                flowData.gathered.news.push(...articles);
+                                console.log(`Google News for "${keyword}":`, articles.length);
+                                return articles;
+                            })
+                            .catch(e => {
+                                console.error(`Google News RSS error for ${keyword}:`, e);
+                                // Try direct fetch as fallback
+                                return fetchGoogleNewsDirect(keyword);
+                            })
+                    );
+                }
+                
+                // 3. Fetch RSS feeds (simulated)
+                // In production, this would fetch actual RSS feeds
+                flowData.gathered.rss = flowData.sources.rss_feeds.map(feed => ({
+                    source: feed,
+                    articles: [] // Would contain actual RSS items
+                }));
+                
+                // Wait for all gathering to complete
+                await Promise.all(promises);
+                
+                // Count results
+                const scraperCount = Object.keys(flowData.gathered.scraper).length;
+                const newsCount = flowData.gathered.news.length;
+                
+                result.innerHTML = `
+                    <div class="success">✅ Data Gathering Complete</div>
+                    <div class="data-item"><strong>Websites scraped:</strong> ${scraperCount} / ${flowData.sources.scrape_urls.length}</div>
+                    <div class="data-item"><strong>News articles:</strong> ${newsCount}</div>
+                    <div class="data-item"><strong>RSS sources:</strong> ${flowData.gathered.rss.length}</div>
+                    <div class="data-item"><strong>Total data points:</strong> ${scraperCount * 5 + newsCount}</div>
+                `;
+                
+                document.getElementById('phase4-btn').disabled = false;
+                
+                // Update gathered tab
+                document.getElementById('gathered').innerHTML = `
+                    <h3>Gathered Data Summary</h3>
+                    <h4>Scraped Websites (${scraperCount}):</h4>
+                    ${Object.keys(flowData.gathered.scraper).map(domain => `
+                        <div class="data-item">
+                            <strong>${domain}:</strong>
+                            ${JSON.stringify(flowData.gathered.scraper[domain]?.signals?.meta || 'No data').substring(0, 100)}...
+                        </div>
+                    `).join('')}
+                    <h4>News Articles (${newsCount}):</h4>
+                    ${flowData.gathered.news.slice(0, 5).map(article => `
+                        <div class="data-item">
+                            <strong>${article.source?.name}:</strong> ${article.title}
+                        </div>
+                    `).join('')}
+                `;
+                
+            } catch (error) {
+                status.innerHTML += `<div class="status error">❌ Gathering error: ${error.message}</div>`;
+            }
+        }
+        
+        // PHASE 4: Intelligent Synthesis
+        async function runPhase4() {
+            const status = document.getElementById('phase4-status');
+            const result = document.getElementById('phase4-result');
+            
+            if (!flowData.gathered) {
+                status.innerHTML = '<div class="status error">Run Phase 3 first!</div>';
+                return;
+            }
+            
+            status.innerHTML = '<div class="status">🧠 Synthesizing with Claude...</div>';
+            
+            try {
+                // Send ALL gathered data to Claude
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/claude-intelligence-synthesizer-v2`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        organization: {
+                            name: flowData.discovery.organization,
+                            industry: flowData.discovery.primary_category,
+                            competitors: flowData.discovery.competitors
+                        },
+                        intelligence_type: 'comprehensive',
+                        mcp_data: {
+                            scraper: flowData.gathered.scraper,
+                            news: {
+                                articles: flowData.gathered.news,
+                                totalArticles: flowData.gathered.news.length
+                            },
+                            pr: {
+                                intelligenceConfig: {
+                                    topCompetitors: flowData.discovery.competitors
+                                }
+                            }
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                flowData.synthesis = data;
+                
+                if (data.success || data.analysis) {
+                    result.innerHTML = `
+                        <div class="success">✅ Intelligence Synthesis Complete</div>
+                        <div class="data-item">Analysis generated with ${Object.keys(flowData.gathered.scraper).length} websites + ${flowData.gathered.news.length} articles</div>
+                    `;
+                    
+                    // Update synthesis tab
+                    document.getElementById('synthesis').innerHTML = `
+                        <h3>Final Intelligence Report</h3>
+                        <div class="data-item">
+                            <h4>Executive Summary:</h4>
+                            ${data.analysis?.executive_summary || 
+                              data.analysis?.multi_perspective_analysis?.['Executive Intelligence Synthesizer']?.analysis?.analysis ||
+                              'No summary generated'}
+                        </div>
+                        <div class="data-item">
+                            <h4>Key Insights:</h4>
+                            ${(data.analysis?.key_insights || []).map(i => `<div>• ${i}</div>`).join('') || 'No insights'}
+                        </div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    throw new Error(data.error || 'Synthesis failed');
+                }
+            } catch (error) {
+                status.innerHTML += `<div class="status error">❌ Synthesis error: ${error.message}</div>`;
+            }
+        }
+        
+        // Run complete master flow
+        async function runMasterFlow() {
+            await runPhase1();
+            await new Promise(r => setTimeout(r, 2000));
+            await runPhase2();
+            await new Promise(r => setTimeout(r, 1000));
+            await runPhase3();
+            await new Promise(r => setTimeout(r, 1000));
+            await runPhase4();
+            
+            // Update overview
+            document.getElementById('overview').innerHTML = `
+                <h2>✅ MASTER FLOW COMPLETE</h2>
+                <div class="success">
+                    <strong>Organization:</strong> ${flowData.discovery?.organization}<br>
+                    <strong>Category:</strong> ${flowData.discovery?.primary_category}<br>
+                    <strong>Competitors Analyzed:</strong> ${flowData.discovery?.competitors?.length || 0}<br>
+                    <strong>Websites Scraped:</strong> ${Object.keys(flowData.gathered?.scraper || {}).length}<br>
+                    <strong>News Articles:</strong> ${flowData.gathered?.news?.length || 0}<br>
+                    <strong>Intelligence Generated:</strong> ${flowData.synthesis?.success ? 'YES' : 'NO'}
+                </div>
+            `;
+        }
+        
+        // Test each phase individually
+        async function testPhases() {
+            const phases = [runPhase1, runPhase2, runPhase3, runPhase4];
+            for (let i = 0; i < phases.length; i++) {
+                await phases[i]();
+                await new Promise(r => setTimeout(r, 3000));
+            }
+        }
+    </script>
+</body>
+</html>

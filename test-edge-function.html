@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Edge Functions</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #0f0; }
+        button { background: #00ff00; color: #000; padding: 10px 20px; margin: 10px; cursor: pointer; }
+        pre { background: #000; padding: 15px; overflow: auto; max-height: 400px; }
+        .error { color: #ff0000; }
+        .success { color: #00ff00; }
+    </style>
+</head>
+<body>
+    <h1>Edge Function Test - Direct Calls</h1>
+    
+    <button onclick="testPRIntelligence()">Test PR Intelligence</button>
+    <button onclick="testNewsIntelligence()">Test News Intelligence</button>
+    <button onclick="testDirectCore()">Test IntelligenceCore Config</button>
+    
+    <div id="output"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        const output = document.getElementById('output');
+        
+        async function testPRIntelligence() {
+            output.innerHTML = '<pre>Testing PR Intelligence...</pre>';
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/pr-intelligence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        method: 'gather',
+                        params: {
+                            organization: {
+                                name: 'Mitsui & Co.',
+                                industry: 'conglomerate'
+                            },
+                            timeframe: '24h'
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                output.innerHTML = `
+                    <h3 class="success">PR Intelligence Response:</h3>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                    <h4>Analysis:</h4>
+                    <ul>
+                        <li>Competitors found: ${data.data?.summary?.totalCompetitors || 0}</li>
+                        <li>Top competitors: ${JSON.stringify(data.data?.intelligenceConfig?.topCompetitors || [])}</li>
+                        <li>Industry detected: ${data.data?.summary?.industry}</li>
+                        <li>Keywords: ${data.data?.intelligenceConfig?.monitoringKeywords?.length || 0} keywords</li>
+                    </ul>
+                `;
+            } catch (error) {
+                output.innerHTML = `<pre class="error">Error: ${error.message}</pre>`;
+            }
+        }
+        
+        async function testNewsIntelligence() {
+            output.innerHTML = '<pre>Testing News Intelligence...</pre>';
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/news-intelligence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        method: 'gather',
+                        params: {
+                            organization: {
+                                name: 'Mitsui & Co.',
+                                industry: 'conglomerate'
+                            },
+                            timeframe: '24h'
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                output.innerHTML = `
+                    <h3 class="success">News Intelligence Response:</h3>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                output.innerHTML = `<pre class="error">Error: ${error.message}</pre>`;
+            }
+        }
+        
+        async function testDirectCore() {
+            output.innerHTML = '<pre>Testing direct IntelligenceCore call...</pre>';
+            
+            // This tests if the organization config is being built correctly
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/test-intelligence-core`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: {
+                            name: 'Mitsui & Co.',
+                            industry: 'conglomerate'
+                        }
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+                
+                const data = await response.json();
+                output.innerHTML = `
+                    <h3 class="success">IntelligenceCore Config:</h3>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                output.innerHTML = `
+                    <pre class="error">Error: ${error.message}</pre>
+                    <p>Note: test-intelligence-core function may not exist. Check the PR function above instead.</p>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

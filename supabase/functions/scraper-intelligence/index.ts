@@ -13,10 +13,12 @@ interface ScraperRequest {
   method: string
   params: {
     url?: string
+    urls?: string[]  // Support multiple URLs
     organization?: {
       name: string
       industry?: string
       url?: string
+      competitors?: string[]  // Support competitor URLs
     }
     keywords?: string[]
     stakeholder?: string
@@ -347,6 +349,81 @@ async function monitorWebsiteChanges(url: string, frequency: string) {
   }
 }
 
+function analyzeCompetitorPatterns(results: any[]) {
+  const patterns = {
+    common_technologies: [],
+    hiring_trends: [],
+    product_focus: [],
+    content_themes: [],
+    growth_signals: []
+  }
+  
+  // Analyze successful scrapes
+  const successfulScrapes = results.filter(r => !r.error && r.signals)
+  
+  if (successfulScrapes.length === 0) {
+    return patterns
+  }
+  
+  // Aggregate patterns across competitors
+  const allJobs = []
+  const allProducts = []
+  const allPress = []
+  
+  for (const scrape of successfulScrapes) {
+    if (scrape.signals?.jobs?.activePostings) {
+      allJobs.push(scrape.signals.jobs)
+    }
+    if (scrape.signals?.products) {
+      allProducts.push(...scrape.signals.products)
+    }
+    if (scrape.signals?.press) {
+      allPress.push(...scrape.signals.press)
+    }
+  }
+  
+  // Identify hiring trends
+  let totalHiring = 0
+  if (allJobs.length > 0) {
+    totalHiring = allJobs.reduce((sum, job) => sum + (job.activePostings || 0), 0)
+    patterns.hiring_trends.push({
+      trend: totalHiring > 50 ? 'aggressive_expansion' : 'moderate_growth',
+      total_openings: totalHiring,
+      competitors_hiring: allJobs.length
+    })
+  }
+  
+  // Identify product themes
+  const productKeywords = {}
+  allProducts.forEach(product => {
+    // Handle both string and object formats
+    const productText = typeof product === 'string' ? product : product.content || ''
+    if (productText) {
+      const words = productText.toLowerCase().split(/\s+/)
+      words.forEach(word => {
+        if (word.length > 4) {
+          productKeywords[word] = (productKeywords[word] || 0) + 1
+        }
+      })
+    }
+  })
+  
+  patterns.product_focus = Object.entries(productKeywords)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([keyword, count]) => ({ keyword, frequency: count }))
+  
+  // Identify growth signals
+  if (allPress.length > 10) {
+    patterns.growth_signals.push('high_pr_activity')
+  }
+  if (totalHiring > 100) {
+    patterns.growth_signals.push('rapid_hiring')
+  }
+  
+  return patterns
+}
+
 serve(async (req) => {
   // Handle CORS
   if (req.method === 'OPTIONS') {
@@ -363,11 +440,60 @@ serve(async (req) => {
 
     switch (method) {
       case 'scrape':
-        // Scrape a specific URL
-        if (!params.url) {
-          throw new Error('URL parameter required for scraping')
+        // Scrape a specific URL or multiple URLs
+        if (!params.url && !params.urls) {
+          throw new Error('URL or URLs parameter required for scraping')
         }
-        data = await callScraperMCP('scrape_competitor', { url: params.url })
+        
+        // Handle multiple URLs
+        if (params.urls && params.urls.length > 0) {
+          console.log(`🕷️ Scraping ${params.urls.length} websites in parallel`)
+          const scrapePromises = params.urls.slice(0, 10).map(url => // Limit to 10 for performance
+            callScraperMCP('scrape_competitor', { url }).catch(err => ({
+              url,
+              error: err.message,
+              success: false
+            }))
+          )
+          const results = await Promise.all(scrapePromises)
+          data = {
+            websites_scraped: results.filter(r => !r.error).length,
+            total_attempted: params.urls.length,
+            results: results,
+            timestamp: new Date().toISOString()
+          }
+        } else {
+          // Single URL
+          data = await callScraperMCP('scrape_competitor', { url: params.url })
+        }
+        break
+
+      case 'scrape_competitors':
+        // Scrape multiple competitor websites
+        if (!params.urls && !params.organization?.competitors) {
+          throw new Error('Competitor URLs required')
+        }
+        
+        const competitorUrls = params.urls || params.organization.competitors || []
+        console.log(`🎯 Scraping ${competitorUrls.length} competitor websites`)
+        
+        const competitorPromises = competitorUrls.slice(0, 10).map(url => 
+          callScraperMCP('scrape_competitor', { url }).catch(err => ({
+            url,
+            error: err.message,
+            success: false
+          }))
+        )
+        
+        const competitorResults = await Promise.all(competitorPromises)
+        
+        data = {
+          competitors_scraped: competitorResults.filter(r => !r.error).length,
+          total_competitors: competitorUrls.length,
+          competitor_data: competitorResults,
+          patterns: analyzeCompetitorPatterns(competitorResults),
+          timestamp: new Date().toISOString()
+        }
         break
 
       case 'analyze':

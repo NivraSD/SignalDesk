@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test REAL Scraper Intelligence</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #1a1a1a; color: #00ff00; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        button { background: #00ff00; color: #000; padding: 10px 20px; margin: 10px; cursor: pointer; border: none; font-weight: bold; }
+        button:hover { background: #00dd00; }
+        .status { padding: 10px; margin: 10px 0; border: 1px solid #00ff00; }
+        .error { color: #ff0000; border-color: #ff0000; }
+        .success { color: #00ff00; }
+        pre { background: #000; padding: 15px; overflow: auto; border: 1px solid #333; }
+        .tab { display: inline-block; padding: 10px 20px; cursor: pointer; background: #333; margin-right: 5px; }
+        .tab.active { background: #00ff00; color: #000; }
+        .content-section { display: none; }
+        .content-section.active { display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🕷️ Test REAL Scraper + Intelligence Pipeline</h1>
+        
+        <div>
+            <input type="text" id="orgName" value="Mitsui & Co." placeholder="Organization name" style="padding: 10px; width: 300px;">
+            <input type="text" id="orgUrl" value="https://www.mitsui.com" placeholder="Organization URL" style="padding: 10px; width: 300px;">
+        </div>
+        
+        <div>
+            <button onclick="testScraper()">1. Test Scraper Only</button>
+            <button onclick="testScraperWithNews()">2. Scraper + News</button>
+            <button onclick="testFullPipeline()">3. Full Pipeline with Scraping</button>
+        </div>
+        
+        <div id="status"></div>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('scraper')">Scraper Data</div>
+            <div class="tab" onclick="showTab('news')">News Data</div>
+            <div class="tab" onclick="showTab('synthesis')">Claude Synthesis</div>
+            <div class="tab" onclick="showTab('raw')">Raw Response</div>
+        </div>
+        
+        <div id="scraper" class="content-section active"></div>
+        <div id="news" class="content-section"></div>
+        <div id="synthesis" class="content-section"></div>
+        <div id="raw" class="content-section"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+        
+        function showTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+        
+        async function testScraper() {
+            const orgUrl = document.getElementById('orgUrl').value;
+            const status = document.getElementById('status');
+            status.innerHTML = '<div class="status">🕷️ Testing scraper-intelligence...</div>';
+            
+            try {
+                // Test the scraper
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/scraper-intelligence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        method: 'scrape',
+                        params: {
+                            url: orgUrl
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                console.log('Scraper response:', data);
+                
+                if (data.success) {
+                    status.innerHTML = '<div class="status success">✅ Scraper returned data!</div>';
+                    
+                    document.getElementById('scraper').innerHTML = `
+                        <h2>Scraped Website Intelligence</h2>
+                        <h3>Leadership Info:</h3>
+                        <pre>${JSON.stringify(data.data?.signals?.leadership || 'No leadership data', null, 2)}</pre>
+                        <h3>Press Releases:</h3>
+                        <pre>${JSON.stringify(data.data?.signals?.press || 'No press data', null, 2)}</pre>
+                        <h3>Job Activity:</h3>
+                        <pre>${JSON.stringify(data.data?.signals?.jobs || 'No jobs data', null, 2)}</pre>
+                        <h3>Patterns Detected:</h3>
+                        <pre>${JSON.stringify(data.data?.patterns || 'No patterns', null, 2)}</pre>
+                    `;
+                } else {
+                    throw new Error(data.error || 'Scraper failed');
+                }
+            } catch (error) {
+                status.innerHTML = `<div class="status error">❌ Scraper error: ${error.message}</div>`;
+            }
+        }
+        
+        async function testScraperWithNews() {
+            const orgName = document.getElementById('orgName').value;
+            const orgUrl = document.getElementById('orgUrl').value;
+            const status = document.getElementById('status');
+            
+            status.innerHTML = '<div class="status">🕷️ Running scraper + news gathering...</div>';
+            
+            try {
+                // Run scraper and news in parallel
+                const [scraperResponse, newsResponse] = await Promise.all([
+                    // Scraper
+                    fetch(`${SUPABASE_URL}/functions/v1/scraper-intelligence`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${SUPABASE_KEY}`
+                        },
+                        body: JSON.stringify({
+                            method: 'scrape',
+                            params: { url: orgUrl }
+                        })
+                    }),
+                    // News (using simple fetch to NewsAPI directly)
+                    fetch(`https://newsapi.org/v2/everything?q=${encodeURIComponent(orgName)}&language=en&sortBy=publishedAt&pageSize=10&apiKey=44466831285e41dfa4c1fb4bf6f1a92f`)
+                ]);
+                
+                const scraperData = await scraperResponse.json();
+                const newsData = await newsResponse.json();
+                
+                console.log('Scraper data:', scraperData);
+                console.log('News data:', newsData);
+                
+                // Display scraper data
+                document.getElementById('scraper').innerHTML = `
+                    <h2>Scraped Intelligence</h2>
+                    <pre>${JSON.stringify(scraperData.data, null, 2)}</pre>
+                `;
+                
+                // Display news data
+                document.getElementById('news').innerHTML = `
+                    <h2>News Articles (${newsData.articles?.length || 0})</h2>
+                    ${newsData.articles?.map(a => `
+                        <div style="margin: 10px 0; padding: 10px; border: 1px solid #333;">
+                            <strong>${a.title}</strong><br>
+                            <small>${a.source?.name} - ${new Date(a.publishedAt).toLocaleDateString()}</small><br>
+                            ${a.description || ''}
+                        </div>
+                    `).join('') || 'No articles found'}
+                `;
+                
+                status.innerHTML = `
+                    <div class="status success">
+                        ✅ Got scraper data: ${scraperData.success ? 'YES' : 'NO'}<br>
+                        ✅ Got news articles: ${newsData.articles?.length || 0}
+                    </div>
+                `;
+                
+                return { scraperData, newsData };
+                
+            } catch (error) {
+                status.innerHTML = `<div class="status error">❌ Error: ${error.message}</div>`;
+                throw error;
+            }
+        }
+        
+        async function testFullPipeline() {
+            const orgName = document.getElementById('orgName').value;
+            const orgUrl = document.getElementById('orgUrl').value;
+            const status = document.getElementById('status');
+            
+            status.innerHTML = '<div class="status">🚀 Running FULL pipeline with real scraping...</div>';
+            
+            try {
+                // Step 1: Get scraper and news data
+                const { scraperData, newsData } = await testScraperWithNews();
+                
+                // Step 2: Get PR intelligence (for competitors)
+                status.innerHTML += '<div class="status">📊 Getting PR intelligence...</div>';
+                const prResponse = await fetch(`${SUPABASE_URL}/functions/v1/pr-intelligence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        method: 'gather',
+                        params: {
+                            organization: {
+                                name: orgName,
+                                industry: 'conglomerate',
+                                url: orgUrl
+                            },
+                            timeframe: '24h'
+                        }
+                    })
+                });
+                
+                const prData = await prResponse.json();
+                console.log('PR data:', prData);
+                
+                // Step 3: Send everything to Claude for synthesis
+                status.innerHTML += '<div class="status">🧠 Synthesizing with Claude...</div>';
+                
+                const synthesisResponse = await fetch(`${SUPABASE_URL}/functions/v1/claude-intelligence-synthesizer-v2`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        organization: {
+                            name: orgName,
+                            industry: 'conglomerate',
+                            competitors: prData.data?.intelligenceConfig?.topCompetitors || [],
+                            url: orgUrl
+                        },
+                        intelligence_type: 'comprehensive',
+                        mcp_data: {
+                            pr: prData.data || {},
+                            news: {
+                                articles: newsData.articles || [],
+                                totalArticles: newsData.totalResults || 0
+                            },
+                            scraper: scraperData.data || {},
+                            opportunities: {},
+                            media: {}
+                        }
+                    })
+                });
+                
+                const synthesisData = await synthesisResponse.json();
+                console.log('Synthesis:', synthesisData);
+                
+                // Display synthesis
+                document.getElementById('synthesis').innerHTML = `
+                    <h2>Claude Intelligence Synthesis</h2>
+                    <h3>Executive Summary:</h3>
+                    <div style="padding: 10px; background: #111;">
+                        ${synthesisData.analysis?.executive_summary || 
+                          synthesisData.analysis?.multi_perspective_analysis?.['Executive Intelligence Synthesizer']?.analysis ||
+                          'No executive summary generated'}
+                    </div>
+                    <h3>Competitive Analysis:</h3>
+                    <div style="padding: 10px; background: #111;">
+                        ${synthesisData.analysis?.competitive_analysis ||
+                          synthesisData.analysis?.multi_perspective_analysis?.['Competitive PR Strategist']?.analysis ||
+                          'No competitive analysis generated'}
+                    </div>
+                    <h3>Key Insights:</h3>
+                    <pre>${JSON.stringify(synthesisData.analysis?.key_insights || [], null, 2)}</pre>
+                `;
+                
+                // Display raw response
+                document.getElementById('raw').innerHTML = `
+                    <h2>Complete Raw Response</h2>
+                    <pre>${JSON.stringify({
+                        scraper: scraperData,
+                        news: { articleCount: newsData.articles?.length, status: newsData.status },
+                        pr: { competitorsFound: prData.data?.intelligenceConfig?.topCompetitors?.length },
+                        synthesis: synthesisData
+                    }, null, 2)}</pre>
+                `;
+                
+                status.innerHTML = `
+                    <div class="status success">
+                        ✅ Pipeline Complete!<br>
+                        - Scraped: ${scraperData.success ? 'YES' : 'NO'}<br>
+                        - News articles: ${newsData.articles?.length || 0}<br>
+                        - Competitors: ${prData.data?.intelligenceConfig?.topCompetitors?.length || 0}<br>
+                        - Synthesis: ${synthesisData.success ? 'GENERATED' : 'FAILED'}
+                    </div>
+                `;
+                
+            } catch (error) {
+                status.innerHTML += `<div class="status error">❌ Pipeline error: ${error.message}</div>`;
+                console.error('Pipeline error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

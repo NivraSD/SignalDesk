@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Complete Intelligence Pipeline</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        button { background: #2563eb; color: white; padding: 10px 20px; margin: 10px; cursor: pointer; border: none; border-radius: 4px; }
+        button:hover { background: #1d4ed8; }
+        .tabs { display: flex; gap: 10px; margin: 20px 0; border-bottom: 2px solid #e5e7eb; }
+        .tab { padding: 10px 20px; cursor: pointer; border-bottom: 2px solid transparent; }
+        .tab.active { border-bottom-color: #2563eb; color: #2563eb; }
+        .content { padding: 20px; background: #f9fafb; border-radius: 4px; margin: 10px 0; }
+        .competitor { padding: 10px; background: white; margin: 5px 0; border-radius: 4px; border-left: 3px solid #2563eb; }
+        .error { color: #dc2626; background: #fee; padding: 10px; border-radius: 4px; }
+        .success { color: #059669; background: #d1fae5; padding: 10px; border-radius: 4px; }
+        pre { background: #1f2937; color: #10b981; padding: 15px; overflow: auto; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Complete Intelligence Pipeline Test</h1>
+        
+        <div>
+            <input type="text" id="orgName" value="Mitsui & Co." placeholder="Enter organization name" style="padding: 10px; width: 300px;">
+            <button onclick="testCompletePipeline()">Test Complete Pipeline</button>
+        </div>
+        
+        <div id="status"></div>
+        
+        <div class="tabs" id="tabs" style="display: none;">
+            <div class="tab active" onclick="showTab('overview')">Overview</div>
+            <div class="tab" onclick="showTab('competition')">Competition</div>
+            <div class="tab" onclick="showTab('stakeholders')">Stakeholders</div>
+            <div class="tab" onclick="showTab('topics')">Topics</div>
+            <div class="tab" onclick="showTab('predictions')">Predictions</div>
+            <div class="tab" onclick="showTab('raw')">Raw Data</div>
+        </div>
+        
+        <div id="overview" class="tab-content"></div>
+        <div id="competition" class="tab-content" style="display: none;"></div>
+        <div id="stakeholders" class="tab-content" style="display: none;"></div>
+        <div id="topics" class="tab-content" style="display: none;"></div>
+        <div id="predictions" class="tab-content" style="display: none;"></div>
+        <div id="raw" class="tab-content" style="display: none;"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+        
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            
+            // Show selected tab
+            document.getElementById(tabName).style.display = 'block';
+            event.target.classList.add('active');
+        }
+        
+        async function testCompletePipeline() {
+            const orgName = document.getElementById('orgName').value;
+            const status = document.getElementById('status');
+            status.innerHTML = '<div class="success">Testing complete pipeline for ' + orgName + '...</div>';
+            
+            try {
+                // First gather PR intelligence
+                const prResponse = await fetch(`${SUPABASE_URL}/functions/v1/pr-intelligence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        method: 'gather',
+                        params: {
+                            organization: {
+                                name: orgName,
+                                industry: 'conglomerate'
+                            },
+                            timeframe: '24h'
+                        }
+                    })
+                });
+                
+                const prData = await prResponse.json();
+                console.log('PR Intelligence data:', prData);
+                console.log('Competitors found:', prData.data?.intelligenceConfig?.topCompetitors || 'NONE');
+                console.log('Total competitors:', prData.data?.summary?.totalCompetitors || 0);
+                
+                // Extract competitors properly
+                const competitors = prData.data?.intelligenceConfig?.topCompetitors || [];
+                console.log('Passing competitors to synthesizer:', competitors);
+                
+                // Also get news data separately
+                console.log('Getting news data...');
+                const newsResponse = await fetch(`${SUPABASE_URL}/functions/v1/news-intelligence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        method: 'gather',
+                        params: {
+                            organization: {
+                                name: orgName,
+                                industry: 'conglomerate'
+                            },
+                            timeframe: '24h'
+                        }
+                    })
+                });
+                
+                const newsData = await newsResponse.json();
+                console.log('News data:', newsData);
+                console.log('Articles found:', newsData.data?.articles?.length || 0);
+                
+                // Now call the synthesizer with ACTUAL data
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/claude-intelligence-synthesizer-v2`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        organization: {
+                            name: orgName,
+                            industry: 'conglomerate',
+                            competitors: competitors
+                        },
+                        intelligence_type: 'comprehensive',
+                        mcp_data: {
+                            pr: prData.data || {},
+                            news: newsData.data || {},  // ACTUAL news data
+                            opportunities: {},
+                            media: {}
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                console.log('Full response:', data);
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'API error');
+                }
+                
+                // Show tabs
+                document.getElementById('tabs').style.display = 'flex';
+                
+                // Display Overview
+                const overviewDiv = document.getElementById('overview');
+                // Extract competitors from various possible locations
+                const displayCompetitors = data.competitors || 
+                                         data.organization?.competitors || 
+                                         data.analysis?.competitors || 
+                                         competitors || [];
+                                         
+                overviewDiv.innerHTML = `
+                    <h2>Executive Summary</h2>
+                    <div class="content">${data.executive_summary || data.analysis?.executive_summary || 'No summary available'}</div>
+                    <h3>Organization Details</h3>
+                    <div class="content">
+                        <strong>Name:</strong> ${data.organization || orgName}<br>
+                        <strong>Industry:</strong> ${data.analysis?.industry || prData.data?.summary?.industry || 'Unknown'}<br>
+                        <strong>Competitors Found:</strong> ${displayCompetitors.length}<br>
+                        <strong>PR Data Competitors:</strong> ${competitors.length}
+                    </div>
+                `;
+                
+                // Display Competition
+                const competitionDiv = document.getElementById('competition');
+                if (data.competitive_analysis) {
+                    const analysis = typeof data.competitive_analysis === 'string' 
+                        ? data.competitive_analysis 
+                        : data.competitive_analysis.analysis || JSON.stringify(data.competitive_analysis);
+                    competitionDiv.innerHTML = `
+                        <h2>Competitive Analysis</h2>
+                        <div class="content">${analysis}</div>
+                        <h3>Competitors (${displayCompetitors.length})</h3>
+                        ${displayCompetitors.map(c => `<div class="competitor">${c}</div>`).join('')}
+                        ${displayCompetitors.length === 0 ? '<div class="error">No competitors found - check PR data</div>' : ''}
+                    `;
+                } else {
+                    competitionDiv.innerHTML = '<div class="error">No competitive analysis available</div>';
+                }
+                
+                // Display Stakeholders
+                const stakeholdersDiv = document.getElementById('stakeholders');
+                if (data.stakeholder_analysis) {
+                    const analysis = typeof data.stakeholder_analysis === 'string'
+                        ? data.stakeholder_analysis
+                        : data.stakeholder_analysis.analysis || JSON.stringify(data.stakeholder_analysis);
+                    stakeholdersDiv.innerHTML = `
+                        <h2>Stakeholder Analysis</h2>
+                        <div class="content">${analysis}</div>
+                    `;
+                } else {
+                    stakeholdersDiv.innerHTML = '<div class="error">No stakeholder analysis available</div>';
+                }
+                
+                // Display Topics
+                const topicsDiv = document.getElementById('topics');
+                if (data.key_topics) {
+                    const topics = typeof data.key_topics === 'string'
+                        ? data.key_topics
+                        : data.key_topics.analysis || JSON.stringify(data.key_topics);
+                    topicsDiv.innerHTML = `
+                        <h2>Key Topics & Trends</h2>
+                        <div class="content">${topics}</div>
+                    `;
+                } else {
+                    topicsDiv.innerHTML = '<div class="error">No topics analysis available</div>';
+                }
+                
+                // Display Predictions
+                const predictionsDiv = document.getElementById('predictions');
+                if (data.strategic_predictions) {
+                    const predictions = typeof data.strategic_predictions === 'string'
+                        ? data.strategic_predictions
+                        : data.strategic_predictions.analysis || JSON.stringify(data.strategic_predictions);
+                    predictionsDiv.innerHTML = `
+                        <h2>Strategic Predictions</h2>
+                        <div class="content">${predictions}</div>
+                    `;
+                } else {
+                    predictionsDiv.innerHTML = '<div class="error">No predictions available</div>';
+                }
+                
+                // Display Raw Data
+                document.getElementById('raw').innerHTML = `
+                    <h2>Raw API Response</h2>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+                
+                status.innerHTML = `
+                    <div class="success">
+                        ✅ Pipeline test complete!<br>
+                        - PR Intelligence Competitors: ${competitors.length}<br>
+                        - Final Competitors: ${displayCompetitors.length}<br>
+                        - Industry: ${prData.data?.summary?.industry || 'Unknown'}<br>
+                        - Intelligence Type: ${data.intelligence_type}<br>
+                        - Analysis Status: ${data.analysis ? 'Generated' : 'Missing'}<br>
+                        - All tabs populated: ${data.analysis ? 'Yes' : 'Partial'}
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                status.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

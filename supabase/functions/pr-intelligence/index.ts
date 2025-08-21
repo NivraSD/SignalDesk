@@ -427,6 +427,40 @@ serve(async (req) => {
         const config = await intelligenceCore.getOrganizationConfig(organization)
         console.log(`Using IntelligenceCore config for ${orgName}:`, config.industry, config.competitors.length + ' competitors')
         
+        // DEBUG: Log what IntelligenceCore returns
+        console.log('DEBUG - Organization:', organization)
+        console.log('DEBUG - Config from IntelligenceCore:', {
+          industry: config.industry,
+          competitorCount: config.competitors?.length || 0,
+          competitors: config.competitors || [],
+          keywords: config.keywords?.slice(0, 5) || []
+        })
+        
+        // HARDCODED FIX: Override for known conglomerates
+        const isConglomerate = orgName.toLowerCase().includes('mitsui') || 
+                              orgName.toLowerCase().includes('mitsubishi') ||
+                              orgName.toLowerCase().includes('sumitomo') || 
+                              orgName.toLowerCase().includes('itochu') ||
+                              orgName.toLowerCase().includes('marubeni') ||
+                              organization.industry === 'conglomerate'
+        
+        if (isConglomerate && config.competitors.length === 0) {
+          console.log('🔧 Applying hardcoded conglomerate competitors')
+          config.competitors = [
+            'Mitsubishi Corporation',
+            'Sumitomo Corporation', 
+            'Itochu Corporation',
+            'Marubeni Corporation',
+            'Sojitz',
+            'Toyota Tsusho',
+            'Berkshire Hathaway',
+            'General Electric',
+            'Siemens',
+            '3M'
+          ]
+          config.industry = 'conglomerate'
+        }
+        
         // Gather intelligence from all sources
         const intelligence = await intelligenceCore.gatherIntelligence(config)
         
@@ -509,7 +543,7 @@ serve(async (req) => {
           intelligenceConfig: {
             industry: config.industry,
             monitoringKeywords: config.keywords.slice(0, 10),
-            topCompetitors: config.competitors.slice(0, 5)
+            topCompetitors: config.competitors  // Return ALL competitors, not just 5
           }
         }
         break

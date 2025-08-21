@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Anthropic Key</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #0f0; }
+        button { background: #00ff00; color: #000; padding: 10px 20px; margin: 10px; cursor: pointer; }
+        pre { background: #000; padding: 15px; overflow: auto; border: 1px solid #0f0; }
+        .error { color: #ff0000; }
+        .success { color: #00ff00; }
+    </style>
+</head>
+<body>
+    <h1>Test Anthropic API Key in Edge Function</h1>
+    
+    <button onclick="testKey()">Test Anthropic Key</button>
+    
+    <div id="results"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+        
+        async function testKey() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<div class="success">Testing Anthropic API key...</div>';
+            
+            try {
+                // Test with a simple organization
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligent-discovery`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: 'Apple',
+                        industry_hint: 'technology'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    results.innerHTML = `
+                        <div class="success">
+                            <h3>✅ Anthropic API Key is working!</h3>
+                            <pre>${JSON.stringify(data.data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    results.innerHTML = `
+                        <div class="error">
+                            <h3>❌ Error: ${data.error}</h3>
+                            <p>The Anthropic API key might be invalid or expired.</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                results.innerHTML = `<div class="error">Network Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

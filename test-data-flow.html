@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test ACTUAL Data Flow</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #0f0; }
+        button { background: #00ff00; color: #000; padding: 10px 20px; margin: 10px; cursor: pointer; }
+        pre { background: #000; padding: 15px; overflow: auto; border: 1px solid #0f0; }
+        .error { color: #ff0000; }
+        .success { color: #00ff00; }
+        .section { margin: 20px 0; padding: 10px; border: 1px solid #333; }
+    </style>
+</head>
+<body>
+    <h1>Test ACTUAL Data Flow - Where Is It Breaking?</h1>
+    
+    <button onclick="testNewsIntelligence()">1. Test news-intelligence DIRECTLY</button>
+    <button onclick="testPRIntelligence()">2. Test pr-intelligence Data Gathering</button>
+    <button onclick="testIntelligenceCore()">3. Test IntelligenceCore.gatherIntelligence</button>
+    <button onclick="testFullPipeline()">4. Test Full Pipeline</button>
+    
+    <div id="results"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        
+        async function testNewsIntelligence() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<div class="section"><h3>Testing news-intelligence Edge Function...</h3></div>';
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/news-intelligence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        method: 'gather',
+                        params: {
+                            organization: {
+                                name: 'Mitsui & Co.',
+                                industry: 'conglomerate'
+                            },
+                            timeframe: '24h'
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                
+                results.innerHTML += `
+                    <div class="section">
+                        <h3 class="${data.data?.articles?.length > 0 ? 'success' : 'error'}">
+                            News Intelligence Result:
+                        </h3>
+                        <ul>
+                            <li>Success: ${data.success}</li>
+                            <li>Articles found: ${data.data?.articles?.length || 0}</li>
+                            <li>Breaking news: ${data.data?.breakingNews?.length || 0}</li>
+                            <li>Total news: ${data.data?.totalArticles || 0}</li>
+                        </ul>
+                        <h4>First article (if any):</h4>
+                        <pre>${JSON.stringify(data.data?.articles?.[0] || 'NO ARTICLES', null, 2)}</pre>
+                        <h4>Full response:</h4>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                results.innerHTML += `<pre class="error">Error: ${error.message}</pre>`;
+            }
+        }
+        
+        async function testPRIntelligence() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<div class="section"><h3>Testing pr-intelligence Edge Function...</h3></div>';
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/pr-intelligence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        method: 'gather',
+                        params: {
+                            organization: {
+                                name: 'Mitsui & Co.',
+                                industry: 'conglomerate'
+                            },
+                            timeframe: '24h'
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // Check if intelligenceCore actually returned news
+                const hasRealNews = data.data?.insights?.some(i => i.data?.latestNews) || false;
+                const newsCount = data.data?.summary?.totalNews || 0;
+                
+                results.innerHTML += `
+                    <div class="section">
+                        <h3 class="${hasRealNews ? 'success' : 'error'}">
+                            PR Intelligence Result:
+                        </h3>
+                        <ul>
+                            <li>Success: ${data.success}</li>
+                            <li>Competitors: ${data.data?.summary?.totalCompetitors || 0}</li>
+                            <li>Has real news: ${hasRealNews}</li>
+                            <li>News count: ${newsCount}</li>
+                            <li>Insights: ${data.data?.insights?.length || 0}</li>
+                        </ul>
+                        <h4>First insight:</h4>
+                        <pre>${JSON.stringify(data.data?.insights?.[0] || 'NO INSIGHTS', null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                results.innerHTML += `<pre class="error">Error: ${error.message}</pre>`;
+            }
+        }
+        
+        async function testIntelligenceCore() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<div class="section"><h3>Testing IntelligenceCore via pr-intelligence...</h3></div>';
+            
+            results.innerHTML += `
+                <div class="section">
+                    <p>Check the Supabase logs to see if IntelligenceCore is:</p>
+                    <ul>
+                        <li>🔍 Starting REAL data gathering</li>
+                        <li>📰 Calling news-intelligence Edge Function</li>
+                        <li>✅ Got X real news articles</li>
+                    </ul>
+                    <p>Logs at: <a href="https://supabase.com/dashboard/project/zskaxjtyuaqazydouifp/functions/pr-intelligence/logs" target="_blank">View Logs</a></p>
+                </div>
+            `;
+        }
+        
+        async function testFullPipeline() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<div class="section"><h3>Testing Full Pipeline...</h3></div>';
+            
+            // First get PR data
+            const prResponse = await fetch(`${SUPABASE_URL}/functions/v1/pr-intelligence`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    method: 'gather',
+                    params: {
+                        organization: {
+                            name: 'Mitsui & Co.',
+                            industry: 'conglomerate'
+                        },
+                        timeframe: '24h'
+                    }
+                })
+            });
+            
+            const prData = await prResponse.json();
+            
+            results.innerHTML += `
+                <div class="section">
+                    <h3>Pipeline Check:</h3>
+                    <ul>
+                        <li>✓ PR Intelligence called</li>
+                        <li>${prData.data?.insights?.length > 0 ? '✓' : '✗'} Insights generated</li>
+                        <li>${prData.data?.summary?.totalCompetitors > 0 ? '✓' : '✗'} Competitors found</li>
+                    </ul>
+                    <h4>What data is being passed to Claude:</h4>
+                    <pre>${JSON.stringify({
+                        pr: prData.data || {},
+                        news: 'Should have real news here',
+                        competitors: prData.data?.intelligenceConfig?.topCompetitors || []
+                    }, null, 2)}</pre>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

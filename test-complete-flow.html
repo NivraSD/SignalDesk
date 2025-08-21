@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Complete Intelligence Flow</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #0f0; }
+        button { background: #00ff00; color: #000; padding: 10px 20px; margin: 10px; cursor: pointer; font-size: 14px; }
+        button:hover { background: #00cc00; }
+        .phase { border: 1px solid #0f0; padding: 15px; margin: 10px 0; background: #000; }
+        .success { color: #00ff00; }
+        .error { color: #ff0000; }
+        .info { color: #ffff00; }
+        pre { background: #111; padding: 10px; overflow: auto; max-height: 400px; }
+        .loading { color: #00ffff; animation: blink 1s infinite; }
+        @keyframes blink { 0% {opacity: 1;} 50% {opacity: 0.5;} 100% {opacity: 1;} }
+    </style>
+</head>
+<body>
+    <h1>🎯 COMPLETE INTELLIGENCE FLOW TEST</h1>
+    
+    <div style="display: flex; gap: 20px; margin: 20px 0;">
+        <div>
+            <label>Organization:</label>
+            <input type="text" id="orgName" value="Mitsui & Co." style="background: #000; color: #0f0; border: 1px solid #0f0; padding: 5px;">
+        </div>
+        <div>
+            <label>Industry:</label>
+            <input type="text" id="industry" value="conglomerate" style="background: #000; color: #0f0; border: 1px solid #0f0; padding: 5px;">
+        </div>
+    </div>
+    
+    <button onclick="testFullOrchestration()">🚀 TEST FULL ORCHESTRATION (All 4 Phases)</button>
+    <button onclick="testIndividualPhases()">🔍 TEST PHASES INDIVIDUALLY</button>
+    <button onclick="testNewsOnly()">📰 TEST NEWS GATHERING ONLY</button>
+    <button onclick="clearResults()">🗑️ CLEAR</button>
+    
+    <div id="results"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+        
+        function addPhase(title, content, status = 'info') {
+            const results = document.getElementById('results');
+            const phase = document.createElement('div');
+            phase.className = 'phase';
+            phase.innerHTML = `
+                <h3 class="${status}">${title}</h3>
+                <pre>${typeof content === 'object' ? JSON.stringify(content, null, 2) : content}</pre>
+            `;
+            results.appendChild(phase);
+        }
+        
+        async function testFullOrchestration() {
+            clearResults();
+            const orgName = document.getElementById('orgName').value;
+            const industry = document.getElementById('industry').value;
+            
+            addPhase('🎯 STARTING FULL ORCHESTRATION', `Organization: ${orgName}\nIndustry: ${industry}`, 'loading');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-orchestrator`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: { name: orgName, industry: industry },
+                        method: 'full'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    addPhase('✅ ORCHESTRATION COMPLETE', {
+                        organization: data.organization,
+                        industry: data.industry,
+                        phases_completed: data.phases_completed,
+                        statistics: data.statistics
+                    }, 'success');
+                    
+                    if (data.intelligence) {
+                        addPhase('🧠 INTELLIGENCE SYNTHESIS', data.intelligence, 'success');
+                    }
+                } else {
+                    addPhase('❌ ORCHESTRATION FAILED', data.error, 'error');
+                }
+            } catch (error) {
+                addPhase('❌ REQUEST ERROR', error.message, 'error');
+            }
+        }
+        
+        async function testIndividualPhases() {
+            clearResults();
+            const orgName = document.getElementById('orgName').value;
+            const industry = document.getElementById('industry').value;
+            
+            // Phase 1: Discovery
+            addPhase('📍 PHASE 1: INTELLIGENT DISCOVERY', 'Testing...', 'loading');
+            try {
+                const discoveryResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligent-discovery`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: orgName,
+                        industry_hint: industry
+                    })
+                });
+                
+                const discovery = await discoveryResponse.json();
+                if (discovery.success) {
+                    addPhase('✅ DISCOVERY COMPLETE', discovery.data, 'success');
+                    
+                    // Phase 2: News Gathering
+                    addPhase('📰 PHASE 2: NEWS GATHERING', 'Testing...', 'loading');
+                    const newsResponse = await fetch(`${SUPABASE_URL}/functions/v1/news-intelligence`, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        },
+                        body: JSON.stringify({
+                            method: 'gather',
+                            params: {
+                                organization: {
+                                    name: orgName,
+                                    industry: discovery.data.primary_category,
+                                    competitors: discovery.data.competitors,
+                                    keywords: discovery.data.search_keywords
+                                }
+                            }
+                        })
+                    });
+                    
+                    const news = await newsResponse.json();
+                    if (news.success) {
+                        addPhase('✅ NEWS GATHERED', {
+                            totalArticles: news.data.totalArticles,
+                            sources: news.data.sources,
+                            rssFeedsUsed: news.data.rssFeedsUsed,
+                            competitors: news.data.monitoredCompetitors,
+                            sample: news.data.industryNews?.[0]
+                        }, 'success');
+                    } else {
+                        addPhase('❌ NEWS GATHERING FAILED', news.error, 'error');
+                    }
+                    
+                    // Phase 3: Scraper (if URLs available)
+                    if (discovery.data.scrape_targets?.length > 0) {
+                        addPhase('🕷️ PHASE 3: WEBSITE SCRAPING', 'Testing...', 'loading');
+                        const scraperResponse = await fetch(`${SUPABASE_URL}/functions/v1/scraper-intelligence`, {
+                            method: 'POST',
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                            },
+                            body: JSON.stringify({
+                                method: 'scrape_competitors',
+                                params: {
+                                    urls: discovery.data.scrape_targets.slice(0, 3) // Test with first 3
+                                }
+                            })
+                        });
+                        
+                        const scraper = await scraperResponse.json();
+                        if (scraper.success) {
+                            addPhase('✅ SCRAPING COMPLETE', {
+                                competitors_scraped: scraper.data.competitors_scraped,
+                                patterns: scraper.data.patterns
+                            }, 'success');
+                        } else {
+                            addPhase('⚠️ SCRAPING ISSUES', scraper.error || 'Some sites could not be scraped', 'info');
+                        }
+                    }
+                    
+                } else {
+                    addPhase('❌ DISCOVERY FAILED', discovery.error, 'error');
+                }
+            } catch (error) {
+                addPhase('❌ TEST ERROR', error.message, 'error');
+            }
+        }
+        
+        async function testNewsOnly() {
+            clearResults();
+            const orgName = document.getElementById('orgName').value;
+            const industry = document.getElementById('industry').value;
+            
+            addPhase('📰 TESTING NEWS INTELLIGENCE', 'Gathering news from Google News RSS + Industry feeds...', 'loading');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/news-intelligence`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        method: 'gather',
+                        params: {
+                            organization: {
+                                name: orgName,
+                                industry: industry
+                            }
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    addPhase('✅ NEWS GATHERING SUCCESS', {
+                        totalArticles: data.data.totalArticles,
+                        sources: data.data.sources,
+                        rssFeedsUsed: data.data.rssFeedsUsed,
+                        industry: data.data.industry,
+                        competitors: data.data.monitoredCompetitors?.slice(0, 5),
+                        keywords: data.data.monitoredKeywords?.slice(0, 10)
+                    }, 'success');
+                    
+                    if (data.data.industryNews?.length > 0) {
+                        addPhase('📄 SAMPLE ARTICLES', data.data.industryNews.slice(0, 3), 'info');
+                    }
+                    
+                    if (data.data.competitorActivity?.length > 0) {
+                        addPhase('🎯 COMPETITOR ACTIVITY', data.data.competitorActivity, 'info');
+                    }
+                } else {
+                    addPhase('❌ NEWS GATHERING FAILED', data.error, 'error');
+                }
+            } catch (error) {
+                addPhase('❌ REQUEST ERROR', error.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

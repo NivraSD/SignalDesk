@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test News Intelligence Direct</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #0f0; }
+        button { background: #00ff00; color: #000; padding: 10px 20px; margin: 10px; cursor: pointer; }
+        pre { background: #000; padding: 15px; overflow: auto; border: 1px solid #0f0; }
+        .error { color: #ff0000; }
+        .success { color: #00ff00; }
+    </style>
+</head>
+<body>
+    <h1>Test News Intelligence DIRECTLY</h1>
+    
+    <button onclick="testNewsSimple()">Test News Simple</button>
+    <button onclick="testNewsWithRetry()">Test News With Retry</button>
+    
+    <div id="results"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        
+        async function testNewsSimple() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<div class="success">Testing news-intelligence...</div>';
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/news-intelligence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        method: 'gather',
+                        params: {
+                            organization: {
+                                name: 'Tesla',
+                                industry: 'automotive'
+                            },
+                            timeframe: '24h'
+                        }
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                results.innerHTML = `
+                    <div class="${data.success ? 'success' : 'error'}">
+                        <h3>Response Status: ${data.success ? 'SUCCESS' : 'FAILED'}</h3>
+                        <p>Articles: ${data.data?.industryNews?.length || 0}</p>
+                        <p>Breaking: ${data.data?.breakingNews?.length || 0}</p>
+                        <p>Total: ${data.data?.totalArticles || 0}</p>
+                        <p>Sources: ${data.data?.sources?.join(', ') || 'None'}</p>
+                        <h4>First Article:</h4>
+                        <pre>${JSON.stringify(data.data?.industryNews?.[0] || 'No articles', null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                results.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function testNewsWithRetry() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<div class="success">Testing with retry logic...</div>';
+            
+            let attempts = 0;
+            const maxAttempts = 3;
+            
+            while (attempts < maxAttempts) {
+                attempts++;
+                results.innerHTML += `<div>Attempt ${attempts}/${maxAttempts}...</div>`;
+                
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+                    
+                    const response = await fetch(`${SUPABASE_URL}/functions/v1/news-intelligence`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        signal: controller.signal,
+                        body: JSON.stringify({
+                            method: 'gather',
+                            params: {
+                                organization: {
+                                    name: 'Apple',
+                                    industry: 'technology'
+                                },
+                                timeframe: '24h'
+                            }
+                        })
+                    });
+                    
+                    clearTimeout(timeoutId);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (data.success && data.data?.totalArticles > 0) {
+                        results.innerHTML += `
+                            <div class="success">
+                                <h3>SUCCESS on attempt ${attempts}</h3>
+                                <p>Got ${data.data.totalArticles} articles</p>
+                                <pre>${JSON.stringify(data.data.industryNews?.[0], null, 2)}</pre>
+                            </div>
+                        `;
+                        break;
+                    } else {
+                        throw new Error('No articles returned');
+                    }
+                } catch (error) {
+                    results.innerHTML += `<div class="error">Attempt ${attempts} failed: ${error.message}</div>`;
+                    if (attempts < maxAttempts) {
+                        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>

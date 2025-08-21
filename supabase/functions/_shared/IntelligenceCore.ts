@@ -105,10 +105,17 @@ export class IntelligenceCore {
    */
   async getOrganizationConfig(organization: any) {
     console.log(`🧠 Getting enhanced configuration for ${organization.name}`)
+    console.log(`📝 Input organization data:`, {
+      name: organization.name,
+      industry: organization.industry,
+      hasCompetitors: !!organization.competitors,
+      competitorCount: organization.competitors?.length || 0
+    })
     
     // FIRST: Use AI-enhanced industry insights if available
     const aiIndustryInsights = organization.industryInsights || {}
     const industry = organization.industry || this.identifyIndustry(organization)
+    console.log(`🏭 Identified industry: ${industry} (provided: ${organization.industry}, detected: ${this.identifyIndustry(organization)})`)
     
     // SECOND: Get comprehensive sources from MasterSourceRegistry
     const comprehensiveSources = await this.getComprehensiveSources(industry)
@@ -222,10 +229,15 @@ export class IntelligenceCore {
     // Otherwise use industry defaults
     const industryConfig = INDUSTRY_CONFIG[industry]
     if (industryConfig) {
-      // Return top competitors based on organization size/type
-      return industryConfig.competitors.slice(0, 5)
+      console.log(`📊 Using industry config for ${industry}: ${industryConfig.competitors.length} competitors available`)
+      // Return ALL competitors for conglomerates, more for others
+      if (industry === 'conglomerate' || industry === 'trading_company') {
+        return industryConfig.competitors // Return all 10 for conglomerates
+      }
+      return industryConfig.competitors.slice(0, 8) // Return 8 for other industries
     }
     
+    console.log(`⚠️ No industry config found for ${industry}`)
     return []
   }
   
@@ -275,20 +287,82 @@ export class IntelligenceCore {
    * Gather intelligence from all configured sources
    */
   async gatherIntelligence(config: any) {
-    const intelligence = {
+    const intelligence: {
+      news: any[],
+      competitors: any[],
+      opportunities: any[],
+      alerts: any[]
+    } = {
       news: [],
       competitors: [],
       opportunities: [],
       alerts: []
     }
     
-    // Fetch from RSS feeds
-    for (const feedUrl of config.sources.rss_feeds) {
-      try {
-        const articles = await this.fetchRSSFeed(feedUrl)
-        intelligence.news.push(...articles)
-      } catch (error) {
-        console.log(`RSS feed error for ${feedUrl}:`, error.message)
+    console.log('🔍 Starting REAL data gathering for:', config.organization)
+    
+    // DIRECTLY fetch news from APIs since Edge Functions can't call each other
+    const NEWS_API_KEY = Deno.env.get('NEWS_API_KEY') || '44466831285e41dfa4c1fb4bf6f1a92f'
+    
+    try {
+      console.log('📰 Fetching news directly from NewsAPI...')
+      
+      // Build search query
+      const searchTerms = [
+        config.organization,
+        ...config.keywords.slice(0, 3),
+        ...config.competitors.slice(0, 2)
+      ].filter(Boolean).join(' OR ')
+      
+      const newsUrl = `https://newsapi.org/v2/everything?q=${encodeURIComponent(searchTerms)}&language=en&sortBy=publishedAt&pageSize=10&apiKey=${NEWS_API_KEY}`
+      
+      // Add timeout to prevent hanging
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 3000) // 3 second timeout
+      
+      const newsResponse = await fetch(newsUrl, {
+        signal: controller.signal
+      })
+      clearTimeout(timeoutId)
+      
+      if (newsResponse.ok) {
+        const newsData = await newsResponse.json()
+        console.log('📰 NewsAPI response:', {
+          status: newsData.status,
+          totalResults: newsData.totalResults,
+          articles: newsData.articles?.length || 0
+        })
+        
+        if (newsData.articles && newsData.articles.length > 0) {
+          intelligence.news = newsData.articles.map((article: any) => ({
+            title: article.title,
+            description: article.description,
+            url: article.url,
+            source: article.source?.name || 'NewsAPI',
+            publishedAt: article.publishedAt,
+            content: article.content
+          }))
+          console.log(`✅ Got ${intelligence.news.length} real news articles from NewsAPI`)
+        }
+      } else {
+        console.error('NewsAPI returned error:', newsResponse.status)
+      }
+    } catch (error) {
+      console.error('Failed to fetch news directly:', error.message)
+    }
+    
+    // Skip Google News RSS backup to prevent timeouts - NewsAPI should be enough
+    
+    // Fallback to RSS if no news found
+    if (intelligence.news.length === 0) {
+      console.log('⚠️ No news from Edge Function, trying RSS feeds...')
+      for (const feedUrl of config.sources.rss_feeds) {
+        try {
+          const articles = await this.fetchRSSFeed(feedUrl)
+          intelligence.news.push(...articles)
+        } catch (error) {
+          console.log(`RSS feed error for ${feedUrl}:`, error.message)
+        }
       }
     }
     

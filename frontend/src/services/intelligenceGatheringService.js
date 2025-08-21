@@ -1,13 +1,15 @@
 // Intelligence Gathering Service
 // This service actually fetches real intelligence data from various sources
+import intelligenceOrchestratorService from './intelligenceOrchestratorService';
 
 class IntelligenceGatheringService {
   constructor() {
     this.baseUrl = process.env.REACT_APP_BACKEND_URL || 'https://backend-orchestrator.vercel.app';
     this.supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co';
-    this.supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+    this.supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
     this.cache = new Map();
     this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
+    this.orchestrator = intelligenceOrchestratorService;
   }
 
   // Call MCP Edge Functions directly
@@ -41,6 +43,28 @@ class IntelligenceGatheringService {
   async gatherIntelligence(config) {
     if (!config) return null;
 
+    // Try using the orchestrator first for optimal 4-phase flow
+    if (config.organization?.name) {
+      console.log('🎯 Using Intelligence Orchestrator for optimal flow');
+      try {
+        const orchestratedResult = await this.orchestrator.orchestrateIntelligence(
+          {
+            name: config.organization.name,
+            industry: config.organization.industry || config.industry
+          },
+          'full'
+        );
+
+        if (orchestratedResult.success) {
+          // Transform orchestrated result to match expected format
+          return this.transformOrchestratedResult(orchestratedResult);
+        }
+      } catch (error) {
+        console.log('Orchestrator failed, falling back to individual MCPs:', error);
+      }
+    }
+
+    // Fallback to individual MCP calls
     const intelligence = {
       stakeholderInsights: [],
       industryTrends: [],
@@ -329,6 +353,109 @@ class IntelligenceGatheringService {
 
   clearCache() {
     this.cache.clear();
+  }
+
+  // Transform orchestrated result to match the expected format
+  transformOrchestratedResult(orchestratedResult) {
+    const insights = orchestratedResult.insights || {};
+    const intelligence = orchestratedResult.intelligence || {};
+    
+    return {
+      stakeholderInsights: this.extractStakeholderInsights(insights.stakeholder),
+      industryTrends: this.extractIndustryTrends(intelligence),
+      competitiveIntel: this.extractCompetitiveIntel(insights.competitive),
+      mediaOpportunities: this.extractMediaOpportunities(insights.opportunity),
+      realTimeAlerts: this.extractRealTimeAlerts(insights.risk),
+      predictions: insights.predictive || {},
+      statistics: orchestratedResult.stats || {},
+      timestamp: orchestratedResult.timestamp || new Date().toISOString()
+    };
+  }
+
+  extractStakeholderInsights(stakeholderData) {
+    if (!stakeholderData) return [];
+    
+    const insights = [];
+    if (stakeholderData.groups) {
+      stakeholderData.groups.forEach(group => {
+        insights.push({
+          stakeholder: group.name || 'Unknown',
+          sentiment: stakeholderData.sentiment?.[group.name] || 'neutral',
+          insights: group.insights || [],
+          concerns: group.concerns || [],
+          opportunities: group.opportunities || []
+        });
+      });
+    }
+    return insights;
+  }
+
+  extractIndustryTrends(intelligence) {
+    const trends = [];
+    if (intelligence.industry_trends) {
+      trends.push(...intelligence.industry_trends);
+    }
+    if (intelligence.market_dynamics) {
+      trends.push(...intelligence.market_dynamics);
+    }
+    return trends;
+  }
+
+  extractCompetitiveIntel(competitiveData) {
+    if (!competitiveData) return [];
+    
+    const intel = [];
+    if (competitiveData.competitors) {
+      competitiveData.competitors.forEach(competitor => {
+        intel.push({
+          competitor: competitor.name || competitor,
+          positioning: competitor.positioning || competitiveData.positioning?.[competitor.name],
+          strengths: competitor.strengths || [],
+          weaknesses: competitor.weaknesses || [],
+          threats: competitor.threats || []
+        });
+      });
+    }
+    return intel;
+  }
+
+  extractMediaOpportunities(opportunityData) {
+    if (!opportunityData) return [];
+    
+    const opportunities = [];
+    ['immediate', 'strategic', 'market', 'partnerships'].forEach(type => {
+      if (opportunityData[type]) {
+        opportunityData[type].forEach(opp => {
+          opportunities.push({
+            type,
+            opportunity: opp.description || opp,
+            impact: opp.impact || 'medium',
+            timeframe: opp.timeframe || 'short-term'
+          });
+        });
+      }
+    });
+    return opportunities;
+  }
+
+  extractRealTimeAlerts(riskData) {
+    if (!riskData) return [];
+    
+    const alerts = [];
+    if (riskData.alerts) {
+      alerts.push(...riskData.alerts);
+    }
+    if (riskData.immediate) {
+      riskData.immediate.forEach(risk => {
+        alerts.push({
+          type: 'risk',
+          severity: risk.severity || 'medium',
+          message: risk.description || risk,
+          timestamp: new Date().toISOString()
+        });
+      });
+    }
+    return alerts;
   }
 }
 

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Anthropic API Key</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #0f0; }
+        button { background: #00ff00; color: #000; padding: 10px 20px; margin: 10px; cursor: pointer; }
+        pre { background: #000; padding: 15px; overflow: auto; }
+        .error { color: #ff0000; }
+        .success { color: #00ff00; }
+    </style>
+</head>
+<body>
+    <h1>Edge Function API Key Test</h1>
+    
+    <button onclick="testAPIKey()">Test API Key in Edge Function</button>
+    
+    <div id="output"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        
+        async function testAPIKey() {
+            const output = document.getElementById('output');
+            output.innerHTML = '<pre>Testing API key configuration...</pre>';
+            
+            try {
+                // Call synthesizer with a simple test
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/claude-intelligence-synthesizer-v2`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        organization: {
+                            name: 'Test Company',
+                            industry: 'technology'
+                        },
+                        intelligence_type: 'test',
+                        mcp_data: {
+                            test: true
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // Check if it's using fallback
+                const isFallback = JSON.stringify(data).includes('fallback_analysis');
+                const hasRealAnalysis = JSON.stringify(data).includes('executive_summary') || 
+                                       JSON.stringify(data).includes('competitive_analysis');
+                
+                output.innerHTML = `
+                    <h3 class="${isFallback ? 'error' : 'success'}">
+                        ${isFallback ? '❌ Still using fallback analysis' : '✅ Real analysis generated'}
+                    </h3>
+                    <h4>Debug Info:</h4>
+                    <ul>
+                        <li>Response status: ${response.status}</li>
+                        <li>Has fallback: ${isFallback}</li>
+                        <li>Has real analysis: ${hasRealAnalysis}</li>
+                        <li>Analysis type: ${data.intelligence_type}</li>
+                    </ul>
+                    <h4>Full Response:</h4>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+                
+                // Check the logs link
+                if (isFallback) {
+                    output.innerHTML += `
+                        <div class="error">
+                            <h3>⚠️ API Key Issue Detected</h3>
+                            <p>The Edge Function is not accessing the Anthropic API key.</p>
+                            <p>Check the logs at:</p>
+                            <a href="https://supabase.com/dashboard/project/zskaxjtyuaqazydouifp/functions/claude-intelligence-synthesizer-v2/logs" target="_blank">
+                                View Edge Function Logs
+                            </a>
+                        </div>
+                    `;
+                }
+                
+            } catch (error) {
+                output.innerHTML = `<pre class="error">Error: ${error.message}</pre>`;
+            }
+        }
+    </script>
+</body>
+</html>
