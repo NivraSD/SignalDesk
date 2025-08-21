@@ -66,43 +66,96 @@ class IntelligenceOrchestratorService {
 
   async _executeOrchestration(organization, method) {
     try {
-      const response = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-orchestrator`, {
+      // PHASE 1-3: GATHERING
+      console.log('📡 Phase 1-3: Intelligence Gathering...');
+      const gatheringResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-gathering`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.supabaseKey}`
+        },
+        body: JSON.stringify({ organization })
+      });
+
+      if (!gatheringResponse.ok) {
+        throw new Error(`Gathering failed: ${gatheringResponse.status}`);
+      }
+
+      const gatheringData = await gatheringResponse.json();
+      console.log('✅ Gathering complete:', {
+        success: gatheringData.success,
+        phases: gatheringData.phases,
+        statistics: gatheringData.statistics,
+        sources: Object.keys(gatheringData.raw_intelligence || {})
+      });
+      
+      if (!gatheringData.success) {
+        throw new Error(gatheringData.error || 'Gathering failed');
+      }
+      
+      // PHASE 4: SYNTHESIS
+      console.log('🧠 Phase 4: Intelligence Synthesis with Claude...');
+      const synthesisResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-synthesis`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${this.supabaseKey}`
         },
         body: JSON.stringify({
-          organization,
-          method
+          gathering_data: gatheringData,
+          organization
         })
       });
 
-      if (!response.ok) {
-        throw new Error(`Orchestration failed: ${response.status}`);
+      if (!synthesisResponse.ok) {
+        throw new Error(`Synthesis failed: ${synthesisResponse.status}`);
       }
 
-      const data = await response.json();
-      console.log('✅ Orchestration complete:', data);
-      
-      // DEBUG: What did we actually receive?
-      console.log('🔍 RAW ORCHESTRATOR RESPONSE:', {
-        hasIntelligence: !!data.intelligence,
-        intelligenceKeys: Object.keys(data.intelligence || {}),
-        executiveSummaryType: typeof data.intelligence?.executive_summary,
-        executiveSummaryValue: data.intelligence?.executive_summary,
-        synthesizedKeys: Object.keys(data.intelligence?.synthesized || {}),
-        keyInsightsCount: data.intelligence?.key_insights?.length || 0
+      const synthesisData = await synthesisResponse.json();
+      console.log('✅ Synthesis complete:', {
+        success: synthesisData.success,
+        synthesis_complete: synthesisData.synthesis_complete,
+        statistics: synthesisData.statistics,
+        hasIntelligence: !!synthesisData.intelligence,
+        intelligenceKeys: Object.keys(synthesisData.intelligence || {})
       });
       
-      // Check if the Edge Function returned an error
-      if (!data.success && data.error) {
-        console.error('❌ Edge Function error:', data.error);
-        throw new Error(data.error);
-      }
+      // Combine results from both phases
+      const combinedResult = {
+        success: synthesisData.success,
+        organization: organization.name,
+        industry: synthesisData.industry,
+        phases_completed: {
+          discovery: gatheringData.phases?.discovery || false,
+          mapping: gatheringData.phases?.mapping || false,
+          gathering: gatheringData.phases?.gathering || false,
+          synthesis: synthesisData.synthesis_complete || false
+        },
+        statistics: {
+          competitors_identified: gatheringData.statistics?.competitors_identified || 0,
+          websites_scraped: gatheringData.statistics?.total_websites || 0,
+          articles_processed: gatheringData.statistics?.total_articles || 0,
+          sources_used: gatheringData.statistics?.sources_succeeded || 0,
+          insights_generated: synthesisData.statistics?.total_insights || 0,
+          personas_engaged: synthesisData.statistics?.personas_engaged || 0,
+          second_opinions: synthesisData.statistics?.second_opinions || 0
+        },
+        intelligence: synthesisData.intelligence || {},
+        raw_data: gatheringData.raw_intelligence || {},
+        timestamp: new Date().toISOString()
+      };
+      
+      console.log('🔍 COMBINED ORCHESTRATION RESULT:', {
+        hasIntelligence: !!combinedResult.intelligence,
+        intelligenceKeys: Object.keys(combinedResult.intelligence || {}),
+        executiveSummaryType: typeof combinedResult.intelligence?.executive_summary,
+        keyInsightsCount: combinedResult.intelligence?.key_insights?.length || 0,
+        phasesCompleted: combinedResult.phases_completed,
+        statistics: combinedResult.statistics
+      });
       
       // Use the data formatter for consistent structure
-      return dataFormatterService.formatForDisplay(data);
+      return dataFormatterService.formatForDisplay(combinedResult);
     } catch (error) {
       console.error('❌ Orchestration error:', error);
       return {
