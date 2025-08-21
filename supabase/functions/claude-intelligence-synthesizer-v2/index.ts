@@ -766,7 +766,16 @@ Analyze this intelligence data through the lens of our strategic goals and provi
 
 // Combine multiple persona analyses
 function combineAnalyses(analyses: any[], personas: any[]) {
+  // For comprehensive analysis, we need to return a structure that matches what the frontend expects
   const combined = {
+    // Executive summary as a STRING (not object)
+    executive_summary: '',
+    key_insights: [],
+    recommendations: [],
+    critical_alerts: [],
+    competitors: [],
+    opportunities: [],
+    risks: [],
     multi_perspective_analysis: {},
     consensus_insights: [],
     divergent_views: [],
@@ -784,6 +793,53 @@ function combineAnalyses(analyses: any[], personas: any[]) {
     const personaName = personas[index]?.name || `Persona_${index}`
     combined.multi_perspective_analysis[personaName] = analysis
     
+    // Extract executive summary from executive synthesizer
+    if (personaName.includes('Executive')) {
+      if (typeof analysis === 'string') {
+        combined.executive_summary = analysis
+      } else if (analysis.analysis) {
+        combined.executive_summary = analysis.analysis
+      } else if (analysis.primary_analysis?.analysis) {
+        combined.executive_summary = analysis.primary_analysis.analysis
+      } else if (analysis.executive_summary) {
+        combined.executive_summary = analysis.executive_summary
+      }
+    }
+    
+    // Extract key insights
+    if (analysis.key_insights && Array.isArray(analysis.key_insights)) {
+      combined.key_insights.push(...analysis.key_insights)
+    } else if (analysis.primary_analysis?.key_insights) {
+      combined.key_insights.push(...analysis.primary_analysis.key_insights)
+    }
+    
+    // Extract recommendations
+    if (analysis.recommendations && Array.isArray(analysis.recommendations)) {
+      combined.recommendations.push(...analysis.recommendations)
+      combined.combined_recommendations.push(...analysis.recommendations)
+    } else if (analysis.primary_analysis?.recommendations) {
+      combined.recommendations.push(...analysis.primary_analysis.recommendations)
+      combined.combined_recommendations.push(...analysis.primary_analysis.recommendations)
+    }
+    
+    // Extract alerts/risks
+    if (analysis.critical_alerts) {
+      combined.critical_alerts.push(...analysis.critical_alerts)
+    }
+    if (analysis.risks) {
+      combined.risks.push(...analysis.risks)
+    }
+    
+    // Extract competitors
+    if (analysis.competitors) {
+      combined.competitors.push(...analysis.competitors)
+    }
+    
+    // Extract opportunities
+    if (analysis.opportunities) {
+      combined.opportunities.push(...analysis.opportunities)
+    }
+    
     // Extract consensus and divergent views
     if (analysis.second_opinion && analysis.consensus_level) {
       confidenceSum += analysis.consensus_level
@@ -794,6 +850,16 @@ function combineAnalyses(analyses: any[], personas: any[]) {
       confidenceCount++
     }
   })
+  
+  // Deduplicate arrays
+  combined.key_insights = [...new Set(combined.key_insights)]
+  combined.recommendations = [...new Set(combined.recommendations)]
+  combined.combined_recommendations = [...new Set(combined.combined_recommendations)]
+  
+  // If no executive summary was extracted, create one from insights
+  if (!combined.executive_summary && combined.key_insights.length > 0) {
+    combined.executive_summary = `Analysis reveals ${combined.key_insights.length} key insights. ${combined.key_insights.slice(0, 2).join('. ')}. ${combined.recommendations.length} strategic recommendations have been identified.`
+  }
   
   // Calculate average confidence
   combined.overall_confidence = confidenceCount > 0 ? 

@@ -228,6 +228,15 @@ async function orchestrateIntelligence(organization: any) {
       if (synthesisResult.success && synthesisResult.analysis) {
         results.phases_completed.synthesis = true
         
+        // DEBUG: Log what synthesizer actually returned
+        console.log('🔍 SYNTHESIZER RETURNED:', {
+          type: typeof synthesisResult.analysis,
+          keys: Object.keys(synthesisResult.analysis || {}),
+          hasExecutiveSummary: !!synthesisResult.analysis?.executive_summary,
+          executiveSummaryType: typeof synthesisResult.analysis?.executive_summary,
+          sample: JSON.stringify(synthesisResult.analysis).substring(0, 200)
+        })
+        
         // Extract the actual synthesized content
         const synthesis = synthesisResult.analysis
         

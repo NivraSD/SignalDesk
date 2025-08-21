@@ -83,6 +83,16 @@ class IntelligenceOrchestratorService {
       const data = await response.json();
       console.log('✅ Orchestration complete:', data);
       
+      // DEBUG: What did we actually receive?
+      console.log('🔍 RAW ORCHESTRATOR RESPONSE:', {
+        hasIntelligence: !!data.intelligence,
+        intelligenceKeys: Object.keys(data.intelligence || {}),
+        executiveSummaryType: typeof data.intelligence?.executive_summary,
+        executiveSummaryValue: data.intelligence?.executive_summary,
+        synthesizedKeys: Object.keys(data.intelligence?.synthesized || {}),
+        keyInsightsCount: data.intelligence?.key_insights?.length || 0
+      });
+      
       // Check if the Edge Function returned an error
       if (!data.success && data.error) {
         console.error('❌ Edge Function error:', data.error);
