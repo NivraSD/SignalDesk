@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mitsui Intelligence Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .phase { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .success { background: #d4f4dd; }
+        .error { background: #fdd4d4; }
+        .pending { background: #fff4d4; }
+        pre { white-space: pre-wrap; word-wrap: break-word; max-height: 400px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>Mitsui Intelligence Flow Test</h1>
+    <button onclick="runTest()">Run Complete Test</button>
+    <div id="results"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `phase ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            results.appendChild(div);
+            console.log(message);
+        }
+        
+        async function runTest() {
+            const results = document.getElementById('results');
+            results.innerHTML = '';
+            
+            // 1. Discovery
+            log('🔍 Phase 1: Testing Intelligent Discovery for Mitsui...', 'pending');
+            const discoveryResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligent-discovery`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                },
+                body: JSON.stringify({
+                    organization: 'Mitsui',
+                    industry_hint: 'conglomerate'
+                })
+            });
+            
+            const discovery = await discoveryResponse.json();
+            if (discovery.success) {
+                log(`✅ Discovery SUCCESS: Found ${discovery.data.competitors?.length || 0} competitors`, 'success');
+                console.log('Discovery data:', discovery.data);
+            } else {
+                log(`❌ Discovery FAILED: ${discovery.error}`, 'error');
+                return;
+            }
+            
+            // 2. Gathering
+            log('📡 Phase 2-3: Testing Intelligence Gathering (30-45 seconds)...', 'pending');
+            const gatheringResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-gathering`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                },
+                body: JSON.stringify({
+                    organization: { name: 'Mitsui', industry: 'conglomerate' },
+                    discovered_context: discovery.data
+                })
+            });
+            
+            const gathering = await gatheringResponse.json();
+            if (gathering.success) {
+                log(`✅ Gathering SUCCESS: ${gathering.statistics?.total_articles || 0} articles from ${gathering.statistics?.sources_succeeded || 0} sources`, 'success');
+                
+                // Show what data we actually got
+                const hasNews = gathering.raw_intelligence?.['news-intelligence']?.totalArticles > 0;
+                const hasPR = gathering.raw_intelligence?.['pr-intelligence']?.pressReleases?.length > 0;
+                const hasReddit = gathering.raw_intelligence?.['reddit-intelligence']?.discussions?.length > 0;
+                const hasScraper = gathering.raw_intelligence?.['scraper-intelligence']?.websites?.length > 0;
+                
+                log(`📊 Data collected: News=${hasNews}, PR=${hasPR}, Reddit=${hasReddit}, Scraper=${hasScraper}`, 'info');
+                console.log('Raw intelligence:', gathering.raw_intelligence);
+            } else {
+                log(`❌ Gathering FAILED: ${gathering.error}`, 'error');
+                return;
+            }
+            
+            // 3. Synthesis
+            log('🧠 Phase 4: Testing Intelligence Synthesis with 60s timeout...', 'pending');
+            const synthesisResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-synthesis`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                },
+                body: JSON.stringify({
+                    gathering_data: gathering,
+                    organization: {
+                        name: 'Mitsui',
+                        industry: discovery.data.primary_category || 'conglomerate',
+                        competitors: discovery.data.competitors || []
+                    }
+                })
+            });
+            
+            const synthesis = await synthesisResponse.json();
+            if (synthesis.success) {
+                const complete = synthesis.synthesis_complete;
+                const insights = synthesis.statistics?.total_insights || 0;
+                const personas = synthesis.statistics?.personas_engaged || 0;
+                
+                log(`${complete ? '✅' : '⚠️'} Synthesis ${complete ? 'COMPLETE' : 'PARTIAL'}: ${insights} insights from ${personas} personas`, complete ? 'success' : 'error');
+                
+                if (synthesis.intelligence?.synthesized) {
+                    log('🎯 Got synthesized intelligence!', 'success');
+                    log(`<pre>${JSON.stringify(synthesis.intelligence.synthesized, null, 2)}</pre>`, 'success');
+                } else {
+                    log('❌ No synthesized intelligence - Claude synthesis failed', 'error');
+                    log('This means the Claude API call in synthesizer-v3 is failing', 'error');
+                }
+            } else {
+                log(`❌ Synthesis FAILED: ${synthesis.error}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
