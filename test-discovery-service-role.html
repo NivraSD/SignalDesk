@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Discovery with Service Role</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #007AFF;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0051D5;
+        }
+        .results {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔐 Test Discovery with Different Auth Methods</h1>
+    
+    <div class="warning">
+        <strong>⚠️ Testing Different Authentication Methods</strong>
+        <p>This page tests the Edge Function with different authentication approaches to diagnose the 401 error.</p>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Methods</h2>
+        <button onclick="testWithAnonKey()">Test with Anon Key</button>
+        <button onclick="testWithServiceRole()">Test with Service Role (if available)</button>
+        <button onclick="testWithoutAuth()">Test without Auth Header</button>
+        <button onclick="testRawFunction()">Test Raw Function URL</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Results</h2>
+        <div id="status"></div>
+        <div class="results" id="results"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+        
+        // You would need to add service role key here if testing locally
+        // NEVER expose service role key in production
+        const SUPABASE_SERVICE_ROLE = null; // Add if testing locally
+        
+        async function makeRequest(headers, description) {
+            const statusDiv = document.getElementById('status');
+            const resultsDiv = document.getElementById('results');
+            
+            statusDiv.innerHTML = `<div class="info">🔄 Testing: ${description}</div>`;
+            
+            try {
+                console.log(`Testing with: ${description}`);
+                console.log('Headers:', headers);
+                
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligent-discovery`, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        organization: 'Tesla',
+                        industry_hint: 'automotive'
+                    })
+                });
+                
+                const responseText = await response.text();
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                } catch (e) {
+                    data = { raw_response: responseText };
+                }
+                
+                console.log('Response status:', response.status);
+                console.log('Response headers:', Object.fromEntries(response.headers));
+                console.log('Response data:', data);
+                
+                if (response.status === 401) {
+                    statusDiv.innerHTML = `<div class="error">❌ 401 Unauthorized with ${description}</div>`;
+                    
+                    let html = '<h3>Error Details</h3>';
+                    html += '<h4>Response Status</h4>';
+                    html += `<p>HTTP ${response.status} ${response.statusText}</p>`;
+                    
+                    html += '<h4>Response Headers</h4>';
+                    html += '<pre>' + JSON.stringify(Object.fromEntries(response.headers), null, 2) + '</pre>';
+                    
+                    html += '<h4>Error Message</h4>';
+                    html += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                    
+                    html += '<h4>Request Headers Used</h4>';
+                    html += '<pre>' + JSON.stringify(headers, null, 2) + '</pre>';
+                    
+                    resultsDiv.innerHTML = html;
+                } else if (response.ok && data.success) {
+                    statusDiv.innerHTML = `<div class="success">✅ Success with ${description}!</div>`;
+                    resultsDiv.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                } else {
+                    statusDiv.innerHTML = `<div class="error">❌ Failed with ${description}: ${data.error || 'Unknown error'}</div>`;
+                    resultsDiv.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                statusDiv.innerHTML = `<div class="error">❌ Network Error: ${error.message}</div>`;
+                resultsDiv.innerHTML = `<pre>Error details:\n${error.stack || error.message}</pre>`;
+            }
+        }
+        
+        async function testWithAnonKey() {
+            await makeRequest({
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                'apikey': SUPABASE_ANON_KEY
+            }, 'Anon Key (with apikey header)');
+        }
+        
+        async function testWithServiceRole() {
+            if (!SUPABASE_SERVICE_ROLE) {
+                alert('Service role key not configured in test file');
+                return;
+            }
+            await makeRequest({
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE}`
+            }, 'Service Role Key');
+        }
+        
+        async function testWithoutAuth() {
+            await makeRequest({
+                'Content-Type': 'application/json'
+            }, 'No Auth Headers');
+        }
+        
+        async function testRawFunction() {
+            // Try different auth header format
+            await makeRequest({
+                'Content-Type': 'application/json',
+                'Authorization': SUPABASE_ANON_KEY, // Without "Bearer" prefix
+                'x-client-info': 'test-client'
+            }, 'Raw Token (no Bearer prefix)');
+        }
+        
+        // Show what we're testing
+        window.addEventListener('load', () => {
+            console.log('Auth test page ready');
+            console.log('Supabase URL:', SUPABASE_URL);
+            console.log('Anon key first 20 chars:', SUPABASE_ANON_KEY.substring(0, 20));
+        });
+    </script>
+</body>
+</html>

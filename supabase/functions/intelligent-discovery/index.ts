@@ -6,6 +6,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
 }
 
 async function analyzeOrganization(orgName: string, industryHint?: string) {
@@ -80,7 +81,14 @@ Return ONLY a JSON object with this structure:
       const errorBody = await response.text()
       console.error('❌ Claude API error:', response.status)
       console.error('❌ Error body:', errorBody)
-      throw new Error(`Claude API error: ${response.status}`)
+      
+      // Check if it's an authentication error
+      if (response.status === 401) {
+        console.error('🔑 API Key issue - the key might be invalid or expired')
+        console.error('🔑 Key being used starts with:', ANTHROPIC_API_KEY?.substring(0, 20))
+      }
+      
+      throw new Error(`Claude API error: ${response.status} - ${errorBody}`)
     }
 
     const result = await response.json()

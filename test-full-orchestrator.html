@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Full Intelligence Orchestrator</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #007AFF;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input, select, button {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        input {
+            flex: 1;
+        }
+        button {
+            background: #007AFF;
+            color: white;
+            cursor: pointer;
+            padding: 10px 20px;
+        }
+        button:hover {
+            background: #0051D5;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .phases {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .phase {
+            flex: 1;
+            padding: 15px;
+            background: #f8f8f8;
+            border-radius: 8px;
+            text-align: center;
+            position: relative;
+        }
+        .phase.completed {
+            background: #d4edda;
+            border: 1px solid #28a745;
+        }
+        .phase.in-progress {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            animation: pulse 1.5s infinite;
+        }
+        .phase.failed {
+            background: #f8d7da;
+            border: 1px solid #dc3545;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat {
+            background: #f0f8ff;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007AFF;
+        }
+        .stat .label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .results {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        .timeline {
+            margin: 20px 0;
+        }
+        .timeline-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border-left: 3px solid #007AFF;
+            border-radius: 4px;
+        }
+        .timeline-item .time {
+            font-size: 11px;
+            color: #999;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎯 Full Intelligence Orchestrator Test</h1>
+    
+    <div class="test-section">
+        <h2>Test Configuration</h2>
+        <div class="controls">
+            <input type="text" id="orgName" placeholder="Organization Name" value="Tesla">
+            <select id="industry">
+                <option value="">Auto-detect Industry</option>
+                <option value="automotive">Automotive</option>
+                <option value="technology">Technology</option>
+                <option value="finance">Finance</option>
+                <option value="healthcare">Healthcare</option>
+                <option value="conglomerate">Conglomerate</option>
+                <option value="trading">Trading</option>
+            </select>
+            <button id="testBtn" onclick="runOrchestrator()">Run Full Orchestration</button>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>4-Phase Process Status</h2>
+        <div class="phases">
+            <div class="phase" id="phase-discovery">
+                <div class="phase-name">📍 Phase 1</div>
+                <div><strong>Discovery</strong></div>
+                <div class="phase-status">Not Started</div>
+            </div>
+            <div class="phase" id="phase-mapping">
+                <div class="phase-name">🗺️ Phase 2</div>
+                <div><strong>Mapping</strong></div>
+                <div class="phase-status">Not Started</div>
+            </div>
+            <div class="phase" id="phase-gathering">
+                <div class="phase-name">📡 Phase 3</div>
+                <div><strong>Gathering</strong></div>
+                <div class="phase-status">Not Started</div>
+            </div>
+            <div class="phase" id="phase-synthesis">
+                <div class="phase-name">🧠 Phase 4</div>
+                <div><strong>Synthesis</strong></div>
+                <div class="phase-status">Not Started</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Statistics</h2>
+        <div class="stats">
+            <div class="stat">
+                <div class="value" id="stat-competitors">0</div>
+                <div class="label">Competitors</div>
+            </div>
+            <div class="stat">
+                <div class="value" id="stat-articles">0</div>
+                <div class="label">Articles</div>
+            </div>
+            <div class="stat">
+                <div class="value" id="stat-websites">0</div>
+                <div class="label">Websites</div>
+            </div>
+            <div class="stat">
+                <div class="value" id="stat-sources">0</div>
+                <div class="label">Sources</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Timeline</h2>
+        <div class="timeline" id="timeline"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Results</h2>
+        <div id="status"></div>
+        <div class="results" id="results"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        let startTime;
+        
+        function addTimelineItem(message, type = 'info') {
+            const timeline = document.getElementById('timeline');
+            const elapsed = startTime ? ((Date.now() - startTime) / 1000).toFixed(1) : '0.0';
+            const item = document.createElement('div');
+            item.className = 'timeline-item';
+            item.innerHTML = `
+                <div class="time">+${elapsed}s</div>
+                <div>${message}</div>
+            `;
+            timeline.appendChild(item);
+        }
+        
+        function updatePhase(phaseName, status) {
+            const phaseEl = document.getElementById(`phase-${phaseName}`);
+            if (phaseEl) {
+                phaseEl.className = `phase ${status}`;
+                const statusEl = phaseEl.querySelector('.phase-status');
+                if (statusEl) {
+                    if (status === 'completed') statusEl.textContent = 'Completed';
+                    else if (status === 'in-progress') statusEl.textContent = 'In Progress';
+                    else if (status === 'failed') statusEl.textContent = 'Failed';
+                }
+            }
+        }
+        
+        function updateStats(stats) {
+            if (stats.competitors_identified !== undefined) {
+                document.getElementById('stat-competitors').textContent = stats.competitors_identified;
+            }
+            if (stats.articles_processed !== undefined) {
+                document.getElementById('stat-articles').textContent = stats.articles_processed;
+            }
+            if (stats.websites_scraped !== undefined) {
+                document.getElementById('stat-websites').textContent = stats.websites_scraped;
+            }
+            if (stats.sources_used !== undefined) {
+                document.getElementById('stat-sources').textContent = stats.sources_used;
+            }
+        }
+        
+        async function runOrchestrator() {
+            const btn = document.getElementById('testBtn');
+            const statusDiv = document.getElementById('status');
+            const resultsDiv = document.getElementById('results');
+            const orgName = document.getElementById('orgName').value;
+            const industry = document.getElementById('industry').value;
+            
+            if (!orgName) {
+                alert('Please enter an organization name');
+                return;
+            }
+            
+            btn.disabled = true;
+            statusDiv.innerHTML = '<div class="loading">🔄 Running full orchestration...</div>';
+            resultsDiv.innerHTML = '';
+            document.getElementById('timeline').innerHTML = '';
+            
+            // Reset phases
+            ['discovery', 'mapping', 'gathering', 'synthesis'].forEach(phase => {
+                updatePhase(phase, '');
+            });
+            
+            // Reset stats
+            updateStats({
+                competitors_identified: 0,
+                articles_processed: 0,
+                websites_scraped: 0,
+                sources_used: 0
+            });
+            
+            startTime = Date.now();
+            addTimelineItem('Starting orchestration for ' + orgName);
+            
+            try {
+                // Start phase monitoring
+                updatePhase('discovery', 'in-progress');
+                addTimelineItem('Phase 1: Discovery starting...');
+                
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-orchestrator`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: {
+                            name: orgName,
+                            industry: industry || undefined
+                        },
+                        method: 'full'
+                    })
+                });
+                
+                const data = await response.json();
+                console.log('Orchestrator Response:', data);
+                
+                // Update phases based on response
+                if (data.phases_completed) {
+                    Object.entries(data.phases_completed).forEach(([phase, completed]) => {
+                        updatePhase(phase, completed ? 'completed' : 'failed');
+                        if (completed) {
+                            addTimelineItem(`Phase ${phase} completed`);
+                        }
+                    });
+                }
+                
+                // Update statistics
+                if (data.statistics) {
+                    updateStats(data.statistics);
+                }
+                
+                if (data.success) {
+                    statusDiv.innerHTML = '<div class="success">✅ Orchestration completed successfully!</div>';
+                    
+                    // Display intelligence results
+                    let html = '<h3>Intelligence Results</h3>';
+                    
+                    if (data.intelligence) {
+                        // Executive Summary
+                        if (data.intelligence.executive_summary) {
+                            html += '<h4>Executive Summary</h4>';
+                            html += '<pre>' + JSON.stringify(data.intelligence.executive_summary, null, 2) + '</pre>';
+                        }
+                        
+                        // Competitors
+                        if (data.intelligence.competitors?.length > 0) {
+                            html += '<h4>Competitors Identified</h4>';
+                            html += '<ul>';
+                            data.intelligence.competitors.forEach(comp => {
+                                html += `<li>${comp}</li>`;
+                            });
+                            html += '</ul>';
+                        }
+                        
+                        // Key Insights
+                        if (data.intelligence.key_insights?.length > 0) {
+                            html += '<h4>Key Insights</h4>';
+                            html += '<ul>';
+                            data.intelligence.key_insights.forEach(insight => {
+                                html += `<li>${insight}</li>`;
+                            });
+                            html += '</ul>';
+                        }
+                        
+                        // Opportunities
+                        if (data.intelligence.immediate_opportunities?.length > 0) {
+                            html += '<h4>Immediate Opportunities</h4>';
+                            html += '<pre>' + JSON.stringify(data.intelligence.immediate_opportunities, null, 2) + '</pre>';
+                        }
+                        
+                        // Full Intelligence Data
+                        html += '<h4>Full Intelligence Data</h4>';
+                        html += '<pre>' + JSON.stringify(data.intelligence, null, 2) + '</pre>';
+                    }
+                    
+                    // Raw Data (if available)
+                    if (data.raw_data && Object.keys(data.raw_data).length > 0) {
+                        html += '<h4>Raw Data Sources</h4>';
+                        html += '<pre>' + JSON.stringify(Object.keys(data.raw_data), null, 2) + '</pre>';
+                    }
+                    
+                    resultsDiv.innerHTML = html;
+                    addTimelineItem('✅ All phases complete');
+                } else {
+                    statusDiv.innerHTML = `<div class="error">❌ Orchestration failed: ${data.error || 'Unknown error'}</div>`;
+                    resultsDiv.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                    addTimelineItem('❌ Orchestration failed', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                statusDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+                addTimelineItem('❌ Fatal error: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+                addTimelineItem(`Total time: ${elapsed}s`);
+            }
+        }
+        
+        // Auto-run test on page load for quick testing
+        window.addEventListener('load', () => {
+            console.log('Ready to test full orchestrator');
+        });
+    </script>
+</body>
+</html>
