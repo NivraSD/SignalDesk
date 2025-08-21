@@ -78,29 +78,47 @@ const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigg
   };
 
   const renderOverviewTab = (data) => {
+    // Extract the actual summary text from the nested structure
+    const summaryText = typeof data.executive_summary === 'string' 
+      ? data.executive_summary 
+      : data.executive_summary?.primary_analysis?.analysis || 
+        data.executive_summary?.analysis || 
+        'No executive summary available';
+    
+    // Extract insights and recommendations from the nested structure
+    const insights = data.key_insights || 
+      data.executive_summary?.primary_analysis?.key_insights || 
+      data.executive_summary?.key_insights || [];
+    
+    const recommendations = data.recommended_actions || 
+      data.executive_summary?.primary_analysis?.recommendations || 
+      data.executive_summary?.recommendations || [];
+    
+    const alerts = data.critical_alerts || [];
+    
     return (
       <div className="intelligence-section overview-tab">
-        {data.executive_summary && (
+        {summaryText && (
           <div className="executive-summary-panel">
             <div className="panel-header">
               <ChartIcon size={20} color="#00ffcc" />
               <h3>Executive Summary</h3>
             </div>
-            <p>{data.executive_summary}</p>
+            <p>{summaryText}</p>
           </div>
         )}
         
-        {data.critical_alerts && data.critical_alerts.length > 0 && (
+        {alerts.length > 0 && (
           <div className="alerts-panel">
             <div className="panel-header">
               <AlertIcon size={20} color="#ff0064" />
               <h3>Critical Alerts</h3>
             </div>
             <div className="alerts-grid">
-              {data.critical_alerts.map((alert, idx) => (
-                <div key={idx} className={`alert-card severity-${alert.severity}`}>
-                  <div className="alert-type">{alert.type}</div>
-                  <div className="alert-message">{alert.message}</div>
+              {alerts.map((alert, idx) => (
+                <div key={idx} className={`alert-card severity-${alert.severity || 'medium'}`}>
+                  <div className="alert-type">{alert.type || 'Alert'}</div>
+                  <div className="alert-message">{typeof alert === 'string' ? alert : alert.message}</div>
                   {alert.action_required && <div className="action-required">Action Required</div>}
                 </div>
               ))}
@@ -108,40 +126,47 @@ const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigg
           </div>
         )}
         
-        {data.key_insights && (
+        {insights.length > 0 && (
           <div className="insights-panel">
             <div className="panel-header">
               <InsightIcon size={20} color="#00ffcc" />
               <h3>Key Insights</h3>
             </div>
             <div className="insights-grid">
-              {data.key_insights.map((insight, idx) => (
-                <div key={idx} className={`insight-card impact-${insight.impact}`}>
-                  <div className="insight-type">{insight.type}</div>
-                  <div className="insight-content">{insight.insight}</div>
+              {insights.map((insight, idx) => (
+                <div key={idx} className={`insight-card impact-${insight.impact || 'medium'}`}>
+                  <div className="insight-type">{insight.type || 'Insight'}</div>
+                  <div className="insight-content">{typeof insight === 'string' ? insight : insight.insight || insight.content}</div>
                 </div>
               ))}
             </div>
           </div>
         )}
         
-        {data.recommended_actions && (
+        {recommendations.length > 0 && (
           <div className="actions-panel">
             <div className="panel-header">
               <ActionIcon size={20} color="#00ff88" />
               <h3>Recommended Actions</h3>
             </div>
             <div className="actions-list">
-              {data.recommended_actions.map((action, idx) => (
-                <div key={idx} className={`action-item priority-${action.priority}`}>
-                  <div className="action-priority">{action.priority}</div>
-                  <div className="action-content">
-                    <div className="action-text">{action.action}</div>
-                    <div className="action-rationale">{action.rationale}</div>
-                    <div className="action-owner">Owner: {action.owner}</div>
+              {recommendations.map((action, idx) => {
+                const actionText = typeof action === 'string' ? action : action.action || action.recommendation;
+                const priority = action.priority || 'medium';
+                const rationale = action.rationale || '';
+                const owner = action.owner || 'PR Team';
+                
+                return (
+                  <div key={idx} className={`action-item priority-${priority}`}>
+                    <div className="action-priority">{priority}</div>
+                    <div className="action-content">
+                      <div className="action-text">{actionText}</div>
+                      {rationale && <div className="action-rationale">{rationale}</div>}
+                      <div className="action-owner">Owner: {owner}</div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -150,44 +175,99 @@ const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigg
   };
 
   const renderCompetitionTab = (data) => {
+    // Handle both nested and flat data structures
+    const landscapeSummary = data.competitive_landscape?.summary || 
+      data.competitive_landscape?.primary_analysis?.analysis ||
+      data.competitive_landscape?.analysis ||
+      (typeof data.competitive_landscape === 'string' ? data.competitive_landscape : null);
+    
+    const profiles = data.competitor_profiles || 
+      data.competitive_landscape?.competitor_profiles || {};
+    
+    // Also check for competitive_opportunities or other competitive data
+    const opportunities = data.competitive_opportunities || 
+      data.competitive_landscape?.opportunities || [];
+    
     return (
       <div className="intelligence-section competition-tab">
-        {data.competitive_landscape && (
+        {landscapeSummary && (
           <div className="landscape-panel">
             <div className="panel-header">
               <TargetIcon size={20} color="#ff00ff" />
               <h3>Competitive Landscape</h3>
             </div>
-            <p>{data.competitive_landscape.summary}</p>
+            <p>{landscapeSummary}</p>
           </div>
         )}
         
-        {data.competitor_profiles && Object.keys(data.competitor_profiles).length > 0 && (
+        {Object.keys(profiles).length > 0 && (
           <div className="competitors-panel">
             <div className="panel-header">
               <BuildingIcon size={20} color="#ff00ff" />
               <h3>Competitor Analysis</h3>
             </div>
             <div className="competitor-cards">
-              {Object.entries(data.competitor_profiles).map(([name, profile]) => (
-                <div key={name} className="competitor-card">
-                  <h4>{name}</h4>
-                  {profile.threat_assessment && (
-                    <div className="threat-level">Threat: {profile.threat_assessment.level}</div>
-                  )}
-                  {profile.latest_developments && profile.latest_developments.length > 0 && (
-                    <div className="developments">
-                      <h5>Latest Developments</h5>
-                      <ul>
-                        {profile.latest_developments.slice(0, 3).map((dev, idx) => (
-                          <li key={idx}>{dev.title || dev}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              ))}
+              {Object.entries(profiles).map(([name, profile]) => {
+                const threatLevel = profile.threat_assessment?.level || 
+                  profile.threat_level || 
+                  profile.market_position?.position || 
+                  'medium';
+                
+                const developments = profile.latest_developments || 
+                  profile.recent_news || 
+                  profile.developments || [];
+                
+                return (
+                  <div key={name} className="competitor-card">
+                    <h4>{name}</h4>
+                    <div className="threat-level">Threat: {threatLevel}</div>
+                    
+                    {profile.market_position && (
+                      <div className="market-position">
+                        Position: {profile.market_position.position || 'competitive'}
+                        {profile.market_position.trend && ` (${profile.market_position.trend})`}
+                      </div>
+                    )}
+                    
+                    {developments.length > 0 && (
+                      <div className="developments">
+                        <h5>Latest Developments</h5>
+                        <ul>
+                          {developments.slice(0, 3).map((dev, idx) => (
+                            <li key={idx}>{dev.title || dev.headline || dev}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {profile.opportunities && profile.opportunities.length > 0 && (
+                      <div className="opportunities">
+                        <h5>Opportunities</h5>
+                        <ul>
+                          {profile.opportunities.slice(0, 2).map((opp, idx) => (
+                            <li key={idx}>{opp}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
+          </div>
+        )}
+        
+        {opportunities.length > 0 && (
+          <div className="opportunities-panel">
+            <div className="panel-header">
+              <TrendingUpIcon size={20} color="#00ff88" />
+              <h3>Competitive Opportunities</h3>
+            </div>
+            <ul className="opportunities-list">
+              {opportunities.map((opp, idx) => (
+                <li key={idx}>{typeof opp === 'string' ? opp : opp.opportunity || opp.description}</li>
+              ))}
+            </ul>
           </div>
         )}
       </div>
@@ -195,35 +275,86 @@ const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigg
   };
 
   const renderStakeholdersTab = (data) => {
+    // Handle nested data structures
+    const landscapeOverview = data.stakeholder_landscape?.overview || 
+      data.stakeholder_landscape?.primary_analysis?.analysis ||
+      data.stakeholder_landscape?.analysis ||
+      (typeof data.stakeholder_landscape === 'string' ? data.stakeholder_landscape : null);
+    
+    const groupAnalysis = data.group_analysis || 
+      data.stakeholder_groups || 
+      data.stakeholder_landscape?.group_analysis || {};
+    
+    // Also check for sentiment analysis
+    const sentimentData = data.sentiment_analysis || 
+      data.stakeholder_landscape?.sentiment || {};
+    
     return (
       <div className="intelligence-section stakeholders-tab">
-        {data.stakeholder_landscape && (
+        {landscapeOverview && (
           <div className="landscape-panel">
             <h3>👥 Stakeholder Landscape</h3>
-            <p>{data.stakeholder_landscape.overview}</p>
+            <p>{landscapeOverview}</p>
           </div>
         )}
         
-        {data.group_analysis && Object.keys(data.group_analysis).length > 0 && (
+        {Object.keys(groupAnalysis).length > 0 && (
           <div className="groups-panel">
             <h3>📊 Stakeholder Groups</h3>
             <div className="stakeholder-groups">
-              {Object.entries(data.group_analysis).map(([group, analysis]) => (
-                <div key={group} className="stakeholder-group">
-                  <h4>{group.charAt(0).toUpperCase() + group.slice(1)}</h4>
-                  {analysis.sentiment && (
-                    <div className="sentiment">Sentiment: {analysis.sentiment.sentiment}</div>
-                  )}
-                  {analysis.key_concerns && analysis.key_concerns.length > 0 && (
-                    <div className="concerns">
-                      <h5>Key Concerns</h5>
-                      <ul>
-                        {analysis.key_concerns.map((concern, idx) => (
-                          <li key={idx}>{concern}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+              {Object.entries(groupAnalysis).map(([group, analysis]) => {
+                const sentiment = analysis.sentiment?.sentiment || 
+                  analysis.sentiment || 
+                  sentimentData[group]?.sentiment || 
+                  'neutral';
+                
+                const concerns = analysis.key_concerns || 
+                  analysis.concerns || 
+                  analysis.topics || [];
+                
+                const opportunities = analysis.opportunities || [];
+                
+                return (
+                  <div key={group} className="stakeholder-group">
+                    <h4>{group.charAt(0).toUpperCase() + group.slice(1)}</h4>
+                    <div className="sentiment">Sentiment: {sentiment}</div>
+                    
+                    {concerns.length > 0 && (
+                      <div className="concerns">
+                        <h5>Key Concerns</h5>
+                        <ul>
+                          {concerns.map((concern, idx) => (
+                            <li key={idx}>{typeof concern === 'string' ? concern : concern.topic || concern.concern}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {opportunities.length > 0 && (
+                      <div className="opportunities">
+                        <h5>Engagement Opportunities</h5>
+                        <ul>
+                          {opportunities.map((opp, idx) => (
+                            <li key={idx}>{typeof opp === 'string' ? opp : opp.opportunity}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        
+        {Object.keys(sentimentData).length > 0 && Object.keys(groupAnalysis).length === 0 && (
+          <div className="sentiment-panel">
+            <h3>📊 Sentiment Analysis</h3>
+            <div className="sentiment-breakdown">
+              {Object.entries(sentimentData).map(([source, data]) => (
+                <div key={source} className="sentiment-item">
+                  <h4>{source}</h4>
+                  <div className="sentiment-value">{data.sentiment || data}</div>
                 </div>
               ))}
             </div>
@@ -234,28 +365,48 @@ const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigg
   };
 
   const renderTopicsTab = (data) => {
+    // Handle various data structures
+    const dashboard = data.topic_dashboard || data.trending_topics || {};
+    const deepDives = data.topic_deep_dives || data.topics || {};
+    const emergingTopics = data.emerging_topics || [];
+    
+    // Extract trending topics
+    const trendingUp = dashboard.trending_up || dashboard.rising || [];
+    const trendingDown = dashboard.trending_down || dashboard.declining || [];
+    const stable = dashboard.stable || [];
+    
     return (
       <div className="intelligence-section topics-tab">
-        {data.topic_dashboard && (
+        {(trendingUp.length > 0 || trendingDown.length > 0 || stable.length > 0) && (
           <div className="dashboard-panel">
             <h3>📈 Topic Trends</h3>
             <div className="trends-grid">
-              {data.topic_dashboard.trending_up && data.topic_dashboard.trending_up.length > 0 && (
+              {trendingUp.length > 0 && (
                 <div className="trend-section">
                   <h4>🔼 Trending Up</h4>
                   <ul>
-                    {data.topic_dashboard.trending_up.map((topic, idx) => (
-                      <li key={idx}>{topic}</li>
+                    {trendingUp.map((topic, idx) => (
+                      <li key={idx}>{typeof topic === 'string' ? topic : topic.name || topic.topic}</li>
                     ))}
                   </ul>
                 </div>
               )}
-              {data.topic_dashboard.trending_down && data.topic_dashboard.trending_down.length > 0 && (
+              {trendingDown.length > 0 && (
                 <div className="trend-section">
                   <h4>🔽 Trending Down</h4>
                   <ul>
-                    {data.topic_dashboard.trending_down.map((topic, idx) => (
-                      <li key={idx}>{topic}</li>
+                    {trendingDown.map((topic, idx) => (
+                      <li key={idx}>{typeof topic === 'string' ? topic : topic.name || topic.topic}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {stable.length > 0 && (
+                <div className="trend-section">
+                  <h4>➡️ Stable Topics</h4>
+                  <ul>
+                    {stable.map((topic, idx) => (
+                      <li key={idx}>{typeof topic === 'string' ? topic : topic.name || topic.topic}</li>
                     ))}
                   </ul>
                 </div>
@@ -264,20 +415,49 @@ const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigg
           </div>
         )}
         
-        {data.topic_deep_dives && Object.keys(data.topic_deep_dives).length > 0 && (
+        {Object.keys(deepDives).length > 0 && (
           <div className="topics-panel">
             <h3>🎯 Topic Analysis</h3>
             <div className="topic-cards">
-              {Object.entries(data.topic_deep_dives).map(([topic, analysis]) => (
-                <div key={topic} className="topic-card">
-                  <h4>{topic}</h4>
-                  <div className="topic-status">Status: {analysis.status}</div>
-                  {analysis.impact_assessment && (
-                    <div className="impact">Impact: {analysis.impact_assessment.level}</div>
-                  )}
-                </div>
-              ))}
+              {Object.entries(deepDives).map(([topic, analysis]) => {
+                const status = analysis.status || analysis.trend || 'active';
+                const impact = analysis.impact_assessment?.level || analysis.impact || 'medium';
+                const sentiment = analysis.sentiment || 'neutral';
+                const volume = analysis.volume || analysis.mentions || 0;
+                
+                return (
+                  <div key={topic} className="topic-card">
+                    <h4>{topic}</h4>
+                    <div className="topic-status">Status: {status}</div>
+                    <div className="impact">Impact: {impact}</div>
+                    {sentiment !== 'neutral' && <div className="sentiment">Sentiment: {sentiment}</div>}
+                    {volume > 0 && <div className="volume">Mentions: {volume}</div>}
+                    
+                    {analysis.key_points && analysis.key_points.length > 0 && (
+                      <div className="key-points">
+                        <h5>Key Points</h5>
+                        <ul>
+                          {analysis.key_points.slice(0, 3).map((point, idx) => (
+                            <li key={idx}>{point}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
+          </div>
+        )}
+        
+        {emergingTopics.length > 0 && (
+          <div className="emerging-panel">
+            <h3>🌟 Emerging Topics</h3>
+            <ul className="emerging-list">
+              {emergingTopics.map((topic, idx) => (
+                <li key={idx}>{typeof topic === 'string' ? topic : topic.name || topic.topic}</li>
+              ))}
+            </ul>
           </div>
         )}
       </div>
@@ -285,49 +465,92 @@ const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigg
   };
 
   const renderPredictionsTab = (data) => {
+    // Handle various data structures
+    const scenarios = data.predictive_scenarios || data.scenarios || [];
+    const warnings = data.early_warnings || data.warnings || {};
+    const signals = warnings.signals_detected || warnings.signals || [];
+    const predictions = data.predictions || [];
+    
     return (
       <div className="intelligence-section predictions-tab">
-        {data.predictive_scenarios && data.predictive_scenarios.length > 0 && (
+        {scenarios.length > 0 && (
           <div className="scenarios-panel">
             <h3>🔮 Predictive Scenarios</h3>
             <div className="scenarios-grid">
-              {data.predictive_scenarios.map((scenario, idx) => (
-                <div key={idx} className="scenario-card">
-                  <h4>{scenario.scenario}</h4>
-                  <div className="probability">Probability: {scenario.probability}%</div>
-                  <p>{scenario.description}</p>
-                  {scenario.triggers && scenario.triggers.length > 0 && (
-                    <div className="triggers">
-                      <h5>Triggers</h5>
-                      <ul>
-                        {scenario.triggers.slice(0, 3).map((trigger, tidx) => (
-                          <li key={tidx}>{trigger}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {scenario.cascade_effects && scenario.cascade_effects.length > 0 && (
-                    <div className="effects">
-                      <h5>Cascade Effects</h5>
-                      <ul>
-                        {scenario.cascade_effects.slice(0, 3).map((effect, eidx) => (
-                          <li key={eidx}>{effect}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+              {scenarios.map((scenario, idx) => {
+                const scenarioName = scenario.scenario || scenario.name || `Scenario ${idx + 1}`;
+                const probability = scenario.probability || scenario.likelihood || 50;
+                const description = scenario.description || scenario.analysis || '';
+                const triggers = scenario.triggers || scenario.indicators || [];
+                const effects = scenario.cascade_effects || scenario.impacts || scenario.effects || [];
+                
+                return (
+                  <div key={idx} className="scenario-card">
+                    <h4>{scenarioName}</h4>
+                    <div className="probability">Probability: {probability}%</div>
+                    {description && <p>{description}</p>}
+                    
+                    {triggers.length > 0 && (
+                      <div className="triggers">
+                        <h5>Triggers</h5>
+                        <ul>
+                          {triggers.slice(0, 3).map((trigger, tidx) => (
+                            <li key={tidx}>{typeof trigger === 'string' ? trigger : trigger.indicator}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {effects.length > 0 && (
+                      <div className="effects">
+                        <h5>Cascade Effects</h5>
+                        <ul>
+                          {effects.slice(0, 3).map((effect, eidx) => (
+                            <li key={eidx}>{typeof effect === 'string' ? effect : effect.impact}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        
+        {predictions.length > 0 && (
+          <div className="predictions-panel">
+            <h3>📊 Market Predictions</h3>
+            <div className="predictions-list">
+              {predictions.map((prediction, idx) => (
+                <div key={idx} className="prediction-item">
+                  <h4>{prediction.title || prediction.prediction}</h4>
+                  {prediction.timeframe && <div className="timeframe">Timeframe: {prediction.timeframe}</div>}
+                  {prediction.confidence && <div className="confidence">Confidence: {prediction.confidence}%</div>}
+                  {prediction.rationale && <p>{prediction.rationale}</p>}
                 </div>
               ))}
             </div>
           </div>
         )}
         
-        {data.early_warnings && data.early_warnings.signals_detected && (
+        {signals.length > 0 && (
           <div className="warnings-panel">
             <h3>⚠️ Early Warning Signals</h3>
             <ul>
-              {data.early_warnings.signals_detected.map((signal, idx) => (
-                <li key={idx}>{signal}</li>
+              {signals.map((signal, idx) => (
+                <li key={idx}>{typeof signal === 'string' ? signal : signal.signal || signal.warning}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        
+        {warnings.risk_factors && warnings.risk_factors.length > 0 && (
+          <div className="risks-panel">
+            <h3>🚨 Risk Factors</h3>
+            <ul>
+              {warnings.risk_factors.map((risk, idx) => (
+                <li key={idx}>{typeof risk === 'string' ? risk : risk.factor}</li>
               ))}
             </ul>
           </div>
