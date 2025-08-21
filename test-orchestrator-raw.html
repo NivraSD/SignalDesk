@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Raw Orchestrator Response</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #007AFF;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0051D5;
+        }
+        button:disabled {
+            background: #ccc;
+        }
+        .results {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .data-section {
+            margin: 15px 0;
+            padding: 15px;
+            background: #e9ecef;
+            border-radius: 4px;
+        }
+        .data-section h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .stat {
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .stat .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007AFF;
+        }
+        .stat .label {
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Raw Orchestrator Response Test</h1>
+    
+    <div class="card">
+        <h2>Test Orchestrator Directly</h2>
+        <button onclick="testOrchestrator('Tesla', 'automotive')">Test Tesla</button>
+        <button onclick="testOrchestrator('Apple', 'technology')">Test Apple</button>
+        <button onclick="testOrchestrator('JPMorgan', 'finance')">Test JPMorgan</button>
+    </div>
+
+    <div class="card">
+        <h2>Response Analysis</h2>
+        <div id="status"></div>
+        
+        <div class="stats" id="stats"></div>
+        
+        <div class="data-section">
+            <h3>Intelligence Structure</h3>
+            <div id="structure"></div>
+        </div>
+        
+        <div class="data-section">
+            <h3>Sample Data</h3>
+            <div id="sample"></div>
+        </div>
+        
+        <div class="results">
+            <h3>Full Response</h3>
+            <pre id="fullResponse"></pre>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        async function testOrchestrator(orgName, industry) {
+            const statusDiv = document.getElementById('status');
+            const structureDiv = document.getElementById('structure');
+            const sampleDiv = document.getElementById('sample');
+            const fullResponseDiv = document.getElementById('fullResponse');
+            const statsDiv = document.getElementById('stats');
+            
+            statusDiv.innerHTML = '<div class="loading">🔄 Running orchestrator...</div>';
+            structureDiv.innerHTML = '';
+            sampleDiv.innerHTML = '';
+            fullResponseDiv.innerHTML = '';
+            statsDiv.innerHTML = '';
+            
+            try {
+                console.log(`Testing orchestrator for ${orgName}`);
+                const startTime = Date.now();
+                
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-orchestrator`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: {
+                            name: orgName,
+                            industry: industry
+                        },
+                        method: 'full'
+                    })
+                });
+                
+                const data = await response.json();
+                const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+                
+                console.log('Orchestrator Response:', data);
+                
+                if (data.success) {
+                    statusDiv.innerHTML = `<div class="success">✅ Success in ${elapsed}s</div>`;
+                    
+                    // Show statistics
+                    if (data.statistics) {
+                        statsDiv.innerHTML = `
+                            <div class="stat">
+                                <div class="value">${data.statistics.competitors_identified || 0}</div>
+                                <div class="label">Competitors</div>
+                            </div>
+                            <div class="stat">
+                                <div class="value">${data.statistics.articles_processed || 0}</div>
+                                <div class="label">Articles</div>
+                            </div>
+                            <div class="stat">
+                                <div class="value">${data.statistics.websites_scraped || 0}</div>
+                                <div class="label">Websites</div>
+                            </div>
+                            <div class="stat">
+                                <div class="value">${data.statistics.sources_used || 0}</div>
+                                <div class="label">Sources</div>
+                            </div>
+                        `;
+                    }
+                    
+                    // Analyze structure
+                    const structure = {
+                        'Top-level keys': Object.keys(data),
+                        'Intelligence keys': data.intelligence ? Object.keys(data.intelligence) : [],
+                        'Insights keys': data.insights ? Object.keys(data.insights) : [],
+                        'Phases completed': data.phases_completed || {},
+                        'Has synthesized data': !!(data.intelligence?.synthesized),
+                        'Has executive summary': !!(data.intelligence?.executive_summary),
+                        'Has competitors': !!(data.intelligence?.competitors),
+                        'Has key insights': !!(data.intelligence?.key_insights),
+                        'Key insight count': data.intelligence?.key_insights?.length || 0
+                    };
+                    
+                    structureDiv.innerHTML = '<pre>' + JSON.stringify(structure, null, 2) + '</pre>';
+                    
+                    // Show sample data
+                    const sample = {
+                        competitors: data.intelligence?.competitors?.slice(0, 3),
+                        key_insights: data.intelligence?.key_insights?.slice(0, 3),
+                        opportunities: data.intelligence?.immediate_opportunities?.slice(0, 2),
+                        risks: data.intelligence?.immediate_risks?.slice(0, 2),
+                        executive_summary: data.intelligence?.executive_summary
+                    };
+                    
+                    sampleDiv.innerHTML = '<pre>' + JSON.stringify(sample, null, 2) + '</pre>';
+                    
+                } else {
+                    statusDiv.innerHTML = `<div class="error">❌ Failed: ${data.error || 'Unknown error'}</div>`;
+                }
+                
+                // Show full response
+                fullResponseDiv.innerHTML = JSON.stringify(data, null, 2);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                statusDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+        
+        // Auto-test on load
+        window.addEventListener('load', () => {
+            console.log('Ready to test raw orchestrator response');
+        });
+    </script>
+</body>
+</html>

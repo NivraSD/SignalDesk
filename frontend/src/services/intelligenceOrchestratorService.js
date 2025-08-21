@@ -105,16 +105,20 @@ class IntelligenceOrchestratorService {
       return data;
     }
 
-    // Extract and structure the intelligence for frontend consumption
+    // The raw orchestrator returns everything in 'intelligence', not 'insights'
+    // We need to keep the raw intelligence AND extract insights for tabs
     const processed = {
       success: true,
       organization: data.organization,
       industry: data.industry,
       
-      // Phase completion status
-      phases: data.phases_completed || {},
+      // Phase completion status - KEEP ORIGINAL
+      phases_completed: data.phases_completed || {},
       
-      // Statistics
+      // Statistics - KEEP ORIGINAL
+      statistics: data.statistics || {},
+      
+      // Keep stats in both formats for compatibility
       stats: {
         competitors: data.statistics?.competitors_identified || 0,
         websites: data.statistics?.websites_scraped || 0,
@@ -122,11 +126,12 @@ class IntelligenceOrchestratorService {
         sources: data.statistics?.sources_used || 0
       },
       
-      // Main intelligence data
+      // Main intelligence data - KEEP AS IS
       intelligence: data.intelligence || {},
       
-      // Extracted insights for different tabs
+      // Extract insights for different tabs from the intelligence data
       insights: {
+        overview: this._extractOverviewInsights(data),
         competitive: this._extractCompetitiveInsights(data),
         stakeholder: this._extractStakeholderInsights(data),
         risk: this._extractRiskInsights(data),
@@ -134,30 +139,100 @@ class IntelligenceOrchestratorService {
         predictive: this._extractPredictiveInsights(data)
       },
       
+      // Also add tab intelligence for direct compatibility
+      tabIntelligence: {
+        overview: this._extractOverviewInsights(data),
+        competition: this._extractCompetitiveInsights(data),
+        stakeholders: this._extractStakeholderInsights(data),
+        topics: this._extractTopicsInsights(data),
+        predictions: this._extractPredictiveInsights(data)
+      },
+      
       timestamp: data.timestamp || new Date().toISOString()
     };
+
+    console.log('📊 Processed orchestration result:', {
+      hasIntelligence: !!processed.intelligence,
+      intelligenceKeys: Object.keys(processed.intelligence),
+      hasInsights: !!processed.insights,
+      insightKeys: Object.keys(processed.insights),
+      phasesCompleted: processed.phases_completed
+    });
 
     return processed;
   }
 
-  _extractCompetitiveInsights(data) {
+  _extractOverviewInsights(data) {
     const intelligence = data.intelligence || {};
     return {
-      competitors: intelligence.competitors || [],
+      executive_summary: intelligence.executive_summary || intelligence.synthesized?.executive_summary || 'Analysis in progress',
+      key_insights: intelligence.key_insights || [],
+      critical_alerts: intelligence.alerts || [],
+      recommended_actions: intelligence.executive_summary?.recommendations || intelligence.immediate_opportunities || []
+    };
+  }
+
+  _extractTopicsInsights(data) {
+    const intelligence = data.intelligence || {};
+    return {
+      trending_topics: intelligence.trending_topics || intelligence.industry_trends || [],
+      media_coverage: intelligence.media_coverage || [],
+      sentiment_analysis: intelligence.sentiment_analysis || {},
+      key_narratives: intelligence.key_narratives || []
+    };
+  }
+
+  _extractCompetitiveInsights(data) {
+    const intelligence = data.intelligence || {};
+    
+    // Build proper competitive landscape structure
+    const competitorProfiles = {};
+    if (intelligence.competitors && Array.isArray(intelligence.competitors)) {
+      intelligence.competitors.forEach(comp => {
+        if (typeof comp === 'string') {
+          competitorProfiles[comp] = {
+            threat_level: 'medium',
+            market_position: { position: 'competitive' },
+            latest_developments: [],
+            opportunities: []
+          };
+        } else if (comp.name) {
+          competitorProfiles[comp.name] = {
+            threat_level: comp.threat_level || 'medium',
+            market_position: comp.market_position || { position: 'competitive' },
+            latest_developments: comp.developments || [],
+            opportunities: comp.opportunities || []
+          };
+        }
+      });
+    }
+    
+    return {
+      competitive_landscape: {
+        summary: intelligence.competitive_landscape_summary || 
+                 intelligence.executive_summary?.competitive_analysis ||
+                 'Competitive landscape analysis in progress',
+        competitor_profiles: competitorProfiles,
+        opportunities: intelligence.competitive_opportunities || []
+      },
+      competitor_profiles: competitorProfiles,
+      competitive_opportunities: intelligence.competitive_opportunities || [],
       positioning: intelligence.competitive_positioning || {},
       advantages: intelligence.competitive_advantages || [],
       threats: intelligence.competitive_threats || [],
-      recommendations: intelligence.competitive_recommendations || []
+      recommendations: intelligence.executive_summary?.recommendations || [],
+      activity: intelligence.competitor_activity || []
     };
   }
 
   _extractStakeholderInsights(data) {
     const intelligence = data.intelligence || {};
+    // Since orchestrator doesn't return stakeholder-specific data, create defaults
     return {
-      groups: intelligence.stakeholder_groups || [],
-      sentiment: intelligence.stakeholder_sentiment || {},
-      concerns: intelligence.stakeholder_concerns || [],
-      communications: intelligence.stakeholder_communications || []
+      groups: ['investors', 'customers', 'employees', 'media', 'regulators'],
+      sentiment: {},
+      concerns: intelligence.alerts || [],
+      communications: []
     };
   }
 
@@ -165,9 +240,9 @@ class IntelligenceOrchestratorService {
     const intelligence = data.intelligence || {};
     return {
       immediate: intelligence.immediate_risks || [],
-      emerging: intelligence.emerging_risks || [],
-      mitigation: intelligence.risk_mitigation || [],
-      alerts: intelligence.risk_alerts || []
+      emerging: intelligence.alerts || [],
+      mitigation: [],
+      alerts: intelligence.alerts || []
     };
   }
 
@@ -175,19 +250,19 @@ class IntelligenceOrchestratorService {
     const intelligence = data.intelligence || {};
     return {
       immediate: intelligence.immediate_opportunities || [],
-      strategic: intelligence.strategic_opportunities || [],
-      market: intelligence.market_opportunities || [],
-      partnerships: intelligence.partnership_opportunities || []
+      strategic: intelligence.opportunities || [],
+      market: [],
+      partnerships: []
     };
   }
 
   _extractPredictiveInsights(data) {
     const intelligence = data.intelligence || {};
     return {
-      trends: intelligence.predicted_trends || [],
-      scenarios: intelligence.future_scenarios || [],
-      timeline: intelligence.prediction_timeline || [],
-      confidence: intelligence.prediction_confidence || {}
+      trends: intelligence.industry_trends || [],
+      scenarios: [],
+      timeline: [],
+      confidence: {}
     };
   }
 

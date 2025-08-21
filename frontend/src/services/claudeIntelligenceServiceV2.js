@@ -675,27 +675,76 @@ class ClaudeIntelligenceServiceV2 {
     // Store critical insights in memory for future reference
     const keyInsights = [];
     
-    if (intelligence.executive_summary?.key_insight) {
-      keyInsights.push({
-        type: 'executive_insight',
-        content: intelligence.executive_summary.key_insight,
-        confidence: intelligence.analysis_metadata?.confidence_scores?.executive || 0
+    // Extract from orchestrator format (key_insights array)
+    if (intelligence.tabIntelligence?.overview?.key_insights) {
+      intelligence.tabIntelligence.overview.key_insights.forEach(insight => {
+        keyInsights.push({
+          type: 'key_insight',
+          content: typeof insight === 'string' ? insight : insight.insight || insight.content,
+          confidence: insight.confidence || 0.8
+        });
       });
     }
     
-    if (intelligence.competitor?.priority_focus) {
-      keyInsights.push({
-        type: 'competitive_priority',
-        content: intelligence.competitor.priority_focus,
-        confidence: intelligence.analysis_metadata?.confidence_scores?.competitor || 0
+    // Also check raw intelligence.key_insights
+    if (intelligence.raw_mcp_data?.key_insights || intelligence.executiveOverview?.key_insights) {
+      const rawInsights = intelligence.raw_mcp_data?.key_insights || intelligence.executiveOverview?.key_insights || [];
+      rawInsights.forEach(insight => {
+        if (!keyInsights.some(ki => ki.content === (typeof insight === 'string' ? insight : insight.insight))) {
+          keyInsights.push({
+            type: 'key_insight',
+            content: typeof insight === 'string' ? insight : insight.insight || insight.content,
+            confidence: insight.confidence || 0.8
+          });
+        }
       });
     }
     
-    if (intelligence.predictive?.cascade_risks?.length > 0) {
-      keyInsights.push({
-        type: 'risk_alert',
-        content: intelligence.predictive.cascade_risks[0],
-        confidence: intelligence.analysis_metadata?.confidence_scores?.predictive || 0
+    // Extract from overview
+    if (intelligence.overview?.key_insights) {
+      intelligence.overview.key_insights.forEach(insight => {
+        if (!keyInsights.some(ki => ki.content === (typeof insight === 'string' ? insight : insight.insight))) {
+          keyInsights.push({
+            type: 'key_insight',
+            content: typeof insight === 'string' ? insight : insight.insight || insight.content,
+            confidence: insight.confidence || 0.8
+          });
+        }
+      });
+    }
+    
+    // Extract critical alerts
+    if (intelligence.overview?.critical_alerts) {
+      intelligence.overview.critical_alerts.forEach(alert => {
+        keyInsights.push({
+          type: 'critical_alert',
+          content: typeof alert === 'string' ? alert : alert.message || alert.alert,
+          confidence: 0.9
+        });
+      });
+    }
+    
+    // Extract competitive insights
+    if (intelligence.competition?.competitor_profiles) {
+      Object.entries(intelligence.competition.competitor_profiles).forEach(([name, profile]) => {
+        if (profile.threat_level === 'high') {
+          keyInsights.push({
+            type: 'competitive_threat',
+            content: `High threat competitor: ${name}`,
+            confidence: 0.85
+          });
+        }
+      });
+    }
+    
+    // Extract opportunities
+    if (intelligence.overview?.recommended_actions) {
+      intelligence.overview.recommended_actions.slice(0, 3).forEach(action => {
+        keyInsights.push({
+          type: 'recommended_action',
+          content: typeof action === 'string' ? action : action.action || action.recommendation,
+          confidence: 0.8
+        });
       });
     }
     
@@ -830,55 +879,47 @@ class ClaudeIntelligenceServiceV2 {
    * Transform orchestrated result to match the expected format
    */
   transformOrchestratedResult(orchestratedResult, config) {
+    // Use the properly processed insights and tabIntelligence from orchestratorService
     const insights = orchestratedResult.insights || {};
+    const tabIntelligence = orchestratedResult.tabIntelligence || {};
     const intelligence = orchestratedResult.intelligence || {};
-    const stats = orchestratedResult.stats || {};
+    const stats = orchestratedResult.stats || orchestratedResult.statistics || {};
     const synthesized = intelligence.synthesized || {};
     
     console.log('🔄 Transforming orchestrator result:', {
       hasInsights: Object.keys(insights).length,
+      hasTabIntelligence: Object.keys(tabIntelligence).length,
       hasIntelligence: Object.keys(intelligence).length,
-      hasSynthesized: Object.keys(synthesized).length
+      hasSynthesized: Object.keys(synthesized).length,
+      insightKeys: Object.keys(insights),
+      tabKeys: Object.keys(tabIntelligence)
     });
     
     // Build the response in the expected format for ALL tabs
     const transformed = {
-      // COMPETITION TAB
-      competitor: {
-        key_movements: intelligence.competitor_activity || [],
-        strategic_patterns: intelligence.competitive_positioning?.activity || [],
-        competitive_advantages: insights.competitive?.advantages || [],
-        threats: insights.competitive?.threats || [],
-        priority_focus: intelligence.competitors?.slice(0, 3).join(', ') || 'Monitor all competitors',
-        recommendations: insights.competitive?.recommendations || intelligence.executive_summary?.recommendations || []
+      // OVERVIEW TAB - Use the overview insights
+      overview: tabIntelligence.overview || insights.overview || {
+        executive_summary: intelligence.executive_summary,
+        key_insights: intelligence.key_insights || [],
+        critical_alerts: intelligence.alerts || [],
+        recommended_actions: intelligence.executive_summary?.recommendations || []
       },
       
-      // STAKEHOLDER TAB
-      stakeholder: {
-        key_stakeholders: insights.stakeholder?.groups || ['investors', 'customers', 'employees', 'media'],
-        sentiment_analysis: insights.stakeholder?.sentiment || {},
-        engagement_priorities: insights.stakeholder?.communications || [],
-        messaging_frameworks: [],
-        concerns: insights.stakeholder?.concerns || []
-      },
+      // COMPETITION TAB - Use the processed competitive insights
+      competition: tabIntelligence.competition || insights.competitive || {},
+      competitor: tabIntelligence.competition || insights.competitive || {},
       
-      // NARRATIVE TAB
-      narrative: {
-        dominant_narratives: intelligence.industry_trends || [],
-        narrative_opportunities: intelligence.opportunities || [],
-        messaging_strategy: intelligence.key_insights || [],
-        media_angles: intelligence.breaking_news || [],
-        story_development: intelligence.discussions || []
-      },
+      // STAKEHOLDER TAB - Use the processed stakeholder insights
+      stakeholders: tabIntelligence.stakeholders || insights.stakeholder || {},
+      stakeholder: tabIntelligence.stakeholders || insights.stakeholder || {},
       
-      // PREDICTIVE TAB
-      predictive: {
-        likely_scenarios: insights.predictive?.scenarios || [],
-        emerging_trends: insights.predictive?.trends || intelligence.industry_trends || [],
-        timeline: insights.predictive?.timeline || [],
-        cascade_risks: intelligence.immediate_risks || [],
-        opportunities: intelligence.immediate_opportunities || []
-      },
+      // TOPICS TAB - Use the processed topics insights
+      topics: tabIntelligence.topics || insights.topics || {},
+      narrative: tabIntelligence.topics || insights.topics || {},
+      
+      // PREDICTIONS TAB - Use the processed predictive insights
+      predictions: tabIntelligence.predictions || insights.predictive || {},
+      predictive: tabIntelligence.predictions || insights.predictive || {},
       
       // EXECUTIVE SUMMARY
       executive_summary: intelligence.executive_summary || {
