@@ -426,6 +426,14 @@ const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigg
     // Legacy support
     const trendingTopics = data.trending_topics || [];
     const mediaCoverage = data.media_coverage || [];
+    const emergingTopics = data.emerging_topics || [];
+    
+    // For dashboard display
+    const dashboard = data.topic_dashboard || {};
+    const trendingUp = dashboard.trending_up || [];
+    const trendingDown = dashboard.trending_down || [];
+    const stable = dashboard.stable || [];
+    const deepDives = data.topic_deep_dives || {};
     
     return (
       <div className="intelligence-section topics-tab">
@@ -525,6 +533,8 @@ const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigg
     const secondOpinion = data.second_opinion;
     
     // Legacy support
+    const scenarios = likelyScenarios; // Use the same variable
+    const predictions = data.predictions || [];
     const warnings = data.early_warnings || data.warnings || {};
     const signals = warnings.signals_detected || warnings.signals || [];
     
