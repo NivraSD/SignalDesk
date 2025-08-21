@@ -7,6 +7,7 @@ import MemoryVaultModule from './Modules/MemoryVaultModule';
 import NivStrategicAdvisor from './Niv/NivStrategicAdvisor';
 import OrganizationSettings from './OrganizationSettings';
 import IntelligenceSettings from './IntelligenceSettings';
+import DiagnosticPanel from './DiagnosticPanel';
 import { IntelligenceIcon, OpportunityIcon, ExecutionIcon, MemoryIcon, RefreshIcon, SettingsIcon } from './Icons/NeonIcons';
 
 const RailwayV2Enhanced = () => {
@@ -212,6 +213,9 @@ const RailwayV2Enhanced = () => {
           }}
         />
       )}
+      
+      {/* Diagnostic Panel (only shows in debug mode) */}
+      <DiagnosticPanel />
     </div>
   );
 };
