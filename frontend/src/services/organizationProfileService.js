@@ -14,8 +14,14 @@ class OrganizationProfileService {
    * Build or retrieve an organization's intelligence profile
    */
   async getOrBuildProfile(organization) {
+    // Check if organization exists
+    if (!organization) {
+      console.warn('No organization provided to getOrBuildProfile');
+      return this.getDefaultProfile();
+    }
+    
     // Use consistent key based on name (fallback to ID if available)
-    const profileId = organization.id || organization.name?.toLowerCase().replace(/\s+/g, '_');
+    const profileId = organization.id || organization.name?.toLowerCase().replace(/\s+/g, '_') || 'default';
     const key = `profile_${profileId}`;
     
     // Check cache first
@@ -45,6 +51,39 @@ class OrganizationProfileService {
     localStorage.setItem(`signaldesk_${key}`, JSON.stringify(profile));
     
     return profile;
+  }
+
+  /**
+   * Get default profile for when no organization is provided
+   */
+  getDefaultProfile() {
+    return {
+      identity: {
+        name: 'Unknown Organization',
+        industry: 'general',
+        market_position: 'unknown'
+      },
+      established_facts: {
+        strategic_initiatives: [],
+        recent_history: [],
+        pain_points: [],
+        strengths: []
+      },
+      monitoring_targets: {
+        competitors: { primary: [], emerging: [] },
+        stakeholder_groups: {},
+        critical_topics: [],
+        keywords: []
+      },
+      objectives: {
+        primary: 'Monitor general landscape',
+        risk_areas: [],
+        opportunity_areas: []
+      },
+      context: {},
+      confidence_level: 'building',
+      last_updated: new Date().toISOString()
+    };
   }
 
   /**
