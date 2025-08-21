@@ -73,7 +73,11 @@ class ClaudeIntelligenceServiceV2 {
     console.log('🎯 Goals:', Object.keys(goals).filter(k => goals[k]));
     
     // Try using the Intelligence Orchestrator for optimal 4-phase flow
-    if (orgName) {
+    // Check if orchestrator is enabled (can be disabled via options or localStorage)
+    const useOrchestrator = options.useOrchestrator !== false && 
+                           localStorage.getItem('signaldesk_use_orchestrator') !== 'false';
+    
+    if (orgName && useOrchestrator) {
       console.log('🚀 Using Intelligence Orchestrator for optimal 4-phase flow');
       try {
         const orchestratedResult = await intelligenceOrchestratorService.orchestrateIntelligence(
@@ -85,14 +89,23 @@ class ClaudeIntelligenceServiceV2 {
           console.log('✅ Orchestrator succeeded, using optimized intelligence');
           console.log('📊 Raw orchestrator result:', orchestratedResult);
           
-          // Transform orchestrated result to match expected format
-          const transformed = this.transformOrchestratedResult(orchestratedResult, config);
-          console.log('🔄 Transformed result:', transformed);
-          return transformed;
+          // Only use orchestrator if it has substantial data
+          if (orchestratedResult.intelligence && 
+              Object.keys(orchestratedResult.intelligence).length > 5 &&
+              orchestratedResult.phases_completed?.synthesis) {
+            // Transform orchestrated result to match expected format
+            const transformed = this.transformOrchestratedResult(orchestratedResult, config);
+            console.log('🔄 Transformed result:', transformed);
+            return transformed;
+          } else {
+            console.log('⚠️ Orchestrator returned limited data, using full flow instead');
+          }
         }
       } catch (error) {
         console.log('⚠️ Orchestrator failed, falling back to original flow:', error);
       }
+    } else if (!useOrchestrator) {
+      console.log('🔧 Orchestrator disabled, using original multi-step flow');
     }
     
     // Step 1: Intelligent Discovery (replaces broken onboarding)
