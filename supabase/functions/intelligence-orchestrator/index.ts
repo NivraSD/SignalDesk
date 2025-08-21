@@ -1,5 +1,5 @@
-// Intelligence Orchestrator - Simplified Version
-// Coordinates the intelligence flow without hanging
+// Intelligence Orchestrator - Full 4-Phase Process
+// Properly coordinates all intelligence phases with error recovery
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
@@ -10,47 +10,65 @@ const corsHeaders = {
   'Access-Control-Max-Age': '86400'
 }
 
-// Helper to call other Edge Functions with timeout
-async function callEdgeFunctionWithTimeout(functionName: string, payload: any, timeoutMs: number = 5000) {
+// Helper to call other Edge Functions with timeout and retry
+async function callEdgeFunctionWithTimeout(functionName: string, payload: any, timeoutMs: number = 10000, retries: number = 2) {
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || 'https://zskaxjtyuaqazydouifp.supabase.co'
   const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
   
-  try {
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
-    
-    const url = `${SUPABASE_URL}/functions/v1/${functionName}`
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
-      },
-      body: JSON.stringify(payload),
-      signal: controller.signal
-    })
-    
-    clearTimeout(timeoutId)
-    
-    if (!response.ok) {
-      console.error(`${functionName} returned ${response.status}`)
-      return { success: false, error: `HTTP ${response.status}` }
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      if (attempt > 0) {
+        console.log(`🔄 Retry ${attempt}/${retries} for ${functionName}`)
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt)) // Exponential backoff
+      }
+      
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+      
+      const url = `${SUPABASE_URL}/functions/v1/${functionName}`
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      })
+      
+      clearTimeout(timeoutId)
+      
+      if (!response.ok) {
+        console.error(`${functionName} returned ${response.status}`)
+        if (attempt === retries) {
+          return { success: false, error: `HTTP ${response.status}` }
+        }
+        continue // Retry
+      }
+      
+      const data = await response.json()
+      return data
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        console.error(`${functionName} timed out after ${timeoutMs}ms`)
+        if (attempt === retries) {
+          return { success: false, error: 'Timeout' }
+        }
+      } else {
+        console.error(`Error calling ${functionName}:`, error)
+        if (attempt === retries) {
+          return { success: false, error: error.message }
+        }
+      }
     }
-    
-    return await response.json()
-  } catch (error) {
-    if (error.name === 'AbortError') {
-      console.error(`${functionName} timed out after ${timeoutMs}ms`)
-      return { success: false, error: 'Timeout' }
-    }
-    console.error(`Error calling ${functionName}:`, error)
-    return { success: false, error: error.message }
   }
+  
+  return { success: false, error: 'All retries failed' }
 }
 
-// Simplified orchestration that actually works
+// Full 4-Phase Orchestration with proper error handling
 async function orchestrateIntelligence(organization: any) {
-  console.log('🎯 Starting simplified orchestration for:', organization.name)
+  console.log('🎯 Starting FULL 4-phase orchestration for:', organization.name)
   
   const results = {
     success: true,
@@ -69,80 +87,198 @@ async function orchestrateIntelligence(organization: any) {
       sources_used: 0
     },
     intelligence: {},
+    raw_data: {}, // Store raw data from each phase
     timestamp: new Date().toISOString()
   }
   
+  let discoveryData = null
+  let gatheringData = {}
+  
   try {
-    // Phase 1: Simple discovery (don't call intelligent-discovery as it might timeout)
-    console.log('📍 Phase 1: Discovery')
-    const discoveryData = {
+    // Phase 1: Intelligent Discovery with Claude
+    console.log('📍 Phase 1: Intelligent Discovery')
+    const discoveryResult = await callEdgeFunctionWithTimeout('intelligent-discovery', {
       organization: organization.name,
-      primary_category: organization.industry || 'technology',
-      competitors: getBasicCompetitors(organization.name, organization.industry),
-      search_keywords: [organization.name, `${organization.name} news`, `${organization.name} announcement`],
-      scrape_targets: []
-    }
-    results.phases_completed.discovery = true
-    results.statistics.competitors_identified = discoveryData.competitors.length
+      industry_hint: organization.industry
+    }, 12000) // 12 second timeout with retries
     
-    // Phase 2: Mapping (embedded)
-    console.log('🗺️ Phase 2: Mapping')
+    if (discoveryResult.success && discoveryResult.data) {
+      discoveryData = discoveryResult.data
+      results.phases_completed.discovery = true
+      results.statistics.competitors_identified = discoveryData.competitors?.length || 0
+      console.log(`✅ Discovery complete: ${discoveryData.competitors?.length} competitors found`)
+    } else {
+      // Fallback discovery if Claude fails
+      console.log('⚠️ Intelligent discovery failed, using fallback')
+      discoveryData = {
+        organization: organization.name,
+        primary_category: organization.industry || 'technology',
+        competitors: getBasicCompetitors(organization.name, organization.industry),
+        search_keywords: [organization.name, `${organization.name} news`, `${organization.name} announcement`],
+        scrape_targets: []
+      }
+      results.phases_completed.discovery = true
+      results.statistics.competitors_identified = discoveryData.competitors.length
+    }
+    
+    // Phase 2: Source Mapping (use discovery data)
+    console.log('🗺️ Phase 2: Source Mapping')
     results.phases_completed.mapping = true
     
-    // Phase 3: Gather news only (we know this works)
-    console.log('📡 Phase 3: Gathering')
-    const newsResult = await callEdgeFunctionWithTimeout('news-intelligence', {
-      method: 'gather',
-      params: {
-        organization: {
-          name: organization.name,
-          industry: organization.industry || 'technology',
-          competitors: discoveryData.competitors,
-          keywords: discoveryData.search_keywords
-        }
-      }
-    }, 8000) // 8 second timeout
+    // Phase 3: Parallel Data Gathering
+    console.log('📡 Phase 3: Parallel Data Gathering')
     
-    if (newsResult.success && newsResult.data) {
-      results.phases_completed.gathering = true
-      results.statistics.articles_processed = newsResult.data.totalArticles || 0
-      results.statistics.sources_used = newsResult.data.sources?.length || 0
-      
-      // Build intelligence from news data
-      results.intelligence = {
-        industry_trends: newsResult.data.industryNews || [],
-        breaking_news: newsResult.data.breakingNews || [],
-        opportunities: newsResult.data.opportunities || [],
-        competitor_activity: newsResult.data.competitorActivity || [],
-        alerts: newsResult.data.alerts || [],
-        discussions: newsResult.data.discussions || [],
-        
-        // Add structured insights
-        key_insights: extractKeyInsights(newsResult.data),
-        competitive_positioning: {
-          competitors: discoveryData.competitors,
-          activity: newsResult.data.competitorActivity || []
-        },
-        immediate_opportunities: newsResult.data.opportunities?.slice(0, 5) || [],
-        immediate_risks: newsResult.data.alerts?.slice(0, 5) || [],
-        
-        // Executive summary
-        executive_summary: {
-          organization: organization.name,
-          industry: organization.industry,
-          total_articles: newsResult.data.totalArticles || 0,
-          key_findings: extractKeyInsights(newsResult.data).slice(0, 3),
-          recommendations: generateRecommendations(newsResult.data)
+    // Gather from multiple sources in parallel
+    const gatheringPromises = []
+    
+    // News Intelligence
+    gatheringPromises.push(
+      callEdgeFunctionWithTimeout('news-intelligence', {
+        method: 'gather',
+        params: {
+          organization: {
+            name: organization.name,
+            industry: discoveryData.primary_category || organization.industry,
+            competitors: discoveryData.competitors || [],
+            keywords: discoveryData.search_keywords || []
+          }
         }
-      }
-    } else {
-      console.error('News gathering failed:', newsResult.error)
+      }, 10000).then(result => ({ source: 'news', result }))
+    )
+    
+    // PR Intelligence (if available)
+    gatheringPromises.push(
+      callEdgeFunctionWithTimeout('pr-intelligence', {
+        organization: organization.name,
+        competitors: discoveryData.competitors || [],
+        keywords: discoveryData.search_keywords || []
+      }, 8000).then(result => ({ source: 'pr', result }))
+    )
+    
+    // Reddit Intelligence (if available)
+    if (discoveryData.search_keywords?.length > 0) {
+      gatheringPromises.push(
+        callEdgeFunctionWithTimeout('reddit-intelligence', {
+          keywords: discoveryData.search_keywords.slice(0, 3),
+          organization: organization.name
+        }, 8000).then(result => ({ source: 'reddit', result }))
+      )
     }
     
-    // Phase 4: Simple synthesis (no Claude needed for now)
-    console.log('🧠 Phase 4: Synthesis')
-    if (results.intelligence && Object.keys(results.intelligence).length > 0) {
-      results.phases_completed.synthesis = true
+    // Scraper Intelligence (if we have targets)
+    if (discoveryData.scrape_targets?.length > 0) {
+      gatheringPromises.push(
+        callEdgeFunctionWithTimeout('scraper-intelligence', {
+          urls: discoveryData.scrape_targets.slice(0, 3), // Limit to 3 URLs
+          organization: organization.name
+        }, 10000).then(result => ({ source: 'scraper', result }))
+      )
+    }
+    
+    // Wait for all gathering to complete
+    const gatheringResults = await Promise.allSettled(gatheringPromises)
+    
+    // Process gathering results
+    for (const result of gatheringResults) {
+      if (result.status === 'fulfilled') {
+        const { source, result: data } = result.value
+        if (data.success && data.data) {
+          gatheringData[source] = data.data
+          console.log(`✅ ${source} gathered successfully`)
+          
+          // Update statistics
+          if (source === 'news') {
+            results.statistics.articles_processed += data.data.totalArticles || 0
+            results.statistics.sources_used += data.data.sources?.length || 0
+          } else if (source === 'scraper') {
+            results.statistics.websites_scraped += data.data.scraped?.length || 0
+          }
+        } else {
+          console.log(`⚠️ ${source} gathering failed:`, data.error)
+        }
+      }
+    }
+    
+    results.phases_completed.gathering = Object.keys(gatheringData).length > 0
+    results.raw_data = gatheringData
+    
+    // Phase 4: Intelligent Synthesis with Claude (only if we have data)
+    console.log('🧠 Phase 4: Intelligent Synthesis')
+    
+    if (Object.keys(gatheringData).length > 0) {
+      const synthesisResult = await callEdgeFunctionWithTimeout('claude-intelligence-synthesizer-v2', {
+        intelligence_type: 'comprehensive',
+        mcp_data: gatheringData,
+        organization: {
+          name: organization.name,
+          industry: discoveryData.primary_category || organization.industry,
+          competitors: discoveryData.competitors || [],
+          stakeholders: ['investors', 'customers', 'employees', 'media', 'regulators'],
+          topics: discoveryData.search_keywords || [],
+          keywords: discoveryData.search_keywords || []
+        },
+        goals: {
+          'competitive_advantage': true,
+          'risk_mitigation': true,
+          'opportunity_identification': true
+        },
+        timeframe: '24h'
+      }, 15000) // 15 second timeout for synthesis
+      
+      if (synthesisResult.success && synthesisResult.analysis) {
+        results.phases_completed.synthesis = true
+        
+        // Merge synthesized intelligence with raw data insights
+        results.intelligence = {
+          // Synthesized insights from Claude
+          synthesized: synthesisResult.analysis,
+          
+          // Raw data insights
+          industry_trends: gatheringData.news?.industryNews || [],
+          breaking_news: gatheringData.news?.breakingNews || [],
+          opportunities: gatheringData.news?.opportunities || [],
+          competitor_activity: gatheringData.news?.competitorActivity || [],
+          alerts: gatheringData.news?.alerts || [],
+          discussions: gatheringData.reddit?.discussions || gatheringData.news?.discussions || [],
+          
+          // Discovery insights
+          competitors: discoveryData.competitors || [],
+          industry_context: discoveryData.industry_context || '',
+          intelligence_focus: discoveryData.intelligence_focus || [],
+          
+          // Structured insights
+          key_insights: extractKeyInsights(gatheringData),
+          competitive_positioning: {
+            competitors: discoveryData.competitors || [],
+            activity: gatheringData.news?.competitorActivity || []
+          },
+          immediate_opportunities: gatheringData.news?.opportunities?.slice(0, 5) || [],
+          immediate_risks: gatheringData.news?.alerts?.slice(0, 5) || [],
+          
+          // Executive summary
+          executive_summary: {
+            organization: organization.name,
+            industry: discoveryData.primary_category || organization.industry,
+            total_articles: results.statistics.articles_processed,
+            key_findings: extractKeyInsights(gatheringData).slice(0, 5),
+            recommendations: generateRecommendations(gatheringData)
+          }
+        }
+        
+        console.log('✅ Synthesis complete with Claude')
+      } else {
+        // Fallback: Use raw data without synthesis
+        console.log('⚠️ Synthesis failed, using raw intelligence')
+        results.intelligence = buildFallbackIntelligence(discoveryData, gatheringData)
+        results.phases_completed.synthesis = true
+      }
+    } else {
+      // No data gathered, provide minimal intelligence
+      results.intelligence = {
+        message: 'Limited data available',
+        competitors: discoveryData?.competitors || [],
+        recommendations: ['Expand data sources', 'Retry gathering phase']
+      }
     }
     
   } catch (error) {
@@ -152,6 +288,37 @@ async function orchestrateIntelligence(organization: any) {
   }
   
   return results
+}
+
+// Build fallback intelligence from raw data
+function buildFallbackIntelligence(discoveryData: any, gatheringData: any) {
+  return {
+    industry_trends: gatheringData.news?.industryNews || [],
+    breaking_news: gatheringData.news?.breakingNews || [],
+    opportunities: gatheringData.news?.opportunities || [],
+    competitor_activity: gatheringData.news?.competitorActivity || [],
+    alerts: gatheringData.news?.alerts || [],
+    discussions: gatheringData.reddit?.discussions || gatheringData.news?.discussions || [],
+    
+    competitors: discoveryData?.competitors || [],
+    industry_context: discoveryData?.industry_context || '',
+    
+    key_insights: extractKeyInsights(gatheringData),
+    competitive_positioning: {
+      competitors: discoveryData?.competitors || [],
+      activity: gatheringData.news?.competitorActivity || []
+    },
+    immediate_opportunities: gatheringData.news?.opportunities?.slice(0, 5) || [],
+    immediate_risks: gatheringData.news?.alerts?.slice(0, 5) || [],
+    
+    executive_summary: {
+      organization: discoveryData?.organization || 'Unknown',
+      industry: discoveryData?.primary_category || 'Unknown',
+      total_articles: gatheringData.news?.totalArticles || 0,
+      key_findings: extractKeyInsights(gatheringData).slice(0, 3),
+      recommendations: generateRecommendations(gatheringData)
+    }
+  }
 }
 
 // Helper functions
@@ -182,8 +349,9 @@ function getBasicCompetitors(orgName: string, industry?: string) {
   }
 }
 
-function extractKeyInsights(newsData: any) {
+function extractKeyInsights(gatheringData: any) {
   const insights = []
+  const newsData = gatheringData.news || gatheringData // Support both structures
   
   if (newsData.breakingNews?.length > 0) {
     insights.push(`${newsData.breakingNews.length} breaking news items detected`)
@@ -201,11 +369,23 @@ function extractKeyInsights(newsData: any) {
     insights.push(`High news volume with ${newsData.totalArticles} articles`)
   }
   
+  // Add insights from other sources
+  if (gatheringData.pr?.pressReleases?.length > 0) {
+    insights.push(`${gatheringData.pr.pressReleases.length} PR announcements tracked`)
+  }
+  if (gatheringData.reddit?.discussions?.length > 0) {
+    insights.push(`${gatheringData.reddit.discussions.length} community discussions found`)
+  }
+  if (gatheringData.scraper?.scraped?.length > 0) {
+    insights.push(`${gatheringData.scraper.scraped.length} websites analyzed`)
+  }
+  
   return insights
 }
 
-function generateRecommendations(newsData: any) {
+function generateRecommendations(gatheringData: any) {
   const recommendations = []
+  const newsData = gatheringData.news || gatheringData // Support both structures
   
   if (newsData.alerts?.length > 0) {
     recommendations.push('Review and address identified risk alerts immediately')
@@ -216,8 +396,11 @@ function generateRecommendations(newsData: any) {
   if (newsData.competitorActivity?.length > 0) {
     recommendations.push('Monitor competitor movements and adjust strategy accordingly')
   }
-  if (newsData.discussions?.length > 0) {
+  if (gatheringData.reddit?.discussions?.length > 0 || newsData.discussions?.length > 0) {
     recommendations.push('Engage with community discussions to shape narrative')
+  }
+  if (gatheringData.pr?.sentiment && gatheringData.pr.sentiment.negative > 0.3) {
+    recommendations.push('Address negative PR sentiment with targeted communications')
   }
   
   return recommendations.length > 0 ? recommendations : ['Continue monitoring for developments']
