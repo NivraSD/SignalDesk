@@ -7,7 +7,7 @@
 class IntelligentDiscoveryService {
   constructor() {
     this.supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co';
-    this.supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+    this.supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
     this.cache = new Map();
   }
 
@@ -97,6 +97,10 @@ class IntelligentDiscoveryService {
     `;
 
     try {
+      console.log('🔍 Calling Claude API for company analysis...');
+      console.log('URL:', `${this.supabaseUrl}/functions/v1/claude-intelligence-synthesizer-v2`);
+      console.log('Has API Key:', !!this.supabaseKey);
+      
       const response = await fetch(`${this.supabaseUrl}/functions/v1/claude-intelligence-synthesizer-v2`, {
         method: 'POST',
         headers: {
@@ -110,12 +114,18 @@ class IntelligentDiscoveryService {
         })
       });
 
+      console.log('Response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ Claude analysis successful:', data);
         return data.analysis || this.getDefaultAnalysis(companyName);
+      } else {
+        const errorText = await response.text();
+        console.error('❌ Claude API error:', response.status, errorText);
       }
     } catch (error) {
-      console.error('Claude analysis failed:', error);
+      console.error('❌ Claude analysis failed:', error);
     }
 
     return this.getDefaultAnalysis(companyName);
