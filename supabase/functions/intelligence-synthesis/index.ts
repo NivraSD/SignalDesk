@@ -13,25 +13,22 @@ async function callClaudeSynthesizer(data: any, organization: any) {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 20000) // 20 seconds for Claude
     
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/claude-intelligence-synthesizer-v2`, {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/claude-intelligence-synthesizer-v3`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
       },
       body: JSON.stringify({
-        intelligence_type: 'comprehensive', // Use all 5 personas
         mcp_data: data,
         organization: organization,
-        goals: {
-          competitive_advantage: true,
-          risk_mitigation: true,
-          opportunity_identification: true,
-          stakeholder_analysis: true,
-          narrative_control: true
-        },
-        timeframe: '24h',
-        require_second_opinion: true // Enable second opinions
+        discovery_context: {
+          ...organization,
+          discovered_industry: organization.industry,
+          competitors: organization.competitors || [],
+          keywords: organization.keywords || [],
+          intelligence_focus: organization.intelligence_focus || []
+        }
       }),
       signal: controller.signal
     })
@@ -102,63 +99,43 @@ async function synthesizeIntelligence(gatheringData: any, organization: any) {
       
       const synthesis = synthesisResult.analysis
       
-      // Extract executive summary (ensure it's a string)
-      let executiveSummary = ''
-      if (typeof synthesis.executive_summary === 'string') {
-        executiveSummary = synthesis.executive_summary
-      } else if (synthesis.primary_analysis?.executive_summary) {
-        executiveSummary = synthesis.primary_analysis.executive_summary
-      } else if (synthesis.synthesized?.pr_strategy_summary) {
-        executiveSummary = synthesis.synthesized.pr_strategy_summary
-      } else {
-        // Build from components if needed
-        executiveSummary = `Strategic analysis for ${organization.name} in the ${fullOrganization.industry} sector. `
-        if (synthesis.key_insights?.length > 0) {
-          executiveSummary += `Key findings: ${synthesis.key_insights[0]}. `
-        }
-        if (synthesis.recommendations?.length > 0) {
-          executiveSummary += `Primary recommendation: ${synthesis.recommendations[0]}`
-        }
-      }
-      
-      // Build comprehensive intelligence structure
+      // V3 returns structured tab data directly
+      // Build comprehensive intelligence structure from v3 output
       result.intelligence = {
-        // Core executive summary
-        executive_summary: executiveSummary,
+        // Overview tab data
+        executive_summary: synthesis.overview?.executive_summary || `Strategic analysis for ${organization.name}`,
+        key_insights: synthesis.overview?.key_insights || [],
+        critical_alerts: synthesis.overview?.critical_alerts || [],
+        recommendations: synthesis.overview?.recommended_actions || [],
         
-        // Key insights and alerts
-        key_insights: synthesis.key_insights || synthesis.primary_analysis?.key_insights || [],
-        critical_alerts: synthesis.critical_alerts || synthesis.alerts || [],
-        recommendations: synthesis.recommendations || synthesis.primary_analysis?.recommendations || [],
-        
-        // Synthesized analysis from all personas
+        // Full synthesized analysis for reference
         synthesized: synthesis,
         
-        // Competitive intelligence
+        // Competitive intelligence (from competition tab)
         competitors: fullOrganization.competitors,
-        competitive_landscape_summary: synthesis.competitive_analysis?.landscape_summary || '',
-        competitive_opportunities: synthesis.competitive_analysis?.positioning_opportunities || [],
-        competitive_threats: synthesis.competitive_analysis?.reputation_threats || [],
+        competitive_landscape_summary: synthesis.competition?.landscape_summary || '',
+        competitive_opportunities: synthesis.competition?.positioning_opportunities || [],
+        competitive_threats: synthesis.competition?.narrative_threats || [],
         competitor_activity: mcpData['news-intelligence']?.competitorActivity || [],
         
-        // Stakeholder intelligence
-        stakeholder_sentiment: synthesis.stakeholder_analysis?.sentiment || {},
-        stakeholder_concerns: synthesis.stakeholder_analysis?.concerns || [],
-        engagement_strategy: synthesis.stakeholder_analysis?.engagement_strategy || [],
-        messaging_frameworks: synthesis.stakeholder_analysis?.messaging_frameworks || {},
+        // Stakeholder intelligence (from stakeholders tab)
+        stakeholder_sentiment: synthesis.stakeholders?.group_specific_strategies || {},
+        stakeholder_concerns: synthesis.stakeholders?.engagement_priorities || [],
+        engagement_strategy: synthesis.stakeholders?.engagement_priorities || [],
+        messaging_frameworks: synthesis.stakeholders?.messaging_frameworks || {},
         
-        // Narrative and media intelligence
-        trending_topics: synthesis.narrative_analysis?.trending_topics || mcpData['news-intelligence']?.industryNews || [],
+        // Narrative and media intelligence (from topics tab)
+        trending_topics: synthesis.topics?.content_opportunities || mcpData['news-intelligence']?.industryNews || [],
         media_coverage: mcpData['news-intelligence']?.breakingNews || [],
-        narrative_opportunities: synthesis.narrative_analysis?.narrative_opportunities || [],
-        content_angles: synthesis.narrative_analysis?.content_angles || [],
-        media_risks: synthesis.narrative_analysis?.media_risks || [],
+        narrative_opportunities: synthesis.topics?.narrative_strategies || [],
+        content_angles: synthesis.topics?.content_opportunities || [],
+        media_risks: synthesis.topics?.risks_to_avoid || [],
         
-        // Predictive intelligence
-        likely_scenarios: synthesis.predictive_analysis?.likely_scenarios || [],
-        cascade_effects: synthesis.predictive_analysis?.cascade_effects || [],
-        proactive_strategies: synthesis.predictive_analysis?.proactive_strategies || [],
-        emerging_trends: synthesis.predictive_analysis?.trends || [],
+        // Predictive intelligence (from predictions tab)
+        likely_scenarios: synthesis.predictions?.cascade_effects || [],
+        cascade_effects: synthesis.predictions?.cascade_effects || [],
+        proactive_strategies: synthesis.predictions?.proactive_strategies || [],
+        emerging_trends: synthesis.predictions?.timeline || [],
         
         // Risk and opportunity
         immediate_risks: synthesis.risk_analysis?.immediate_risks || [],
@@ -172,8 +149,13 @@ async function synthesizeIntelligence(gatheringData: any, organization: any) {
         discussions: mcpData['reddit-intelligence']?.discussions || [],
         press_releases: mcpData['pr-intelligence']?.pressReleases || [],
         
-        // Second opinions (if available)
-        alternative_perspectives: synthesis.divergent_views || synthesis.second_opinions || []
+        // Alternative perspectives from each tab
+        alternative_perspectives: [
+          synthesis.competition?.alternative_view,
+          synthesis.stakeholders?.alternative_view,
+          synthesis.topics?.alternative_view,
+          synthesis.predictions?.alternative_view
+        ].filter(Boolean)
       }
       
       // Update statistics
