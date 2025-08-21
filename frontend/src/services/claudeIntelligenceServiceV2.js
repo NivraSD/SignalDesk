@@ -73,20 +73,25 @@ class ClaudeIntelligenceServiceV2 {
     const orgName = organization.name || config.organizationName || '';
     const website = organization.website || config.website || '';
     
-    // Use AI-powered industry detection instead of basic pattern matching
+    // ALWAYS use AI-powered industry detection for accurate classification
     let industry = organization.industry || config.industry;
-    if (!industry || industry === 'technology') {
-      console.log('🤖 Using AI for industry detection');
-      try {
-        const aiDetection = await aiIndustryExpansionService.smartIndustryDetection(
-          orgName, 
-          website, 
-          organization.description || config.description || ''
-        );
-        industry = aiDetection.industry;
-        console.log(`✨ AI detected industry: ${industry} (confidence: ${aiDetection.confidence})`);
-      } catch (error) {
-        console.error('AI industry detection failed, using fallback:', error);
+    console.log(`🔍 Initial industry: ${industry} for ${orgName}`);
+    
+    // Always run AI detection to ensure accurate industry classification
+    // (especially important for companies like Toyota that shouldn't be "technology")
+    console.log('🤖 Using AI for accurate industry detection');
+    try {
+      const aiDetection = await aiIndustryExpansionService.smartIndustryDetection(
+        orgName, 
+        website, 
+        organization.description || config.description || ''
+      );
+      industry = aiDetection.industry;
+      console.log(`✨ AI detected industry: ${industry} (confidence: ${aiDetection.confidence})`);
+    } catch (error) {
+      console.error('AI industry detection failed, using fallback:', error);
+      // Only use existing industry if it's not generic
+      if (!industry || industry === 'technology' || industry === 'general') {
         industry = detectIndustryFromOrganization(orgName);
       }
     }

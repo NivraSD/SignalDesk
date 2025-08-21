@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug KARV Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #f0f0f0; }
+        .container { background: white; padding: 20px; border-radius: 8px; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .result { margin: 20px 0; padding: 15px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; }
+        .error { background: #f8d7da; border-color: #f5c6cb; color: #721c24; }
+        .success { background: #d4edda; border-color: #c3e6cb; color: #155724; }
+        pre { white-space: pre-wrap; font-size: 12px; max-height: 400px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Debug KARV Test</h1>
+        
+        <button onclick="testCORS()">1. Test CORS</button>
+        <button onclick="testAuth()">2. Test Authentication</button>
+        <button onclick="testKARV()">3. Test KARV Analysis</button>
+        <button onclick="testConsole()">4. Check Console</button>
+        
+        <div id="result" class="result">Ready to debug...</div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+
+        function log(message, isError = false) {
+            const resultDiv = document.getElementById('result');
+            const timestamp = new Date().toLocaleTimeString();
+            const logMessage = `[${timestamp}] ${message}`;
+            
+            resultDiv.className = isError ? 'result error' : 'result success';
+            resultDiv.innerHTML = `<pre>${logMessage}</pre>`;
+            
+            console.log(logMessage);
+        }
+
+        async function testCORS() {
+            log('Testing CORS with OPTIONS request...');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/ai-industry-expansion`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    }
+                });
+                
+                log(`CORS Test: ${response.ok ? 'SUCCESS' : 'FAILED'} - Status: ${response.status}`);
+                
+                const headers = {};
+                for (let [key, value] of response.headers.entries()) {
+                    headers[key] = value;
+                }
+                log(`CORS Headers: ${JSON.stringify(headers, null, 2)}`);
+                
+            } catch (error) {
+                log(`CORS Test FAILED: ${error.message}`, true);
+            }
+        }
+
+        async function testAuth() {
+            log('Testing authentication...');
+            
+            try {
+                // Test with minimal request
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/ai-industry-expansion`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization_name: 'Test',
+                        website: 'test.com',
+                        description: 'test',
+                        current_categories: []
+                    })
+                });
+                
+                log(`Auth Test: ${response.ok ? 'SUCCESS' : 'FAILED'} - Status: ${response.status}`);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    log(`Auth Error Response: ${errorText}`, true);
+                }
+                
+            } catch (error) {
+                log(`Auth Test FAILED: ${error.message}`, true);
+            }
+        }
+
+        async function testKARV() {
+            log('Testing KARV analysis...');
+            
+            try {
+                const requestData = {
+                    organization_name: 'KARV Global',
+                    website: 'https://www.karv.global/',
+                    description: 'Global communications and PR agency',
+                    current_categories: ['technology']
+                };
+                
+                log(`Request Data: ${JSON.stringify(requestData, null, 2)}`);
+                
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/ai-industry-expansion`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                log(`KARV Test: Status ${response.status}`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        log(`SUCCESS: KARV detected as "${data.analysis.primary_industry}"`);
+                        log(`Full Response: ${JSON.stringify(data, null, 2)}`);
+                    } else {
+                        log(`FAILED: ${JSON.stringify(data, null, 2)}`, true);
+                    }
+                } else {
+                    const errorText = await response.text();
+                    log(`HTTP Error ${response.status}: ${errorText}`, true);
+                }
+                
+            } catch (error) {
+                log(`KARV Test FAILED: ${error.message}`, true);
+                log(`Stack: ${error.stack}`, true);
+            }
+        }
+
+        function testConsole() {
+            log('Check browser console for additional error details...');
+            console.log('=== DEBUG INFO ===');
+            console.log('SUPABASE_URL:', SUPABASE_URL);
+            console.log('SUPABASE_KEY (first 50 chars):', SUPABASE_KEY.substring(0, 50) + '...');
+            console.log('Current time:', new Date().toISOString());
+            console.log('User agent:', navigator.userAgent);
+        }
+
+        // Auto-run all tests in sequence
+        window.addEventListener('load', async () => {
+            log('Starting automated debug sequence...');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testCORS();
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            await testAuth();
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            await testKARV();
+        });
+    </script>
+</body>
+</html>

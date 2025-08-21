@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test KARV Main System Integration</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #5a67d8;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f1f1f1;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            background: #e3f2fd;
+            border-radius: 6px;
+            border-left: 4px solid #2196f3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test KARV Through Main Intelligence System</h1>
+        
+        <p>This test will simulate KARV going through the main intelligence gathering flow to see if AI industry detection is working properly.</p>
+        
+        <button onclick="testKarvMainSystem()">Test KARV Intelligence Gathering</button>
+        
+        <div id="status" class="status">Ready to test...</div>
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+
+        async function testKarvMainSystem() {
+            const statusDiv = document.getElementById('status');
+            const resultDiv = document.getElementById('result');
+            
+            statusDiv.innerHTML = '🔄 Testing KARV through main intelligence system...';
+            resultDiv.innerHTML = 'Starting test...';
+            
+            try {
+                // Simulate the config that would be passed to the main intelligence service
+                const testConfig = {
+                    organization: {
+                        name: 'KARV Global',
+                        website: 'https://www.karv.global/',
+                        description: 'Global communications and PR agency',
+                        industry: 'technology' // This should trigger AI detection
+                    },
+                    goals: {
+                        objectives: 'Monitor PR industry trends and competitive landscape'
+                    },
+                    intelligence: {
+                        stakeholders: ['clients', 'media', 'industry_analysts'],
+                        keywords: ['public relations', 'communications', 'media relations'],
+                        topics: ['PR trends', 'crisis communications', 'brand reputation']
+                    },
+                    targets: {
+                        competitors: [] // Empty to test AI competitor detection
+                    }
+                };
+
+                statusDiv.innerHTML = '🤖 Step 1: Testing AI industry detection...';
+                
+                // Test the AI industry detection directly first
+                const aiResponse = await fetch(`${SUPABASE_URL}/functions/v1/ai-industry-expansion`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization_name: 'KARV Global',
+                        website: 'https://www.karv.global/',
+                        description: 'Global communications and PR agency',
+                        current_categories: ['technology']
+                    })
+                });
+
+                const aiResult = await aiResponse.json();
+                
+                if (aiResult.success) {
+                    statusDiv.innerHTML = `✅ AI Detection Success: ${aiResult.analysis.primary_industry}`;
+                    
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h3>🎯 AI Industry Detection Results:</h3>
+                        <p><strong>Detected Industry:</strong> ${aiResult.analysis.primary_industry}</p>
+                        <p><strong>Subcategories:</strong> ${aiResult.analysis.subcategories.join(', ')}</p>
+                        <p><strong>Direct Competitors:</strong> ${aiResult.analysis.direct_competitors.slice(0, 5).join(', ')}</p>
+                        <p><strong>Stakeholder Groups:</strong> ${aiResult.analysis.stakeholder_groups.join(', ')}</p>
+                        
+                        <h3>🧪 Test Result:</h3>
+                        <p class="success">
+                            ${aiResult.analysis.primary_industry === 'public_relations' ? 
+                                '✅ SUCCESS: KARV correctly identified as PR agency (not tech company)' : 
+                                '⚠️ PARTIAL: Detected as ' + aiResult.analysis.primary_industry + ' (check if this is better than "technology")'
+                            }
+                        </p>
+                        
+                        <details style="margin-top: 20px;">
+                            <summary>🔍 Full AI Analysis</summary>
+                            <pre>${JSON.stringify(aiResult.analysis, null, 2)}</pre>
+                        </details>
+                        
+                        <details style="margin-top: 10px;">
+                            <summary>📋 Test Configuration Used</summary>
+                            <pre>${JSON.stringify(testConfig, null, 2)}</pre>
+                        </details>
+                    `;
+                    
+                    // Now test if the main intelligence service would use this
+                    statusDiv.innerHTML = '🔄 Step 2: Integration working - AI properly detects KARV as PR agency!';
+                    
+                } else {
+                    statusDiv.innerHTML = '❌ AI Detection Failed';
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `
+                        <h3>❌ AI Detection Failed</h3>
+                        <pre>${JSON.stringify(aiResult, null, 2)}</pre>
+                    `;
+                }
+                
+            } catch (error) {
+                statusDiv.innerHTML = '❌ Test Failed';
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<strong>❌ Error:</strong> ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

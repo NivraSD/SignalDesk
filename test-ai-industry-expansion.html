@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test AI Industry Expansion</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #5a67d8;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f1f1f1;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .industry-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 10px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid #28a745;
+        }
+        .competitor-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .competitor-tag {
+            background: #e3f2fd;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            text-align: center;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧠 AI Industry Expansion Test</h1>
+        
+        <div class="test-section">
+            <h2>Test 1: KARV Global (PR Agency)</h2>
+            <p>Test AI analysis of a PR/communications company that should NOT be categorized as tech</p>
+            <button onclick="testKARV()">Analyze KARV Global</button>
+            <div id="karv-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Test 2: McKinsey (Consulting)</h2>
+            <p>Test AI analysis of a management consulting firm</p>
+            <button onclick="testMcKinsey()">Analyze McKinsey</button>
+            <div id="mckinsey-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Test 3: Custom Organization</h2>
+            <p>Test with your own organization</p>
+            <input type="text" id="org-name" placeholder="Organization Name" style="margin: 5px; padding: 8px; width: 200px;">
+            <input type="text" id="org-website" placeholder="Website" style="margin: 5px; padding: 8px; width: 200px;">
+            <button onclick="testCustomOrg()">Analyze Custom Org</button>
+            <div id="custom-result" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+
+        async function analyzeOrganization(orgData, resultElementId) {
+            const resultDiv = document.getElementById(resultElementId);
+            resultDiv.innerHTML = 'Analyzing with AI...';
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/ai-industry-expansion`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify(orgData)
+                });
+
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    resultDiv.className = 'result success';
+                    const analysis = data.analysis;
+                    
+                    resultDiv.innerHTML = `
+                        <div class="industry-card">
+                            <h3>🏭 ${analysis.primary_industry.toUpperCase().replace(/_/g, ' ')}</h3>
+                            <p><strong>Subcategories:</strong> ${analysis.subcategories.join(', ')}</p>
+                            
+                            <h4>🏢 Direct Competitors (${analysis.direct_competitors.length})</h4>
+                            <div class="competitor-list">
+                                ${analysis.direct_competitors.map(c => `<div class="competitor-tag">${c}</div>`).join('')}
+                            </div>
+                            
+                            <h4>👥 Key Stakeholder Groups (${analysis.stakeholder_groups.length})</h4>
+                            <p>${analysis.stakeholder_groups.join(', ')}</p>
+                            
+                            <h4>🔍 Monitoring Keywords (${analysis.monitoring_keywords.length})</h4>
+                            <p>${analysis.monitoring_keywords.join(', ')}</p>
+                            
+                            <h4>📰 Media Outlets (${analysis.media_outlets.length})</h4>
+                            <p>${analysis.media_outlets.map(m => m.name).join(', ')}</p>
+                            
+                            <h4>📅 Industry Events (${analysis.industry_events.length})</h4>
+                            <p>${analysis.industry_events.map(e => e.name).join(', ')}</p>
+                            
+                            <h4>🎯 Trending Topics</h4>
+                            <p>${analysis.trending_topics.join(', ')}</p>
+                            
+                            <details style="margin-top: 20px;">
+                                <summary>🔍 Full AI Analysis (JSON)</summary>
+                                <pre>${JSON.stringify(analysis, null, 2)}</pre>
+                            </details>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `<strong>❌ Analysis Failed</strong><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<strong>❌ Error:</strong> ${error.message}`;
+            }
+        }
+
+        async function testKARV() {
+            await analyzeOrganization({
+                organization_name: 'KARV Global',
+                website: 'https://www.karv.global/',
+                description: 'Global communications and PR agency',
+                current_categories: []
+            }, 'karv-result');
+        }
+
+        async function testMcKinsey() {
+            await analyzeOrganization({
+                organization_name: 'McKinsey & Company',
+                website: 'https://www.mckinsey.com/',
+                description: 'Global management consulting firm',
+                current_categories: []
+            }, 'mckinsey-result');
+        }
+
+        async function testCustomOrg() {
+            const orgName = document.getElementById('org-name').value;
+            const orgWebsite = document.getElementById('org-website').value;
+            
+            if (!orgName) {
+                alert('Please enter an organization name');
+                return;
+            }
+
+            await analyzeOrganization({
+                organization_name: orgName,
+                website: orgWebsite,
+                description: '',
+                current_categories: []
+            }, 'custom-result');
+        }
+    </script>
+</body>
+</html>

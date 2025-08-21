@@ -219,6 +219,101 @@ async function getOrganizationalContext(organizationId: string) {
   }
 }
 
+// Enhance organization data with Claude's intelligence
+async function enhanceOrganizationData(organization: any, goals: any, enhancementPrompt: string) {
+  if (!ANTHROPIC_API_KEY) {
+    console.error('❌ ANTHROPIC_API_KEY not configured')
+    return {
+      competitors: [],
+      stakeholders: [],
+      topics: [],
+      keywords: [],
+      industryInsights: {}
+    }
+  }
+
+  try {
+    const systemPrompt = `You are an industry expert specializing in ${organization.industry || 'business'} intelligence.
+Your task is to enhance organization data with industry-specific insights.
+
+Focus on the ${organization.industry} industry specifically.
+DO NOT suggest generic tech companies unless they are direct competitors in the ${organization.industry} space.
+
+Return your response as a valid JSON object with this exact structure:
+{
+  "competitors": ["competitor1", "competitor2", "..."],
+  "stakeholders": ["stakeholder_group1", "stakeholder_group2", "..."],
+  "topics": ["topic1", "topic2", "..."],
+  "keywords": ["keyword1", "keyword2", "..."],
+  "industryInsights": {
+    "key_trends": ["trend1", "trend2"],
+    "market_dynamics": "brief description",
+    "competitive_landscape": "brief description"
+  }
+}
+
+For automotive industry, focus on car manufacturers, EV companies, and automotive suppliers.
+For healthcare, focus on pharma, medical devices, and healthcare providers.
+For finance, focus on banks, fintech, and financial services.
+
+Output ONLY the JSON object, no markdown, no explanations.`
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 1000,
+        temperature: 0.3,
+        system: systemPrompt,
+        messages: [{
+          role: 'user',
+          content: enhancementPrompt
+        }]
+      })
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Claude API error:', errorText)
+      throw new Error(`Claude API error: ${response.status}`)
+    }
+
+    const result = await response.json()
+    const content = result.content[0].text
+    
+    // Parse the JSON response
+    try {
+      const enhanced = JSON.parse(content)
+      console.log('✨ Organization enhanced successfully')
+      return enhanced
+    } catch (parseError) {
+      console.error('Failed to parse Claude response:', content)
+      // Return basic structure if parsing fails
+      return {
+        competitors: [],
+        stakeholders: [],
+        topics: [],
+        keywords: [],
+        industryInsights: {}
+      }
+    }
+  } catch (error) {
+    console.error('Enhancement error:', error)
+    return {
+      competitors: [],
+      stakeholders: [],
+      topics: [],
+      keywords: [],
+      industryInsights: {}
+    }
+  }
+}
+
 // Analyze with specific persona
 async function analyzeWithPersona(
   persona: any,
@@ -490,26 +585,43 @@ async function orchestrateAnalysis(
       ]
   }
   
-  // Build analysis prompt with goals and context
+  // Build analysis prompt with FULL context
   const analysisPrompt = `
 ANALYSIS TYPE: ${intelligenceType}
 TIMEFRAME: ${timeframe}
 
 ORGANIZATION:
 Name: ${organization.name}
-Industry: ${organization.industry}
-Size: ${organization.size}
+Industry: ${organization.industry || 'Unknown'}
+Website: ${organization.website || 'Not provided'}
+Size: ${organization.size || 'Not specified'}
+
+COMPETITORS BEING TRACKED:
+${organization.competitors?.length > 0 ? organization.competitors.join(', ') : 'No competitors specified'}
+
+STAKEHOLDERS:
+${organization.stakeholders ? JSON.stringify(organization.stakeholders, null, 2) : 'None specified'}
+
+TOPICS/KEYWORDS:
+Topics: ${organization.topics?.join(', ') || 'None'}
+Keywords: ${organization.keywords?.join(', ') || 'None'}
 
 STRATEGIC GOALS:
 ${Object.entries(goals || {})
   .filter(([_, enabled]) => enabled)
   .map(([goal]) => `- ${goal}`)
-  .join('\n')}
+  .join('\n') || 'No goals specified'}
 
 RAW INTELLIGENCE DATA:
 ${JSON.stringify(mcpData, null, 2)}
 
-Analyze this intelligence data through the lens of our strategic goals and provide actionable insights.`
+IMPORTANT CONTEXT:
+- Focus on the specified competitors above, not generic tech companies
+- Consider the industry context (${organization.industry})
+- Align insights with the strategic goals listed
+- Use stakeholder groups to frame recommendations
+
+Analyze this intelligence data through the lens of our strategic goals and provide actionable PR insights.`
 
   // Perform analysis with each persona
   const analyses = await Promise.all(
@@ -588,7 +700,8 @@ serve(async (req) => {
       mcp_data, 
       organization, 
       goals,
-      timeframe = '24h'
+      timeframe = '24h',
+      prompt
     } = body
 
     console.log(`🧠 Claude V2 synthesizing ${intelligence_type} for ${organization?.name || 'Unknown Organization'}`)
@@ -600,8 +713,30 @@ serve(async (req) => {
       goals_count: Object.keys(goals || {}).length
     })
 
-    if (!intelligence_type || !mcp_data) {
-      throw new Error('Missing required fields: intelligence_type and mcp_data are required')
+    // Handle organization enhancement request
+    if (intelligence_type === 'enhance_organization') {
+      console.log('🔮 Enhancing organization data')
+      
+      const enhancedData = await enhanceOrganizationData(organization, goals, prompt)
+      
+      return new Response(
+        JSON.stringify(enhancedData),
+        { 
+          headers: { 
+            ...corsHeaders,
+            'Content-Type': 'application/json'
+          } 
+        }
+      )
+    }
+
+    // For other intelligence types, mcp_data is required
+    if (!intelligence_type) {
+      throw new Error('Missing required field: intelligence_type')
+    }
+    
+    if (!mcp_data && intelligence_type !== 'enhance_organization') {
+      throw new Error('Missing required field: mcp_data is required for synthesis')
     }
 
     const synthesizedIntelligence = await orchestrateAnalysis(
