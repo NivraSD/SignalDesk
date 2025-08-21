@@ -811,6 +811,15 @@ function combineAnalyses(analyses: any[], personas: any[]) {
     executive_summary: '',
     pr_strategy_summary: '',
     
+    // Core arrays that are referenced later
+    key_insights: [],
+    recommendations: [],
+    combined_recommendations: [],
+    critical_alerts: [],
+    risks: [],
+    opportunities: [],
+    competitors: [],
+    
     // Competition Intelligence
     competitive_analysis: {
       landscape_summary: '',
@@ -847,10 +856,7 @@ function combineAnalyses(analyses: any[], personas: any[]) {
       second_opinion: null
     },
     
-    // Overall insights
-    key_insights: [],
-    recommendations: [],
-    critical_alerts: [],
+    // Overall confidence tracking
     overall_confidence: 0
   }
   
