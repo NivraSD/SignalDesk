@@ -119,7 +119,12 @@ class IntelligentDiscoveryService {
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Claude analysis successful:', data);
-        return data.analysis || this.getDefaultAnalysis(companyName);
+        // Make sure we return the full analysis with competitors
+        if (data.analysis) {
+          console.log('🎯 Discovered competitors:', data.analysis.competitors);
+          return data.analysis;
+        }
+        return this.getDefaultAnalysis(companyName);
       } else {
         const errorText = await response.text();
         console.error('❌ Claude API error:', response.status, errorText);
@@ -135,6 +140,10 @@ class IntelligentDiscoveryService {
    * Discover REAL competitors, not placeholders
    */
   async discoverRealCompetitors(companyName, industry) {
+    // Normalize industry name for lookup
+    const normalizedIndustry = (industry || '').toLowerCase();
+    console.log('🔍 Looking up competitors for:', companyName, 'in industry:', normalizedIndustry);
+    
     // Industry-specific real competitors
     const competitorMap = {
       automotive: {
@@ -145,6 +154,10 @@ class IntelligentDiscoveryService {
       trading: {
         'Mitsui & Co': ['Mitsubishi Corporation', 'Itochu', 'Sumitomo Corporation', 'Marubeni', 'Sojitz', 'Toyota Tsusho'],
         'Mitsubishi Corporation': ['Mitsui & Co', 'Itochu', 'Sumitomo Corporation', 'Marubeni']
+      },
+      'diversified conglomerate': {
+        'Mitsui & Co': ['Mitsubishi Corporation', 'Itochu Corporation', 'Sumitomo Corporation', 'Marubeni Corporation', 'Sojitz', 'Toyota Tsusho'],
+        'Mitsui & Co.': ['Mitsubishi Corporation', 'Itochu Corporation', 'Sumitomo Corporation', 'Marubeni Corporation', 'Sojitz', 'Toyota Tsusho']
       },
       finance: {
         'Goldman Sachs': ['Morgan Stanley', 'JPMorgan', 'Bank of America', 'Citigroup', 'Barclays', 'Deutsche Bank'],
@@ -158,7 +171,7 @@ class IntelligentDiscoveryService {
     };
 
     // Check if we have specific competitors for this company
-    const industryCompetitors = competitorMap[industry] || {};
+    const industryCompetitors = competitorMap[normalizedIndustry] || {};
     const specificCompetitors = industryCompetitors[companyName];
     
     if (specificCompetitors) {
