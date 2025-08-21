@@ -145,3 +145,103 @@ export const SynthesizeIcon = ({ size = 24, color = '#8800ff' }) => (
     <path d="M10 10l2 4M14 10l-2 4" stroke={color} strokeWidth="2" opacity="0.5"/>
   </svg>
 );
+
+export const TargetIcon = ({ size = 24, color = '#00ffcc' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="10" stroke={color} strokeWidth="2" opacity="0.3"/>
+    <circle cx="12" cy="12" r="6" stroke={color} strokeWidth="2" opacity="0.5"/>
+    <circle cx="12" cy="12" r="2" fill={color}/>
+    <path d="M12 2v2M12 20v2M2 12h2M20 12h2" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+  </svg>
+);
+
+export const BrainIcon = ({ size = 24, color = '#ff00ff' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2C8 2 5 5 5 9c0 2 1 4 2 5v6h10v-6c1-1 2-3 2-5 0-4-3-7-7-7z" 
+          stroke={color} strokeWidth="2" fill="none" opacity="0.8"/>
+    <path d="M9 9c0-1 1-2 2-2s2 1 2 2M8 11h8M10 14h4" 
+          stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
+  </svg>
+);
+
+export const ShieldIcon = ({ size = 24, color = '#00ff88' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2L4 7v6c0 5 3.5 9.5 8 11 4.5-1.5 8-6 8-11V7l-8-5z" 
+          stroke={color} strokeWidth="2" fill={color} fillOpacity="0.1"/>
+    <path d="M9 12l2 2 4-4" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+export const TrendingUpIcon = ({ size = 24, color = '#00ffcc' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3 17l6-6 4 4 8-8" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M14 7h7v7" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+export const UsersIcon = ({ size = 24, color = '#00ff88' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="9" cy="7" r="3" stroke={color} strokeWidth="2" opacity="0.6"/>
+    <circle cx="17" cy="7" r="3" stroke={color} strokeWidth="2" opacity="0.6"/>
+    <path d="M4 20v-2c0-2 2-3 5-3s5 1 5 3v2M14 15c3 0 5 1 5 3v2" 
+          stroke={color} strokeWidth="2" strokeLinecap="round"/>
+  </svg>
+);
+
+export const DollarSignIcon = ({ size = 24, color = '#00ffcc' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2v20" stroke={color} strokeWidth="2" strokeLinecap="round" opacity="0.4"/>
+    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" 
+          stroke={color} strokeWidth="2" strokeLinecap="round"/>
+  </svg>
+);
+
+export const SwordIcon = ({ size = 24, color = '#ff00ff' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M14 3l7 7-10 10-1 3-3 1-4-4 1-3 3-1 10-10" 
+          stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M3 21l4-4" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+    <circle cx="19" cy="5" r="2" fill={color} opacity="0.8"/>
+  </svg>
+);
+
+export const AlertIcon = ({ size = 24, color = '#ff0064' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2L2 20h20L12 2z" stroke={color} strokeWidth="2" fill={color} fillOpacity="0.1"/>
+    <path d="M12 9v4M12 17h.01" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+  </svg>
+);
+
+export const InsightIcon = ({ size = 24, color = '#00ffcc' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="3" fill={color}/>
+    <path d="M12 2v6M12 16v6M4.93 4.93l4.24 4.24M14.83 14.83l4.24 4.24M2 12h6M16 12h6M4.93 19.07l4.24-4.24M14.83 9.17l4.24-4.24" 
+          stroke={color} strokeWidth="2" strokeLinecap="round" opacity="0.6"/>
+  </svg>
+);
+
+export const ActionIcon = ({ size = 24, color = '#00ff88' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="3" y="3" width="18" height="18" rx="2" stroke={color} strokeWidth="2" opacity="0.3"/>
+    <path d="M9 12l2 2 4-4" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+export const ChartIcon = ({ size = 24, color = '#00ffcc' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="3" y="12" width="4" height="9" fill={color} opacity="0.6"/>
+    <rect x="10" y="8" width="4" height="13" fill={color} opacity="0.8"/>
+    <rect x="17" y="3" width="4" height="18" fill={color}/>
+  </svg>
+);
+
+export const BuildingIcon = ({ size = 24, color = '#ff00ff' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="4" y="2" width="16" height="20" stroke={color} strokeWidth="2" fill={color} fillOpacity="0.05"/>
+    <rect x="8" y="6" width="3" height="3" fill={color} opacity="0.6"/>
+    <rect x="13" y="6" width="3" height="3" fill={color} opacity="0.6"/>
+    <rect x="8" y="11" width="3" height="3" fill={color} opacity="0.6"/>
+    <rect x="13" y="11" width="3" height="3" fill={color} opacity="0.6"/>
+    <rect x="9" y="18" width="6" height="4" stroke={color} strokeWidth="2"/>
+  </svg>
+);

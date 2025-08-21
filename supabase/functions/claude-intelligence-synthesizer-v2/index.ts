@@ -691,16 +691,20 @@ function combineAnalyses(analyses: any[], personas: any[]) {
 }
 
 serve(withCors(async (req) => {
+  let intelligence_type = 'unknown' // Define outside try block for error handler access
+  
   try {
     const body = await req.json()
     const { 
-      intelligence_type, 
+      intelligence_type: reqIntelligenceType, 
       mcp_data, 
       organization, 
       goals,
       timeframe = '24h',
       prompt
     } = body
+    
+    intelligence_type = reqIntelligenceType // Update the outer scope variable
 
     console.log(`🧠 Claude V2 synthesizing ${intelligence_type} for ${organization?.name || 'Unknown Organization'}`)
     console.log(`📊 Using specialized personas with organizational context`)
@@ -718,6 +722,22 @@ serve(withCors(async (req) => {
       const enhancedData = await enhanceOrganizationData(organization, goals, prompt)
       
       return jsonResponse(enhancedData)
+    }
+    
+    // Handle company analysis for intelligent discovery
+    if (intelligence_type === 'company_analysis') {
+      console.log('🏢 Processing company analysis for intelligent discovery')
+      
+      // Use the enhance organization function for company analysis
+      const analysisData = await enhanceOrganizationData(organization, goals || {}, prompt)
+      
+      return jsonResponse({
+        success: true,
+        intelligence_type,
+        organization: organization?.name,
+        analysis: analysisData,
+        analyzed_at: new Date().toISOString()
+      })
     }
 
     // For other intelligence types, mcp_data is required

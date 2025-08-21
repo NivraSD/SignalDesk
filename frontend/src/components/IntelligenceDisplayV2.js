@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import './IntelligenceDisplay.css';
 import claudeIntelligenceServiceV2 from '../services/claudeIntelligenceServiceV2';
-import { CompetitorIcon, StakeholderIcon, MediaIcon, PredictiveIcon, RocketIcon, ScanIcon, AnalyzeIcon, SynthesizeIcon } from './Icons/NeonIcons';
+import { 
+  CompetitorIcon, StakeholderIcon, MediaIcon, PredictiveIcon, RocketIcon, 
+  ScanIcon, AnalyzeIcon, SynthesizeIcon, AlertIcon, InsightIcon, 
+  ActionIcon, ChartIcon, BuildingIcon, TargetIcon, TrendingUpIcon 
+} from './Icons/NeonIcons';
 
 const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigger = 0 }) => {
   const [loading, setLoading] = useState(false);
@@ -78,14 +82,20 @@ const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigg
       <div className="intelligence-section overview-tab">
         {data.executive_summary && (
           <div className="executive-summary-panel">
-            <h3>📊 Executive Summary</h3>
+            <div className="panel-header">
+              <ChartIcon size={20} color="#00ffcc" />
+              <h3>Executive Summary</h3>
+            </div>
             <p>{data.executive_summary}</p>
           </div>
         )}
         
         {data.critical_alerts && data.critical_alerts.length > 0 && (
           <div className="alerts-panel">
-            <h3>🚨 Critical Alerts</h3>
+            <div className="panel-header">
+              <AlertIcon size={20} color="#ff0064" />
+              <h3>Critical Alerts</h3>
+            </div>
             <div className="alerts-grid">
               {data.critical_alerts.map((alert, idx) => (
                 <div key={idx} className={`alert-card severity-${alert.severity}`}>
@@ -100,7 +110,10 @@ const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigg
         
         {data.key_insights && (
           <div className="insights-panel">
-            <h3>💡 Key Insights</h3>
+            <div className="panel-header">
+              <InsightIcon size={20} color="#00ffcc" />
+              <h3>Key Insights</h3>
+            </div>
             <div className="insights-grid">
               {data.key_insights.map((insight, idx) => (
                 <div key={idx} className={`insight-card impact-${insight.impact}`}>
@@ -114,7 +127,10 @@ const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigg
         
         {data.recommended_actions && (
           <div className="actions-panel">
-            <h3>📋 Recommended Actions</h3>
+            <div className="panel-header">
+              <ActionIcon size={20} color="#00ff88" />
+              <h3>Recommended Actions</h3>
+            </div>
             <div className="actions-list">
               {data.recommended_actions.map((action, idx) => (
                 <div key={idx} className={`action-item priority-${action.priority}`}>
@@ -138,14 +154,20 @@ const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigg
       <div className="intelligence-section competition-tab">
         {data.competitive_landscape && (
           <div className="landscape-panel">
-            <h3>🎯 Competitive Landscape</h3>
+            <div className="panel-header">
+              <TargetIcon size={20} color="#ff00ff" />
+              <h3>Competitive Landscape</h3>
+            </div>
             <p>{data.competitive_landscape.summary}</p>
           </div>
         )}
         
         {data.competitor_profiles && Object.keys(data.competitor_profiles).length > 0 && (
           <div className="competitors-panel">
-            <h3>🏢 Competitor Analysis</h3>
+            <div className="panel-header">
+              <BuildingIcon size={20} color="#ff00ff" />
+              <h3>Competitor Analysis</h3>
+            </div>
             <div className="competitor-cards">
               {Object.entries(data.competitor_profiles).map(([name, profile]) => (
                 <div key={name} className="competitor-card">

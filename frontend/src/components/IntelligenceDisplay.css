@@ -37,6 +37,26 @@
   border-bottom: 1px solid rgba(0, 255, 136, 0.1);
 }
 
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.panel-header svg {
+  filter: drop-shadow(0 0 8px currentColor);
+}
+
+.panel-header h3 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .intelligence-v2 .intel-controls {
   display: flex;
   gap: 12px;

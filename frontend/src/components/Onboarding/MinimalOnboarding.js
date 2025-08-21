@@ -1,5 +1,15 @@
 import React, { useState } from 'react';
 import './MinimalOnboarding.css';
+import { 
+  RocketIcon, 
+  TargetIcon, 
+  BrainIcon, 
+  ShieldIcon, 
+  TrendingUpIcon, 
+  UsersIcon, 
+  DollarSignIcon, 
+  SwordIcon 
+} from '../Icons/NeonIcons';
 
 /**
  * Minimal Onboarding - AI-powered discovery with proper neon styling
@@ -151,7 +161,7 @@ const MinimalOnboarding = ({ onComplete }) => {
       </div>
 
       <div className="ai-discovery-note">
-        <div className="note-icon">🤖</div>
+        <div className="note-icon"><BrainIcon /></div>
         <div className="note-content">
           <div className="note-title">AI-Powered Discovery</div>
           <div className="note-text">
@@ -165,14 +175,14 @@ const MinimalOnboarding = ({ onComplete }) => {
 
   const renderStep2 = () => {
     const goals = [
-      { id: 'brand_awareness', icon: '📢', label: 'Brand Awareness', desc: 'Increase visibility' },
-      { id: 'lead_generation', icon: '🎯', label: 'Lead Generation', desc: 'Drive opportunities' },
-      { id: 'thought_leadership', icon: '💡', label: 'Thought Leadership', desc: 'Industry expertise' },
-      { id: 'crisis_management', icon: '🛡️', label: 'Crisis Management', desc: 'Protect reputation' },
-      { id: 'product_launches', icon: '🚀', label: 'Product Launches', desc: 'Launch impact' },
-      { id: 'investor_relations', icon: '💰', label: 'Investor Relations', desc: 'Investor comms' },
-      { id: 'talent_acquisition', icon: '👥', label: 'Talent Acquisition', desc: 'Attract talent' },
-      { id: 'competitive_positioning', icon: '⚔️', label: 'Competitive Edge', desc: 'Market position' }
+      { id: 'brand_awareness', Icon: TrendingUpIcon, label: 'Brand Awareness', desc: 'Increase visibility' },
+      { id: 'lead_generation', Icon: TargetIcon, label: 'Lead Generation', desc: 'Drive opportunities' },
+      { id: 'thought_leadership', Icon: BrainIcon, label: 'Thought Leadership', desc: 'Industry expertise' },
+      { id: 'crisis_management', Icon: ShieldIcon, label: 'Crisis Management', desc: 'Protect reputation' },
+      { id: 'product_launches', Icon: RocketIcon, label: 'Product Launches', desc: 'Launch impact' },
+      { id: 'investor_relations', Icon: DollarSignIcon, label: 'Investor Relations', desc: 'Investor comms' },
+      { id: 'talent_acquisition', Icon: UsersIcon, label: 'Talent Acquisition', desc: 'Attract talent' },
+      { id: 'competitive_positioning', Icon: SwordIcon, label: 'Competitive Edge', desc: 'Market position' }
     ];
 
     const selectedCount = Object.values(formData.goals).filter(v => v).length;
@@ -186,7 +196,7 @@ const MinimalOnboarding = ({ onComplete }) => {
               className={`goal-card ${formData.goals[goal.id] ? 'selected' : ''}`}
               onClick={() => toggleGoal(goal.id)}
             >
-              <div className="goal-icon">{goal.icon}</div>
+              <div className="goal-icon"><goal.Icon /></div>
               <div className="goal-info">
                 <div className="goal-label">{goal.label}</div>
                 <div className="goal-desc">{goal.desc}</div>
