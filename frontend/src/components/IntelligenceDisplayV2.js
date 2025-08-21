@@ -270,31 +270,75 @@ const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigg
             </ul>
           </div>
         )}
+        
+        {data.competitive_landscape?.threats && data.competitive_landscape.threats.length > 0 && (
+          <div className="threats-panel">
+            <div className="panel-header">
+              <AlertIcon size={20} color="#ff0064" />
+              <h3>Reputation Threats</h3>
+            </div>
+            <ul className="threats-list">
+              {data.competitive_landscape.threats.map((threat, idx) => (
+                <li key={idx}>{threat}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        
+        {data.competitive_landscape?.second_opinion && (
+          <div className="second-opinion-panel">
+            <div className="panel-header">
+              <InsightIcon size={20} color="#8800ff" />
+              <h3>Alternative Competitive Analysis</h3>
+            </div>
+            <p>{data.competitive_landscape.second_opinion.assessment || data.competitive_landscape.second_opinion}</p>
+            {data.competitive_landscape.second_opinion.confidence_level && (
+              <div className="confidence-note">
+                Confidence: {data.competitive_landscape.second_opinion.confidence_level}%
+              </div>
+            )}
+          </div>
+        )}
       </div>
     );
   };
 
   const renderStakeholdersTab = (data) => {
-    // Handle nested data structures
-    const landscapeOverview = data.stakeholder_landscape?.overview || 
-      data.stakeholder_landscape?.primary_analysis?.analysis ||
-      data.stakeholder_landscape?.analysis ||
-      (typeof data.stakeholder_landscape === 'string' ? data.stakeholder_landscape : null);
+    // Extract rich stakeholder analysis
+    const sentimentOverview = data.sentiment_overview;
+    const groupPriorities = data.group_priorities || {};
+    const engagementStrategy = data.engagement_strategy || [];
+    const messagingFrameworks = data.messaging_frameworks || {};
+    const secondOpinion = data.second_opinion;
     
-    const groupAnalysis = data.group_analysis || 
-      data.stakeholder_groups || 
-      data.stakeholder_landscape?.group_analysis || {};
-    
-    // Also check for sentiment analysis
-    const sentimentData = data.sentiment_analysis || 
-      data.stakeholder_landscape?.sentiment || {};
+    // Legacy fallbacks
+    const groupAnalysis = groupPriorities || data.group_analysis || {};
+    const sentimentData = data.sentiment || {};
     
     return (
       <div className="intelligence-section stakeholders-tab">
-        {landscapeOverview && (
+        {sentimentOverview && (
           <div className="landscape-panel">
-            <h3>👥 Stakeholder Landscape</h3>
-            <p>{landscapeOverview}</p>
+            <h3>👥 Stakeholder Sentiment Overview</h3>
+            <p>{sentimentOverview}</p>
+          </div>
+        )}
+        
+        {engagementStrategy.length > 0 && (
+          <div className="engagement-panel">
+            <h3>📋 Engagement Strategy</h3>
+            <ul>
+              {engagementStrategy.map((strategy, idx) => (
+                <li key={idx}>{strategy}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        
+        {secondOpinion && (
+          <div className="second-opinion-panel">
+            <h3>🔄 Alternative Perspective</h3>
+            <p>{secondOpinion.assessment || secondOpinion}</p>
           </div>
         )}
         
@@ -365,15 +409,16 @@ const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigg
   };
 
   const renderTopicsTab = (data) => {
-    // Handle various data structures
-    const dashboard = data.topic_dashboard || data.trending_topics || {};
-    const deepDives = data.topic_deep_dives || data.topics || {};
-    const emergingTopics = data.emerging_topics || [];
+    // Extract rich narrative analysis
+    const trendingOverview = data.trending_overview;
+    const narrativeOpportunities = data.narrative_opportunities || [];
+    const contentAngles = data.content_angles || [];
+    const mediaRisks = data.media_risks || [];
+    const secondOpinion = data.second_opinion;
     
-    // Extract trending topics
-    const trendingUp = dashboard.trending_up || dashboard.rising || [];
-    const trendingDown = dashboard.trending_down || dashboard.declining || [];
-    const stable = dashboard.stable || [];
+    // Legacy support
+    const trendingTopics = data.trending_topics || [];
+    const mediaCoverage = data.media_coverage || [];
     
     return (
       <div className="intelligence-section topics-tab">
@@ -465,15 +510,56 @@ const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigg
   };
 
   const renderPredictionsTab = (data) => {
-    // Handle various data structures
-    const scenarios = data.predictive_scenarios || data.scenarios || [];
+    // Extract rich predictive analysis
+    const scenarioOverview = data.scenario_overview;
+    const likelyScenarios = data.likely_scenarios || data.scenarios || [];
+    const cascadeEffects = data.cascade_effects || [];
+    const proactiveStrategies = data.proactive_strategies || [];
+    const secondOpinion = data.second_opinion;
+    
+    // Legacy support
     const warnings = data.early_warnings || data.warnings || {};
     const signals = warnings.signals_detected || warnings.signals || [];
-    const predictions = data.predictions || [];
     
     return (
       <div className="intelligence-section predictions-tab">
-        {scenarios.length > 0 && (
+        {scenarioOverview && (
+          <div className="overview-panel">
+            <h3>🔮 Predictive Intelligence Overview</h3>
+            <p>{scenarioOverview}</p>
+          </div>
+        )}
+        
+        {cascadeEffects.length > 0 && (
+          <div className="cascade-panel">
+            <h3>⚠️ Cascade Effects</h3>
+            <ul>
+              {cascadeEffects.map((effect, idx) => (
+                <li key={idx}>{effect}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        
+        {proactiveStrategies.length > 0 && (
+          <div className="strategies-panel">
+            <h3>🎯 Proactive PR Strategies</h3>
+            <ul>
+              {proactiveStrategies.map((strategy, idx) => (
+                <li key={idx}>{strategy}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        
+        {secondOpinion && (
+          <div className="second-opinion-panel">
+            <h3>🔄 Alternative Future Scenario</h3>
+            <p>{secondOpinion.assessment || secondOpinion}</p>
+          </div>
+        )}
+        
+        {likelyScenarios.length > 0 && (
           <div className="scenarios-panel">
             <h3>🔮 Predictive Scenarios</h3>
             <div className="scenarios-grid">
