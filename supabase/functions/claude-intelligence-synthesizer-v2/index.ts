@@ -400,11 +400,15 @@ Output ONLY the JSON object, no markdown, no explanations.`
 
   try {
     // Primary analysis
-    const primaryAnalysis = await callClaude(fullPrompt, 'claude-sonnet-4-20250514')
+    const primaryAnalysisPromise = callClaude(fullPrompt, 'claude-sonnet-4-20250514')
     
-    // Second opinion for critical insights
+    // For second opinion, we need primary analysis first
+    const primaryAnalysis = await primaryAnalysisPromise
+    
+    // Second opinion for critical insights (run in parallel when possible)
     if (requiresSecondOpinion) {
       try {
+        // Create second opinion prompt
         const secondOpinionPrompt = `You are providing a second opinion on this analysis:
 
 PRIMARY ANALYSIS:
@@ -419,10 +423,11 @@ Please:
 
 Format as JSON with your assessment including a "confidence_level" field.`
         
-        const secondOpinion = await callClaude(secondOpinionPrompt, 'claude-sonnet-4-20250514')
+        // Launch second opinion (don't await yet)
+        const secondOpinionPromise = callClaude(secondOpinionPrompt, 'claude-sonnet-4-20250514')
         
-        // Safely parse JSON responses
-        let primaryData, secondaryData
+        // Process primary while second opinion runs
+        let primaryData
         try {
           primaryData = JSON.parse(primaryAnalysis)
         } catch (e) {
@@ -430,6 +435,11 @@ Format as JSON with your assessment including a "confidence_level" field.`
           primaryData = { analysis_text: primaryAnalysis, status: 'text_response' }
         }
         
+        // Now wait for second opinion
+        const secondOpinion = await secondOpinionPromise
+        
+        // Parse second opinion
+        let secondaryData
         try {
           secondaryData = JSON.parse(secondOpinion)
         } catch (e) {
@@ -731,26 +741,46 @@ IMPORTANT CONTEXT:
 
 Analyze this intelligence data through the lens of our strategic goals and provide actionable PR insights.`
 
-  // Perform analysis with each persona SEQUENTIALLY to avoid overload
-  const analyses = []
-  for (let i = 0; i < personasToUse.length; i++) {
-    const persona = personasToUse[i]
-    console.log(`🎭 Analyzing with persona ${i + 1}/${personasToUse.length}: ${persona.name}`)
+  // Perform analysis with each persona IN PARALLEL for speed
+  console.log(`🚀 Launching ${personasToUse.length} personas in parallel...`)
+  
+  // Create all persona analysis promises
+  const analysisPromises = personasToUse.map(async (persona, index) => {
+    console.log(`🎭 Starting analysis with persona ${index + 1}/${personasToUse.length}: ${persona.name}`)
     
-    // Add delay between personas to avoid overloading Claude
-    if (i > 0) {
-      console.log('⏱️ Waiting 2 seconds before next persona...')
-      await delay(2000)
+    // Add a small staggered delay to avoid hitting rate limits (100ms per persona)
+    if (index > 0) {
+      await delay(index * 100)
     }
     
     try {
       const analysis = await analyzeWithPersona(persona, analysisPrompt, context, requiresSecondOpinion)
-      analyses.push(analysis)
+      console.log(`✅ ${persona.name} completed`)
+      return analysis
     } catch (error) {
-      console.error(`Failed to analyze with ${persona.name}:`, error.message)
-      // Continue with other personas even if one fails
-      analyses.push(null)
+      console.error(`❌ Failed to analyze with ${persona.name}:`, error.message)
+      // Return null instead of throwing so other personas can complete
+      return null
     }
+  })
+  
+  // Wait for all personas to complete (with timeout protection)
+  const timeoutPromise = new Promise((_, reject) => 
+    setTimeout(() => reject(new Error('Persona analysis timeout')), 15000)
+  )
+  
+  let analyses = []
+  try {
+    analyses = await Promise.race([
+      Promise.all(analysisPromises),
+      timeoutPromise
+    ])
+  } catch (timeoutError) {
+    console.error('⚠️ Some personas timed out, using completed analyses')
+    // Get whatever completed before timeout
+    analyses = await Promise.allSettled(analysisPromises).then(results =>
+      results.map(r => r.status === 'fulfilled' ? r.value : null)
+    )
   }
   
   // Combine analyses if multiple personas used
