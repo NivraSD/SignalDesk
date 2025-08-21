@@ -106,50 +106,31 @@ class ClaudeIntelligenceServiceV2 {
           }
           
           // Only use orchestrator if it has substantial data
-          if (orchestratedResult.intelligence && 
-              Object.keys(orchestratedResult.intelligence).length > 5 &&
-              orchestratedResult.phases_completed?.synthesis) {
-            // Transform orchestrated result to match expected format
-            const transformed = this.transformOrchestratedResult(orchestratedResult, config);
-            console.log('🔄 Transformed result:', transformed);
+          if (orchestratedResult.tabs && 
+              Object.keys(orchestratedResult.tabs).length === 5) {
             
-            // CRITICAL: Store the transformed data in memory/profile
+            console.log('✅ Using orchestrator data (already formatted)');
+            console.log('📊 Tab data check:', {
+              hasOverviewTab: !!orchestratedResult.tabs.overview,
+              overviewExecutiveSummaryType: typeof orchestratedResult.tabs.overview?.executive_summary,
+              insightsStored: orchestratedResult.stats?.insights_stored || 0
+            });
+            
+            // The orchestrator already returns properly formatted data via dataFormatter
+            // Just add profile and guidance
             const orgForStorage = {
               name: orgName,
               industry: industry,
               ...config.organization
             };
-            await this.storeKeyInsights(transformed, orgForStorage);
             
-            // Don't return here - continue to enrich with profile data
-            // return transformed;
-            
-            // Merge with profile and tab intelligence
             const profile = await organizationProfileService.getOrBuildProfile(orgForStorage);
             
-            const tabIntelligence = await tabIntelligenceService.generateTabIntelligence(
-              { ...config.organization, name: orgName },
-              transformed,
-              profile
-            );
+            // Store insights from the formatted data
+            await this.storeKeyInsights(orchestratedResult, orgForStorage);
             
-            // Ensure we have the correct structure for IntelligenceDisplayV2
-            const finalResult = {
-              ...transformed,
-              // Legacy format (for backward compatibility)
-              overview: transformed.overview || tabIntelligence.overview || insights.overview,
-              competition: transformed.competition || transformed.competitor,
-              stakeholders: transformed.stakeholders || transformed.stakeholder,
-              topics: transformed.topics || transformed.narrative,
-              predictions: transformed.predictions || transformed.predictive,
-              // New tab format - MUST use the correctly formatted data
-              tabs: {
-                overview: transformed.overview || tabIntelligence.overview || insights.overview,
-                competition: transformed.competition || tabIntelligence.competition || transformed.competitor,
-                stakeholders: transformed.stakeholders || tabIntelligence.stakeholders || transformed.stakeholder,
-                topics: transformed.topics || tabIntelligence.topics || transformed.narrative,
-                predictions: transformed.predictions || tabIntelligence.predictions || transformed.predictive
-              },
+            return {
+              ...orchestratedResult,
               profile: {
                 confidence_level: profile.confidence_level,
                 last_updated: profile.last_updated,
@@ -157,18 +138,6 @@ class ClaudeIntelligenceServiceV2 {
               },
               guidance: organizationProfileService.getIntelligenceGuidance(profile)
             };
-            
-            console.log('📦 Final result structure:', {
-              hasOverview: !!finalResult.overview,
-              hasCompetition: !!finalResult.competition,
-              hasStakeholders: !!finalResult.stakeholders,
-              hasTopics: !!finalResult.topics,
-              hasPredictions: !!finalResult.predictions,
-              hasTabs: !!finalResult.tabs,
-              tabKeys: Object.keys(finalResult.tabs || {})
-            });
-            
-            return finalResult;
           } else {
             console.log('⚠️ Orchestrator returned limited data, using full flow instead');
           }
@@ -674,47 +643,20 @@ class ClaudeIntelligenceServiceV2 {
     // Store critical insights in memory for future reference
     const keyInsights = [];
     
-    // Extract from orchestrator format (key_insights array)
-    if (intelligence.tabIntelligence?.overview?.key_insights) {
-      intelligence.tabIntelligence.overview.key_insights.forEach(insight => {
+    // Extract from properly formatted tabs
+    if (intelligence.tabs?.overview?.key_insights) {
+      intelligence.tabs.overview.key_insights.forEach(insight => {
         keyInsights.push({
           type: 'key_insight',
           content: typeof insight === 'string' ? insight : insight.insight || insight.content,
-          confidence: insight.confidence || 0.8
+          confidence: 0.8
         });
       });
     }
     
-    // Also check raw intelligence.key_insights
-    if (intelligence.raw_mcp_data?.key_insights || intelligence.executiveOverview?.key_insights) {
-      const rawInsights = intelligence.raw_mcp_data?.key_insights || intelligence.executiveOverview?.key_insights || [];
-      rawInsights.forEach(insight => {
-        if (!keyInsights.some(ki => ki.content === (typeof insight === 'string' ? insight : insight.insight))) {
-          keyInsights.push({
-            type: 'key_insight',
-            content: typeof insight === 'string' ? insight : insight.insight || insight.content,
-            confidence: insight.confidence || 0.8
-          });
-        }
-      });
-    }
-    
-    // Extract from overview
-    if (intelligence.overview?.key_insights) {
-      intelligence.overview.key_insights.forEach(insight => {
-        if (!keyInsights.some(ki => ki.content === (typeof insight === 'string' ? insight : insight.insight))) {
-          keyInsights.push({
-            type: 'key_insight',
-            content: typeof insight === 'string' ? insight : insight.insight || insight.content,
-            confidence: insight.confidence || 0.8
-          });
-        }
-      });
-    }
-    
     // Extract critical alerts
-    if (intelligence.overview?.critical_alerts) {
-      intelligence.overview.critical_alerts.forEach(alert => {
+    if (intelligence.tabs?.overview?.critical_alerts) {
+      intelligence.tabs.overview.critical_alerts.forEach(alert => {
         keyInsights.push({
           type: 'critical_alert',
           content: typeof alert === 'string' ? alert : alert.message || alert.alert,
@@ -723,9 +665,9 @@ class ClaudeIntelligenceServiceV2 {
       });
     }
     
-    // Extract competitive insights
-    if (intelligence.competition?.competitor_profiles) {
-      Object.entries(intelligence.competition.competitor_profiles).forEach(([name, profile]) => {
+    // Extract competitive threats
+    if (intelligence.tabs?.competition?.competitive_landscape?.competitor_profiles) {
+      Object.entries(intelligence.tabs.competition.competitive_landscape.competitor_profiles).forEach(([name, profile]) => {
         if (profile.threat_level === 'high') {
           keyInsights.push({
             type: 'competitive_threat',
@@ -736,9 +678,9 @@ class ClaudeIntelligenceServiceV2 {
       });
     }
     
-    // Extract opportunities
-    if (intelligence.overview?.recommended_actions) {
-      intelligence.overview.recommended_actions.slice(0, 3).forEach(action => {
+    // Extract recommended actions
+    if (intelligence.tabs?.overview?.recommended_actions) {
+      intelligence.tabs.overview.recommended_actions.slice(0, 3).forEach(action => {
         keyInsights.push({
           type: 'recommended_action',
           content: typeof action === 'string' ? action : action.action || action.recommendation,

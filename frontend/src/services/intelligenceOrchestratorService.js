@@ -7,6 +7,8 @@
  * 4. Intelligent Synthesis
  */
 
+import dataFormatterService from './dataFormatter';
+
 class IntelligenceOrchestratorService {
   constructor() {
     this.supabaseUrl = (process.env.REACT_APP_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co').trim().replace(/\n/g, '');
@@ -99,7 +101,8 @@ class IntelligenceOrchestratorService {
         throw new Error(data.error);
       }
       
-      return this._processOrchestrationResult(data);
+      // Use the data formatter for consistent structure
+      return dataFormatterService.formatForDisplay(data);
     } catch (error) {
       console.error('❌ Orchestration error:', error);
       return {

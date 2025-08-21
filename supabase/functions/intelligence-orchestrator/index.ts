@@ -242,20 +242,43 @@ async function orchestrateIntelligence(organization: any) {
         
         // Build proper executive summary from synthesis
         let executiveSummaryText = ''
+        
+        // Log what we're working with
+        console.log('🔍 Extracting executive summary from synthesis:', {
+          hasExecutiveSummary: !!synthesis.executive_summary,
+          executiveSummaryType: typeof synthesis.executive_summary,
+          hasPrimaryAnalysis: !!synthesis.primary_analysis,
+          hasAnalysisText: !!synthesis.analysis_text,
+          synthesisKeys: Object.keys(synthesis).slice(0, 10)
+        })
+        
         if (synthesis.executive_summary) {
-          executiveSummaryText = typeof synthesis.executive_summary === 'string' 
-            ? synthesis.executive_summary 
-            : synthesis.executive_summary.analysis || synthesis.executive_summary.summary || ''
+          if (typeof synthesis.executive_summary === 'string') {
+            executiveSummaryText = synthesis.executive_summary
+            console.log('✅ Found executive_summary as string')
+          } else {
+            // It's an object, try to extract the text
+            executiveSummaryText = synthesis.executive_summary.analysis || 
+                                  synthesis.executive_summary.summary || 
+                                  synthesis.executive_summary.text || 
+                                  JSON.stringify(synthesis.executive_summary)
+            console.log('⚠️ executive_summary is object, extracted:', executiveSummaryText.substring(0, 100))
+          }
         } else if (synthesis.primary_analysis) {
           executiveSummaryText = synthesis.primary_analysis.analysis || synthesis.primary_analysis.summary || ''
+          console.log('📝 Using primary_analysis')
         } else if (synthesis.analysis_text) {
           executiveSummaryText = synthesis.analysis_text
+          console.log('📝 Using analysis_text')
         }
         
         // If no executive summary from synthesis, generate one
-        if (!executiveSummaryText) {
+        if (!executiveSummaryText || executiveSummaryText === '{}') {
           executiveSummaryText = `${organization.name} operates in the ${discoveryData.primary_category || organization.industry} industry. Based on analysis of ${results.statistics.articles_processed} articles and ${results.statistics.websites_scraped} websites, key competitive threats and opportunities have been identified. Immediate focus areas include monitoring ${discoveryData.competitors?.slice(0, 3).join(', ') || 'key competitors'}.`
+          console.log('⚠️ Generated fallback executive summary')
         }
+        
+        console.log('📊 Final executive summary type:', typeof executiveSummaryText)
         
         // Extract or build key insights
         const keyInsights = synthesis.key_insights || 
