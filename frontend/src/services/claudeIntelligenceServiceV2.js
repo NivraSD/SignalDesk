@@ -89,6 +89,21 @@ class ClaudeIntelligenceServiceV2 {
         if (orchestratedResult.success) {
           console.log('✅ Orchestrator succeeded, using optimized intelligence');
           console.log('📊 Raw orchestrator result:', orchestratedResult);
+          console.log('🔍 Intelligence keys:', Object.keys(orchestratedResult.intelligence || {}));
+          console.log('🔍 Insights keys:', Object.keys(orchestratedResult.insights || {}));
+          console.log('🔍 Phases completed:', orchestratedResult.phases_completed);
+          
+          // Debug: Log the actual data structure
+          if (orchestratedResult.intelligence) {
+            console.log('📋 Sample intelligence data:', {
+              hasCompetitors: !!orchestratedResult.intelligence.competitors,
+              competitorCount: orchestratedResult.intelligence.competitors?.length,
+              hasKeyInsights: !!orchestratedResult.intelligence.key_insights,
+              keyInsightCount: orchestratedResult.intelligence.key_insights?.length,
+              hasSynthesized: !!orchestratedResult.intelligence.synthesized,
+              hasExecutiveSummary: !!orchestratedResult.intelligence.executive_summary
+            });
+          }
           
           // Only use orchestrator if it has substantial data
           if (orchestratedResult.intelligence && 
@@ -118,16 +133,43 @@ class ClaudeIntelligenceServiceV2 {
               profile
             );
             
-            return {
+            // Ensure we have the correct structure for IntelligenceDisplayV2
+            const finalResult = {
               ...transformed,
+              // Legacy format (for backward compatibility)
+              overview: transformed.executive_summary,
+              competition: transformed.competitor,
+              stakeholders: transformed.stakeholder,
+              topics: transformed.narrative,
+              predictions: transformed.predictive,
+              // New tab format
+              tabs: {
+                overview: transformed.executive_summary,
+                competition: transformed.competitor,
+                stakeholders: transformed.stakeholder,
+                topics: transformed.narrative,
+                predictions: transformed.predictive,
+                ...tabIntelligence
+              },
               profile: {
                 confidence_level: profile.confidence_level,
                 last_updated: profile.last_updated,
                 established_facts: profile.established_facts
               },
-              tabs: tabIntelligence,
               guidance: organizationProfileService.getIntelligenceGuidance(profile)
             };
+            
+            console.log('📦 Final result structure:', {
+              hasOverview: !!finalResult.overview,
+              hasCompetition: !!finalResult.competition,
+              hasStakeholders: !!finalResult.stakeholders,
+              hasTopics: !!finalResult.topics,
+              hasPredictions: !!finalResult.predictions,
+              hasTabs: !!finalResult.tabs,
+              tabKeys: Object.keys(finalResult.tabs || {})
+            });
+            
+            return finalResult;
           } else {
             console.log('⚠️ Orchestrator returned limited data, using full flow instead');
           }
