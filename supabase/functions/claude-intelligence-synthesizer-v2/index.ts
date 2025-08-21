@@ -220,17 +220,62 @@ async function getOrganizationalContext(organizationId: string | undefined) {
   }
 }
 
-// Enhance organization data with Claude's intelligence
+// Enhance organization data with built-in industry knowledge + Claude's intelligence
 async function enhanceOrganizationData(organization: any, goals: any, enhancementPrompt: string) {
-  if (!ANTHROPIC_API_KEY) {
-    console.error('❌ ANTHROPIC_API_KEY not configured')
-    return {
-      competitors: [],
-      stakeholders: [],
-      topics: [],
-      keywords: [],
-      industryInsights: {}
+  // Built-in competitor data for key industries
+  const COMPETITOR_DATA = {
+    conglomerate: ['Mitsubishi Corporation', 'Sumitomo Corporation', 'Itochu Corporation', 'Marubeni Corporation', 
+                   'Sojitz', 'Toyota Tsusho', 'Berkshire Hathaway', 'General Electric', 'Siemens', '3M'],
+    trading: ['Mitsubishi Corporation', 'Mitsui & Co.', 'Sumitomo Corporation', 'Itochu Corporation', 
+              'Marubeni', 'Sojitz', 'Glencore', 'Trafigura', 'Vitol', 'Cargill'],
+    automotive: ['Toyota', 'Volkswagen', 'Tesla', 'General Motors', 'Ford', 'Stellantis', 'BMW', 'Mercedes-Benz'],
+    technology: ['Microsoft', 'Google', 'Apple', 'Amazon', 'Meta', 'Oracle', 'Salesforce', 'Adobe'],
+    finance: ['JPMorgan Chase', 'Bank of America', 'Wells Fargo', 'Goldman Sachs', 'Morgan Stanley', 'Citigroup']
+  }
+  
+  // Detect industry from organization name or industry field
+  const orgName = (organization.name || '').toLowerCase()
+  const industry = (organization.industry || '').toLowerCase()
+  
+  let competitors = []
+  let detectedIndustry = 'general'
+  
+  // Check for Japanese trading companies
+  if (orgName.includes('mitsui') || orgName.includes('mitsubishi') || orgName.includes('sumitomo') || 
+      orgName.includes('itochu') || orgName.includes('marubeni') || 
+      industry.includes('conglomerate') || industry.includes('diversified') || industry.includes('trading')) {
+    competitors = COMPETITOR_DATA.conglomerate
+    detectedIndustry = 'conglomerate'
+    console.log(`🎯 Detected Japanese trading company/conglomerate: ${organization.name}`)
+  } else if (industry.includes('auto') || industry.includes('car') || industry.includes('vehicle')) {
+    competitors = COMPETITOR_DATA.automotive
+    detectedIndustry = 'automotive'
+  } else if (industry.includes('tech') || industry.includes('software')) {
+    competitors = COMPETITOR_DATA.technology
+    detectedIndustry = 'technology'
+  } else if (industry.includes('finance') || industry.includes('bank')) {
+    competitors = COMPETITOR_DATA.finance
+    detectedIndustry = 'finance'
+  }
+  
+  console.log(`📊 Industry detected: ${detectedIndustry}, ${competitors.length} competitors identified`)
+  
+  // Start with real competitor data
+  const baseData = {
+    competitors: competitors,
+    stakeholders: ['investors', 'employees', 'customers', 'regulators', 'partners'],
+    topics: ['market trends', 'competitive positioning', 'industry news', 'strategic initiatives'],
+    keywords: [organization.name, ...competitors.slice(0, 5)],
+    industryInsights: {
+      industry: detectedIndustry,
+      competitive_landscape: `${organization.name} operates in the ${detectedIndustry} industry with ${competitors.length} major competitors`,
+      key_trends: ['digital transformation', 'sustainability', 'market consolidation']
     }
+  }
+  
+  if (!ANTHROPIC_API_KEY) {
+    console.error('❌ ANTHROPIC_API_KEY not configured, returning built-in data')
+    return baseData
   }
 
   try {
@@ -290,28 +335,25 @@ Output ONLY the JSON object, no markdown, no explanations.`
     // Parse the JSON response
     try {
       const enhanced = JSON.parse(content)
-      console.log('✨ Organization enhanced successfully')
-      return enhanced
+      console.log('✨ Organization enhanced with Claude')
+      // IMPORTANT: Merge Claude's response with our base data, keeping our competitors
+      return {
+        ...enhanced,
+        competitors: baseData.competitors.length > 0 ? baseData.competitors : enhanced.competitors,
+        industryInsights: {
+          ...enhanced.industryInsights,
+          industry: detectedIndustry
+        }
+      }
     } catch (parseError) {
       console.error('Failed to parse Claude response:', content)
-      // Return basic structure if parsing fails
-      return {
-        competitors: [],
-        stakeholders: [],
-        topics: [],
-        keywords: [],
-        industryInsights: {}
-      }
+      // Return our base data if parsing fails
+      return baseData
     }
   } catch (error) {
     console.error('Enhancement error:', error)
-    return {
-      competitors: [],
-      stakeholders: [],
-      topics: [],
-      keywords: [],
-      industryInsights: {}
-    }
+    // Return our base data on any error
+    return baseData
   }
 }
 
