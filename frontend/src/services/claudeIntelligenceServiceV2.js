@@ -2,6 +2,7 @@
 // Enhanced with specialized personas, organizational context, and memory integration
 
 import { getIndustryCompetitors, detectIndustryFromOrganization } from '../utils/industryCompetitors';
+import aiIndustryExpansionService from './aiIndustryExpansionService';
 
 class ClaudeIntelligenceServiceV2 {
   constructor() {
@@ -43,8 +44,25 @@ class ClaudeIntelligenceServiceV2 {
     
     // Get org details from the CORRECT location in the config structure
     const orgName = organization.name || config.organizationName || '';
-    const industry = organization.industry || config.industry || detectIndustryFromOrganization(orgName);
     const website = organization.website || config.website || '';
+    
+    // Use AI-powered industry detection instead of basic pattern matching
+    let industry = organization.industry || config.industry;
+    if (!industry || industry === 'technology') {
+      console.log('🤖 Using AI for industry detection');
+      try {
+        const aiDetection = await aiIndustryExpansionService.smartIndustryDetection(
+          orgName, 
+          website, 
+          organization.description || config.description || ''
+        );
+        industry = aiDetection.industry;
+        console.log(`✨ AI detected industry: ${industry} (confidence: ${aiDetection.confidence})`);
+      } catch (error) {
+        console.error('AI industry detection failed, using fallback:', error);
+        industry = detectIndustryFromOrganization(orgName);
+      }
+    }
     
     console.log(`🏭 Industry detection for ${orgName}: ${industry}`);
     
@@ -123,25 +141,151 @@ class ClaudeIntelligenceServiceV2 {
     console.log('📊 Organization:', organization.name, '| Industry:', organization.industry);
     console.log('🎯 Active goals:', Object.entries(goals).filter(([k,v]) => v).map(([k]) => k));
     
-    // Step 1: Gather raw data from MCPs with FULL context
-    const mcpData = await this.orchestrateMCPs(organization, timeframe);
+    // Step 1: Enhance organization data with Claude before MCP calls
+    const enhancedOrganization = await this.enhanceOrganizationWithClaude(organization, goals);
     
-    // Step 2: Determine which analyses need second opinions
+    // Step 2: Gather raw data from MCPs with ENHANCED context
+    const mcpData = await this.orchestrateMCPs(enhancedOrganization, timeframe);
+    
+    // Step 3: Determine which analyses need second opinions
     const criticalAnalyses = this.identifyCriticalAnalyses(mcpData, goals);
     
-    // Step 3: Send to Claude V2 for persona-based synthesis
+    // Step 4: Send to Claude V2 for persona-based synthesis
     const synthesizedIntelligence = await this.synthesizeWithClaudeV2(
       mcpData, 
-      organization, 
+      enhancedOrganization, 
       goals, 
       timeframe,
       criticalAnalyses
     );
     
-    // Step 4: Store key insights in memory
-    await this.storeKeyInsights(synthesizedIntelligence, organization);
+    // Step 5: Store key insights in memory
+    await this.storeKeyInsights(synthesizedIntelligence, enhancedOrganization);
     
     return synthesizedIntelligence;
+  }
+
+  async enhanceOrganizationWithClaude(organization, goals) {
+    console.log('🔮 Enhancing organization data with AI Industry Expansion');
+    
+    try {
+      // First, try AI Industry Expansion for comprehensive analysis
+      const aiAnalysis = await aiIndustryExpansionService.smartIndustryDetection(
+        organization.name,
+        organization.website,
+        organization.description
+      );
+      
+      console.log('🎯 AI detected industry:', aiAnalysis.industry);
+      
+      if (aiAnalysis.confidence === 'high') {
+        // Use AI-powered full analysis
+        const fullAnalysis = await aiIndustryExpansionService.analyzeAndExpandIndustry({
+          name: organization.name,
+          website: organization.website,
+          description: organization.description
+        });
+        
+        return {
+          ...organization,
+          // Update industry based on AI analysis
+          industry: fullAnalysis.primary_industry,
+          subcategories: fullAnalysis.subcategories,
+          
+          // Use AI-discovered competitors instead of generic tech defaults
+          competitors: [...new Set([
+            ...(organization.competitors || []), 
+            ...fullAnalysis.direct_competitors.slice(0, 8)
+          ])],
+          
+          // Rich stakeholder data from AI
+          stakeholders: [...new Set([
+            ...(organization.stakeholders || []), 
+            ...fullAnalysis.stakeholder_groups.slice(0, 6)
+          ])],
+          
+          // Industry-specific topics and keywords
+          topics: [...new Set([
+            ...(organization.topics || []), 
+            ...fullAnalysis.trending_topics.slice(0, 5)
+          ])],
+          keywords: [...new Set([
+            ...(organization.keywords || []), 
+            ...fullAnalysis.monitoring_keywords.slice(0, 10)
+          ])],
+          
+          // Additional AI insights
+          industryInsights: {
+            media_outlets: fullAnalysis.media_outlets,
+            industry_events: fullAnalysis.industry_events,
+            regulatory_bodies: fullAnalysis.regulatory_bodies,
+            ecosystem_players: fullAnalysis.ecosystem_players
+          },
+          
+          enhancedAt: new Date().toISOString(),
+          enhancementSource: 'ai_expansion'
+        };
+      }
+      
+      // Fallback to original Claude enhancement if AI confidence is low
+      return await this.fallbackClaudeEnhancement(organization, goals);
+      
+    } catch (error) {
+      console.error('Failed to enhance organization with AI:', error);
+      return await this.fallbackClaudeEnhancement(organization, goals);
+    }
+  }
+
+  async fallbackClaudeEnhancement(organization, goals) {
+    console.log('🔄 Using fallback Claude enhancement');
+    
+    try {
+      const enhancementPrompt = `
+        Organization: ${organization.name}
+        Industry: ${organization.industry}
+        Website: ${organization.website || 'Not provided'}
+        
+        This is NOT a technology company. Analyze the actual business and industry.
+        Provide relevant competitors, stakeholders, and keywords specific to their industry.
+        
+        DO NOT default to tech companies like Google, Apple, Microsoft unless this is actually a tech company.
+      `;
+      
+      const response = await fetch(`${this.supabaseUrl}/functions/v1/claude-intelligence-synthesizer-v2`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.supabaseKey}`
+        },
+        body: JSON.stringify({
+          intelligence_type: 'enhance_organization',
+          organization,
+          goals,
+          prompt: enhancementPrompt
+        })
+      });
+      
+      if (response.ok) {
+        const enhanced = await response.json();
+        console.log('✨ Organization enhanced with fallback Claude insights');
+        
+        return {
+          ...organization,
+          competitors: [...new Set([...(organization.competitors || []), ...(enhanced.competitors || [])])],
+          stakeholders: [...new Set([...(organization.stakeholders || []), ...(enhanced.stakeholders || [])])],
+          topics: [...new Set([...(organization.topics || []), ...(enhanced.topics || [])])],
+          keywords: [...new Set([...(organization.keywords || []), ...(enhanced.keywords || [])])],
+          industryInsights: enhanced.industryInsights || {},
+          enhancedAt: new Date().toISOString(),
+          enhancementSource: 'claude_fallback'
+        };
+      }
+    } catch (error) {
+      console.error('Fallback enhancement also failed:', error);
+    }
+    
+    // Return original if both enhancements fail
+    return organization;
   }
 
   identifyCriticalAnalyses(mcpData, goals) {
@@ -328,6 +472,18 @@ class ClaudeIntelligenceServiceV2 {
   }
 
   async callClaudeV2Synthesizer(intelligenceType, mcpData, organization, goals, timeframe, requiresSecondOpinion = false) {
+    // Log what we're sending to Claude
+    console.log(`🚀 Sending to Claude ${intelligenceType}:`, {
+      hasOrganization: !!organization,
+      orgName: organization?.name,
+      industry: organization?.industry,
+      competitors: organization?.competitors,
+      stakeholders: organization?.stakeholders,
+      topics: organization?.topics,
+      goalsCount: Object.keys(goals || {}).filter(k => goals[k]).length,
+      hasMcpData: !!mcpData
+    });
+    
     try {
       const response = await fetch(`${this.supabaseUrl}/functions/v1/claude-intelligence-synthesizer-v2`, {
         method: 'POST',
