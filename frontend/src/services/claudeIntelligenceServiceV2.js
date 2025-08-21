@@ -105,11 +105,19 @@ class ClaudeIntelligenceServiceV2 {
             });
           }
           
-          // Only use orchestrator if it has substantial data
+          // Check if orchestrator returned formatted data with tabs
+          // The dataFormatter returns data with 'tabs' property
+          console.log('🔍 Checking orchestrator result structure:', {
+            hasTabs: !!orchestratedResult.tabs,
+            tabCount: Object.keys(orchestratedResult.tabs || {}).length,
+            hasRawIntelligence: !!orchestratedResult.raw?.intelligence,
+            topLevelKeys: Object.keys(orchestratedResult)
+          });
+          
           if (orchestratedResult.tabs && 
               Object.keys(orchestratedResult.tabs).length === 5) {
             
-            console.log('✅ Using orchestrator data (already formatted)');
+            console.log('✅ Using orchestrator data (already formatted by dataFormatter)');
             console.log('📊 Tab data check:', {
               hasOverviewTab: !!orchestratedResult.tabs.overview,
               overviewExecutiveSummaryType: typeof orchestratedResult.tabs.overview?.executive_summary,
@@ -129,6 +137,7 @@ class ClaudeIntelligenceServiceV2 {
             // Store insights from the formatted data
             await this.storeKeyInsights(orchestratedResult, orgForStorage);
             
+            console.log('🎯 RETURNING ORCHESTRATOR DATA DIRECTLY');
             return {
               ...orchestratedResult,
               profile: {
