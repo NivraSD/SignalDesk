@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import './SimplifiedOnboarding.css';
+import '../SmartOnboarding.css'; // Use the existing smart onboarding styles
 
 /**
  * Minimal Onboarding - Only collect what actually matters
@@ -73,7 +73,13 @@ const MinimalOnboarding = ({ onComplete }) => {
     localStorage.setItem('signaldesk_onboarding', JSON.stringify(config));
     localStorage.setItem('signaldesk_minimal', 'true'); // Flag for minimal onboarding
     
-    onComplete(config.organization);
+    // Check if onComplete is a function before calling
+    if (typeof onComplete === 'function') {
+      onComplete(config.organization);
+    } else {
+      // Fallback - navigate directly
+      window.location.href = '/dashboard';
+    }
   };
 
   const renderStep1 = () => (
@@ -83,8 +89,8 @@ const MinimalOnboarding = ({ onComplete }) => {
         We'll figure out everything else about your competitive landscape
       </p>
 
-      <div className="form-group">
-        <label>Company Name *</label>
+      <div className="form-section">
+        <label className="smart-label">Company Name *</label>
         <input
           type="text"
           placeholder="e.g., Tesla, Mitsui & Co., OpenAI"
@@ -97,8 +103,8 @@ const MinimalOnboarding = ({ onComplete }) => {
         />
       </div>
 
-      <div className="form-group">
-        <label>Website (optional but helpful)</label>
+      <div className="form-section">
+        <label className="smart-label">Website (optional but helpful)</label>
         <input
           type="url"
           placeholder="https://your-company.com"
@@ -110,8 +116,8 @@ const MinimalOnboarding = ({ onComplete }) => {
         />
       </div>
 
-      <div className="form-group">
-        <label>Brief Description (optional)</label>
+      <div className="form-section">
+        <label className="smart-label">Brief Description (optional)</label>
         <textarea
           placeholder="What does your company do? (helps us understand context)"
           value={formData.company.description}
@@ -205,13 +211,13 @@ const MinimalOnboarding = ({ onComplete }) => {
 
         <div className="form-group">
           <label>Urgency Level</label>
-          <div className="radio-group">
+          <div className="selection-group">
             {[
               { value: 'immediate', label: 'Immediate', desc: 'Need results ASAP' },
               { value: 'balanced', label: 'Balanced', desc: 'Steady progress' },
               { value: 'long-term', label: 'Long-term', desc: 'Building for the future' }
             ].map(option => (
-              <label key={option.value} className="radio-option">
+              <label key={option.value} className="selection-option">
                 <input
                   type="radio"
                   name="urgency"
@@ -222,9 +228,9 @@ const MinimalOnboarding = ({ onComplete }) => {
                     priorities: { ...formData.priorities, urgency: e.target.value }
                   })}
                 />
-                <div className="radio-content">
-                  <div className="radio-label">{option.label}</div>
-                  <div className="radio-desc">{option.desc}</div>
+                <div className="option-content">
+                  <div className="option-label">{option.label}</div>
+                  <div className="option-desc">{option.desc}</div>
                 </div>
               </label>
             ))}
@@ -233,13 +239,13 @@ const MinimalOnboarding = ({ onComplete }) => {
 
         <div className="form-group">
           <label>PR Aggressiveness</label>
-          <div className="radio-group">
+          <div className="selection-group">
             {[
               { value: 'conservative', label: 'Conservative', desc: 'Careful and measured' },
               { value: 'moderate', label: 'Moderate', desc: 'Balanced approach' },
               { value: 'aggressive', label: 'Aggressive', desc: 'Bold and proactive' }
             ].map(option => (
-              <label key={option.value} className="radio-option">
+              <label key={option.value} className="selection-option">
                 <input
                   type="radio"
                   name="aggressiveness"
@@ -250,9 +256,9 @@ const MinimalOnboarding = ({ onComplete }) => {
                     priorities: { ...formData.priorities, aggressiveness: e.target.value }
                   })}
                 />
-                <div className="radio-content">
-                  <div className="radio-label">{option.label}</div>
-                  <div className="radio-desc">{option.desc}</div>
+                <div className="option-content">
+                  <div className="option-label">{option.label}</div>
+                  <div className="option-desc">{option.desc}</div>
                 </div>
               </label>
             ))}
@@ -276,43 +282,51 @@ const MinimalOnboarding = ({ onComplete }) => {
   };
 
   return (
-    <div className="minimal-onboarding">
-      <div className="onboarding-container">
-        <div className="progress-bar">
-          <div 
-            className="progress-fill" 
-            style={{ width: `${(currentStep / totalSteps) * 100}%` }}
-          />
-        </div>
-
-        <div className="step-indicator">
-          {[1, 2, 3].map(step => (
+    <div className="smart-onboarding">
+      <div className="smart-container">
+        <div className="smart-progress">
+          <div className="progress-track">
             <div 
-              key={step}
-              className={`step-dot ${currentStep >= step ? 'active' : ''}`}
+              className="progress-fill" 
+              style={{ width: `${(currentStep / totalSteps) * 100}%` }}
             />
-          ))}
+          </div>
+          <div className="step-dots">
+            {[1, 2, 3].map(step => (
+              <div 
+                key={step}
+                className={`dot ${currentStep >= step ? 'active' : ''} ${currentStep === step ? 'current' : ''}`}
+              />
+            ))}
+          </div>
         </div>
 
-        <div className="onboarding-content">
+        <div className="smart-content">
+          <div className="step-header">
+            <h1>{currentStep === 1 ? 'Welcome to SignalDesk' : currentStep === 2 ? 'Your PR Goals' : 'Your Approach'}</h1>
+            <p className="step-subtitle">
+              {currentStep === 1 ? 'Let\'s start with the basics' : currentStep === 2 ? 'What outcomes do you want?' : 'How should we operate?'}
+            </p>
+          </div>
           {currentStep === 1 && renderStep1()}
           {currentStep === 2 && renderStep2()}
           {currentStep === 3 && renderStep3()}
         </div>
 
-        <div className="button-group">
+        <div className="smart-actions">
           {currentStep > 1 && (
             <button 
-              className="btn btn-secondary"
+              className="smart-button secondary"
               onClick={() => setCurrentStep(currentStep - 1)}
             >
               ← Back
             </button>
           )}
           <button 
-            className="btn btn-primary"
+            className="smart-button primary"
             onClick={handleNext}
             disabled={!isStepValid()}
+            style={!isStepValid() ? {opacity: 0.5, cursor: 'not-allowed'} : {}}
           >
             {currentStep === totalSteps ? 'Start Intelligence Gathering →' : 'Continue →'}
           </button>
