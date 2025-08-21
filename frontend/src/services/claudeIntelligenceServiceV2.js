@@ -80,6 +80,7 @@ class ClaudeIntelligenceServiceV2 {
     if (orgName && useOrchestrator) {
       console.log('🚀 Using Intelligence Orchestrator for optimal 4-phase flow');
       try {
+        // Force refresh for orchestrator to avoid stale cache
         const orchestratedResult = await intelligenceOrchestratorService.orchestrateIntelligence(
           { name: orgName, industry: industry },
           'full'
@@ -96,7 +97,37 @@ class ClaudeIntelligenceServiceV2 {
             // Transform orchestrated result to match expected format
             const transformed = this.transformOrchestratedResult(orchestratedResult, config);
             console.log('🔄 Transformed result:', transformed);
-            return transformed;
+            
+            // CRITICAL: Store the transformed data in memory/profile
+            const orgForStorage = {
+              name: orgName,
+              industry: industry,
+              ...config.organization
+            };
+            await this.storeKeyInsights(transformed, orgForStorage);
+            
+            // Don't return here - continue to enrich with profile data
+            // return transformed;
+            
+            // Merge with profile and tab intelligence
+            const profile = await organizationProfileService.getOrBuildProfile(orgForStorage);
+            
+            const tabIntelligence = await tabIntelligenceService.generateTabIntelligence(
+              { ...config.organization, name: orgName },
+              transformed,
+              profile
+            );
+            
+            return {
+              ...transformed,
+              profile: {
+                confidence_level: profile.confidence_level,
+                last_updated: profile.last_updated,
+                established_facts: profile.established_facts
+              },
+              tabs: tabIntelligence,
+              guidance: organizationProfileService.getIntelligenceGuidance(profile)
+            };
           } else {
             console.log('⚠️ Orchestrator returned limited data, using full flow instead');
           }

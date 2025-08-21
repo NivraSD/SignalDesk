@@ -22,12 +22,12 @@ class IntelligenceOrchestratorService {
    * @param {string} organization.industry - Industry hint
    * @param {string} method - Method to run: 'full', 'discovery', 'gather'
    */
-  async orchestrateIntelligence(organization, method = 'full') {
+  async orchestrateIntelligence(organization, method = 'full', forceRefresh = false) {
     console.log(`🎯 Starting Intelligence Orchestration for ${organization.name}`);
     
-    // Check cache
+    // Check cache (unless force refresh)
     const cacheKey = `${organization.name}_${organization.industry}_${method}`;
-    if (this.cache.has(cacheKey)) {
+    if (!forceRefresh && this.cache.has(cacheKey)) {
       const cached = this.cache.get(cacheKey);
       if (Date.now() - cached.timestamp < 300000) { // 5 minute cache
         console.log('📦 Using cached orchestration results');
