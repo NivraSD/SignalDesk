@@ -50,6 +50,13 @@ const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigg
   ];
 
   const renderTabContent = (tabData, tabType) => {
+    console.log(`📂 Rendering ${tabType} tab with data:`, {
+      tabType,
+      dataKeys: Object.keys(tabData || {}),
+      hasExecutiveSummary: !!tabData?.executive_summary,
+      executiveSummaryType: typeof tabData?.executive_summary
+    });
+    
     if (!tabData) {
       return (
         <div className="intelligence-section">
