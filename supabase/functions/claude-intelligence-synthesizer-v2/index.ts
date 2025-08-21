@@ -691,20 +691,16 @@ function combineAnalyses(analyses: any[], personas: any[]) {
 }
 
 serve(withCors(async (req) => {
-  let intelligence_type = 'unknown' // Define outside try block for error handler access
-  
   try {
     const body = await req.json()
     const { 
-      intelligence_type: reqIntelligenceType, 
+      intelligence_type, 
       mcp_data, 
       organization, 
       goals,
       timeframe = '24h',
       prompt
     } = body
-    
-    intelligence_type = reqIntelligenceType // Update the outer scope variable
 
     console.log(`🧠 Claude V2 synthesizing ${intelligence_type} for ${organization?.name || 'Unknown Organization'}`)
     console.log(`📊 Using specialized personas with organizational context`)
@@ -729,6 +725,22 @@ serve(withCors(async (req) => {
       console.log('🏢 Processing company analysis for intelligent discovery')
       
       // Use the enhance organization function for company analysis
+      const analysisData = await enhanceOrganizationData(organization, goals || {}, prompt)
+      
+      return jsonResponse({
+        success: true,
+        intelligence_type,
+        organization: organization?.name,
+        analysis: analysisData,
+        analyzed_at: new Date().toISOString()
+      })
+    }
+    
+    // Handle competitor discovery
+    if (intelligence_type === 'competitor_discovery') {
+      console.log('🎯 Processing competitor discovery')
+      
+      // Use the enhance organization function to discover competitors
       const analysisData = await enhanceOrganizationData(organization, goals || {}, prompt)
       
       return jsonResponse({
@@ -785,8 +797,7 @@ serve(withCors(async (req) => {
     
     return errorResponse(
       error.message || 'Failed to synthesize intelligence',
-      500,
-      { intelligence_type }
+      500
     )
   }
 }))
