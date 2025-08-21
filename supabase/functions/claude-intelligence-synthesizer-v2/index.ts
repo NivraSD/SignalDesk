@@ -3,13 +3,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Max-Age': '86400'
-}
+import { corsHeaders, withCors, jsonResponse, errorResponse } from '../_shared/cors.ts'
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || 'https://zskaxjtyuaqazydouifp.supabase.co'
@@ -688,11 +682,7 @@ function combineAnalyses(analyses: any[], personas: any[]) {
   return combined
 }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
-  }
-
+serve(withCors(async (req) => {
   try {
     const body = await req.json()
     const { 
@@ -719,15 +709,7 @@ serve(async (req) => {
       
       const enhancedData = await enhanceOrganizationData(organization, goals, prompt)
       
-      return new Response(
-        JSON.stringify(enhancedData),
-        { 
-          headers: { 
-            ...corsHeaders,
-            'Content-Type': 'application/json'
-          } 
-        }
-      )
+      return jsonResponse(enhancedData)
     }
 
     // For other intelligence types, mcp_data is required
@@ -747,45 +729,29 @@ serve(async (req) => {
       timeframe
     )
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        intelligence_type,
-        organization: organization?.name,
-        analysis: synthesizedIntelligence,
-        personas_used: Object.keys(ANALYSIS_PERSONAS).filter(p => 
-          intelligence_type === 'executive_summary' ? p === 'executive_synthesizer' :
-          intelligence_type === 'competitor' ? p === 'competitive_strategist' :
-          intelligence_type === 'stakeholder' ? p === 'stakeholder_psychologist' :
-          intelligence_type === 'narrative' ? p === 'narrative_architect' :
-          intelligence_type === 'predictive' ? ['risk_prophet', 'opportunity_hunter'].includes(p) :
-          false
-        ),
-        analyzed_at: new Date().toISOString()
-      }),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
-    )
+    return jsonResponse({
+      success: true,
+      intelligence_type,
+      organization: organization?.name,
+      analysis: synthesizedIntelligence,
+      personas_used: Object.keys(ANALYSIS_PERSONAS).filter(p => 
+        intelligence_type === 'executive_summary' ? p === 'executive_synthesizer' :
+        intelligence_type === 'competitor' ? p === 'competitive_strategist' :
+        intelligence_type === 'stakeholder' ? p === 'stakeholder_psychologist' :
+        intelligence_type === 'narrative' ? p === 'narrative_architect' :
+        intelligence_type === 'predictive' ? ['risk_prophet', 'opportunity_hunter'].includes(p) :
+        false
+      ),
+      analyzed_at: new Date().toISOString()
+    })
 
   } catch (error) {
     console.error('❌ Claude V2 synthesis error:', error)
     
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message || 'Failed to synthesize intelligence'
-      }),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        },
-        status: 500
-      }
+    return errorResponse(
+      error.message || 'Failed to synthesize intelligence',
+      500,
+      { intelligence_type }
     )
   }
-})
+}))
