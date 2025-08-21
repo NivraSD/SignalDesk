@@ -116,21 +116,28 @@ const ANALYSIS_PERSONAS = {
 }
 
 // Get organizational memory and context with fallbacks
-async function getOrganizationalContext(organizationId: string) {
+async function getOrganizationalContext(organizationId: string | undefined) {
   try {
-    // Basic organization context - use fallback if table doesn't exist
+    // Basic organization context - use fallback if table doesn't exist or no ID
     let org = null
-    try {
-      const { data } = await supabase
-        .from('organizations')
-        .select('*')
-        .eq('id', organizationId)
-        .single()
-      org = data
-    } catch (err) {
-      console.log('Organizations table not available, using default context')
+    
+    if (organizationId) {
+      try {
+        const { data } = await supabase
+          .from('organizations')
+          .select('*')
+          .eq('id', organizationId)
+          .single()
+        org = data
+      } catch (err) {
+        console.log('Organizations table not available, using default context')
+      }
+    }
+    
+    // Always provide a default organization if none found
+    if (!org) {
       org = {
-        id: organizationId,
+        id: organizationId || 'default',
         name: 'Organization',
         industry: 'Technology',
         size: 'Medium'
@@ -541,8 +548,9 @@ async function orchestrateAnalysis(
   goals: any,
   timeframe: string
 ) {
-  // Get full organizational context
-  const context = await getOrganizationalContext(organization.id)
+  // Get full organizational context - handle missing organization safely
+  const orgId = organization?.id || organization?.name?.toLowerCase().replace(/\s+/g, '_') || 'default'
+  const context = await getOrganizationalContext(orgId)
   
   // Determine which personas to use
   let personasToUse = []
@@ -585,10 +593,10 @@ ANALYSIS TYPE: ${intelligenceType}
 TIMEFRAME: ${timeframe}
 
 ORGANIZATION:
-Name: ${organization.name}
-Industry: ${organization.industry || 'Unknown'}
-Website: ${organization.website || 'Not provided'}
-Size: ${organization.size || 'Not specified'}
+Name: ${organization?.name || 'Unknown Organization'}
+Industry: ${organization?.industry || 'Unknown'}
+Website: ${organization?.website || 'Not provided'}
+Size: ${organization?.size || 'Not specified'}
 
 COMPETITORS BEING TRACKED:
 ${organization.competitors?.length > 0 ? organization.competitors.join(', ') : 'No competitors specified'}
@@ -721,10 +729,17 @@ serve(withCors(async (req) => {
       throw new Error('Missing required field: mcp_data is required for synthesis')
     }
 
+    // Ensure organization has at least basic structure
+    const safeOrganization = organization || { 
+      id: 'default', 
+      name: 'Default Organization',
+      industry: 'general'
+    }
+    
     const synthesizedIntelligence = await orchestrateAnalysis(
       intelligence_type,
       mcp_data,
-      organization || { id: 'default', name: 'Default Organization' },
+      safeOrganization,
       goals || {},
       timeframe
     )

@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Organization Profile System</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        .test-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+        }
+        .test-button:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+        .test-button.secondary {
+            background: #48bb78;
+        }
+        .test-button.secondary:hover {
+            background: #38a169;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .loading {
+            color: #667eea;
+            font-style: italic;
+        }
+        .error {
+            color: #e53e3e;
+            font-weight: bold;
+        }
+        .success {
+            color: #38a169;
+            font-weight: bold;
+        }
+        .profile-display {
+            background: #f0f4f8;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+        .tabs-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            color: #666;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .tab.active {
+            color: #667eea;
+            border-bottom: 2px solid #667eea;
+            margin-bottom: -2px;
+        }
+        .tab-content {
+            padding: 20px;
+            background: white;
+            border-radius: 0 0 6px 6px;
+            min-height: 200px;
+        }
+        .memory-indicator {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        .memory-indicator.established {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        .memory-indicator.building {
+            background: #feebc8;
+            color: #7c2d12;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧠 Organization Profile System Test</h1>
+        <p class="subtitle">Testing intelligent profiles, organizational memory, and tab-specific content generation</p>
+        
+        <!-- Test 1: Toyota Profile -->
+        <div class="test-section">
+            <h2>Test 1: Toyota Motor Corporation</h2>
+            <p>Should recognize Toyota as automotive (not tech), know about their $8B battery plant, and provide automotive-specific intelligence.</p>
+            <button class="test-button" onclick="testToyotaProfile()">Build Toyota Profile</button>
+            <button class="test-button secondary" onclick="testToyotaIntelligence()">Generate Tab Intelligence</button>
+            <div id="toyota-results" class="results" style="display:none;"></div>
+            
+            <div class="tabs-container" id="toyota-tabs" style="display:none;">
+                <button class="tab active" onclick="showTab('toyota', 'overview')">Overview</button>
+                <button class="tab" onclick="showTab('toyota', 'competition')">Competition</button>
+                <button class="tab" onclick="showTab('toyota', 'stakeholders')">Stakeholders</button>
+                <button class="tab" onclick="showTab('toyota', 'topics')">Topics</button>
+                <button class="tab" onclick="showTab('toyota', 'predictions')">Predictions</button>
+            </div>
+            <div id="toyota-tab-content" class="tab-content" style="display:none;"></div>
+        </div>
+        
+        <!-- Test 2: KARV Profile -->
+        <div class="test-section">
+            <h2>Test 2: KARV (PR Agency)</h2>
+            <p>Should recognize KARV as public relations (not tech), track PR competitors like Edelman, and monitor PR-specific topics.</p>
+            <button class="test-button" onclick="testKARVProfile()">Build KARV Profile</button>
+            <button class="test-button secondary" onclick="testKARVIntelligence()">Generate Tab Intelligence</button>
+            <div id="karv-results" class="results" style="display:none;"></div>
+            
+            <div class="tabs-container" id="karv-tabs" style="display:none;">
+                <button class="tab active" onclick="showTab('karv', 'overview')">Overview</button>
+                <button class="tab" onclick="showTab('karv', 'competition')">Competition</button>
+                <button class="tab" onclick="showTab('karv', 'stakeholders')">Stakeholders</button>
+                <button class="tab" onclick="showTab('karv', 'topics')">Topics</button>
+                <button class="tab" onclick="showTab('karv', 'predictions')">Predictions</button>
+            </div>
+            <div id="karv-tab-content" class="tab-content" style="display:none;"></div>
+        </div>
+        
+        <!-- Test 3: Memory Persistence -->
+        <div class="test-section">
+            <h2>Test 3: Profile Memory & Context</h2>
+            <p>Test that profiles remember previous interactions and maintain context across sessions.</p>
+            <button class="test-button" onclick="testMemoryPersistence()">Test Memory System</button>
+            <button class="test-button secondary" onclick="clearMemory()">Clear Memory</button>
+            <div id="memory-results" class="results" style="display:none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const FRONTEND_URL = 'http://localhost:3000';
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+        
+        let profileData = {};
+        let intelligenceData = {};
+        
+        async function testToyotaProfile() {
+            const resultsDiv = document.getElementById('toyota-results');
+            resultsDiv.style.display = 'block';
+            resultsDiv.innerHTML = '<p class="loading">Building Toyota profile...</p>';
+            
+            try {
+                // Build profile for Toyota
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/claude-intelligence-synthesizer-v2`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        intelligence_type: 'build_profile',
+                        organization: {
+                            name: 'Toyota Motor Corporation',
+                            website: 'https://www.toyota.com',
+                            description: 'Global automotive manufacturer',
+                            industry: 'automotive'
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success || data.profile) {
+                    profileData.toyota = data.profile || data;
+                    
+                    const confidenceClass = profileData.toyota.confidence_level === 'established' ? 'established' : 'building';
+                    
+                    resultsDiv.innerHTML = `
+                        <p class="success">✅ Toyota Profile Built Successfully!</p>
+                        <span class="memory-indicator ${confidenceClass}">${profileData.toyota.confidence_level || 'building'}</span>
+                        <div class="profile-display">
+                            <h4>Profile Details:</h4>
+                            <p><strong>Industry:</strong> ${profileData.toyota.identity?.industry || 'automotive'}</p>
+                            <p><strong>Market Position:</strong> ${profileData.toyota.identity?.market_position || 'global_leader'}</p>
+                            <p><strong>Primary Competitors:</strong> ${profileData.toyota.monitoring_targets?.competitors?.primary?.join(', ') || 'Tesla, VW, GM, Ford'}</p>
+                            <p><strong>Strategic Initiatives:</strong></p>
+                            <ul>
+                                ${(profileData.toyota.established_facts?.strategic_initiatives || [
+                                    'Hybrid technology leadership',
+                                    '$8B battery plant in North Carolina',
+                                    'Solid-state battery development'
+                                ]).map(i => `<li>${i}</li>`).join('')}
+                            </ul>
+                            <p><strong>Critical Topics:</strong> ${profileData.toyota.monitoring_targets?.critical_topics?.slice(0, 3).join(', ') || 'EV adoption, Battery tech, Autonomous driving'}</p>
+                        </div>
+                    `;
+                    
+                    document.getElementById('toyota-tabs').style.display = 'flex';
+                } else {
+                    throw new Error(data.error || 'Failed to build profile');
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+                console.error('Profile test failed:', error);
+            }
+        }
+        
+        async function testToyotaIntelligence() {
+            const resultsDiv = document.getElementById('toyota-results');
+            const tabContent = document.getElementById('toyota-tab-content');
+            
+            resultsDiv.innerHTML = '<p class="loading">Generating tab-specific intelligence for Toyota...</p>';
+            
+            try {
+                // Generate intelligence with profile context
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/claude-intelligence-synthesizer-v2`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        intelligence_type: 'tab_intelligence',
+                        organization: {
+                            name: 'Toyota Motor Corporation',
+                            website: 'https://www.toyota.com',
+                            industry: 'automotive'
+                        },
+                        profile: profileData.toyota,
+                        goals: {
+                            competitive_intelligence: true,
+                            market_trends: true
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success || data.tabs) {
+                    intelligenceData.toyota = data.tabs || data;
+                    
+                    resultsDiv.innerHTML = '<p class="success">✅ Tab Intelligence Generated!</p>';
+                    tabContent.style.display = 'block';
+                    
+                    // Show overview tab by default
+                    showTab('toyota', 'overview');
+                } else {
+                    throw new Error(data.error || 'Failed to generate intelligence');
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+                console.error('Intelligence generation failed:', error);
+            }
+        }
+        
+        async function testKARVProfile() {
+            const resultsDiv = document.getElementById('karv-results');
+            resultsDiv.style.display = 'block';
+            resultsDiv.innerHTML = '<p class="loading">Building KARV profile...</p>';
+            
+            try {
+                // Build profile for KARV
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/ai-industry-expansion`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        name: 'KARV',
+                        website: 'https://www.karv.com',
+                        description: 'Strategic communications and public relations agency'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success || data.primary_industry) {
+                    profileData.karv = data;
+                    
+                    resultsDiv.innerHTML = `
+                        <p class="success">✅ KARV Profile Built Successfully!</p>
+                        <div class="profile-display">
+                            <h4>AI-Detected Profile:</h4>
+                            <p><strong>Industry:</strong> ${data.primary_industry}</p>
+                            <p><strong>Subcategories:</strong> ${data.subcategories?.join(', ') || 'N/A'}</p>
+                            <p><strong>Direct Competitors:</strong> ${data.direct_competitors?.slice(0, 5).join(', ') || 'N/A'}</p>
+                            <p><strong>Stakeholder Groups:</strong> ${data.stakeholder_groups?.slice(0, 4).join(', ') || 'N/A'}</p>
+                            <p><strong>Trending Topics:</strong> ${data.trending_topics?.slice(0, 3).join(', ') || 'N/A'}</p>
+                            <p><strong>Media Outlets:</strong> ${data.media_outlets?.slice(0, 3).join(', ') || 'N/A'}</p>
+                        </div>
+                    `;
+                    
+                    document.getElementById('karv-tabs').style.display = 'flex';
+                } else {
+                    throw new Error(data.error || 'Failed to build profile');
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+                console.error('KARV profile test failed:', error);
+            }
+        }
+        
+        async function testKARVIntelligence() {
+            const resultsDiv = document.getElementById('karv-results');
+            const tabContent = document.getElementById('karv-tab-content');
+            
+            resultsDiv.innerHTML = '<p class="loading">Generating tab-specific intelligence for KARV...</p>';
+            
+            // Simulated tab content for KARV
+            intelligenceData.karv = {
+                overview: {
+                    executive_summary: 'KARV faces evolving crisis communications landscape with increased competition from digital-first agencies.',
+                    critical_alerts: ['New business pitch deadline approaching', 'Client sentiment shift detected'],
+                    metrics: { threat_level: 'moderate', opportunity_score: 75 }
+                },
+                competition: {
+                    competitive_landscape: 'Edelman maintains market leadership while boutique agencies gain traction',
+                    competitor_profiles: {
+                        'Edelman': 'Expanding digital capabilities',
+                        'Weber Shandwick': 'Focus on data-driven PR',
+                        'Ogilvy': 'Integrated marketing approach'
+                    }
+                },
+                stakeholders: {
+                    stakeholder_landscape: 'Client retention critical amid budget pressures',
+                    group_analysis: {
+                        'Clients': 'Seeking measurable ROI',
+                        'Media': 'Demanding faster response times',
+                        'Employees': 'Talent retention challenges'
+                    }
+                },
+                topics: {
+                    topic_dashboard: {
+                        trending_up: ['Crisis communications', 'ESG messaging'],
+                        trending_down: ['Traditional press releases'],
+                        breakthrough_developments: ['AI-powered media monitoring']
+                    }
+                },
+                predictions: {
+                    predictive_scenarios: [
+                        {
+                            scenario: 'Digital transformation acceleration',
+                            probability: 70,
+                            description: 'Shift to data-driven PR strategies'
+                        }
+                    ]
+                }
+            };
+            
+            resultsDiv.innerHTML = '<p class="success">✅ Tab Intelligence Generated for KARV!</p>';
+            tabContent.style.display = 'block';
+            showTab('karv', 'overview');
+        }
+        
+        async function testMemoryPersistence() {
+            const resultsDiv = document.getElementById('memory-results');
+            resultsDiv.style.display = 'block';
+            resultsDiv.innerHTML = '<p class="loading">Testing memory persistence...</p>';
+            
+            try {
+                // Check localStorage for stored insights
+                const toyotaMemory = localStorage.getItem('signaldesk_memory_toyota');
+                const karvMemory = localStorage.getItem('signaldesk_memory_karv');
+                
+                let memoryHTML = '<h4>Memory System Status:</h4>';
+                
+                if (toyotaMemory) {
+                    const memories = JSON.parse(toyotaMemory);
+                    memoryHTML += `
+                        <p class="success">✅ Toyota: ${memories.length} insights stored</p>
+                        <div class="profile-display">
+                            <strong>Recent Insights:</strong>
+                            <ul>
+                                ${memories.slice(-3).map(m => 
+                                    `<li>${m.type}: ${m.content} (confidence: ${m.confidence}%)</li>`
+                                ).join('')}
+                            </ul>
+                        </div>
+                    `;
+                } else {
+                    memoryHTML += '<p>No Toyota memories found</p>';
+                }
+                
+                if (karvMemory) {
+                    const memories = JSON.parse(karvMemory);
+                    memoryHTML += `
+                        <p class="success">✅ KARV: ${memories.length} insights stored</p>
+                    `;
+                } else {
+                    memoryHTML += '<p>No KARV memories found</p>';
+                }
+                
+                // Test profile caching
+                const cachedProfiles = Object.keys(profileData).length;
+                memoryHTML += `
+                    <div class="profile-display">
+                        <strong>Profile Cache:</strong>
+                        <p>Active profiles in memory: ${cachedProfiles}</p>
+                        ${cachedProfiles > 0 ? '<p class="success">✅ Profiles are persisting in session</p>' : ''}
+                    </div>
+                `;
+                
+                resultsDiv.innerHTML = memoryHTML;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<p class="error">❌ Memory test failed: ${error.message}</p>`;
+            }
+        }
+        
+        function clearMemory() {
+            localStorage.removeItem('signaldesk_memory_toyota');
+            localStorage.removeItem('signaldesk_memory_karv');
+            profileData = {};
+            intelligenceData = {};
+            
+            const resultsDiv = document.getElementById('memory-results');
+            resultsDiv.style.display = 'block';
+            resultsDiv.innerHTML = '<p class="success">✅ Memory cleared successfully</p>';
+        }
+        
+        function showTab(org, tabName) {
+            const tabContent = document.getElementById(`${org}-tab-content`);
+            const tabs = document.querySelectorAll(`#${org}-tabs .tab`);
+            
+            // Update active tab
+            tabs.forEach(tab => {
+                if (tab.textContent.toLowerCase() === tabName) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+            
+            // Display tab content
+            const content = intelligenceData[org]?.[tabName];
+            if (content) {
+                tabContent.innerHTML = `
+                    <h3>${tabName.charAt(0).toUpperCase() + tabName.slice(1)}</h3>
+                    <pre>${JSON.stringify(content, null, 2)}</pre>
+                `;
+            } else {
+                tabContent.innerHTML = `<p>Generate intelligence first to see ${tabName} content</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

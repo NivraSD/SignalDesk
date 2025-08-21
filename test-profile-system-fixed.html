@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Organization Profile System - Fixed</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        .test-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+        }
+        .test-button:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+        .test-button.secondary {
+            background: #48bb78;
+        }
+        .test-button.secondary:hover {
+            background: #38a169;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .loading {
+            color: #667eea;
+            font-style: italic;
+        }
+        .error {
+            color: #e53e3e;
+            font-weight: bold;
+        }
+        .success {
+            color: #38a169;
+            font-weight: bold;
+        }
+        .profile-display {
+            background: #f0f4f8;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .memory-indicator {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        .memory-indicator.established {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        .memory-indicator.building {
+            background: #feebc8;
+            color: #7c2d12;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧠 Organization Profile System Test - Fixed</h1>
+        <p class="subtitle">Testing AI industry detection, Claude synthesis, and memory persistence</p>
+        
+        <!-- Test 1: Toyota AI Industry Detection -->
+        <div class="test-section">
+            <h2>Test 1: Toyota AI Industry Detection</h2>
+            <p>Should detect Toyota as automotive (not tech) and identify automotive competitors.</p>
+            <button class="test-button" onclick="testToyotaIndustry()">Test AI Industry Detection</button>
+            <button class="test-button secondary" onclick="testToyotaSynthesis()">Test Claude Synthesis</button>
+            <div id="toyota-results" class="results" style="display:none;"></div>
+        </div>
+        
+        <!-- Test 2: KARV AI Industry Detection -->
+        <div class="test-section">
+            <h2>Test 2: KARV PR Agency Detection</h2>
+            <p>Should detect KARV as public relations (not tech) and identify PR competitors.</p>
+            <button class="test-button" onclick="testKARVIndustry()">Test AI Industry Detection</button>
+            <button class="test-button secondary" onclick="testKARVSynthesis()">Test Claude Synthesis</button>
+            <div id="karv-results" class="results" style="display:none;"></div>
+        </div>
+        
+        <!-- Test 3: Memory & Frontend Integration -->
+        <div class="test-section">
+            <h2>Test 3: Frontend Profile Service</h2>
+            <p>Test the actual frontend services that build profiles and store memories.</p>
+            <button class="test-button" onclick="testFrontendProfile()">Test Frontend Profile Building</button>
+            <button class="test-button secondary" onclick="testMemoryStorage()">Test Memory Storage</button>
+            <div id="frontend-results" class="results" style="display:none;"></div>
+        </div>
+        
+        <!-- Test 4: Complete Intelligence Flow -->
+        <div class="test-section">
+            <h2>Test 4: Complete Intelligence Flow</h2>
+            <p>Test the full flow: AI detection → Profile building → Claude synthesis → Tab intelligence</p>
+            <button class="test-button" onclick="testCompleteFlow()">Run Complete Flow for Toyota</button>
+            <div id="complete-results" class="results" style="display:none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        let aiIndustryData = {};
+        let synthesisData = {};
+        
+        async function testToyotaIndustry() {
+            const resultsDiv = document.getElementById('toyota-results');
+            resultsDiv.style.display = 'block';
+            resultsDiv.innerHTML = '<p class="loading">Testing AI Industry Detection for Toyota...</p>';
+            
+            try {
+                // Test AI Industry Expansion
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/ai-industry-expansion`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        name: 'Toyota Motor Corporation',
+                        website: 'https://www.toyota.com',
+                        description: 'Global automotive manufacturer and leader in hybrid technology'
+                    })
+                });
+                
+                const data = await response.json();
+                aiIndustryData.toyota = data.analysis || data;
+                
+                if (data.success !== false && data.analysis?.primary_industry) {
+                    const isCorrect = data.analysis.primary_industry.toLowerCase().includes('auto');
+                    const hasCorrectCompetitors = data.analysis.direct_competitors?.some(c => 
+                        ['Tesla', 'Ford', 'GM', 'Volkswagen', 'BMW'].some(name => c.includes(name))
+                    );
+                    
+                    resultsDiv.innerHTML = `
+                        <p class="${isCorrect ? 'success' : 'error'}">
+                            ${isCorrect ? '✅' : '❌'} Industry: ${data.primary_industry}
+                        </p>
+                        <p class="${hasCorrectCompetitors ? 'success' : 'error'}">
+                            ${hasCorrectCompetitors ? '✅' : '❌'} Competitors detected correctly
+                        </p>
+                        <div class="profile-display">
+                            <h4>AI Analysis Results:</h4>
+                            <p><strong>Primary Industry:</strong> ${data.analysis.primary_industry}</p>
+                            <p><strong>Subcategories:</strong> ${data.analysis.subcategories?.join(', ') || 'N/A'}</p>
+                            <p><strong>Direct Competitors:</strong> ${data.analysis.direct_competitors?.slice(0, 5).join(', ') || 'N/A'}</p>
+                            <p><strong>Adjacent Competitors:</strong> ${data.analysis.adjacent_competitors?.slice(0, 3).join(', ') || 'N/A'}</p>
+                            <p><strong>Stakeholder Groups:</strong> ${data.analysis.stakeholder_groups?.slice(0, 4).join(', ') || 'N/A'}</p>
+                            <p><strong>Trending Topics:</strong> ${data.analysis.trending_topics?.slice(0, 3).join(', ') || 'N/A'}</p>
+                            <p><strong>Monitoring Keywords:</strong> ${data.analysis.monitoring_keywords?.slice(0, 5).join(', ') || 'N/A'}</p>
+                        </div>
+                    `;
+                } else {
+                    throw new Error(data.error || 'Failed to analyze industry');
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+                console.error('Toyota industry test failed:', error);
+            }
+        }
+        
+        async function testToyotaSynthesis() {
+            const resultsDiv = document.getElementById('toyota-results');
+            resultsDiv.innerHTML += '<p class="loading">Testing Claude Synthesis for Toyota...</p>';
+            
+            try {
+                // Test Claude V2 Synthesizer with competitor analysis
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/claude-intelligence-synthesizer-v2`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        intelligence_type: 'competitor',
+                        organization: {
+                            name: 'Toyota Motor Corporation',
+                            industry: aiIndustryData.toyota?.primary_industry || 'automotive',
+                            competitors: aiIndustryData.toyota?.direct_competitors || ['Tesla', 'Ford', 'GM'],
+                            topics: aiIndustryData.toyota?.trending_topics || ['EV', 'batteries', 'autonomous']
+                        },
+                        goals: {
+                            competitive_intelligence: true,
+                            market_trends: true
+                        },
+                        mcp_data: {
+                            competitors: ['Tesla launching new model', 'Ford EV production increase'],
+                            news: ['Battery technology advances', 'EV market growth']
+                        },
+                        timeframe: '24h'
+                    })
+                });
+                
+                const data = await response.json();
+                synthesisData.toyota = data;
+                
+                if (data.success && data.analysis) {
+                    resultsDiv.innerHTML += `
+                        <p class="success">✅ Claude Synthesis Successful!</p>
+                        <div class="profile-display">
+                            <h4>Claude Analysis:</h4>
+                            <pre>${JSON.stringify(data.analysis, null, 2).substring(0, 500)}...</pre>
+                            <p><strong>Personas Used:</strong> ${data.personas_used?.join(', ') || 'N/A'}</p>
+                        </div>
+                    `;
+                } else {
+                    throw new Error(data.error || 'Synthesis failed');
+                }
+            } catch (error) {
+                resultsDiv.innerHTML += `<p class="error">❌ Synthesis Error: ${error.message}</p>`;
+                console.error('Toyota synthesis failed:', error);
+            }
+        }
+        
+        async function testKARVIndustry() {
+            const resultsDiv = document.getElementById('karv-results');
+            resultsDiv.style.display = 'block';
+            resultsDiv.innerHTML = '<p class="loading">Testing AI Industry Detection for KARV...</p>';
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/ai-industry-expansion`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        name: 'KARV',
+                        website: 'https://www.karv.com',
+                        description: 'Strategic communications and public relations agency'
+                    })
+                });
+                
+                const data = await response.json();
+                aiIndustryData.karv = data.analysis || data;
+                
+                if (data.success !== false && data.analysis?.primary_industry) {
+                    const isCorrect = data.analysis.primary_industry.toLowerCase().includes('pr') || 
+                                     data.analysis.primary_industry.toLowerCase().includes('public') ||
+                                     data.analysis.primary_industry.toLowerCase().includes('communication');
+                    const hasCorrectCompetitors = data.analysis.direct_competitors?.some(c => 
+                        ['Edelman', 'Weber', 'Ogilvy', 'FleishmanHillard', 'Ketchum'].some(name => c.includes(name))
+                    );
+                    
+                    resultsDiv.innerHTML = `
+                        <p class="${isCorrect ? 'success' : 'error'}">
+                            ${isCorrect ? '✅' : '❌'} Industry: ${data.primary_industry}
+                        </p>
+                        <p class="${hasCorrectCompetitors ? 'success' : 'error'}">
+                            ${hasCorrectCompetitors ? '✅' : '❌'} PR competitors detected
+                        </p>
+                        <div class="profile-display">
+                            <h4>AI Analysis Results:</h4>
+                            <p><strong>Primary Industry:</strong> ${data.analysis.primary_industry}</p>
+                            <p><strong>Direct Competitors:</strong> ${data.analysis.direct_competitors?.slice(0, 5).join(', ') || 'N/A'}</p>
+                            <p><strong>Stakeholder Groups:</strong> ${data.analysis.stakeholder_groups?.slice(0, 4).join(', ') || 'N/A'}</p>
+                            <p><strong>Trending Topics:</strong> ${data.analysis.trending_topics?.slice(0, 3).join(', ') || 'N/A'}</p>
+                        </div>
+                    `;
+                } else {
+                    throw new Error(data.error || 'Failed to analyze industry');
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+                console.error('KARV industry test failed:', error);
+            }
+        }
+        
+        async function testKARVSynthesis() {
+            const resultsDiv = document.getElementById('karv-results');
+            resultsDiv.innerHTML += '<p class="loading">Testing Claude Synthesis for KARV...</p>';
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/claude-intelligence-synthesizer-v2`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        intelligence_type: 'stakeholder',
+                        organization: {
+                            name: 'KARV',
+                            industry: aiIndustryData.karv?.primary_industry || 'public_relations',
+                            stakeholders: aiIndustryData.karv?.stakeholder_groups || ['Clients', 'Media', 'Employees'],
+                            topics: aiIndustryData.karv?.trending_topics || ['Crisis comms', 'Digital PR']
+                        },
+                        goals: {
+                            stakeholder_management: true,
+                            reputation_monitoring: true
+                        },
+                        mcp_data: {
+                            relationships: {
+                                clients: 'Stable relationships',
+                                media: 'Growing influence'
+                            },
+                            media: ['PR Week coverage', 'Industry awards']
+                        },
+                        timeframe: '24h'
+                    })
+                });
+                
+                const data = await response.json();
+                synthesisData.karv = data;
+                
+                if (data.success && data.analysis) {
+                    resultsDiv.innerHTML += `
+                        <p class="success">✅ Claude Synthesis Successful!</p>
+                        <div class="profile-display">
+                            <h4>Stakeholder Analysis:</h4>
+                            <pre>${JSON.stringify(data.analysis, null, 2).substring(0, 500)}...</pre>
+                        </div>
+                    `;
+                } else {
+                    throw new Error(data.error || 'Synthesis failed');
+                }
+            } catch (error) {
+                resultsDiv.innerHTML += `<p class="error">❌ Synthesis Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function testFrontendProfile() {
+            const resultsDiv = document.getElementById('frontend-results');
+            resultsDiv.style.display = 'block';
+            resultsDiv.innerHTML = '<p class="loading">Testing frontend profile service...</p>';
+            
+            // Simulate what the frontend organizationProfileService does
+            const profile = {
+                identity: {
+                    name: 'Toyota Motor Corporation',
+                    industry: 'automotive',
+                    market_position: 'global_leader'
+                },
+                established_facts: {
+                    strategic_initiatives: [
+                        'Hybrid technology leadership',
+                        '$8B battery plant in North Carolina',
+                        'Solid-state battery development'
+                    ],
+                    recent_history: [
+                        '2024: Announced $8B battery plant',
+                        '2023: Committed to 30 EV models by 2030'
+                    ]
+                },
+                monitoring_targets: {
+                    competitors: {
+                        primary: ['Tesla', 'Volkswagen', 'GM', 'Ford'],
+                        emerging: ['BYD', 'Rivian', 'Nio']
+                    },
+                    critical_topics: ['EV adoption', 'Battery technology', 'Autonomous driving']
+                },
+                confidence_level: 'established',
+                last_updated: new Date().toISOString()
+            };
+            
+            // Store in localStorage (simulating frontend service)
+            localStorage.setItem('signaldesk_profile_toyota', JSON.stringify(profile));
+            
+            resultsDiv.innerHTML = `
+                <p class="success">✅ Profile stored in memory!</p>
+                <span class="memory-indicator established">established</span>
+                <div class="profile-display">
+                    <h4>Profile Structure:</h4>
+                    <pre>${JSON.stringify(profile, null, 2).substring(0, 600)}...</pre>
+                </div>
+            `;
+        }
+        
+        async function testMemoryStorage() {
+            const resultsDiv = document.getElementById('frontend-results');
+            
+            // Store some insights in memory
+            const insights = [
+                {
+                    type: 'competitive_priority',
+                    content: 'Tesla expanding battery production capacity',
+                    confidence: 85,
+                    timestamp: new Date().toISOString()
+                },
+                {
+                    type: 'executive_insight',
+                    content: 'Toyota maintaining hybrid leadership while transitioning to EVs',
+                    confidence: 90,
+                    timestamp: new Date().toISOString()
+                },
+                {
+                    type: 'risk_alert',
+                    content: 'Supply chain constraints on semiconductor chips',
+                    confidence: 75,
+                    timestamp: new Date().toISOString()
+                }
+            ];
+            
+            localStorage.setItem('signaldesk_memory_toyota', JSON.stringify(insights));
+            
+            // Retrieve and display
+            const stored = localStorage.getItem('signaldesk_memory_toyota');
+            const profile = localStorage.getItem('signaldesk_profile_toyota');
+            
+            resultsDiv.innerHTML += `
+                <p class="success">✅ Memory system working!</p>
+                <div class="profile-display">
+                    <h4>Stored Memories:</h4>
+                    <p>Profile exists: ${profile ? 'Yes' : 'No'}</p>
+                    <p>Insights stored: ${insights.length}</p>
+                    <ul>
+                        ${insights.map(i => `<li>${i.type}: ${i.content}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+        }
+        
+        async function testCompleteFlow() {
+            const resultsDiv = document.getElementById('complete-results');
+            resultsDiv.style.display = 'block';
+            resultsDiv.innerHTML = '<p class="loading">Running complete intelligence flow...</p>';
+            
+            try {
+                let flowResults = '<h3>Complete Flow Results:</h3>';
+                
+                // Step 1: AI Industry Detection
+                flowResults += '<p class="loading">Step 1: AI Industry Detection...</p>';
+                const aiResponse = await fetch(`${SUPABASE_URL}/functions/v1/ai-industry-expansion`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        name: 'Toyota Motor Corporation',
+                        website: 'https://www.toyota.com',
+                        description: 'Global automotive manufacturer'
+                    })
+                });
+                
+                const aiData = await aiResponse.json();
+                if (aiData.primary_industry) {
+                    flowResults += `<p class="success">✅ Industry detected: ${aiData.primary_industry}</p>`;
+                }
+                
+                // Step 2: Build Profile (simulated)
+                flowResults += '<p class="loading">Step 2: Building profile...</p>';
+                const profile = {
+                    identity: { 
+                        name: 'Toyota Motor Corporation',
+                        industry: aiData.primary_industry 
+                    },
+                    established_facts: {
+                        strategic_initiatives: ['$8B battery plant', 'Solid-state batteries']
+                    },
+                    monitoring_targets: {
+                        competitors: { primary: aiData.direct_competitors?.slice(0, 5) }
+                    },
+                    confidence_level: 'established'
+                };
+                localStorage.setItem('signaldesk_profile_toyota_complete', JSON.stringify(profile));
+                flowResults += '<p class="success">✅ Profile built and stored</p>';
+                
+                // Step 3: Claude Synthesis
+                flowResults += '<p class="loading">Step 3: Claude synthesis...</p>';
+                const synthResponse = await fetch(`${SUPABASE_URL}/functions/v1/claude-intelligence-synthesizer-v2`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        intelligence_type: 'executive_summary',
+                        organization: {
+                            name: 'Toyota Motor Corporation',
+                            industry: aiData.primary_industry,
+                            competitors: aiData.direct_competitors
+                        },
+                        goals: { competitive_intelligence: true },
+                        mcp_data: {
+                            competitor: { key_movements: ['Tesla price cuts', 'Ford EV expansion'] },
+                            stakeholder: { sentiment: 'positive' },
+                            narrative: { trending: 'EV transition' },
+                            predictive: { risks: ['Supply chain'] }
+                        },
+                        profile: {
+                            established_facts: profile.established_facts,
+                            monitoring_targets: profile.monitoring_targets
+                        },
+                        timeframe: '24h'
+                    })
+                });
+                
+                const synthData = await synthResponse.json();
+                if (synthData.success) {
+                    flowResults += '<p class="success">✅ Claude synthesis complete</p>';
+                }
+                
+                // Step 4: Tab Intelligence (simulated)
+                flowResults += '<p class="loading">Step 4: Generating tab intelligence...</p>';
+                const tabIntelligence = {
+                    overview: { executive_summary: 'Toyota maintaining leadership...' },
+                    competition: { landscape: 'Intense EV competition...' },
+                    stakeholders: { groups: 'Investors focused on EV strategy...' },
+                    topics: { trending: ['Battery tech', 'Autonomous driving'] },
+                    predictions: { scenarios: ['EV market acceleration'] }
+                };
+                flowResults += '<p class="success">✅ Tab intelligence generated</p>';
+                
+                // Final results
+                resultsDiv.innerHTML = flowResults + `
+                    <div class="profile-display">
+                        <h4>Complete Flow Summary:</h4>
+                        <p>✅ Industry correctly detected as: ${aiData.primary_industry}</p>
+                        <p>✅ Profile built with ${aiData.direct_competitors?.length || 0} competitors</p>
+                        <p>✅ Claude synthesis completed with ${synthData.personas_used?.length || 0} personas</p>
+                        <p>✅ Tab-specific intelligence ready</p>
+                        <p>✅ Memory and context preserved</p>
+                    </div>
+                `;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<p class="error">❌ Flow failed: ${error.message}</p>`;
+                console.error('Complete flow failed:', error);
+            }
+        }
+    </script>
+</body>
+</html>

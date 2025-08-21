@@ -6,7 +6,7 @@ import { CompetitorIcon, StakeholderIcon, MediaIcon, PredictiveIcon, RocketIcon,
 const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigger = 0 }) => {
   const [loading, setLoading] = useState(false);
   const [intelligenceData, setIntelligenceData] = useState(null);
-  const [activeTab, setActiveTab] = useState('competitor');
+  const [activeTab, setActiveTab] = useState('overview');
   const [loadingStage, setLoadingStage] = useState('');
 
   useEffect(() => {
@@ -38,24 +38,284 @@ const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigg
   };
 
   const tabs = [
-    { id: 'competitor', name: 'Competitive PR', Icon: CompetitorIcon, color: '#ff00ff' },
-    { id: 'stakeholder', name: 'Stakeholder Relations', Icon: StakeholderIcon, color: '#00ffcc' },
-    { id: 'narrative', name: 'Media Narrative', Icon: MediaIcon, color: '#00ff88' },
-    { id: 'predictive', name: 'PR Predictions', Icon: PredictiveIcon, color: '#8800ff' }
+    { id: 'overview', name: 'Executive Overview', Icon: RocketIcon, color: '#ff00ff' },
+    { id: 'competition', name: 'Competition', Icon: CompetitorIcon, color: '#00ffcc' },
+    { id: 'stakeholders', name: 'Stakeholders', Icon: StakeholderIcon, color: '#00ff88' },
+    { id: 'topics', name: 'Topics & Trends', Icon: MediaIcon, color: '#ffcc00' },
+    { id: 'predictions', name: 'Predictions', Icon: PredictiveIcon, color: '#8800ff' }
   ];
 
-  const renderAnalysis = (analysisData, type) => {
-    if (!analysisData) {
+  const renderTabContent = (tabData, tabType) => {
+    if (!tabData) {
       return (
         <div className="intelligence-section">
           <div className="empty-state">
-            <p>No {type} intelligence available yet</p>
+            <p>No {tabType} intelligence available yet</p>
           </div>
         </div>
       );
     }
 
-    // Handle different analysis structures
+    // Handle tab-specific rendering
+    switch (tabType) {
+      case 'overview':
+        return renderOverviewTab(tabData);
+      case 'competition':
+        return renderCompetitionTab(tabData);
+      case 'stakeholders':
+        return renderStakeholdersTab(tabData);
+      case 'topics':
+        return renderTopicsTab(tabData);
+      case 'predictions':
+        return renderPredictionsTab(tabData);
+      default:
+        return renderLegacyAnalysis(tabData, tabType);
+    }
+  };
+
+  const renderOverviewTab = (data) => {
+    return (
+      <div className="intelligence-section overview-tab">
+        {data.executive_summary && (
+          <div className="executive-summary-panel">
+            <h3>📊 Executive Summary</h3>
+            <p>{data.executive_summary}</p>
+          </div>
+        )}
+        
+        {data.critical_alerts && data.critical_alerts.length > 0 && (
+          <div className="alerts-panel">
+            <h3>🚨 Critical Alerts</h3>
+            <div className="alerts-grid">
+              {data.critical_alerts.map((alert, idx) => (
+                <div key={idx} className={`alert-card severity-${alert.severity}`}>
+                  <div className="alert-type">{alert.type}</div>
+                  <div className="alert-message">{alert.message}</div>
+                  {alert.action_required && <div className="action-required">Action Required</div>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {data.key_insights && (
+          <div className="insights-panel">
+            <h3>💡 Key Insights</h3>
+            <div className="insights-grid">
+              {data.key_insights.map((insight, idx) => (
+                <div key={idx} className={`insight-card impact-${insight.impact}`}>
+                  <div className="insight-type">{insight.type}</div>
+                  <div className="insight-content">{insight.insight}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {data.recommended_actions && (
+          <div className="actions-panel">
+            <h3>📋 Recommended Actions</h3>
+            <div className="actions-list">
+              {data.recommended_actions.map((action, idx) => (
+                <div key={idx} className={`action-item priority-${action.priority}`}>
+                  <div className="action-priority">{action.priority}</div>
+                  <div className="action-content">
+                    <div className="action-text">{action.action}</div>
+                    <div className="action-rationale">{action.rationale}</div>
+                    <div className="action-owner">Owner: {action.owner}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderCompetitionTab = (data) => {
+    return (
+      <div className="intelligence-section competition-tab">
+        {data.competitive_landscape && (
+          <div className="landscape-panel">
+            <h3>🎯 Competitive Landscape</h3>
+            <p>{data.competitive_landscape.summary}</p>
+          </div>
+        )}
+        
+        {data.competitor_profiles && Object.keys(data.competitor_profiles).length > 0 && (
+          <div className="competitors-panel">
+            <h3>🏢 Competitor Analysis</h3>
+            <div className="competitor-cards">
+              {Object.entries(data.competitor_profiles).map(([name, profile]) => (
+                <div key={name} className="competitor-card">
+                  <h4>{name}</h4>
+                  {profile.threat_assessment && (
+                    <div className="threat-level">Threat: {profile.threat_assessment.level}</div>
+                  )}
+                  {profile.latest_developments && profile.latest_developments.length > 0 && (
+                    <div className="developments">
+                      <h5>Latest Developments</h5>
+                      <ul>
+                        {profile.latest_developments.slice(0, 3).map((dev, idx) => (
+                          <li key={idx}>{dev.title || dev}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderStakeholdersTab = (data) => {
+    return (
+      <div className="intelligence-section stakeholders-tab">
+        {data.stakeholder_landscape && (
+          <div className="landscape-panel">
+            <h3>👥 Stakeholder Landscape</h3>
+            <p>{data.stakeholder_landscape.overview}</p>
+          </div>
+        )}
+        
+        {data.group_analysis && Object.keys(data.group_analysis).length > 0 && (
+          <div className="groups-panel">
+            <h3>📊 Stakeholder Groups</h3>
+            <div className="stakeholder-groups">
+              {Object.entries(data.group_analysis).map(([group, analysis]) => (
+                <div key={group} className="stakeholder-group">
+                  <h4>{group.charAt(0).toUpperCase() + group.slice(1)}</h4>
+                  {analysis.sentiment && (
+                    <div className="sentiment">Sentiment: {analysis.sentiment.sentiment}</div>
+                  )}
+                  {analysis.key_concerns && analysis.key_concerns.length > 0 && (
+                    <div className="concerns">
+                      <h5>Key Concerns</h5>
+                      <ul>
+                        {analysis.key_concerns.map((concern, idx) => (
+                          <li key={idx}>{concern}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderTopicsTab = (data) => {
+    return (
+      <div className="intelligence-section topics-tab">
+        {data.topic_dashboard && (
+          <div className="dashboard-panel">
+            <h3>📈 Topic Trends</h3>
+            <div className="trends-grid">
+              {data.topic_dashboard.trending_up && data.topic_dashboard.trending_up.length > 0 && (
+                <div className="trend-section">
+                  <h4>🔼 Trending Up</h4>
+                  <ul>
+                    {data.topic_dashboard.trending_up.map((topic, idx) => (
+                      <li key={idx}>{topic}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {data.topic_dashboard.trending_down && data.topic_dashboard.trending_down.length > 0 && (
+                <div className="trend-section">
+                  <h4>🔽 Trending Down</h4>
+                  <ul>
+                    {data.topic_dashboard.trending_down.map((topic, idx) => (
+                      <li key={idx}>{topic}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        
+        {data.topic_deep_dives && Object.keys(data.topic_deep_dives).length > 0 && (
+          <div className="topics-panel">
+            <h3>🎯 Topic Analysis</h3>
+            <div className="topic-cards">
+              {Object.entries(data.topic_deep_dives).map(([topic, analysis]) => (
+                <div key={topic} className="topic-card">
+                  <h4>{topic}</h4>
+                  <div className="topic-status">Status: {analysis.status}</div>
+                  {analysis.impact_assessment && (
+                    <div className="impact">Impact: {analysis.impact_assessment.level}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderPredictionsTab = (data) => {
+    return (
+      <div className="intelligence-section predictions-tab">
+        {data.predictive_scenarios && data.predictive_scenarios.length > 0 && (
+          <div className="scenarios-panel">
+            <h3>🔮 Predictive Scenarios</h3>
+            <div className="scenarios-grid">
+              {data.predictive_scenarios.map((scenario, idx) => (
+                <div key={idx} className="scenario-card">
+                  <h4>{scenario.scenario}</h4>
+                  <div className="probability">Probability: {scenario.probability}%</div>
+                  <p>{scenario.description}</p>
+                  {scenario.triggers && scenario.triggers.length > 0 && (
+                    <div className="triggers">
+                      <h5>Triggers</h5>
+                      <ul>
+                        {scenario.triggers.slice(0, 3).map((trigger, tidx) => (
+                          <li key={tidx}>{trigger}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {scenario.cascade_effects && scenario.cascade_effects.length > 0 && (
+                    <div className="effects">
+                      <h5>Cascade Effects</h5>
+                      <ul>
+                        {scenario.cascade_effects.slice(0, 3).map((effect, eidx) => (
+                          <li key={eidx}>{effect}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {data.early_warnings && data.early_warnings.signals_detected && (
+          <div className="warnings-panel">
+            <h3>⚠️ Early Warning Signals</h3>
+            <ul>
+              {data.early_warnings.signals_detected.map((signal, idx) => (
+                <li key={idx}>{signal}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderLegacyAnalysis = (analysisData, type) => {
+    // Handle legacy format for backward compatibility
     const analysis = analysisData.primary_analysis || analysisData;
     const secondOpinion = analysisData.second_opinion;
     
@@ -175,8 +435,17 @@ const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigg
   };
 
   const renderContent = () => {
-    const data = intelligenceData?.[activeTab];
-    return renderAnalysis(data, activeTab);
+    if (!intelligenceData) return null;
+    
+    // Check if we have the new tab format
+    if (intelligenceData.tabs) {
+      const tabData = intelligenceData.tabs[activeTab];
+      return renderTabContent(tabData, activeTab);
+    }
+    
+    // Fall back to legacy format
+    const data = intelligenceData[activeTab];
+    return renderTabContent(data, activeTab);
   };
 
   return (
