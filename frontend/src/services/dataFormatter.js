@@ -135,31 +135,71 @@ class DataFormatterService {
   }
   
   formatStakeholdersTab(intelligence) {
+    const stakeholderData = intelligence.synthesized?.stakeholder_analysis || {};
     const defaultGroups = ['investors', 'customers', 'employees', 'media', 'regulators'];
     
     return {
+      sentiment_overview: stakeholderData.sentiment_overview || 
+                         'Analyzing stakeholder sentiment and engagement priorities',
       groups: intelligence.stakeholder_groups || defaultGroups,
-      sentiment: intelligence.stakeholder_sentiment || {},
-      concerns: this.extractArray(intelligence.stakeholder_concerns || intelligence.alerts),
-      communications: this.extractArray(intelligence.stakeholder_communications)
+      group_priorities: stakeholderData.group_priorities || {},
+      sentiment: stakeholderData.sentiment || intelligence.stakeholder_sentiment || {},
+      concerns: this.extractArray(
+        stakeholderData.concerns || 
+        intelligence.stakeholder_concerns || 
+        intelligence.alerts
+      ),
+      engagement_strategy: this.extractArray(stakeholderData.engagement_strategy),
+      messaging_frameworks: stakeholderData.messaging_frameworks || {},
+      second_opinion: stakeholderData.second_opinion
     };
   }
   
   formatTopicsTab(intelligence) {
+    const narrativeData = intelligence.synthesized?.narrative_analysis || {};
+    
     return {
-      trending_topics: this.extractArray(intelligence.industry_trends || intelligence.trending_topics),
-      media_coverage: this.extractArray(intelligence.breaking_news || intelligence.media_coverage),
+      trending_overview: narrativeData.trending_overview || 
+                        'Analyzing media narratives and content opportunities',
+      trending_topics: this.extractArray(
+        intelligence.industry_trends || 
+        intelligence.trending_topics
+      ),
+      media_coverage: this.extractArray(
+        intelligence.breaking_news || 
+        intelligence.media_coverage
+      ),
+      narrative_opportunities: this.extractArray(narrativeData.narrative_opportunities),
+      content_angles: this.extractArray(narrativeData.content_angles),
+      media_risks: this.extractArray(narrativeData.media_risks),
       sentiment_analysis: intelligence.sentiment_analysis || {},
-      key_narratives: this.extractArray(intelligence.discussions || intelligence.key_narratives)
+      key_narratives: this.extractArray(
+        intelligence.discussions || 
+        intelligence.key_narratives
+      ),
+      second_opinion: narrativeData.second_opinion
     };
   }
   
   formatPredictionsTab(intelligence) {
+    const predictiveData = intelligence.synthesized?.predictive_analysis || {};
+    
     return {
-      trends: this.extractArray(intelligence.industry_trends || intelligence.emerging_trends),
-      scenarios: this.extractArray(intelligence.predicted_scenarios),
+      scenario_overview: predictiveData.scenario_overview || 
+                        'Analyzing future scenarios and cascade effects',
+      likely_scenarios: this.extractArray(
+        predictiveData.likely_scenarios || 
+        intelligence.predicted_scenarios
+      ),
+      cascade_effects: this.extractArray(predictiveData.cascade_effects),
+      proactive_strategies: this.extractArray(predictiveData.proactive_strategies),
+      trends: this.extractArray(
+        intelligence.industry_trends || 
+        intelligence.emerging_trends
+      ),
       timeline: this.extractArray(intelligence.timeline),
-      confidence: intelligence.confidence_levels || {}
+      confidence: intelligence.confidence_levels || {},
+      second_opinion: predictiveData.second_opinion
     };
   }
   
