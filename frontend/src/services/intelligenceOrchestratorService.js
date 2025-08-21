@@ -83,6 +83,12 @@ class IntelligenceOrchestratorService {
       const data = await response.json();
       console.log('✅ Orchestration complete:', data);
       
+      // Check if the Edge Function returned an error
+      if (!data.success && data.error) {
+        console.error('❌ Edge Function error:', data.error);
+        throw new Error(data.error);
+      }
+      
       return this._processOrchestrationResult(data);
     } catch (error) {
       console.error('❌ Orchestration error:', error);

@@ -83,9 +83,12 @@ class ClaudeIntelligenceServiceV2 {
         
         if (orchestratedResult.success) {
           console.log('✅ Orchestrator succeeded, using optimized intelligence');
+          console.log('📊 Raw orchestrator result:', orchestratedResult);
           
           // Transform orchestrated result to match expected format
-          return this.transformOrchestratedResult(orchestratedResult, config);
+          const transformed = this.transformOrchestratedResult(orchestratedResult, config);
+          console.log('🔄 Transformed result:', transformed);
+          return transformed;
         }
       } catch (error) {
         console.log('⚠️ Orchestrator failed, falling back to original flow:', error);
