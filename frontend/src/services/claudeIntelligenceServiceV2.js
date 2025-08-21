@@ -760,20 +760,72 @@ class ClaudeIntelligenceServiceV2 {
     const insights = orchestratedResult.insights || {};
     const intelligence = orchestratedResult.intelligence || {};
     const stats = orchestratedResult.stats || {};
+    const synthesized = intelligence.synthesized || {};
     
-    // Build the response in the expected format
-    return {
-      // Tab content
+    console.log('🔄 Transforming orchestrator result:', {
+      hasInsights: Object.keys(insights).length,
+      hasIntelligence: Object.keys(intelligence).length,
+      hasSynthesized: Object.keys(synthesized).length
+    });
+    
+    // Build the response in the expected format for ALL tabs
+    const transformed = {
+      // COMPETITION TAB
+      competitor: {
+        key_movements: intelligence.competitor_activity || [],
+        strategic_patterns: intelligence.competitive_positioning?.activity || [],
+        competitive_advantages: insights.competitive?.advantages || [],
+        threats: insights.competitive?.threats || [],
+        priority_focus: intelligence.competitors?.slice(0, 3).join(', ') || 'Monitor all competitors',
+        recommendations: insights.competitive?.recommendations || intelligence.executive_summary?.recommendations || []
+      },
+      
+      // STAKEHOLDER TAB
+      stakeholder: {
+        key_stakeholders: insights.stakeholder?.groups || ['investors', 'customers', 'employees', 'media'],
+        sentiment_analysis: insights.stakeholder?.sentiment || {},
+        engagement_priorities: insights.stakeholder?.communications || [],
+        messaging_frameworks: [],
+        concerns: insights.stakeholder?.concerns || []
+      },
+      
+      // NARRATIVE TAB
+      narrative: {
+        dominant_narratives: intelligence.industry_trends || [],
+        narrative_opportunities: intelligence.opportunities || [],
+        messaging_strategy: intelligence.key_insights || [],
+        media_angles: intelligence.breaking_news || [],
+        story_development: intelligence.discussions || []
+      },
+      
+      // PREDICTIVE TAB
+      predictive: {
+        likely_scenarios: insights.predictive?.scenarios || [],
+        emerging_trends: insights.predictive?.trends || intelligence.industry_trends || [],
+        timeline: insights.predictive?.timeline || [],
+        cascade_risks: intelligence.immediate_risks || [],
+        opportunities: intelligence.immediate_opportunities || []
+      },
+      
+      // EXECUTIVE SUMMARY
+      executive_summary: intelligence.executive_summary || {
+        organization: orchestratedResult.organization,
+        key_findings: intelligence.key_insights || [],
+        recommendations: intelligence.executive_summary?.recommendations || [],
+        total_articles: stats.articles || 0
+      },
+      
+      // Tab-specific intelligence (for the tab components)
       tabIntelligence: {
         competition: {
-          competitors: insights.competitive?.competitors || [],
-          positioning: insights.competitive?.positioning || {},
+          competitors: intelligence.competitors || insights.competitive?.competitors || [],
+          positioning: intelligence.competitive_positioning || insights.competitive?.positioning || {},
           advantages: insights.competitive?.advantages || [],
           threats: insights.competitive?.threats || [],
           recommendations: insights.competitive?.recommendations || []
         },
         stakeholders: {
-          groups: insights.stakeholder?.groups || [],
+          groups: insights.stakeholder?.groups || ['investors', 'customers', 'employees', 'media'],
           sentiment: insights.stakeholder?.sentiment || {},
           concerns: insights.stakeholder?.concerns || [],
           communications: insights.stakeholder?.communications || []
@@ -783,44 +835,86 @@ class ClaudeIntelligenceServiceV2 {
           emerging: intelligence.emerging_topics || [],
           discussions: intelligence.discussions || []
         },
-        predictions: insights.predictive || {}
+        predictions: insights.predictive || {
+          trends: intelligence.industry_trends || [],
+          scenarios: [],
+          timeline: []
+        }
       },
       
       // Executive overview
       executiveOverview: intelligence.executive_summary || {
         key_insights: intelligence.key_insights || [],
         critical_actions: intelligence.critical_actions || [],
-        opportunities: insights.opportunity?.immediate || [],
-        risks: insights.risk?.immediate || []
+        opportunities: intelligence.immediate_opportunities || insights.opportunity?.immediate || [],
+        risks: intelligence.immediate_risks || insights.risk?.immediate || []
       },
       
       // MCP data (from orchestrator)
       raw_mcp_data: {
-        competitors_identified: stats.competitors || 0,
+        competitors_identified: stats.competitors || intelligence.competitors?.length || 0,
         websites_scraped: stats.websites || 0,
         articles_processed: stats.articles || 0,
-        sources_used: stats.sources || 0
+        sources_used: stats.sources || 0,
+        // Include raw data for debugging
+        raw_intelligence: intelligence,
+        raw_insights: insights
       },
       
       // Analysis metadata
       analysis_metadata: {
         timestamp: orchestratedResult.timestamp || new Date().toISOString(),
         orchestrator_used: true,
-        phases_completed: orchestratedResult.phases || {},
+        phases_completed: orchestratedResult.phases || orchestratedResult.phases_completed || {},
         organization: orchestratedResult.organization,
         industry: orchestratedResult.industry,
-        confidence_scores: intelligence.confidence_scores || {}
+        confidence_scores: synthesized.overall_confidence ? { overall: synthesized.overall_confidence } : {}
       },
       
       // Profile data
       profile: {
         organization: config.organization || {},
         goals: config.goals || {},
-        stakeholders: insights.stakeholder?.groups || [],
+        stakeholders: insights.stakeholder?.groups || ['investors', 'customers', 'employees', 'media'],
         topics: intelligence.topics || [],
         keywords: intelligence.keywords || []
       }
     };
+    
+    // Extract and store key insights
+    const keyInsights = [];
+    if (intelligence.key_insights?.length > 0) {
+      intelligence.key_insights.forEach(insight => {
+        keyInsights.push({
+          type: 'key_insight',
+          content: insight,
+          confidence: 85
+        });
+      });
+    }
+    if (intelligence.immediate_opportunities?.length > 0) {
+      keyInsights.push({
+        type: 'opportunity',
+        content: `${intelligence.immediate_opportunities.length} opportunities identified`,
+        confidence: 80
+      });
+    }
+    if (intelligence.immediate_risks?.length > 0) {
+      keyInsights.push({
+        type: 'risk',
+        content: `${intelligence.immediate_risks.length} risks detected`,
+        confidence: 80
+      });
+    }
+    
+    // Store insights properly
+    if (keyInsights.length > 0) {
+      this.storeKeyInsights({ key_insights: keyInsights }, config.organization || {});
+    }
+    
+    console.log('✅ Transformed data with', keyInsights.length, 'key insights');
+    
+    return transformed;
   }
 }
 

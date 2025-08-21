@@ -7,7 +7,8 @@ const DiagnosticPanel = () => {
     supabase: {},
     localStorage: {},
     orchestrator: {},
-    apiTests: {}
+    apiTests: {},
+    lastOrchestrationCall: null
   });
   const [isVisible, setIsVisible] = useState(false);
 
