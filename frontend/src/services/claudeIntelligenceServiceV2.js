@@ -130,9 +130,9 @@ class ClaudeIntelligenceServiceV2 {
     
     // Use the discovered/enhanced organization as the full context
     const fullOrganization = enhancedOrganization;
-    const industry = fullOrganization.industry || 'technology';
+    const detectedIndustry = fullOrganization.industry || industry || 'technology';
     
-    console.log('🏭 Using industry:', industry);
+    console.log('🏭 Using industry:', detectedIndustry);
     console.log('🏢 Real Competitors:', fullOrganization.competitors);
     console.log('👥 Real Stakeholders:', fullOrganization.stakeholders);
     console.log('📝 Real Topics:', fullOrganization.topics);
@@ -140,7 +140,7 @@ class ClaudeIntelligenceServiceV2 {
     console.log('🎯 Full organization context:', fullOrganization);
     
     // Check cache first with full context
-    const cacheKey = `${fullOrganization.name}_${industry}_${timeframe}_${JSON.stringify(goals)}`;
+    const cacheKey = `${fullOrganization.name}_${detectedIndustry}_${timeframe}_${JSON.stringify(goals)}`;
     const cached = this.getCachedAnalysis(cacheKey);
     if (cached && !options.forceRefresh) {
       console.log('📦 Using cached analysis');
