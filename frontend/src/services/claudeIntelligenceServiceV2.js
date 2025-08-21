@@ -137,19 +137,18 @@ class ClaudeIntelligenceServiceV2 {
             const finalResult = {
               ...transformed,
               // Legacy format (for backward compatibility)
-              overview: transformed.executive_summary,
-              competition: transformed.competitor,
-              stakeholders: transformed.stakeholder,
-              topics: transformed.narrative,
-              predictions: transformed.predictive,
-              // New tab format
+              overview: transformed.overview || tabIntelligence.overview || insights.overview,
+              competition: transformed.competition || transformed.competitor,
+              stakeholders: transformed.stakeholders || transformed.stakeholder,
+              topics: transformed.topics || transformed.narrative,
+              predictions: transformed.predictions || transformed.predictive,
+              // New tab format - MUST use the correctly formatted data
               tabs: {
-                overview: transformed.executive_summary,
-                competition: transformed.competitor,
-                stakeholders: transformed.stakeholder,
-                topics: transformed.narrative,
-                predictions: transformed.predictive,
-                ...tabIntelligence
+                overview: transformed.overview || tabIntelligence.overview || insights.overview,
+                competition: transformed.competition || tabIntelligence.competition || transformed.competitor,
+                stakeholders: transformed.stakeholders || tabIntelligence.stakeholders || transformed.stakeholder,
+                topics: transformed.topics || tabIntelligence.topics || transformed.narrative,
+                predictions: transformed.predictions || tabIntelligence.predictions || transformed.predictive
               },
               profile: {
                 confidence_level: profile.confidence_level,

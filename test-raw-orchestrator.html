@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Raw Orchestrator Response</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #007AFF;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0051D5;
+        }
+        .results {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .highlight {
+            background: yellow;
+            padding: 2px 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug Orchestrator Data Flow</h1>
+    
+    <div class="card">
+        <h2>Step 1: Call Orchestrator Directly</h2>
+        <button onclick="testOrchestrator()">Test Toyota</button>
+        <div id="orchestratorResult"></div>
+    </div>
+
+    <div class="card">
+        <h2>Step 2: Call Frontend Service</h2>
+        <button onclick="testFrontendService()">Test Frontend Service</button>
+        <div id="frontendResult"></div>
+    </div>
+
+    <div class="card">
+        <h2>Step 3: What Display Component Receives</h2>
+        <button onclick="testFullFlow()">Test Full Flow</button>
+        <div id="displayResult"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        async function testOrchestrator() {
+            const resultDiv = document.getElementById('orchestratorResult');
+            resultDiv.innerHTML = '<div class="loading">🔄 Calling orchestrator Edge Function directly...</div>';
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-orchestrator`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: {
+                            name: 'Toyota',
+                            industry: 'automotive'
+                        },
+                        method: 'full'
+                    })
+                });
+                
+                const data = await response.json();
+                console.log('Raw Orchestrator Response:', data);
+                
+                // Check what we got
+                const analysis = {
+                    'Has intelligence?': !!data.intelligence,
+                    'Intelligence keys': Object.keys(data.intelligence || {}),
+                    'Executive summary type': typeof data.intelligence?.executive_summary,
+                    'Executive summary value': data.intelligence?.executive_summary,
+                    'Key insights count': data.intelligence?.key_insights?.length || 0,
+                    'Has synthesized?': !!data.intelligence?.synthesized,
+                    'Synthesized keys': Object.keys(data.intelligence?.synthesized || {})
+                };
+                
+                resultDiv.innerHTML = `
+                    <div class="success">✅ Orchestrator Response</div>
+                    <pre>${JSON.stringify(analysis, null, 2)}</pre>
+                    <details>
+                        <summary>Full Response</summary>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </details>
+                `;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function testFrontendService() {
+            const resultDiv = document.getElementById('frontendResult');
+            resultDiv.innerHTML = '<div class="loading">🔄 Testing frontend service transformation...</div>';
+            
+            // This simulates what intelligenceOrchestratorService does
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-orchestrator`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: {
+                            name: 'Toyota',
+                            industry: 'automotive'
+                        },
+                        method: 'full'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // Simulate the _extractOverviewInsights transformation
+                const intelligence = data.intelligence || {};
+                const overview = {
+                    executive_summary: intelligence.executive_summary || 
+                                     intelligence.synthesized?.executive_summary || 
+                                     'Executive intelligence analysis in progress...',
+                    key_insights: intelligence.key_insights || [],
+                    critical_alerts: intelligence.alerts || [],
+                    recommended_actions: intelligence.recommendations || intelligence.immediate_opportunities || []
+                };
+                
+                console.log('Frontend Transformed Overview:', overview);
+                
+                resultDiv.innerHTML = `
+                    <div class="success">✅ Frontend Service Transformation</div>
+                    <h4>Overview Tab Data:</h4>
+                    <pre>${JSON.stringify(overview, null, 2)}</pre>
+                    <div class="highlight">
+                        Executive Summary Type: ${typeof overview.executive_summary}<br>
+                        Is String?: ${typeof overview.executive_summary === 'string'}
+                    </div>
+                `;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function testFullFlow() {
+            const resultDiv = document.getElementById('displayResult');
+            resultDiv.innerHTML = '<div class="loading">🔄 Testing what display component would receive...</div>';
+            
+            // Import the actual service modules (mock for test)
+            const config = {
+                organization: {
+                    name: 'Toyota',
+                    industry: 'automotive'
+                }
+            };
+            
+            // This would normally call claudeIntelligenceServiceV2.gatherAndAnalyze
+            // For now, let's just show what the display expects
+            const expectedStructure = {
+                overview: {
+                    executive_summary: "This should be a STRING with the actual summary text",
+                    key_insights: ["insight 1", "insight 2"],
+                    critical_alerts: ["alert 1"],
+                    recommended_actions: ["action 1", "action 2"]
+                },
+                competition: {
+                    competitive_landscape: {
+                        summary: "Competitive landscape text",
+                        competitor_profiles: {}
+                    }
+                }
+            };
+            
+            resultDiv.innerHTML = `
+                <div class="success">✅ Expected Display Structure</div>
+                <pre>${JSON.stringify(expectedStructure, null, 2)}</pre>
+                <div class="error">
+                    The display component expects 'overview.executive_summary' to be a STRING.<br>
+                    If it's an object or undefined, it shows "No executive summary available"
+                </div>
+            `;
+        }
+        
+        // Auto-test on load
+        window.addEventListener('load', () => {
+            console.log('Debug page ready. Click buttons to test each step.');
+        });
+    </script>
+</body>
+</html>
