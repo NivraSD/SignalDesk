@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import '../SmartOnboarding.css'; // Use the existing smart onboarding styles
+import './MinimalOnboarding.css'; // Custom neon styles matching platform aesthetic
 
 /**
  * Minimal Onboarding - Only collect what actually matters
