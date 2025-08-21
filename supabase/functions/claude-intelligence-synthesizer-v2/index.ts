@@ -668,13 +668,15 @@ async function orchestrateAnalysis(
       break
       
     case 'comprehensive':
-      // For comprehensive analysis, use all key personas
+      // For comprehensive analysis, use all key personas WITH second opinions
       personasToUse = [
         ANALYSIS_PERSONAS.executive_synthesizer,
         ANALYSIS_PERSONAS.competitive_strategist,
-        ANALYSIS_PERSONAS.stakeholder_psychologist
+        ANALYSIS_PERSONAS.stakeholder_psychologist,
+        ANALYSIS_PERSONAS.risk_prophet,
+        ANALYSIS_PERSONAS.opportunity_hunter
       ]
-      requiresSecondOpinion = false // Already using multiple perspectives
+      requiresSecondOpinion = true // We want rich analysis with alternative views
       break
       
     default:
@@ -766,20 +768,52 @@ Analyze this intelligence data through the lens of our strategic goals and provi
 
 // Combine multiple persona analyses
 function combineAnalyses(analyses: any[], personas: any[]) {
-  // For comprehensive analysis, we need to return a structure that matches what the frontend expects
+  // Build rich, tab-specific intelligence from multiple perspectives
   const combined = {
-    // Executive summary as a STRING (not object)
+    // Executive PR Summary - synthesized across all dimensions
     executive_summary: '',
+    pr_strategy_summary: '',
+    
+    // Competition Intelligence
+    competitive_analysis: {
+      landscape_summary: '',
+      competitor_moves: [],
+      positioning_opportunities: [],
+      reputation_threats: [],
+      second_opinion: null
+    },
+    
+    // Stakeholder Intelligence
+    stakeholder_analysis: {
+      sentiment_overview: '',
+      group_priorities: {},
+      engagement_strategy: [],
+      messaging_frameworks: {},
+      second_opinion: null
+    },
+    
+    // Topics & Trends Intelligence
+    narrative_analysis: {
+      trending_overview: '',
+      narrative_opportunities: [],
+      content_angles: [],
+      media_risks: [],
+      second_opinion: null
+    },
+    
+    // Predictive Intelligence
+    predictive_analysis: {
+      scenario_overview: '',
+      likely_scenarios: [],
+      cascade_effects: [],
+      proactive_strategies: [],
+      second_opinion: null
+    },
+    
+    // Overall insights
     key_insights: [],
     recommendations: [],
     critical_alerts: [],
-    competitors: [],
-    opportunities: [],
-    risks: [],
-    multi_perspective_analysis: {},
-    consensus_insights: [],
-    divergent_views: [],
-    combined_recommendations: [],
     overall_confidence: 0
   }
   
@@ -790,20 +824,63 @@ function combineAnalyses(analyses: any[], personas: any[]) {
   analyses.forEach((analysis, index) => {
     if (!analysis) return // Skip null analyses
     
-    const personaName = personas[index]?.name || `Persona_${index}`
-    combined.multi_perspective_analysis[personaName] = analysis
+    const persona = personas[index]
+    const personaName = persona?.name || `Persona_${index}`
     
-    // Extract executive summary from executive synthesizer
+    // Extract based on persona type
     if (personaName.includes('Executive')) {
-      if (typeof analysis === 'string') {
-        combined.executive_summary = analysis
-      } else if (analysis.analysis) {
-        combined.executive_summary = analysis.analysis
-      } else if (analysis.primary_analysis?.analysis) {
-        combined.executive_summary = analysis.primary_analysis.analysis
-      } else if (analysis.executive_summary) {
-        combined.executive_summary = analysis.executive_summary
+      // Executive Synthesizer - overall PR strategy
+      const executiveAnalysis = analysis.primary_analysis || analysis
+      combined.executive_summary = executiveAnalysis.analysis || ''
+      combined.pr_strategy_summary = `Based on comprehensive analysis: ${executiveAnalysis.analysis || ''}. Key PR imperatives: ${(executiveAnalysis.recommendations || []).slice(0, 3).join('; ')}`
+      
+      if (analysis.second_opinion) {
+        combined.critical_alerts.push(`Alternative Executive View: ${analysis.second_opinion.assessment || ''}`)
       }
+    }
+    
+    if (personaName.includes('Competitive')) {
+      // Competitive Strategist - competition intelligence
+      const competitiveAnalysis = analysis.primary_analysis || analysis
+      combined.competitive_analysis.landscape_summary = competitiveAnalysis.analysis || ''
+      combined.competitive_analysis.competitor_moves = competitiveAnalysis.competitor_activity || []
+      combined.competitive_analysis.positioning_opportunities = competitiveAnalysis.opportunities || []
+      combined.competitive_analysis.reputation_threats = competitiveAnalysis.threats || []
+      
+      if (analysis.second_opinion) {
+        combined.competitive_analysis.second_opinion = analysis.second_opinion
+      }
+    }
+    
+    if (personaName.includes('Stakeholder')) {
+      // Stakeholder Psychologist - stakeholder intelligence
+      const stakeholderAnalysis = analysis.primary_analysis || analysis
+      combined.stakeholder_analysis.sentiment_overview = stakeholderAnalysis.analysis || ''
+      combined.stakeholder_analysis.group_priorities = stakeholderAnalysis.stakeholder_priorities || {}
+      combined.stakeholder_analysis.engagement_strategy = stakeholderAnalysis.recommendations || []
+      
+      if (analysis.second_opinion) {
+        combined.stakeholder_analysis.second_opinion = analysis.second_opinion
+      }
+    }
+    
+    if (personaName.includes('Risk')) {
+      // Risk Prophet - predictive risks
+      const riskAnalysis = analysis.primary_analysis || analysis
+      combined.predictive_analysis.cascade_effects = riskAnalysis.cascade_scenarios || []
+      combined.predictive_analysis.likely_scenarios = riskAnalysis.risk_scenarios || []
+      
+      if (analysis.second_opinion) {
+        combined.predictive_analysis.second_opinion = analysis.second_opinion
+      }
+    }
+    
+    if (personaName.includes('Opportunity')) {
+      // Opportunity Hunter - opportunities and trends
+      const opportunityAnalysis = analysis.primary_analysis || analysis
+      combined.narrative_analysis.narrative_opportunities = opportunityAnalysis.opportunities || []
+      combined.narrative_analysis.content_angles = opportunityAnalysis.content_opportunities || []
+      combined.predictive_analysis.proactive_strategies = opportunityAnalysis.proactive_moves || []
     }
     
     // Extract key insights

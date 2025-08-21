@@ -64,39 +64,46 @@ class DataFormatterService {
   }
   
   formatOverviewTab(intelligence) {
-    // Extract executive summary - MUST be a string
+    // Extract PR strategy summary from synthesis
     let executiveSummaryText = '';
     
-    if (typeof intelligence.executive_summary === 'string') {
-      executiveSummaryText = intelligence.executive_summary;
-    } else if (intelligence.executive_summary?.summary) {
-      executiveSummaryText = intelligence.executive_summary.summary;
-    } else if (intelligence.executive_summary?.analysis) {
-      executiveSummaryText = intelligence.executive_summary.analysis;
+    // Check if we have rich synthesized analysis
+    if (intelligence.synthesized?.pr_strategy_summary) {
+      executiveSummaryText = intelligence.synthesized.pr_strategy_summary;
     } else if (intelligence.synthesized?.executive_summary) {
-      executiveSummaryText = typeof intelligence.synthesized.executive_summary === 'string'
-        ? intelligence.synthesized.executive_summary
-        : intelligence.synthesized.executive_summary?.analysis || '';
+      executiveSummaryText = intelligence.synthesized.executive_summary;
+    } else if (typeof intelligence.executive_summary === 'string') {
+      executiveSummaryText = intelligence.executive_summary;
     } else {
-      executiveSummaryText = 'Executive intelligence analysis in progress. Data is being synthesized from multiple sources.';
+      executiveSummaryText = 'Executive PR intelligence analysis in progress. Synthesizing insights from competitive landscape, stakeholder sentiment, media narratives, and predictive scenarios.';
     }
     
     return {
       executive_summary: executiveSummaryText,
-      key_insights: this.extractArray(intelligence.key_insights),
-      critical_alerts: this.extractArray(intelligence.alerts || intelligence.critical_alerts),
+      key_insights: this.extractArray(
+        intelligence.synthesized?.key_insights || 
+        intelligence.key_insights
+      ),
+      critical_alerts: this.extractArray(
+        intelligence.synthesized?.critical_alerts || 
+        intelligence.alerts || 
+        intelligence.critical_alerts
+      ),
       recommended_actions: this.extractArray(
-        intelligence.recommendations || 
-        intelligence.recommended_actions || 
-        intelligence.immediate_opportunities
-      )
+        intelligence.synthesized?.recommendations || 
+        intelligence.recommendations
+      ),
+      // Add second opinion if available
+      alternative_perspective: intelligence.synthesized?.divergent_views?.[0] || null
     };
   }
   
   formatCompetitionTab(intelligence) {
-    // Build competitor profiles from various sources
-    const competitorProfiles = {};
+    // Extract rich competitive analysis from synthesis
+    const competitiveData = intelligence.synthesized?.competitive_analysis || {};
     
+    // Build competitor profiles
+    const competitorProfiles = {};
     if (intelligence.competitors && Array.isArray(intelligence.competitors)) {
       intelligence.competitors.forEach(comp => {
         const name = typeof comp === 'string' ? comp : comp.name;
@@ -104,7 +111,7 @@ class DataFormatterService {
           competitorProfiles[name] = {
             threat_level: comp.threat_level || 'medium',
             market_position: comp.market_position || { position: 'competitive' },
-            latest_developments: comp.developments || [],
+            latest_developments: comp.developments || competitiveData.competitor_moves || [],
             opportunities: comp.opportunities || []
           };
         }
@@ -113,11 +120,16 @@ class DataFormatterService {
     
     return {
       competitive_landscape: {
-        summary: intelligence.competitive_landscape_summary || 
-                 intelligence.industry_context || 
-                 'Competitive landscape analysis in progress',
+        summary: competitiveData.landscape_summary || 
+                 intelligence.competitive_landscape_summary || 
+                 'Analyzing competitive dynamics and PR positioning opportunities',
         competitor_profiles: competitorProfiles,
-        opportunities: this.extractArray(intelligence.competitive_opportunities)
+        opportunities: this.extractArray(
+          competitiveData.positioning_opportunities || 
+          intelligence.competitive_opportunities
+        ),
+        threats: this.extractArray(competitiveData.reputation_threats),
+        second_opinion: competitiveData.second_opinion
       }
     };
   }
