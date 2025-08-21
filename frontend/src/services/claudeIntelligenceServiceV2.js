@@ -258,45 +258,41 @@ class ClaudeIntelligenceServiceV2 {
         ...organization,
         // Keep user's industry or use AI's if none provided
         industry: finalIndustry,
-          subcategories: fullAnalysis.subcategories,
-          
-          // Use AI-discovered competitors instead of generic tech defaults
-          competitors: [...new Set([
-            ...(organization.competitors || []), 
-            ...fullAnalysis.direct_competitors.slice(0, 8)
-          ])],
-          
-          // Rich stakeholder data from AI
-          stakeholders: [...new Set([
-            ...this.extractStakeholdersArray(organization.stakeholders), 
-            ...fullAnalysis.stakeholder_groups.slice(0, 6)
-          ])],
-          
-          // Industry-specific topics and keywords
-          topics: [...new Set([
-            ...(organization.topics || []), 
-            ...fullAnalysis.trending_topics.slice(0, 5)
-          ])],
-          keywords: [...new Set([
-            ...(organization.keywords || []), 
-            ...fullAnalysis.monitoring_keywords.slice(0, 10)
-          ])],
-          
-          // Additional AI insights
-          industryInsights: {
-            media_outlets: fullAnalysis.media_outlets,
-            industry_events: fullAnalysis.industry_events,
-            regulatory_bodies: fullAnalysis.regulatory_bodies,
-            ecosystem_players: fullAnalysis.ecosystem_players
-          },
-          
-          enhancedAt: new Date().toISOString(),
-          enhancementSource: 'ai_expansion'
-        };
-      }
-      
-      // Fallback to original Claude enhancement if AI confidence is low
-      return await this.fallbackClaudeEnhancement(organization, goals);
+        subcategories: fullAnalysis.subcategories,
+        
+        // Use AI-discovered competitors instead of generic tech defaults
+        competitors: [...new Set([
+          ...(organization.competitors || []), 
+          ...fullAnalysis.direct_competitors.slice(0, 8)
+        ])],
+        
+        // Rich stakeholder data from AI
+        stakeholders: [...new Set([
+          ...this.extractStakeholdersArray(organization.stakeholders), 
+          ...fullAnalysis.stakeholder_groups.slice(0, 6)
+        ])],
+        
+        // Industry-specific topics and keywords
+        topics: [...new Set([
+          ...(organization.topics || []), 
+          ...fullAnalysis.trending_topics.slice(0, 5)
+        ])],
+        keywords: [...new Set([
+          ...(organization.keywords || []), 
+          ...fullAnalysis.monitoring_keywords.slice(0, 10)
+        ])],
+        
+        // Additional AI insights
+        industryInsights: {
+          media_outlets: fullAnalysis.media_outlets,
+          industry_events: fullAnalysis.industry_events,
+          regulatory_bodies: fullAnalysis.regulatory_bodies,
+          ecosystem_players: fullAnalysis.ecosystem_players
+        },
+        
+        enhancedAt: new Date().toISOString(),
+        enhancementSource: 'ai_expansion'
+      };
       
     } catch (error) {
       console.error('Failed to enhance organization with AI:', error);
