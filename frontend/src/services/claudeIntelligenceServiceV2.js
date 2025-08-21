@@ -73,9 +73,16 @@ class ClaudeIntelligenceServiceV2 {
     console.log('🎯 Goals:', Object.keys(goals).filter(k => goals[k]));
     
     // Try using the Intelligence Orchestrator for optimal 4-phase flow
-    // Check if orchestrator is enabled (can be disabled via options or localStorage)
+    // Check if orchestrator is enabled (default: enabled unless explicitly disabled)
+    const orchestratorSetting = localStorage.getItem('signaldesk_use_orchestrator');
     const useOrchestrator = options.useOrchestrator !== false && 
-                           localStorage.getItem('signaldesk_use_orchestrator') !== 'false';
+                           orchestratorSetting !== 'false';
+    
+    console.log('🔧 Orchestrator settings:', {
+      fromOptions: options.useOrchestrator,
+      fromLocalStorage: orchestratorSetting,
+      willUseOrchestrator: useOrchestrator
+    });
     
     if (orgName && useOrchestrator) {
       console.log('🚀 Using Intelligence Orchestrator for optimal 4-phase flow');

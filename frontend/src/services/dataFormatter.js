@@ -16,6 +16,9 @@ class DataFormatterService {
     
     // Build properly formatted tabs
     const formattedData = {
+      // CRITICAL: Include success field so claudeIntelligenceServiceV2 uses this data
+      success: true,
+      
       // Overview Tab - MUST have these exact fields
       overview: this.formatOverviewTab(intelligence),
       
@@ -54,10 +57,12 @@ class DataFormatterService {
     };
     
     console.log('✅ Formatted data structure:', {
+      success: formattedData.success,
       hasOverview: !!formattedData.overview,
       overviewHasExecutiveSummary: !!formattedData.overview.executive_summary,
       executiveSummaryType: typeof formattedData.overview.executive_summary,
-      tabKeys: Object.keys(formattedData.tabs)
+      tabKeys: Object.keys(formattedData.tabs),
+      tabCount: Object.keys(formattedData.tabs).length
     });
     
     return formattedData;
