@@ -427,26 +427,134 @@ export class IntelligenceCore {
           }
         }
         
-        // Industry mapping for common variations
+        // Comprehensive industry mapping for all variations
         const industryMap: Record<string, string> = {
+          // Technology variations
           'tech': 'technology',
-          'fintech': 'finance',
-          'saas': 'technology',
           'software': 'technology',
+          'saas': 'technology',
+          'ai': 'technology',
+          'it': 'technology',
+          'digital': 'technology',
+          
+          // Conglomerate variations
+          'diversified': 'conglomerate',
+          'diversifiedconglomerate': 'conglomerate',
+          'holding': 'conglomerate',
+          'holdingcompany': 'conglomerate',
+          'tradingcompany': 'trading_company',
+          'generaltrading': 'trading_company',
+          'sogoshosha': 'trading_company',
+          
+          // Finance variations
+          'fintech': 'finance',
           'banking': 'finance',
+          'bank': 'finance',
+          'financial': 'finance',
+          'financialservices': 'finance',
+          'investment': 'finance',
+          'privateequity': 'private_equity',
+          'pe': 'private_equity',
+          'hedgefund': 'finance',
+          'assetmanagement': 'finance',
+          
+          // Healthcare variations
           'pharma': 'healthcare',
+          'pharmaceutical': 'healthcare',
           'medical': 'healthcare',
+          'health': 'healthcare',
+          'biotech': 'healthcare',
+          'biotechnology': 'healthcare',
+          'lifesciences': 'healthcare',
+          
+          // Automotive variations
           'auto': 'automotive',
+          'automobile': 'automotive',
           'cars': 'automotive',
-          'food': 'retail',
-          'restaurant': 'hospitality',
-          'hotel': 'hospitality',
-          'airline': 'transportation',
-          'aircraft': 'aerospace',
+          'vehicles': 'automotive',
+          'ev': 'automotive',
+          
+          // Real Estate variations
           'realestate': 'real_estate',
           'property': 'real_estate',
+          'reit': 'real_estate',
+          'propertymanagement': 'real_estate',
+          'commercialrealestate': 'real_estate',
+          
+          // Retail variations
           'ecommerce': 'retail',
-          'shopping': 'retail'
+          'shopping': 'retail',
+          'consumer': 'retail',
+          'cpg': 'retail',
+          'consumergoods': 'retail',
+          
+          // Food & Beverage variations
+          'food': 'food_beverage',
+          'beverage': 'food_beverage',
+          'restaurant': 'food_beverage',
+          'qsr': 'food_beverage',
+          'foodservice': 'food_beverage',
+          
+          // Transportation variations
+          'airline': 'transportation',
+          'shipping': 'transportation',
+          'logistics': 'transportation',
+          'freight': 'transportation',
+          'delivery': 'transportation',
+          
+          // Hospitality variations
+          'hotel': 'hospitality',
+          'travel': 'hospitality',
+          'tourism': 'hospitality',
+          'leisure': 'hospitality',
+          
+          // Manufacturing variations
+          'industrial': 'manufacturing',
+          'machinery': 'manufacturing',
+          'equipment': 'manufacturing',
+          
+          // Aerospace variations
+          'aircraft': 'aerospace',
+          'aviation': 'aerospace',
+          'space': 'aerospace',
+          'defense': 'aerospace',
+          
+          // Telecom variations
+          'telecom': 'telecommunications',
+          'telco': 'telecommunications',
+          'wireless': 'telecommunications',
+          'mobile': 'telecommunications',
+          
+          // Media variations
+          'entertainment': 'media',
+          'broadcasting': 'media',
+          'streaming': 'media',
+          'publishing': 'media',
+          
+          // Energy variations
+          'oil': 'energy',
+          'gas': 'energy',
+          'utilities': 'energy',
+          'renewable': 'energy',
+          'solar': 'energy',
+          'wind': 'energy',
+          
+          // Professional Services variations
+          'consulting': 'consulting',
+          'professionalservices': 'consulting',
+          'advisory': 'consulting',
+          'accounting': 'consulting',
+          
+          // Insurance variations
+          'insurtech': 'insurance',
+          'reinsurance': 'insurance',
+          'underwriting': 'insurance',
+          
+          // Agriculture variations
+          'farming': 'agriculture',
+          'agtech': 'agriculture',
+          'agribusiness': 'agriculture',
+          'agricultural': 'agriculture'
         }
         
         const mappedIndustry = industryMap[normalizedIndustry]
@@ -475,10 +583,11 @@ export class IntelligenceCore {
   }
 
   /**
-   * Comprehensive industry sources database (key sources from MasterSourceRegistry)
+   * Comprehensive industry sources database - COMPLETE coverage for all industries
    */
   getIndustrySourcesDatabase() {
     return {
+      // TECHNOLOGY & SOFTWARE
       technology: {
         rss: [
           { name: 'TechCrunch', url: 'https://techcrunch.com/feed/', priority: 'critical', category: 'tech_news' },
@@ -491,9 +600,41 @@ export class IntelligenceCore {
         google_news: [
           'artificial intelligence', 'machine learning', 'cloud computing', 'cybersecurity',
           'software development', 'blockchain', 'quantum computing', 'IoT', '5G technology'
-        ]
+        ],
+        competitors: ['Microsoft', 'Google', 'Apple', 'Amazon', 'Meta', 'Oracle', 'Salesforce', 'Adobe']
       },
       
+      // CONGLOMERATES & TRADING COMPANIES
+      conglomerate: {
+        rss: [
+          { name: 'Nikkei Asia', url: 'https://asia.nikkei.com/rss/feed/nar', priority: 'critical', category: 'asian_business' },
+          { name: 'Japan Times Business', url: 'https://www.japantimes.co.jp/feed/business/', priority: 'critical', category: 'japan_business' },
+          { name: 'Financial Times', url: 'https://www.ft.com/rss/home', priority: 'critical', category: 'global_business' },
+          { name: 'Reuters Business', url: 'https://feeds.reuters.com/reuters/businessNews', priority: 'critical', category: 'business' }
+        ],
+        google_news: [
+          'sogo shosha', 'trading company', 'Mitsubishi Corporation', 'Mitsui', 'Sumitomo', 'Itochu',
+          'Marubeni', 'conglomerate strategy', 'diversified portfolio', 'keiretsu', 'zaibatsu'
+        ],
+        competitors: ['Mitsubishi Corporation', 'Sumitomo Corporation', 'Itochu Corporation', 'Marubeni Corporation', 
+                     'Sojitz', 'Toyota Tsusho', 'Berkshire Hathaway', 'General Electric', 'Siemens', '3M']
+      },
+      
+      trading_company: {
+        rss: [
+          { name: 'Nikkei Asia', url: 'https://asia.nikkei.com/rss/feed/nar', priority: 'critical', category: 'asian_business' },
+          { name: 'Japan Times Business', url: 'https://www.japantimes.co.jp/feed/business/', priority: 'critical', category: 'japan_business' },
+          { name: 'Trade Finance Global', url: 'https://www.tradefinanceglobal.com/feed/', priority: 'high', category: 'trade' }
+        ],
+        google_news: [
+          'general trading company', 'sogo shosha', 'commodity trading', 'international trade',
+          'supply chain management', 'trade finance', 'export import'
+        ],
+        competitors: ['Mitsubishi Corporation', 'Mitsui & Co.', 'Sumitomo Corporation', 'Itochu Corporation', 
+                     'Marubeni', 'Sojitz', 'Glencore', 'Trafigura', 'Vitol', 'Cargill']
+      },
+      
+      // AUTOMOTIVE
       automotive: {
         rss: [
           { name: 'Automotive News', url: 'https://www.autonews.com/feed', priority: 'critical', category: 'auto' },
@@ -502,51 +643,242 @@ export class IntelligenceCore {
         ],
         google_news: [
           'electric vehicles', 'autonomous driving', 'automotive chips', 'vehicle recalls', 
-          'auto manufacturing', 'charging infrastructure', 'EV adoption'
-        ]
+          'auto manufacturing', 'charging infrastructure', 'EV adoption', 'Tesla', 'Toyota', 'Ford'
+        ],
+        competitors: ['Toyota', 'Volkswagen', 'Tesla', 'General Motors', 'Ford', 'Stellantis', 'BMW', 'Mercedes-Benz', 'Honda', 'Nissan']
       },
       
+      // FINANCE & BANKING
       finance: {
         rss: [
           { name: 'Bloomberg', url: 'https://feeds.bloomberg.com/markets/news.rss', priority: 'critical', category: 'markets' },
           { name: 'Reuters Business', url: 'https://feeds.reuters.com/reuters/businessNews', priority: 'critical', category: 'business' },
-          { name: 'CNBC Top News', url: 'https://www.cnbc.com/id/100003114/device/rss/rss.html', priority: 'high', category: 'business' }
+          { name: 'CNBC Top News', url: 'https://www.cnbc.com/id/100003114/device/rss/rss.html', priority: 'high', category: 'business' },
+          { name: 'Financial Times', url: 'https://www.ft.com/rss/home', priority: 'critical', category: 'finance' }
         ],
         google_news: [
           'stock market', 'cryptocurrency', 'federal reserve', 'interest rates',
-          'inflation', 'recession', 'IPO', 'mergers acquisitions', 'fintech'
-        ]
+          'inflation', 'recession', 'IPO', 'mergers acquisitions', 'fintech', 'banking crisis'
+        ],
+        competitors: ['JPMorgan Chase', 'Bank of America', 'ICBC', 'Wells Fargo', 'HSBC', 'Citigroup', 'Goldman Sachs', 'Morgan Stanley']
       },
       
+      private_equity: {
+        rss: [
+          { name: 'PE Hub', url: 'https://www.pehub.com/feed/', priority: 'critical', category: 'pe_news' },
+          { name: 'Private Equity International', url: 'https://www.privateequityinternational.com/feed/', priority: 'critical', category: 'pe_news' },
+          { name: 'Pitchbook News', url: 'https://pitchbook.com/news/rss', priority: 'high', category: 'pe_deals' }
+        ],
+        google_news: [
+          'private equity deals', 'leveraged buyout', 'portfolio company', 'fund raising',
+          'exit strategy', 'venture capital', 'growth equity', 'distressed investing'
+        ],
+        competitors: ['Blackstone', 'KKR', 'Apollo', 'Carlyle Group', 'TPG', 'Warburg Pincus', 'CVC Capital', 'EQT', 'Advent International']
+      },
+      
+      // HEALTHCARE & PHARMA
       healthcare: {
         rss: [
           { name: 'STAT News', url: 'https://www.statnews.com/feed/', priority: 'critical', category: 'health_news' },
           { name: 'FiercePharma', url: 'https://www.fiercepharma.com/rss/xml', priority: 'high', category: 'pharma' },
-          { name: 'MedCity News', url: 'https://medcitynews.com/feed/', priority: 'high', category: 'health_innovation' }
+          { name: 'MedCity News', url: 'https://medcitynews.com/feed/', priority: 'high', category: 'health_innovation' },
+          { name: 'Healthcare Dive', url: 'https://www.healthcaredive.com/feeds/news/', priority: 'high', category: 'healthcare' }
         ],
         google_news: [
           'FDA approval', 'clinical trials', 'drug development', 'medical devices',
-          'telemedicine', 'health insurance', 'vaccine development'
-        ]
+          'telemedicine', 'health insurance', 'vaccine development', 'biotech', 'pharma merger'
+        ],
+        competitors: ['Johnson & Johnson', 'Pfizer', 'Roche', 'Novartis', 'Merck', 'AbbVie', 'Sanofi', 'GSK', 'AstraZeneca', 'Moderna']
       },
       
+      // RETAIL & E-COMMERCE
       retail: {
         rss: [
           { name: 'Retail Dive', url: 'https://www.retaildive.com/feeds/news/', priority: 'high', category: 'retail_news' },
-          { name: 'Chain Store Age', url: 'https://chainstoreage.com/rss.xml', priority: 'medium', category: 'retail_chains' }
+          { name: 'Chain Store Age', url: 'https://chainstoreage.com/rss.xml', priority: 'medium', category: 'retail_chains' },
+          { name: 'Modern Retail', url: 'https://www.modernretail.co/feed/', priority: 'high', category: 'ecommerce' }
         ],
         google_news: [
           'e-commerce', 'retail sales', 'supply chain', 'consumer spending',
-          'holiday shopping', 'omnichannel retail'
-        ]
+          'holiday shopping', 'omnichannel retail', 'Amazon', 'Walmart', 'retail technology'
+        ],
+        competitors: ['Amazon', 'Walmart', 'Alibaba', 'Costco', 'Home Depot', 'CVS', 'Target', 'Kroger', 'JD.com', 'Shopify']
       },
       
+      // ENERGY & UTILITIES
+      energy: {
+        rss: [
+          { name: 'Oil & Gas Journal', url: 'https://www.ogj.com/rss/', priority: 'critical', category: 'oil_gas' },
+          { name: 'Renewable Energy World', url: 'https://www.renewableenergyworld.com/feed/', priority: 'high', category: 'renewable' },
+          { name: 'Energy Digital', url: 'https://www.energydigital.com/feed', priority: 'high', category: 'energy_news' }
+        ],
+        google_news: [
+          'oil prices', 'renewable energy', 'solar power', 'wind energy', 'natural gas',
+          'energy transition', 'carbon neutral', 'electric grid', 'OPEC', 'crude oil'
+        ],
+        competitors: ['Saudi Aramco', 'ExxonMobil', 'Shell', 'Chevron', 'BP', 'TotalEnergies', 'ConocoPhillips', 'NextEra Energy']
+      },
+      
+      // REAL ESTATE
+      real_estate: {
+        rss: [
+          { name: 'Real Estate Weekly', url: 'https://rew-online.com/feed/', priority: 'high', category: 'real_estate' },
+          { name: 'The Real Deal', url: 'https://therealdeal.com/feed/', priority: 'high', category: 'real_estate' },
+          { name: 'CoStar', url: 'https://www.costar.com/News/RSS', priority: 'high', category: 'commercial_real_estate' }
+        ],
+        google_news: [
+          'real estate market', 'property prices', 'commercial real estate', 'REITs',
+          'mortgage rates', 'housing market', 'property development', 'real estate investment'
+        ],
+        competitors: ['CBRE', 'Jones Lang LaSalle', 'Cushman & Wakefield', 'Colliers', 'Brookfield', 'Simon Property', 'Prologis']
+      },
+      
+      // MANUFACTURING & INDUSTRIAL
+      manufacturing: {
+        rss: [
+          { name: 'IndustryWeek', url: 'https://www.industryweek.com/feed', priority: 'high', category: 'manufacturing' },
+          { name: 'Manufacturing.net', url: 'https://www.manufacturing.net/rss/all', priority: 'high', category: 'manufacturing' },
+          { name: 'Supply Chain Dive', url: 'https://www.supplychaindive.com/feeds/news/', priority: 'high', category: 'supply_chain' }
+        ],
+        google_news: [
+          'manufacturing', 'supply chain', 'industrial automation', 'factory production',
+          'lean manufacturing', 'industry 4.0', 'robotics', 'quality control'
+        ],
+        competitors: ['General Electric', 'Siemens', 'Honeywell', '3M', 'Caterpillar', 'Boeing', 'Lockheed Martin', 'Raytheon']
+      },
+      
+      // AEROSPACE & DEFENSE
+      aerospace: {
+        rss: [
+          { name: 'Aviation Week', url: 'https://aviationweek.com/rss.xml', priority: 'critical', category: 'aerospace' },
+          { name: 'Defense News', url: 'https://www.defensenews.com/arc/outboundfeeds/rss/', priority: 'critical', category: 'defense' },
+          { name: 'Space News', url: 'https://spacenews.com/feed/', priority: 'high', category: 'space' }
+        ],
+        google_news: [
+          'aerospace', 'defense contracts', 'military aircraft', 'space exploration',
+          'satellite', 'NASA', 'SpaceX', 'Boeing', 'fighter jets', 'missile defense'
+        ],
+        competitors: ['Boeing', 'Airbus', 'Lockheed Martin', 'Northrop Grumman', 'Raytheon', 'General Dynamics', 'BAE Systems', 'SpaceX']
+      },
+      
+      // TELECOMMUNICATIONS
+      telecommunications: {
+        rss: [
+          { name: 'Light Reading', url: 'https://www.lightreading.com/rss.xml', priority: 'high', category: 'telecom' },
+          { name: 'Fierce Wireless', url: 'https://www.fiercewireless.com/rss/xml', priority: 'high', category: 'wireless' },
+          { name: 'RCR Wireless', url: 'https://www.rcrwireless.com/feed', priority: 'high', category: 'telecom' }
+        ],
+        google_news: [
+          '5G network', 'telecom', 'wireless', 'broadband', 'fiber optic',
+          'mobile network', 'spectrum auction', 'network infrastructure'
+        ],
+        competitors: ['AT&T', 'Verizon', 'T-Mobile', 'China Mobile', 'Vodafone', 'Deutsche Telekom', 'Orange', 'Telefonica']
+      },
+      
+      // MEDIA & ENTERTAINMENT
+      media: {
+        rss: [
+          { name: 'Variety', url: 'https://variety.com/feed/', priority: 'high', category: 'entertainment' },
+          { name: 'Hollywood Reporter', url: 'https://www.hollywoodreporter.com/feed', priority: 'high', category: 'entertainment' },
+          { name: 'Deadline', url: 'https://deadline.com/feed/', priority: 'high', category: 'entertainment' }
+        ],
+        google_news: [
+          'streaming services', 'box office', 'television ratings', 'media merger',
+          'content production', 'Netflix', 'Disney', 'Warner Bros', 'advertising revenue'
+        ],
+        competitors: ['Disney', 'Netflix', 'Warner Bros Discovery', 'Comcast', 'Paramount', 'Sony', 'Amazon Prime', 'Apple TV+']
+      },
+      
+      // HOSPITALITY & TOURISM
+      hospitality: {
+        rss: [
+          { name: 'Hotel News Now', url: 'https://www.hotelnewsnow.com/rss/', priority: 'high', category: 'hospitality' },
+          { name: 'Skift', url: 'https://skift.com/feed/', priority: 'high', category: 'travel' },
+          { name: 'PhocusWire', url: 'https://www.phocuswire.com/rss', priority: 'high', category: 'travel_tech' }
+        ],
+        google_news: [
+          'hotel industry', 'tourism', 'travel recovery', 'airline industry',
+          'cruise lines', 'vacation rental', 'business travel', 'hospitality technology'
+        ],
+        competitors: ['Marriott', 'Hilton', 'Airbnb', 'Booking.com', 'Expedia', 'IHG', 'Hyatt', 'Accor', 'Wyndham']
+      },
+      
+      // FOOD & BEVERAGE
+      food_beverage: {
+        rss: [
+          { name: 'Food Dive', url: 'https://www.fooddive.com/feeds/news/', priority: 'high', category: 'food_industry' },
+          { name: 'Food Business News', url: 'https://www.foodbusinessnews.net/rss', priority: 'high', category: 'food_industry' },
+          { name: 'Beverage Daily', url: 'https://www.beveragedaily.com/rss', priority: 'high', category: 'beverage' }
+        ],
+        google_news: [
+          'food industry', 'restaurant industry', 'food safety', 'supply chain',
+          'plant-based food', 'beverage market', 'food tech', 'QSR', 'food delivery'
+        ],
+        competitors: ['Nestle', 'PepsiCo', 'Coca-Cola', 'Unilever', 'Mondelez', 'Kraft Heinz', 'General Mills', 'Danone', 'Mars']
+      },
+      
+      // TRANSPORTATION & LOGISTICS
+      transportation: {
+        rss: [
+          { name: 'Transport Topics', url: 'https://www.ttnews.com/rss.xml', priority: 'high', category: 'transport' },
+          { name: 'Logistics Management', url: 'https://www.logisticsmgmt.com/rss', priority: 'high', category: 'logistics' },
+          { name: 'FreightWaves', url: 'https://www.freightwaves.com/feed', priority: 'high', category: 'freight' }
+        ],
+        google_news: [
+          'logistics', 'shipping', 'freight', 'transportation', 'supply chain',
+          'cargo', 'trucking industry', 'rail transport', 'port operations'
+        ],
+        competitors: ['UPS', 'FedEx', 'DHL', 'Maersk', 'C.H. Robinson', 'XPO Logistics', 'J.B. Hunt', 'DSV', 'Kuehne + Nagel']
+      },
+      
+      // CONSULTING & PROFESSIONAL SERVICES
+      consulting: {
+        rss: [
+          { name: 'Consulting Magazine', url: 'https://www.consultingmag.com/feed/', priority: 'high', category: 'consulting' },
+          { name: 'Management Consulted', url: 'https://managementconsulted.com/feed/', priority: 'medium', category: 'consulting' }
+        ],
+        google_news: [
+          'management consulting', 'strategy consulting', 'digital transformation',
+          'business advisory', 'McKinsey', 'BCG', 'Bain', 'Deloitte', 'Accenture'
+        ],
+        competitors: ['McKinsey', 'BCG', 'Bain', 'Deloitte', 'PwC', 'EY', 'KPMG', 'Accenture', 'IBM Consulting', 'Capgemini']
+      },
+      
+      // INSURANCE
+      insurance: {
+        rss: [
+          { name: 'Insurance Journal', url: 'https://www.insurancejournal.com/feed/', priority: 'high', category: 'insurance' },
+          { name: 'PropertyCasualty360', url: 'https://www.propertycasualty360.com/feed/', priority: 'high', category: 'insurance' }
+        ],
+        google_news: [
+          'insurance industry', 'insurtech', 'claims processing', 'underwriting',
+          'reinsurance', 'catastrophe insurance', 'health insurance', 'life insurance'
+        ],
+        competitors: ['Berkshire Hathaway', 'Ping An', 'Allianz', 'AXA', 'MetLife', 'Prudential', 'Munich Re', 'Zurich', 'AIG']
+      },
+      
+      // AGRICULTURE
+      agriculture: {
+        rss: [
+          { name: 'AgWeb', url: 'https://www.agweb.com/rss/', priority: 'high', category: 'agriculture' },
+          { name: 'Farm Progress', url: 'https://www.farmprogress.com/rss', priority: 'high', category: 'farming' }
+        ],
+        google_news: [
+          'agriculture', 'farming', 'crop prices', 'agricultural technology',
+          'precision farming', 'sustainable agriculture', 'food security', 'agribusiness'
+        ],
+        competitors: ['Cargill', 'ADM', 'Bunge', 'John Deere', 'Bayer Crop Science', 'Corteva', 'Syngenta', 'Nutrien']
+      },
+      
+      // GLOBAL NEWS SOURCES (fallback)
       global: {
         major_news: [
           { name: 'Reuters Top News', url: 'https://feeds.reuters.com/reuters/topNews', priority: 'critical' },
           { name: 'AP News', url: 'https://feeds.apnews.com/rss/apf-topnews', priority: 'critical' },
           { name: 'BBC News', url: 'https://feeds.bbci.co.uk/news/rss.xml', priority: 'critical' },
-          { name: 'WSJ Business', url: 'https://feeds.wsj.com/wsj/xml/rss/3_7014.xml', priority: 'critical' }
+          { name: 'WSJ Business', url: 'https://feeds.wsj.com/wsj/xml/rss/3_7014.xml', priority: 'critical' },
+          { name: 'Financial Times', url: 'https://www.ft.com/rss/home', priority: 'critical' },
+          { name: 'Nikkei Asia', url: 'https://asia.nikkei.com/rss/feed/nar', priority: 'critical' }
         ]
       }
     }
