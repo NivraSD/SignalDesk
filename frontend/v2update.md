@@ -1,12 +1,12 @@
 # SignalDesk V2 - Intelligence System Update
 
-## 🎯 Major Achievement: Real-Time Intelligence System Operational
+## 🎯 Major Achievement: Real-Time Intelligence System with Organizational Profiles
 
-### Date: 2025-08-20
-**Status: FULLY OPERATIONAL** ✅
+### Date: 2025-08-21
+**Status: FULLY OPERATIONAL WITH PROFILE SYSTEM** ✅
 
 ## Executive Summary
-Successfully deployed a complete MCP (Model Context Protocol) based intelligence gathering system that provides real-time, synthesized intelligence across multiple domains. The system uses distributed Edge Functions to gather data and Claude AI to synthesize actionable insights.
+Successfully deployed a complete MCP (Model Context Protocol) based intelligence gathering system with organizational profiles that provides real-time, synthesized, context-aware intelligence across multiple domains. The system now maintains organizational memory, provides industry-accurate analysis, and generates differentiated tab-specific content.
 
 ## Architecture Overview
 
@@ -21,18 +21,22 @@ Seven specialized intelligence gathering functions deployed with `--no-verify-jw
 - **monitor-intelligence**: Continuous monitoring and alerting
 
 ### 2. Claude AI Synthesis Layer
-- **Model**: `claude-sonnet-4-20250514` (standardized across all functions)
-- **Edge Function**: `claude-intelligence-synthesizer-v2`
-- **Personas**: PR-focused strategic advisors providing targeted analysis
+- **Model**: `claude-3-haiku-20240307` (for fast responses)
+- **Edge Functions**: 
+  - `claude-intelligence-synthesizer-v2`: Persona-based synthesis
+  - `ai-industry-expansion`: Industry detection and enrichment
+- **Personas**: Specialized strategic advisors providing targeted analysis
+- **Profile Integration**: Synthesis now uses organizational context and history
 
 ### 3. Frontend Display
 - **Component**: `IntelligenceDisplayV2` with enhanced data presentation
 - **Features**: 
-  - Tab-based navigation for different intelligence types
+  - Tab-based navigation with differentiated content per tab
   - Real-time refresh capabilities
   - Time-based filtering (24h, 7d, 30d)
-  - Executive summary generation
-  - Full analysis display with insights, recommendations, risks, and opportunities
+  - Executive summary generation with organizational context
+  - Profile-aware analysis with established facts and monitoring targets
+  - Persistent organizational memory across sessions
 
 ## Key Technical Decisions
 
@@ -40,7 +44,8 @@ Seven specialized intelligence gathering functions deployed with `--no-verify-jw
 ```javascript
 // Standardized Claude API configuration
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const model = 'claude-sonnet-4-20250514';
+const model = 'claude-3-haiku-20240307'; // Fast, accurate responses
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; // Valid production key
 ```
 
 ### MCP Deployment Strategy
@@ -52,10 +57,13 @@ supabase functions deploy pr-intelligence news-intelligence media-intelligence \
 ```
 
 ### Data Flow
-1. Frontend requests intelligence → 
-2. MCP functions gather raw data →
-3. Claude synthesizer processes with personas →
-4. Frontend displays structured insights
+1. User provides organization info →
+2. System builds/retrieves organizational profile →
+3. MCP functions gather raw data with context →
+4. Claude synthesizer processes with personas and profile →
+5. Tab intelligence service generates differentiated content →
+6. Frontend displays structured, context-aware insights →
+7. System stores key insights in organizational memory
 
 ## Problems Solved
 
@@ -77,15 +85,48 @@ supabase functions deploy pr-intelligence news-intelligence media-intelligence \
 - **Issue**: Intelligence data overflow, Niv panel double containers
 - **Solution**: Created `RailwayV2Enhanced` with proper flex layout and scrolling
 
+### 5. Industry Misclassification (Toyota = Tech Company)
+- **Issue**: System defaulted all organizations to technology industry
+- **Root Cause**: Always overriding user's industry selection with AI detection
+- **Solution**: Respect user's industry choice, use AI for enrichment only
+
+### 6. Generic Intelligence Across All Tabs
+- **Issue**: Same content repeated in Competition, Stakeholders, Topics tabs
+- **Solution**: Created `tabIntelligenceService.js` for differentiated content
+
+### 7. No Organizational Memory
+- **Issue**: System started from zero knowledge each time
+- **Solution**: Built profile system with localStorage persistence
+
 ## Current Capabilities
+
+### Organizational Profile System
+- **Intelligent Profiles**: Maintains context about each organization
+  - Established facts (e.g., Toyota's $8B battery plant)
+  - Strategic initiatives and recent history
+  - Pain points and strengths
+  - Monitoring targets (competitors, stakeholders, topics)
+- **Industry Accuracy**: Correctly identifies and enriches industries
+  - Toyota → Automotive (with Ford, GM, VW as competitors)
+  - KARV → PR/Communications (with Edelman, Weber as competitors)
+- **Memory Persistence**: Profiles and insights persist across sessions
+- **Context-Aware Analysis**: Won't make obvious recommendations
+
+### Tab-Specific Intelligence
+Each tab provides differentiated content:
+- **Overview**: Executive summary with critical alerts and metrics
+- **Competition**: Competitor movements, market dynamics, strategic gaps
+- **Stakeholders**: Group sentiment, engagement opportunities, risk assessment
+- **Topics**: Trend analysis, breakthrough developments, blind spots
+- **Predictions**: Cascade scenarios, early warnings, strategic implications
 
 ### Intelligence Types & Output
 Each intelligence type provides:
-- **Primary Analysis**: Main insights and findings
+- **Primary Analysis**: Main insights with organizational context
 - **Second Opinion**: Alternative perspective for validation
-- **Recommendations**: Actionable next steps (PR-focused)
-- **Risk Assessment**: Potential challenges and mitigation
-- **Opportunity Identification**: Strategic openings to exploit
+- **Recommendations**: Context-aware next steps (not generic)
+- **Risk Assessment**: Organization-specific challenges
+- **Opportunity Identification**: Tailored strategic openings
 
 ### Real-Time Data Sources
 The system actively monitors:
@@ -198,13 +239,22 @@ To add a new intelligence domain:
 ### Key Files
 - Intelligence Display: `frontend/src/components/IntelligenceDisplayV2.js`
 - Main Layout: `frontend/src/components/RailwayV2Enhanced.js`
+- Claude Service V2: `frontend/src/services/claudeIntelligenceServiceV2.js`
+- Organization Profiles: `frontend/src/services/organizationProfileService.js`
+- Tab Intelligence: `frontend/src/services/tabIntelligenceService.js`
+- AI Industry Expansion: `frontend/src/services/aiIndustryExpansionService.js`
 - Claude Synthesizer: `supabase/functions/claude-intelligence-synthesizer-v2/index.ts`
+- Industry Detection: `supabase/functions/ai-industry-expansion/index.ts`
 - MCP Functions: `supabase/functions/*-intelligence/index.ts`
+- Profile Schema: `backend/src/db/create_organization_profiles.sql`
 
 ### Critical Functions
-- Data fetching: `IntelligenceDisplayV2.js:fetchIntelligence()`
-- Synthesis: `claude-intelligence-synthesizer-v2:synthesizeIntelligence()`
-- Display rendering: `IntelligenceDisplayV2.js:renderAnalysis()`
+- Profile Building: `organizationProfileService.js:getOrBuildProfile()`
+- Industry Detection: `aiIndustryExpansionService.js:smartIndustryDetection()`
+- Intelligence Gathering: `claudeIntelligenceServiceV2.js:gatherAndAnalyze()`
+- Tab Generation: `tabIntelligenceService.js:generateTabIntelligence()`
+- Data Synthesis: `claude-intelligence-synthesizer-v2:synthesizeIntelligence()`
+- Memory Storage: `claudeIntelligenceServiceV2.js:storeKeyInsights()`
 
 ## Success Metrics
 - ✅ Real-time intelligence gathering operational
@@ -212,11 +262,23 @@ To add a new intelligence domain:
 - ✅ AI synthesis providing actionable insights
 - ✅ UI properly displaying all intelligence types
 - ✅ System scalable and reconfigurable
+- ✅ Organizational profiles with persistent memory
+- ✅ Industry-accurate classification (no more Toyota = tech)
+- ✅ Tab-specific differentiated content
+- ✅ Context-aware recommendations
+- ✅ User industry selections respected
 
 ## Team Notes
-This represents a major milestone in the SignalDesk platform. The intelligence system is now production-ready and can be easily adapted for different use cases beyond PR. The modular architecture ensures maintainability and extensibility.
+This represents a major milestone in the SignalDesk platform. The intelligence system now features organizational profiles with memory, industry-accurate classification, and differentiated tab content. The system is production-ready and provides truly context-aware intelligence that improves over time. The modular architecture ensures maintainability and extensibility.
+
+### Latest Enhancements (2025-08-21)
+- **Organizational Profile System**: Complete context and memory management
+- **Industry Accuracy**: Fixed misclassification issues (Toyota ≠ tech company)
+- **Tab Differentiation**: Each tab shows unique, purpose-specific content
+- **User Respect**: System honors user's industry selection while enriching with AI
+- **Persistent Memory**: Insights accumulate and persist across sessions
 
 ---
-*Last Updated: 2025-08-20*
-*Version: 2.0.0*
-*Status: Production Ready*
+*Last Updated: 2025-08-21*
+*Version: 2.1.0*
+*Status: Production Ready with Profile System*

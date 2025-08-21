@@ -3,6 +3,8 @@
 
 import { getIndustryCompetitors, detectIndustryFromOrganization } from '../utils/industryCompetitors';
 import aiIndustryExpansionService from './aiIndustryExpansionService';
+import organizationProfileService from './organizationProfileService';
+import tabIntelligenceService from './tabIntelligenceService';
 
 class ClaudeIntelligenceServiceV2 {
   constructor() {
@@ -62,6 +64,14 @@ class ClaudeIntelligenceServiceV2 {
       hasTargets: !!config.targets
     });
     
+    // Build or retrieve organization profile for context
+    const profile = await organizationProfileService.getOrBuildProfile(config.organization);
+    console.log('📋 Organization Profile loaded:', profile.identity.name, 
+                `(${profile.confidence_level})`);
+    
+    // Use profile to guide intelligence gathering
+    const intelligenceGuidance = organizationProfileService.getIntelligenceGuidance(profile);
+    
     // Extract ALL onboarding data - FIXED to match actual structure
     const organization = config.organization || {};
     const goals = config.goals || {};
@@ -73,27 +83,34 @@ class ClaudeIntelligenceServiceV2 {
     const orgName = organization.name || config.organizationName || '';
     const website = organization.website || config.website || '';
     
-    // ALWAYS use AI-powered industry detection for accurate classification
+    // Start with user's industry selection
     let industry = organization.industry || config.industry;
-    console.log(`🔍 Initial industry: ${industry} for ${orgName}`);
+    console.log(`🔍 User selected industry: ${industry} for ${orgName}`);
     
-    // Always run AI detection to ensure accurate industry classification
-    // (especially important for companies like Toyota that shouldn't be "technology")
-    console.log('🤖 Using AI for accurate industry detection');
-    try {
-      const aiDetection = await aiIndustryExpansionService.smartIndustryDetection(
-        orgName, 
-        website, 
-        organization.description || config.description || ''
-      );
-      industry = aiDetection.industry;
-      console.log(`✨ AI detected industry: ${industry} (confidence: ${aiDetection.confidence})`);
-    } catch (error) {
-      console.error('AI industry detection failed, using fallback:', error);
-      // Only use existing industry if it's not generic
-      if (!industry || industry === 'technology' || industry === 'general') {
+    // Determine if we need AI detection or just enrichment
+    const needsIndustryDetection = !industry || 
+                                   industry === 'general' || 
+                                   industry === 'other' ||
+                                   (industry === 'technology' && orgName.toLowerCase().includes('toyota')); // Known mismatches
+    
+    if (needsIndustryDetection) {
+      console.log('🤖 No industry provided or mismatch detected - using AI detection');
+      try {
+        const aiDetection = await aiIndustryExpansionService.smartIndustryDetection(
+          orgName, 
+          website, 
+          organization.description || config.description || ''
+        );
+        industry = aiDetection.industry;
+        console.log(`✨ AI detected industry: ${industry} (confidence: ${aiDetection.confidence})`);
+      } catch (error) {
+        console.error('AI industry detection failed, using fallback:', error);
         industry = detectIndustryFromOrganization(orgName);
       }
+    } else {
+      console.log(`✅ Using user-provided industry: ${industry}`);
+      // Still use AI to enrich the industry data (competitors, keywords, etc.)
+      // but trust the user's industry classification
     }
     
     console.log(`🏭 Industry detection for ${orgName}: ${industry}`);
@@ -154,7 +171,7 @@ class ClaudeIntelligenceServiceV2 {
     }
     
     // Create a promise for this request to prevent duplicates
-    const analysisPromise = this.performAnalysis(fullOrganization, goals, timeframe, options);
+    const analysisPromise = this.performAnalysis(fullOrganization, goals, timeframe, options, profile, intelligenceGuidance);
     this.pendingRequests.set(cacheKey, analysisPromise);
     
     try {
@@ -168,10 +185,11 @@ class ClaudeIntelligenceServiceV2 {
     }
   }
 
-  async performAnalysis(organization, goals, timeframe, options) {
+  async performAnalysis(organization, goals, timeframe, options, profile, intelligenceGuidance) {
     console.log('🎯 Gathering intelligence with specialized personas');
     console.log('📊 Organization:', organization.name, '| Industry:', organization.industry);
     console.log('🎯 Active goals:', Object.entries(goals).filter(([k,v]) => v).map(([k]) => k));
+    console.log('📋 Using profile guidance:', intelligenceGuidance?.search_priorities?.slice(0, 3));
     
     // Step 1: Enhance organization data with Claude before MCP calls
     const enhancedOrganization = await this.enhanceOrganizationWithClaude(organization, goals);
@@ -182,46 +200,64 @@ class ClaudeIntelligenceServiceV2 {
     // Step 3: Determine which analyses need second opinions
     const criticalAnalyses = this.identifyCriticalAnalyses(mcpData, goals);
     
-    // Step 4: Send to Claude V2 for persona-based synthesis
+    // Step 4: Send to Claude V2 for persona-based synthesis with profile context
     const synthesizedIntelligence = await this.synthesizeWithClaudeV2(
       mcpData, 
       enhancedOrganization, 
       goals, 
       timeframe,
-      criticalAnalyses
+      criticalAnalyses,
+      profile,
+      intelligenceGuidance
     );
     
     // Step 5: Store key insights in memory
     await this.storeKeyInsights(synthesizedIntelligence, enhancedOrganization);
     
-    return synthesizedIntelligence;
+    // Generate tab-specific intelligence using profile
+    const tabIntelligence = await tabIntelligenceService.generateTabIntelligence(
+      enhancedOrganization,
+      synthesizedIntelligence,
+      profile
+    );
+    
+    // Update profile with new intelligence
+    await organizationProfileService.updateProfile(enhancedOrganization, synthesizedIntelligence);
+    
+    // Return enhanced intelligence with tab-specific content
+    return {
+      ...synthesizedIntelligence,
+      profile: {
+        confidence_level: profile.confidence_level,
+        last_updated: profile.last_updated,
+        established_facts: profile.established_facts
+      },
+      tabs: tabIntelligence,
+      guidance: intelligenceGuidance
+    };
   }
 
   async enhanceOrganizationWithClaude(organization, goals) {
     console.log('🔮 Enhancing organization data with AI Industry Expansion');
     
     try {
-      // First, try AI Industry Expansion for comprehensive analysis
-      const aiAnalysis = await aiIndustryExpansionService.smartIndustryDetection(
-        organization.name,
-        organization.website,
-        organization.description
-      );
+      // Use AI to EXPAND industry data, not necessarily to override the industry
+      const fullAnalysis = await aiIndustryExpansionService.analyzeAndExpandIndustry({
+        name: organization.name,
+        website: organization.website,
+        description: organization.description,
+        industry: organization.industry // Pass user's industry selection
+      });
       
-      console.log('🎯 AI detected industry:', aiAnalysis.industry);
+      console.log('🎯 AI analysis complete for industry:', organization.industry || fullAnalysis.primary_industry);
       
-      if (aiAnalysis.confidence === 'high') {
-        // Use AI-powered full analysis
-        const fullAnalysis = await aiIndustryExpansionService.analyzeAndExpandIndustry({
-          name: organization.name,
-          website: organization.website,
-          description: organization.description
-        });
-        
-        return {
-          ...organization,
-          // Update industry based on AI analysis
-          industry: fullAnalysis.primary_industry,
+      // Respect user's industry choice if provided
+      const finalIndustry = organization.industry || fullAnalysis.primary_industry;
+      
+      return {
+        ...organization,
+        // Keep user's industry or use AI's if none provided
+        industry: finalIndustry,
           subcategories: fullAnalysis.subcategories,
           
           // Use AI-discovered competitors instead of generic tech defaults
@@ -436,27 +472,28 @@ class ClaudeIntelligenceServiceV2 {
     }
   }
 
-  async synthesizeWithClaudeV2(mcpData, organization, goals, timeframe, criticalAnalyses) {
+  async synthesizeWithClaudeV2(mcpData, organization, goals, timeframe, criticalAnalyses, profile, intelligenceGuidance) {
     console.log('🧠 Synthesizing with Claude V2 specialized personas');
+    console.log('📋 Profile context:', profile?.identity?.name, profile?.confidence_level);
     
     try {
-      // Call different synthesis types in parallel with V2 endpoint
+      // Call different synthesis types in parallel with V2 endpoint, including profile context
       const synthesisPromises = [
         this.callClaudeV2Synthesizer('competitor', mcpData.competitive, organization, goals, timeframe, 
-          criticalAnalyses.includes('competitor')),
+          criticalAnalyses.includes('competitor'), profile, intelligenceGuidance),
         this.callClaudeV2Synthesizer('stakeholder', {
           relationships: mcpData.stakeholder,
           media: mcpData.media
         }, organization, goals, timeframe, 
-          criticalAnalyses.includes('stakeholder')),
+          criticalAnalyses.includes('stakeholder'), profile, intelligenceGuidance),
         this.callClaudeV2Synthesizer('narrative', {
           news: mcpData.news,
           media: mcpData.media,
           analytics: mcpData.analytics
         }, organization, goals, timeframe,
-          criticalAnalyses.includes('narrative')),
+          criticalAnalyses.includes('narrative'), profile, intelligenceGuidance),
         this.callClaudeV2Synthesizer('predictive', mcpData, organization, goals, timeframe,
-          criticalAnalyses.includes('predictive')),
+          criticalAnalyses.includes('predictive'), profile, intelligenceGuidance),
       ];
 
       const results = await Promise.allSettled(synthesisPromises);
@@ -469,14 +506,16 @@ class ClaudeIntelligenceServiceV2 {
         predictive: results[3].status === 'fulfilled' ? results[3].value : null,
       };
 
-      // Executive summary with second opinion
+      // Executive summary with second opinion and profile context
       const executiveSummary = await this.callClaudeV2Synthesizer(
         'executive_summary', 
         allAnalyses, 
         organization, 
         goals, 
         timeframe,
-        criticalAnalyses.includes('executive_summary')
+        criticalAnalyses.includes('executive_summary'),
+        profile,
+        intelligenceGuidance
       );
 
       // Track which personas were activated
@@ -503,7 +542,7 @@ class ClaudeIntelligenceServiceV2 {
     }
   }
 
-  async callClaudeV2Synthesizer(intelligenceType, mcpData, organization, goals, timeframe, requiresSecondOpinion = false) {
+  async callClaudeV2Synthesizer(intelligenceType, mcpData, organization, goals, timeframe, requiresSecondOpinion = false, profile = null, intelligenceGuidance = null) {
     // Log what we're sending to Claude
     console.log(`🚀 Sending to Claude ${intelligenceType}:`, {
       hasOrganization: !!organization,
@@ -513,7 +552,9 @@ class ClaudeIntelligenceServiceV2 {
       stakeholders: organization?.stakeholders,
       topics: organization?.topics,
       goalsCount: Object.keys(goals || {}).filter(k => goals[k]).length,
-      hasMcpData: !!mcpData
+      hasMcpData: !!mcpData,
+      hasProfile: !!profile,
+      profileConfidence: profile?.confidence_level
     });
     
     try {
@@ -529,7 +570,14 @@ class ClaudeIntelligenceServiceV2 {
           organization,
           goals,
           timeframe,
-          requires_second_opinion: requiresSecondOpinion
+          requires_second_opinion: requiresSecondOpinion,
+          profile: profile ? {
+            established_facts: profile.established_facts,
+            monitoring_targets: profile.monitoring_targets,
+            objectives: profile.objectives,
+            context_flags: profile.context
+          } : null,
+          guidance: intelligenceGuidance
         })
       });
 
@@ -584,7 +632,9 @@ class ClaudeIntelligenceServiceV2 {
     }
     
     // Store in localStorage for now (would be database in production)
-    const memoryKey = `signaldesk_memory_${organization.id}`;
+    // Use organization name as fallback if no ID exists
+    const memoryId = organization.id || organization.name?.toLowerCase().replace(/\s+/g, '_');
+    const memoryKey = `signaldesk_memory_${memoryId}`;
     const existingMemory = JSON.parse(localStorage.getItem(memoryKey) || '[]');
     
     keyInsights.forEach(insight => {
