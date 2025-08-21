@@ -921,12 +921,12 @@ class ClaudeIntelligenceServiceV2 {
       predictions: tabIntelligence.predictions || insights.predictive || {},
       predictive: tabIntelligence.predictions || insights.predictive || {},
       
-      // EXECUTIVE SUMMARY
-      executive_summary: intelligence.executive_summary || {
-        organization: orchestratedResult.organization,
-        key_findings: intelligence.key_insights || [],
-        recommendations: intelligence.executive_summary?.recommendations || [],
-        total_articles: stats.articles || 0
+      // EXECUTIVE SUMMARY - Pass through the properly formatted overview
+      executive_summary: tabIntelligence.overview || insights.overview || {
+        executive_summary: intelligence.executive_summary,
+        key_insights: intelligence.key_insights || [],
+        critical_alerts: intelligence.alerts || [],
+        recommended_actions: intelligence.recommendations || []
       },
       
       // Tab-specific intelligence (for the tab components)

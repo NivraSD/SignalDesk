@@ -228,17 +228,58 @@ async function orchestrateIntelligence(organization: any) {
       if (synthesisResult.success && synthesisResult.analysis) {
         results.phases_completed.synthesis = true
         
+        // Extract the actual synthesized content
+        const synthesis = synthesisResult.analysis
+        
+        // Build proper executive summary from synthesis
+        let executiveSummaryText = ''
+        if (synthesis.executive_summary) {
+          executiveSummaryText = typeof synthesis.executive_summary === 'string' 
+            ? synthesis.executive_summary 
+            : synthesis.executive_summary.analysis || synthesis.executive_summary.summary || ''
+        } else if (synthesis.primary_analysis) {
+          executiveSummaryText = synthesis.primary_analysis.analysis || synthesis.primary_analysis.summary || ''
+        } else if (synthesis.analysis_text) {
+          executiveSummaryText = synthesis.analysis_text
+        }
+        
+        // If no executive summary from synthesis, generate one
+        if (!executiveSummaryText) {
+          executiveSummaryText = `${organization.name} operates in the ${discoveryData.primary_category || organization.industry} industry. Based on analysis of ${results.statistics.articles_processed} articles and ${results.statistics.websites_scraped} websites, key competitive threats and opportunities have been identified. Immediate focus areas include monitoring ${discoveryData.competitors?.slice(0, 3).join(', ') || 'key competitors'}.`
+        }
+        
+        // Extract or build key insights
+        const keyInsights = synthesis.key_insights || 
+                           synthesis.primary_analysis?.key_insights || 
+                           extractKeyInsights(gatheringData)
+        
+        // Extract or build recommendations
+        const recommendations = synthesis.recommendations || 
+                               synthesis.primary_analysis?.recommendations || 
+                               generateRecommendations(gatheringData)
+        
         // Merge synthesized intelligence with raw data insights
         results.intelligence = {
-          // Synthesized insights from Claude
-          synthesized: synthesisResult.analysis,
+          // The actual executive summary TEXT (not object)
+          executive_summary: executiveSummaryText,
+          
+          // Key insights from synthesis or extracted
+          key_insights: keyInsights,
+          
+          // Critical alerts
+          alerts: synthesis.critical_alerts || gatheringData.news?.alerts || [],
+          
+          // Recommendations
+          recommendations: recommendations,
+          
+          // Synthesized insights from Claude (keep for reference)
+          synthesized: synthesis,
           
           // Raw data insights
           industry_trends: gatheringData.news?.industryNews || [],
           breaking_news: gatheringData.news?.breakingNews || [],
-          opportunities: gatheringData.news?.opportunities || [],
+          opportunities: synthesis.opportunities || gatheringData.news?.opportunities || [],
           competitor_activity: gatheringData.news?.competitorActivity || [],
-          alerts: gatheringData.news?.alerts || [],
           discussions: gatheringData.reddit?.discussions || gatheringData.news?.discussions || [],
           
           // Discovery insights
@@ -246,23 +287,15 @@ async function orchestrateIntelligence(organization: any) {
           industry_context: discoveryData.industry_context || '',
           intelligence_focus: discoveryData.intelligence_focus || [],
           
-          // Structured insights
-          key_insights: extractKeyInsights(gatheringData),
+          // Competitive positioning
           competitive_positioning: {
             competitors: discoveryData.competitors || [],
             activity: gatheringData.news?.competitorActivity || []
           },
-          immediate_opportunities: gatheringData.news?.opportunities?.slice(0, 5) || [],
-          immediate_risks: gatheringData.news?.alerts?.slice(0, 5) || [],
           
-          // Executive summary
-          executive_summary: {
-            organization: organization.name,
-            industry: discoveryData.primary_category || organization.industry,
-            total_articles: results.statistics.articles_processed,
-            key_findings: extractKeyInsights(gatheringData).slice(0, 5),
-            recommendations: generateRecommendations(gatheringData)
-          }
+          // Immediate items
+          immediate_opportunities: synthesis.immediate_opportunities || gatheringData.news?.opportunities?.slice(0, 5) || [],
+          immediate_risks: synthesis.immediate_risks || gatheringData.news?.alerts?.slice(0, 5) || []
         }
         
         console.log('✅ Synthesis complete with Claude')

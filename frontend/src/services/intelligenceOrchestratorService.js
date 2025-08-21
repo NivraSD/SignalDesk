@@ -164,11 +164,17 @@ class IntelligenceOrchestratorService {
 
   _extractOverviewInsights(data) {
     const intelligence = data.intelligence || {};
+    
+    // The orchestrator now returns executive_summary as a direct string
+    const summaryText = intelligence.executive_summary || 
+                       intelligence.synthesized?.executive_summary || 
+                       'Executive intelligence analysis in progress...';
+    
     return {
-      executive_summary: intelligence.executive_summary || intelligence.synthesized?.executive_summary || 'Analysis in progress',
+      executive_summary: summaryText,
       key_insights: intelligence.key_insights || [],
       critical_alerts: intelligence.alerts || [],
-      recommended_actions: intelligence.executive_summary?.recommendations || intelligence.immediate_opportunities || []
+      recommended_actions: intelligence.recommendations || intelligence.immediate_opportunities || []
     };
   }
 
