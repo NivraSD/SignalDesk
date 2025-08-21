@@ -156,6 +156,16 @@ export class IntelligenceCore {
     const name = organization.name?.toLowerCase() || ''
     const industry = organization.industry?.toLowerCase() || ''
     
+    // Check for conglomerate/trading company FIRST (most specific)
+    if (industry.includes('conglomerate') || industry.includes('diversified') || 
+        industry.includes('holding') || industry.includes('trading')) {
+      return 'conglomerate'
+    }
+    if (name.includes('mitsui') || name.includes('mitsubishi') || name.includes('sumitomo') || 
+        name.includes('itochu') || name.includes('marubeni')) {
+      return 'conglomerate'  // Japanese trading companies
+    }
+    
     // Use exact industry if automotive
     if (industry === 'automotive' || industry.includes('automotive')) {
       return 'automotive'
@@ -437,7 +447,8 @@ export class IntelligenceCore {
           'it': 'technology',
           'digital': 'technology',
           
-          // Conglomerate variations
+          // Conglomerate variations - keep conglomerate as conglomerate!
+          'conglomerate': 'conglomerate',  // Explicit mapping to itself
           'diversified': 'conglomerate',
           'diversifiedconglomerate': 'conglomerate',
           'holding': 'conglomerate',
