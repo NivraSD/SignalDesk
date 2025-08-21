@@ -101,32 +101,50 @@ export class IntelligenceCore {
   /**
    * Get complete intelligence configuration for an organization
    * This is called by EVERY Edge Function to know what to monitor
+   * NOW USES: AI-enhanced industry data + comprehensive MasterSourceRegistry
    */
   async getOrganizationConfig(organization: any) {
-    // Determine industry
-    const industry = this.identifyIndustry(organization)
-    const config = INDUSTRY_CONFIG[industry] || INDUSTRY_CONFIG.default
+    console.log(`🧠 Getting enhanced configuration for ${organization.name}`)
     
-    // Get any custom sources from database
+    // FIRST: Use AI-enhanced industry insights if available
+    const aiIndustryInsights = organization.industryInsights || {}
+    const industry = organization.industry || this.identifyIndustry(organization)
+    
+    // SECOND: Get comprehensive sources from MasterSourceRegistry
+    const comprehensiveSources = await this.getComprehensiveSources(industry)
+    
+    // THIRD: Get any custom sources from database
     const customSources = await this.getCustomSources(organization)
     
-    // Identify specific competitors for this org
+    // FOURTH: Identify specific competitors using AI + discovered data
     const competitors = await this.identifyCompetitors(organization, industry)
+    
+    // FIFTH: Build comprehensive monitoring keywords
+    const keywords = this.buildComprehensiveKeywords(organization, aiIndustryInsights, comprehensiveSources)
+    
+    // SIXTH: Merge all media outlets (AI + MasterSourceRegistry)
+    const mediaOutlets = this.mergeMediaOutlets(aiIndustryInsights.media_outlets, comprehensiveSources.media_outlets)
+    
+    console.log(`✅ Enhanced config: ${competitors.length} competitors, ${comprehensiveSources.rss_feeds.length} RSS feeds, ${keywords.length} keywords`)
     
     return {
       organization: organization.name,
       industry,
-      keywords: [...config.keywords, organization.name],
-      competitors: [...new Set([...competitors, ...config.competitors.slice(0, 5)])],
+      keywords,
+      competitors,
+      stakeholder_groups: organization.stakeholders || aiIndustryInsights.stakeholder_groups || [],
+      industry_events: aiIndustryInsights.industry_events || [],
+      regulatory_bodies: aiIndustryInsights.regulatory_bodies || [],
       sources: {
-        rss_feeds: config.rss_feeds,
-        news_queries: [...config.news_queries, `"${organization.name}" news`],
-        websites: this.getIndustryWebsites(industry)
+        rss_feeds: [...comprehensiveSources.rss_feeds, ...(customSources.rss_feeds || [])],
+        news_queries: [...comprehensiveSources.google_news_queries, `"${organization.name}" news`, ...(customSources.news_queries || [])],
+        websites: [...comprehensiveSources.websites, this.getIndustryWebsites(industry), ...(customSources.websites || [])],
+        media_outlets: mediaOutlets
       },
       monitoring: {
         refresh_interval: 3600000, // 1 hour
-        priority_keywords: [organization.name, ...competitors.slice(0, 3)],
-        alert_keywords: ['crisis', 'lawsuit', 'breach', 'acquisition', 'layoffs']
+        priority_keywords: [organization.name, ...competitors.slice(0, 5), ...keywords.slice(0, 10)],
+        alert_keywords: ['crisis', 'lawsuit', 'breach', 'acquisition', 'layoffs', 'bankruptcy', 'investigation', 'recall']
       }
     }
   }
@@ -137,6 +155,11 @@ export class IntelligenceCore {
   identifyIndustry(organization: any): string {
     const name = organization.name?.toLowerCase() || ''
     const industry = organization.industry?.toLowerCase() || ''
+    
+    // Use exact industry if automotive
+    if (industry === 'automotive' || industry.includes('automotive')) {
+      return 'automotive'
+    }
     
     // Direct industry match
     if (industry.includes('tech') || industry.includes('software') || industry.includes('ai')) {
@@ -169,7 +192,13 @@ export class IntelligenceCore {
   async identifyCompetitors(organization: any, industry: string): Promise<string[]> {
     const competitors = []
     
-    // First check if we have stored competitors
+    // FIRST - Check if competitors were provided directly (from intelligent discovery)
+    if (organization.competitors && Array.isArray(organization.competitors)) {
+      console.log(`✅ Using ${organization.competitors.length} discovered competitors for ${organization.name}`)
+      return organization.competitors
+    }
+    
+    // SECOND - Check if we have stored competitors in database
     const { data } = await this.supabase
       .from('organization_intelligence')
       .select('competitors')
@@ -330,6 +359,251 @@ export class IntelligenceCore {
     }
     
     return articles
+  }
+
+  /**
+   * Get comprehensive sources from MasterSourceRegistry
+   * This replaces the limited hardcoded INDUSTRY_CONFIG
+   */
+  async getComprehensiveSources(industry: string) {
+    // Import MasterSourceRegistry logic (simplified version for Edge Function)
+    const masterSources = this.getMasterSourceRegistry()
+    
+    // Get sources for this specific industry
+    const industrySources = masterSources.getSourcesForIndustry(industry)
+    
+    return {
+      rss_feeds: (industrySources.rss_feeds || []).map(feed => 
+        typeof feed === 'string' ? feed : feed.url
+      ),
+      google_news_queries: industrySources.google_news_queries || [],
+      websites: industrySources.websites || [],
+      media_outlets: (industrySources.rss_feeds || []).map(feed => ({
+        name: typeof feed === 'string' ? feed.split('/')[2] : feed.name,
+        url: typeof feed === 'string' ? feed : feed.url,
+        category: typeof feed === 'string' ? 'general' : feed.category,
+        priority: typeof feed === 'string' ? 'medium' : feed.priority
+      }))
+    }
+  }
+
+  /**
+   * Simplified MasterSourceRegistry for Edge Functions
+   * Contains the comprehensive source database
+   */
+  getMasterSourceRegistry() {
+    return {
+      getSourcesForIndustry: (industry: string) => {
+        const sources = this.getIndustrySourcesDatabase()
+        
+        if (!industry) {
+          return {
+            rss_feeds: sources.global.major_news,
+            google_news_queries: ['business news', 'industry trends', 'market updates'],
+            websites: []
+          }
+        }
+        
+        // Normalize industry name
+        const normalizedIndustry = industry.toLowerCase().replace(/[^a-z]/g, '')
+        
+        // Try exact match first
+        if (sources[normalizedIndustry]) {
+          return {
+            rss_feeds: sources[normalizedIndustry].rss || [],
+            google_news_queries: sources[normalizedIndustry].google_news || [],
+            websites: sources[normalizedIndustry].websites || []
+          }
+        }
+        
+        // Try partial match
+        for (const key in sources) {
+          if (key !== 'global' && (key.includes(normalizedIndustry) || normalizedIndustry.includes(key))) {
+            return {
+              rss_feeds: sources[key].rss || [],
+              google_news_queries: sources[key].google_news || [],
+              websites: sources[key].websites || []
+            }
+          }
+        }
+        
+        // Industry mapping for common variations
+        const industryMap: Record<string, string> = {
+          'tech': 'technology',
+          'fintech': 'finance',
+          'saas': 'technology',
+          'software': 'technology',
+          'banking': 'finance',
+          'pharma': 'healthcare',
+          'medical': 'healthcare',
+          'auto': 'automotive',
+          'cars': 'automotive',
+          'food': 'retail',
+          'restaurant': 'hospitality',
+          'hotel': 'hospitality',
+          'airline': 'transportation',
+          'aircraft': 'aerospace',
+          'realestate': 'real_estate',
+          'property': 'real_estate',
+          'ecommerce': 'retail',
+          'shopping': 'retail'
+        }
+        
+        const mappedIndustry = industryMap[normalizedIndustry]
+        if (mappedIndustry && sources[mappedIndustry]) {
+          return {
+            rss_feeds: sources[mappedIndustry].rss || [],
+            google_news_queries: sources[mappedIndustry].google_news || [],
+            websites: sources[mappedIndustry].websites || []
+          }
+        }
+        
+        // Default to business sources with industry-specific queries
+        return {
+          rss_feeds: sources.global.major_news.slice(0, 10),
+          google_news_queries: [
+            `${industry} news`,
+            `${industry} trends`,
+            `${industry} market`,
+            `${industry} industry`,
+            'business news'
+          ],
+          websites: []
+        }
+      }
+    }
+  }
+
+  /**
+   * Comprehensive industry sources database (key sources from MasterSourceRegistry)
+   */
+  getIndustrySourcesDatabase() {
+    return {
+      technology: {
+        rss: [
+          { name: 'TechCrunch', url: 'https://techcrunch.com/feed/', priority: 'critical', category: 'tech_news' },
+          { name: 'The Verge', url: 'https://www.theverge.com/rss/index.xml', priority: 'critical', category: 'tech_news' },
+          { name: 'Ars Technica', url: 'https://feeds.arstechnica.com/arstechnica/index', priority: 'high', category: 'tech_news' },
+          { name: 'Wired', url: 'https://www.wired.com/feed/rss', priority: 'high', category: 'tech_news' },
+          { name: 'VentureBeat', url: 'https://feeds.feedburner.com/venturebeat/SZYF', priority: 'high', category: 'tech_news' },
+          { name: 'MIT Tech Review', url: 'https://www.technologyreview.com/feed/', priority: 'high', category: 'research' }
+        ],
+        google_news: [
+          'artificial intelligence', 'machine learning', 'cloud computing', 'cybersecurity',
+          'software development', 'blockchain', 'quantum computing', 'IoT', '5G technology'
+        ]
+      },
+      
+      automotive: {
+        rss: [
+          { name: 'Automotive News', url: 'https://www.autonews.com/feed', priority: 'critical', category: 'auto' },
+          { name: 'Electrek', url: 'https://electrek.co/feed/', priority: 'high', category: 'electric_vehicles' },
+          { name: 'Green Car Reports', url: 'https://www.greencarreports.com/rss', priority: 'high', category: 'green_vehicles' }
+        ],
+        google_news: [
+          'electric vehicles', 'autonomous driving', 'automotive chips', 'vehicle recalls', 
+          'auto manufacturing', 'charging infrastructure', 'EV adoption'
+        ]
+      },
+      
+      finance: {
+        rss: [
+          { name: 'Bloomberg', url: 'https://feeds.bloomberg.com/markets/news.rss', priority: 'critical', category: 'markets' },
+          { name: 'Reuters Business', url: 'https://feeds.reuters.com/reuters/businessNews', priority: 'critical', category: 'business' },
+          { name: 'CNBC Top News', url: 'https://www.cnbc.com/id/100003114/device/rss/rss.html', priority: 'high', category: 'business' }
+        ],
+        google_news: [
+          'stock market', 'cryptocurrency', 'federal reserve', 'interest rates',
+          'inflation', 'recession', 'IPO', 'mergers acquisitions', 'fintech'
+        ]
+      },
+      
+      healthcare: {
+        rss: [
+          { name: 'STAT News', url: 'https://www.statnews.com/feed/', priority: 'critical', category: 'health_news' },
+          { name: 'FiercePharma', url: 'https://www.fiercepharma.com/rss/xml', priority: 'high', category: 'pharma' },
+          { name: 'MedCity News', url: 'https://medcitynews.com/feed/', priority: 'high', category: 'health_innovation' }
+        ],
+        google_news: [
+          'FDA approval', 'clinical trials', 'drug development', 'medical devices',
+          'telemedicine', 'health insurance', 'vaccine development'
+        ]
+      },
+      
+      retail: {
+        rss: [
+          { name: 'Retail Dive', url: 'https://www.retaildive.com/feeds/news/', priority: 'high', category: 'retail_news' },
+          { name: 'Chain Store Age', url: 'https://chainstoreage.com/rss.xml', priority: 'medium', category: 'retail_chains' }
+        ],
+        google_news: [
+          'e-commerce', 'retail sales', 'supply chain', 'consumer spending',
+          'holiday shopping', 'omnichannel retail'
+        ]
+      },
+      
+      global: {
+        major_news: [
+          { name: 'Reuters Top News', url: 'https://feeds.reuters.com/reuters/topNews', priority: 'critical' },
+          { name: 'AP News', url: 'https://feeds.apnews.com/rss/apf-topnews', priority: 'critical' },
+          { name: 'BBC News', url: 'https://feeds.bbci.co.uk/news/rss.xml', priority: 'critical' },
+          { name: 'WSJ Business', url: 'https://feeds.wsj.com/wsj/xml/rss/3_7014.xml', priority: 'critical' }
+        ]
+      }
+    }
+  }
+
+  /**
+   * Build comprehensive monitoring keywords from AI insights + sources
+   */
+  buildComprehensiveKeywords(organization: any, aiInsights: any, sources: any) {
+    const keywords = new Set([
+      // Organization basics
+      organization.name,
+      
+      // AI-discovered keywords
+      ...(organization.keywords || []),
+      ...(aiInsights.monitoring_keywords || []),
+      
+      // Source-based keywords
+      ...(sources.google_news_queries || []),
+      
+      // Competitor names as keywords
+      ...(organization.competitors || []),
+      
+      // Industry-specific terms
+      ...(organization.topics || [])
+    ])
+    
+    return Array.from(keywords).slice(0, 25) // Limit to top 25 keywords
+  }
+
+  /**
+   * Merge AI-discovered media outlets with comprehensive source outlets
+   */
+  mergeMediaOutlets(aiOutlets: any[], sourceOutlets: any[]) {
+    const outlets = new Map()
+    
+    // Add source outlets first (comprehensive database)
+    if (sourceOutlets) {
+      sourceOutlets.forEach(outlet => {
+        outlets.set(outlet.name || outlet.url, outlet)
+      })
+    }
+    
+    // Add AI-discovered outlets (may have more specific industry focus)
+    if (aiOutlets) {
+      aiOutlets.forEach(outlet => {
+        outlets.set(outlet.name, {
+          name: outlet.name,
+          type: outlet.type,
+          focus: outlet.focus,
+          priority: 'high', // AI-discovered outlets get high priority
+          source: 'ai_discovery'
+        })
+      })
+    }
+    
+    return Array.from(outlets.values())
   }
 }
 

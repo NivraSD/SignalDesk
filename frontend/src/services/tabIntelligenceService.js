@@ -44,23 +44,7 @@ class TabIntelligenceService {
       
       critical_alerts: this.identifyCriticalAlerts(profile, intelligence),
       
-      key_insights: [
-        {
-          type: 'competitive',
-          insight: 'Monitor key competitor movements and market positioning',
-          impact: 'high'
-        },
-        {
-          type: 'stakeholder',
-          insight: 'Track stakeholder sentiment and engagement opportunities',
-          impact: 'medium'
-        },
-        {
-          type: 'market',
-          insight: 'Analyze market trends and emerging opportunities',
-          impact: 'high'
-        }
-      ],
+      key_insights: this.generateKeyInsights(profile, intelligence),
       
       recommended_actions: this.prioritizeActions(profile, intelligence),
       
@@ -101,18 +85,12 @@ class TabIntelligenceService {
       competitor_profiles: competitorAnalysis,
       
       competitive_intelligence: {
-        recent_moves: Object.keys(competitorAnalysis).map(comp => ({
-          competitor: comp,
-          activity: 'Monitoring for strategic moves'
-        })),
-        emerging_threats: [],
-        competitive_gaps: []
+        recent_moves: this.extractRecentCompetitorMoves(competitorAnalysis),
+        emerging_threats: this.identifyEmergingThreats(competitorAnalysis),
+        competitive_gaps: this.identifyCompetitiveGaps(competitorAnalysis, intelligence)
       },
       
-      action_items: [
-        { priority: 'high', action: 'Monitor competitor activities' },
-        { priority: 'medium', action: 'Analyze market positioning' }
-      ]
+      action_items: this.generateCompetitiveActionItems(competitorAnalysis, intelligence)
     };
   }
 
@@ -252,10 +230,153 @@ class TabIntelligenceService {
 
   // Helper methods for executive overview
   createExecutiveSummary(profile, intelligence) {
-    const context = profile?.established_facts?.pain_points?.[0] || 'market dynamics';
     const orgName = profile?.identity?.name || 'Organization';
+    const industry = profile?.identity?.industry || 'industry';
+    
+    // Analyze actual intelligence data
+    const newsCount = intelligence.news?.length || 0;
+    const opportunitiesCount = intelligence.opportunities?.length || 0;
+    const alertsCount = intelligence.alerts?.length || 0;
     const competitorCount = profile?.monitoring_targets?.competitors?.primary?.length || 0;
-    return `${orgName} faces evolving ${context} with ${competitorCount} key competitors showing increased activity. Stakeholder sentiment remains ${this.getOverallSentiment(intelligence)} with ${this.countCriticalDevelopments(intelligence)} critical developments requiring attention.`;
+    
+    // Extract key themes from recent news
+    const keyThemes = this.extractKeyThemes(intelligence);
+    const sentimentTrend = this.analyzeSentimentTrend(intelligence);
+    const criticalDevelopments = this.countCriticalDevelopments(intelligence);
+    
+    // Build dynamic summary based on actual data
+    let summary = `${orgName} operates in a ${sentimentTrend.trend} ${industry} environment with ${newsCount} relevant developments monitored across ${competitorCount} key competitors.`;
+    
+    if (alertsCount > 0) {
+      summary += ` ${alertsCount} critical alert${alertsCount > 1 ? 's' : ''} require immediate attention.`;
+    }
+    
+    if (opportunitiesCount > 0) {
+      summary += ` ${opportunitiesCount} strategic opportunities identified for consideration.`;
+    }
+    
+    if (keyThemes.length > 0) {
+      summary += ` Primary focus areas include ${keyThemes.slice(0, 3).join(', ')}.`;
+    }
+    
+    if (criticalDevelopments > 0) {
+      summary += ` ${criticalDevelopments} critical development${criticalDevelopments > 1 ? 's' : ''} detected in the competitive landscape.`;
+    }
+    
+    return summary;
+  }
+
+  extractKeyThemes(intelligence) {
+    const themes = {};
+    
+    // Analyze news titles and descriptions for common themes
+    intelligence.news?.forEach(article => {
+      const text = `${article.title} ${article.description || ''}`.toLowerCase();
+      const words = text.split(/\s+/);
+      
+      words.forEach(word => {
+        if (word.length > 4 && !this.isStopWord(word)) {
+          themes[word] = (themes[word] || 0) + 1;
+        }
+      });
+    });
+    
+    // Return top themes
+    return Object.entries(themes)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([theme]) => theme);
+  }
+
+  isStopWord(word) {
+    const stopWords = ['that', 'with', 'have', 'this', 'will', 'said', 'more', 'also', 'from', 'they', 'been', 'were', 'their'];
+    return stopWords.includes(word);
+  }
+
+  analyzeSentimentTrend(intelligence) {
+    const positiveWords = ['growth', 'success', 'innovation', 'opportunity', 'positive', 'strong', 'improve'];
+    const negativeWords = ['decline', 'crisis', 'problem', 'concern', 'negative', 'weak', 'struggle'];
+    
+    let positiveCount = 0;
+    let negativeCount = 0;
+    
+    intelligence.news?.forEach(article => {
+      const text = `${article.title} ${article.description || ''}`.toLowerCase();
+      positiveCount += positiveWords.filter(word => text.includes(word)).length;
+      negativeCount += negativeWords.filter(word => text.includes(word)).length;
+    });
+    
+    const netSentiment = positiveCount - negativeCount;
+    const trend = netSentiment > 2 ? 'dynamic' : netSentiment < -2 ? 'challenging' : 'stable';
+    
+    return { trend, score: netSentiment };
+  }
+
+  generateKeyInsights(profile, intelligence) {
+    const insights = [];
+    
+    // ONLY generate insights if we have REAL data - NO FALLBACKS
+    if (!intelligence || !intelligence.news || intelligence.news.length === 0) {
+      return []; // Return empty if no real data
+    }
+    
+    // Competitive insights - only if we have competitor news
+    const competitorNews = intelligence.news.filter(article => {
+      const competitors = profile?.monitoring_targets?.competitors?.primary || [];
+      return competitors.some(comp => 
+        article.title?.toLowerCase().includes(comp.toLowerCase()) ||
+        article.description?.toLowerCase().includes(comp.toLowerCase())
+      );
+    });
+    
+    if (competitorNews.length > 0) {
+      insights.push({
+        type: 'competitive',
+        insight: `${competitorNews.length} competitor developments detected requiring strategic assessment`,
+        impact: competitorNews.length > 3 ? 'high' : 'medium',
+        data_source: 'real_competitive_intelligence'
+      });
+    }
+    
+    // Market insights - only from actual news analysis
+    const marketKeywords = ['market', 'industry', 'sector', 'trend', 'growth', 'decline'];
+    const marketNews = intelligence.news.filter(article => {
+      const text = `${article.title} ${article.description || ''}`.toLowerCase();
+      return marketKeywords.some(keyword => text.includes(keyword));
+    });
+    
+    if (marketNews.length > 2) {
+      const sentimentTrend = this.analyzeSentimentTrend({ news: marketNews });
+      insights.push({
+        type: 'market',
+        insight: `Market sentiment trending ${sentimentTrend.trend} based on ${marketNews.length} relevant developments`,
+        impact: Math.abs(sentimentTrend.score) > 2 ? 'high' : 'medium',
+        data_source: 'real_market_analysis'
+      });
+    }
+    
+    // Alert-based insights - only if we have real alerts
+    if (intelligence.alerts && intelligence.alerts.length > 0) {
+      insights.push({
+        type: 'alert',
+        insight: `${intelligence.alerts.length} critical situation${intelligence.alerts.length > 1 ? 's' : ''} identified requiring immediate response`,
+        impact: 'critical',
+        data_source: 'real_alert_system'
+      });
+    }
+    
+    // Opportunity insights - only from real opportunity data
+    if (intelligence.opportunities && intelligence.opportunities.length > 0) {
+      insights.push({
+        type: 'opportunity',
+        insight: `${intelligence.opportunities.length} strategic opportunities detected in current market conditions`,
+        impact: 'high',
+        data_source: 'real_opportunity_detection'
+      });
+    }
+    
+    // ABSOLUTELY NO FALLBACK INSIGHTS - return empty if no real data
+    return insights;
   }
 
   identifyCriticalAlerts(profile, intelligence) {
@@ -323,12 +444,52 @@ class TabIntelligenceService {
   }
 
   analyzeStrategicMoves(competitor, intelligence) {
-    // Analyze strategic patterns
-    return {
-      expansion: 'Entering new markets',
-      innovation: 'New product launches',
-      partnerships: 'Strategic alliances formed'
+    const competitorNews = this.extractCompetitorNews(competitor, intelligence);
+    const moves = {
+      expansion: [],
+      innovation: [],
+      partnerships: [],
+      acquisitions: [],
+      financial: [],
+      operational: []
     };
+    
+    competitorNews.forEach(article => {
+      const text = `${article.title} ${article.description || ''}`.toLowerCase();
+      
+      if (text.includes('expand') || text.includes('market') || text.includes('international') || text.includes('global')) {
+        moves.expansion.push(article.title);
+      }
+      if (text.includes('launch') || text.includes('product') || text.includes('innovation') || text.includes('technology')) {
+        moves.innovation.push(article.title);
+      }
+      if (text.includes('partnership') || text.includes('alliance') || text.includes('collaboration') || text.includes('joint')) {
+        moves.partnerships.push(article.title);
+      }
+      if (text.includes('acquisition') || text.includes('acquire') || text.includes('merger') || text.includes('buyout')) {
+        moves.acquisitions.push(article.title);
+      }
+      if (text.includes('funding') || text.includes('investment') || text.includes('revenue') || text.includes('ipo')) {
+        moves.financial.push(article.title);
+      }
+      if (text.includes('hire') || text.includes('layoff') || text.includes('restructur') || text.includes('reorganiz')) {
+        moves.operational.push(article.title);
+      }
+    });
+    
+    // Convert to summary format
+    const summary = {};
+    Object.keys(moves).forEach(category => {
+      if (moves[category].length > 0) {
+        summary[category] = {
+          count: moves[category].length,
+          latest: moves[category][0], // Most recent
+          trend: moves[category].length > 2 ? 'active' : moves[category].length > 0 ? 'moderate' : 'inactive'
+        };
+      }
+    });
+    
+    return summary;
   }
 
   assessCompetitorThreat(competitor, profile, intelligence) {
@@ -380,21 +541,240 @@ class TabIntelligenceService {
     ];
   }
 
-  // Stub implementations for missing methods
+  // REAL ANALYSIS METHODS - No more stubs!
   assessMarketPosition(competitor, profile, intelligence) {
-    return { position: 'competitive', trend: 'stable' };
+    const competitorNews = this.extractCompetitorNews(competitor, intelligence);
+    const positiveKeywords = ['growth', 'expansion', 'success', 'launch', 'innovation', 'partnership', 'funding'];
+    const negativeKeywords = ['decline', 'loss', 'lawsuit', 'crisis', 'investigation', 'layoffs'];
+    
+    let positiveScore = 0;
+    let negativeScore = 0;
+    
+    competitorNews.forEach(article => {
+      const text = `${article.title} ${article.description || ''}`.toLowerCase();
+      positiveScore += positiveKeywords.filter(kw => text.includes(kw)).length;
+      negativeScore += negativeKeywords.filter(kw => text.includes(kw)).length;
+    });
+    
+    const netScore = positiveScore - negativeScore;
+    const position = netScore > 2 ? 'strong' : netScore < -2 ? 'weak' : 'competitive';
+    const trend = positiveScore > negativeScore ? 'improving' : negativeScore > positiveScore ? 'declining' : 'stable';
+    
+    return { 
+      position, 
+      trend, 
+      score: netScore,
+      recent_news_count: competitorNews.length,
+      analysis: `${competitor} shows ${position} market position with ${trend} trend based on ${competitorNews.length} recent developments`
+    };
   }
 
   identifyCompetitiveOpportunities(competitor, profile, intelligence) {
-    return ['Market expansion', 'Partnership potential'];
+    const opportunities = [];
+    const competitorNews = this.extractCompetitorNews(competitor, intelligence);
+    
+    competitorNews.forEach(article => {
+      const text = `${article.title} ${article.description || ''}`.toLowerCase();
+      
+      if (text.includes('partnership') || text.includes('collaboration')) {
+        opportunities.push(`Partnership opportunity following ${competitor}'s collaboration moves`);
+      }
+      if (text.includes('expansion') || text.includes('new market')) {
+        opportunities.push(`Market expansion opportunity in ${competitor}'s new territories`);
+      }
+      if (text.includes('layoffs') || text.includes('crisis')) {
+        opportunities.push(`Talent acquisition opportunity from ${competitor}'s challenges`);
+      }
+      if (text.includes('product launch') || text.includes('innovation')) {
+        opportunities.push(`Innovation opportunity to differentiate from ${competitor}'s approach`);
+      }
+    });
+    
+    // NO FALLBACKS - if no real opportunities found, return empty
+    return opportunities.slice(0, 4); // Limit to top 4 real opportunities only
   }
 
   analyzeStakeholderSentiment(group, intelligence) {
-    return { sentiment: 'neutral', score: 0.5 };
+    // Look for mentions of this stakeholder group in news/media
+    const relevantNews = intelligence.news?.filter(article => {
+      const text = `${article.title} ${article.description || ''}`.toLowerCase();
+      const groupTerms = group.toLowerCase().split(/[_\s]+/);
+      return groupTerms.some(term => text.includes(term));
+    }) || [];
+    
+    const positiveWords = ['positive', 'support', 'praise', 'success', 'growth', 'improvement', 'pleased'];
+    const negativeWords = ['negative', 'concern', 'criticism', 'issue', 'problem', 'decline', 'worried'];
+    
+    let positiveCount = 0;
+    let negativeCount = 0;
+    
+    relevantNews.forEach(article => {
+      const text = `${article.title} ${article.description || ''}`.toLowerCase();
+      positiveCount += positiveWords.filter(word => text.includes(word)).length;
+      negativeCount += negativeWords.filter(word => text.includes(word)).length;
+    });
+    
+    const totalMentions = positiveCount + negativeCount;
+    const score = totalMentions > 0 ? (positiveCount - negativeCount) / totalMentions : 0;
+    
+    let sentiment = 'neutral';
+    if (score > 0.2) sentiment = 'positive';
+    else if (score < -0.2) sentiment = 'negative';
+    
+    return { 
+      sentiment, 
+      score: Math.max(-1, Math.min(1, score)), // Normalize between -1 and 1
+      mentions_count: relevantNews.length,
+      analysis: `${group} sentiment appears ${sentiment} based on ${relevantNews.length} relevant mentions`
+    };
+  }
+
+  // NEW REAL ANALYSIS METHODS - NO HARDCODED DATA
+  extractRecentCompetitorMoves(competitorAnalysis) {
+    const moves = [];
+    
+    Object.entries(competitorAnalysis).forEach(([competitor, analysis]) => {
+      if (analysis.strategic_moves && Object.keys(analysis.strategic_moves).length > 0) {
+        Object.entries(analysis.strategic_moves).forEach(([category, moveData]) => {
+          if (moveData.latest) {
+            moves.push({
+              competitor,
+              category,
+              activity: moveData.latest,
+              trend: moveData.trend,
+              count: moveData.count
+            });
+          }
+        });
+      }
+    });
+    
+    return moves; // Only real moves, no fake data
+  }
+
+  identifyEmergingThreats(competitorAnalysis) {
+    const threats = [];
+    
+    Object.entries(competitorAnalysis).forEach(([competitor, analysis]) => {
+      const position = analysis.market_position;
+      if (position && position.position === 'strong' && position.trend === 'improving') {
+        threats.push({
+          competitor,
+          threat_type: 'market_strength',
+          severity: 'high',
+          details: position.analysis
+        });
+      }
+      
+      // Check for aggressive moves
+      const strategicMoves = analysis.strategic_moves || {};
+      if (strategicMoves.acquisitions?.trend === 'active' || strategicMoves.expansion?.trend === 'active') {
+        threats.push({
+          competitor,
+          threat_type: 'aggressive_expansion',
+          severity: 'medium',
+          details: 'Showing aggressive expansion or acquisition activity'
+        });
+      }
+    });
+    
+    return threats; // Only real threats based on data
+  }
+
+  identifyCompetitiveGaps(competitorAnalysis, intelligence) {
+    const gaps = [];
+    
+    // Look for areas where competitors are active but we might not be
+    const competitorActivities = new Set();
+    
+    Object.values(competitorAnalysis).forEach(analysis => {
+      const moves = analysis.strategic_moves || {};
+      Object.keys(moves).forEach(category => {
+        if (moves[category]?.trend === 'active') {
+          competitorActivities.add(category);
+        }
+      });
+    });
+    
+    // Only return gaps if we have real competitor activity data
+    if (competitorActivities.size > 0) {
+      competitorActivities.forEach(activity => {
+        gaps.push({
+          area: activity,
+          competitor_activity_level: 'high',
+          recommendation: `Evaluate ${activity} strategy relative to competitor moves`
+        });
+      });
+    }
+    
+    return gaps; // Only real gaps, not assumptions
+  }
+
+  generateCompetitiveActionItems(competitorAnalysis, intelligence) {
+    const actions = [];
+    
+    // Generate actions based on REAL competitor intelligence only
+    Object.entries(competitorAnalysis).forEach(([competitor, analysis]) => {
+      const opportunities = analysis.opportunities || [];
+      if (opportunities.length > 0) {
+        actions.push({
+          priority: 'high',
+          action: `Evaluate opportunities following ${competitor}'s recent moves`,
+          competitor,
+          basis: 'real_competitor_intelligence'
+        });
+      }
+      
+      const position = analysis.market_position;
+      if (position && position.position === 'strong') {
+        actions.push({
+          priority: 'medium',
+          action: `Analyze ${competitor}'s strengthening market position`,
+          competitor,
+          basis: 'market_position_analysis'
+        });
+      }
+    });
+    
+    // Add alert-based actions if we have real alerts
+    if (intelligence.alerts?.length > 0) {
+      actions.push({
+        priority: 'critical',
+        action: `Address ${intelligence.alerts.length} critical alert${intelligence.alerts.length > 1 ? 's' : ''}`,
+        basis: 'real_alert_data'
+      });
+    }
+    
+    return actions; // Only actions based on real data
   }
 
   extractStakeholderConcerns(group, config, intelligence) {
-    return ['Communication transparency', 'Strategic direction'];
+    const concerns = [];
+    
+    // Extract concerns ONLY from real intelligence data
+    const relevantNews = intelligence.news?.filter(article => {
+      const text = `${article.title} ${article.description || ''}`.toLowerCase();
+      const groupTerms = group.toLowerCase().split(/[_\s]+/);
+      return groupTerms.some(term => text.includes(term));
+    }) || [];
+    
+    const concernKeywords = ['concern', 'worry', 'issue', 'problem', 'challenge', 'criticism', 'complaint'];
+    
+    relevantNews.forEach(article => {
+      const text = `${article.title} ${article.description || ''}`.toLowerCase();
+      concernKeywords.forEach(keyword => {
+        if (text.includes(keyword)) {
+          // Extract the sentence containing the concern
+          const sentences = text.split('.');
+          const concernSentence = sentences.find(s => s.includes(keyword));
+          if (concernSentence) {
+            concerns.push(concernSentence.trim());
+          }
+        }
+      });
+    });
+    
+    return concerns.slice(0, 5); // Return only real concerns found in data
   }
 
   trackStakeholderActions(group, intelligence) {
