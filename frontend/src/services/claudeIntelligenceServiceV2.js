@@ -5,6 +5,7 @@ import { getIndustryCompetitors, detectIndustryFromOrganization } from '../utils
 import aiIndustryExpansionService from './aiIndustryExpansionService';
 import organizationProfileService from './organizationProfileService';
 import tabIntelligenceService from './tabIntelligenceService';
+import intelligentDiscoveryService from './intelligentDiscoveryService';
 
 class ClaudeIntelligenceServiceV2 {
   constructor() {
@@ -55,106 +56,66 @@ class ClaudeIntelligenceServiceV2 {
   }
 
   async gatherAndAnalyze(config, timeframe = '24h', options = {}) {
-    console.log('🔍 RAW CONFIG RECEIVED:', config);
-    console.log('🔍 Config structure:', {
-      hasOrganization: !!config.organization,
-      hasGoals: !!config.goals,
-      hasIntelligence: !!config.intelligence,
-      hasMonitoring: !!config.monitoring,
-      hasTargets: !!config.targets
-    });
+    console.log('🔍 Starting intelligent analysis');
     
-    // Build or retrieve organization profile for context
-    const profile = await organizationProfileService.getOrBuildProfile(config.organization);
+    // Check if this is minimal onboarding (new approach)
+    const isMinimalOnboarding = localStorage.getItem('signaldesk_minimal') === 'true';
+    
+    // Extract basic info
+    const orgName = config.organization?.name || config.organizationName || '';
+    const website = config.organization?.website || config.website || '';
+    const description = config.organization?.description || '';
+    const goals = config.goals || {};
+    
+    console.log(`🏢 Analyzing ${orgName}`);
+    console.log('🎯 Goals:', Object.keys(goals).filter(k => goals[k]));
+    
+    // Step 1: Intelligent Discovery (replaces broken onboarding)
+    let discoveredIntelligence;
+    if (isMinimalOnboarding || !config.intelligence?.stakeholders || 
+        typeof config.intelligence?.stakeholders === 'string') {
+      console.log('🤖 Using intelligent discovery to find real data...');
+      discoveredIntelligence = await intelligentDiscoveryService.discoverCompanyIntelligence(
+        orgName, website, description
+      );
+    } else {
+      // Fallback to old config if somehow it has real data
+      discoveredIntelligence = {
+        company: config.organization,
+        competitors: config.organization?.competitors || [],
+        stakeholders: config.intelligence?.stakeholders || {},
+        topics: config.intelligence?.topics || [],
+        keywords: config.intelligence?.keywords || []
+      };
+    }
+    
+    // Build profile from discovered intelligence
+    const enhancedOrganization = {
+      ...discoveredIntelligence.company,
+      name: orgName,
+      competitors: discoveredIntelligence.competitors,
+      stakeholders: discoveredIntelligence.stakeholders,
+      topics: discoveredIntelligence.topics,
+      keywords: discoveredIntelligence.keywords
+    };
+    
+    const profile = await organizationProfileService.getOrBuildProfile(enhancedOrganization);
     console.log('📋 Organization Profile loaded:', profile.identity.name, 
                 `(${profile.confidence_level})`);
     
     // Use profile to guide intelligence gathering
     const intelligenceGuidance = organizationProfileService.getIntelligenceGuidance(profile);
     
-    // Extract ALL onboarding data - FIXED to match actual structure
-    const organization = config.organization || {};
-    const goals = config.goals || {};
+    // Use the discovered/enhanced organization as the full context
+    const fullOrganization = enhancedOrganization;
+    const industry = fullOrganization.industry || 'technology';
     
-    console.log('📋 Organization object:', organization);
-    console.log('🎯 Goals object:', goals);
-    
-    // Get org details from the CORRECT location in the config structure
-    const orgName = organization.name || config.organizationName || '';
-    const website = organization.website || config.website || '';
-    
-    // Start with user's industry selection
-    let industry = organization.industry || config.industry;
-    console.log(`🔍 User selected industry: ${industry} for ${orgName}`);
-    
-    // Determine if we need AI detection or just enrichment
-    const needsIndustryDetection = !industry || 
-                                   industry === 'general' || 
-                                   industry === 'other' ||
-                                   (industry === 'technology' && orgName.toLowerCase().includes('toyota')); // Known mismatches
-    
-    if (needsIndustryDetection) {
-      console.log('🤖 No industry provided or mismatch detected - using AI detection');
-      try {
-        const aiDetection = await aiIndustryExpansionService.smartIndustryDetection(
-          orgName, 
-          website, 
-          organization.description || config.description || ''
-        );
-        industry = aiDetection.industry;
-        console.log(`✨ AI detected industry: ${industry} (confidence: ${aiDetection.confidence})`);
-      } catch (error) {
-        console.error('AI industry detection failed, using fallback:', error);
-        industry = detectIndustryFromOrganization(orgName);
-      }
-    } else {
-      console.log(`✅ Using user-provided industry: ${industry}`);
-      // Still use AI to enrich the industry data (competitors, keywords, etc.)
-      // but trust the user's industry classification
-    }
-    
-    console.log(`🏭 Industry detection for ${orgName}: ${industry}`);
-    
-    // Get industry-specific competitors and keywords
-    const industryData = getIndustryCompetitors(industry);
-    
-    // Get stakeholders and topics from intelligence section
-    const stakeholders = config.intelligence?.stakeholders || config.stakeholders || [];
-    const additionalTopics = config.intelligence?.topics || config.monitoring?.topics || config.additionalTopics || [];
-    const keywords = config.intelligence?.keywords || config.monitoring?.keywords || [];
-    
-    console.log('👥 Stakeholders found:', stakeholders);
-    console.log('👥 Stakeholders details:', JSON.stringify(stakeholders, null, 2));
-    console.log('📝 Topics found:', additionalTopics);
-    console.log('🔑 Keywords found:', keywords);
-    console.log('📊 Intelligence config:', config.intelligence);
-    console.log('📊 Full intelligence details:', JSON.stringify(config.intelligence, null, 2));
-    
-    // Use industry-specific competitors if user didn't provide any
-    const userCompetitors = config.targets?.competitors || config.competitors || [];
-    const competitors = userCompetitors.length > 0 ? userCompetitors : industryData.primary.slice(0, 5);
-    
-    console.log('🏢 User competitors:', userCompetitors);
-    console.log('🏢 Industry data primary:', industryData.primary);
-    console.log('🏢 Using competitors:', competitors);
-    console.log('🏢 Competitor names:', competitors.map(c => typeof c === 'string' ? c : c.name));
-    
-    // Enhanced organization object with ALL context and industry data
-    const fullOrganization = {
-      ...organization,
-      name: orgName,
-      industry: industry,
-      website: website,
-      competitors: competitors,
-      stakeholders: stakeholders,
-      topics: [...additionalTopics, ...industryData.topics],
-      keywords: [...keywords, ...industryData.keywords],
-      emergingCompetitors: industryData.emerging.slice(0, 3),
-      industryContext: industryData // Include full industry data for reference
-    };
-    
+    console.log('🏭 Using industry:', industry);
+    console.log('🏢 Real Competitors:', fullOrganization.competitors);
+    console.log('👥 Real Stakeholders:', fullOrganization.stakeholders);
+    console.log('📝 Real Topics:', fullOrganization.topics);
+    console.log('🔑 Smart Keywords:', fullOrganization.keywords);
     console.log('🎯 Full organization context:', fullOrganization);
-    console.log('🏢 Tracking competitors:', fullOrganization.competitors);
     
     // Check cache first with full context
     const cacheKey = `${fullOrganization.name}_${industry}_${timeframe}_${JSON.stringify(goals)}`;
