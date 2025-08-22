@@ -11,13 +11,19 @@ console.log('🔑 API Key length:', ANTHROPIC_API_KEY?.length || 0)
 
 async function synthesizeWithClaude(intelligence: any, organization: any) {
   console.log(`🧠 V3 Synthesis: Analyzing intelligence for ${organization.name}`)
+  console.log(`📊 Data to synthesize: ${intelligence.entity_actions?.all?.length || 0} actions, ${intelligence.topic_trends?.all?.length || 0} trends`)
   
   const entityActions = intelligence.entity_actions?.all || []
   const topicTrends = intelligence.topic_trends?.all || []
   
   const prompt = `You are a strategic intelligence analyst for ${organization.name} in the ${organization.industry || 'business'} industry.
 
-IMPORTANT: Your executive briefing must synthesize ALL intelligence below into a comprehensive strategic assessment. Do NOT focus on just one item or entity.
+CRITICAL REQUIREMENTS:
+1. Your executive briefing MUST synthesize ALL ${entityActions.length} entity actions and ${topicTrends.length} topic trends
+2. Do NOT focus on a single item - provide a COMPREHENSIVE strategic view
+3. The strategic_headline must capture the OVERALL situation, not one event
+4. The strategic_summary must mention MULTIPLE entities and trends
+5. Generate ACTUAL predictions and cascades based on the data
 
 Analyze the following real-time intelligence:
 
@@ -31,8 +37,8 @@ Provide strategic analysis in this EXACT JSON structure:
 
 {
   "executive_briefing": {
-    "strategic_headline": "One-line strategic summary covering the ENTIRE intelligence landscape, not just one item",
-    "strategic_summary": "A comprehensive 4-5 sentence strategic assessment that synthesizes ALL ${entityActions.length} entity actions and ${topicTrends.length} topic trends. Must mention multiple entities, trends, and their collective impact on ${organization.name}. Do NOT focus on just one development.",
+    "strategic_headline": "MUST be a comprehensive one-line summary of the OVERALL strategic situation across ALL entities and trends",
+    "strategic_summary": "MUST be 4-5 sentences that mention AT LEAST 3 different entities/trends. Synthesize patterns across competitors, regulators, AND market movements. Explain what the COLLECTIVE intelligence means for ${organization.name}'s strategic position. NEVER focus on just one item.",
     "key_insights": [
       "Insight combining multiple competitor actions",
       "Insight about overall market momentum from trends",
@@ -160,7 +166,7 @@ Provide strategic analysis in this EXACT JSON structure:
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-3-5-sonnet-20241022',
         max_tokens: 4000,
         temperature: 0.3,
         messages: [{

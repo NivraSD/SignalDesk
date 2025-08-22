@@ -416,7 +416,16 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
   };
 
   const renderPredictionsTab = (data) => {
-    if (!data) return null;
+    if (!data) {
+      return (
+        <div className="v3-predictions-tab">
+          <div className="predictions-placeholder">
+            <h3>Predictive Analysis Loading...</h3>
+            <p>Cascade predictions and second-order effects will appear here once analysis completes.</p>
+          </div>
+        </div>
+      );
+    }
     
     return (
       <div className="v3-predictions-tab">
