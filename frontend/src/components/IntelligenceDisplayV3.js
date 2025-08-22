@@ -12,12 +12,38 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
   const [activeTab, setActiveTab] = useState('executive');
   const [error, setError] = useState(null);
 
+  console.log('🚀 IntelligenceDisplayV3 mounted with organization:', organization);
+
   useEffect(() => {
+    console.log('📊 V3 useEffect triggered, organization:', organization);
     fetchIntelligence();
   }, [organization, refreshTrigger]);
 
   const fetchIntelligence = async () => {
-    if (!organization?.name) return;
+    console.log('🔍 V3 fetchIntelligence called, organization:', organization);
+    if (!organization?.name) {
+      console.log('⚠️ No organization name, skipping fetch');
+      // Try to get from localStorage as fallback
+      const savedOrg = localStorage.getItem('signaldesk_onboarding');
+      if (savedOrg) {
+        const orgData = JSON.parse(savedOrg);
+        console.log('📦 Found organization in localStorage:', orgData);
+        if (orgData.organization?.name) {
+          const result = await intelligenceOrchestratorV3.orchestrate(orgData.organization);
+          if (result.success) {
+            setIntelligence(result);
+            if (!result.tabs?.[activeTab]) {
+              setActiveTab('executive');
+            }
+          } else {
+            setError(result.error);
+          }
+          setLoading(false);
+          return;
+        }
+      }
+      return;
+    }
     
     setLoading(true);
     setError(null);
