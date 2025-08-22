@@ -139,27 +139,29 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
   };
 
   const tabs = [
-    { id: 'executive', name: 'Executive Brief', Icon: RocketIcon, color: '#ff00ff' },
-    { id: 'entities', name: 'Entity Movements', Icon: TargetIcon, color: '#00ffcc' },
-    { id: 'market', name: 'Market Dynamics', Icon: TrendingUpIcon, color: '#00ff88' },
-    { id: 'strategy', name: 'Strategic Intel', Icon: ChartIcon, color: '#ffcc00' },
-    { id: 'predictions', name: 'Cascades & Predictions', Icon: BuildingIcon, color: '#8800ff' }
+    { id: 'executive', name: 'Strategic Brief', Icon: RocketIcon, color: '#ff00ff' },
+    { id: 'market', name: 'Market Context', Icon: TrendingUpIcon, color: '#00ff88' },
+    { id: 'entities', name: 'Key Players', Icon: TargetIcon, color: '#00ffcc' },
+    { id: 'strategy', name: 'Actions', Icon: ChartIcon, color: '#ffcc00' },
+    { id: 'predictions', name: 'What\'s Next', Icon: BuildingIcon, color: '#8800ff' }
   ];
 
   const renderExecutiveTab = (data) => {
     if (!data) return null;
     
-    const urgencyColors = {
-      immediate: '#ff0064',
-      high: '#ff6600',
-      medium: '#ffcc00',
-      low: '#00ff88'
-    };
+    // Synthesize information from ALL tabs if strategic data is missing
+    const synthesizedHeadline = data.strategic_headline || 
+      `Strategic Update: ${intelligence?.statistics?.entities_tracked || 0} entities tracked, ${intelligence?.statistics?.actions_captured || 0} actions detected`;
+    
+    const synthesizedSummary = data.strategic_summary || 
+      `Monitoring ${intelligence?.statistics?.entities_tracked || 0} key entities across competitors, regulators, and stakeholders. ` +
+      `${intelligence?.statistics?.actions_captured || 0} significant actions detected with ${intelligence?.statistics?.critical_items || 0} requiring attention. ` +
+      `Market trends show ${intelligence?.statistics?.topics_monitored || 0} active topics being tracked for strategic implications.`;
     
     return (
       <div className="v3-executive-tab">
-        <h2 className="executive-headline">{data.strategic_headline || data.headline}</h2>
-        <p className="executive-summary">{data.strategic_summary || data.summary}</p>
+        <h2 className="executive-headline">{synthesizedHeadline}</h2>
+        <p className="executive-summary">{synthesizedSummary}</p>
         
         {data.key_insights && (
           <div className="key-insights">
@@ -211,8 +213,19 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
   const renderEntitiesTab = (data) => {
     if (!data) return null;
     
+    const totalEntities = 
+      (data.competitor_actions?.length || 0) + 
+      (data.regulatory_developments?.length || 0) + 
+      (data.stakeholder_positions?.length || 0);
+    
     return (
       <div className="v3-entities-tab">
+        <div className="entities-overview">
+          <p className="entities-context">
+            Tracking {totalEntities} key entity movements across competitors, regulators, and stakeholders. 
+            These actions directly impact market dynamics and strategic positioning.
+          </p>
+        </div>
         {data.competitor_actions?.length > 0 && (
           <div className="entity-section">
             <h3>Competitor Actions</h3>
@@ -271,9 +284,16 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
     
     return (
       <div className="v3-market-tab">
+        <div className="market-overview">
+          <p className="market-context">
+            Current market intelligence reveals {data.trending_opportunities?.length || 0} emerging opportunities 
+            and {data.emerging_risks?.length || 0} potential risks that could impact strategic positioning.
+          </p>
+        </div>
+        
         {data.trending_opportunities?.length > 0 && (
           <div className="market-section">
-            <h3>Trending Opportunities</h3>
+            <h3>Emerging Opportunities</h3>
             <div className="opportunity-cards">
               {data.trending_opportunities.map((opp, idx) => (
                 <div key={idx} className="opportunity-card">
@@ -313,6 +333,12 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
     
     return (
       <div className="v3-strategy-tab">
+        <div className="strategy-overview">
+          <p className="strategy-context">
+            Based on current intelligence, {data.recommendations?.length || 0} strategic actions recommended 
+            to maintain competitive advantage and respond to market movements.
+          </p>
+        </div>
         {data.recommendations?.length > 0 && (
           <div className="recommendations-section">
             <h3>Strategic Recommendations</h3>
@@ -527,13 +553,6 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
 
   return (
     <div className="intelligence-display-v3">
-      {intelligence.alerts?.length > 0 && (
-        <div className="critical-alerts-bar">
-          <AlertIcon size={20} />
-          <span>{intelligence.alerts.length} Critical Alert{intelligence.alerts.length > 1 ? 's' : ''}</span>
-        </div>
-      )}
-      
       <div className="tab-navigation">
         {tabs.map(tab => (
           <button

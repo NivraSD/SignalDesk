@@ -17,24 +17,27 @@ async function synthesizeWithClaude(intelligence: any, organization: any) {
   
   const prompt = `You are a strategic intelligence analyst for ${organization.name} in the ${organization.industry || 'business'} industry.
 
-Analyze the following real-time intelligence about entity movements and market trends:
+IMPORTANT: Your executive briefing must synthesize ALL intelligence below into a comprehensive strategic assessment. Do NOT focus on just one item or entity.
 
-ENTITY ACTIONS (WHO did WHAT):
+Analyze the following real-time intelligence:
+
+ENTITY ACTIONS (${entityActions.length} total movements detected):
 ${JSON.stringify(entityActions, null, 2)}
 
-TOPIC TRENDS (Market movements):
+TOPIC TRENDS (${topicTrends.length} market trends monitored):
 ${JSON.stringify(topicTrends, null, 2)}
 
 Provide strategic analysis in this EXACT JSON structure:
 
 {
   "executive_briefing": {
-    "strategic_headline": "One-line strategic summary of the overall situation",
-    "strategic_summary": "3-4 sentence strategic assessment synthesizing ALL intelligence - competitors, regulators, stakeholders, and market trends. Focus on what it means for ${organization.name}'s position and strategy.",
+    "strategic_headline": "One-line strategic summary covering the ENTIRE intelligence landscape, not just one item",
+    "strategic_summary": "A comprehensive 4-5 sentence strategic assessment that synthesizes ALL ${entityActions.length} entity actions and ${topicTrends.length} topic trends. Must mention multiple entities, trends, and their collective impact on ${organization.name}. Do NOT focus on just one development.",
     "key_insights": [
-      "Strategic insight 1 based on entity movements",
-      "Strategic insight 2 based on market dynamics",
-      "Strategic insight 3 based on stakeholder positions"
+      "Insight combining multiple competitor actions",
+      "Insight about overall market momentum from trends",
+      "Insight about regulatory/stakeholder landscape",
+      "Insight about emerging opportunities or risks"
     ],
     "situation_assessment": {
       "position": "Strong/Challenged/Vulnerable",

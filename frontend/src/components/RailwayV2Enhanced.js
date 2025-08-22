@@ -20,11 +20,36 @@ const RailwayV2Enhanced = () => {
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    // Get organization data
+    // Get organization data - try both possible localStorage keys
+    let orgData = null;
+    
+    // First try signaldesk_organization
     const savedOrg = localStorage.getItem('signaldesk_organization');
     if (savedOrg) {
-      setOrganizationData(JSON.parse(savedOrg));
+      orgData = JSON.parse(savedOrg);
     }
+    
+    // If not found, try signaldesk_onboarding
+    if (!orgData) {
+      const onboarding = localStorage.getItem('signaldesk_onboarding');
+      if (onboarding) {
+        const parsed = JSON.parse(onboarding);
+        if (parsed.organization) {
+          orgData = parsed.organization;
+        }
+      }
+    }
+    
+    // Default to Toyota if nothing found
+    if (!orgData) {
+      orgData = {
+        name: 'Toyota',
+        industry: 'automotive'
+      };
+    }
+    
+    console.log('🏢 RailwayV2Enhanced setting organization:', orgData);
+    setOrganizationData(orgData);
   }, []);
 
   const modules = [

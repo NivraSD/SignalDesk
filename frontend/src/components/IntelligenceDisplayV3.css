@@ -8,23 +8,7 @@
   min-height: 600px;
 }
 
-/* Critical Alerts Bar */
-.critical-alerts-bar {
-  background: linear-gradient(90deg, #ff0064, #ff3366);
-  color: white;
-  padding: 12px 20px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.8; }
-}
+/* Removed critical alerts bar - no longer needed */
 
 /* Tab Navigation */
 .tab-navigation {
@@ -95,18 +79,21 @@
 }
 
 .executive-headline {
-  font-size: 28px;
-  font-weight: bold;
-  color: #00ffcc;
-  margin-bottom: 15px;
-  line-height: 1.3;
+  font-size: 26px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #00ffcc, #00ff88);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 20px;
+  line-height: 1.4;
 }
 
 .executive-summary {
-  font-size: 18px;
-  line-height: 1.7;
-  color: #e0e0e0;
+  font-size: 17px;
+  line-height: 1.8;
+  color: #f0f0f0;
   margin-bottom: 25px;
+  text-align: justify;
 }
 
 .key-insights {
@@ -313,6 +300,25 @@
   padding: 20px;
 }
 
+.market-overview,
+.entities-overview,
+.strategy-overview {
+  background: rgba(0, 255, 204, 0.03);
+  border-left: 3px solid #00ffcc;
+  padding: 15px 20px;
+  margin-bottom: 25px;
+  border-radius: 0 8px 8px 0;
+}
+
+.market-context,
+.entities-context,
+.strategy-context {
+  color: #e0e0e0;
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0;
+}
+
 .market-section {
   margin-bottom: 30px;
 }
@@ -320,7 +326,8 @@
 .market-section h3 {
   color: #00ffcc;
   margin-bottom: 15px;
-  font-size: 18px;
+  font-size: 17px;
+  font-weight: 500;
 }
 
 .opportunity-cards,
