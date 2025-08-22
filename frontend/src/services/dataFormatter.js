@@ -29,25 +29,33 @@ class DataFormatterService {
       intelligence.synthesized.strategic_signals
     );
     
-    const isV5Structure = !isV6Structure && ((intelligence.synthesized && (
+    // Check V5 structure - entity-focused analytical structure
+    const hasV5InSynthesized = intelligence.synthesized && (
       intelligence.synthesized.market_activity || 
       intelligence.synthesized.competitor_intelligence ||
       intelligence.synthesized.social_pulse ||
       intelligence.synthesized.industry_signals ||
       intelligence.synthesized.media_coverage
-    )) || (intelligence.tabs && (
+    );
+    
+    const hasV5InTabs = intelligence.tabs && (
       intelligence.tabs.market_activity ||
       intelligence.tabs.competitor_intelligence ||
       intelligence.tabs.social_pulse ||
       intelligence.tabs.industry_signals ||
       intelligence.tabs.media_coverage
-    )));
+    );
+    
+    const isV5Structure = !isV6Structure && (hasV5InSynthesized || hasV5InTabs);
     
     console.log('🔍 Data structure detection:', { 
       isV6Structure,
-      isV5Structure, 
+      isV5Structure,
+      hasV5InSynthesized,
+      hasV5InTabs,
       hasSynthesized: !!intelligence.synthesized,
       synthesizedKeys: intelligence.synthesized ? Object.keys(intelligence.synthesized) : [],
+      tabKeys: intelligence.tabs ? Object.keys(intelligence.tabs) : [],
       hasV6Narrative: !!intelligence.synthesized?.narrative_landscape,
       hasV5Markets: !!intelligence.synthesized?.market_activity,
       intelligenceKeys: Object.keys(intelligence)
@@ -106,7 +114,10 @@ class DataFormatterService {
       overviewHasExecutiveSummary: !!formattedData.overview.executive_summary,
       executiveSummaryType: typeof formattedData.overview.executive_summary,
       tabKeys: Object.keys(formattedData.tabs),
-      tabCount: Object.keys(formattedData.tabs).length
+      tabCount: Object.keys(formattedData.tabs).length,
+      isV5Structure,
+      isV6Structure,
+      actualTabsReturned: Object.keys(formattedData.tabs)
     });
     
     return formattedData;
@@ -255,7 +266,8 @@ class DataFormatterService {
   
   // V5 Analytical Tab Formatters
   formatMarketActivityTab(intelligence) {
-    const marketData = intelligence.synthesized?.market_activity || {};
+    const marketData = intelligence.synthesized?.market_activity || 
+                      intelligence.tabs?.market_activity || {};
     return {
       summary: marketData.summary || 'No market activity data available',
       statistics: marketData.statistics || {
