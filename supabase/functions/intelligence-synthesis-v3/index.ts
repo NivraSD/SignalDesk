@@ -16,6 +16,15 @@ async function synthesizeWithClaude(intelligence: any, organization: any) {
   const entityActions = intelligence.entity_actions?.all || []
   const topicTrends = intelligence.topic_trends?.all || []
   
+  console.log('🔍 Entity Actions Sample:', entityActions.slice(0, 2))
+  console.log('📈 Topic Trends Sample:', topicTrends.slice(0, 2))
+  
+  // If no data, use fallback
+  if (entityActions.length === 0 && topicTrends.length === 0) {
+    console.log('⚠️ No intelligence data to synthesize, using fallback')
+    throw new Error('No intelligence data available for synthesis')
+  }
+  
   const prompt = `You are a strategic intelligence analyst for ${organization.name} in the ${organization.industry || 'business'} industry.
 
 Analyze ALL intelligence using this formula for each segment:
@@ -399,7 +408,9 @@ Provide comprehensive analysis in this EXACT JSON structure:
     }
 
     const result = await response.json()
+    console.log('🤖 Claude API Response received')
     let content = result.content[0].text
+    console.log('📝 Claude Response Length:', content.length)
     
     // Clean and parse response
     if (content.includes('```json')) {
@@ -412,7 +423,10 @@ Provide comprehensive analysis in this EXACT JSON structure:
       content = content.substring(firstBrace, lastBrace + 1)
     }
     
-    return JSON.parse(content)
+    const parsed = JSON.parse(content)
+    console.log('✅ Parsed Claude response successfully')
+    console.log('🔑 Response keys:', Object.keys(parsed))
+    return parsed
   } catch (error) {
     console.error('Claude synthesis error:', error)
     // Return structured fallback matching new comprehensive structure

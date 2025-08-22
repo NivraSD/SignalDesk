@@ -96,6 +96,11 @@ class IntelligenceOrchestratorV3 {
 
       const gatheringData = await gatheringResponse.json();
       console.log('📡 Gathering Data:', gatheringData);
+      console.log('📊 Intelligence to synthesize:', {
+        entity_actions_count: gatheringData.intelligence?.entity_actions?.all?.length || 0,
+        topic_trends_count: gatheringData.intelligence?.topic_trends?.all?.length || 0,
+        has_data: !!(gatheringData.intelligence?.entity_actions?.all?.length || gatheringData.intelligence?.topic_trends?.all?.length)
+      });
       
       if (!gatheringData.success) {
         throw new Error(gatheringData.error || 'Gathering failed');
@@ -137,6 +142,22 @@ class IntelligenceOrchestratorV3 {
 
       const synthesisData = await synthesisResponse.json();
       console.log('📡 Synthesis Data:', synthesisData);
+      console.log('🎯 Synthesis Tabs:', synthesisData.tabs ? Object.keys(synthesisData.tabs) : 'No tabs');
+      
+      // Log a sample of each tab's data
+      if (synthesisData.tabs) {
+        if (synthesisData.tabs.executive) {
+          console.log('📊 Executive tab sample:', {
+            headline: synthesisData.tabs.executive.headline,
+            has_highlights: !!(synthesisData.tabs.executive.competitive_highlight)
+          });
+        }
+        if (synthesisData.tabs.competitive) {
+          console.log('🎯 Competitive tab sample:', {
+            actions_count: synthesisData.tabs.competitive.competitor_actions?.length || 0
+          });
+        }
+      }
       
       if (!synthesisData.success) {
         throw new Error(synthesisData.error || 'Synthesis failed');

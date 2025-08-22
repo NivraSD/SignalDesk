@@ -126,6 +126,8 @@ async function gatherTopicTrends(topics: any[]) {
 
 async function gatherIntelligence(discovery: any, organization: any) {
   console.log(`📡 V3 Gathering: Collecting intelligence for ${organization.name}`)
+  console.log('📋 Discovery entities:', Object.keys(discovery.entities || {}))
+  console.log('📋 Discovery topics count:', discovery.topics?.length || 0)
   
   try {
     // Parallel gathering
@@ -133,6 +135,8 @@ async function gatherIntelligence(discovery: any, organization: any) {
       gatherEntityActions(discovery.entities || {}),
       gatherTopicTrends(discovery.topics || [])
     ])
+    
+    console.log(`✅ Gathered ${entityActions.length} actions and ${topicTrends.length} trends`)
     
     // Organize by importance
     const criticalActions = entityActions.filter(a => a.importance === 'critical')
