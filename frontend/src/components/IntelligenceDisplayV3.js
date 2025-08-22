@@ -1098,8 +1098,6 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
         return renderTomorrowTab(tabData);
       case 'entities':
         return renderEntitiesTab(tabData);
-      case 'market':
-        return renderMarketTab(tabData);
       case 'strategy':
         return renderStrategyTab(tabData);
       case 'predictions':
