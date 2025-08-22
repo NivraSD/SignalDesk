@@ -41,7 +41,7 @@ async function synthesizeWithClaude(intelligence: any, organization: any) {
 }
 
 async function synthesizeOffensiveIntel(entityActions: any[], topicTrends: any[], organization: any) {
-  const prompt = `You are an elite intelligence analyst for ${organization.name}. Analyze this intelligence to uncover what's REALLY happening.
+  const prompt = `You are an elite narrative intelligence analyst for ${organization.name}. Analyze how these developments affect reputation, perception, and narrative positioning.
 
 ENTITY ACTIONS (${entityActions.length} captured):
 ${JSON.stringify(entityActions, null, 2)}
@@ -49,50 +49,50 @@ ${JSON.stringify(entityActions, null, 2)}
 TOPIC TRENDS (${topicTrends.length} monitored):
 ${JSON.stringify(topicTrends, null, 2)}
 
-Provide EXPANSIVE NARRATIVE ANALYSIS. We're monitoring ${entityActions.length} entity movements and ${topicTrends.length} market trends. 
-Show the SCALE of what's happening. Focus on STRATEGIC IMPLICATIONS for ${organization.name}, not PR tactics.
+Provide EXPANSIVE NARRATIVE INTELLIGENCE. We're monitoring ${entityActions.length} entity movements and ${topicTrends.length} trends. 
+Show the SCALE of what's happening. Focus on REPUTATION, NARRATIVE, and PERCEPTION implications - NOT business strategy.
 
-Write DETAILED NARRATIVES for each section - don't constrain yourself to short fields. 
-Think: "What does all this MEAN for ${organization.name}'s future?"
+Write DETAILED NARRATIVES for each section. 
+Think: "How does this reshape the narrative landscape? What perceptions are being created?"
 
-Return this JSON with EXPANSIVE, DETAILED analysis:
+Return this JSON with EXPANSIVE NARRATIVE ANALYSIS:
 {
   "executive_summary": {
-    "headline": "The big story that connects all the pieces - be specific with names and numbers",
-    "overview": "Tell the complete narrative in 4-6 sentences. What's the chess game being played? Who's winning and why? What moves are coming next?",
-    "competitive_highlight": "Most significant competitor development and what it reveals about their strategy",
-    "market_highlight": "The market shift that changes the game",
-    "regulatory_highlight": "Regulatory angle that affects everyone",
-    "media_highlight": "The narrative that's gaining momentum",
-    "immediate_actions": [
-      "Specific action based on the intelligence",
-      "Another specific action",
-      "Third specific action"
+    "headline": "The dominant narrative emerging from all this activity - be specific with names and numbers",
+    "overview": "Tell the complete story in 4-6 sentences. What narratives are competing for dominance? Who's winning the perception battle and why? What story will stakeholders remember?",
+    "competitive_highlight": "Most significant competitor move and how it positions them in public perception",
+    "market_highlight": "The trend that's reshaping how the market is perceived",
+    "regulatory_highlight": "Regulatory development affecting industry reputation",
+    "media_highlight": "The narrative that's gaining the most traction",
+    "narrative_watch_points": [
+      "Critical narrative development to monitor",
+      "Another perception shift to track",
+      "Third reputational consideration"
     ]
   },
   "competitive_landscape": {
-    "competitor_actions": [
-      // List EVERY significant competitor move - show the VOLUME of activity
-      {"competitor": "Name", "action": "What they did", "details": "EXPANSIVE analysis of strategic intent, capabilities revealed, market positioning, and what this signals about their next moves"}
+    "competitor_positioning": [
+      // List EVERY significant competitor move - show narrative positioning
+      {"competitor": "Name", "action": "What they did", "narrative_impact": "EXPANSIVE analysis of how this positions them in public perception, what story they're telling, how stakeholders will interpret this, what reputation they're building"}
     ],
-    "strategic_implications": "DETAILED NARRATIVE (500+ words): What does all this competitor activity mean for ${organization.name}? How is the competitive landscape reshaping? Where are the opportunities and threats? What capabilities does ${organization.name} need to develop? What strategic moves should we consider?",
-    "competitive_dynamics": "How power is shifting in the market and what it means for ${organization.name}'s position",
-    "capability_gaps": "What competitor moves reveal about capabilities ${organization.name} needs",
-    "strategic_options": [
-      "Option 1: Detailed strategic response option",
-      "Option 2: Another strategic path",
-      "Option 3: Alternative approach"
+    "narrative_implications": "DETAILED NARRATIVE (500+ words): How are competitors reshaping the narrative landscape? What stories are they telling? How does this affect ${organization.name}'s perceived position? What new perceptions are being created about the industry and its players?",
+    "perception_dynamics": "How public perception and stakeholder sentiment is shifting based on these moves",
+    "reputation_considerations": "What these competitor moves mean for industry reputation and ${organization.name}'s standing",
+    "narrative_positions": [
+      "Position 1: How ${organization.name} could be perceived given these developments",
+      "Position 2: Alternative narrative positioning",
+      "Position 3: Another reputational consideration"
     ]
   },
   "market_dynamics": {
-    "market_trends": [
-      // Show ALL ${topicTrends.length} trends we're tracking
-      {"trend": "Trend name", "description": "EXPANSIVE analysis of what's driving this, who's involved, where it's heading", "momentum": "accelerating/stable/declining", "volume": "How much activity"}
+    "trend_narratives": [
+      // Show ALL ${topicTrends.length} trends and their narrative impact
+      {"trend": "Trend name", "narrative": "EXPANSIVE analysis of the story this trend tells, who's involved, what perceptions it creates", "momentum": "accelerating/stable/declining", "attention_level": "How much mindshare this has"}
     ],
-    "market_analysis": "DETAILED NARRATIVE (500+ words): Connect all these trends. What's the bigger picture? How are these ${topicTrends.length} trends interconnected? What fundamental shifts are occurring? What does this mean for ${organization.name}'s market position?",
-    "strategic_opportunities": "EXPANSIVE analysis of opportunities emerging from these trends for ${organization.name}",
-    "market_evolution": "Where the market is heading in 6-12 months based on current momentum",
-    "positioning_strategy": "How ${organization.name} should position itself given these market dynamics"
+    "narrative_analysis": "DETAILED NARRATIVE (500+ words): What story do these ${topicTrends.length} trends tell together? How is the market narrative evolving? What new perceptions are taking hold? How does this affect ${organization.name}'s narrative position?",
+    "perception_opportunities": "EXPANSIVE analysis of how ${organization.name} could be perceived given these narrative trends",
+    "narrative_evolution": "Where the market narrative is heading in 6-12 months based on current momentum",
+    "reputation_landscape": "How the reputational landscape is shifting for ${organization.name} and the industry"
   }
 }`
 
@@ -131,7 +131,7 @@ Return this JSON with EXPANSIVE, DETAILED analysis:
 }
 
 async function synthesizeDefensiveIntel(entityActions: any[], topicTrends: any[], organization: any) {
-  const prompt = `You are an elite intelligence analyst for ${organization.name}. Analyze regulatory, media, and future risks/opportunities.
+  const prompt = `You are an elite narrative intelligence analyst for ${organization.name}. Analyze how regulatory, media, and future developments affect reputation and narrative positioning.
 
 ENTITY ACTIONS (${entityActions.length} captured):
 ${JSON.stringify(entityActions, null, 2)}
@@ -139,39 +139,39 @@ ${JSON.stringify(entityActions, null, 2)}
 TOPIC TRENDS (${topicTrends.length} monitored):
 ${JSON.stringify(topicTrends, null, 2)}
 
-Provide EXPANSIVE STRATEGIC ANALYSIS. We're tracking ${entityActions.length} entity actions and ${topicTrends.length} trends.
-Focus on IMPLICATIONS and STRATEGIC MEANING for ${organization.name}, not tactical PR responses.
+Provide EXPANSIVE NARRATIVE ANALYSIS. We're tracking ${entityActions.length} entity actions and ${topicTrends.length} trends.
+Focus on REPUTATION, PERCEPTION, and NARRATIVE IMPLICATIONS for ${organization.name}, not business recommendations.
 
-Return this JSON with EXPANSIVE NARRATIVES and STRATEGIC INSIGHTS:
+Return this JSON with EXPANSIVE NARRATIVE INTELLIGENCE:
 {
   "regulatory_policy": {
-    "regulatory_landscape": "EXPANSIVE NARRATIVE (300+ words): What's happening in the regulatory space based on the ${entityActions.length} actions we're tracking? Connect the dots between different regulatory moves.",
+    "regulatory_narrative": "EXPANSIVE NARRATIVE (300+ words): What story is emerging from regulatory developments? How are regulators positioning themselves and the industry? What narrative are they creating through the ${entityActions.length} actions we're tracking?",
     "regulatory_developments": [
-      // Every regulatory signal matters
-      {"regulator": "Entity", "development": "DETAILED analysis of what's happening, motivations, and trajectory", "timeline": "Key milestones", "strategic_impact": "How this reshapes ${organization.name}'s operating environment"}
+      // Every regulatory signal affects perception
+      {"regulator": "Entity", "development": "DETAILED analysis of what's happening and the narrative being created", "perception_impact": "How this affects public perception of the industry", "reputation_effect": "Impact on ${organization.name}'s reputation and standing"}
     ],
-    "strategic_implications": "What does the regulatory environment mean for ${organization.name}'s strategy? What capabilities become advantages? What business models are at risk?",
-    "regulatory_positioning": "How ${organization.name} should position itself in this evolving regulatory landscape"
+    "narrative_implications": "How does the regulatory narrative affect ${organization.name}'s reputation? What perceptions are being created about compliance, responsibility, and industry leadership?",
+    "perception_landscape": "How ${organization.name} is likely to be perceived in this evolving regulatory narrative"
   },
   "media_sentiment": {
-    "narrative_landscape": "EXPANSIVE ANALYSIS (400+ words): What narratives are dominating? How are they evolving? What's driving media attention across the ${topicTrends.length} trends we're tracking?",
+    "narrative_landscape": "EXPANSIVE ANALYSIS (400+ words): What stories are dominating media coverage? How are narratives evolving? What's capturing attention across the ${topicTrends.length} trends we're tracking? Who's controlling the narrative?",
     "media_coverage": [
-      // Show the SCALE of coverage
-      {"outlet": "Source", "topic": "What they're covering", "sentiment": "positive/neutral/negative", "narrative": "The story they're telling", "reach": "Influence and audience"}
+      // Show the SCALE and diversity of narratives
+      {"outlet": "Source", "topic": "What they're covering", "sentiment": "positive/neutral/negative", "narrative": "The specific story they're telling", "influence": "How this shapes public perception"}
     ],
-    "sentiment_analysis": "Deep dive into how ${organization.name} and the industry are being perceived. What's driving sentiment? How is it evolving?",
-    "narrative_implications": "What do these narratives mean for ${organization.name}'s strategic position? How do they affect stakeholder perceptions?",
-    "strategic_communications": "How ${organization.name} should think about communications given this landscape - focus on strategic positioning, not tactics"
+    "perception_analysis": "Deep dive into how ${organization.name} and the industry are being portrayed. What narratives are sticking? How is public perception evolving?",
+    "reputation_implications": "What do these media narratives mean for ${organization.name}'s reputation? How do they affect stakeholder trust and confidence?",
+    "narrative_considerations": "Key narrative dynamics ${organization.name} should understand about how the story is being told"
   },
   "forward_look": {
-    "future_landscape": "EXPANSIVE NARRATIVE (400+ words): Based on the ${entityActions.length} entity actions and ${topicTrends.length} trends, paint the picture of what's coming. Connect the dots between current movements and future state.",
-    "predictions": [
-      // Multiple detailed predictions
-      {"timeframe": "Timeframe", "prediction": "DETAILED prediction with evidence from current intelligence", "probability": 70, "indicators": "What signals this is coming", "strategic_implications": "What this means for ${organization.name}'s strategy and positioning"}
+    "future_narratives": "EXPANSIVE NARRATIVE (400+ words): Based on the ${entityActions.length} entity actions and ${topicTrends.length} trends, what narratives will dominate tomorrow? How will reputations evolve? What stories will shape perception?",
+    "narrative_predictions": [
+      // Multiple detailed narrative predictions
+      {"timeframe": "Timeframe", "narrative_shift": "DETAILED prediction of how the narrative will evolve with evidence", "likelihood": 70, "signals": "What indicates this narrative shift", "reputation_impact": "How this affects ${organization.name}'s perceived position"}
     ],
-    "scenario_analysis": "Multiple future scenarios and their implications for ${organization.name}",
-    "strategic_preparation": "What capabilities, relationships, and positions ${organization.name} needs to develop now for the future we see coming",
-    "windows_of_opportunity": "Time-sensitive opportunities ${organization.name} should consider based on predicted developments"
+    "perception_scenarios": "Multiple scenarios for how public perception and narrative could evolve, and what each means for ${organization.name}'s reputation",
+    "narrative_preparation": "What narrative positions ${organization.name} should understand as the landscape evolves",
+    "reputation_considerations": "Key reputational factors to monitor as these narratives develop"
   }
 }`
 
