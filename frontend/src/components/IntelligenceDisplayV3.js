@@ -140,13 +140,61 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
   };
 
   const tabs = [
-    { id: 'executive', name: 'Strategic Brief', Icon: RocketIcon, color: '#ff00ff' },
-    { id: 'market', name: 'Market Context', Icon: TrendingUpIcon, color: '#00ff88' },
-    { id: 'entities', name: 'Key Players', Icon: TargetIcon, color: '#00ffcc' },
-    { id: 'strategy', name: 'Actions', Icon: ChartIcon, color: '#ffcc00' },
-    { id: 'predictions', name: 'What\'s Next', Icon: BuildingIcon, color: '#8800ff' }
+    { id: 'narrative', name: 'Narrative Control', Icon: RocketIcon, color: '#ff00ff' },
+    { id: 'response', name: 'Response Priorities', Icon: AlertIcon, color: '#ff6600' },
+    { id: 'messaging', name: 'Messaging Opps', Icon: TrendingUpIcon, color: '#00ff88' },
+    { id: 'stakeholders', name: 'Stakeholder View', Icon: TargetIcon, color: '#00ffcc' },
+    { id: 'tomorrow', name: 'Tomorrow\'s Headlines', Icon: BuildingIcon, color: '#8800ff' }
   ];
 
+  const renderNarrativeTab = (data) => {
+    if (!data) return null;
+    
+    return (
+      <div className="v3-narrative-tab">
+        <div className="narrative-header">
+          <h2 className="narrative-headline">Current Narrative Landscape</h2>
+          <p className="narrative-summary">
+            Analyzing {intelligence?.statistics?.entities_tracked || 0} entities and {intelligence?.statistics?.topics_monitored || 0} trending topics 
+            to understand narrative control and messaging opportunities.
+          </p>
+        </div>
+        
+        {data.dominant_narratives && (
+          <div className="dominant-narratives">
+            <h3>Dominant Narratives</h3>
+            {data.dominant_narratives.map((narrative, idx) => (
+              <div key={idx} className="narrative-item">
+                <div className="narrative-theme">{narrative.theme}</div>
+                <div className="narrative-drivers">Driven by: {narrative.drivers.join(', ')}</div>
+                <div className="our-position">
+                  <span className="label">Our Position:</span>
+                  <span className={`position ${narrative.our_position}`}>{narrative.our_position}</span>
+                </div>
+                {narrative.action_needed && (
+                  <div className="pr-action">PR Action: {narrative.pr_response}</div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {data.narrative_threats && (
+          <div className="narrative-threats">
+            <h3>Narrative Threats</h3>
+            {data.narrative_threats.map((threat, idx) => (
+              <div key={idx} className="threat-card">
+                <div className="threat-description">{threat.description}</div>
+                <div className="threat-source">Source: {threat.source}</div>
+                <div className="counter-message">Counter: {threat.counter_narrative}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+  
   const renderExecutiveTab = (data) => {
     if (!data) return null;
     
@@ -415,6 +463,135 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
     );
   };
 
+  const renderResponseTab = (data) => {
+    if (!data) return null;
+    
+    return (
+      <div className="v3-response-tab">
+        <div className="response-header">
+          <h3>PR Response Priorities</h3>
+          <p>Items requiring immediate communications response or monitoring.</p>
+        </div>
+        
+        {data.immediate_responses?.length > 0 && (
+          <div className="immediate-section">
+            <h4 className="urgency-high">⚡ Immediate Response Required</h4>
+            {data.immediate_responses.map((item, idx) => (
+              <div key={idx} className="response-item urgent">
+                <div className="response-trigger">{item.trigger}</div>
+                <div className="response-recommendation">
+                  <strong>Recommended Response:</strong> {item.response}
+                </div>
+                <div className="response-channels">Channels: {item.channels.join(', ')}</div>
+                <div className="response-timeline">Timeline: {item.timeline}</div>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {data.monitor_only?.length > 0 && (
+          <div className="monitor-section">
+            <h4>👁 Monitor Only</h4>
+            {data.monitor_only.map((item, idx) => (
+              <div key={idx} className="response-item monitor">
+                <div className="monitor-item">{item.description}</div>
+                <div className="monitor-reason">Why monitor: {item.reason}</div>
+                <div className="escalation-trigger">Escalate if: {item.escalation_trigger}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+  
+  const renderMessagingTab = (data) => {
+    if (!data) return null;
+    
+    return (
+      <div className="v3-messaging-tab">
+        <div className="messaging-header">
+          <h3>Messaging Opportunities</h3>
+          <p>Openings to advance our narrative and key messages.</p>
+        </div>
+        
+        {data.opportunities?.map((opp, idx) => (
+          <div key={idx} className="messaging-opportunity">
+            <div className="opp-context">{opp.context}</div>
+            <div className="opp-message">
+              <strong>Our Message:</strong> {opp.message}
+            </div>
+            <div className="opp-talking-points">
+              <strong>Key Talking Points:</strong>
+              <ul>
+                {opp.talking_points?.map((point, pidx) => (
+                  <li key={pidx}>{point}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="opp-timing">Best Timing: {opp.timing}</div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+  
+  const renderStakeholdersTab = (data) => {
+    if (!data) return null;
+    
+    return (
+      <div className="v3-stakeholders-tab">
+        <div className="stakeholders-header">
+          <h3>Stakeholder Sentiment & Positioning</h3>
+        </div>
+        
+        {data.stakeholder_groups?.map((group, idx) => (
+          <div key={idx} className="stakeholder-group">
+            <h4>{group.name}</h4>
+            <div className="sentiment-indicator">
+              Sentiment: <span className={`sentiment ${group.sentiment}`}>{group.sentiment}</span>
+            </div>
+            <div className="key-concerns">Key Concerns: {group.concerns.join(', ')}</div>
+            <div className="messaging-approach">
+              Messaging Approach: {group.messaging_approach}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+  
+  const renderTomorrowTab = (data) => {
+    if (!data) return null;
+    
+    return (
+      <div className="v3-tomorrow-tab">
+        <div className="tomorrow-header">
+          <h3>Tomorrow's Headlines</h3>
+          <p>Anticipated developments requiring PR preparation.</p>
+        </div>
+        
+        {data.anticipated_headlines?.map((headline, idx) => (
+          <div key={idx} className="future-headline">
+            <div className="headline-text">{headline.headline}</div>
+            <div className="headline-probability">Probability: {headline.probability}%</div>
+            <div className="pr-preparation">
+              <strong>PR Preparation:</strong>
+              <ul>
+                {headline.preparation_steps?.map((step, sidx) => (
+                  <li key={sidx}>{step}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="draft-statement">
+              <strong>Draft Statement:</strong> {headline.draft_statement}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+  
   const renderPredictionsTab = (data) => {
     if (!data) {
       return (
@@ -505,6 +682,18 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
     const tabData = intelligence.tabs[activeTab];
     
     switch (activeTab) {
+      case 'narrative':
+        return renderNarrativeTab(tabData);
+      case 'response':
+        return renderResponseTab(tabData);
+      case 'messaging':
+        return renderMessagingTab(tabData);
+      case 'stakeholders':
+        return renderStakeholdersTab(tabData);
+      case 'tomorrow':
+        return renderTomorrowTab(tabData);
+      
+      // Fallback to old tabs if data structure hasn't updated yet
       case 'executive':
         return renderExecutiveTab(tabData);
       case 'entities':
