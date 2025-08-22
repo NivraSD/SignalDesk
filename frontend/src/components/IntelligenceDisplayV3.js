@@ -150,6 +150,13 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
   const renderExecutiveTab = (data) => {
     if (!data) return null;
     
+    const riskColors = {
+      immediate: '#ff0064',
+      high: '#ff6600',
+      medium: '#ffcc00',
+      low: '#00ff88'
+    };
+    
     // Synthesize information from ALL tabs if strategic data is missing
     const synthesizedHeadline = data.strategic_headline || 
       `Strategic Update: ${intelligence?.statistics?.entities_tracked || 0} entities tracked, ${intelligence?.statistics?.actions_captured || 0} actions detected`;
@@ -189,7 +196,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
               </div>
               <div className="assessment-item">
                 <span className="label">Risk Level:</span>
-                <span className="value" style={{ color: urgencyColors[data.situation_assessment.risk_level] }}>
+                <span className="value" style={{ color: riskColors[data.situation_assessment.risk_level] || '#00ff88' }}>
                   {data.situation_assessment.risk_level}
                 </span>
               </div>
