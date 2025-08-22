@@ -48,7 +48,7 @@ class DataFormatterService {
       intelligence.tabs.media_coverage
     );
     
-    const isV5Structure = !isV6Structure && (hasV5InSynthesized || hasV5InTabs);
+    const isV5Structure = !isV6Structure && !!(hasV5InSynthesized || hasV5InTabs);
     
     console.log('🔍 Data structure detection:', { 
       isV6Structure,

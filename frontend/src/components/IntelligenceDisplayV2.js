@@ -10,7 +10,7 @@ import {
 const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigger = 0 }) => {
   const [loading, setLoading] = useState(false);
   const [intelligenceData, setIntelligenceData] = useState(null);
-  const [activeTab, setActiveTab] = useState('narrative_landscape'); // Default to V6 first tab
+  const [activeTab, setActiveTab] = useState('market_activity'); // Default to V5 first tab (entity-focused)
   const [loadingStage, setLoadingStage] = useState('');
 
   useEffect(() => {
@@ -33,6 +33,13 @@ const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigg
       const intelligence = await claudeIntelligenceServiceV2.gatherAndAnalyze(config, timeframe, { forceRefresh: true });
       console.log('✅ Intelligence received:', intelligence);
       setIntelligenceData(intelligence);
+      
+      // Update activeTab if current tab doesn't exist in new data
+      if (intelligence?.tabs && !intelligence.tabs[activeTab]) {
+        const firstTab = Object.keys(intelligence.tabs)[0];
+        console.log(`📂 Switching to first available tab: ${firstTab}`);
+        setActiveTab(firstTab);
+      }
     } catch (err) {
       console.error('❌ Intelligence fetch failed:', err);
     } finally {
