@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import './IntelligenceDisplay.css';
+import './IntelligenceDisplayV3.css';
 import intelligenceOrchestratorV3 from '../services/intelligenceOrchestratorV3';
 import { 
   RocketIcon, AlertIcon, TrendingUpIcon, TargetIcon, 
