@@ -11,13 +11,14 @@
 
 /* Header Section */
 .hub-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #000000;
   color: white;
   padding: 32px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
 }
 
 .hub-title h1 {
@@ -477,7 +478,7 @@
 }
 
 .sov-fill.you {
-  background: linear-gradient(90deg, #667eea, #764ba2);
+  background: linear-gradient(90deg, #00ffff, #0088ff);
 }
 
 .sov-fill.competitor {
@@ -791,7 +792,7 @@
 }
 
 .action-btn.primary {
-  background: #667eea;
+  background: #00ffff;
   color: white;
 }
 

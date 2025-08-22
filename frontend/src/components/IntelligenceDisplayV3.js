@@ -1112,19 +1112,6 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
       <div className="intelligence-display-v3 loading">
         <div className="intelligence-loading-container">
           <div className="intelligence-header">
-            <div className="intelligence-logo">
-              <div className="pulse-ring"></div>
-              <div className="pulse-ring delay-1"></div>
-              <div className="pulse-ring delay-2"></div>
-              <div className="core-icon">
-                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                  <circle cx="24" cy="24" r="20" stroke="#00ffff" strokeWidth="2" opacity="0.3"/>
-                  <circle cx="24" cy="24" r="14" stroke="#00ffff" strokeWidth="2" opacity="0.5"/>
-                  <circle cx="24" cy="24" r="8" stroke="#00ffff" strokeWidth="2" opacity="0.7"/>
-                  <circle cx="24" cy="24" r="3" fill="#00ffff"/>
-                </svg>
-              </div>
-            </div>
             <h2 className="intelligence-title">INTELLIGENCE PROCESSING</h2>
             <div className="current-phase">{loadingPhase.toUpperCase()}</div>
           </div>
