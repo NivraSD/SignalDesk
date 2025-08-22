@@ -104,7 +104,7 @@ const FourModuleLayout = () => {
       {/* Header Bar */}
       <div className="layout-header">
         <div className="header-left">
-          <h1 className="platform-title">SignalDesk V2</h1>
+          <h1 className="platform-title">SignalDesk</h1>
           {organizationData && (
             <span className="org-name">{organizationData.name}</span>
           )}

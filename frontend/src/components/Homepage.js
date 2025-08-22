@@ -385,7 +385,7 @@ const Homepage = () => {
         }}>
           <Sparkles style={{ width: "18px", height: "18px" }} />
           <span>
-            🚀 SignalDesk Enhanced Platform v2.0 is Live! 
+            🚀 SignalDesk Enhanced Platform is Live! 
             Try the new <strong>Campaign Intelligence</strong> with Railway UI, MemoryVault, and Real-time Collaboration
           </span>
           <button

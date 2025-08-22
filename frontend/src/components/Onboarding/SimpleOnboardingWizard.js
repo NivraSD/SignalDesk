@@ -64,7 +64,7 @@ const SimpleOnboardingWizard = ({ onComplete }) => {
 
   const renderStep1 = () => (
     <div className="step-content">
-      <h3>Welcome to SignalDesk V2</h3>
+      <h3>Welcome to SignalDesk</h3>
       <p>Let's set up your PR command center in just a few steps.</p>
       
       <div className="form-group">
@@ -185,7 +185,7 @@ const SimpleOnboardingWizard = ({ onComplete }) => {
   const renderStep4 = () => (
     <div className="step-content">
       <h3>Setup Complete!</h3>
-      <p>Your SignalDesk V2 platform is ready.</p>
+      <p>Your SignalDesk platform is ready.</p>
       
       <div className="summary-grid">
         <div className="summary-section">

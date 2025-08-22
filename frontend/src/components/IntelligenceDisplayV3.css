@@ -1,7 +1,7 @@
 /* Intelligence Display V3 - Professional Intelligence Aesthetic */
 
 .intelligence-display-v3 {
-  background: linear-gradient(135deg, #0a0e27 0%, #151932 100%);
+  background: #000000;
   border-radius: 16px;
   padding: 0;
   color: #e0e6ed;
@@ -11,13 +11,34 @@
   overflow: hidden;
 }
 
+/* Neon Icon Styles */
+.neon-icon {
+  color: #00ffff;
+  font-size: 1.2em;
+  margin-right: 8px;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.8),
+               0 0 20px rgba(0, 255, 255, 0.6),
+               0 0 30px rgba(0, 255, 255, 0.4);
+  display: inline-block;
+  animation: neon-pulse 2s ease-in-out infinite;
+}
+
+@keyframes neon-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
 /* Loading State - Intelligence Processing */
 .intelligence-display-v3.loading {
   min-height: 600px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(ellipse at center, #0a0e27 0%, #000511 100%);
+  background: #000000;
 }
 
 .intelligence-loading-container {

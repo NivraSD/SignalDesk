@@ -250,7 +250,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
     return (
       <div className="v3-segment-tab competitive">
         <div className="segment-section">
-          <h3 className="section-title">📊 Competitor Positioning</h3>
+          <h3 className="section-title"><span className="neon-icon">◆</span> Competitor Positioning</h3>
           <div className="intelligence-items">
             {data.competitor_positioning?.map((action, idx) => (
               <div key={idx} className="intelligence-item">
@@ -264,7 +264,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
         
         {data.narrative_implications && (
           <div className="segment-section">
-            <h3 className="section-title">🎯 Narrative Implications</h3>
+            <h3 className="section-title"><span className="neon-icon">▶</span> Narrative Implications</h3>
             <div className="narrative-content">
               <p>{data.narrative_implications}</p>
             </div>
@@ -273,7 +273,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
         
         {data.perception_dynamics && (
           <div className="segment-section">
-            <h3 className="section-title">⚡ Perception Dynamics</h3>
+            <h3 className="section-title"><span className="neon-icon">⟐</span> Perception Dynamics</h3>
             <div className="narrative-content">
               <p>{data.perception_dynamics}</p>
             </div>
@@ -282,7 +282,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
         
         {data.reputation_considerations && (
           <div className="segment-section">
-            <h3 className="section-title">🔧 Reputation Considerations</h3>
+            <h3 className="section-title"><span className="neon-icon">⬢</span> Reputation Considerations</h3>
             <div className="narrative-content">
               <p>{data.reputation_considerations}</p>
             </div>
@@ -291,7 +291,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
         
         {data.narrative_positions?.length > 0 && (
           <div className="segment-section">
-            <h3 className="section-title">📋 Narrative Positions</h3>
+            <h3 className="section-title"><span className="neon-icon">▣</span> Narrative Positions</h3>
             <ul className="strategic-options">
               {data.narrative_positions.map((position, idx) => (
                 <li key={idx}>{position}</li>
@@ -723,7 +723,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
     return (
       <div className="v3-segment-tab market">
         <div className="segment-section">
-          <h3 className="section-title">📊 Trend Narratives</h3>
+          <h3 className="section-title"><span className="neon-icon">◈</span> Trend Narratives</h3>
           <div className="intelligence-items">
             {data.trend_narratives?.map((trend, idx) => (
               <div key={idx} className="intelligence-item">
@@ -737,7 +737,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
         
         {data.narrative_analysis && (
           <div className="segment-section">
-            <h3 className="section-title">🎯 Narrative Analysis</h3>
+            <h3 className="section-title"><span className="neon-icon">▶</span> Narrative Analysis</h3>
             <div className="narrative-content">
               <p>{data.narrative_analysis}</p>
             </div>
@@ -746,7 +746,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
         
         {data.perception_opportunities && (
           <div className="segment-section">
-            <h3 className="section-title">💡 Perception Opportunities</h3>
+            <h3 className="section-title"><span className="neon-icon">◉</span> Perception Opportunities</h3>
             <div className="narrative-content">
               <p>{data.perception_opportunities}</p>
             </div>
@@ -755,7 +755,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
         
         {data.narrative_evolution && (
           <div className="segment-section">
-            <h3 className="section-title">📈 Narrative Evolution</h3>
+            <h3 className="section-title"><span className="neon-icon">↗</span> Narrative Evolution</h3>
             <div className="narrative-content">
               <p>{data.narrative_evolution}</p>
             </div>
@@ -764,7 +764,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
         
         {data.reputation_landscape && (
           <div className="segment-section">
-            <h3 className="section-title">🎯 Reputation Landscape</h3>
+            <h3 className="section-title"><span className="neon-icon">⬡</span> Reputation Landscape</h3>
             <div className="narrative-content">
               <p>{data.reputation_landscape}</p>
             </div>
@@ -781,7 +781,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
       <div className="v3-segment-tab regulatory">
         {data.regulatory_narrative && (
           <div className="segment-section">
-            <h3 className="section-title">🏛️ Regulatory Narrative</h3>
+            <h3 className="section-title"><span className="neon-icon">⊞</span> Regulatory Narrative</h3>
             <div className="narrative-content">
               <p>{data.regulatory_narrative}</p>
             </div>
@@ -789,7 +789,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
         )}
         
         <div className="segment-section">
-          <h3 className="section-title">📊 Regulatory Developments</h3>
+          <h3 className="section-title"><span className="neon-icon">◆</span> Regulatory Developments</h3>
           <div className="intelligence-items">
             {data.regulatory_developments?.map((dev, idx) => (
               <div key={idx} className="intelligence-item">
@@ -808,7 +808,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
         
         {data.narrative_implications && (
           <div className="segment-section">
-            <h3 className="section-title">🎯 Narrative Implications</h3>
+            <h3 className="section-title"><span className="neon-icon">▶</span> Narrative Implications</h3>
             <div className="narrative-content">
               <p>{data.narrative_implications}</p>
             </div>
@@ -817,7 +817,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
         
         {data.perception_landscape && (
           <div className="segment-section">
-            <h3 className="section-title">📢 Perception Landscape</h3>
+            <h3 className="section-title"><span className="neon-icon">◎</span> Perception Landscape</h3>
             <div className="narrative-content">
               <p>{data.perception_landscape}</p>
             </div>
@@ -834,7 +834,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
       <div className="v3-segment-tab media">
         {data.narrative_landscape && (
           <div className="segment-section">
-            <h3 className="section-title">📰 Narrative Landscape</h3>
+            <h3 className="section-title"><span className="neon-icon">⬢</span> Narrative Landscape</h3>
             <div className="narrative-content">
               <p>{data.narrative_landscape}</p>
             </div>
@@ -842,7 +842,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
         )}
         
         <div className="segment-section">
-          <h3 className="section-title">📊 Media Coverage</h3>
+          <h3 className="section-title"><span className="neon-icon">◆</span> Media Coverage</h3>
           <div className="intelligence-items">
             {data.media_coverage?.map((coverage, idx) => (
               <div key={idx} className="intelligence-item">
@@ -858,7 +858,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
         
         {data.perception_analysis && (
           <div className="segment-section">
-            <h3 className="section-title">📊 Perception Analysis</h3>
+            <h3 className="section-title"><span className="neon-icon">◈</span> Perception Analysis</h3>
             <div className="narrative-content">
               <p>{data.perception_analysis}</p>
             </div>
@@ -867,7 +867,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
         
         {data.reputation_implications && (
           <div className="segment-section">
-            <h3 className="section-title">🎯 Reputation Implications</h3>
+            <h3 className="section-title"><span className="neon-icon">▶</span> Reputation Implications</h3>
             <div className="narrative-content">
               <p>{data.reputation_implications}</p>
             </div>
@@ -876,7 +876,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
         
         {data.narrative_considerations && (
           <div className="segment-section">
-            <h3 className="section-title">📢 Narrative Considerations</h3>
+            <h3 className="section-title"><span className="neon-icon">◎</span> Narrative Considerations</h3>
             <div className="narrative-content">
               <p>{data.narrative_considerations}</p>
             </div>
@@ -893,7 +893,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
       <div className="v3-segment-tab forward">
         {data.future_narratives && (
           <div className="segment-section">
-            <h3 className="section-title">🔮 Future Narratives</h3>
+            <h3 className="section-title"><span className="neon-icon">⟡</span> Future Narratives</h3>
             <div className="narrative-content">
               <p>{data.future_narratives}</p>
             </div>
@@ -901,7 +901,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
         )}
         
         <div className="segment-section">
-          <h3 className="section-title">📊 Narrative Predictions</h3>
+          <h3 className="section-title"><span className="neon-icon">◆</span> Narrative Predictions</h3>
           <div className="intelligence-items">
             {data.narrative_predictions?.map((pred, idx) => (
               <div key={idx} className="intelligence-item prediction">
@@ -919,7 +919,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
         
         {data.perception_scenarios && (
           <div className="segment-section">
-            <h3 className="section-title">🎯 Perception Scenarios</h3>
+            <h3 className="section-title"><span className="neon-icon">▶</span> Perception Scenarios</h3>
             <div className="narrative-content">
               <p>{data.perception_scenarios}</p>
             </div>
@@ -928,7 +928,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
         
         {data.narrative_preparation && (
           <div className="segment-section">
-            <h3 className="section-title">🛡️ Narrative Preparation</h3>
+            <h3 className="section-title"><span className="neon-icon">⬢</span> Narrative Preparation</h3>
             <div className="narrative-content">
               <p>{data.narrative_preparation}</p>
             </div>
@@ -937,7 +937,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
         
         {data.reputation_considerations && (
           <div className="segment-section">
-            <h3 className="section-title">🌟 Reputation Considerations</h3>
+            <h3 className="section-title"><span className="neon-icon">✦</span> Reputation Considerations</h3>
             <div className="narrative-content">
               <p>{data.reputation_considerations}</p>
             </div>
@@ -1116,7 +1116,14 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
               <div className="pulse-ring"></div>
               <div className="pulse-ring delay-1"></div>
               <div className="pulse-ring delay-2"></div>
-              <div className="core-icon">🛰️</div>
+              <div className="core-icon">
+                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                  <circle cx="24" cy="24" r="20" stroke="#00ffff" strokeWidth="2" opacity="0.3"/>
+                  <circle cx="24" cy="24" r="14" stroke="#00ffff" strokeWidth="2" opacity="0.5"/>
+                  <circle cx="24" cy="24" r="8" stroke="#00ffff" strokeWidth="2" opacity="0.7"/>
+                  <circle cx="24" cy="24" r="3" fill="#00ffff"/>
+                </svg>
+              </div>
             </div>
             <h2 className="intelligence-title">INTELLIGENCE PROCESSING</h2>
             <div className="current-phase">{loadingPhase.toUpperCase()}</div>
