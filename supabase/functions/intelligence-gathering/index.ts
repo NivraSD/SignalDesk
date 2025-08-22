@@ -164,19 +164,56 @@ async function gatherIntelligence(organization: any) {
       }, 6000)
     )
     
-    // Reddit Intelligence - DISABLED (function doesn't exist)
-    // TODO: Create reddit-intelligence Edge Function
-    // if (result.discovered_context.search_keywords?.length > 0) {
-    //   gatheringPromises.push(
-    //     callEdgeFunction('reddit-intelligence', {
-    //       method: 'gather',
-    //       params: {
-    //         keywords: result.discovered_context.search_keywords.slice(0, 3),
-    //         organization: organization.name
-    //       }
-    //     }, 6000)
-    //   )
-    // }
+    // Reddit Intelligence 
+    if (result.discovered_context.search_keywords?.length > 0) {
+      gatheringPromises.push(
+        callEdgeFunction('reddit-intelligence', {
+          method: 'gather',
+          params: {
+            organization: {
+              name: organization.name,
+              keywords: result.discovered_context.search_keywords.slice(0, 5)
+            }
+          }
+        }, 8000)
+      )
+    }
+    
+    // Twitter/X Intelligence
+    if (result.discovered_context.search_keywords?.length > 0) {
+      gatheringPromises.push(
+        callEdgeFunction('twitter-intelligence', {
+          method: 'gather',
+          params: {
+            organization: {
+              name: organization.name,
+              keywords: result.discovered_context.search_keywords.slice(0, 3)
+            }
+          }
+        }, 8000)
+      )
+    }
+    
+    // Google Intelligence
+    gatheringPromises.push(
+      callEdgeFunction('google-intelligence', {
+        method: 'gather',
+        params: {
+          organization: {
+            name: organization.name,
+            keywords: result.discovered_context.search_keywords?.slice(0, 3) || [],
+            competitors: result.discovered_context.competitors?.slice(0, 2) || []
+          }
+        }
+      }, 8000)
+    )
+    
+    // RSS Intelligence (for industry blogs and news)
+    gatheringPromises.push(
+      callEdgeFunction('rss-proxy', {
+        url: 'https://techcrunch.com/feed/' // Can be made dynamic based on industry
+      }, 5000)
+    )
     
     // Scraper Intelligence (if applicable)
     if (result.discovered_context.scrape_targets?.length > 0) {
