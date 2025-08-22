@@ -21,13 +21,15 @@ class DataFormatterService {
     const stats = orchestratorResponse.statistics || {};
     
     // Check if we have V6 PR impact structure, V5 analytical structure, or tabs
-    const isV6Structure = intelligence.synthesized && (
-      intelligence.synthesized.narrative_landscape ||
-      intelligence.synthesized.competitive_dynamics ||
-      intelligence.synthesized.stakeholder_sentiment ||
-      intelligence.synthesized.media_momentum ||
-      intelligence.synthesized.strategic_signals
+    const hasV6Keys = intelligence.synthesized && (
+      'narrative_landscape' in intelligence.synthesized ||
+      'competitive_dynamics' in intelligence.synthesized ||
+      'stakeholder_sentiment' in intelligence.synthesized ||
+      'media_momentum' in intelligence.synthesized ||
+      'strategic_signals' in intelligence.synthesized
     );
+    
+    const isV6Structure = hasV6Keys;
     
     // Check V5 structure - entity-focused analytical structure
     const hasV5InSynthesized = intelligence.synthesized && (
@@ -51,6 +53,7 @@ class DataFormatterService {
     console.log('🔍 Data structure detection:', { 
       isV6Structure,
       isV5Structure,
+      hasV6Keys,
       hasV5InSynthesized,
       hasV5InTabs,
       hasSynthesized: !!intelligence.synthesized,
@@ -58,10 +61,17 @@ class DataFormatterService {
       tabKeys: intelligence.tabs ? Object.keys(intelligence.tabs) : [],
       hasV6Narrative: !!intelligence.synthesized?.narrative_landscape,
       hasV5Markets: !!intelligence.synthesized?.market_activity,
-      intelligenceKeys: Object.keys(intelligence)
+      intelligenceKeys: Object.keys(intelligence),
+      synthesizedSample: intelligence.synthesized ? JSON.stringify(Object.keys(intelligence.synthesized).slice(0, 3)) : 'none'
     });
     
     // Build properly formatted tabs
+    console.log('🎯 Tab selection:', {
+      willUseV6: isV6Structure,
+      willUseV5: isV5Structure,
+      willUseLegacy: !isV6Structure && !isV5Structure
+    });
+    
     const formattedData = {
       // CRITICAL: Include success field so claudeIntelligenceServiceV2 uses this data
       success: true,
