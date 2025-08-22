@@ -70,18 +70,48 @@ async function synthesizeIntelligence(gatheringData: any, organization: any) {
   
   try {
     // Prepare the data for synthesis
-    const mcpData = gatheringData.raw_intelligence || {}
-    const discoveryContext = gatheringData.discovered_context || {}
+    const rawIntelligence = gatheringData.raw_intelligence || {}
     
-    // Build comprehensive organization context
-    const fullOrganization = {
-      name: organization.name,
-      industry: discoveryContext.primary_category || organization.industry,
-      competitors: discoveryContext.competitors || [],
-      stakeholders: ['investors', 'customers', 'employees', 'media', 'regulators'],
-      topics: discoveryContext.search_keywords || [],
-      keywords: discoveryContext.search_keywords || [],
-      intelligence_focus: discoveryContext.intelligence_focus || []
+    // Check if we have entity-focused data (V2) or legacy data
+    const isEntityFocused = !!(rawIntelligence['entity-actions'] || rawIntelligence['trends'])
+    
+    let mcpData = {}
+    let fullOrganization = {}
+    
+    if (isEntityFocused) {
+      // New entity-focused structure
+      console.log('📊 Processing entity-focused intelligence')
+      
+      // Transform entity data for synthesis
+      mcpData = {
+        'entity-actions': rawIntelligence['entity-actions'],
+        'trends': rawIntelligence['trends'],
+        'summary': rawIntelligence['summary']
+      }
+      
+      // Use monitoring targets as context
+      fullOrganization = {
+        name: organization.name,
+        industry: organization.industry,
+        entities_monitored: gatheringData.monitoring_targets?.entities_to_monitor || {},
+        topics_tracked: gatheringData.monitoring_targets?.topics_to_track || [],
+        monitoring_context: gatheringData.monitoring_targets?.monitoring_context || {}
+      }
+    } else {
+      // Legacy structure
+      console.log('📊 Processing legacy intelligence structure')
+      mcpData = rawIntelligence
+      const discoveryContext = gatheringData.discovered_context || {}
+      
+      fullOrganization = {
+        name: organization.name,
+        industry: discoveryContext.primary_category || organization.industry,
+        competitors: discoveryContext.competitors || [],
+        stakeholders: ['investors', 'customers', 'employees', 'media', 'regulators'],
+        topics: discoveryContext.search_keywords || [],
+        keywords: discoveryContext.search_keywords || [],
+        intelligence_focus: discoveryContext.intelligence_focus || []
+      }
     }
     
     console.log('📊 Synthesis context:')
