@@ -14,7 +14,9 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
   const [activeTab, setActiveTab] = useState('executive');
   const [error, setError] = useState(null);
 
-  console.log('🚀 IntelligenceDisplayV3 mounted with organization:', organization);
+  useEffect(() => {
+    console.log('🚀 IntelligenceDisplayV3 mounted with organization:', organization);
+  }, []); // Only log on actual mount
 
   useEffect(() => {
     console.log('📊 V3 useEffect triggered:', {
@@ -84,12 +86,14 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
     }, 200);
     
     // Update phases based on timing
-    setTimeout(() => setLoadingPhase('Gathering'), 2000);
-    setTimeout(() => setLoadingPhase('Synthesizing'), 5000);
+    const gatheringTimeout = setTimeout(() => setLoadingPhase('Gathering'), 2000);
+    const synthesizingTimeout = setTimeout(() => setLoadingPhase('Synthesizing'), 5000);
     
     try {
       const result = await intelligenceOrchestratorV3.orchestrate(orgToUse);
       clearInterval(progressInterval);
+      clearTimeout(gatheringTimeout);
+      clearTimeout(synthesizingTimeout);
       setLoadingProgress(100);
       
       console.log('📦 V3 Orchestration result:', {
@@ -98,6 +102,14 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
         tabKeys: result.tabs ? Object.keys(result.tabs) : [],
         error: result.error
       });
+      
+      // Debug: Log the actual executive and predictions data
+      if (result.tabs?.executive) {
+        console.log('🎯 Executive Tab Data:', result.tabs.executive);
+      }
+      if (result.tabs?.predictions) {
+        console.log('🔮 Predictions Tab Data:', result.tabs.predictions);
+      }
       
       if (result.success) {
         setIntelligence(result);
@@ -117,6 +129,9 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
         stack: err.stack,
         organization: orgToUse
       });
+      clearInterval(progressInterval);
+      clearTimeout(gatheringTimeout);
+      clearTimeout(synthesizingTimeout);
       setError(err.message);
     } finally {
       setLoading(false);
