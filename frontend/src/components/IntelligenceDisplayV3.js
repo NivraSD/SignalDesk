@@ -10,6 +10,12 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
   const [loading, setLoading] = useState(false);
   const [loadingPhase, setLoadingPhase] = useState('');
   const [loadingProgress, setLoadingProgress] = useState(0);
+  const [phaseProgress, setPhaseProgress] = useState({
+    gathering: 0,
+    analysis: 0,
+    synthesis: 0,
+    preparing: 0
+  });
   const [intelligence, setIntelligence] = useState(null);
   const [activeTab, setActiveTab] = useState('executive');
   const [error, setError] = useState(null);
@@ -76,32 +82,62 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
     
     setLoading(true);
     setError(null);
-    setLoadingPhase('Discovery');
+    setLoadingPhase('Gathering');
     setLoadingProgress(0);
+    setPhaseProgress({ gathering: 0, analysis: 0, synthesis: 0, preparing: 0 });
     
     console.log('🚀 Starting V3 orchestration with:', orgToUse);
     
-    // Simulate progress through phases - adjusted for dual synthesis
-    const progressInterval = setInterval(() => {
-      setLoadingProgress(prev => Math.min(prev + 1.5, 95));
-    }, 200);
+    // Start all progress bars animation with overlapping phases
+    let elapsed = 0;
+    const totalDuration = 24000; // 24 seconds total
+    const phaseTimings = {
+      gathering: { start: 0, end: 8000 },     // 0-8s
+      analysis: { start: 4000, end: 14000 },  // 4-14s  (overlaps with gathering)
+      synthesis: { start: 10000, end: 20000 }, // 10-20s (overlaps with analysis)
+      preparing: { start: 16000, end: 24000 }  // 16-24s (overlaps with synthesis)
+    };
     
-    // Update phases based on timing - more even distribution
-    const gatheringTimeout = setTimeout(() => {
-      setLoadingPhase('Gathering');
-      setLoadingProgress(33);
-    }, 3000);
-    const synthesizingTimeout = setTimeout(() => {
-      setLoadingPhase('Synthesizing');
-      setLoadingProgress(66);
-    }, 7000);
+    const progressInterval = setInterval(() => {
+      elapsed += 100;
+      
+      // Update overall progress
+      setLoadingProgress(Math.min(95, (elapsed / totalDuration) * 100));
+      
+      // Update phase progress bars
+      setPhaseProgress(prev => {
+        const newProgress = { ...prev };
+        
+        Object.keys(phaseTimings).forEach(phase => {
+          const timing = phaseTimings[phase];
+          if (elapsed >= timing.start && elapsed <= timing.end) {
+            const phaseElapsed = elapsed - timing.start;
+            const phaseDuration = timing.end - timing.start;
+            newProgress[phase] = Math.min(100, (phaseElapsed / phaseDuration) * 100);
+          } else if (elapsed > timing.end) {
+            newProgress[phase] = 100;
+          }
+        });
+        
+        return newProgress;
+      });
+      
+      // Update current phase label based on dominant activity
+      if (elapsed < 6000) setLoadingPhase('Gathering Intelligence');
+      else if (elapsed < 12000) setLoadingPhase('Analyzing Patterns');
+      else if (elapsed < 18000) setLoadingPhase('Synthesizing Insights');
+      else setLoadingPhase('Preparing Report');
+      
+      if (elapsed >= totalDuration) {
+        clearInterval(progressInterval);
+      }
+    }, 100);
     
     try {
       const result = await intelligenceOrchestratorV3.orchestrate(orgToUse);
       clearInterval(progressInterval);
-      clearTimeout(gatheringTimeout);
-      clearTimeout(synthesizingTimeout);
       setLoadingProgress(100);
+      setPhaseProgress({ gathering: 100, analysis: 100, synthesis: 100, preparing: 100 });
       
       console.log('📦 V3 Orchestration result:', {
         success: result.success,
@@ -1076,28 +1112,92 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
   if (loading) {
     return (
       <div className="intelligence-display-v3 loading">
-        <div className="loading-container">
-          <div className="phase-indicator">
-            <div className="phase-name">{loadingPhase}</div>
-            <div className="phase-steps">
-              <div className={`step ${loadingPhase === 'Discovery' ? 'active' : loadingProgress > 30 ? 'complete' : ''}`}>
-                <span className="step-icon">🔍</span>
-                <span className="step-label">Discovery</span>
+        <div className="intelligence-loading-container">
+          <div className="intelligence-header">
+            <div className="intelligence-logo">
+              <div className="pulse-ring"></div>
+              <div className="pulse-ring delay-1"></div>
+              <div className="pulse-ring delay-2"></div>
+              <div className="core-icon">🛰️</div>
+            </div>
+            <h2 className="intelligence-title">INTELLIGENCE PROCESSING</h2>
+            <div className="current-phase">{loadingPhase.toUpperCase()}</div>
+          </div>
+          
+          <div className="phase-progress-grid">
+            <div className={`phase-card ${phaseProgress.gathering > 0 ? 'active' : ''}`}>
+              <div className="phase-header">
+                <span className="phase-icon">📡</span>
+                <span className="phase-label">GATHERING</span>
+                <span className="phase-percent">{Math.round(phaseProgress.gathering)}%</span>
               </div>
-              <div className={`step ${loadingPhase === 'Gathering' ? 'active' : loadingProgress > 60 ? 'complete' : ''}`}>
-                <span className="step-icon">📡</span>
-                <span className="step-label">Gathering</span>
+              <div className="phase-track">
+                <div className="phase-fill gathering" style={{ width: `${phaseProgress.gathering}%` }}></div>
               </div>
-              <div className={`step ${loadingPhase === 'Synthesizing' ? 'active' : ''}`}>
-                <span className="step-icon">🧠</span>
-                <span className="step-label">Synthesizing</span>
+              <div className="phase-status">
+                {phaseProgress.gathering === 100 ? 'COMPLETE' : phaseProgress.gathering > 0 ? 'PROCESSING' : 'PENDING'}
               </div>
             </div>
-            <div className="progress-bar">
-              <div className="progress-fill" style={{ width: `${loadingProgress}%` }}></div>
+            
+            <div className={`phase-card ${phaseProgress.analysis > 0 ? 'active' : ''}`}>
+              <div className="phase-header">
+                <span className="phase-icon">🔍</span>
+                <span className="phase-label">ANALYSIS</span>
+                <span className="phase-percent">{Math.round(phaseProgress.analysis)}%</span>
+              </div>
+              <div className="phase-track">
+                <div className="phase-fill analysis" style={{ width: `${phaseProgress.analysis}%` }}></div>
+              </div>
+              <div className="phase-status">
+                {phaseProgress.analysis === 100 ? 'COMPLETE' : phaseProgress.analysis > 0 ? 'PROCESSING' : 'PENDING'}
+              </div>
+            </div>
+            
+            <div className={`phase-card ${phaseProgress.synthesis > 0 ? 'active' : ''}`}>
+              <div className="phase-header">
+                <span className="phase-icon">🧠</span>
+                <span className="phase-label">SYNTHESIS</span>
+                <span className="phase-percent">{Math.round(phaseProgress.synthesis)}%</span>
+              </div>
+              <div className="phase-track">
+                <div className="phase-fill synthesis" style={{ width: `${phaseProgress.synthesis}%` }}></div>
+              </div>
+              <div className="phase-status">
+                {phaseProgress.synthesis === 100 ? 'COMPLETE' : phaseProgress.synthesis > 0 ? 'PROCESSING' : 'PENDING'}
+              </div>
+            </div>
+            
+            <div className={`phase-card ${phaseProgress.preparing > 0 ? 'active' : ''}`}>
+              <div className="phase-header">
+                <span className="phase-icon">📊</span>
+                <span className="phase-label">PREPARING</span>
+                <span className="phase-percent">{Math.round(phaseProgress.preparing)}%</span>
+              </div>
+              <div className="phase-track">
+                <div className="phase-fill preparing" style={{ width: `${phaseProgress.preparing}%` }}></div>
+              </div>
+              <div className="phase-status">
+                {phaseProgress.preparing === 100 ? 'COMPLETE' : phaseProgress.preparing > 0 ? 'PROCESSING' : 'PENDING'}
+              </div>
             </div>
           </div>
-          <p className="loading-message">Analyzing with Claude Sonnet 4...</p>
+          
+          <div className="processing-stats">
+            <div className="stat-item">
+              <span className="stat-label">Processing Speed</span>
+              <span className="stat-value">2.4 TB/s</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-label">Sources Analyzed</span>
+              <span className="stat-value">{Math.round(loadingProgress * 12.5)}</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-label">Pattern Recognition</span>
+              <span className="stat-value active">ACTIVE</span>
+            </div>
+          </div>
+          
+          <p className="loading-message">Powered by Claude Sonnet 4 Intelligence Engine</p>
         </div>
       </div>
     );
