@@ -23,7 +23,14 @@ class DataFormatterService {
       intelligence.synthesized.media_coverage
     );
     
-    console.log('🔍 Data structure detection:', { isV5Structure, hasSynthesized: !!intelligence.synthesized });
+    console.log('🔍 Data structure detection:', { 
+      isV5Structure, 
+      hasSynthesized: !!intelligence.synthesized,
+      synthesizedKeys: intelligence.synthesized ? Object.keys(intelligence.synthesized) : [],
+      hasV5Markets: !!intelligence.synthesized?.market_activity,
+      hasV5Competitor: !!intelligence.synthesized?.competitor_intelligence,
+      intelligenceKeys: Object.keys(intelligence)
+    });
     
     // Build properly formatted tabs
     const formattedData = {

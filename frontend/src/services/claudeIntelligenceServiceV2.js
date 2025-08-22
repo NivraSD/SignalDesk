@@ -659,50 +659,139 @@ class ClaudeIntelligenceServiceV2 {
     // Store critical insights in memory for future reference
     const keyInsights = [];
     
-    // Extract from properly formatted tabs
-    if (intelligence.tabs?.overview?.key_insights) {
-      intelligence.tabs.overview.key_insights.forEach(insight => {
-        keyInsights.push({
-          type: 'key_insight',
-          content: typeof insight === 'string' ? insight : insight.insight || insight.content,
-          confidence: 0.8
-        });
-      });
-    }
+    // Check if we have V5 analytical structure
+    const hasV5Structure = intelligence.tabs && (
+      intelligence.tabs.market_activity ||
+      intelligence.tabs.competitor_intelligence ||
+      intelligence.tabs.social_pulse ||
+      intelligence.tabs.industry_signals ||
+      intelligence.tabs.media_coverage
+    );
     
-    // Extract critical alerts
-    if (intelligence.tabs?.overview?.critical_alerts) {
-      intelligence.tabs.overview.critical_alerts.forEach(alert => {
-        keyInsights.push({
-          type: 'critical_alert',
-          content: typeof alert === 'string' ? alert : alert.message || alert.alert,
-          confidence: 0.9
-        });
-      });
-    }
+    console.log('💾 Insight extraction - V5 structure detected:', hasV5Structure);
     
-    // Extract competitive threats
-    if (intelligence.tabs?.competition?.competitive_landscape?.competitor_profiles) {
-      Object.entries(intelligence.tabs.competition.competitive_landscape.competitor_profiles).forEach(([name, profile]) => {
-        if (profile.threat_level === 'high') {
+    if (hasV5Structure) {
+      // Extract insights from V5 analytical structure
+      
+      // Market Activity insights
+      if (intelligence.tabs.market_activity?.key_findings) {
+        intelligence.tabs.market_activity.key_findings.forEach(finding => {
           keyInsights.push({
-            type: 'competitive_threat',
-            content: `High threat competitor: ${name}`,
-            confidence: 0.85
+            type: 'market_finding',
+            content: finding.finding || finding,
+            confidence: 0.85,
+            source: finding.source || 'market_analysis',
+            category: finding.category || 'market_event'
           });
-        }
-      });
-    }
-    
-    // Extract recommended actions
-    if (intelligence.tabs?.overview?.recommended_actions) {
-      intelligence.tabs.overview.recommended_actions.slice(0, 3).forEach(action => {
-        keyInsights.push({
-          type: 'recommended_action',
-          content: typeof action === 'string' ? action : action.action || action.recommendation,
-          confidence: 0.8
         });
-      });
+        console.log(`💾 Extracted ${intelligence.tabs.market_activity.key_findings.length} market findings`);
+      }
+      
+      // Competitor Intelligence insights
+      if (intelligence.tabs.competitor_intelligence?.movements) {
+        intelligence.tabs.competitor_intelligence.movements.forEach(movement => {
+          keyInsights.push({
+            type: 'competitor_movement',
+            content: `${movement.competitor}: ${movement.action}`,
+            confidence: 0.9,
+            source: movement.source || 'competitor_analysis',
+            competitor: movement.competitor
+          });
+        });
+        console.log(`💾 Extracted ${intelligence.tabs.competitor_intelligence.movements.length} competitor movements`);
+      }
+      
+      // Social Pulse insights
+      if (intelligence.tabs.social_pulse?.key_discussions) {
+        intelligence.tabs.social_pulse.key_discussions.forEach(discussion => {
+          keyInsights.push({
+            type: 'social_discussion',
+            content: `${discussion.platform}: ${discussion.topic} (${discussion.sentiment})`,
+            confidence: 0.7,
+            source: discussion.platform || 'social_analysis',
+            sentiment: discussion.sentiment
+          });
+        });
+        console.log(`💾 Extracted ${intelligence.tabs.social_pulse.key_discussions.length} social discussions`);
+      }
+      
+      // Industry Signals insights
+      if (intelligence.tabs.industry_signals?.indicators) {
+        intelligence.tabs.industry_signals.indicators.forEach(indicator => {
+          keyInsights.push({
+            type: 'industry_signal',
+            content: `${indicator.signal}: ${indicator.metric} (${indicator.trend})`,
+            confidence: 0.8,
+            source: indicator.source || 'industry_analysis',
+            trend: indicator.trend
+          });
+        });
+        console.log(`💾 Extracted ${intelligence.tabs.industry_signals.indicators.length} industry signals`);
+      }
+      
+      // Media Coverage insights
+      if (intelligence.tabs.media_coverage?.top_narratives) {
+        intelligence.tabs.media_coverage.top_narratives.forEach(narrative => {
+          keyInsights.push({
+            type: 'media_narrative',
+            content: `${narrative.narrative} (${narrative.frequency} mentions)`,
+            confidence: 0.75,
+            source: 'media_analysis',
+            frequency: narrative.frequency
+          });
+        });
+        console.log(`💾 Extracted ${intelligence.tabs.media_coverage.top_narratives.length} media narratives`);
+      }
+      
+    } else {
+      // Fallback to legacy structure
+      console.log('💾 Using legacy insight extraction');
+      
+      // Extract from properly formatted tabs
+      if (intelligence.tabs?.overview?.key_insights) {
+        intelligence.tabs.overview.key_insights.forEach(insight => {
+          keyInsights.push({
+            type: 'key_insight',
+            content: typeof insight === 'string' ? insight : insight.insight || insight.content,
+            confidence: 0.8
+          });
+        });
+      }
+      
+      // Extract critical alerts
+      if (intelligence.tabs?.overview?.critical_alerts) {
+        intelligence.tabs.overview.critical_alerts.forEach(alert => {
+          keyInsights.push({
+            type: 'critical_alert',
+            content: typeof alert === 'string' ? alert : alert.message || alert.alert,
+            confidence: 0.9
+          });
+        });
+      }
+      
+      // Extract competitive threats
+      if (intelligence.tabs?.competition?.competitive_landscape?.competitor_profiles) {
+        Object.entries(intelligence.tabs.competition.competitive_landscape.competitor_profiles).forEach(([name, profile]) => {
+          if (profile.threat_level === 'high') {
+            keyInsights.push({
+              type: 'competitive_threat',
+              content: `High threat competitor: ${name}`,
+              confidence: 0.85
+            });
+          }
+        });
+      }
+      
+      // Extract recommended actions
+      if (intelligence.tabs?.overview?.recommended_actions) {
+        intelligence.tabs.overview.recommended_actions.slice(0, 3).forEach(action => {
+          keyInsights.push({
+            type: 'recommended_action',
+            content: typeof action === 'string' ? action : action.action || action.recommendation,
+            confidence: 0.8
+          });
+        });
+      }
     }
     
     // Store in localStorage for now (would be database in production)
