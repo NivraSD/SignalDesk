@@ -49,9 +49,13 @@ ${JSON.stringify(entityActions, null, 2)}
 TOPIC TRENDS (${topicTrends.length} monitored):
 ${JSON.stringify(topicTrends, null, 2)}
 
-Create a comprehensive analysis that tells the FULL STORY. Don't just list - SYNTHESIZE and CONNECT.
+Provide EXPANSIVE NARRATIVE ANALYSIS. We're monitoring ${entityActions.length} entity movements and ${topicTrends.length} market trends. 
+Show the SCALE of what's happening. Focus on STRATEGIC IMPLICATIONS for ${organization.name}, not PR tactics.
 
-Return this JSON with RICH, DETAILED content:
+Write DETAILED NARRATIVES for each section - don't constrain yourself to short fields. 
+Think: "What does all this MEAN for ${organization.name}'s future?"
+
+Return this JSON with EXPANSIVE, DETAILED analysis:
 {
   "executive_summary": {
     "headline": "The big story that connects all the pieces - be specific with names and numbers",
@@ -68,39 +72,27 @@ Return this JSON with RICH, DETAILED content:
   },
   "competitive_landscape": {
     "competitor_actions": [
-      // List ALL significant competitor moves from the data
-      {"competitor": "Actual name from data", "action": "What they actually did", "details": "Deep analysis of why this matters and what they're really trying to achieve"}
+      // List EVERY significant competitor move - show the VOLUME of activity
+      {"competitor": "Name", "action": "What they did", "details": "EXPANSIVE analysis of strategic intent, capabilities revealed, market positioning, and what this signals about their next moves"}
     ],
-    "competitive_implications": [
-      // Multiple implications - be comprehensive
-      {"impact": "First-order effect", "severity": "Why this fundamentally changes competitive dynamics"},
-      {"impact": "Second-order effect", "severity": "The cascade this triggers"}
-    ],
-    "pr_strategy": "Detailed strategy for positioning ${organization.name} given all these competitor moves",
-    "key_messages": [
-      "Specific message that counters competitor narrative",
-      "Another key message based on the intelligence"
-    ],
-    "do_not_say": ["What to avoid saying given current dynamics"]
+    "strategic_implications": "DETAILED NARRATIVE (500+ words): What does all this competitor activity mean for ${organization.name}? How is the competitive landscape reshaping? Where are the opportunities and threats? What capabilities does ${organization.name} need to develop? What strategic moves should we consider?",
+    "competitive_dynamics": "How power is shifting in the market and what it means for ${organization.name}'s position",
+    "capability_gaps": "What competitor moves reveal about capabilities ${organization.name} needs",
+    "strategic_options": [
+      "Option 1: Detailed strategic response option",
+      "Option 2: Another strategic path",
+      "Option 3: Alternative approach"
+    ]
   },
   "market_dynamics": {
     "market_trends": [
-      // Analyze ALL significant trends from the data
-      {"trend": "Specific trend from data", "description": "Rich analysis of drivers, stakeholders, and trajectory", "momentum": "accelerating/stable/declining"}
+      // Show ALL ${topicTrends.length} trends we're tracking
+      {"trend": "Trend name", "description": "EXPANSIVE analysis of what's driving this, who's involved, where it's heading", "momentum": "accelerating/stable/declining", "volume": "How much activity"}
     ],
-    "opportunities": [
-      // Multiple opportunities based on the trends
-      {"opportunity": "Specific opportunity", "description": "Detailed explanation of how ${organization.name} can capitalize"}
-    ],
-    "market_implications": [
-      // Several implications
-      {"implication": "How market is restructuring", "what_it_means_for_us": "Specific impact on ${organization.name}", "pr_response": "How to message this"}
-    ],
-    "market_narrative": "The story of where the market is heading and ${organization.name}'s role",
-    "thought_leadership": [
-      "Specific contrarian position ${organization.name} should take",
-      "Another thought leadership opportunity"
-    ]
+    "market_analysis": "DETAILED NARRATIVE (500+ words): Connect all these trends. What's the bigger picture? How are these ${topicTrends.length} trends interconnected? What fundamental shifts are occurring? What does this mean for ${organization.name}'s market position?",
+    "strategic_opportunities": "EXPANSIVE analysis of opportunities emerging from these trends for ${organization.name}",
+    "market_evolution": "Where the market is heading in 6-12 months based on current momentum",
+    "positioning_strategy": "How ${organization.name} should position itself given these market dynamics"
   }
 }`
 
@@ -114,7 +106,7 @@ Return this JSON with RICH, DETAILED content:
       },
       body: JSON.stringify({
         model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 3500,
+        max_tokens: 4000,
         temperature: 0.3,
         messages: [{
           role: 'user',
@@ -147,64 +139,39 @@ ${JSON.stringify(entityActions, null, 2)}
 TOPIC TRENDS (${topicTrends.length} monitored):
 ${JSON.stringify(topicTrends, null, 2)}
 
-Provide COMPREHENSIVE analysis of defensive positioning and future preparation.
+Provide EXPANSIVE STRATEGIC ANALYSIS. We're tracking ${entityActions.length} entity actions and ${topicTrends.length} trends.
+Focus on IMPLICATIONS and STRATEGIC MEANING for ${organization.name}, not tactical PR responses.
 
-Return this JSON with DETAILED, NARRATIVE content:
+Return this JSON with EXPANSIVE NARRATIVES and STRATEGIC INSIGHTS:
 {
   "regulatory_policy": {
+    "regulatory_landscape": "EXPANSIVE NARRATIVE (300+ words): What's happening in the regulatory space based on the ${entityActions.length} actions we're tracking? Connect the dots between different regulatory moves.",
     "regulatory_developments": [
-      // Analyze ALL regulatory signals in the data
-      {"regulator": "Specific entity from data", "development": "Full story of what's happening and hidden agenda", "timeline": "Realistic timeline with key milestones", "what_it_means_for_us": "Detailed impact analysis for ${organization.name}", "pr_response": "Complete messaging strategy"}
+      // Every regulatory signal matters
+      {"regulator": "Entity", "development": "DETAILED analysis of what's happening, motivations, and trajectory", "timeline": "Key milestones", "strategic_impact": "How this reshapes ${organization.name}'s operating environment"}
     ],
-    "compliance_requirements": [
-      // Multiple requirements emerging
-      {"requirement": "Detailed requirement", "action": "Specific steps ${organization.name} should take"}
-    ],
-    "regulatory_stance": "Comprehensive position ${organization.name} should take given the landscape",
-    "stakeholder_messages": [
-      // Messages for each key stakeholder group
-      {"audience": "Specific group", "message": "Tailored message based on intelligence"}
-    ]
+    "strategic_implications": "What does the regulatory environment mean for ${organization.name}'s strategy? What capabilities become advantages? What business models are at risk?",
+    "regulatory_positioning": "How ${organization.name} should position itself in this evolving regulatory landscape"
   },
   "media_sentiment": {
+    "narrative_landscape": "EXPANSIVE ANALYSIS (400+ words): What narratives are dominating? How are they evolving? What's driving media attention across the ${topicTrends.length} trends we're tracking?",
     "media_coverage": [
-      // Analyze patterns in media coverage
-      {"outlet": "Key outlets covering the space", "topic": "What they're focusing on", "sentiment": "positive/neutral/negative", "influence": "Their reach and impact"}
+      // Show the SCALE of coverage
+      {"outlet": "Source", "topic": "What they're covering", "sentiment": "positive/neutral/negative", "narrative": "The story they're telling", "reach": "Influence and audience"}
     ],
-    "social_trends": [
-      // Multiple social trends from the data
-      {"platform": "Where conversation is happening", "trend": "What's gaining traction", "volume": "Quantify the momentum"}
-    ],
-    "reputation_impact": "Detailed analysis of how current coverage affects ${organization.name}'s reputation",
-    "sentiment_trend": "Where sentiment is heading and why",
-    "narrative_risks": [
-      "Specific narrative that could damage ${organization.name}",
-      "Another risk narrative emerging"
-    ],
-    "what_it_means_for_us": "Complete analysis of media landscape impact on ${organization.name}",
-    "pr_response": "Comprehensive PR strategy to shape narrative",
-    "media_strategy": "Detailed approach to media engagement",
-    "media_outreach": [
-      "Specific story to pitch",
-      "Another media opportunity"
-    ],
-    "social_response": "How to engage on social platforms"
+    "sentiment_analysis": "Deep dive into how ${organization.name} and the industry are being perceived. What's driving sentiment? How is it evolving?",
+    "narrative_implications": "What do these narratives mean for ${organization.name}'s strategic position? How do they affect stakeholder perceptions?",
+    "strategic_communications": "How ${organization.name} should think about communications given this landscape - focus on strategic positioning, not tactics"
   },
   "forward_look": {
+    "future_landscape": "EXPANSIVE NARRATIVE (400+ words): Based on the ${entityActions.length} entity actions and ${topicTrends.length} trends, paint the picture of what's coming. Connect the dots between current movements and future state.",
     "predictions": [
-      // Multiple predictions based on patterns
-      {"timeframe": "Next 30 days", "prediction": "Specific prediction based on current intelligence", "probability": 70, "early_indicators": "What to watch for", "what_it_means_for_us": "Impact on ${organization.name}", "pr_response": "How to message if this happens"},
-      {"timeframe": "Next 90 days", "prediction": "Another prediction", "probability": 60, "early_indicators": "Leading indicators", "what_it_means_for_us": "Strategic implications", "pr_response": "Positioning strategy"}
+      // Multiple detailed predictions
+      {"timeframe": "Timeframe", "prediction": "DETAILED prediction with evidence from current intelligence", "probability": 70, "indicators": "What signals this is coming", "strategic_implications": "What this means for ${organization.name}'s strategy and positioning"}
     ],
-    "preparation_needed": [
-      // Multiple scenarios to prepare for
-      {"scenario": "Specific scenario from intelligence", "impact": "Detailed impact analysis"}
-    ],
-    "proactive_strategy": "Comprehensive strategy for getting ahead of developments",
-    "prepared_statements": [
-      // Multiple prepared responses
-      {"scenario": "When X happens", "statement": "Complete statement ready to go"}
-    ]
+    "scenario_analysis": "Multiple future scenarios and their implications for ${organization.name}",
+    "strategic_preparation": "What capabilities, relationships, and positions ${organization.name} needs to develop now for the future we see coming",
+    "windows_of_opportunity": "Time-sensitive opportunities ${organization.name} should consider based on predicted developments"
   }
 }`
 
@@ -218,7 +185,7 @@ Return this JSON with DETAILED, NARRATIVE content:
       },
       body: JSON.stringify({
         model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 3500,
+        max_tokens: 4000,
         temperature: 0.3,
         messages: [{
           role: 'user',
