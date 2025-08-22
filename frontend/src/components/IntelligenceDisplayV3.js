@@ -173,8 +173,6 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
         organization: orgToUse
       });
       clearInterval(progressInterval);
-      clearTimeout(gatheringTimeout);
-      clearTimeout(synthesizingTimeout);
       setError(err.message);
     } finally {
       setLoading(false);
