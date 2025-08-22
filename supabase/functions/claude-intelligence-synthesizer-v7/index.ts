@@ -153,7 +153,7 @@ Return the same JSON structure as above but based on the traditional intelligenc
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-20250514',
         messages: [{
           role: 'user',
           content: prompt
