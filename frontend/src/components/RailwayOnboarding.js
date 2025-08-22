@@ -765,7 +765,6 @@ const RailwayOnboarding = ({ onComplete }) => {
         <div className="onboarding-header">
           <h1 className="onboarding-title">
             <span className="title-gradient">SignalDesk</span>
-            <span className="title-version">V2</span>
           </h1>
           <p className="onboarding-subtitle">Intelligence-Driven PR Platform</p>
         </div>

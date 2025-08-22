@@ -2,7 +2,7 @@
 
 .railway-v2 {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0a0a0f 0%, #1a0033 50%, #000515 100%);
+  background: #000000;
   color: #ffffff;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   position: relative;

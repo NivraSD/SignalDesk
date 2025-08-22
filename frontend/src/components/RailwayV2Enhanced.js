@@ -89,7 +89,6 @@ const RailwayV2Enhanced = () => {
       <header className="railway-header">
         <div className="railway-logo">
           <span className="logo-text">SIGNALDESK</span>
-          <span className="logo-version">V2</span>
         </div>
         
         <nav className="railway-nav">
