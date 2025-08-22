@@ -13,7 +13,11 @@ async function callClaudeSynthesizer(data: any, organization: any) {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 50000) // 50 seconds for Claude (needs 38+ to complete)
     
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/claude-intelligence-synthesizer-v6`, {
+    // Use V7 for entity-focused data, V6 for legacy
+    const synthesizerVersion = data.raw_intelligence?.['entity-actions'] ? 
+      'claude-intelligence-synthesizer-v7' : 'claude-intelligence-synthesizer-v6'
+    
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/${synthesizerVersion}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
