@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './RailwayV2Enhanced.css';
-import IntelligenceDisplayV2 from './IntelligenceDisplayV2';
+import IntelligenceDisplayV3 from './IntelligenceDisplayV3';
 import OpportunityModule from './Modules/OpportunityModule';
 import ExecutionModule from './Modules/ExecutionModule';
 import MemoryVaultModule from './Modules/MemoryVaultModule';
@@ -37,9 +37,8 @@ const RailwayV2Enhanced = () => {
   const renderModule = () => {
     switch(activeModule) {
       case 'intelligence':
-        return <IntelligenceDisplayV2 
-          organizationId={organizationData?.id} 
-          timeframe={timeframe}
+        return <IntelligenceDisplayV3 
+          organization={organizationData} 
           refreshTrigger={refreshKey}
         />;
       case 'opportunities':
@@ -49,9 +48,8 @@ const RailwayV2Enhanced = () => {
       case 'memory':
         return <MemoryVaultModule organizationId={organizationData?.id} />;
       default:
-        return <IntelligenceDisplayV2 
-          organizationId={organizationData?.id} 
-          timeframe={timeframe}
+        return <IntelligenceDisplayV3 
+          organization={organizationData} 
           refreshTrigger={refreshKey}
         />;
     }
