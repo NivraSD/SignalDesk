@@ -525,17 +525,16 @@ serve(async (req) => {
         media: analysis.media_sentiment,
         forward: analysis.forward_look,
         
-        // Keep PR-focused structure as additional data
-        narrative: analysis.narrative_control,
-        response: analysis.response_priorities,
-        messaging: analysis.messaging_opportunities,
-        stakeholders: analysis.stakeholder_sentiment,
-        tomorrow: analysis.tomorrows_headlines
+        // Keep PR-focused structure as additional data with safe defaults
+        narrative: analysis.narrative_control || { dominant_narratives: [], narrative_threats: [] },
+        response: analysis.response_priorities || { immediate_responses: [], monitor_only: [] },
+        messaging: analysis.messaging_opportunities || { opportunities: [] },
+        stakeholders: analysis.stakeholder_sentiment || { stakeholder_groups: [] },
+        tomorrow: analysis.tomorrows_headlines || { anticipated_headlines: [] }
       },
       
       // Quick access to critical items
       alerts: intelligence.entity_actions?.critical || [],
-      requires_attention: analysis.executive_briefing.requires_action,
       
       // Statistics for display
       statistics: {

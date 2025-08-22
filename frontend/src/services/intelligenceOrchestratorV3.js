@@ -143,7 +143,7 @@ class IntelligenceOrchestratorV3 {
       }
       
       console.log('✅ Synthesis complete:', {
-        requires_attention: synthesisData.requires_attention,
+        has_immediate_actions: synthesisData.tabs?.executive?.immediate_actions?.length > 0,
         alert_count: synthesisData.alerts?.length || 0,
         tabs: Object.keys(synthesisData.tabs || {})
       });
@@ -174,20 +174,58 @@ class IntelligenceOrchestratorV3 {
         organization: organization
       });
       
-      // Return error state with empty structure
+      // Return error state with new comprehensive structure
       return {
         success: false,
         error: error.message,
         tabs: {
           executive: {
             headline: 'Intelligence gathering failed',
-            summary: error.message,
-            requires_action: false,
-            urgency_level: 'low'
+            overview: error.message,
+            competitive_highlight: 'No data available',
+            market_highlight: 'No data available',
+            regulatory_highlight: 'No data available', 
+            media_highlight: 'No data available',
+            immediate_actions: []
+          },
+          competitive: {
+            competitor_actions: [],
+            competitive_implications: [],
+            pr_strategy: '',
+            key_messages: [],
+            do_not_say: []
+          },
+          market: {
+            market_trends: [],
+            opportunities: [],
+            market_implications: [],
+            market_narrative: '',
+            thought_leadership: []
+          },
+          regulatory: {
+            regulatory_developments: [],
+            compliance_requirements: [],
+            regulatory_stance: '',
+            stakeholder_messages: []
+          },
+          media: {
+            media_coverage: [],
+            social_trends: [],
+            reputation_impact: '',
+            sentiment_trend: '',
+            narrative_risks: [],
+            media_strategy: '',
+            media_outreach: [],
+            social_response: ''
+          },
+          forward: {
+            predictions: [],
+            preparation_needed: [],
+            proactive_strategy: '',
+            prepared_statements: []
           }
         },
         alerts: [],
-        requires_attention: false,
         statistics: {
           entities_tracked: 0,
           actions_captured: 0,
