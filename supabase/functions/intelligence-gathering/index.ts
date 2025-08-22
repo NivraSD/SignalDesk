@@ -208,6 +208,21 @@ async function gatherIntelligence(organization: any) {
       }, 8000)
     )
     
+    // Yahoo Finance Intelligence (for financial/business organizations)
+    gatheringPromises.push(
+      callEdgeFunction('yahoo-finance-intelligence', {
+        method: 'gather',
+        params: {
+          organization: {
+            name: organization.name,
+            industry: result.discovered_context.primary_category || organization.industry,
+            competitors: result.discovered_context.competitors || [],
+            stock_symbol: organization.stock_symbol || null
+          }
+        }
+      }, 8000)
+    )
+    
     // RSS Intelligence (industry-specific feeds from discovery)
     const rssFeeds = result.discovered_context.rss_feeds || ['https://techcrunch.com/feed/']
     for (const feedUrl of rssFeeds.slice(0, 3)) { // Limit to 3 feeds to avoid timeout
@@ -249,6 +264,8 @@ async function gatherIntelligence(organization: any) {
             result.statistics.total_articles += data.data?.totalArticles || 0
           } else if (source === 'scraper-intelligence') {
             result.statistics.total_websites += data.data?.scraped?.length || 0
+          } else if (source === 'yahoo-finance-intelligence') {
+            result.statistics.total_articles += data.data?.relevant_articles || 0
           }
           
           console.log(`✅ ${source}: Success`)

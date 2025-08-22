@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Direct Synthesis Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+        pre { background: #f8f9fa; padding: 10px; overflow-x: auto; }
+        button { padding: 10px 20px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Direct Edge Function Tests</h1>
+    
+    <div class="test-section">
+        <h2>Test Claude V5 Synthesizer Directly</h2>
+        <button onclick="testV5Directly()">Test V5 Synthesizer</button>
+        <div id="v5-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Intelligence Gathering</h2>
+        <button onclick="testGathering()">Test Gathering</button>
+        <div id="gathering-results"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+
+        async function testV5Directly() {
+            const resultsDiv = document.getElementById('v5-results');
+            resultsDiv.innerHTML = '<p>🔍 Testing V5 synthesizer directly...</p>';
+            
+            try {
+                // Create test data
+                const testData = {
+                    intelligence: {
+                        raw_intelligence: {
+                            'news-intelligence': {
+                                totalArticles: 10,
+                                articles: [{title: 'Test Article', content: 'Test content'}],
+                                breakingNews: ['Breaking news item'],
+                                opportunities: ['Opportunity 1']
+                            }
+                        },
+                        organization: 'Acme Corp',
+                        industry: 'technology',
+                        discovered_context: {
+                            name: 'Acme Corp',
+                            industry: 'technology',
+                            competitors: ['Competitor 1', 'Competitor 2']
+                        }
+                    }
+                };
+
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/claude-intelligence-synthesizer-v5`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${ANON_KEY}`
+                    },
+                    body: JSON.stringify(testData)
+                });
+
+                const data = await response.json();
+                
+                resultsDiv.innerHTML = `
+                    <div class="test-section ${data.success ? 'success' : 'error'}">
+                        <h3>V5 Synthesizer Response</h3>
+                        <p><strong>Success:</strong> ${data.success}</p>
+                        <p><strong>Has Analysis:</strong> ${!!data.analysis}</p>
+                        
+                        <h4>Analysis Structure:</h4>
+                        <ul>
+                            <li>Market Activity: ${!!data.analysis?.market_activity}</li>
+                            <li>Competitor Intel: ${!!data.analysis?.competitor_intelligence}</li>
+                            <li>Social Pulse: ${!!data.analysis?.social_pulse}</li>
+                            <li>Industry Signals: ${!!data.analysis?.industry_signals}</li>
+                            <li>Media Coverage: ${!!data.analysis?.media_coverage}</li>
+                        </ul>
+                        
+                        <details>
+                            <summary>Full Response</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    </div>
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="test-section error">
+                        <h3>❌ Error</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function testGathering() {
+            const resultsDiv = document.getElementById('gathering-results');
+            resultsDiv.innerHTML = '<p>🔍 Testing intelligence gathering...</p>';
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-gathering`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: {
+                            name: 'Acme Corp',
+                            industry: 'technology'
+                        }
+                    })
+                });
+
+                const data = await response.json();
+                
+                resultsDiv.innerHTML = `
+                    <div class="test-section ${data.success ? 'success' : 'error'}">
+                        <h3>Gathering Response</h3>
+                        <p><strong>Success:</strong> ${data.success}</p>
+                        <p><strong>Phases:</strong> ${JSON.stringify(data.phases)}</p>
+                        
+                        <h4>Statistics:</h4>
+                        <ul>
+                            <li>Competitors: ${data.statistics?.competitors_identified || 0}</li>
+                            <li>Sources Attempted: ${data.statistics?.sources_attempted || 0}</li>
+                            <li>Sources Succeeded: ${data.statistics?.sources_succeeded || 0}</li>
+                            <li>Total Articles: ${data.statistics?.total_articles || 0}</li>
+                        </ul>
+                        
+                        <h4>Raw Intelligence Sources:</h4>
+                        <ul>
+                            ${Object.keys(data.raw_intelligence || {}).map(key => 
+                                `<li>${key}: ${data.raw_intelligence[key]?.success !== false ? '✅' : '❌'}</li>`
+                            ).join('')}
+                        </ul>
+                        
+                        <details>
+                            <summary>Full Response</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    </div>
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="test-section error">
+                        <h3>❌ Error</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

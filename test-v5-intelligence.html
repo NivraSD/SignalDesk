@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>V5 Intelligence Debug Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+        .info { background-color: #d1ecf1; }
+        pre { background: #f8f9fa; padding: 10px; overflow-x: auto; }
+        button { padding: 10px 20px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 V5 Intelligence Structure Debug Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Test Direct Intelligence Synthesis (V5)</h2>
+        <button onclick="testDirectSynthesis()">Test Direct V5 Synthesis</button>
+        <div id="synthesis-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Test Full Orchestrator Flow</h2>
+        <button onclick="testOrchestratorFlow()">Test Full Orchestrator</button>
+        <div id="orchestrator-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Check LocalStorage Config</h2>
+        <button onclick="checkLocalStorage()">Check Config</button>
+        <div id="localstorage-results"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+
+        async function testDirectSynthesis() {
+            const resultsDiv = document.getElementById('synthesis-results');
+            resultsDiv.innerHTML = '<p>🔍 Testing direct V5 synthesis...</p>';
+            
+            try {
+                // First gather some data
+                const gatheringResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-gathering`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: {
+                            name: 'Tesla',
+                            industry: 'automotive'
+                        }
+                    })
+                });
+
+                const gatheringData = await gatheringResponse.json();
+                
+                // Now test synthesis
+                const synthesisResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-synthesis`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        gathering_data: gatheringData,
+                        organization: {
+                            name: 'Tesla',
+                            industry: 'automotive'
+                        }
+                    })
+                });
+
+                const synthesisData = await synthesisResponse.json();
+                
+                resultsDiv.innerHTML = `
+                    <div class="test-section ${synthesisData.success ? 'success' : 'error'}">
+                        <h3>📊 V5 Synthesis Results</h3>
+                        <p><strong>Success:</strong> ${synthesisData.success}</p>
+                        <p><strong>Has Intelligence:</strong> ${!!synthesisData.intelligence}</p>
+                        <p><strong>Has Synthesized:</strong> ${!!synthesisData.intelligence?.synthesized}</p>
+                        <p><strong>Has Tabs:</strong> ${!!synthesisData.intelligence?.tabs}</p>
+                        
+                        <h4>🔍 V5 Structure Check:</h4>
+                        <ul>
+                            <li>Market Activity: ${!!synthesisData.intelligence?.synthesized?.market_activity}</li>
+                            <li>Competitor Intel: ${!!synthesisData.intelligence?.synthesized?.competitor_intelligence}</li>
+                            <li>Social Pulse: ${!!synthesisData.intelligence?.synthesized?.social_pulse}</li>
+                            <li>Industry Signals: ${!!synthesisData.intelligence?.synthesized?.industry_signals}</li>
+                            <li>Media Coverage: ${!!synthesisData.intelligence?.synthesized?.media_coverage}</li>
+                        </ul>
+                        
+                        <h4>📈 Statistics:</h4>
+                        <ul>
+                            <li>Total Sources: ${synthesisData.statistics?.total_sources || 0}</li>
+                            <li>Total Insights: ${synthesisData.statistics?.total_insights || 0}</li>
+                        </ul>
+                        
+                        <details>
+                            <summary>Raw Intelligence Keys</summary>
+                            <pre>${JSON.stringify(Object.keys(synthesisData.intelligence || {}), null, 2)}</pre>
+                        </details>
+                        
+                        <details>
+                            <summary>Raw Synthesized Keys</summary>
+                            <pre>${JSON.stringify(Object.keys(synthesisData.intelligence?.synthesized || {}), null, 2)}</pre>
+                        </details>
+                        
+                        <details>
+                            <summary>Full Response</summary>
+                            <pre>${JSON.stringify(synthesisData, null, 2)}</pre>
+                        </details>
+                    </div>
+                `;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="test-section error">
+                        <h3>❌ Error</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function testOrchestratorFlow() {
+            const resultsDiv = document.getElementById('orchestrator-results');
+            resultsDiv.innerHTML = '<p>🔍 Testing full orchestrator flow...</p>';
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-orchestrator`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: {
+                            name: 'Tesla',
+                            industry: 'automotive'
+                        },
+                        timeframe: '7d'
+                    })
+                });
+
+                const data = await response.json();
+                
+                resultsDiv.innerHTML = `
+                    <div class="test-section ${data.success ? 'success' : 'error'}">
+                        <h3>📊 Orchestrator Results</h3>
+                        <p><strong>Success:</strong> ${data.success}</p>
+                        <p><strong>Phases Completed:</strong> ${JSON.stringify(data.phases_completed)}</p>
+                        <p><strong>Has Intelligence:</strong> ${!!data.intelligence}</p>
+                        <p><strong>Has Synthesized:</strong> ${!!data.intelligence?.synthesized}</p>
+                        
+                        <h4>🔍 Data Structure:</h4>
+                        <ul>
+                            <li>Top-level keys: ${Object.keys(data).join(', ')}</li>
+                            <li>Intelligence keys: ${Object.keys(data.intelligence || {}).join(', ')}</li>
+                            <li>Synthesized keys: ${Object.keys(data.intelligence?.synthesized || {}).join(', ')}</li>
+                        </ul>
+                        
+                        <details>
+                            <summary>Full Response</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    </div>
+                `;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="test-section error">
+                        <h3>❌ Error</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function checkLocalStorage() {
+            const resultsDiv = document.getElementById('localstorage-results');
+            
+            const onboardingConfig = localStorage.getItem('signaldesk_onboarding');
+            const minimalFlag = localStorage.getItem('signaldesk_minimal');
+            const orchestratorFlag = localStorage.getItem('signaldesk_use_orchestrator');
+            
+            resultsDiv.innerHTML = `
+                <div class="test-section info">
+                    <h3>📦 LocalStorage Configuration</h3>
+                    
+                    <h4>Onboarding Config:</h4>
+                    <pre>${onboardingConfig ? JSON.stringify(JSON.parse(onboardingConfig), null, 2) : 'Not set'}</pre>
+                    
+                    <h4>Flags:</h4>
+                    <ul>
+                        <li>Minimal Mode: ${minimalFlag || 'Not set'}</li>
+                        <li>Use Orchestrator: ${orchestratorFlag || 'Not set (defaults to true)'}</li>
+                    </ul>
+                    
+                    <button onclick="setTestConfig()">Set Test Config</button>
+                    <button onclick="clearConfig()">Clear Config</button>
+                </div>
+            `;
+        }
+
+        function setTestConfig() {
+            const config = {
+                organization: {
+                    name: 'Tesla',
+                    industry: 'automotive',
+                    website: 'https://tesla.com',
+                    description: 'Electric vehicle and clean energy company'
+                },
+                goals: {
+                    media_monitoring: true,
+                    competitor_tracking: true,
+                    opportunity_detection: true
+                }
+            };
+            
+            localStorage.setItem('signaldesk_onboarding', JSON.stringify(config));
+            localStorage.setItem('signaldesk_minimal', 'false');
+            localStorage.removeItem('signaldesk_use_orchestrator'); // Let it default to true
+            
+            checkLocalStorage();
+            alert('Test config set! Refresh the main app to use it.');
+        }
+
+        function clearConfig() {
+            localStorage.removeItem('signaldesk_onboarding');
+            localStorage.removeItem('signaldesk_minimal');
+            localStorage.removeItem('signaldesk_use_orchestrator');
+            
+            checkLocalStorage();
+            alert('Config cleared!');
+        }
+    </script>
+</body>
+</html>

@@ -10,6 +10,12 @@ class DataFormatterService {
    */
   formatForDisplay(orchestratorResponse) {
     console.log('🎨 Formatting orchestrator response for display');
+    console.log('📥 Raw orchestrator response:', {
+      hasIntelligence: !!orchestratorResponse.intelligence,
+      intelligenceKeys: Object.keys(orchestratorResponse.intelligence || {}),
+      hasSynthesized: !!orchestratorResponse.intelligence?.synthesized,
+      synthesizedKeys: Object.keys(orchestratorResponse.intelligence?.synthesized || {})
+    });
     
     const intelligence = orchestratorResponse.intelligence || {};
     const stats = orchestratorResponse.statistics || {};

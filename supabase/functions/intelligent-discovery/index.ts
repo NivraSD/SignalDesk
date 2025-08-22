@@ -24,7 +24,9 @@ const INDUSTRY_RSS_FEEDS = {
     'https://feeds.bloomberg.com/markets/news.rss',
     'https://feeds.reuters.com/reuters/businessNews',
     'https://feeds.wsj.com/wsj/xml/rss/3_7031.xml',
-    'https://www.cnbc.com/id/100003114/device/rss/rss.html'
+    'https://www.cnbc.com/id/100003114/device/rss/rss.html',
+    'https://finance.yahoo.com/rss/',
+    'https://finance.yahoo.com/news/rssindex'
   ],
   healthcare: [
     'https://www.healthcareitnews.com/feed',

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Yahoo Finance Intelligence Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+        .info { background-color: #d1ecf1; }
+        pre { background: #f8f9fa; padding: 10px; overflow-x: auto; }
+        button { padding: 10px 20px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Yahoo Finance Intelligence Test</h1>
+    
+    <div class="test-section">
+        <h2>Test Yahoo Finance Intelligence Source</h2>
+        <button onclick="testYahooFinance()">Test Yahoo Finance Intelligence</button>
+        <div id="yahoo-results"></div>
+    </div>
+
+    <script>
+        async function testYahooFinance() {
+            const resultsDiv = document.getElementById('yahoo-results');
+            resultsDiv.innerHTML = '<p>🔍 Testing Yahoo Finance intelligence...</p>';
+            
+            try {
+                const response = await fetch('https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/yahoo-finance-intelligence', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8'
+                    },
+                    body: JSON.stringify({
+                        method: 'gather',
+                        params: {
+                            organization: {
+                                name: 'Toyota',
+                                industry: 'automotive',
+                                competitors: ['Honda', 'Ford', 'General Motors'],
+                                stock_symbol: 'TM'
+                            }
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                
+                resultsDiv.innerHTML = `
+                    <div class="test-section ${result.success ? 'success' : 'error'}">
+                        <h3>📊 Yahoo Finance Intelligence Results</h3>
+                        <p><strong>Success:</strong> ${result.success}</p>
+                        <p><strong>Total Articles:</strong> ${result.data?.total_articles || 0}</p>
+                        <p><strong>Relevant Articles:</strong> ${result.data?.relevant_articles || 0}</p>
+                        <p><strong>Feeds Checked:</strong> ${result.data?.feeds_checked || 0}</p>
+                        
+                        <h4>📈 Article Categories:</h4>
+                        <ul>
+                            <li>Earnings: ${result.data?.categorized?.earnings?.length || 0}</li>
+                            <li>Markets: ${result.data?.categorized?.markets?.length || 0}</li>
+                            <li>M&A: ${result.data?.categorized?.mergers_acquisitions?.length || 0}</li>
+                            <li>Analyst Opinion: ${result.data?.categorized?.analyst_opinion?.length || 0}</li>
+                            <li>General: ${result.data?.categorized?.general?.length || 0}</li>
+                        </ul>
+                        
+                        ${result.data?.articles?.length > 0 ? `
+                            <h4>📰 Sample Articles:</h4>
+                            <ul>
+                                ${result.data.articles.slice(0, 3).map(article => `
+                                    <li>
+                                        <strong>${article.title}</strong><br>
+                                        <small>Category: ${article.category} | Source: ${article.source}</small>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        ` : ''}
+                        
+                        <details>
+                            <summary>Raw Response</summary>
+                            <pre>${JSON.stringify(result, null, 2)}</pre>
+                        </details>
+                    </div>
+                `;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="test-section error">
+                        <h3>❌ Error</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

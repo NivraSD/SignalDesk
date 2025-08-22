@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Edge Function Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+        pre { background: #f8f9fa; padding: 10px; overflow-x: auto; white-space: pre-wrap; }
+        button { padding: 10px 20px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Edge Function Simple Test</h1>
+    
+    <div class="test-section">
+        <h2>Test News Intelligence (Simple)</h2>
+        <button onclick="testNewsIntelligence()">Test News Intelligence</button>
+        <div id="news-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Intelligent Discovery</h2>
+        <button onclick="testDiscovery()">Test Discovery</button>
+        <div id="discovery-results"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+
+        async function testNewsIntelligence() {
+            const resultsDiv = document.getElementById('news-results');
+            resultsDiv.innerHTML = '<p>🔍 Testing news intelligence...</p>';
+            
+            try {
+                console.log('Calling news-intelligence...');
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/news-intelligence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        method: 'gather',
+                        params: {
+                            organization: {
+                                name: 'Tesla',
+                                industry: 'automotive',
+                                competitors: ['Ford', 'GM'],
+                                keywords: ['electric vehicle', 'EV']
+                            }
+                        }
+                    })
+                });
+
+                console.log('Response status:', response.status);
+                const responseText = await response.text();
+                console.log('Response text:', responseText);
+                
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                } catch (e) {
+                    data = { error: 'Invalid JSON response', raw: responseText };
+                }
+                
+                resultsDiv.innerHTML = `
+                    <div class="test-section ${response.ok ? 'success' : 'error'}">
+                        <h3>News Intelligence Response</h3>
+                        <p><strong>Status:</strong> ${response.status}</p>
+                        <p><strong>Success:</strong> ${data.success || false}</p>
+                        <p><strong>Articles:</strong> ${data.data?.totalArticles || 0}</p>
+                        
+                        <details>
+                            <summary>Response Headers</summary>
+                            <pre>${Array.from(response.headers.entries()).map(([k,v]) => `${k}: ${v}`).join('\n')}</pre>
+                        </details>
+                        
+                        <details>
+                            <summary>Full Response</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error:', error);
+                resultsDiv.innerHTML = `
+                    <div class="test-section error">
+                        <h3>❌ Error</h3>
+                        <p>${error.message}</p>
+                        <pre>${error.stack}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        async function testDiscovery() {
+            const resultsDiv = document.getElementById('discovery-results');
+            resultsDiv.innerHTML = '<p>🔍 Testing intelligent discovery...</p>';
+            
+            try {
+                console.log('Calling intelligent-discovery...');
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligent-discovery`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: 'Tesla',
+                        industry_hint: 'automotive'
+                    })
+                });
+
+                console.log('Response status:', response.status);
+                const responseText = await response.text();
+                console.log('Response text:', responseText);
+                
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                } catch (e) {
+                    data = { error: 'Invalid JSON response', raw: responseText };
+                }
+                
+                resultsDiv.innerHTML = `
+                    <div class="test-section ${response.ok ? 'success' : 'error'}">
+                        <h3>Discovery Response</h3>
+                        <p><strong>Status:</strong> ${response.status}</p>
+                        <p><strong>Success:</strong> ${data.success || false}</p>
+                        <p><strong>Category:</strong> ${data.data?.primary_category || 'N/A'}</p>
+                        <p><strong>Competitors:</strong> ${data.data?.competitors?.length || 0}</p>
+                        
+                        <details>
+                            <summary>Full Response</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error:', error);
+                resultsDiv.innerHTML = `
+                    <div class="test-section error">
+                        <h3>❌ Error</h3>
+                        <p>${error.message}</p>
+                        <pre>${error.stack}</pre>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -56,6 +56,7 @@ class MasterSourceRegistry {
           { name: 'Barrons', url: 'https://www.barrons.com/xml/rss/3_7510.xml', priority: 'high', category: 'investing' },
           { name: 'Seeking Alpha', url: 'https://seekingalpha.com/feed.xml', priority: 'medium', category: 'investing' },
           { name: 'The Economist', url: 'https://www.economist.com/feeds/print-sections/77/business.xml', priority: 'high', category: 'analysis' },
+          { name: 'Yahoo Finance', url: 'https://finance.yahoo.com/rss/', priority: 'critical', category: 'markets' },
           { name: 'Zero Hedge', url: 'https://feeds.feedburner.com/zerohedge/feed', priority: 'medium', category: 'alternative' },
           { name: 'Investopedia', url: 'https://www.investopedia.com/feedbuilder/feed/getfeed', priority: 'low', category: 'education' }
         ],
