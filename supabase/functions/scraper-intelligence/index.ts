@@ -7,6 +7,64 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+}
+
+// Industry-specific websites from MasterSourceRegistry
+const INDUSTRY_WEBSITES = {
+  technology: [
+    'https://techcrunch.com',
+    'https://theverge.com',
+    'https://arstechnica.com',
+    'https://wired.com',
+    'https://venturebeat.com',
+    'https://thenextweb.com'
+  ],
+  finance: [
+    'https://ft.com',
+    'https://bloomberg.com',
+    'https://reuters.com/business',
+    'https://wsj.com',
+    'https://cnbc.com',
+    'https://marketwatch.com'
+  ],
+  healthcare: [
+    'https://healthcareitnews.com',
+    'https://modernhealthcare.com',
+    'https://medcitynews.com',
+    'https://fiercepharma.com',
+    'https://statnews.com'
+  ],
+  energy: [
+    'https://oilprice.com',
+    'https://energyvoice.com',
+    'https://renewableenergyworld.com',
+    'https://cleantechnica.com'
+  ],
+  retail: [
+    'https://retaildive.com',
+    'https://nrf.com',
+    'https://retailwire.com',
+    'https://chainstoreage.com'
+  ],
+  manufacturing: [
+    'https://industryweek.com',
+    'https://manufacturingnews.com',
+    'https://automationworld.com'
+  ],
+  automotive: [
+    'https://autonews.com',
+    'https://insideevs.com',
+    'https://motortrend.com',
+    'https://autoblog.com',
+    'https://caranddriver.com'
+  ],
+  conglomerate: [
+    'https://ft.com',
+    'https://asia.nikkei.com',
+    'https://bloomberg.com',
+    'https://reuters.com/business'
+  ]
 }
 
 interface ScraperRequest {
@@ -439,16 +497,51 @@ serve(async (req) => {
     let data: any = {}
 
     switch (method) {
+      case 'gather':
       case 'scrape':
-        // Scrape a specific URL or multiple URLs
-        if (!params.url && !params.urls) {
-          throw new Error('URL or URLs parameter required for scraping')
+        // Enhanced scraping with industry awareness
+        let targetUrls = params.urls || []
+        
+        // Add scrape_targets from intelligent discovery if available
+        if (!targetUrls.length && params.scrape_targets) {
+          targetUrls = params.scrape_targets
         }
         
-        // Handle multiple URLs
-        if (params.urls && params.urls.length > 0) {
-          console.log(`🕷️ Scraping ${params.urls.length} websites in parallel`)
-          const scrapePromises = params.urls.slice(0, 10).map(url => // Limit to 10 for performance
+        // Add single URL if provided
+        if (!targetUrls.length && params.url) {
+          targetUrls = [params.url]
+        }
+        
+        // Add industry-specific websites if we know the industry
+        const industry = params.organization?.industry || params.industry
+        if (industry && INDUSTRY_WEBSITES[industry]) {
+          console.log(`📊 Adding ${industry} industry websites`)
+          // Add industry websites but avoid duplicates
+          const industryUrls = INDUSTRY_WEBSITES[industry]
+          targetUrls = [...new Set([...targetUrls, ...industryUrls.slice(0, 3)])]
+        }
+        
+        // If still no URLs, check organization competitors
+        if (!targetUrls.length && params.organization?.competitors) {
+          // Convert competitor names to potential URLs
+          targetUrls = params.organization.competitors.map(comp => {
+            const name = comp.toLowerCase().replace(/[^a-z0-9]/g, '')
+            return `https://${name}.com`
+          })
+        }
+        
+        if (!targetUrls.length) {
+          console.log('⚠️ No URLs to scrape')
+          data = {
+            websites_scraped: 0,
+            total_attempted: 0,
+            results: [],
+            message: 'No URLs provided for scraping',
+            timestamp: new Date().toISOString()
+          }
+        } else {
+          console.log(`🕷️ Scraping ${targetUrls.length} websites in parallel`)
+          const scrapePromises = targetUrls.slice(0, 10).map(url => // Limit to 10 for performance
             callScraperMCP('scrape_competitor', { url }).catch(err => ({
               url,
               error: err.message,
@@ -458,13 +551,11 @@ serve(async (req) => {
           const results = await Promise.all(scrapePromises)
           data = {
             websites_scraped: results.filter(r => !r.error).length,
-            total_attempted: params.urls.length,
+            total_attempted: targetUrls.length,
             results: results,
+            industry: industry || 'unknown',
             timestamp: new Date().toISOString()
           }
-        } else {
-          // Single URL
-          data = await callScraperMCP('scrape_competitor', { url: params.url })
         }
         break
 

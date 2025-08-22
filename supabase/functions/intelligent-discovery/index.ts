@@ -9,6 +9,107 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
 }
 
+// Industry-specific RSS feeds from MasterSourceRegistry
+const INDUSTRY_RSS_FEEDS = {
+  technology: [
+    'https://techcrunch.com/feed/',
+    'https://www.theverge.com/rss/index.xml',
+    'https://feeds.arstechnica.com/arstechnica/index',
+    'https://www.wired.com/feed/rss',
+    'https://feeds.feedburner.com/venturebeat/SZYF',
+    'https://www.engadget.com/rss.xml'
+  ],
+  finance: [
+    'https://www.ft.com/rss/home',
+    'https://feeds.bloomberg.com/markets/news.rss',
+    'https://feeds.reuters.com/reuters/businessNews',
+    'https://feeds.wsj.com/wsj/xml/rss/3_7031.xml',
+    'https://www.cnbc.com/id/100003114/device/rss/rss.html'
+  ],
+  healthcare: [
+    'https://www.healthcareitnews.com/feed',
+    'https://medcitynews.com/feed/',
+    'https://www.statnews.com/feed/',
+    'https://www.fiercepharma.com/rss/xml',
+    'https://www.fiercebiotech.com/rss/xml'
+  ],
+  energy: [
+    'https://oilprice.com/rss/main',
+    'https://www.energyvoice.com/feed/',
+    'https://www.renewableenergyworld.com/feed/',
+    'https://cleantechnica.com/feed/'
+  ],
+  retail: [
+    'https://www.retaildive.com/feeds/news/',
+    'https://nrf.com/rss.xml',
+    'https://retailwire.com/feed/',
+    'https://chainstoreage.com/rss.xml'
+  ],
+  manufacturing: [
+    'https://www.industryweek.com/rss.xml',
+    'https://www.manufacturingnews.com/rss.xml',
+    'https://www.automationworld.com/rss.xml'
+  ],
+  real_estate: [
+    'https://www.inman.com/feed/',
+    'https://therealdeal.com/feed/',
+    'https://www.bisnow.com/rss'
+  ],
+  transportation: [
+    'https://www.freightwaves.com/feed',
+    'https://www.ttnews.com/rss.xml',
+    'https://www.supplychaindive.com/feeds/news/'
+  ],
+  media: [
+    'https://variety.com/feed/',
+    'https://www.hollywoodreporter.com/feed/',
+    'https://deadline.com/feed/',
+    'https://www.adweek.com/feed/'
+  ],
+  telecommunications: [
+    'https://www.fiercewireless.com/rss/xml',
+    'https://www.lightreading.com/rss.xml',
+    'https://www.rcrwireless.com/feed'
+  ],
+  agriculture: [
+    'https://www.agriculture.com/rss/',
+    'https://www.feedstuffs.com/rss.xml',
+    'https://www.agweb.com/rss/'
+  ],
+  education: [
+    'https://www.edsurge.com/rss',
+    'https://www.insidehighered.com/rss.xml',
+    'https://www.chronicle.com/section/News/6/rss'
+  ],
+  government: [
+    'https://www.govtech.com/rss/',
+    'https://fcw.com/rss.aspx',
+    'https://www.nextgov.com/rss/'
+  ],
+  aerospace: [
+    'https://aviationweek.com/rss.xml',
+    'https://spacenews.com/feed/',
+    'https://www.flightglobal.com/rss'
+  ],
+  automotive: [
+    'https://www.autonews.com/feed',
+    'https://insideevs.com/rss/news/',
+    'https://www.motortrend.com/feed/',
+    'https://www.autoblog.com/rss.xml'
+  ],
+  pharmaceuticals: [
+    'https://www.fiercepharma.com/rss/xml',
+    'https://www.pharmalive.com/feed/',
+    'https://www.pharmaceutical-technology.com/feed/'
+  ],
+  conglomerate: [
+    'https://www.ft.com/rss/home',
+    'https://asia.nikkei.com/rss/feed',
+    'https://feeds.bloomberg.com/markets/news.rss',
+    'https://feeds.reuters.com/reuters/businessNews'
+  ]
+}
+
 async function analyzeOrganization(orgName: string, industryHint?: string) {
   // Get API key - try multiple times
   const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
@@ -28,7 +129,7 @@ Organization: ${orgName}
 Industry Hint: ${industryHint || 'Unknown'}
 
 Your task:
-1. Identify the PRIMARY industry category (one of: technology, finance, healthcare, energy, retail, manufacturing, real_estate, transportation, media, telecommunications, conglomerate, automotive, aerospace, pharmaceuticals, agriculture, hospitality, education, government, nonprofit)
+1. Identify the PRIMARY industry category (one of: technology, finance, healthcare, energy, retail, manufacturing, real_estate, transportation, media, telecommunications, agriculture, education, government, aerospace, automotive, pharmaceuticals, conglomerate)
 
 2. Identify SUB-CATEGORIES that apply (can be multiple)
 
@@ -96,6 +197,14 @@ Return ONLY a JSON object with this structure:
     
     // Parse JSON response
     const discovery = JSON.parse(content)
+    
+    // Add industry-specific RSS feeds
+    if (discovery.primary_category && INDUSTRY_RSS_FEEDS[discovery.primary_category]) {
+      discovery.rss_feeds = INDUSTRY_RSS_FEEDS[discovery.primary_category]
+    } else {
+      // Default to business/finance feeds
+      discovery.rss_feeds = INDUSTRY_RSS_FEEDS.finance || []
+    }
     
     // Ensure we have good data for known companies
     if (orgName.toLowerCase().includes('mitsui')) {

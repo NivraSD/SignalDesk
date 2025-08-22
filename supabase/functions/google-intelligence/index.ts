@@ -10,7 +10,7 @@ const corsHeaders = {
 }
 
 const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY')
-const GOOGLE_CX = 'a4e6b8c4a4e6b8c4a' // You'll need to create a Custom Search Engine ID
+const GOOGLE_CX = Deno.env.get('GOOGLE_SEARCH_ENGINE_ID') || 'a4e6b8c4a4e6b8c4a'
 
 // Search Google for recent content
 async function searchGoogle(query: string, dateRestrict = 'w1') { // w1 = past week

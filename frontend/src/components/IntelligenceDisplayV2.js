@@ -10,7 +10,7 @@ import {
 const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigger = 0 }) => {
   const [loading, setLoading] = useState(false);
   const [intelligenceData, setIntelligenceData] = useState(null);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('market_activity');
   const [loadingStage, setLoadingStage] = useState('');
 
   useEffect(() => {
@@ -42,11 +42,11 @@ const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigg
   };
 
   const tabs = [
-    { id: 'overview', name: 'Executive Overview', Icon: RocketIcon, color: '#ff00ff' },
-    { id: 'competition', name: 'Competition', Icon: CompetitorIcon, color: '#00ffcc' },
-    { id: 'stakeholders', name: 'Stakeholders', Icon: StakeholderIcon, color: '#00ff88' },
-    { id: 'topics', name: 'Topics & Trends', Icon: MediaIcon, color: '#ffcc00' },
-    { id: 'predictions', name: 'Predictions', Icon: PredictiveIcon, color: '#8800ff' }
+    { id: 'market_activity', name: 'Market Activity', Icon: TrendingUpIcon, color: '#ff00ff' },
+    { id: 'competitor_intelligence', name: 'Competitor Intel', Icon: CompetitorIcon, color: '#00ffcc' },
+    { id: 'social_pulse', name: 'Social Pulse', Icon: MediaIcon, color: '#00ff88' },
+    { id: 'industry_signals', name: 'Industry Signals', Icon: ChartIcon, color: '#ffcc00' },
+    { id: 'media_coverage', name: 'Media Coverage', Icon: InsightIcon, color: '#8800ff' }
   ];
 
   const renderTabContent = (tabData, tabType) => {
@@ -67,18 +67,18 @@ const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigg
       );
     }
 
-    // Handle tab-specific rendering
+    // Handle tab-specific rendering for V5 analytical structure
     switch (tabType) {
-      case 'overview':
-        return renderOverviewTab(tabData);
-      case 'competition':
-        return renderCompetitionTab(tabData);
-      case 'stakeholders':
-        return renderStakeholdersTab(tabData);
-      case 'topics':
-        return renderTopicsTab(tabData);
-      case 'predictions':
-        return renderPredictionsTab(tabData);
+      case 'market_activity':
+        return renderMarketActivityTab(tabData);
+      case 'competitor_intelligence':
+        return renderCompetitorIntelTab(tabData);
+      case 'social_pulse':
+        return renderSocialPulseTab(tabData);
+      case 'industry_signals':
+        return renderIndustrySignalsTab(tabData);
+      case 'media_coverage':
+        return renderMediaCoverageTab(tabData);
       default:
         return renderLegacyAnalysis(tabData, tabType);
     }
@@ -780,6 +780,294 @@ const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigg
     if (level >= 60) return '#ffcc00';
     if (level >= 40) return '#ff8800';
     return '#ff4444';
+  };
+
+  // New V5 Analytical Tab Render Functions
+  const renderMarketActivityTab = (data) => {
+    return (
+      <div className="intelligence-section market-activity-tab">
+        <div className="summary-panel">
+          <div className="panel-header">
+            <TrendingUpIcon size={20} color="#ff00ff" />
+            <h3>Market Activity Overview</h3>
+          </div>
+          <p>{data.summary || 'No market activity data available'}</p>
+          {data.statistics && (
+            <div className="stats-row">
+              <div className="stat">
+                <span className="stat-value">{data.statistics.total_articles || 0}</span>
+                <span className="stat-label">Articles</span>
+              </div>
+              <div className="stat">
+                <span className="stat-value">{data.statistics.sources || 0}</span>
+                <span className="stat-label">Sources</span>
+              </div>
+              <div className="stat">
+                <span className="stat-value">{data.statistics.time_range || 'N/A'}</span>
+                <span className="stat-label">Time Range</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {data.key_findings && data.key_findings.length > 0 && (
+          <div className="findings-panel">
+            <div className="panel-header">
+              <InsightIcon size={20} color="#00ffcc" />
+              <h3>Key Market Events</h3>
+            </div>
+            <div className="findings-grid">
+              {data.key_findings.map((finding, idx) => (
+                <div key={idx} className="finding-card">
+                  <div className="finding-category">{finding.category || 'Event'}</div>
+                  <div className="finding-content">{finding.finding}</div>
+                  <div className="finding-meta">
+                    <span className="finding-source">{finding.source}</span>
+                    {finding.timestamp && (
+                      <span className="finding-time">
+                        {new Date(finding.timestamp).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderCompetitorIntelTab = (data) => {
+    return (
+      <div className="intelligence-section competitor-intel-tab">
+        <div className="summary-panel">
+          <div className="panel-header">
+            <CompetitorIcon size={20} color="#00ffcc" />
+            <h3>Competitor Intelligence</h3>
+          </div>
+          <p>{data.summary || 'No competitor intelligence available'}</p>
+          {data.competitors_tracked && (
+            <div className="tracked-competitors">
+              <strong>Tracked Competitors:</strong> {data.competitors_tracked.join(', ')}
+            </div>
+          )}
+        </div>
+
+        {data.movements && data.movements.length > 0 && (
+          <div className="movements-panel">
+            <div className="panel-header">
+              <TargetIcon size={20} color="#ff00ff" />
+              <h3>Competitor Movements ({data.total_actions || data.movements.length})</h3>
+            </div>
+            <div className="movements-timeline">
+              {data.movements.map((movement, idx) => (
+                <div key={idx} className="movement-item">
+                  <div className="movement-competitor">{movement.competitor}</div>
+                  <div className="movement-action">{movement.action}</div>
+                  <div className="movement-meta">
+                    <span className="movement-source">{movement.source}</span>
+                    {movement.timestamp && (
+                      <span className="movement-time">
+                        {new Date(movement.timestamp).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderSocialPulseTab = (data) => {
+    return (
+      <div className="intelligence-section social-pulse-tab">
+        <div className="summary-panel">
+          <div className="panel-header">
+            <MediaIcon size={20} color="#00ff88" />
+            <h3>Social Media Pulse</h3>
+          </div>
+          <p>{data.summary || 'No social media data available'}</p>
+        </div>
+
+        {data.sentiment_breakdown && (
+          <div className="sentiment-panel">
+            <div className="panel-header">
+              <ChartIcon size={20} color="#00ffcc" />
+              <h3>Sentiment Analysis ({data.total_posts || 0} posts)</h3>
+            </div>
+            <div className="sentiment-chart">
+              <div className="sentiment-bar">
+                <div 
+                  className="sentiment-positive" 
+                  style={{ width: `${(data.sentiment_breakdown.positive / data.total_posts) * 100 || 0}%` }}
+                >
+                  {data.sentiment_breakdown.positive} Positive
+                </div>
+                <div 
+                  className="sentiment-neutral" 
+                  style={{ width: `${(data.sentiment_breakdown.neutral / data.total_posts) * 100 || 0}%` }}
+                >
+                  {data.sentiment_breakdown.neutral} Neutral
+                </div>
+                <div 
+                  className="sentiment-negative" 
+                  style={{ width: `${(data.sentiment_breakdown.negative / data.total_posts) * 100 || 0}%` }}
+                >
+                  {data.sentiment_breakdown.negative} Negative
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {data.trending_topics && data.trending_topics.length > 0 && (
+          <div className="trending-panel">
+            <div className="panel-header">
+              <TrendingUpIcon size={20} color="#ffcc00" />
+              <h3>Trending Topics</h3>
+            </div>
+            <div className="trending-topics">
+              {data.trending_topics.map((topic, idx) => (
+                <span key={idx} className="trending-topic">{topic}</span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {data.key_discussions && data.key_discussions.length > 0 && (
+          <div className="discussions-panel">
+            <div className="panel-header">
+              <InsightIcon size={20} color="#ff00ff" />
+              <h3>Key Discussions</h3>
+            </div>
+            <div className="discussions-grid">
+              {data.key_discussions.map((discussion, idx) => (
+                <div key={idx} className="discussion-card">
+                  <div className="discussion-topic">{discussion.topic}</div>
+                  <div className="discussion-platform">{discussion.platform}</div>
+                  <div className="discussion-metrics">
+                    <span className={`sentiment-${discussion.sentiment}`}>
+                      {discussion.sentiment}
+                    </span>
+                    <span className="engagement">{discussion.engagement} engagement</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderIndustrySignalsTab = (data) => {
+    return (
+      <div className="intelligence-section industry-signals-tab">
+        <div className="summary-panel">
+          <div className="panel-header">
+            <ChartIcon size={20} color="#ffcc00" />
+            <h3>Industry Signals</h3>
+          </div>
+          <p>{data.summary || 'No industry signals detected'}</p>
+        </div>
+
+        {data.indicators && data.indicators.length > 0 && (
+          <div className="indicators-panel">
+            <div className="panel-header">
+              <TrendingUpIcon size={20} color="#00ffcc" />
+              <h3>Market Indicators</h3>
+            </div>
+            <div className="indicators-grid">
+              {data.indicators.map((indicator, idx) => (
+                <div key={idx} className="indicator-card">
+                  <div className="indicator-signal">{indicator.signal}</div>
+                  <div className="indicator-metric">{indicator.metric}</div>
+                  <div className="indicator-trend">{indicator.trend}</div>
+                  <div className="indicator-source">{indicator.source}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {data.hiring_activity && (
+          <div className="hiring-panel">
+            <div className="panel-header">
+              <BuildingIcon size={20} color="#00ff88" />
+              <h3>Hiring Activity</h3>
+            </div>
+            <div className="hiring-stats">
+              <div className="hiring-stat">
+                <span className="stat-value">{data.hiring_activity.total_postings || 0}</span>
+                <span className="stat-label">Total Job Postings</span>
+              </div>
+              <div className="hiring-stat">
+                <span className="stat-value">{data.hiring_activity.growth_rate || 'N/A'}</span>
+                <span className="stat-label">Growth Rate</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderMediaCoverageTab = (data) => {
+    return (
+      <div className="intelligence-section media-coverage-tab">
+        <div className="summary-panel">
+          <div className="panel-header">
+            <InsightIcon size={20} color="#8800ff" />
+            <h3>Media Coverage Analysis</h3>
+          </div>
+          <p>{data.summary || 'No media coverage data available'}</p>
+          <div className="coverage-stats">
+            <div className="stat">
+              <span className="stat-value">{data.coverage_volume || 0}</span>
+              <span className="stat-label">Articles</span>
+            </div>
+            <div className="stat">
+              <span className="stat-value">{data.source_count || 0}</span>
+              <span className="stat-label">Sources</span>
+            </div>
+            <div className="stat">
+              <span className={`stat-value sentiment-${data.sentiment_trend}`}>
+                {data.sentiment_trend || 'neutral'}
+              </span>
+              <span className="stat-label">Sentiment Trend</span>
+            </div>
+          </div>
+        </div>
+
+        {data.top_narratives && data.top_narratives.length > 0 && (
+          <div className="narratives-panel">
+            <div className="panel-header">
+              <MediaIcon size={20} color="#ff00ff" />
+              <h3>Top Narratives</h3>
+            </div>
+            <div className="narratives-grid">
+              {data.top_narratives.map((narrative, idx) => (
+                <div key={idx} className="narrative-card">
+                  <div className="narrative-text">{narrative.narrative}</div>
+                  <div className="narrative-meta">
+                    <span className="narrative-frequency">{narrative.frequency} mentions</span>
+                    <div className="narrative-sources">
+                      {narrative.sources?.slice(0, 3).map((source, sidx) => (
+                        <span key={sidx} className="source-tag">{source}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   const renderContent = () => {

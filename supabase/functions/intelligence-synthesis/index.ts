@@ -13,21 +13,19 @@ async function callClaudeSynthesizer(data: any, organization: any) {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 50000) // 50 seconds for Claude (needs 38+ to complete)
     
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/claude-intelligence-synthesizer-v4`, {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/claude-intelligence-synthesizer-v5`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
       },
       body: JSON.stringify({
-        mcp_data: data,
-        organization: organization,
-        discovery_context: {
-          ...organization,
-          discovered_industry: organization.industry,
-          competitors: organization.competitors || [],
-          keywords: organization.keywords || [],
-          intelligence_focus: organization.intelligence_focus || []
+        intelligence: {
+          raw_intelligence: data,
+          discovered_context: organization,
+          organization: organization.name,
+          industry: organization.industry,
+          timestamp: new Date().toISOString()
         }
       }),
       signal: controller.signal
@@ -99,69 +97,54 @@ async function synthesizeIntelligence(gatheringData: any, organization: any) {
       
       const synthesis = synthesisResult.analysis
       
-      // V4 returns analytical intelligence without recommendations
-      // Build comprehensive intelligence structure from v4 output
+      // V5 returns pure analytical intelligence organized by category
       result.intelligence = {
-        // Overview tab data
-        executive_summary: synthesis.overview?.data_summary || `Intelligence analysis for ${organization.name}`,
-        key_insights: synthesis.overview?.key_developments || [],
-        critical_alerts: synthesis.overview?.notable_patterns || [],
-        recommendations: [], // V4 doesn't make recommendations - pure analysis
-        
-        // Full synthesized analysis for reference - THIS IS KEY FOR DISPLAY
+        // Store the full V5 analysis for display
         synthesized: synthesis,
         
-        // Competitive intelligence (from competition tab)
-        competitors: fullOrganization.competitors,
-        competitive_landscape_summary: synthesis.competition?.relative_positioning || '',
-        competitive_opportunities: synthesis.competition?.competitive_developments || [],
-        competitive_threats: synthesis.competition?.market_movements || [],
-        competitor_activity: synthesis.competition?.competitor_activity || mcpData['news-intelligence']?.competitorActivity || [],
+        // Tab-specific data from V5 categories
+        tabs: {
+          market_activity: synthesis.market_activity || {},
+          competitor_intelligence: synthesis.competitor_intelligence || {},
+          social_pulse: synthesis.social_pulse || {},
+          industry_signals: synthesis.industry_signals || {},
+          media_coverage: synthesis.media_coverage || {}
+        },
         
-        // Stakeholder intelligence (from stakeholders tab)
-        stakeholder_sentiment: synthesis.stakeholders?.sentiment_observed || {},
-        stakeholder_concerns: synthesis.stakeholders?.stakeholder_concerns || [],
-        engagement_strategy: synthesis.stakeholders?.key_discussions || [],
-        messaging_frameworks: {}, // V4 focuses on analysis, not messaging
+        // Executive summary from market activity
+        executive_summary: synthesis.market_activity?.summary || `Intelligence analysis for ${organization.name}`,
         
-        // Narrative and media intelligence (from topics tab)
-        trending_topics: synthesis.topics?.trending_topics || [],
-        media_coverage: synthesis.topics?.media_coverage || mcpData['news-intelligence']?.breakingNews || [],
-        narrative_opportunities: synthesis.topics?.narrative_themes || [],
-        content_angles: synthesis.topics?.coverage_analysis || [],
-        media_risks: [], // V4 focuses on analysis, not risk assessment
+        // Key statistics
+        statistics: {
+          total_articles: synthesis.market_activity?.statistics?.total_articles || 0,
+          competitors_tracked: synthesis.competitor_intelligence?.competitors_tracked?.length || 0,
+          social_posts: synthesis.social_pulse?.total_posts || 0,
+          media_sources: synthesis.media_coverage?.source_count || 0
+        },
         
-        // Predictive intelligence (from predictions tab)
-        likely_scenarios: synthesis.predictions?.emerging_patterns || [],
-        cascade_effects: synthesis.predictions?.momentum_indicators || [],
-        proactive_strategies: [], // V4 doesn't prescribe strategies
-        emerging_trends: synthesis.predictions?.trend_analysis || [],
+        // Metadata
+        organization: organization.name,
+        industry: fullOrganization.industry,
+        timestamp: new Date().toISOString(),
         
-        // Risk and opportunity
-        immediate_risks: synthesis.risk_analysis?.immediate_risks || [],
-        emerging_risks: synthesis.risk_analysis?.emerging_risks || [],
-        immediate_opportunities: synthesis.opportunity_analysis?.immediate || [],
-        strategic_opportunities: synthesis.opportunity_analysis?.strategic || [],
-        
-        // Raw data insights (preserved)
-        industry_trends: mcpData['news-intelligence']?.industryNews || [],
-        breaking_news: mcpData['news-intelligence']?.breakingNews || [],
-        discussions: mcpData['reddit-intelligence']?.discussions || [],
-        press_releases: mcpData['pr-intelligence']?.pressReleases || [],
-        
-        // Alternative perspectives from each tab
-        alternative_perspectives: [
-          synthesis.competition?.alternative_view,
-          synthesis.stakeholders?.alternative_view,
-          synthesis.topics?.alternative_view,
-          synthesis.predictions?.alternative_view
-        ].filter(Boolean)
+        // Raw data preserved for drill-down
+        raw_data: {
+          news: mcpData['news-intelligence'] || {},
+          reddit: mcpData['reddit-intelligence'] || {},
+          twitter: mcpData['twitter-intelligence'] || {},
+          google: mcpData['google-intelligence'] || {},
+          pr: mcpData['pr-intelligence'] || {},
+          scraper: mcpData['scraper-intelligence'] || {}
+        }
       }
       
       // Update statistics
-      result.statistics.total_insights = result.intelligence.key_insights.length
-      result.statistics.personas_engaged = synthesis.personas_used?.length || 5
-      result.statistics.second_opinions = result.intelligence.alternative_perspectives.length
+      result.statistics.total_insights = 
+        (synthesis.market_activity?.key_findings?.length || 0) +
+        (synthesis.competitor_intelligence?.movements?.length || 0) +
+        (synthesis.industry_signals?.indicators?.length || 0)
+      result.statistics.personas_engaged = 1 // V5 uses single analytical persona
+      result.statistics.second_opinions = 0 // V5 doesn't provide alternative perspectives
       
       result.synthesis_complete = true
       

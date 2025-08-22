@@ -208,12 +208,15 @@ async function gatherIntelligence(organization: any) {
       }, 8000)
     )
     
-    // RSS Intelligence (for industry blogs and news)
-    gatheringPromises.push(
-      callEdgeFunction('rss-proxy', {
-        url: 'https://techcrunch.com/feed/' // Can be made dynamic based on industry
-      }, 5000)
-    )
+    // RSS Intelligence (industry-specific feeds from discovery)
+    const rssFeeds = result.discovered_context.rss_feeds || ['https://techcrunch.com/feed/']
+    for (const feedUrl of rssFeeds.slice(0, 3)) { // Limit to 3 feeds to avoid timeout
+      gatheringPromises.push(
+        callEdgeFunction('rss-proxy', {
+          url: feedUrl
+        }, 5000)
+      )
+    }
     
     // Scraper Intelligence (if applicable)
     if (result.discovered_context.scrape_targets?.length > 0) {
