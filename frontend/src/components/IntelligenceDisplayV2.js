@@ -838,40 +838,63 @@ const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigg
   // New V5 Analytical Tab Render Functions
   // V6 PR Impact Tab Renderers
   const renderNarrativeLandscapeTab = (data) => {
+    const hasData = data && (data.current_position || data.key_developments?.length > 0);
+    
     return (
       <div className="intelligence-section narrative-landscape-tab">
-        <div className="narrative-status-panel">
+        <div className="narrative-status-panel" style={{ '--accent-color': '#ff00ff' }}>
           <div className="panel-header">
             <RocketIcon size={20} color="#ff00ff" />
             <h3>Narrative Position</h3>
           </div>
-          <p>{data.current_position || 'Analyzing narrative position...'}</p>
+          <p style={{ fontSize: '15px', lineHeight: '1.6', marginBottom: '20px' }}>
+            {data.current_position || 'Analyzing your organization\'s position in the current narrative landscape...'}
+          </p>
           <div className="narrative-metrics">
             <div className="metric">
-              <span className="label">Narrative Control:</span>
-              <span className={`value control-${data.narrative_control}`}>{data.narrative_control || 'contested'}</span>
+              <span className="label">Narrative Control</span>
+              <span className={`value control-${data.narrative_control || 'contested'}`}>
+                {(data.narrative_control || 'contested').toUpperCase()}
+              </span>
             </div>
             <div className="metric">
-              <span className="label">Attention Flow:</span>
-              <span className={`value flow-${data.attention_flow}`}>{data.attention_flow || 'neutral'}</span>
+              <span className="label">Attention Flow</span>
+              <span className={`value flow-${data.attention_flow || 'neutral'}`}>
+                {(data.attention_flow || 'neutral').replace(/_/g, ' ').toUpperCase()}
+              </span>
             </div>
           </div>
         </div>
         
-        {data.key_developments && data.key_developments.length > 0 && (
+        {data.key_developments && data.key_developments.length > 0 ? (
           <div className="developments-panel">
-            <h4>Key PR Developments</h4>
+            <h4>🎯 Key PR Developments</h4>
             <div className="developments-list">
               {data.key_developments.map((dev, idx) => (
-                <div key={idx} className={`development-card impact-${dev.pr_impact}`}>
+                <div key={idx} className={`development-card impact-${dev.pr_impact || 'neutral'}`}>
                   <div className="development-header">
-                    <span className={`impact-badge ${dev.pr_impact}`}>{dev.pr_impact}</span>
-                    <span className="source">{dev.source}</span>
+                    <span className={`impact-badge ${dev.pr_impact || 'neutral'}`}>
+                      {(dev.pr_impact || 'neutral').toUpperCase()}
+                    </span>
+                    <span className="source">Source: {dev.source || 'Analysis'}</span>
                   </div>
-                  <div className="development-content">{dev.development}</div>
-                  <div className="impact-description">{dev.impact_description}</div>
+                  <div className="development-content">
+                    {dev.development || 'Development details pending...'}
+                  </div>
+                  {dev.impact_description && (
+                    <div className="impact-description">
+                      → {dev.impact_description}
+                    </div>
+                  )}
                 </div>
               ))}
+            </div>
+          </div>
+        ) : (
+          <div className="developments-panel">
+            <h4>🎯 Key PR Developments</h4>
+            <div style={{ padding: '20px', textAlign: 'center', color: 'rgba(255,255,255,0.5)' }}>
+              Monitoring for narrative developments...
             </div>
           </div>
         )}
@@ -880,51 +903,88 @@ const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigg
   };
 
   const renderCompetitiveDynamicsTab = (data) => {
+    const hasThreats = data.narrative_threats?.length > 0;
+    const hasOpportunities = data.narrative_opportunities?.length > 0;
+    
     return (
       <div className="intelligence-section competitive-dynamics-tab">
-        <div className="positioning-panel">
+        <div className="positioning-panel" style={{ '--accent-color': '#00ffcc' }}>
           <div className="panel-header">
             <CompetitorIcon size={20} color="#00ffcc" />
             <h3>PR Positioning</h3>
           </div>
-          <p>{data.pr_positioning || 'Analyzing competitive PR landscape...'}</p>
+          <p style={{ fontSize: '15px', lineHeight: '1.6' }}>
+            {data.pr_positioning || 'Analyzing your competitive PR positioning and narrative dynamics...'}
+          </p>
         </div>
         
-        {data.narrative_threats && data.narrative_threats.length > 0 && (
-          <div className="threats-panel">
-            <h4>Narrative Threats</h4>
-            <div className="threats-list">
-              {data.narrative_threats.map((threat, idx) => (
-                <div key={idx} className={`threat-card urgency-${threat.urgency}`}>
-                  <div className="threat-header">
-                    <span className="competitor">{threat.competitor}</span>
-                    <span className={`urgency-badge ${threat.urgency}`}>{threat.urgency} priority</span>
+        <div style={{ display: 'grid', gridTemplateColumns: hasThreats && hasOpportunities ? '1fr 1fr' : '1fr', gap: '20px' }}>
+          {hasThreats ? (
+            <div className="threats-panel">
+              <h4>⚠️ Narrative Threats</h4>
+              <div className="threats-list">
+                {data.narrative_threats.map((threat, idx) => (
+                  <div key={idx} className={`threat-card urgency-${threat.urgency || 'medium'}`}>
+                    <div className="threat-header">
+                      <span className="competitor">From: {threat.competitor || 'Competitor'}</span>
+                      <span className={`urgency-badge ${threat.urgency || 'medium'}`}>
+                        {(threat.urgency || 'medium').toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="threat-content">
+                      {threat.threat || 'Threat details pending...'}
+                    </div>
+                    {threat.pr_impact && (
+                      <div className="pr-impact">
+                        → Impact: {threat.pr_impact}
+                      </div>
+                    )}
                   </div>
-                  <div className="threat-content">{threat.threat}</div>
-                  <div className="pr-impact">{threat.pr_impact}</div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        )}
-        
-        {data.narrative_opportunities && data.narrative_opportunities.length > 0 && (
-          <div className="opportunities-panel">
-            <h4>PR Opportunities</h4>
-            <div className="opportunities-list">
-              {data.narrative_opportunities.map((opp, idx) => (
-                <div key={idx} className={`opportunity-card value-${opp.pr_value}`}>
-                  <div className="opportunity-header">
-                    <span className={`value-badge ${opp.pr_value}`}>{opp.pr_value} value</span>
-                    <span className="timing">{opp.timing}</span>
+          ) : (
+            <div className="threats-panel">
+              <h4>⚠️ Narrative Threats</h4>
+              <div style={{ padding: '20px', textAlign: 'center', color: 'rgba(255,255,255,0.5)' }}>
+                No immediate threats detected
+              </div>
+            </div>
+          )}
+          
+          {hasOpportunities ? (
+            <div className="opportunities-panel">
+              <h4>💡 PR Opportunities</h4>
+              <div className="opportunities-list">
+                {data.narrative_opportunities.map((opp, idx) => (
+                  <div key={idx} className={`opportunity-card value-${opp.pr_value || 'medium'}`}>
+                    <div className="opportunity-header">
+                      <span className={`value-badge ${opp.pr_value || 'medium'}`}>
+                        {(opp.pr_value || 'medium').toUpperCase()} VALUE
+                      </span>
+                      <span className="timing">Timing: {opp.timing || 'Monitor'}</span>
+                    </div>
+                    <div className="opportunity-content">
+                      {opp.opportunity || 'Opportunity details pending...'}
+                    </div>
+                    {opp.trigger && (
+                      <div className="trigger">
+                        Trigger: {opp.trigger}
+                      </div>
+                    )}
                   </div>
-                  <div className="opportunity-content">{opp.opportunity}</div>
-                  <div className="trigger">Trigger: {opp.trigger}</div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="opportunities-panel">
+              <h4>💡 PR Opportunities</h4>
+              <div style={{ padding: '20px', textAlign: 'center', color: 'rgba(255,255,255,0.5)' }}>
+                Scanning for opportunities...
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     );
   };
@@ -932,37 +992,62 @@ const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigg
   const renderStakeholderSentimentTab = (data) => {
     return (
       <div className="intelligence-section stakeholder-sentiment-tab">
-        <div className="sentiment-overview-panel">
+        <div className="sentiment-overview-panel" style={{ '--accent-color': '#00ff88' }}>
           <div className="panel-header">
             <StakeholderIcon size={20} color="#00ff88" />
             <h3>Sentiment Trajectory</h3>
           </div>
-          <div className="trajectory-display">
-            <span className={`trajectory ${data.overall_trajectory}`}>
-              {data.overall_trajectory || 'stable'}
-            </span>
+          <p style={{ fontSize: '15px', lineHeight: '1.6', marginBottom: '20px' }}>
+            {data.pr_implications || 'Monitoring stakeholder sentiment and engagement priorities...'}
+          </p>
+          <div className="sentiment-metrics">
+            <div className="metric">
+              <span className="label">Overall Trajectory</span>
+              <span className={`value trajectory-${data.overall_trajectory || 'stable'}`}>
+                {(data.overall_trajectory || 'stable').toUpperCase()}
+              </span>
+            </div>
           </div>
-          <p>{data.pr_implications || 'Monitoring stakeholder sentiment...'}</p>
         </div>
         
-        {data.sentiment_drivers && data.sentiment_drivers.length > 0 && (
+        {data.sentiment_drivers && data.sentiment_drivers.length > 0 ? (
           <div className="drivers-panel">
-            <h4>Stakeholder Groups</h4>
-            <div className="drivers-grid">
+            <h4>👥 Stakeholder Groups</h4>
+            <div className="drivers-list">
               {data.sentiment_drivers.map((driver, idx) => (
-                <div key={idx} className={`driver-card priority-${driver.pr_priority}`}>
+                <div key={idx} className={`driver-card priority-${driver.pr_priority || 'medium'}`}>
                   <div className="driver-header">
-                    <span className="group">{driver.stakeholder_group}</span>
-                    <span className={`sentiment-badge ${driver.sentiment}`}>{driver.sentiment}</span>
+                    <span className="stakeholder-group">
+                      {(driver.stakeholder_group || 'Group').toUpperCase()}
+                    </span>
+                    <span className={`priority-badge ${driver.pr_priority || 'medium'}`}>
+                      {(driver.pr_priority || 'medium').toUpperCase()} PRIORITY
+                    </span>
                   </div>
-                  <div className="trending">Trending: {driver.trending}</div>
-                  {driver.key_concerns && (
-                    <div className="concerns">
-                      Concerns: {driver.key_concerns.join(', ')}
+                  <div className="driver-content">
+                    <div style={{ display: 'flex', gap: '12px', marginBottom: '8px' }}>
+                      <span className={`sentiment-indicator ${driver.sentiment || 'neutral'}`}>
+                        Sentiment: {(driver.sentiment || 'neutral').toUpperCase()}
+                      </span>
+                      <span className={`trending-indicator ${driver.trending || 'stable'}`}>
+                        {driver.trending === 'up' ? '↑' : driver.trending === 'down' ? '↓' : '→'} {(driver.trending || 'stable').toUpperCase()}
+                      </span>
                     </div>
-                  )}
+                    {driver.key_concerns && driver.key_concerns.length > 0 && (
+                      <div className="pr-implications">
+                        Key Concerns: {driver.key_concerns.join(', ')}
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
+            </div>
+          </div>
+        ) : (
+          <div className="drivers-panel">
+            <h4>👥 Stakeholder Groups</h4>
+            <div style={{ padding: '20px', textAlign: 'center', color: 'rgba(255,255,255,0.5)' }}>
+              Analyzing stakeholder sentiment...
             </div>
           </div>
         )}
@@ -973,37 +1058,65 @@ const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigg
   const renderMediaMomentumTab = (data) => {
     return (
       <div className="intelligence-section media-momentum-tab">
-        <div className="momentum-panel">
+        <div className="momentum-panel" style={{ '--accent-color': '#ffcc00' }}>
           <div className="panel-header">
             <MediaIcon size={20} color="#ffcc00" />
             <h3>Media Momentum</h3>
           </div>
+          <p style={{ fontSize: '15px', lineHeight: '1.6', marginBottom: '20px' }}>
+            Tracking media coverage patterns and PR amplification opportunities
+          </p>
           <div className="momentum-metrics">
             <div className="metric">
-              <span className="label">Coverage:</span>
-              <span className={`value ${data.coverage_trajectory}`}>{data.coverage_trajectory || 'stable'}</span>
+              <span className="label">Coverage Trajectory</span>
+              <span className={`value coverage-${data.coverage_trajectory || 'stable'}`}>
+                {(data.coverage_trajectory || 'stable').replace(/_/g, ' ').toUpperCase()}
+              </span>
             </div>
             <div className="metric">
-              <span className="label">Narrative Alignment:</span>
-              <span className={`value ${data.narrative_alignment}`}>{data.narrative_alignment || 'mixed'}</span>
+              <span className="label">Narrative Alignment</span>
+              <span className={`value alignment-${data.narrative_alignment || 'mixed'}`}>
+                {(data.narrative_alignment || 'mixed').toUpperCase()}
+              </span>
             </div>
           </div>
         </div>
         
-        {data.pr_leverage_points && data.pr_leverage_points.length > 0 && (
+        {data.pr_leverage_points && data.pr_leverage_points.length > 0 ? (
           <div className="leverage-panel">
-            <h4>PR Leverage Points</h4>
+            <h4>🎯 PR Leverage Points</h4>
             <div className="leverage-list">
               {data.pr_leverage_points.map((point, idx) => (
-                <div key={idx} className={`leverage-card momentum-${point.momentum}`}>
+                <div key={idx} className={`leverage-card momentum-${point.momentum || 'stable'}`}>
                   <div className="leverage-header">
-                    <span className="topic">{point.topic}</span>
-                    <span className={`momentum-badge ${point.momentum}`}>{point.momentum}</span>
+                    <span className="topic" style={{ fontWeight: '600' }}>
+                      {point.topic || 'Topic'}
+                    </span>
+                    <span className={`value-badge ${point.momentum || 'stable'}`}>
+                      {(point.momentum || 'stable').toUpperCase()}
+                    </span>
                   </div>
-                  <div className="relevance">{point.relevance_to_us}</div>
-                  <div className="opportunity">{point.pr_opportunity}</div>
+                  <div className="leverage-content">
+                    {point.relevance_to_us && (
+                      <div style={{ marginBottom: '8px', color: '#ffffff' }}>
+                        {point.relevance_to_us}
+                      </div>
+                    )}
+                    {point.pr_opportunity && (
+                      <div className="pr-opportunity">
+                        → Opportunity: {point.pr_opportunity}
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
+            </div>
+          </div>
+        ) : (
+          <div className="leverage-panel">
+            <h4>🎯 PR Leverage Points</h4>
+            <div style={{ padding: '20px', textAlign: 'center', color: 'rgba(255,255,255,0.5)' }}>
+              Identifying media opportunities...
             </div>
           </div>
         )}
@@ -1014,47 +1127,83 @@ const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigg
   const renderStrategicSignalsTab = (data) => {
     return (
       <div className="intelligence-section strategic-signals-tab">
-        <div className="regulatory-panel">
+        <div className="signals-panel" style={{ '--accent-color': '#8800ff' }}>
           <div className="panel-header">
             <ChartIcon size={20} color="#8800ff" />
-            <h3>Regulatory Implications</h3>
+            <h3>Strategic Signals</h3>
           </div>
-          <p>{data.regulatory_implications || 'Monitoring regulatory environment...'}</p>
+          <p style={{ fontSize: '15px', lineHeight: '1.6', marginBottom: '20px' }}>
+            {data.regulatory_implications || 'Monitoring regulatory environment and industry shifts affecting your PR strategy...'}
+          </p>
         </div>
         
-        {data.industry_narrative_shifts && data.industry_narrative_shifts.length > 0 && (
+        <div style={{ display: 'grid', gap: '20px' }}>
+          {data.industry_narrative_shifts && data.industry_narrative_shifts.length > 0 ? (
           <div className="shifts-panel">
-            <h4>Industry Narrative Shifts</h4>
+            <h4>🔄 Industry Narrative Shifts</h4>
             <div className="shifts-list">
               {data.industry_narrative_shifts.map((shift, idx) => (
-                <div key={idx} className={`shift-card impact-${shift.pr_impact}`}>
+                <div key={idx} className={`shift-card impact-${shift.pr_impact || 'neutral'}`}>
                   <div className="shift-header">
-                    <span className={`impact-badge ${shift.pr_impact}`}>{shift.pr_impact}</span>
+                    <span className={`impact-badge ${shift.pr_impact || 'neutral'}`}>
+                      {(shift.pr_impact || 'neutral').toUpperCase()} IMPACT
+                    </span>
                   </div>
-                  <div className="shift-content">{shift.shift}</div>
-                  <div className="preparation">{shift.preparation_needed}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {data.pr_action_triggers && data.pr_action_triggers.length > 0 && (
-          <div className="triggers-panel">
-            <h4>PR Action Triggers</h4>
-            <div className="triggers-list">
-              {data.pr_action_triggers.map((trigger, idx) => (
-                <div key={idx} className={`trigger-card urgency-${trigger.response_urgency}`}>
-                  <div className="trigger-header">
-                    <span className={`urgency-badge ${trigger.response_urgency}`}>{trigger.response_urgency}</span>
+                  <div className="shift-content">
+                    {shift.shift || 'Shift details pending...'}
                   </div>
-                  <div className="signal">{trigger.signal}</div>
-                  <div className="implication">{trigger.pr_implication}</div>
+                  {shift.preparation_needed && (
+                    <div className="preparation-needed">
+                      → Preparation: {shift.preparation_needed}
+                    </div>
+                  )}
                 </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="shifts-panel">
+              <h4>🔄 Industry Narrative Shifts</h4>
+              <div style={{ padding: '20px', textAlign: 'center', color: 'rgba(255,255,255,0.5)' }}>
+                Monitoring industry narratives...
+              </div>
+            </div>
+          )}
+          
+          {data.pr_action_triggers && data.pr_action_triggers.length > 0 ? (
+            <div className="triggers-panel">
+              <h4>⚡ PR Action Triggers</h4>
+              <div className="triggers-list">
+                {data.pr_action_triggers.map((trigger, idx) => (
+                  <div key={idx} className={`trigger-card urgency-${trigger.response_urgency || 'monitor'}`}>
+                    <div className="trigger-header">
+                      <span className={`response-badge ${trigger.response_urgency || 'monitor'}`}>
+                        {(trigger.response_urgency || 'monitor').toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="trigger-content">
+                      <div style={{ marginBottom: '8px', color: '#ffffff' }}>
+                        {trigger.signal || 'Signal details pending...'}
+                      </div>
+                      {trigger.pr_implication && (
+                        <div className="pr-implications">
+                          → Implication: {trigger.pr_implication}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="triggers-panel">
+              <h4>⚡ PR Action Triggers</h4>
+              <div style={{ padding: '20px', textAlign: 'center', color: 'rgba(255,255,255,0.5)' }}>
+                Monitoring for action triggers...
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     );
   };

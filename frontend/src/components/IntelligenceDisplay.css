@@ -1,8 +1,314 @@
 /* IntelligenceDisplay.css - Modern Railway V2 Intelligence Styling */
 
+/* V6 PR Impact Analysis Styles */
+.narrative-landscape-tab,
+.competitive-dynamics-tab,
+.stakeholder-sentiment-tab,
+.media-momentum-tab,
+.strategic-signals-tab {
+  padding: 20px;
+  animation: fadeIn 0.5s ease;
+}
+
+/* V6 Status Panels */
+.narrative-status-panel,
+.positioning-panel,
+.sentiment-overview-panel,
+.momentum-panel,
+.signals-panel {
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.3));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.narrative-status-panel::before,
+.positioning-panel::before,
+.sentiment-overview-panel::before,
+.momentum-panel::before,
+.signals-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent-color, #00ff88), transparent);
+  animation: shimmer 3s infinite;
+}
+
+/* V6 Metrics Display */
+.narrative-metrics,
+.sentiment-metrics,
+.momentum-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.narrative-metrics .metric,
+.sentiment-metrics .metric,
+.momentum-metrics .metric {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.metric .label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metric .value {
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* V6 Control Status Colors */
+.control-strong { color: #00ff88; }
+.control-contested { color: #ffcc00; }
+.control-weak { color: #ff4466; }
+
+.flow-toward_us { color: #00ff88; }
+.flow-neutral { color: #ffcc00; }
+.flow-away_from_us { color: #ff4466; }
+
+/* V6 Development Cards */
+.developments-panel,
+.threats-panel,
+.opportunities-panel,
+.drivers-panel,
+.leverage-panel,
+.shifts-panel,
+.triggers-panel {
+  margin-top: 24px;
+}
+
+.developments-panel h4,
+.threats-panel h4,
+.opportunities-panel h4,
+.drivers-panel h4,
+.leverage-panel h4,
+.shifts-panel h4,
+.triggers-panel h4 {
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.developments-list,
+.threats-list,
+.opportunities-list,
+.drivers-list,
+.leverage-list,
+.shifts-list,
+.triggers-list {
+  display: grid;
+  gap: 12px;
+}
+
+/* V6 Impact Cards */
+.development-card,
+.threat-card,
+.opportunity-card,
+.driver-card,
+.leverage-card,
+.shift-card,
+.trigger-card {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 16px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.development-card:hover,
+.threat-card:hover,
+.opportunity-card:hover,
+.driver-card:hover,
+.leverage-card:hover,
+.shift-card:hover,
+.trigger-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* V6 Card Headers */
+.development-header,
+.threat-header,
+.opportunity-header,
+.driver-header,
+.leverage-header,
+.shift-header,
+.trigger-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+/* V6 Impact Badges */
+.impact-badge,
+.urgency-badge,
+.value-badge,
+.priority-badge,
+.response-badge {
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.impact-badge.positive,
+.value-badge.high {
+  background: rgba(0, 255, 136, 0.2);
+  color: #00ff88;
+  border: 1px solid rgba(0, 255, 136, 0.3);
+}
+
+.impact-badge.negative,
+.urgency-badge.high {
+  background: rgba(255, 68, 102, 0.2);
+  color: #ff4466;
+  border: 1px solid rgba(255, 68, 102, 0.3);
+}
+
+.impact-badge.neutral,
+.urgency-badge.medium,
+.value-badge.medium {
+  background: rgba(255, 204, 0, 0.2);
+  color: #ffcc00;
+  border: 1px solid rgba(255, 204, 0, 0.3);
+}
+
+.urgency-badge.low,
+.value-badge.low {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* V6 Content Styling */
+.development-content,
+.threat-content,
+.opportunity-content,
+.driver-content,
+.leverage-content,
+.shift-content,
+.trigger-content {
+  color: #ffffff;
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+.impact-description,
+.pr-impact,
+.pr-implications,
+.pr-opportunity,
+.preparation-needed {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  font-style: italic;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* V6 Source & Metadata */
+.source,
+.timing,
+.trigger,
+.competitor {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* V6 Impact-specific colors */
+.impact-positive {
+  border-left: 3px solid #00ff88;
+}
+
+.impact-negative {
+  border-left: 3px solid #ff4466;
+}
+
+.impact-neutral {
+  border-left: 3px solid #ffcc00;
+}
+
+/* V6 Urgency-specific colors */
+.urgency-high {
+  border-left: 3px solid #ff4466;
+}
+
+.urgency-medium {
+  border-left: 3px solid #ffcc00;
+}
+
+.urgency-low {
+  border-left: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+/* V6 Value-specific colors */
+.value-high {
+  border-left: 3px solid #00ff88;
+}
+
+.value-medium {
+  border-left: 3px solid #ffcc00;
+}
+
+.value-low {
+  border-left: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+/* V6 Sentiment Trajectory */
+.trajectory-improving { color: #00ff88; }
+.trajectory-stable { color: #ffcc00; }
+.trajectory-declining { color: #ff4466; }
+
+/* V6 Coverage Trajectory */
+.coverage-increasing_positive { color: #00ff88; }
+.coverage-stable { color: #ffcc00; }
+.coverage-increasing_negative { color: #ff4466; }
+
+/* V6 Narrative Alignment */
+.alignment-aligned { color: #00ff88; }
+.alignment-mixed { color: #ffcc00; }
+.alignment-misaligned { color: #ff4466; }
+
+/* Shimmer Animation */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
 .intelligence-display {
   width: 100%;
   animation: fadeIn 0.5s ease;
+  min-height: 600px;
 }
 
 /* Debug Panel */
