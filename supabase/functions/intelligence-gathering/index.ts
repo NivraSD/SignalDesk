@@ -152,28 +152,41 @@ async function gatherIntelligence(organization: any) {
     // PR Intelligence
     gatheringPromises.push(
       callEdgeFunction('pr-intelligence', {
-        organization: organization.name,
-        competitors: result.discovered_context.competitors || [],
-        keywords: result.discovered_context.search_keywords || []
+        method: 'gather',
+        params: {
+          organization: {
+            name: organization.name,
+            industry: result.discovered_context.primary_category || organization.industry,
+            competitors: result.discovered_context.competitors || [],
+            keywords: result.discovered_context.search_keywords || []
+          }
+        }
       }, 6000)
     )
     
-    // Reddit Intelligence (if applicable)
-    if (result.discovered_context.search_keywords?.length > 0) {
-      gatheringPromises.push(
-        callEdgeFunction('reddit-intelligence', {
-          keywords: result.discovered_context.search_keywords.slice(0, 3),
-          organization: organization.name
-        }, 6000)
-      )
-    }
+    // Reddit Intelligence - DISABLED (function doesn't exist)
+    // TODO: Create reddit-intelligence Edge Function
+    // if (result.discovered_context.search_keywords?.length > 0) {
+    //   gatheringPromises.push(
+    //     callEdgeFunction('reddit-intelligence', {
+    //       method: 'gather',
+    //       params: {
+    //         keywords: result.discovered_context.search_keywords.slice(0, 3),
+    //         organization: organization.name
+    //       }
+    //     }, 6000)
+    //   )
+    // }
     
     // Scraper Intelligence (if applicable)
     if (result.discovered_context.scrape_targets?.length > 0) {
       gatheringPromises.push(
         callEdgeFunction('scraper-intelligence', {
-          urls: result.discovered_context.scrape_targets.slice(0, 5),
-          organization: organization.name
+          method: 'scrape',
+          params: {
+            urls: result.discovered_context.scrape_targets.slice(0, 5),
+            organization: organization.name
+          }
         }, 8000)
       )
     }

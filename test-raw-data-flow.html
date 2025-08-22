@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Raw Data Collection Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .data-source { background: #f0f0f0; margin: 10px 0; padding: 10px; }
+        pre { white-space: pre-wrap; word-wrap: break-word; max-height: 300px; overflow-y: auto; background: #f9f9f9; padding: 10px; }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+    </style>
+</head>
+<body>
+    <h1>Raw Data Collection Analysis</h1>
+    <p>Testing what data we're actually getting from MCPs</p>
+    
+    <div>
+        <label>Organization: <input id="org" value="Toyota" /></label>
+        <button onclick="testDataCollection()">Test Data Collection</button>
+    </div>
+    
+    <div id="results"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        function addSection(title, content, className = '') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `section ${className}`;
+            div.innerHTML = `<h2>${title}</h2>${content}`;
+            results.appendChild(div);
+        }
+        
+        async function testDataCollection() {
+            const org = document.getElementById('org').value;
+            document.getElementById('results').innerHTML = '';
+            
+            // 1. Discovery
+            addSection('Phase 1: Discovery', '<p>Running discovery...</p>');
+            const discoveryResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligent-discovery`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                },
+                body: JSON.stringify({ organization: org })
+            });
+            
+            const discovery = await discoveryResponse.json();
+            if (!discovery.success) {
+                addSection('Discovery Failed', discovery.error, 'error');
+                return;
+            }
+            
+            addSection('Discovery Results', `
+                <p class="success">✅ Found ${discovery.data.competitors?.length || 0} competitors</p>
+                <p>Industry: ${discovery.data.primary_category}</p>
+                <p>Competitors: ${discovery.data.competitors?.join(', ') || 'None'}</p>
+                <p>Keywords: ${discovery.data.search_keywords?.slice(0, 5).join(', ')}...</p>
+            `);
+            
+            // 2. Gathering
+            addSection('Phase 2-3: Gathering', '<p>Collecting data from MCPs (30-45 seconds)...</p>');
+            const gatheringResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-gathering`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                },
+                body: JSON.stringify({
+                    organization: { name: org, industry: discovery.data.primary_category },
+                    discovered_context: discovery.data
+                })
+            });
+            
+            const gathering = await gatheringResponse.json();
+            if (!gathering.success) {
+                addSection('Gathering Failed', gathering.error, 'error');
+                return;
+            }
+            
+            // Analyze what data we got
+            const rawIntel = gathering.raw_intelligence || {};
+            
+            // Check each MCP source
+            const sources = {
+                'news-intelligence': {
+                    name: 'News Intelligence',
+                    check: () => {
+                        const news = rawIntel['news-intelligence'] || {};
+                        return {
+                            hasData: news.totalArticles > 0,
+                            stats: {
+                                'Total Articles': news.totalArticles || 0,
+                                'Industry News': news.industryNews?.length || 0,
+                                'Breaking News': news.breakingNews?.length || 0,
+                                'Competitor Activity': news.competitorActivity?.length || 0,
+                                'Opportunities': news.opportunities?.length || 0
+                            },
+                            samples: {
+                                'First Industry News': news.industryNews?.[0]?.title || 'None',
+                                'First Breaking News': news.breakingNews?.[0]?.title || 'None',
+                                'First Competitor News': news.competitorActivity?.[0]?.title || 'None'
+                            }
+                        };
+                    }
+                },
+                'pr-intelligence': {
+                    name: 'PR Intelligence',
+                    check: () => {
+                        const pr = rawIntel['pr-intelligence'] || {};
+                        return {
+                            hasData: pr.pressReleases?.length > 0,
+                            stats: {
+                                'Press Releases': pr.pressReleases?.length || 0,
+                                'Company PRs': pr.companyPRs?.length || 0,
+                                'Competitor PRs': pr.competitorPRs?.length || 0
+                            },
+                            samples: {
+                                'First PR': pr.pressReleases?.[0]?.title || 'None'
+                            }
+                        };
+                    }
+                },
+                'reddit-intelligence': {
+                    name: 'Reddit Intelligence',
+                    check: () => {
+                        const reddit = rawIntel['reddit-intelligence'] || {};
+                        return {
+                            hasData: reddit.discussions?.length > 0,
+                            stats: {
+                                'Discussions': reddit.discussions?.length || 0,
+                                'Subreddits': reddit.subreddits?.length || 0
+                            },
+                            samples: {
+                                'First Discussion': reddit.discussions?.[0]?.title || 'None'
+                            }
+                        };
+                    }
+                },
+                'scraper-intelligence': {
+                    name: 'Website Scraper',
+                    check: () => {
+                        const scraper = rawIntel['scraper-intelligence'] || {};
+                        return {
+                            hasData: scraper.websites?.length > 0,
+                            stats: {
+                                'Websites Scraped': scraper.websites?.length || 0,
+                                'Total Content': scraper.totalContent || 0
+                            },
+                            samples: {
+                                'First Website': scraper.websites?.[0]?.url || 'None'
+                            }
+                        };
+                    }
+                }
+            };
+            
+            // Display source analysis
+            let sourceHtml = '<h3>MCP Data Sources Analysis:</h3>';
+            Object.entries(sources).forEach(([key, source]) => {
+                const result = source.check();
+                const statusIcon = result.hasData ? '✅' : '❌';
+                const statusClass = result.hasData ? 'success' : 'error';
+                
+                sourceHtml += `
+                    <div class="data-source">
+                        <h4 class="${statusClass}">${statusIcon} ${source.name}</h4>
+                        <div style="margin-left: 20px;">
+                            <strong>Statistics:</strong>
+                            <ul>${Object.entries(result.stats).map(([k, v]) => 
+                                `<li>${k}: <strong>${v}</strong></li>`
+                            ).join('')}</ul>
+                            <strong>Sample Data:</strong>
+                            <ul>${Object.entries(result.samples).map(([k, v]) => 
+                                `<li>${k}: "${v}"</li>`
+                            ).join('')}</ul>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            addSection('Raw Data Collection Results', sourceHtml);
+            
+            // Analyze what SHOULD go into each tab
+            const tabAnalysis = {
+                'Competition Tab': {
+                    'Should contain': 'Competitor news, competitor press releases, competitive positioning',
+                    'We have': [
+                        `${rawIntel['news-intelligence']?.competitorActivity?.length || 0} competitor news items`,
+                        `${rawIntel['pr-intelligence']?.competitorPRs?.length || 0} competitor PRs`
+                    ]
+                },
+                'Stakeholders Tab': {
+                    'Should contain': 'Reddit discussions, social sentiment, community feedback',
+                    'We have': [
+                        `${rawIntel['reddit-intelligence']?.discussions?.length || 0} Reddit discussions`,
+                        'No Twitter/social data (need to add)'
+                    ]
+                },
+                'Topics Tab': {
+                    'Should contain': 'Industry trends, breaking news, hot topics',
+                    'We have': [
+                        `${rawIntel['news-intelligence']?.industryNews?.length || 0} industry news`,
+                        `${rawIntel['news-intelligence']?.breakingNews?.length || 0} breaking news`
+                    ]
+                },
+                'Predictions Tab': {
+                    'Should contain': 'Trend analysis based on data patterns',
+                    'We have': 'Need Claude to analyze patterns from above data'
+                }
+            };
+            
+            let tabHtml = '<h3>Tab Content Analysis:</h3>';
+            Object.entries(tabAnalysis).forEach(([tab, info]) => {
+                tabHtml += `
+                    <div class="data-source">
+                        <h4>${tab}</h4>
+                        <p><strong>Should contain:</strong> ${info['Should contain']}</p>
+                        <p><strong>We have:</strong></p>
+                        <ul>${info['We have'].map(item => `<li>${item}</li>`).join('')}</ul>
+                    </div>
+                `;
+            });
+            
+            addSection('Intelligence Tab Mapping', tabHtml);
+            
+            // Show raw data for inspection
+            addSection('Raw Intelligence Data (Full)', 
+                `<pre>${JSON.stringify(rawIntel, null, 2)}</pre>`
+            );
+        }
+    </script>
+</body>
+</html>
