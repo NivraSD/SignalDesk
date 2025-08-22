@@ -81,14 +81,20 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
     
     console.log('🚀 Starting V3 orchestration with:', orgToUse);
     
-    // Simulate progress through phases
+    // Simulate progress through phases - adjusted for dual synthesis
     const progressInterval = setInterval(() => {
-      setLoadingProgress(prev => Math.min(prev + 2, 95));
+      setLoadingProgress(prev => Math.min(prev + 1.5, 95));
     }, 200);
     
-    // Update phases based on timing
-    const gatheringTimeout = setTimeout(() => setLoadingPhase('Gathering'), 2000);
-    const synthesizingTimeout = setTimeout(() => setLoadingPhase('Synthesizing'), 5000);
+    // Update phases based on timing - more even distribution
+    const gatheringTimeout = setTimeout(() => {
+      setLoadingPhase('Gathering');
+      setLoadingProgress(33);
+    }, 3000);
+    const synthesizingTimeout = setTimeout(() => {
+      setLoadingPhase('Synthesizing');
+      setLoadingProgress(66);
+    }, 7000);
     
     try {
       const result = await intelligenceOrchestratorV3.orchestrate(orgToUse);
@@ -706,15 +712,21 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
             {data.market_implications?.map((impl, idx) => (
               <div key={idx} className="impact-item">
                 <div className="impact-description">{impl.implication}</div>
-                <div className="impact-opportunity">{impl.opportunity ? `Opportunity: ${impl.opportunity}` : `Risk: ${impl.risk}`}</div>
+                <div className="impact-meaning">{impl.what_it_means_for_us || impl.opportunity || ''}</div>
               </div>
             ))}
+            {(!data.market_implications || data.market_implications.length === 0) && (
+              <div className="impact-item">{data.market_narrative || 'Analysis pending...'}</div>
+            )}
           </div>
         </div>
         
         <div className="segment-section">
           <h3 className="section-title">📢 PR Response</h3>
           <div className="pr-response">
+            {data.market_implications?.map((impl, idx) => (
+              impl.pr_response && <div key={idx} className="response-item">{impl.pr_response}</div>
+            ))}
             <div className="response-strategy">{data.market_narrative}</div>
             <div className="thought-leadership">
               <h4>Thought Leadership Topics:</h4>
@@ -751,6 +763,13 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
         <div className="segment-section">
           <h3 className="section-title">🎯 What It Means For Us</h3>
           <div className="impact-analysis">
+            {data.regulatory_developments?.map((dev, idx) => (
+              dev.what_it_means_for_us && (
+                <div key={idx} className="impact-item">
+                  <div className="impact-description">{dev.what_it_means_for_us}</div>
+                </div>
+              )
+            ))}
             {data.compliance_requirements?.map((req, idx) => (
               <div key={idx} className="impact-item">
                 <div className="impact-description">{req.requirement}</div>
@@ -763,6 +782,9 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
         <div className="segment-section">
           <h3 className="section-title">📢 PR Response</h3>
           <div className="pr-response">
+            {data.regulatory_developments?.map((dev, idx) => (
+              dev.pr_response && <div key={idx} className="response-item">{dev.pr_response}</div>
+            ))}
             <div className="response-strategy">{data.regulatory_stance}</div>
             <div className="stakeholder-messages">
               <h4>Stakeholder Communications:</h4>
@@ -806,6 +828,11 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
         <div className="segment-section">
           <h3 className="section-title">🎯 What It Means For Us</h3>
           <div className="impact-analysis">
+            {data.what_it_means_for_us && (
+              <div className="impact-item">
+                <div className="impact-description">{data.what_it_means_for_us}</div>
+              </div>
+            )}
             <div className="reputation-impact">
               <div className="reputation-score">Reputation Impact: {data.reputation_impact}</div>
               <div className="sentiment-shift">Sentiment Trend: {data.sentiment_trend}</div>
@@ -821,6 +848,9 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
         <div className="segment-section">
           <h3 className="section-title">📢 PR Response</h3>
           <div className="pr-response">
+            {data.pr_response && (
+              <div className="response-item">{data.pr_response}</div>
+            )}
             <div className="media-strategy">{data.media_strategy}</div>
             {data.media_outreach && (
               <div className="media-outreach">
@@ -865,6 +895,13 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
         <div className="segment-section">
           <h3 className="section-title">🎯 What It Means For Us</h3>
           <div className="impact-analysis">
+            {data.predictions?.map((pred, idx) => (
+              pred.what_it_means_for_us && (
+                <div key={idx} className="impact-item">
+                  <div className="impact-description">{pred.what_it_means_for_us}</div>
+                </div>
+              )
+            ))}
             {data.preparation_needed?.map((prep, idx) => (
               <div key={idx} className="impact-item">
                 <div className="prep-scenario">{prep.scenario}</div>
@@ -877,6 +914,9 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
         <div className="segment-section">
           <h3 className="section-title">📢 PR Preparation</h3>
           <div className="pr-response">
+            {data.predictions?.map((pred, idx) => (
+              pred.pr_response && <div key={idx} className="response-item">{pred.pr_response}</div>
+            ))}
             <div className="proactive-strategy">{data.proactive_strategy}</div>
             {data.prepared_statements && (
               <div className="prepared-statements">

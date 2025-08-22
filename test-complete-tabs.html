@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Complete Tab Content</title>
+    <style>
+        body {
+            font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            color: white;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 20px;
+            padding: 30px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(90deg, #00ffcc, #ff00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .test-btn {
+            background: linear-gradient(90deg, #00ffcc, #00ff88);
+            color: black;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s;
+        }
+        .test-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(0, 255, 204, 0.4);
+        }
+        .results {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .tab-section {
+            margin: 15px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border-left: 4px solid #00ffcc;
+        }
+        .tab-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #00ffcc;
+            margin-bottom: 10px;
+        }
+        .field-missing {
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+        .field-present {
+            color: #51cf66;
+        }
+        .creative-highlight {
+            background: rgba(255, 0, 255, 0.2);
+            padding: 5px;
+            border-radius: 5px;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧠 Intelligence Tab Content Verification</h1>
+        
+        <div class="test-section">
+            <h2>Test Complete Intelligence Pipeline</h2>
+            <p>This test runs the full V3 pipeline and checks all tab content</p>
+            
+            <button class="test-btn" onclick="testFullPipeline()">
+                🚀 Run Full Intelligence Pipeline
+            </button>
+            
+            <button class="test-btn" onclick="testTabContent()">
+                📊 Verify Tab Content
+            </button>
+        </div>
+        
+        <div id="results" class="results"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        function log(message, data = null, isError = false) {
+            const results = document.getElementById('results');
+            const entry = document.createElement('div');
+            entry.style.marginBottom = '10px';
+            
+            if (isError) {
+                entry.style.color = '#ff6b6b';
+            }
+            
+            let content = `<strong>${new Date().toLocaleTimeString()}</strong> - ${message}`;
+            if (data) {
+                content += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            }
+            
+            entry.innerHTML = content;
+            results.appendChild(entry);
+            results.scrollTop = results.scrollHeight;
+        }
+        
+        async function testFullPipeline() {
+            log('🚀 Starting full intelligence pipeline test...');
+            
+            const organization = {
+                name: 'Meta',
+                industry: 'technology',
+                competitors: ['Google', 'Apple', 'Microsoft', 'TikTok', 'Amazon']
+            };
+            
+            try {
+                // Phase 1: Discovery
+                log('🔍 Phase 1: Discovery');
+                const discoveryResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-discovery-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({ organization })
+                });
+                
+                const discoveryData = await discoveryResponse.json();
+                log('✅ Discovery complete', {
+                    entities: Object.keys(discoveryData.discovery?.entities || {}),
+                    topics: discoveryData.discovery?.topics?.length || 0
+                });
+                
+                // Phase 2: Gathering
+                log('📡 Phase 2: Gathering');
+                const gatheringResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-gathering-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({ 
+                        discovery: discoveryData.discovery,
+                        organization 
+                    })
+                });
+                
+                const gatheringData = await gatheringResponse.json();
+                log('✅ Gathering complete', {
+                    actions: gatheringData.intelligence?.entity_actions?.all?.length || 0,
+                    trends: gatheringData.intelligence?.topic_trends?.all?.length || 0
+                });
+                
+                // Phase 3: Synthesis
+                log('🧠 Phase 3: Synthesis');
+                const synthesisResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-synthesis-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        intelligence: gatheringData.intelligence,
+                        organization
+                    })
+                });
+                
+                const synthesisData = await synthesisResponse.json();
+                
+                // Check tab content
+                log('📊 Checking tab content...');
+                checkTabContent(synthesisData);
+                
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, error, true);
+            }
+        }
+        
+        function checkTabContent(data) {
+            const tabs = data.tabs;
+            if (!tabs) {
+                log('❌ No tabs found in response!', null, true);
+                return;
+            }
+            
+            const results = document.getElementById('results');
+            
+            // Check each tab
+            const tabChecks = [
+                {
+                    name: 'Executive Summary',
+                    tab: tabs.executive,
+                    required: ['headline', 'overview', 'competitive_highlight', 'market_highlight', 'regulatory_highlight', 'media_highlight', 'immediate_actions']
+                },
+                {
+                    name: 'Competitive',
+                    tab: tabs.competitive,
+                    required: ['competitor_actions', 'competitive_implications', 'pr_strategy', 'key_messages', 'do_not_say']
+                },
+                {
+                    name: 'Market & Trends',
+                    tab: tabs.market,
+                    required: ['market_trends', 'opportunities', 'market_implications', 'market_narrative', 'thought_leadership'],
+                    checkNested: ['market_implications[0].what_it_means_for_us', 'market_implications[0].pr_response']
+                },
+                {
+                    name: 'Regulatory',
+                    tab: tabs.regulatory,
+                    required: ['regulatory_developments', 'compliance_requirements', 'regulatory_stance', 'stakeholder_messages'],
+                    checkNested: ['regulatory_developments[0].what_it_means_for_us', 'regulatory_developments[0].pr_response']
+                },
+                {
+                    name: 'Media & Sentiment',
+                    tab: tabs.media,
+                    required: ['media_coverage', 'social_trends', 'reputation_impact', 'sentiment_trend', 'narrative_risks', 'media_strategy', 'media_outreach', 'social_response'],
+                    checkAdditional: ['what_it_means_for_us', 'pr_response']
+                },
+                {
+                    name: 'Forward Look',
+                    tab: tabs.forward,
+                    required: ['predictions', 'preparation_needed', 'proactive_strategy', 'prepared_statements'],
+                    checkNested: ['predictions[0].what_it_means_for_us', 'predictions[0].pr_response']
+                }
+            ];
+            
+            tabChecks.forEach(check => {
+                const section = document.createElement('div');
+                section.className = 'tab-section';
+                
+                const title = document.createElement('div');
+                title.className = 'tab-title';
+                title.textContent = `📋 ${check.name}`;
+                section.appendChild(title);
+                
+                if (!check.tab) {
+                    section.innerHTML += '<span class="field-missing">❌ Tab missing entirely!</span>';
+                } else {
+                    // Check required fields
+                    check.required.forEach(field => {
+                        const hasField = check.tab[field] !== undefined && check.tab[field] !== null;
+                        const isEmpty = hasField && (
+                            (Array.isArray(check.tab[field]) && check.tab[field].length === 0) ||
+                            (typeof check.tab[field] === 'string' && check.tab[field].trim() === '')
+                        );
+                        
+                        const fieldStatus = document.createElement('div');
+                        if (!hasField) {
+                            fieldStatus.innerHTML = `<span class="field-missing">❌ Missing: ${field}</span>`;
+                        } else if (isEmpty) {
+                            fieldStatus.innerHTML = `<span class="field-missing">⚠️ Empty: ${field}</span>`;
+                        } else {
+                            fieldStatus.innerHTML = `<span class="field-present">✅ ${field}</span>`;
+                            
+                            // Show sample of creative content
+                            if (typeof check.tab[field] === 'string' && check.tab[field].length > 50) {
+                                const preview = document.createElement('div');
+                                preview.className = 'creative-highlight';
+                                preview.textContent = check.tab[field].substring(0, 100) + '...';
+                                fieldStatus.appendChild(preview);
+                            }
+                        }
+                        section.appendChild(fieldStatus);
+                    });
+                    
+                    // Check nested fields
+                    if (check.checkNested) {
+                        check.checkNested.forEach(path => {
+                            const parts = path.split(/[\.\[\]]+/).filter(p => p);
+                            let value = check.tab;
+                            let exists = true;
+                            
+                            for (const part of parts) {
+                                if (value && value[part] !== undefined) {
+                                    value = value[part];
+                                } else {
+                                    exists = false;
+                                    break;
+                                }
+                            }
+                            
+                            const fieldStatus = document.createElement('div');
+                            if (!exists || !value || (typeof value === 'string' && value.trim() === '')) {
+                                fieldStatus.innerHTML = `<span class="field-missing">❌ Missing nested: ${path}</span>`;
+                            } else {
+                                fieldStatus.innerHTML = `<span class="field-present">✅ ${path}</span>`;
+                                if (typeof value === 'string') {
+                                    const preview = document.createElement('div');
+                                    preview.className = 'creative-highlight';
+                                    preview.textContent = value.substring(0, 100) + '...';
+                                    fieldStatus.appendChild(preview);
+                                }
+                            }
+                            section.appendChild(fieldStatus);
+                        });
+                    }
+                    
+                    // Check additional fields
+                    if (check.checkAdditional) {
+                        check.checkAdditional.forEach(field => {
+                            const hasField = check.tab[field] !== undefined && check.tab[field] !== null;
+                            const isEmpty = hasField && check.tab[field].trim() === '';
+                            
+                            const fieldStatus = document.createElement('div');
+                            if (!hasField) {
+                                fieldStatus.innerHTML = `<span class="field-missing">❌ Missing additional: ${field}</span>`;
+                            } else if (isEmpty) {
+                                fieldStatus.innerHTML = `<span class="field-missing">⚠️ Empty additional: ${field}</span>`;
+                            } else {
+                                fieldStatus.innerHTML = `<span class="field-present">✅ ${field}</span>`;
+                                const preview = document.createElement('div');
+                                preview.className = 'creative-highlight';
+                                preview.textContent = check.tab[field].substring(0, 100) + '...';
+                                fieldStatus.appendChild(preview);
+                            }
+                            section.appendChild(fieldStatus);
+                        });
+                    }
+                }
+                
+                results.appendChild(section);
+            });
+            
+            log('✨ Tab content check complete!');
+        }
+        
+        async function testTabContent() {
+            log('📊 Testing tab content directly...');
+            
+            // Use mock data to test tab structure
+            const mockIntelligence = {
+                entity_actions: {
+                    all: [
+                        { entity: 'Google', entity_type: 'competitor', action: 'launched', headline: 'Google launches new AI product' },
+                        { entity: 'Microsoft', entity_type: 'competitor', action: 'acquired', headline: 'Microsoft acquires startup' }
+                    ],
+                    critical: [],
+                    high_priority: [],
+                    by_entity_type: {},
+                    total_count: 2
+                },
+                topic_trends: {
+                    all: [
+                        { topic: 'AI regulation', momentum: 'accelerating', article_count: 25 },
+                        { topic: 'Privacy concerns', momentum: 'growing', article_count: 15 }
+                    ],
+                    hot_topics: [],
+                    by_category: {},
+                    total_monitored: 2
+                },
+                summary: {
+                    requires_attention: false,
+                    key_movements: [],
+                    trending_topics: ['AI regulation'],
+                    total_intelligence_points: 4
+                }
+            };
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-synthesis-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        intelligence: mockIntelligence,
+                        organization: { name: 'TestCorp', industry: 'technology' }
+                    })
+                });
+                
+                const data = await response.json();
+                checkTabContent(data);
+                
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, error, true);
+            }
+        }
+    </script>
+</body>
+</html>
