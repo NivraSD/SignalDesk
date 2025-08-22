@@ -13,11 +13,11 @@ async function synthesizeWithClaude(intelligence: any, organization: any) {
   console.log(`🧠 V3 Synthesis: Analyzing intelligence for ${organization.name}`)
   console.log(`📊 Data to synthesize: ${intelligence.entity_actions?.all?.length || 0} actions, ${intelligence.topic_trends?.all?.length || 0} trends`)
   
-  const entityActions = intelligence.entity_actions?.all?.slice(0, 5) || []  // Top 5 only
-  const topicTrends = intelligence.topic_trends?.all?.slice(0, 5) || []  // Top 5 only
+  const entityActions = intelligence.entity_actions?.all?.slice(0, 15) || []  // Top 15 for richer analysis
+  const topicTrends = intelligence.topic_trends?.all?.slice(0, 15) || []  // Top 15 for better patterns
   
-  console.log('🔍 Entity Actions (top 5):', entityActions.length)
-  console.log('📈 Topic Trends (top 5):', topicTrends.length)
+  console.log('🔍 Entity Actions (top 15):', entityActions.length)
+  console.log('📈 Topic Trends (top 15):', topicTrends.length)
   
   if (entityActions.length === 0 && topicTrends.length === 0) {
     console.log('⚠️ No intelligence data to synthesize')
@@ -41,45 +41,66 @@ async function synthesizeWithClaude(intelligence: any, organization: any) {
 }
 
 async function synthesizeOffensiveIntel(entityActions: any[], topicTrends: any[], organization: any) {
-  const prompt = `You are an elite intelligence analyst for ${organization.name}. Create NON-OBVIOUS, SURPRISING insights.
+  const prompt = `You are an elite intelligence analyst for ${organization.name}. Analyze this intelligence to uncover what's REALLY happening.
 
-Look for:
-- PATTERNS: What are 3+ entities doing that reveals a hidden trend?
-- MISDIRECTION: What's the real story while everyone looks elsewhere?
-- TIMING: Why are these things happening NOW?
-- OPPORTUNITIES: What gap does chaos create?
+ENTITY ACTIONS (${entityActions.length} captured):
+${JSON.stringify(entityActions, null, 2)}
 
-ENTITY ACTIONS (top 5): ${JSON.stringify(entityActions, null, 2)}
-TOPIC TRENDS (top 5): ${JSON.stringify(topicTrends, null, 2)}
+TOPIC TRENDS (${topicTrends.length} monitored):
+${JSON.stringify(topicTrends, null, 2)}
 
-Return ONLY this JSON:
+Create a comprehensive analysis that tells the FULL STORY. Don't just list - SYNTHESIZE and CONNECT.
+
+Return this JSON with RICH, DETAILED content:
 {
   "executive_summary": {
-    "headline": "The ONE non-obvious insight that changes everything",
-    "overview": "Connect 3+ data points to reveal hidden pattern. What's REALLY happening?",
-    "competitive_highlight": "The competitor move that's actually about something else",
-    "market_highlight": "The opportunity hiding in plain sight",
-    "regulatory_highlight": "How to turn regulation into advantage",
-    "media_highlight": "The narrative shift that predicts next 90 days",
+    "headline": "The big story that connects all the pieces - be specific with names and numbers",
+    "overview": "Tell the complete narrative in 4-6 sentences. What's the chess game being played? Who's winning and why? What moves are coming next?",
+    "competitive_highlight": "Most significant competitor development and what it reveals about their strategy",
+    "market_highlight": "The market shift that changes the game",
+    "regulatory_highlight": "Regulatory angle that affects everyone",
+    "media_highlight": "The narrative that's gaining momentum",
     "immediate_actions": [
-      "Do X before competitors realize Y",
-      "Say Z to position for coming change",
-      "Stop doing A because B makes it irrelevant"
+      "Specific action based on the intelligence",
+      "Another specific action",
+      "Third specific action"
     ]
   },
   "competitive_landscape": {
-    "competitor_actions": [{"competitor": "Name", "action": "What they did", "details": "The REAL reason - what are they preparing for?"}],
-    "competitive_implications": [{"impact": "Non-obvious consequence", "severity": "Why this matters more/less than appears"}],
-    "pr_strategy": "How to use their move against them - judo strategy",
-    "key_messages": ["Counter-narrative that reframes conversation", "Proof point that changes perception"],
-    "do_not_say": ["The trap they're setting for you"]
+    "competitor_actions": [
+      // List ALL significant competitor moves from the data
+      {"competitor": "Actual name from data", "action": "What they actually did", "details": "Deep analysis of why this matters and what they're really trying to achieve"}
+    ],
+    "competitive_implications": [
+      // Multiple implications - be comprehensive
+      {"impact": "First-order effect", "severity": "Why this fundamentally changes competitive dynamics"},
+      {"impact": "Second-order effect", "severity": "The cascade this triggers"}
+    ],
+    "pr_strategy": "Detailed strategy for positioning ${organization.name} given all these competitor moves",
+    "key_messages": [
+      "Specific message that counters competitor narrative",
+      "Another key message based on the intelligence"
+    ],
+    "do_not_say": ["What to avoid saying given current dynamics"]
   },
   "market_dynamics": {
-    "market_trends": [{"trend": "Specific trend", "description": "What's REALLY driving this - follow money/power/fear", "momentum": "accelerating/stable/declining"}],
-    "opportunities": [{"opportunity": "The gap everyone else is missing", "description": "Why this works specifically for ${organization.name}"}],
-    "market_implications": [{"implication": "Second-order effect that changes everything", "what_it_means_for_us": "How ${organization.name} uniquely benefits", "pr_response": "Position as the solution"}],
-    "market_narrative": "Story that makes ${organization.name} inevitable winner",
-    "thought_leadership": ["Contrarian position that becomes consensus in 6 months", "Framework that makes competitors obsolete"]
+    "market_trends": [
+      // Analyze ALL significant trends from the data
+      {"trend": "Specific trend from data", "description": "Rich analysis of drivers, stakeholders, and trajectory", "momentum": "accelerating/stable/declining"}
+    ],
+    "opportunities": [
+      // Multiple opportunities based on the trends
+      {"opportunity": "Specific opportunity", "description": "Detailed explanation of how ${organization.name} can capitalize"}
+    ],
+    "market_implications": [
+      // Several implications
+      {"implication": "How market is restructuring", "what_it_means_for_us": "Specific impact on ${organization.name}", "pr_response": "How to message this"}
+    ],
+    "market_narrative": "The story of where the market is heading and ${organization.name}'s role",
+    "thought_leadership": [
+      "Specific contrarian position ${organization.name} should take",
+      "Another thought leadership opportunity"
+    ]
   }
 }`
 
@@ -93,7 +114,7 @@ Return ONLY this JSON:
       },
       body: JSON.stringify({
         model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 2000,
+        max_tokens: 3500,
         temperature: 0.3,
         messages: [{
           role: 'user',
@@ -118,42 +139,72 @@ Return ONLY this JSON:
 }
 
 async function synthesizeDefensiveIntel(entityActions: any[], topicTrends: any[], organization: any) {
-  const prompt = `You are an elite intelligence analyst for ${organization.name}. Create NON-OBVIOUS, SURPRISING insights.
+  const prompt = `You are an elite intelligence analyst for ${organization.name}. Analyze regulatory, media, and future risks/opportunities.
 
-Look for:
-- REGULATORY ANGLES: How to turn compliance into competitive advantage?
-- MEDIA NARRATIVES: What story kills us if we don't act in 48 hours?
-- CASCADE EFFECTS: If X happens, what's the non-obvious Y and Z?
-- PREPARATION: What are competitors/regulators about to do that we should prepare for?
+ENTITY ACTIONS (${entityActions.length} captured):
+${JSON.stringify(entityActions, null, 2)}
 
-ENTITY ACTIONS (top 5): ${JSON.stringify(entityActions, null, 2)}
-TOPIC TRENDS (top 5): ${JSON.stringify(topicTrends, null, 2)}
+TOPIC TRENDS (${topicTrends.length} monitored):
+${JSON.stringify(topicTrends, null, 2)}
 
-Return ONLY this JSON:
+Provide COMPREHENSIVE analysis of defensive positioning and future preparation.
+
+Return this JSON with DETAILED, NARRATIVE content:
 {
   "regulatory_policy": {
-    "regulatory_developments": [{"regulator": "Specific agency/official", "development": "What they're REALLY trying to achieve", "timeline": "Real vs stated deadline", "what_it_means_for_us": "How this changes ${organization.name}'s game", "pr_response": "Proactive stance that makes us look good"}],
-    "compliance_requirements": [{"requirement": "Letter of law vs spirit", "action": "How to exceed and gain favor"}],
-    "regulatory_stance": "Position that makes ${organization.name} regulator's favorite",
-    "stakeholder_messages": [{"audience": "Regulators", "message": "We're solving problem they haven't articulated"}, {"audience": "Market", "message": "Our standards become regulations"}]
+    "regulatory_developments": [
+      // Analyze ALL regulatory signals in the data
+      {"regulator": "Specific entity from data", "development": "Full story of what's happening and hidden agenda", "timeline": "Realistic timeline with key milestones", "what_it_means_for_us": "Detailed impact analysis for ${organization.name}", "pr_response": "Complete messaging strategy"}
+    ],
+    "compliance_requirements": [
+      // Multiple requirements emerging
+      {"requirement": "Detailed requirement", "action": "Specific steps ${organization.name} should take"}
+    ],
+    "regulatory_stance": "Comprehensive position ${organization.name} should take given the landscape",
+    "stakeholder_messages": [
+      // Messages for each key stakeholder group
+      {"audience": "Specific group", "message": "Tailored message based on intelligence"}
+    ]
   },
   "media_sentiment": {
-    "media_coverage": [{"outlet": "Specific outlet", "topic": "Angle they're missing", "sentiment": "positive/neutral/negative", "influence": "Who they influence"}],
-    "social_trends": [{"platform": "Where narrative forming", "trend": "Undercurrent becoming mainstream", "volume": "Velocity matters more than volume"}],
-    "reputation_impact": "How perception becomes reality in 30 days",
-    "sentiment_trend": "Inflection point approaching",
-    "narrative_risks": ["Story that sticks if we don't act", "Comparison that kills us"],
-    "what_it_means_for_us": "Window to shape narrative closing - act now",
-    "pr_response": "Launch preemptive narrative others must respond to",
-    "media_strategy": "Create story others must cover",
-    "media_outreach": ["Plant story to redirect attention", "Give exclusive to create ally"],
-    "social_response": "Response that goes viral for RIGHT reasons"
+    "media_coverage": [
+      // Analyze patterns in media coverage
+      {"outlet": "Key outlets covering the space", "topic": "What they're focusing on", "sentiment": "positive/neutral/negative", "influence": "Their reach and impact"}
+    ],
+    "social_trends": [
+      // Multiple social trends from the data
+      {"platform": "Where conversation is happening", "trend": "What's gaining traction", "volume": "Quantify the momentum"}
+    ],
+    "reputation_impact": "Detailed analysis of how current coverage affects ${organization.name}'s reputation",
+    "sentiment_trend": "Where sentiment is heading and why",
+    "narrative_risks": [
+      "Specific narrative that could damage ${organization.name}",
+      "Another risk narrative emerging"
+    ],
+    "what_it_means_for_us": "Complete analysis of media landscape impact on ${organization.name}",
+    "pr_response": "Comprehensive PR strategy to shape narrative",
+    "media_strategy": "Detailed approach to media engagement",
+    "media_outreach": [
+      "Specific story to pitch",
+      "Another media opportunity"
+    ],
+    "social_response": "How to engage on social platforms"
   },
   "forward_look": {
-    "predictions": [{"timeframe": "Next 30 days", "prediction": "[Competitor] will do [action] because [pattern]", "probability": 70, "early_indicators": "Watch for X in Y department", "what_it_means_for_us": "Creates opportunity/threat", "pr_response": "Position ahead of curve"}],
-    "preparation_needed": [{"scenario": "When [event] happens", "impact": "Creates 40% discount opportunity"}],
-    "proactive_strategy": "Start rumors about Q3 to force competitor reaction",
-    "prepared_statements": [{"scenario": "Competitor announces X", "statement": "We've been working on this 18 months - here's why different"}]
+    "predictions": [
+      // Multiple predictions based on patterns
+      {"timeframe": "Next 30 days", "prediction": "Specific prediction based on current intelligence", "probability": 70, "early_indicators": "What to watch for", "what_it_means_for_us": "Impact on ${organization.name}", "pr_response": "How to message if this happens"},
+      {"timeframe": "Next 90 days", "prediction": "Another prediction", "probability": 60, "early_indicators": "Leading indicators", "what_it_means_for_us": "Strategic implications", "pr_response": "Positioning strategy"}
+    ],
+    "preparation_needed": [
+      // Multiple scenarios to prepare for
+      {"scenario": "Specific scenario from intelligence", "impact": "Detailed impact analysis"}
+    ],
+    "proactive_strategy": "Comprehensive strategy for getting ahead of developments",
+    "prepared_statements": [
+      // Multiple prepared responses
+      {"scenario": "When X happens", "statement": "Complete statement ready to go"}
+    ]
   }
 }`
 
@@ -167,7 +218,7 @@ Return ONLY this JSON:
       },
       body: JSON.stringify({
         model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 2000,
+        max_tokens: 3500,
         temperature: 0.3,
         messages: [{
           role: 'user',
