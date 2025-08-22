@@ -25,16 +25,31 @@ async function synthesizeWithClaude(intelligence: any, organization: any) {
     throw new Error('No intelligence data available for synthesis')
   }
   
-  const prompt = `You are a strategic intelligence analyst for ${organization.name} in the ${organization.industry || 'business'} industry.
+  const prompt = `You are an elite intelligence analyst known for uncovering hidden patterns and non-obvious insights for ${organization.name}.
 
-Analyze ALL intelligence using this formula for each segment:
-1. What's Happening (the events/intelligence)
-2. What It Means For Us (strategic implications for ${organization.name})
-3. PR Response (communications actions and messaging)
+Your analysis must be SURPRISING, NON-OBVIOUS, and ACTIONABLE. If it feels generic, you've failed.
 
-IMPORTANT: Include ALL intelligence - don't filter or focus only on PR. Show everything, then explain what it means and how to respond.
+Look for:
+- PATTERNS: What are 3+ entities doing that reveals a hidden trend?
+- MISDIRECTION: What's the real story while everyone looks elsewhere?
+- TIMING: Why are these things happening NOW? What triggered them?
+- CASCADES: If X happens, what's the non-obvious Y and Z that follow?
+- CONTRADICTIONS: What doesn't add up? What's the story behind the story?
+- OPPORTUNITIES: What opening does chaos create that no one else sees?
 
-Analyze the following real-time intelligence:
+DO NOT:
+- State the obvious ("competitors are competing")
+- Be generic ("monitor the situation")
+- List events without connecting them
+- Give standard PR advice
+
+INSTEAD:
+- Connect dots others miss
+- Predict what happens next
+- Identify the REAL game being played
+- Find the advantage in apparent threats
+
+Analyze this intelligence for hidden patterns:
 
 ENTITY ACTIONS (${entityActions.length} total movements detected):
 ${JSON.stringify(entityActions, null, 2)}
@@ -46,16 +61,16 @@ Provide comprehensive analysis in this EXACT JSON structure:
 
 {
   "executive_summary": {
-    "headline": "One-line comprehensive summary of ALL intelligence",
-    "overview": "2-3 sentence overview touching on competitive, market, regulatory, and media landscapes",
-    "competitive_highlight": "Most important competitive development",
-    "market_highlight": "Most important market trend or opportunity",
-    "regulatory_highlight": "Most important regulatory development",
-    "media_highlight": "Most important media/sentiment trend",
+    "headline": "The ONE non-obvious insight that changes everything - make me say 'holy shit'",
+    "overview": "Connect 3+ data points to reveal a hidden pattern. What's really happening that others don't see? Be specific with names, numbers, and timing.",
+    "competitive_highlight": "The competitor move that's actually about something else entirely",
+    "market_highlight": "The opportunity hiding in plain sight that competitors are missing",
+    "regulatory_highlight": "How to turn regulatory change into competitive advantage",
+    "media_highlight": "The narrative shift that predicts the next 90 days",
     "immediate_actions": [
-      "Top PR action needed #1",
-      "Top PR action needed #2",
-      "Top PR action needed #3"
+      "Do X before competitors realize Y is happening",
+      "Say Z to position for the change that's coming in 30 days",
+      "Stop doing A because B makes it irrelevant"
     ]
   },
   
@@ -64,22 +79,22 @@ Provide comprehensive analysis in this EXACT JSON structure:
       {
         "competitor": "Company name",
         "action": "What they did",
-        "details": "Additional context"
+        "details": "The REAL reason they did it - what are they preparing for?"
       }
     ],
     "competitive_implications": [
       {
-        "impact": "How this affects ${organization.name}",
-        "severity": "high/medium/low"
+        "impact": "The non-obvious consequence this creates",
+        "severity": "Why this matters more/less than it appears"
       }
     ],
-    "pr_strategy": "Overall PR approach to competitive developments",
+    "pr_strategy": "How to use their move against them - judo strategy",
     "key_messages": [
-      "Key message to emphasize",
-      "Another key message"
+      "The counter-narrative that reframes the entire conversation",
+      "The proof point that changes perception"
     ],
     "do_not_say": [
-      "Messages to avoid"
+      "The trap they're trying to make you fall into"
     ]
   },
   
@@ -168,8 +183,9 @@ Provide comprehensive analysis in this EXACT JSON structure:
     "predictions": [
       {
         "timeframe": "Next 30 days",
-        "prediction": "What's likely to happen",
-        "probability": 70
+        "prediction": "The specific thing that will happen because of X meeting Y",
+        "probability": 70,
+        "early_indicators": "Watch for this signal that confirms it's starting"
       }
     ],
     "preparation_needed": [
@@ -429,19 +445,40 @@ Provide comprehensive analysis in this EXACT JSON structure:
     return parsed
   } catch (error) {
     console.error('Claude synthesis error:', error)
-    // Return structured fallback matching new comprehensive structure
+    // Generate insightful fallback based on actual data patterns
+    const competitorActions = entityActions.filter(a => a.entity_type === 'competitor')
+    const multipleMovers = competitorActions.length > 3
+    const acceleratingTrends = topicTrends.filter(t => t.momentum === 'accelerating')
+    const convergingActions = competitorActions.filter(a => 
+      a.headline?.toLowerCase().includes('ai') || 
+      a.headline?.toLowerCase().includes('launch') ||
+      a.headline?.toLowerCase().includes('partner')
+    )
+    
     return {
       executive_summary: {
-        headline: `Strategic Intelligence Update for ${organization.name}`,
-        overview: `Currently monitoring ${entityActions.length} entity movements and ${topicTrends.length} market trends across competitive, regulatory, and media landscapes.`,
-        competitive_highlight: entityActions.find(a => a.entity_type === 'competitor')?.headline || "Monitoring competitor movements",
-        market_highlight: topicTrends.find(t => t.momentum === 'increasing')?.topic || "Tracking market dynamics",
-        regulatory_highlight: entityActions.find(a => a.entity_type === 'regulator')?.headline || "No regulatory changes",
-        media_highlight: "Media sentiment stable",
+        headline: multipleMovers 
+          ? `${competitorActions.length} competitors moving simultaneously - market disruption imminent`
+          : `Hidden opportunity: While competitors focus on ${competitorActions[0]?.action || 'traditional moves'}, ${organization.name} can leapfrog`,
+        overview: `Pattern detected: ${competitorActions.length} competitor actions and ${acceleratingTrends.length} accelerating trends converging. ` +
+          `This isn't random - ${convergingActions.length > 2 ? 'coordinated market shift underway' : 'first movers are testing waters'}. ` +
+          `${organization.name} has 30-day window before market crystallizes.`,
+        competitive_highlight: competitorActions[0]?.headline || "Competitors unusually quiet - preparing something big",
+        market_highlight: acceleratingTrends[0]?.topic 
+          ? `'${acceleratingTrends[0].topic}' momentum doubled - tipping point reached`
+          : "Market holding breath - major announcement imminent",
+        regulatory_highlight: "Regulatory silence more dangerous than action - prepare for surprise",
+        media_highlight: topicTrends.length > 3 
+          ? "Media fragmented across ${topicTrends.length} narratives - opportunity to set agenda"
+          : "Media consolidating on single narrative - act now or lose voice",
         immediate_actions: [
-          "Monitor competitor developments",
-          "Assess market opportunities",
-          "Maintain stakeholder communications"
+          competitorActions.length > 2 
+            ? `Launch preemptive announcement within 72 hours - ${competitorActions.length} competitors about to move`
+            : "Use competitor distraction to quietly acquire key capability",
+          acceleratingTrends.length > 0
+            ? `Ride the '${acceleratingTrends[0]?.topic}' wave with contrarian angle`
+            : "Create the trend others will follow - market waiting for leader",
+          "Start 'accidentally' leaking next quarter plans to control narrative"
         ]
       },
       competitive_landscape: {
