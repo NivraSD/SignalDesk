@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test V6 PR Impact Flow</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            padding: 40px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #00ff88;
+            margin-bottom: 30px;
+        }
+        .section {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #00ff88;
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #00cc70;
+        }
+        button:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            background: #0d0d0d;
+            border-radius: 6px;
+            font-family: 'Monaco', monospace;
+            font-size: 14px;
+        }
+        .success {
+            color: #00ff88;
+        }
+        .error {
+            color: #ff4466;
+        }
+        .info {
+            color: #00ccff;
+        }
+        .warning {
+            color: #ffcc00;
+        }
+        pre {
+            background: #0d0d0d;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .tab-info {
+            background: #0d0d0d;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 3px solid #00ff88;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Test V6 PR Impact Analysis Flow</h1>
+        
+        <div class="section">
+            <h2>1. Test Direct Orchestrator Call</h2>
+            <button onclick="testOrchestrator()">Test Orchestrator</button>
+            <div id="orchestrator-status" class="status"></div>
+        </div>
+
+        <div class="section">
+            <h2>2. Test Complete Flow</h2>
+            <button onclick="testCompleteFlow()">Test Complete V6 Flow</button>
+            <div id="flow-status" class="status"></div>
+        </div>
+
+        <div class="section">
+            <h2>3. Intelligence Data</h2>
+            <button onclick="clearData()">Clear Cache</button>
+            <div id="intelligence-data"></div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+            element.innerHTML += `<div class="${type}">[${timestamp}] ${message}</div>`;
+        }
+
+        async function testOrchestrator() {
+            const statusEl = document.getElementById('orchestrator-status');
+            statusEl.innerHTML = '';
+            
+            log('orchestrator-status', 'Starting orchestrator test...', 'info');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-orchestrator`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: {
+                            name: 'Tesla',
+                            industry: 'automotive',
+                            competitors: ['Rivian', 'Lucid Motors', 'Ford'],
+                            stakeholders: ['investors', 'customers', 'employees', 'media', 'regulators'],
+                            topics: ['electric vehicles', 'autonomous driving', 'battery technology'],
+                            keywords: ['EV', 'Tesla', 'Model 3', 'Model Y', 'Cybertruck']
+                        },
+                        goals: {
+                            competitive_analysis: true,
+                            media_monitoring: true,
+                            narrative_shaping: true
+                        },
+                        timeframe: '7d'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${data.error || 'Unknown error'}`);
+                }
+
+                log('orchestrator-status', '✅ Orchestrator call successful!', 'success');
+                
+                // Check for V6 structure
+                if (data.intelligence?.synthesized) {
+                    const synthesized = data.intelligence.synthesized;
+                    const isV6 = !!(synthesized.narrative_landscape || synthesized.competitive_dynamics);
+                    
+                    log('orchestrator-status', `Structure: ${isV6 ? 'V6 PR Impact' : 'V5 Analytical'}`, isV6 ? 'success' : 'warning');
+                    
+                    if (isV6) {
+                        log('orchestrator-status', 'V6 PR Impact Categories:', 'info');
+                        const v6Categories = ['narrative_landscape', 'competitive_dynamics', 'stakeholder_sentiment', 'media_momentum', 'strategic_signals'];
+                        v6Categories.forEach(cat => {
+                            if (synthesized[cat]) {
+                                log('orchestrator-status', `  ✓ ${cat}`, 'success');
+                            }
+                        });
+                    }
+                }
+                
+                // Display intelligence data
+                displayIntelligence(data);
+                
+            } catch (error) {
+                log('orchestrator-status', `Error: ${error.message}`, 'error');
+                console.error('Orchestrator error:', error);
+            }
+        }
+
+        async function testCompleteFlow() {
+            const statusEl = document.getElementById('flow-status');
+            statusEl.innerHTML = '';
+            
+            log('flow-status', 'Testing complete V6 flow...', 'info');
+            
+            // Simulate the frontend flow
+            const config = {
+                name: 'Tesla',
+                industry: 'automotive'
+            };
+            
+            localStorage.setItem('signaldesk_onboarding', JSON.stringify(config));
+            
+            try {
+                // Call orchestrator directly
+                log('flow-status', 'Phase 1: Discovery...', 'info');
+                
+                const discoveryResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligent-discovery`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({ organization: config })
+                });
+                
+                const discoveryData = await discoveryResponse.json();
+                log('flow-status', `Discovery: ${discoveryData.success ? '✓' : '✗'}`, discoveryData.success ? 'success' : 'error');
+                
+                // Full orchestrator call
+                log('flow-status', 'Phase 2: Full orchestration...', 'info');
+                
+                const orchestratorResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-orchestrator`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: discoveryData.discovered_context || config,
+                        goals: {},
+                        timeframe: '7d'
+                    })
+                });
+                
+                const orchestratorData = await orchestratorResponse.json();
+                
+                if (!orchestratorData.success) {
+                    throw new Error(orchestratorData.error || 'Orchestration failed');
+                }
+                
+                log('flow-status', '✅ Full flow successful!', 'success');
+                
+                // Check synthesis version
+                const intel = orchestratorData.intelligence;
+                if (intel?.synthesized) {
+                    const isV6 = !!(intel.synthesized.narrative_landscape || intel.synthesized.competitive_dynamics);
+                    log('flow-status', `Synthesis: ${isV6 ? 'V6 PR Impact Analysis' : 'V5 Analytical'}`, 'success');
+                    
+                    if (isV6) {
+                        // Display V6 tabs
+                        displayV6Tabs(intel);
+                    }
+                }
+                
+                // Display full data
+                displayIntelligence(orchestratorData);
+                
+            } catch (error) {
+                log('flow-status', `Error: ${error.message}`, 'error');
+                console.error('Flow error:', error);
+            }
+        }
+
+        function displayV6Tabs(intelligence) {
+            const container = document.getElementById('intelligence-data');
+            let html = '<h3>V6 PR Impact Analysis</h3>';
+            
+            const tabs = intelligence.tabs || {};
+            const synthesized = intelligence.synthesized || {};
+            
+            // Check each V6 tab
+            const v6Tabs = [
+                { id: 'narrative_landscape', name: 'Narrative Landscape', color: '#ff00ff' },
+                { id: 'competitive_dynamics', name: 'Competitive Dynamics', color: '#00ffcc' },
+                { id: 'stakeholder_sentiment', name: 'Stakeholder Sentiment', color: '#00ff88' },
+                { id: 'media_momentum', name: 'Media Momentum', color: '#ffcc00' },
+                { id: 'strategic_signals', name: 'Strategic Signals', color: '#8800ff' }
+            ];
+            
+            v6Tabs.forEach(tab => {
+                const tabData = tabs[tab.id] || synthesized[tab.id];
+                if (tabData) {
+                    html += `<div class="tab-info" style="border-left-color: ${tab.color}">`;
+                    html += `<strong>${tab.name}</strong><br>`;
+                    
+                    // Show key fields
+                    if (tab.id === 'narrative_landscape') {
+                        html += `Position: ${tabData.current_position || 'N/A'}<br>`;
+                        html += `Control: ${tabData.narrative_control || 'N/A'}<br>`;
+                        html += `Attention: ${tabData.attention_flow || 'N/A'}<br>`;
+                        html += `Developments: ${tabData.key_developments?.length || 0}`;
+                    } else if (tab.id === 'competitive_dynamics') {
+                        html += `Positioning: ${tabData.pr_positioning || 'N/A'}<br>`;
+                        html += `Threats: ${tabData.narrative_threats?.length || 0}<br>`;
+                        html += `Opportunities: ${tabData.narrative_opportunities?.length || 0}`;
+                    } else if (tab.id === 'stakeholder_sentiment') {
+                        html += `Trajectory: ${tabData.overall_trajectory || 'N/A'}<br>`;
+                        html += `Implications: ${tabData.pr_implications || 'N/A'}<br>`;
+                        html += `Drivers: ${tabData.sentiment_drivers?.length || 0}`;
+                    } else if (tab.id === 'media_momentum') {
+                        html += `Coverage: ${tabData.coverage_trajectory || 'N/A'}<br>`;
+                        html += `Alignment: ${tabData.narrative_alignment || 'N/A'}<br>`;
+                        html += `Leverage Points: ${tabData.pr_leverage_points?.length || 0}`;
+                    } else if (tab.id === 'strategic_signals') {
+                        html += `Regulatory: ${tabData.regulatory_implications || 'N/A'}<br>`;
+                        html += `Shifts: ${tabData.industry_narrative_shifts?.length || 0}<br>`;
+                        html += `Triggers: ${tabData.pr_action_triggers?.length || 0}`;
+                    }
+                    
+                    html += '</div>';
+                }
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function displayIntelligence(data) {
+            const container = document.getElementById('intelligence-data');
+            
+            let html = '<h3>Intelligence Data Structure</h3>';
+            html += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            
+            container.innerHTML = html;
+        }
+
+        function clearData() {
+            localStorage.clear();
+            document.getElementById('intelligence-data').innerHTML = '<div class="success">Cache cleared!</div>';
+        }
+    </script>
+</body>
+</html>

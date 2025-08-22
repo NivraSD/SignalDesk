@@ -10,7 +10,7 @@ import {
 const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigger = 0 }) => {
   const [loading, setLoading] = useState(false);
   const [intelligenceData, setIntelligenceData] = useState(null);
-  const [activeTab, setActiveTab] = useState('market_activity');
+  const [activeTab, setActiveTab] = useState('narrative_landscape'); // Default to V6 first tab
   const [loadingStage, setLoadingStage] = useState('');
 
   useEffect(() => {
@@ -41,13 +41,54 @@ const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigg
     }
   };
 
-  const tabs = [
-    { id: 'market_activity', name: 'Market Activity', Icon: TrendingUpIcon, color: '#ff00ff' },
-    { id: 'competitor_intelligence', name: 'Competitor Intel', Icon: CompetitorIcon, color: '#00ffcc' },
-    { id: 'social_pulse', name: 'Social Pulse', Icon: MediaIcon, color: '#00ff88' },
-    { id: 'industry_signals', name: 'Industry Signals', Icon: ChartIcon, color: '#ffcc00' },
-    { id: 'media_coverage', name: 'Media Coverage', Icon: InsightIcon, color: '#8800ff' }
-  ];
+  // Dynamically determine tabs based on the data structure
+  const getTabsFromData = () => {
+    if (!intelligenceData?.tabs) {
+      // Default V5 tabs if no data yet
+      return [
+        { id: 'market_activity', name: 'Market Activity', Icon: TrendingUpIcon, color: '#ff00ff' },
+        { id: 'competitor_intelligence', name: 'Competitor Intel', Icon: CompetitorIcon, color: '#00ffcc' },
+        { id: 'social_pulse', name: 'Social Pulse', Icon: MediaIcon, color: '#00ff88' },
+        { id: 'industry_signals', name: 'Industry Signals', Icon: ChartIcon, color: '#ffcc00' },
+        { id: 'media_coverage', name: 'Media Coverage', Icon: InsightIcon, color: '#8800ff' }
+      ];
+    }
+    
+    const tabKeys = Object.keys(intelligenceData.tabs);
+    
+    // V6 PR Impact tabs
+    if (tabKeys.includes('narrative_landscape')) {
+      return [
+        { id: 'narrative_landscape', name: 'Narrative Landscape', Icon: RocketIcon, color: '#ff00ff' },
+        { id: 'competitive_dynamics', name: 'Competitive Dynamics', Icon: CompetitorIcon, color: '#00ffcc' },
+        { id: 'stakeholder_sentiment', name: 'Stakeholder Sentiment', Icon: StakeholderIcon, color: '#00ff88' },
+        { id: 'media_momentum', name: 'Media Momentum', Icon: MediaIcon, color: '#ffcc00' },
+        { id: 'strategic_signals', name: 'Strategic Signals', Icon: ChartIcon, color: '#8800ff' }
+      ];
+    }
+    
+    // V5 Analytical tabs
+    if (tabKeys.includes('market_activity')) {
+      return [
+        { id: 'market_activity', name: 'Market Activity', Icon: TrendingUpIcon, color: '#ff00ff' },
+        { id: 'competitor_intelligence', name: 'Competitor Intel', Icon: CompetitorIcon, color: '#00ffcc' },
+        { id: 'social_pulse', name: 'Social Pulse', Icon: MediaIcon, color: '#00ff88' },
+        { id: 'industry_signals', name: 'Industry Signals', Icon: ChartIcon, color: '#ffcc00' },
+        { id: 'media_coverage', name: 'Media Coverage', Icon: InsightIcon, color: '#8800ff' }
+      ];
+    }
+    
+    // Legacy tabs
+    return [
+      { id: 'overview', name: 'Overview', Icon: RocketIcon, color: '#ff00ff' },
+      { id: 'competition', name: 'Competition', Icon: CompetitorIcon, color: '#00ffcc' },
+      { id: 'stakeholders', name: 'Stakeholders', Icon: StakeholderIcon, color: '#00ff88' },
+      { id: 'topics', name: 'Topics & Media', Icon: MediaIcon, color: '#ffcc00' },
+      { id: 'predictions', name: 'Predictions', Icon: PredictiveIcon, color: '#8800ff' }
+    ];
+  };
+  
+  const tabs = getTabsFromData();
 
   const renderTabContent = (tabData, tabType) => {
     console.log(`📂 Rendering ${tabType} tab with data:`, {
@@ -67,8 +108,20 @@ const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigg
       );
     }
 
-    // Handle tab-specific rendering for V5 analytical structure
+    // Handle tab-specific rendering for V6 PR Impact or V5 analytical structure
     switch (tabType) {
+      // V6 PR Impact tabs
+      case 'narrative_landscape':
+        return renderNarrativeLandscapeTab(tabData);
+      case 'competitive_dynamics':
+        return renderCompetitiveDynamicsTab(tabData);
+      case 'stakeholder_sentiment':
+        return renderStakeholderSentimentTab(tabData);
+      case 'media_momentum':
+        return renderMediaMomentumTab(tabData);
+      case 'strategic_signals':
+        return renderStrategicSignalsTab(tabData);
+      // V5 Analytical tabs
       case 'market_activity':
         return renderMarketActivityTab(tabData);
       case 'competitor_intelligence':
@@ -783,6 +836,229 @@ const IntelligenceDisplayV2 = ({ organizationId, timeframe = '24h', refreshTrigg
   };
 
   // New V5 Analytical Tab Render Functions
+  // V6 PR Impact Tab Renderers
+  const renderNarrativeLandscapeTab = (data) => {
+    return (
+      <div className="intelligence-section narrative-landscape-tab">
+        <div className="narrative-status-panel">
+          <div className="panel-header">
+            <RocketIcon size={20} color="#ff00ff" />
+            <h3>Narrative Position</h3>
+          </div>
+          <p>{data.current_position || 'Analyzing narrative position...'}</p>
+          <div className="narrative-metrics">
+            <div className="metric">
+              <span className="label">Narrative Control:</span>
+              <span className={`value control-${data.narrative_control}`}>{data.narrative_control || 'contested'}</span>
+            </div>
+            <div className="metric">
+              <span className="label">Attention Flow:</span>
+              <span className={`value flow-${data.attention_flow}`}>{data.attention_flow || 'neutral'}</span>
+            </div>
+          </div>
+        </div>
+        
+        {data.key_developments && data.key_developments.length > 0 && (
+          <div className="developments-panel">
+            <h4>Key PR Developments</h4>
+            <div className="developments-list">
+              {data.key_developments.map((dev, idx) => (
+                <div key={idx} className={`development-card impact-${dev.pr_impact}`}>
+                  <div className="development-header">
+                    <span className={`impact-badge ${dev.pr_impact}`}>{dev.pr_impact}</span>
+                    <span className="source">{dev.source}</span>
+                  </div>
+                  <div className="development-content">{dev.development}</div>
+                  <div className="impact-description">{dev.impact_description}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderCompetitiveDynamicsTab = (data) => {
+    return (
+      <div className="intelligence-section competitive-dynamics-tab">
+        <div className="positioning-panel">
+          <div className="panel-header">
+            <CompetitorIcon size={20} color="#00ffcc" />
+            <h3>PR Positioning</h3>
+          </div>
+          <p>{data.pr_positioning || 'Analyzing competitive PR landscape...'}</p>
+        </div>
+        
+        {data.narrative_threats && data.narrative_threats.length > 0 && (
+          <div className="threats-panel">
+            <h4>Narrative Threats</h4>
+            <div className="threats-list">
+              {data.narrative_threats.map((threat, idx) => (
+                <div key={idx} className={`threat-card urgency-${threat.urgency}`}>
+                  <div className="threat-header">
+                    <span className="competitor">{threat.competitor}</span>
+                    <span className={`urgency-badge ${threat.urgency}`}>{threat.urgency} priority</span>
+                  </div>
+                  <div className="threat-content">{threat.threat}</div>
+                  <div className="pr-impact">{threat.pr_impact}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {data.narrative_opportunities && data.narrative_opportunities.length > 0 && (
+          <div className="opportunities-panel">
+            <h4>PR Opportunities</h4>
+            <div className="opportunities-list">
+              {data.narrative_opportunities.map((opp, idx) => (
+                <div key={idx} className={`opportunity-card value-${opp.pr_value}`}>
+                  <div className="opportunity-header">
+                    <span className={`value-badge ${opp.pr_value}`}>{opp.pr_value} value</span>
+                    <span className="timing">{opp.timing}</span>
+                  </div>
+                  <div className="opportunity-content">{opp.opportunity}</div>
+                  <div className="trigger">Trigger: {opp.trigger}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderStakeholderSentimentTab = (data) => {
+    return (
+      <div className="intelligence-section stakeholder-sentiment-tab">
+        <div className="sentiment-overview-panel">
+          <div className="panel-header">
+            <StakeholderIcon size={20} color="#00ff88" />
+            <h3>Sentiment Trajectory</h3>
+          </div>
+          <div className="trajectory-display">
+            <span className={`trajectory ${data.overall_trajectory}`}>
+              {data.overall_trajectory || 'stable'}
+            </span>
+          </div>
+          <p>{data.pr_implications || 'Monitoring stakeholder sentiment...'}</p>
+        </div>
+        
+        {data.sentiment_drivers && data.sentiment_drivers.length > 0 && (
+          <div className="drivers-panel">
+            <h4>Stakeholder Groups</h4>
+            <div className="drivers-grid">
+              {data.sentiment_drivers.map((driver, idx) => (
+                <div key={idx} className={`driver-card priority-${driver.pr_priority}`}>
+                  <div className="driver-header">
+                    <span className="group">{driver.stakeholder_group}</span>
+                    <span className={`sentiment-badge ${driver.sentiment}`}>{driver.sentiment}</span>
+                  </div>
+                  <div className="trending">Trending: {driver.trending}</div>
+                  {driver.key_concerns && (
+                    <div className="concerns">
+                      Concerns: {driver.key_concerns.join(', ')}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderMediaMomentumTab = (data) => {
+    return (
+      <div className="intelligence-section media-momentum-tab">
+        <div className="momentum-panel">
+          <div className="panel-header">
+            <MediaIcon size={20} color="#ffcc00" />
+            <h3>Media Momentum</h3>
+          </div>
+          <div className="momentum-metrics">
+            <div className="metric">
+              <span className="label">Coverage:</span>
+              <span className={`value ${data.coverage_trajectory}`}>{data.coverage_trajectory || 'stable'}</span>
+            </div>
+            <div className="metric">
+              <span className="label">Narrative Alignment:</span>
+              <span className={`value ${data.narrative_alignment}`}>{data.narrative_alignment || 'mixed'}</span>
+            </div>
+          </div>
+        </div>
+        
+        {data.pr_leverage_points && data.pr_leverage_points.length > 0 && (
+          <div className="leverage-panel">
+            <h4>PR Leverage Points</h4>
+            <div className="leverage-list">
+              {data.pr_leverage_points.map((point, idx) => (
+                <div key={idx} className={`leverage-card momentum-${point.momentum}`}>
+                  <div className="leverage-header">
+                    <span className="topic">{point.topic}</span>
+                    <span className={`momentum-badge ${point.momentum}`}>{point.momentum}</span>
+                  </div>
+                  <div className="relevance">{point.relevance_to_us}</div>
+                  <div className="opportunity">{point.pr_opportunity}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderStrategicSignalsTab = (data) => {
+    return (
+      <div className="intelligence-section strategic-signals-tab">
+        <div className="regulatory-panel">
+          <div className="panel-header">
+            <ChartIcon size={20} color="#8800ff" />
+            <h3>Regulatory Implications</h3>
+          </div>
+          <p>{data.regulatory_implications || 'Monitoring regulatory environment...'}</p>
+        </div>
+        
+        {data.industry_narrative_shifts && data.industry_narrative_shifts.length > 0 && (
+          <div className="shifts-panel">
+            <h4>Industry Narrative Shifts</h4>
+            <div className="shifts-list">
+              {data.industry_narrative_shifts.map((shift, idx) => (
+                <div key={idx} className={`shift-card impact-${shift.pr_impact}`}>
+                  <div className="shift-header">
+                    <span className={`impact-badge ${shift.pr_impact}`}>{shift.pr_impact}</span>
+                  </div>
+                  <div className="shift-content">{shift.shift}</div>
+                  <div className="preparation">{shift.preparation_needed}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {data.pr_action_triggers && data.pr_action_triggers.length > 0 && (
+          <div className="triggers-panel">
+            <h4>PR Action Triggers</h4>
+            <div className="triggers-list">
+              {data.pr_action_triggers.map((trigger, idx) => (
+                <div key={idx} className={`trigger-card urgency-${trigger.response_urgency}`}>
+                  <div className="trigger-header">
+                    <span className={`urgency-badge ${trigger.response_urgency}`}>{trigger.response_urgency}</span>
+                  </div>
+                  <div className="signal">{trigger.signal}</div>
+                  <div className="implication">{trigger.pr_implication}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderMarketActivityTab = (data) => {
     return (
       <div className="intelligence-section market-activity-tab">

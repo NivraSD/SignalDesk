@@ -240,10 +240,78 @@ class ClaudeIntelligenceServiceV2 {
   }
 
   async performAnalysis(organization, goals, timeframe, options, profile, intelligenceGuidance) {
-    console.log('🎯 Gathering intelligence with specialized personas');
+    console.log('🎯 Calling Intelligence Orchestrator Edge Function');
     console.log('📊 Organization:', organization.name, '| Industry:', organization.industry);
     console.log('🎯 Active goals:', Object.entries(goals).filter(([k,v]) => v).map(([k]) => k));
-    console.log('📋 Using profile guidance:', intelligenceGuidance?.search_priorities?.slice(0, 3));
+    
+    try {
+      // Call the orchestrator Edge Function that handles the complete flow
+      const response = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-orchestrator`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.supabaseKey}`
+        },
+        body: JSON.stringify({
+          organization: {
+            name: organization.name,
+            industry: organization.industry,
+            competitors: organization.competitors || [],
+            stakeholders: organization.stakeholders || ['investors', 'customers', 'employees', 'media', 'regulators'],
+            topics: organization.topics || [],
+            keywords: organization.keywords || []
+          },
+          goals: goals || {},
+          timeframe: timeframe || '7d'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Orchestrator failed with status ${response.status}`);
+      }
+
+      const orchestratorResult = await response.json();
+      
+      if (!orchestratorResult.success) {
+        throw new Error(orchestratorResult.error || 'Orchestration failed');
+      }
+
+      console.log('✅ Orchestrator response received:', {
+        hasIntelligence: !!orchestratorResult.intelligence,
+        hasSynthesized: !!orchestratorResult.intelligence?.synthesized,
+        synthesizedKeys: Object.keys(orchestratorResult.intelligence?.synthesized || {}),
+        hasTabs: !!orchestratorResult.intelligence?.tabs,
+        tabKeys: Object.keys(orchestratorResult.intelligence?.tabs || {})
+      });
+
+      // Use dataFormatter to format the orchestrator response
+      const formattedData = dataFormatterService.formatForDisplay(orchestratorResult);
+      
+      // Store key insights from the formatted data
+      await this.storeKeyInsights(formattedData, organization);
+      
+      // Update profile with new intelligence
+      await organizationProfileService.updateProfile(organization, formattedData);
+      
+      console.log('📋 Formatted data structure:', {
+        success: formattedData.success,
+        tabKeys: Object.keys(formattedData.tabs || {}),
+        hasStats: !!formattedData.stats,
+        statsValues: formattedData.stats
+      });
+      
+      return formattedData;
+    } catch (error) {
+      console.error('❌ Orchestrator call failed:', error);
+      
+      // Fallback to local synthesis if orchestrator fails
+      console.log('⚠️ Falling back to local synthesis...');
+      return await this.performLocalAnalysis(organization, goals, timeframe, options, profile, intelligenceGuidance);
+    }
+  }
+
+  async performLocalAnalysis(organization, goals, timeframe, options, profile, intelligenceGuidance) {
+    console.log('🎯 Performing local analysis (fallback)');
     
     // Step 1: Enhance organization data with Claude before MCP calls
     const enhancedOrganization = await this.enhanceOrganizationWithClaude(organization, goals);
