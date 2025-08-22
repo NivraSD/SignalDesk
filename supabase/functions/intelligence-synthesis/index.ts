@@ -108,7 +108,7 @@ async function synthesizeIntelligence(gatheringData: any, organization: any) {
         critical_alerts: synthesis.overview?.notable_patterns || [],
         recommendations: [], // V4 doesn't make recommendations - pure analysis
         
-        // Full synthesized analysis for reference
+        // Full synthesized analysis for reference - THIS IS KEY FOR DISPLAY
         synthesized: synthesis,
         
         // Competitive intelligence (from competition tab)

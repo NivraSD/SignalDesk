@@ -314,7 +314,12 @@ export class IntelligenceCore {
         ...config.competitors.slice(0, 2)
       ].filter(Boolean).join(' OR ')
       
-      const newsUrl = `https://newsapi.org/v2/everything?q=${encodeURIComponent(searchTerms)}&language=en&sortBy=publishedAt&pageSize=10&apiKey=${NEWS_API_KEY}`
+      // Get last 7 days of news (can be configured)
+      const toDate = new Date().toISOString().split('T')[0]
+      const fromDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      
+      // Get more articles (50 instead of 10) and filter by date
+      const newsUrl = `https://newsapi.org/v2/everything?q=${encodeURIComponent(searchTerms)}&from=${fromDate}&to=${toDate}&language=en&sortBy=publishedAt&pageSize=50&apiKey=${NEWS_API_KEY}`
       
       // Add timeout to prevent hanging
       const controller = new AbortController()

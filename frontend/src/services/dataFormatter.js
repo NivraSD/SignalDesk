@@ -72,31 +72,32 @@ class DataFormatterService {
     // Extract PR strategy summary from synthesis
     let executiveSummaryText = '';
     
-    // Check if we have rich synthesized analysis
-    if (intelligence.synthesized?.pr_strategy_summary) {
-      executiveSummaryText = intelligence.synthesized.pr_strategy_summary;
+    // Check if we have V4 analytical synthesis
+    if (intelligence.synthesized?.overview?.data_summary) {
+      executiveSummaryText = intelligence.synthesized.overview.data_summary;
     } else if (intelligence.synthesized?.executive_summary) {
       executiveSummaryText = intelligence.synthesized.executive_summary;
     } else if (typeof intelligence.executive_summary === 'string') {
       executiveSummaryText = intelligence.executive_summary;
     } else {
-      executiveSummaryText = 'Executive PR intelligence analysis in progress. Synthesizing insights from competitive landscape, stakeholder sentiment, media narratives, and predictive scenarios.';
+      executiveSummaryText = 'Intelligence analysis in progress.';
     }
     
     return {
       executive_summary: executiveSummaryText,
       key_insights: this.extractArray(
+        intelligence.synthesized?.overview?.key_developments || 
         intelligence.synthesized?.key_insights || 
         intelligence.key_insights
       ),
       critical_alerts: this.extractArray(
+        intelligence.synthesized?.overview?.notable_patterns || 
         intelligence.synthesized?.critical_alerts || 
-        intelligence.alerts || 
         intelligence.critical_alerts
       ),
       recommended_actions: this.extractArray(
-        intelligence.synthesized?.recommendations || 
-        intelligence.recommendations
+        intelligence.synthesized?.overview?.data_gaps || 
+        [] // V4 doesn't make recommendations
       ),
       // Add second opinion if available
       alternative_perspective: intelligence.synthesized?.divergent_views?.[0] || null
@@ -104,8 +105,8 @@ class DataFormatterService {
   }
   
   formatCompetitionTab(intelligence) {
-    // Extract rich competitive analysis from synthesis
-    const competitiveData = intelligence.synthesized?.competitive_analysis || {};
+    // Extract V4 competitive analysis from synthesis
+    const competitiveData = intelligence.synthesized?.competition || intelligence.synthesized?.competitive_analysis || {};
     
     // Build competitor profiles
     const competitorProfiles = {};
@@ -116,7 +117,7 @@ class DataFormatterService {
           competitorProfiles[name] = {
             threat_level: comp.threat_level || 'medium',
             market_position: comp.market_position || { position: 'competitive' },
-            latest_developments: comp.developments || competitiveData.competitor_moves || [],
+            latest_developments: comp.developments || competitiveData.competitor_activity || competitiveData.competitor_moves || [],
             opportunities: comp.opportunities || []
           };
         }

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>V4 Synthesizer Direct Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        pre { white-space: pre-wrap; word-wrap: break-word; background: #f9f9f9; padding: 10px; max-height: 400px; overflow-y: auto; }
+        .timing { color: blue; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Testing V4 Synthesizer Directly</h1>
+    <button onclick="testSynthesis()">Test Synthesis</button>
+    <div id="results"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        async function testSynthesis() {
+            const results = document.getElementById('results');
+            results.innerHTML = '';
+            
+            // First, let's gather some real data
+            const startGather = Date.now();
+            results.innerHTML += '<div class="section">Gathering data for Toyota...</div>';
+            
+            const gatherResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-gathering`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                },
+                body: JSON.stringify({
+                    organization: { name: 'Toyota', industry: 'automotive' },
+                    discovered_context: {
+                        primary_category: 'automotive',
+                        competitors: ['Honda', 'Nissan', 'Ford', 'GM', 'Tesla'],
+                        search_keywords: ['Toyota', 'automotive', 'electric vehicles', 'hybrid'],
+                        scrape_targets: ['https://www.toyota.com', 'https://www.honda.com']
+                    }
+                })
+            });
+            
+            const gatherData = await gatherResponse.json();
+            const gatherTime = ((Date.now() - startGather) / 1000).toFixed(1);
+            
+            results.innerHTML += `<div class="section">
+                <p class="timing">Gathering took: ${gatherTime} seconds</p>
+                <p>Success: ${gatherData.success}</p>
+                <p>Articles: ${gatherData.statistics?.total_articles || 0}</p>
+                <p>Sources succeeded: ${gatherData.statistics?.sources_succeeded || 0}</p>
+                <details>
+                    <summary>Raw intelligence data</summary>
+                    <pre>${JSON.stringify(gatherData.raw_intelligence, null, 2)}</pre>
+                </details>
+            </div>`;
+            
+            // Now test synthesis with this real data
+            const startSynth = Date.now();
+            results.innerHTML += '<div class="section">Testing synthesis...</div>';
+            
+            const synthResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-synthesis`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                },
+                body: JSON.stringify({
+                    gathering_data: gatherData,
+                    organization: {
+                        name: 'Toyota',
+                        industry: 'automotive',
+                        competitors: ['Honda', 'Nissan', 'Ford', 'GM', 'Tesla']
+                    }
+                })
+            });
+            
+            const synthData = await synthResponse.json();
+            const synthTime = ((Date.now() - startSynth) / 1000).toFixed(1);
+            
+            results.innerHTML += `<div class="section">
+                <p class="timing">Synthesis took: ${synthTime} seconds</p>
+                <p>Success: ${synthData.success}</p>
+                <p>Synthesis complete: ${synthData.synthesis_complete}</p>
+                <p>Insights: ${synthData.statistics?.total_insights || 0}</p>
+                <p>Personas engaged: ${synthData.statistics?.personas_engaged || 0}</p>
+                
+                <h3>Intelligence Returned:</h3>
+                <details open>
+                    <summary>Executive Summary</summary>
+                    <pre>${synthData.intelligence?.executive_summary || 'None'}</pre>
+                </details>
+                
+                <details>
+                    <summary>Key Insights</summary>
+                    <pre>${JSON.stringify(synthData.intelligence?.key_insights, null, 2)}</pre>
+                </details>
+                
+                <details>
+                    <summary>Synthesized Data</summary>
+                    <pre>${JSON.stringify(synthData.intelligence?.synthesized, null, 2)}</pre>
+                </details>
+                
+                <details>
+                    <summary>Full Response</summary>
+                    <pre>${JSON.stringify(synthData, null, 2)}</pre>
+                </details>
+            </div>`;
+            
+            // Also test V4 directly to see what it returns
+            const startV4 = Date.now();
+            results.innerHTML += '<div class="section">Testing V4 synthesizer directly...</div>';
+            
+            const v4Response = await fetch(`${SUPABASE_URL}/functions/v1/claude-intelligence-synthesizer-v4`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                },
+                body: JSON.stringify({
+                    mcp_data: gatherData.raw_intelligence || {},
+                    organization: {
+                        name: 'Toyota',
+                        industry: 'automotive',
+                        competitors: ['Honda', 'Nissan', 'Ford']
+                    },
+                    discovery_context: {
+                        primary_category: 'automotive',
+                        competitors: ['Honda', 'Nissan', 'Ford'],
+                        search_keywords: ['Toyota', 'automotive']
+                    }
+                })
+            });
+            
+            const v4Data = await v4Response.json();
+            const v4Time = ((Date.now() - startV4) / 1000).toFixed(1);
+            
+            results.innerHTML += `<div class="section">
+                <p class="timing">V4 direct took: ${v4Time} seconds</p>
+                <p>Success: ${v4Data.success}</p>
+                <p>Error: ${v4Data.error || 'None'}</p>
+                
+                <h3>V4 Analysis:</h3>
+                <pre>${JSON.stringify(v4Data.analysis, null, 2)}</pre>
+            </div>`;
+        }
+    </script>
+</body>
+</html>
