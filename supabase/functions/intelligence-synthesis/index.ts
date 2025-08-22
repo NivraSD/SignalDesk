@@ -14,8 +14,13 @@ async function callClaudeSynthesizer(data: any, organization: any) {
     const timeoutId = setTimeout(() => controller.abort(), 50000) // 50 seconds for Claude (needs 38+ to complete)
     
     // Use V7 for entity-focused data, V6 for legacy
-    const synthesizerVersion = data.raw_intelligence?.['entity-actions'] ? 
+    const hasEntityActions = !!(data['entity-actions'])
+    const synthesizerVersion = hasEntityActions ? 
       'claude-intelligence-synthesizer-v7' : 'claude-intelligence-synthesizer-v6'
+    
+    console.log(`📊 Selecting synthesizer: ${synthesizerVersion}`)
+    console.log(`   Has entity-actions: ${hasEntityActions}`)
+    console.log(`   Data keys: ${Object.keys(data).join(', ')}`)
     
     const response = await fetch(`${SUPABASE_URL}/functions/v1/${synthesizerVersion}`, {
       method: 'POST',
@@ -120,8 +125,15 @@ async function synthesizeIntelligence(gatheringData: any, organization: any) {
     
     console.log('📊 Synthesis context:')
     console.log(`   Sources: ${result.statistics.total_sources}`)
-    console.log(`   Competitors: ${fullOrganization.competitors.length}`)
-    console.log(`   Keywords: ${fullOrganization.keywords.length}`)
+    if (isEntityFocused) {
+      const entityCount = Object.values(fullOrganization.entities_monitored || {})
+        .reduce((acc: number, arr: any) => acc + (arr?.length || 0), 0)
+      console.log(`   Entities monitored: ${entityCount}`)
+      console.log(`   Topics tracked: ${fullOrganization.topics_tracked?.length || 0}`)
+    } else {
+      console.log(`   Competitors: ${fullOrganization.competitors?.length || 0}`)
+      console.log(`   Keywords: ${fullOrganization.keywords?.length || 0}`)
+    }
     
     // Call Claude for comprehensive synthesis
     const synthesisResult = await callClaudeSynthesizer(mcpData, fullOrganization)

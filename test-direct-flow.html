@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Direct Intelligence Flow Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            padding: 40px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #00ff88;
+            margin-bottom: 30px;
+        }
+        button {
+            background: #00ff88;
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background: #00cc70;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            background: #0d0d0d;
+            border-radius: 6px;
+            font-family: 'Monaco', monospace;
+            font-size: 14px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .success { color: #00ff88; }
+        .error { color: #ff4466; }
+        .info { color: #00ccff; }
+        .warning { color: #ffcc00; }
+        pre {
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Direct Intelligence Flow Test</h1>
+        
+        <div>
+            <button onclick="testDiscoveryV2()">1. Test Discovery V2</button>
+            <button onclick="testGatheringV2()">2. Test Gathering V2</button>
+            <button onclick="testSynthesis()">3. Test Synthesis</button>
+            <button onclick="testFullFlow()">4. Test Full Flow</button>
+        </div>
+        
+        <div id="status" class="status"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+
+        let discoveryData = null;
+        let gatheringData = null;
+
+        function log(message, type = 'info') {
+            const element = document.getElementById('status');
+            const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+            element.innerHTML += `<div class="${type}">[${timestamp}] ${message}</div>`;
+            element.scrollTop = element.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('status').innerHTML = '';
+        }
+
+        async function testDiscoveryV2() {
+            clearLog();
+            log('Testing Discovery V2...', 'info');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-discovery-v2`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: {
+                            name: 'Toyota',
+                            industry: 'automotive'
+                        }
+                    })
+                });
+
+                const data = await response.json();
+                discoveryData = data;
+                
+                log('Discovery V2 Response:', 'success');
+                log(`<pre>${JSON.stringify(data, null, 2)}</pre>`, 'info');
+                
+                if (data.monitoring_targets) {
+                    const entityCount = Object.values(data.monitoring_targets.entities_to_monitor || {})
+                        .reduce((acc, arr) => acc + (arr?.length || 0), 0);
+                    log(`✅ Found ${entityCount} entities to monitor`, 'success');
+                    log(`✅ Found ${data.monitoring_targets.topics_to_track?.length || 0} topics to track`, 'success');
+                }
+                
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testGatheringV2() {
+            if (!discoveryData) {
+                log('Please run Discovery V2 first', 'error');
+                return;
+            }
+            
+            clearLog();
+            log('Testing Gathering V2...', 'info');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-gathering-v2`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        monitoring_targets: discoveryData.monitoring_targets,
+                        organization: {
+                            name: 'Toyota',
+                            industry: 'automotive'
+                        }
+                    })
+                });
+
+                const data = await response.json();
+                gatheringData = data;
+                
+                log('Gathering V2 Response:', 'success');
+                log(`<pre>${JSON.stringify(data, null, 2)}</pre>`, 'info');
+                
+                if (data.raw_intelligence) {
+                    log(`✅ Gathered intelligence from ${Object.keys(data.raw_intelligence).length} sources`, 'success');
+                    log(`✅ Entity actions: ${data.statistics?.entity_actions || 0}`, 'success');
+                    log(`✅ Trend points: ${data.statistics?.trend_points || 0}`, 'success');
+                }
+                
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSynthesis() {
+            if (!gatheringData || !discoveryData) {
+                log('Please run Discovery V2 and Gathering V2 first', 'error');
+                return;
+            }
+            
+            clearLog();
+            log('Testing Synthesis...', 'info');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-synthesis`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        gathering_data: {
+                            ...gatheringData,
+                            monitoring_targets: discoveryData.monitoring_targets
+                        },
+                        organization: {
+                            name: 'Toyota',
+                            industry: 'automotive'
+                        }
+                    })
+                });
+
+                const data = await response.json();
+                
+                log('Synthesis Response:', 'success');
+                log(`<pre>${JSON.stringify(data, null, 2)}</pre>`, 'info');
+                
+                if (data.intelligence) {
+                    log('Intelligence structure:', 'warning');
+                    log(`Has synthesized: ${!!data.intelligence.synthesized}`, 'info');
+                    log(`Has tabs: ${!!data.intelligence.tabs}`, 'info');
+                    log(`Intelligence keys: ${Object.keys(data.intelligence).join(', ')}`, 'info');
+                    
+                    if (data.intelligence.synthesized) {
+                        log(`Synthesized keys: ${Object.keys(data.intelligence.synthesized).join(', ')}`, 'success');
+                    }
+                    if (data.intelligence.tabs) {
+                        log(`Tab keys: ${Object.keys(data.intelligence.tabs).join(', ')}`, 'success');
+                    }
+                }
+                
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testFullFlow() {
+            await testDiscoveryV2();
+            await new Promise(r => setTimeout(r, 1000));
+            await testGatheringV2();
+            await new Promise(r => setTimeout(r, 1000));
+            await testSynthesis();
+        }
+    </script>
+</body>
+</html>
