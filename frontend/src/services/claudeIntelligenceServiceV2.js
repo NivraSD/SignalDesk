@@ -245,7 +245,7 @@ class ClaudeIntelligenceServiceV2 {
     console.log('🎯 Active goals:', Object.entries(goals).filter(([k,v]) => v).map(([k]) => k));
     
     // Try orchestrator first, but quickly fallback to local if it fails
-    const USE_ORCHESTRATOR = false; // Disabled for now until we fix the orchestrator
+    const USE_ORCHESTRATOR = true; // Re-enabled with V2 entity-focused intelligence
     
     if (USE_ORCHESTRATOR) {
       try {

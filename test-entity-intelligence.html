@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entity-Focused Intelligence Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            padding: 40px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #00ff88;
+            margin-bottom: 30px;
+        }
+        .section {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #00ff88;
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #00cc70;
+        }
+        button:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            background: #0d0d0d;
+            border-radius: 6px;
+            font-family: 'Monaco', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success { color: #00ff88; }
+        .error { color: #ff4466; }
+        .info { color: #00ccff; }
+        .warning { color: #ffcc00; }
+        .critical { color: #ff00ff; font-weight: bold; }
+        
+        .entity-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .entity-card {
+            background: #0d0d0d;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 3px solid #00ff88;
+        }
+        .entity-card.critical {
+            border-left-color: #ff00ff;
+        }
+        .entity-card.high {
+            border-left-color: #ff4466;
+        }
+        .entity-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .entity-type {
+            color: #888;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        pre {
+            background: #0d0d0d;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Entity-Focused Intelligence System Test</h1>
+        
+        <div class="section">
+            <h2>1. Entity & Topic Discovery (Claude Initial Analysis)</h2>
+            <input type="text" id="orgName" placeholder="Organization Name (e.g., Tesla)" style="padding: 10px; margin-right: 10px; width: 200px;">
+            <input type="text" id="orgIndustry" placeholder="Industry (e.g., automotive)" style="padding: 10px; margin-right: 10px; width: 200px;">
+            <button onclick="discoverEntities()">Discover Entities to Monitor</button>
+            <div id="discovery-status" class="status"></div>
+            <div id="entities-display" class="entity-grid"></div>
+        </div>
+
+        <div class="section">
+            <h2>2. Track Entity Actions (News Intelligence)</h2>
+            <button onclick="trackEntityActions()" id="track-btn" disabled>Track Entity Actions</button>
+            <div id="entity-tracking-status" class="status"></div>
+        </div>
+
+        <div class="section">
+            <h2>3. Monitor Trends (Topics Intelligence)</h2>
+            <button onclick="monitorTrends()" id="trends-btn" disabled>Monitor Industry Trends</button>
+            <div id="trends-status" class="status"></div>
+        </div>
+
+        <div class="section">
+            <h2>4. Full Intelligence Flow</h2>
+            <button onclick="runFullFlow()">Run Complete Intelligence Cycle</button>
+            <div id="full-flow-status" class="status"></div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+
+        let discoveredEntities = null;
+        let discoveredTopics = null;
+
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+            element.innerHTML += `<div class="${type}">[${timestamp}] ${message}</div>`;
+            element.scrollTop = element.scrollHeight;
+        }
+
+        async function discoverEntities() {
+            const orgName = document.getElementById('orgName').value || 'Tesla';
+            const orgIndustry = document.getElementById('orgIndustry').value || 'automotive';
+            
+            const statusEl = document.getElementById('discovery-status');
+            statusEl.innerHTML = '';
+            
+            log('discovery-status', `Starting entity discovery for ${orgName}...`, 'info');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-discovery-v2`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: {
+                            name: orgName,
+                            industry: orgIndustry
+                        }
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Discovery failed');
+                }
+
+                log('discovery-status', '✅ Entity discovery successful!', 'success');
+                
+                // Store discovered entities and topics
+                discoveredEntities = data.monitoring_targets.entities_to_monitor;
+                discoveredTopics = data.monitoring_targets.topics_to_track;
+                
+                // Display entities
+                displayEntities(discoveredEntities);
+                
+                // Log summary
+                const entityCount = Object.values(discoveredEntities).reduce((acc, arr) => acc + arr.length, 0);
+                log('discovery-status', `Found ${entityCount} entities to monitor:`, 'info');
+                
+                for (const [type, entities] of Object.entries(discoveredEntities)) {
+                    if (entities.length > 0) {
+                        log('discovery-status', `  ${type}: ${entities.length} entities`, 'info');
+                    }
+                }
+                
+                log('discovery-status', `Topics to track: ${discoveredTopics.map(t => t.topic).join(', ')}`, 'info');
+                
+                // Enable next steps
+                document.getElementById('track-btn').disabled = false;
+                document.getElementById('trends-btn').disabled = false;
+                
+            } catch (error) {
+                log('discovery-status', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        function displayEntities(entities) {
+            const display = document.getElementById('entities-display');
+            display.innerHTML = '';
+            
+            for (const [type, entityList] of Object.entries(entities)) {
+                if (!entityList || entityList.length === 0) continue;
+                
+                for (const entity of entityList.slice(0, 5)) {
+                    const card = document.createElement('div');
+                    card.className = `entity-card ${entity.priority || 'medium'}`;
+                    card.innerHTML = `
+                        <div class="entity-name">${entity.name}</div>
+                        <div class="entity-type">${type}</div>
+                        <div style="color: #888; font-size: 12px; margin-top: 5px;">
+                            ${entity.why || entity.role || ''}
+                        </div>
+                        <div style="color: ${entity.priority === 'high' ? '#ff4466' : '#00ff88'}; font-size: 11px; margin-top: 3px;">
+                            Priority: ${entity.priority || 'medium'}
+                        </div>
+                    `;
+                    display.appendChild(card);
+                }
+            }
+        }
+
+        async function trackEntityActions() {
+            if (!discoveredEntities) {
+                log('entity-tracking-status', 'Please discover entities first', 'error');
+                return;
+            }
+            
+            const statusEl = document.getElementById('entity-tracking-status');
+            statusEl.innerHTML = '';
+            
+            log('entity-tracking-status', 'Tracking entity actions in news...', 'info');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/entity-news-intelligence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        entities: discoveredEntities,
+                        organization: {
+                            name: document.getElementById('orgName').value || 'Tesla'
+                        }
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Tracking failed');
+                }
+
+                log('entity-tracking-status', `✅ Tracked ${data.intelligence.total_actions} entity actions!`, 'success');
+                
+                // Display critical and high priority actions
+                if (data.intelligence.key_movements.length > 0) {
+                    log('entity-tracking-status', '\n🚨 Key Movements:', 'warning');
+                    for (const movement of data.intelligence.key_movements.slice(0, 5)) {
+                        const typeClass = movement.pr_impact.includes('immediate') ? 'critical' : 'warning';
+                        log('entity-tracking-status', 
+                            `${movement.action}\n   "${movement.headline}"\n   Impact: ${movement.pr_impact}`, 
+                            typeClass);
+                    }
+                }
+                
+                // Summary by relevance
+                const relevance = data.intelligence.by_relevance;
+                log('entity-tracking-status', 
+                    `\nRelevance: Critical(${relevance.critical}) High(${relevance.high}) Medium(${relevance.medium})`, 
+                    'info');
+                
+            } catch (error) {
+                log('entity-tracking-status', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function monitorTrends() {
+            if (!discoveredTopics) {
+                log('trends-status', 'Please discover topics first', 'error');
+                return;
+            }
+            
+            const statusEl = document.getElementById('trends-status');
+            statusEl.innerHTML = '';
+            
+            log('trends-status', 'Monitoring industry trends...', 'info');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/trends-intelligence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        topics: discoveredTopics.map(t => t.topic),
+                        organization: {
+                            name: document.getElementById('orgName').value || 'Tesla'
+                        }
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Trend monitoring failed');
+                }
+
+                log('trends-status', `✅ Analyzed ${data.intelligence.metadata.data_points} trend data points!`, 'success');
+                
+                // Display hot topics
+                if (data.intelligence.summary.hot_topics?.length > 0) {
+                    log('trends-status', `\n🔥 Hot Topics: ${data.intelligence.summary.hot_topics.join(', ')}`, 'warning');
+                }
+                
+                // Display opportunities
+                if (data.intelligence.implications.opportunities?.length > 0) {
+                    log('trends-status', '\n💡 Opportunities:', 'success');
+                    for (const opp of data.intelligence.implications.opportunities) {
+                        log('trends-status', `  • ${opp.action}`, 'info');
+                    }
+                }
+                
+                // Display risks
+                if (data.intelligence.implications.risks?.length > 0) {
+                    log('trends-status', '\n⚠️ Risks:', 'warning');
+                    for (const risk of data.intelligence.implications.risks) {
+                        log('trends-status', `  • ${risk.risk}`, 'error');
+                    }
+                }
+                
+            } catch (error) {
+                log('trends-status', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function runFullFlow() {
+            const statusEl = document.getElementById('full-flow-status');
+            statusEl.innerHTML = '';
+            
+            log('full-flow-status', '🚀 Starting complete intelligence cycle...', 'info');
+            
+            // Step 1: Discover
+            log('full-flow-status', '\nPhase 1: Entity Discovery', 'warning');
+            await discoverEntities();
+            
+            // Step 2: Track entities
+            log('full-flow-status', '\nPhase 2: Entity Action Tracking', 'warning');
+            await trackEntityActions();
+            
+            // Step 3: Monitor trends
+            log('full-flow-status', '\nPhase 3: Trend Monitoring', 'warning');
+            await monitorTrends();
+            
+            log('full-flow-status', '\n✅ Intelligence cycle complete!', 'success');
+            log('full-flow-status', 'System is now monitoring:', 'info');
+            log('full-flow-status', `  • ${Object.values(discoveredEntities).reduce((acc, arr) => acc + arr.length, 0)} entities`, 'info');
+            log('full-flow-status', `  • ${discoveredTopics.length} topics`, 'info');
+        }
+    </script>
+</body>
+</html>

@@ -66,15 +66,39 @@ class IntelligenceOrchestratorService {
 
   async _executeOrchestration(organization, method) {
     try {
-      // PHASE 1-3: GATHERING
-      console.log('📡 Phase 1-3: Intelligence Gathering...');
-      const gatheringResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-gathering`, {
+      // PHASE 1: DISCOVERY V2 (Entity identification)
+      console.log('🔍 Phase 1: Entity Discovery V2...');
+      const discoveryResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-discovery-v2`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${this.supabaseKey}`
         },
         body: JSON.stringify({ organization })
+      });
+
+      if (!discoveryResponse.ok) {
+        throw new Error(`Discovery V2 failed: ${discoveryResponse.status}`);
+      }
+
+      const discoveryData = await discoveryResponse.json();
+      console.log('✅ Discovery V2 complete:', {
+        entities: Object.keys(discoveryData.monitoring_targets?.entities_to_monitor || {}),
+        topics: discoveryData.monitoring_targets?.topics_to_track?.length || 0
+      });
+
+      // PHASE 2-3: GATHERING V2 (Entity tracking)
+      console.log('📡 Phase 2-3: Intelligence Gathering V2...');
+      const gatheringResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-gathering-v2`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.supabaseKey}`
+        },
+        body: JSON.stringify({ 
+          monitoring_targets: discoveryData.monitoring_targets,
+          organization 
+        })
       });
 
       if (!gatheringResponse.ok) {
@@ -102,7 +126,10 @@ class IntelligenceOrchestratorService {
           'Authorization': `Bearer ${this.supabaseKey}`
         },
         body: JSON.stringify({
-          gathering_data: gatheringData,
+          gathering_data: {
+            ...gatheringData,
+            monitoring_targets: discoveryData.monitoring_targets
+          },
           organization
         })
       });
