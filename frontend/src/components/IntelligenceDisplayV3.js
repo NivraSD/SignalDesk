@@ -15,7 +15,8 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    console.log('🚀 IntelligenceDisplayV3 mounted with organization:', organization);
+    console.log('🚀 IntelligenceDisplayV3 mounted at:', new Date().toISOString());
+    console.log('📊 Initial organization:', organization);
   }, []); // Only log on actual mount
 
   useEffect(() => {
