@@ -20,8 +20,16 @@ class DataFormatterService {
     const intelligence = orchestratorResponse.intelligence || {};
     const stats = orchestratorResponse.statistics || {};
     
-    // Check if we have V5 analytical structure from synthesized data OR tabs
-    const isV5Structure = (intelligence.synthesized && (
+    // Check if we have V6 PR impact structure, V5 analytical structure, or tabs
+    const isV6Structure = intelligence.synthesized && (
+      intelligence.synthesized.narrative_landscape ||
+      intelligence.synthesized.competitive_dynamics ||
+      intelligence.synthesized.stakeholder_sentiment ||
+      intelligence.synthesized.media_momentum ||
+      intelligence.synthesized.strategic_signals
+    );
+    
+    const isV5Structure = !isV6Structure && ((intelligence.synthesized && (
       intelligence.synthesized.market_activity || 
       intelligence.synthesized.competitor_intelligence ||
       intelligence.synthesized.social_pulse ||
@@ -33,14 +41,15 @@ class DataFormatterService {
       intelligence.tabs.social_pulse ||
       intelligence.tabs.industry_signals ||
       intelligence.tabs.media_coverage
-    ));
+    )));
     
     console.log('🔍 Data structure detection:', { 
+      isV6Structure,
       isV5Structure, 
       hasSynthesized: !!intelligence.synthesized,
       synthesizedKeys: intelligence.synthesized ? Object.keys(intelligence.synthesized) : [],
+      hasV6Narrative: !!intelligence.synthesized?.narrative_landscape,
       hasV5Markets: !!intelligence.synthesized?.market_activity,
-      hasV5Competitor: !!intelligence.synthesized?.competitor_intelligence,
       intelligenceKeys: Object.keys(intelligence)
     });
     
@@ -49,8 +58,14 @@ class DataFormatterService {
       // CRITICAL: Include success field so claudeIntelligenceServiceV2 uses this data
       success: true,
       
-      // Tab format for display component - V5 Analytical Structure
-      tabs: isV5Structure ? {
+      // Tab format for display component - V6 PR Impact or V5 Analytical Structure
+      tabs: isV6Structure ? {
+        narrative_landscape: this.formatNarrativeLandscapeTab(intelligence),
+        competitive_dynamics: this.formatCompetitiveDynamicsTab(intelligence),
+        stakeholder_sentiment: this.formatStakeholderSentimentTab(intelligence),
+        media_momentum: this.formatMediaMomentumTab(intelligence),
+        strategic_signals: this.formatStrategicSignalsTab(intelligence)
+      } : isV5Structure ? {
         market_activity: this.formatMarketActivityTab(intelligence),
         competitor_intelligence: this.formatCompetitorIntelTab(intelligence),
         social_pulse: this.formatSocialPulseTab(intelligence),
@@ -297,6 +312,53 @@ class DataFormatterService {
       source_count: mediaData.source_count || 0,
       sentiment_trend: mediaData.sentiment_trend || 'neutral',
       top_narratives: mediaData.top_narratives || []
+    };
+  }
+
+  // V6 PR Impact Tab Formatters
+  formatNarrativeLandscapeTab(intelligence) {
+    const narrativeData = intelligence.synthesized?.narrative_landscape || {};
+    return {
+      current_position: narrativeData.current_position || 'Analyzing narrative position',
+      narrative_control: narrativeData.narrative_control || 'contested',
+      attention_flow: narrativeData.attention_flow || 'neutral',
+      key_developments: narrativeData.key_developments || []
+    };
+  }
+
+  formatCompetitiveDynamicsTab(intelligence) {
+    const competitiveData = intelligence.synthesized?.competitive_dynamics || {};
+    return {
+      pr_positioning: competitiveData.pr_positioning || 'Analyzing competitive PR landscape',
+      narrative_threats: competitiveData.narrative_threats || [],
+      narrative_opportunities: competitiveData.narrative_opportunities || []
+    };
+  }
+
+  formatStakeholderSentimentTab(intelligence) {
+    const sentimentData = intelligence.synthesized?.stakeholder_sentiment || {};
+    return {
+      overall_trajectory: sentimentData.overall_trajectory || 'stable',
+      pr_implications: sentimentData.pr_implications || 'Monitoring stakeholder sentiment',
+      sentiment_drivers: sentimentData.sentiment_drivers || []
+    };
+  }
+
+  formatMediaMomentumTab(intelligence) {
+    const mediaData = intelligence.synthesized?.media_momentum || {};
+    return {
+      coverage_trajectory: mediaData.coverage_trajectory || 'stable',
+      narrative_alignment: mediaData.narrative_alignment || 'mixed',
+      pr_leverage_points: mediaData.pr_leverage_points || []
+    };
+  }
+
+  formatStrategicSignalsTab(intelligence) {
+    const signalsData = intelligence.synthesized?.strategic_signals || {};
+    return {
+      regulatory_implications: signalsData.regulatory_implications || 'Monitoring regulatory environment',
+      industry_narrative_shifts: signalsData.industry_narrative_shifts || [],
+      pr_action_triggers: signalsData.pr_action_triggers || []
     };
   }
 

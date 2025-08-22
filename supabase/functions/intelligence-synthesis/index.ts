@@ -13,7 +13,7 @@ async function callClaudeSynthesizer(data: any, organization: any) {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 50000) // 50 seconds for Claude (needs 38+ to complete)
     
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/claude-intelligence-synthesizer-v5`, {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/claude-intelligence-synthesizer-v6`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

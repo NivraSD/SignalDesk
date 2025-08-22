@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug V5 Synthesis</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+        pre { background: #f8f9fa; padding: 10px; overflow-x: auto; white-space: pre-wrap; }
+        button { padding: 10px 20px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug V5 Synthesis Structure</h1>
+    
+    <div class="test-section">
+        <h2>Test Complete Flow</h2>
+        <button onclick="testCompleteFlow()">Run Complete Intelligence Flow</button>
+        <div id="complete-results"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+
+        async function testCompleteFlow() {
+            const resultsDiv = document.getElementById('complete-results');
+            resultsDiv.innerHTML = '<p>🔍 Running complete intelligence flow...</p>';
+            
+            try {
+                // Step 1: Gathering
+                console.log('Step 1: Gathering...');
+                const gatheringResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-gathering`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: {
+                            name: 'Tesla',
+                            industry: 'automotive'
+                        }
+                    })
+                });
+
+                const gatheringData = await gatheringResponse.json();
+                console.log('Gathering result:', gatheringData);
+                
+                // Step 2: Synthesis
+                console.log('Step 2: Synthesis...');
+                const synthesisResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-synthesis`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        gathering_data: gatheringData,
+                        organization: {
+                            name: 'Tesla',
+                            industry: 'automotive'
+                        }
+                    })
+                });
+
+                const synthesisData = await synthesisResponse.json();
+                console.log('Synthesis result:', synthesisData);
+                
+                // Analyze the structure
+                const analysis = {
+                    success: synthesisData.success,
+                    hasIntelligence: !!synthesisData.intelligence,
+                    intelligenceKeys: Object.keys(synthesisData.intelligence || {}),
+                    synthesizedKeys: Object.keys(synthesisData.intelligence?.synthesized || {}),
+                    tabsKeys: Object.keys(synthesisData.intelligence?.tabs || {}),
+                    
+                    // Check V5 structure
+                    hasMarketActivity: !!synthesisData.intelligence?.synthesized?.market_activity,
+                    hasCompetitorIntel: !!synthesisData.intelligence?.synthesized?.competitor_intelligence,
+                    hasSocialPulse: !!synthesisData.intelligence?.synthesized?.social_pulse,
+                    hasIndustrySignals: !!synthesisData.intelligence?.synthesized?.industry_signals,
+                    hasMediaCoverage: !!synthesisData.intelligence?.synthesized?.media_coverage,
+                    
+                    // Check what's actually in synthesized
+                    synthesizedType: typeof synthesisData.intelligence?.synthesized,
+                    synthesizedIsArray: Array.isArray(synthesisData.intelligence?.synthesized),
+                    
+                    // Sample data
+                    synthesizedSample: synthesisData.intelligence?.synthesized ? 
+                        JSON.stringify(synthesisData.intelligence.synthesized).substring(0, 200) : 'null'
+                };
+                
+                resultsDiv.innerHTML = `
+                    <div class="test-section ${synthesisData.success ? 'success' : 'error'}">
+                        <h3>📊 Complete Flow Results</h3>
+                        
+                        <h4>Gathering Phase:</h4>
+                        <ul>
+                            <li>Success: ${gatheringData.success}</li>
+                            <li>Sources Succeeded: ${gatheringData.statistics?.sources_succeeded || 0}</li>
+                            <li>Total Articles: ${gatheringData.statistics?.total_articles || 0}</li>
+                            <li>Competitors Found: ${gatheringData.statistics?.competitors_identified || 0}</li>
+                        </ul>
+                        
+                        <h4>Synthesis Phase:</h4>
+                        <ul>
+                            <li>Success: ${analysis.success}</li>
+                            <li>Has Intelligence: ${analysis.hasIntelligence}</li>
+                            <li>Intelligence Keys: ${analysis.intelligenceKeys.join(', ')}</li>
+                            <li>Synthesized Keys: ${analysis.synthesizedKeys.join(', ')}</li>
+                            <li>Tabs Keys: ${analysis.tabsKeys.join(', ')}</li>
+                        </ul>
+                        
+                        <h4>V5 Structure Check:</h4>
+                        <ul>
+                            <li>Market Activity: ${analysis.hasMarketActivity}</li>
+                            <li>Competitor Intel: ${analysis.hasCompetitorIntel}</li>
+                            <li>Social Pulse: ${analysis.hasSocialPulse}</li>
+                            <li>Industry Signals: ${analysis.hasIndustrySignals}</li>
+                            <li>Media Coverage: ${analysis.hasMediaCoverage}</li>
+                        </ul>
+                        
+                        <h4>Synthesized Data Type:</h4>
+                        <ul>
+                            <li>Type: ${analysis.synthesizedType}</li>
+                            <li>Is Array: ${analysis.synthesizedIsArray}</li>
+                            <li>Sample: <code>${analysis.synthesizedSample}</code></li>
+                        </ul>
+                        
+                        <details>
+                            <summary>Raw Gathering Data</summary>
+                            <pre>${JSON.stringify(gatheringData, null, 2)}</pre>
+                        </details>
+                        
+                        <details>
+                            <summary>Raw Synthesis Data</summary>
+                            <pre>${JSON.stringify(synthesisData, null, 2)}</pre>
+                        </details>
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                resultsDiv.innerHTML = `
+                    <div class="test-section error">
+                        <h3>❌ Error</h3>
+                        <p>${error.message}</p>
+                        <pre>${error.stack}</pre>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

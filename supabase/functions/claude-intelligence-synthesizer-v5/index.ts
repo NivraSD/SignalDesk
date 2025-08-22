@@ -1,5 +1,5 @@
 // Claude Intelligence Synthesizer V5 - Pure Analytical Intelligence
-// Focuses on analyzing and categorizing data without recommendations
+// No recommendations, just analysis of what IS happening
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
@@ -14,10 +14,16 @@ const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
 const INTELLIGENCE_ANALYST = {
   name: "Intelligence Analyst",
   role: "Analyze and categorize intelligence data into structured insights",
-  system_prompt: `You are an intelligence analyst. Your job is to analyze raw data and organize it into structured analytical categories. 
+  system_prompt: `You are an intelligence analyst that outputs ONLY valid JSON.
+
+CRITICAL INSTRUCTIONS:
+1. Return ONLY a valid JSON object
+2. Do NOT include any text before or after the JSON
+3. Do NOT start with "Here is" or "Based on" or any explanatory text
+4. Your response must start with { and end with }
+5. The JSON must be valid and parseable
 
 You DO NOT make strategic recommendations or tell companies what to do.
-You DO NOT provide advice or suggestions.
 You ONLY analyze what IS happening based on the data provided.
 
 Your analysis should be:
@@ -25,15 +31,7 @@ Your analysis should be:
 - Temporally organized (what happened when)
 - Source-attributed (where did this information come from)
 - Quantitative where possible (counts, percentages, trends)
-- Comparative (how does this compare to competitors or baseline)
-
-Focus on extracting:
-- Key events and announcements
-- Patterns in the data
-- Sentiment analysis from social sources
-- Competitive movements
-- Industry trends
-- Media coverage patterns`
+- Comparative (how does this compare to competitors or baseline)`
 }
 
 async function analyzeWithClaude(prompt: string, data: any) {
@@ -58,11 +56,80 @@ async function analyzeWithClaude(prompt: string, data: any) {
     })
 
     if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Claude API error:', response.status, errorText)
       throw new Error(`Claude API error: ${response.status}`)
     }
 
     const result = await response.json()
-    return JSON.parse(result.content[0].text)
+    let content = result.content[0].text
+    
+    // Clean up Claude's response to extract JSON
+    content = content.trim()
+    
+    // Remove common prefixes
+    const prefixes = ['Here is', 'Here\'s', 'Based on', 'The analysis', 'Below is']
+    for (const prefix of prefixes) {
+      if (content.toLowerCase().startsWith(prefix.toLowerCase())) {
+        const jsonStart = content.indexOf('{')
+        if (jsonStart !== -1) {
+          content = content.substring(jsonStart)
+        }
+      }
+    }
+    
+    // Remove markdown code blocks
+    if (content.includes('```json')) {
+      content = content.replace(/```json\s*/g, '').replace(/```/g, '')
+    } else if (content.includes('```')) {
+      content = content.replace(/```\s*/g, '')
+    }
+    
+    // Find JSON boundaries
+    const firstBrace = content.indexOf('{')
+    const lastBrace = content.lastIndexOf('}')
+    if (firstBrace !== -1 && lastBrace !== -1) {
+      content = content.substring(firstBrace, lastBrace + 1)
+    }
+    
+    try {
+      return JSON.parse(content)
+    } catch (parseError) {
+      console.error('Failed to parse Claude response:', content.substring(0, 500))
+      // Return a fallback structure
+      return {
+        market_activity: {
+          summary: "Unable to parse intelligence data",
+          statistics: { total_articles: 0, sources: 0, time_range: "N/A" },
+          key_findings: []
+        },
+        competitor_intelligence: {
+          summary: "Unable to parse intelligence data",
+          competitors_tracked: [],
+          total_actions: 0,
+          movements: []
+        },
+        social_pulse: {
+          summary: "Unable to parse intelligence data",
+          sentiment_breakdown: { positive: 0, neutral: 0, negative: 0 },
+          total_posts: 0,
+          trending_topics: [],
+          key_discussions: []
+        },
+        industry_signals: {
+          summary: "Unable to parse intelligence data",
+          indicators: [],
+          hiring_activity: { total_postings: 0, growth_rate: "N/A" }
+        },
+        media_coverage: {
+          summary: "Unable to parse intelligence data",
+          coverage_volume: 0,
+          source_count: 0,
+          sentiment_trend: "neutral",
+          top_narratives: []
+        }
+      }
+    }
   } catch (error) {
     console.error('Claude analysis error:', error)
     throw error
@@ -72,138 +139,122 @@ async function analyzeWithClaude(prompt: string, data: any) {
 async function synthesizeIntelligence(intelligenceData: any) {
   console.log('🧠 Starting V5 Analytical Intelligence Synthesis')
   
-  const prompt = `Analyze the provided intelligence data and organize it into these 5 analytical categories:
+  const prompt = `Analyze the provided intelligence data and organize it into these 5 analytical categories.
+
+REMEMBER: Return ONLY valid JSON, no text before or after.
 
 1. MARKET ACTIVITY - What's happening in the market right now
    - Recent news and announcements
    - Market movements and events
    - Breaking developments
-   - Include: total article count, time range, key events
 
 2. COMPETITOR INTELLIGENCE - Specific competitor actions
    - Competitor announcements and moves
    - Product launches
    - Leadership changes
    - Partnerships
-   - Include: competitors identified, number of actions tracked
 
 3. SOCIAL PULSE - Public sentiment and discussions
-   - Reddit sentiment breakdown (positive/neutral/negative counts)
+   - Reddit sentiment breakdown
    - Twitter engagement metrics
    - Trending topics and discussions
    - Community feedback themes
-   - Include: total posts analyzed, sentiment percentages
 
 4. INDUSTRY SIGNALS - Broader industry patterns
-   - Hiring trends (job posting counts)
+   - Hiring trends
    - Technology adoption patterns
    - Investment activities
    - Regulatory changes
-   - Include: quantitative indicators where available
 
 5. MEDIA COVERAGE - How organization is being covered
    - Press coverage volume
    - Coverage sentiment
    - Key narratives in media
    - Share of voice vs competitors
-   - Include: article count, source diversity
 
-For each category, provide:
-- A brief factual summary (1-2 sentences)
-- Key findings (3-5 bullet points with source attribution)
-- Relevant statistics and metrics
-- Temporal context (when things happened)
-
-Return a JSON object with this exact structure:
+Return ONLY this JSON structure (no other text):
 {
   "market_activity": {
-    "summary": "string",
+    "summary": "Brief factual summary of market activity",
     "statistics": {
-      "total_articles": number,
-      "sources": number,
-      "time_range": "string"
+      "total_articles": 0,
+      "sources": 0,
+      "time_range": "last 7 days"
     },
     "key_findings": [
       {
-        "finding": "string",
-        "source": "string",
-        "timestamp": "string",
-        "category": "string"
+        "finding": "What happened",
+        "source": "Where it came from",
+        "timestamp": "When it happened",
+        "category": "Type of event"
       }
     ]
   },
   "competitor_intelligence": {
-    "summary": "string",
-    "competitors_tracked": ["string"],
-    "total_actions": number,
+    "summary": "Brief summary of competitor activities",
+    "competitors_tracked": ["Company1", "Company2"],
+    "total_actions": 0,
     "movements": [
       {
-        "competitor": "string",
-        "action": "string",
-        "source": "string",
-        "timestamp": "string"
+        "competitor": "Company name",
+        "action": "What they did",
+        "source": "Where reported",
+        "timestamp": "When"
       }
     ]
   },
   "social_pulse": {
-    "summary": "string",
+    "summary": "Brief summary of social sentiment",
     "sentiment_breakdown": {
-      "positive": number,
-      "neutral": number,
-      "negative": number
+      "positive": 0,
+      "neutral": 0,
+      "negative": 0
     },
-    "total_posts": number,
-    "trending_topics": ["string"],
+    "total_posts": 0,
+    "trending_topics": ["topic1", "topic2"],
     "key_discussions": [
       {
-        "topic": "string",
-        "sentiment": "string",
-        "engagement": number,
-        "platform": "string"
+        "topic": "Discussion topic",
+        "sentiment": "positive/neutral/negative",
+        "engagement": 0,
+        "platform": "reddit/twitter"
       }
     ]
   },
   "industry_signals": {
-    "summary": "string",
+    "summary": "Brief summary of industry trends",
     "indicators": [
       {
-        "signal": "string",
-        "metric": "string",
-        "trend": "string",
-        "source": "string"
+        "signal": "What's happening",
+        "metric": "Quantitative measure",
+        "trend": "up/down/stable",
+        "source": "Data source"
       }
     ],
     "hiring_activity": {
-      "total_postings": number,
-      "growth_rate": "string"
+      "total_postings": 0,
+      "growth_rate": "percentage or N/A"
     }
   },
   "media_coverage": {
-    "summary": "string",
-    "coverage_volume": number,
-    "source_count": number,
-    "sentiment_trend": "string",
+    "summary": "Brief summary of media coverage",
+    "coverage_volume": 0,
+    "source_count": 0,
+    "sentiment_trend": "positive/neutral/negative",
     "top_narratives": [
       {
-        "narrative": "string",
-        "frequency": number,
-        "sources": ["string"]
+        "narrative": "Key story theme",
+        "frequency": 0,
+        "sources": ["source1", "source2"]
       }
     ]
   }
-}
-
-IMPORTANT: 
-- Do NOT include any recommendations or suggestions
-- Do NOT tell the organization what they should do
-- ONLY report what the data shows
-- Use actual numbers from the data
-- Attribute findings to specific sources`
+}`
 
   try {
     const analysis = await analyzeWithClaude(prompt, intelligenceData)
     
-    // Ensure we have all required sections
+    // Ensure we have all required sections with proper defaults
     const result = {
       market_activity: analysis.market_activity || {
         summary: "No market activity data available",
@@ -217,7 +268,7 @@ IMPORTANT:
         movements: []
       },
       social_pulse: analysis.social_pulse || {
-        summary: "No social data available",
+        summary: "No social media data available",
         sentiment_breakdown: { positive: 0, neutral: 0, negative: 0 },
         total_posts: 0,
         trending_topics: [],
@@ -264,28 +315,20 @@ function countDataSources(data: any): any {
     google: 0,
     pr: 0,
     scraper: 0,
-    rss: 0
+    rss: 0,
+    yahoo_finance: 0
   }
   
+  // Count sources from the raw intelligence data
   if (data.raw_intelligence) {
-    if (data.raw_intelligence['news-intelligence']?.totalArticles) {
-      sources.news = data.raw_intelligence['news-intelligence'].totalArticles
-    }
-    if (data.raw_intelligence['reddit-intelligence']?.totalDiscussions) {
-      sources.reddit = data.raw_intelligence['reddit-intelligence'].totalDiscussions
-    }
-    if (data.raw_intelligence['twitter-intelligence']?.totalTweets) {
-      sources.twitter = data.raw_intelligence['twitter-intelligence'].totalTweets
-    }
-    if (data.raw_intelligence['google-intelligence']?.totalResults) {
-      sources.google = data.raw_intelligence['google-intelligence'].totalResults
-    }
-    if (data.raw_intelligence['pr-intelligence']?.releases?.length) {
-      sources.pr = data.raw_intelligence['pr-intelligence'].releases.length
-    }
-    if (data.raw_intelligence['scraper-intelligence']?.websites_scraped) {
-      sources.scraper = data.raw_intelligence['scraper-intelligence'].websites_scraped
-    }
+    if (data.raw_intelligence['news-intelligence']) sources.news = 1
+    if (data.raw_intelligence['reddit-intelligence']) sources.reddit = 1
+    if (data.raw_intelligence['twitter-intelligence']) sources.twitter = 1
+    if (data.raw_intelligence['google-intelligence']) sources.google = 1
+    if (data.raw_intelligence['pr-intelligence']) sources.pr = 1
+    if (data.raw_intelligence['scraper-intelligence']) sources.scraper = 1
+    if (data.raw_intelligence['rss-proxy']) sources.rss = 1
+    if (data.raw_intelligence['yahoo-finance-intelligence']) sources.yahoo_finance = 1
   }
   
   return sources
@@ -293,17 +336,19 @@ function countDataSources(data: any): any {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
     const { intelligence } = await req.json()
     
     if (!intelligence) {
-      throw new Error('No intelligence data provided')
+      throw new Error('Intelligence data is required')
     }
     
-    console.log('📊 Received intelligence for V5 analytical synthesis')
+    console.log('📊 Processing intelligence for V5 synthesis')
+    console.log(`   Organization: ${intelligence.organization}`)
+    console.log(`   Data sources: ${Object.keys(intelligence.raw_intelligence || {}).length}`)
     
     const result = await synthesizeIntelligence(intelligence)
     
@@ -315,7 +360,7 @@ serve(async (req) => {
       }
     )
   } catch (error) {
-    console.error('V5 Synthesizer error:', error)
+    console.error('❌ V5 Synthesis error:', error)
     return new Response(
       JSON.stringify({
         success: false,
@@ -324,7 +369,7 @@ serve(async (req) => {
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500
+        status: 200
       }
     )
   }
