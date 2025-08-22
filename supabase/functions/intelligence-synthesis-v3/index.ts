@@ -6,6 +6,9 @@ import { corsHeaders } from "../_shared/cors.ts"
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
 
+console.log('🔑 Synthesis V3 - ANTHROPIC_API_KEY exists:', !!ANTHROPIC_API_KEY)
+console.log('🔑 API Key length:', ANTHROPIC_API_KEY?.length || 0)
+
 async function synthesizeWithClaude(intelligence: any, organization: any) {
   console.log(`🧠 V3 Synthesis: Analyzing intelligence for ${organization.name}`)
   
@@ -26,10 +29,23 @@ Provide strategic analysis in this EXACT JSON structure:
 
 {
   "executive_briefing": {
-    "headline": "One-line summary of the most important development",
-    "summary": "2-3 sentence executive summary of key movements and implications",
-    "requires_action": true/false,
-    "urgency_level": "immediate/high/medium/low"
+    "strategic_headline": "One-line strategic summary of the overall situation",
+    "strategic_summary": "3-4 sentence strategic assessment synthesizing ALL intelligence - competitors, regulators, stakeholders, and market trends. Focus on what it means for ${organization.name}'s position and strategy.",
+    "key_insights": [
+      "Strategic insight 1 based on entity movements",
+      "Strategic insight 2 based on market dynamics",
+      "Strategic insight 3 based on stakeholder positions"
+    ],
+    "situation_assessment": {
+      "position": "Strong/Challenged/Vulnerable",
+      "momentum": "Gaining/Stable/Losing",
+      "risk_level": "high/medium/low"
+    },
+    "immediate_priorities": [
+      "Priority action 1",
+      "Priority action 2",
+      "Priority action 3"
+    ]
   },
   
   "entity_movements": {
@@ -94,6 +110,41 @@ Provide strategic analysis in this EXACT JSON structure:
     "momentum": "gaining/maintaining/losing",
     "key_advantages": ["Advantages to leverage"],
     "vulnerabilities": ["Gaps to address"]
+  },
+  
+  "predictions_and_cascades": {
+    "cascades": [
+      {
+        "trigger": "If this current event/trend continues",
+        "effects": [
+          "First-order effect",
+          "Second-order effect",
+          "Third-order effect"
+        ],
+        "probability": "high/medium/low"
+      }
+    ],
+    "predictions": [
+      {
+        "timeframe": "Next 30 days",
+        "prediction": "What is likely to happen",
+        "basis": "Based on which current intelligence",
+        "confidence": 70
+      },
+      {
+        "timeframe": "Next 90 days",
+        "prediction": "What is likely to happen",
+        "basis": "Based on which current intelligence",
+        "confidence": 60
+      }
+    ],
+    "second_order_effects": [
+      {
+        "primary_change": "Current change happening",
+        "secondary_impact": "How this will affect other areas",
+        "recommended_action": "What ${organization.name} should do"
+      }
+    ]
   }
 }`
 
@@ -140,10 +191,23 @@ Provide strategic analysis in this EXACT JSON structure:
     // Return structured fallback
     return {
       executive_briefing: {
-        headline: `${entityActions.length} entity actions tracked for ${organization.name}`,
-        summary: `Monitoring ${entityActions.length} entity movements and ${topicTrends.length} market trends.`,
-        requires_action: entityActions.some(a => a.importance === 'critical'),
-        urgency_level: entityActions.some(a => a.importance === 'critical') ? 'high' : 'medium'
+        strategic_headline: `Strategic situation for ${organization.name}`,
+        strategic_summary: `Currently monitoring ${entityActions.length} entity movements and ${topicTrends.length} market trends. Analysis indicates multiple stakeholder actions requiring strategic assessment.`,
+        key_insights: [
+          `${entityActions.filter(a => a.entity_type === 'competitor').length} competitor actions detected`,
+          `${topicTrends.filter(t => t.momentum === 'increasing').length} trending topics gaining momentum`,
+          `Strategic position requires continuous monitoring`
+        ],
+        situation_assessment: {
+          position: "Stable",
+          momentum: "Stable",
+          risk_level: entityActions.some(a => a.importance === 'critical') ? 'high' : 'medium'
+        },
+        immediate_priorities: [
+          "Monitor competitor movements",
+          "Assess regulatory changes",
+          "Evaluate market trends"
+        ]
       },
       entity_movements: {
         competitor_actions: [],
@@ -161,18 +225,30 @@ Provide strategic analysis in this EXACT JSON structure:
         momentum: "maintaining",
         key_advantages: [],
         vulnerabilities: []
+      },
+      predictions_and_cascades: {
+        cascades: [],
+        predictions: [],
+        second_order_effects: []
       }
     }
   }
 }
 
 serve(async (req) => {
+  console.log('🚀 Intelligence Synthesis V3 - Request received:', req.method)
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
+    if (!ANTHROPIC_API_KEY) {
+      throw new Error('ANTHROPIC_API_KEY not configured in environment')
+    }
+    
     const { intelligence, organization } = await req.json()
+    console.log('📋 Synthesis V3 - Organization:', organization?.name)
     
     if (!intelligence || !organization?.name) {
       throw new Error('Intelligence data and organization are required')
@@ -192,24 +268,14 @@ serve(async (req) => {
       
       // Direct tab structure for frontend
       tabs: {
-        executive: {
-          ...analysis.executive_briefing,
-          key_numbers: {
-            entity_actions: intelligence.entity_actions?.total_count || 0,
-            critical_items: intelligence.entity_actions?.critical?.length || 0,
-            hot_topics: intelligence.topic_trends?.hot_topics?.length || 0
-          }
-        },
+        executive: analysis.executive_briefing,
         entities: analysis.entity_movements,
         market: analysis.market_dynamics,
         strategy: {
           recommendations: analysis.strategic_recommendations,
           positioning: analysis.competitive_positioning
         },
-        raw_intelligence: {
-          actions: intelligence.entity_actions?.all || [],
-          trends: intelligence.topic_trends?.all || []
-        }
+        predictions: analysis.predictions_and_cascades
       },
       
       // Quick access to critical items
@@ -233,18 +299,32 @@ serve(async (req) => {
       }
     )
   } catch (error) {
-    console.error('Synthesis error:', error)
+    console.error('❌ Synthesis V3 error:', error)
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      hasApiKey: !!ANTHROPIC_API_KEY
+    })
     return new Response(
       JSON.stringify({
         success: false,
         error: error.message,
         tabs: {
           executive: {
-            headline: "Intelligence synthesis failed",
-            summary: error.message,
-            requires_action: false,
-            urgency_level: "low"
-          }
+            strategic_headline: "Intelligence synthesis temporarily unavailable",
+            strategic_summary: error.message,
+            key_insights: [],
+            situation_assessment: {
+              position: "Unknown",
+              momentum: "Unknown",
+              risk_level: "low"
+            },
+            immediate_priorities: []
+          },
+          entities: { competitor_actions: [], regulatory_developments: [], stakeholder_positions: [] },
+          market: { trending_opportunities: [], emerging_risks: [] },
+          strategy: { recommendations: [], positioning: null },
+          predictions: { cascades: [], predictions: [], second_order_effects: [] }
         }
       }),
       { 

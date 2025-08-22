@@ -8,6 +8,8 @@ import {
 
 const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
   const [loading, setLoading] = useState(false);
+  const [loadingPhase, setLoadingPhase] = useState('');
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const [intelligence, setIntelligence] = useState(null);
   const [activeTab, setActiveTab] = useState('executive');
   const [error, setError] = useState(null);
@@ -15,52 +17,106 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
   console.log('🚀 IntelligenceDisplayV3 mounted with organization:', organization);
 
   useEffect(() => {
-    console.log('📊 V3 useEffect triggered, organization:', organization);
+    console.log('📊 V3 useEffect triggered:', {
+      organization: organization,
+      refreshTrigger: refreshTrigger,
+      hasOrgName: !!organization?.name
+    });
     fetchIntelligence();
   }, [organization, refreshTrigger]);
 
   const fetchIntelligence = async () => {
     console.log('🔍 V3 fetchIntelligence called, organization:', organization);
-    if (!organization?.name) {
-      console.log('⚠️ No organization name, skipping fetch');
-      // Try to get from localStorage as fallback
-      const savedOrg = localStorage.getItem('signaldesk_onboarding');
-      if (savedOrg) {
-        const orgData = JSON.parse(savedOrg);
-        console.log('📦 Found organization in localStorage:', orgData);
-        if (orgData.organization?.name) {
-          const result = await intelligenceOrchestratorV3.orchestrate(orgData.organization);
-          if (result.success) {
-            setIntelligence(result);
-            if (!result.tabs?.[activeTab]) {
-              setActiveTab('executive');
-            }
-          } else {
-            setError(result.error);
-          }
-          setLoading(false);
-          return;
+    
+    // Try to get organization from multiple sources
+    let orgToUse = organization;
+    
+    if (!orgToUse?.name) {
+      console.log('⚠️ No organization name, checking localStorage...');
+      
+      // Check signaldesk_organization first
+      const savedOrgDirect = localStorage.getItem('signaldesk_organization');
+      if (savedOrgDirect) {
+        try {
+          orgToUse = JSON.parse(savedOrgDirect);
+          console.log('📦 Found organization in signaldesk_organization:', orgToUse);
+        } catch (e) {
+          console.error('Error parsing signaldesk_organization:', e);
         }
       }
-      return;
+      
+      // If still no org, check signaldesk_onboarding
+      if (!orgToUse?.name) {
+        const savedOnboarding = localStorage.getItem('signaldesk_onboarding');
+        if (savedOnboarding) {
+          try {
+            const onboardingData = JSON.parse(savedOnboarding);
+            if (onboardingData.organization?.name) {
+              orgToUse = onboardingData.organization;
+              console.log('📦 Found organization in signaldesk_onboarding:', orgToUse);
+            }
+          } catch (e) {
+            console.error('Error parsing signaldesk_onboarding:', e);
+          }
+        }
+      }
+      
+      // Last resort: default to Toyota
+      if (!orgToUse?.name) {
+        console.log('🏭 Using default organization: Toyota');
+        orgToUse = {
+          name: 'Toyota',
+          industry: 'automotive'
+        };
+      }
     }
     
     setLoading(true);
     setError(null);
+    setLoadingPhase('Discovery');
+    setLoadingProgress(0);
+    
+    console.log('🚀 Starting V3 orchestration with:', orgToUse);
+    
+    // Simulate progress through phases
+    const progressInterval = setInterval(() => {
+      setLoadingProgress(prev => Math.min(prev + 2, 95));
+    }, 200);
+    
+    // Update phases based on timing
+    setTimeout(() => setLoadingPhase('Gathering'), 2000);
+    setTimeout(() => setLoadingPhase('Synthesizing'), 5000);
     
     try {
-      const result = await intelligenceOrchestratorV3.orchestrate(organization);
+      const result = await intelligenceOrchestratorV3.orchestrate(orgToUse);
+      clearInterval(progressInterval);
+      setLoadingProgress(100);
+      
+      console.log('📦 V3 Orchestration result:', {
+        success: result.success,
+        hasTabsData: !!result.tabs,
+        tabKeys: result.tabs ? Object.keys(result.tabs) : [],
+        error: result.error
+      });
       
       if (result.success) {
         setIntelligence(result);
         // Auto-switch to executive tab if current tab doesn't exist
         if (!result.tabs?.[activeTab]) {
+          console.log('🔄 Switching to executive tab');
           setActiveTab('executive');
         }
       } else {
+        console.error('❌ Orchestration failed:', result.error);
         setError(result.error);
       }
     } catch (err) {
+      console.error('❌ V3 fetchIntelligence error:', err);
+      console.error('Error details:', {
+        message: err.message,
+        stack: err.stack,
+        organization: orgToUse
+      });
       setError(err.message);
     } finally {
       setLoading(false);
@@ -72,7 +128,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
     { id: 'entities', name: 'Entity Movements', Icon: TargetIcon, color: '#00ffcc' },
     { id: 'market', name: 'Market Dynamics', Icon: TrendingUpIcon, color: '#00ff88' },
     { id: 'strategy', name: 'Strategic Intel', Icon: ChartIcon, color: '#ffcc00' },
-    { id: 'raw_intelligence', name: 'Raw Data', Icon: BuildingIcon, color: '#8800ff' }
+    { id: 'predictions', name: 'Cascades & Predictions', Icon: BuildingIcon, color: '#8800ff' }
   ];
 
   const renderExecutiveTab = (data) => {
@@ -87,34 +143,50 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
     
     return (
       <div className="v3-executive-tab">
-        <div className="executive-header">
-          <div className="urgency-badge" style={{ backgroundColor: urgencyColors[data.urgency_level] }}>
-            {data.urgency_level?.toUpperCase()}
+        <h2 className="executive-headline">{data.strategic_headline || data.headline}</h2>
+        <p className="executive-summary">{data.strategic_summary || data.summary}</p>
+        
+        {data.key_insights && (
+          <div className="key-insights">
+            <h3>Key Strategic Insights</h3>
+            <ul>
+              {data.key_insights.map((insight, idx) => (
+                <li key={idx}>{insight}</li>
+              ))}
+            </ul>
           </div>
-          {data.requires_action && (
-            <div className="action-required-badge">
-              <AlertIcon size={16} /> ACTION REQUIRED
-            </div>
-          )}
-        </div>
+        )}
         
-        <h2 className="executive-headline">{data.headline}</h2>
-        <p className="executive-summary">{data.summary}</p>
+        {data.situation_assessment && (
+          <div className="situation-assessment">
+            <h3>Situation Assessment</h3>
+            <div className="assessment-grid">
+              <div className="assessment-item">
+                <span className="label">Competitive Position:</span>
+                <span className="value">{data.situation_assessment.position}</span>
+              </div>
+              <div className="assessment-item">
+                <span className="label">Market Momentum:</span>
+                <span className="value">{data.situation_assessment.momentum}</span>
+              </div>
+              <div className="assessment-item">
+                <span className="label">Risk Level:</span>
+                <span className="value" style={{ color: urgencyColors[data.situation_assessment.risk_level] }}>
+                  {data.situation_assessment.risk_level}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
         
-        {data.key_numbers && (
-          <div className="key-numbers-grid">
-            <div className="number-card">
-              <div className="number">{data.key_numbers.entity_actions}</div>
-              <div className="label">Entity Actions</div>
-            </div>
-            <div className="number-card critical">
-              <div className="number">{data.key_numbers.critical_items}</div>
-              <div className="label">Critical Items</div>
-            </div>
-            <div className="number-card">
-              <div className="number">{data.key_numbers.hot_topics}</div>
-              <div className="label">Hot Topics</div>
-            </div>
+        {data.immediate_priorities && (
+          <div className="immediate-priorities">
+            <h3>Immediate Priorities</h3>
+            <ol>
+              {data.immediate_priorities.map((priority, idx) => (
+                <li key={idx}>{priority}</li>
+              ))}
+            </ol>
           </div>
         )}
       </div>
@@ -294,22 +366,31 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
     );
   };
 
-  const renderRawIntelligenceTab = (data) => {
+  const renderPredictionsTab = (data) => {
     if (!data) return null;
     
     return (
-      <div className="v3-raw-intelligence-tab">
-        {data.actions?.length > 0 && (
-          <div className="raw-section">
-            <h3>Entity Actions (Raw)</h3>
-            <div className="raw-items">
-              {data.actions.map((action, idx) => (
-                <div key={idx} className="raw-item">
-                  <div className="raw-entity">{action.entity} ({action.entity_type})</div>
-                  <div className="raw-action">{action.action}: {action.headline}</div>
-                  <div className="raw-meta">
-                    <span>{action.source}</span>
-                    <span>{action.importance}</span>
+      <div className="v3-predictions-tab">
+        {data.cascades?.length > 0 && (
+          <div className="cascades-section">
+            <h3>Potential Cascades</h3>
+            <div className="cascade-cards">
+              {data.cascades.map((cascade, idx) => (
+                <div key={idx} className="cascade-card">
+                  <div className="cascade-trigger">
+                    <span className="trigger-label">If:</span> {cascade.trigger}
+                  </div>
+                  <div className="cascade-arrow">→</div>
+                  <div className="cascade-effects">
+                    <span className="effect-label">Then:</span>
+                    <ul>
+                      {cascade.effects.map((effect, eidx) => (
+                        <li key={eidx}>{effect}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="cascade-probability">
+                    Probability: <span className={`prob-${cascade.probability}`}>{cascade.probability}</span>
                   </div>
                 </div>
               ))}
@@ -317,19 +398,40 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
           </div>
         )}
         
-        {data.trends?.length > 0 && (
-          <div className="raw-section">
-            <h3>Topic Trends (Raw)</h3>
-            <div className="raw-items">
-              {data.trends.map((trend, idx) => (
-                <div key={idx} className="raw-item">
-                  <div className="raw-topic">{trend.topic}</div>
-                  <div className="raw-momentum">
-                    Momentum: {trend.momentum} ({trend.article_count} articles)
+        {data.predictions?.length > 0 && (
+          <div className="predictions-section">
+            <h3>Strategic Predictions</h3>
+            <div className="prediction-timeline">
+              {data.predictions.map((pred, idx) => (
+                <div key={idx} className="prediction-item">
+                  <div className="prediction-timeframe">{pred.timeframe}</div>
+                  <div className="prediction-content">
+                    <div className="prediction-what">{pred.prediction}</div>
+                    <div className="prediction-basis">Based on: {pred.basis}</div>
+                    <div className="prediction-confidence">
+                      Confidence: <span className={`conf-${pred.confidence}`}>{pred.confidence}%</span>
+                    </div>
                   </div>
-                  {trend.sample_headlines?.map((headline, hidx) => (
-                    <div key={hidx} className="raw-headline">{headline}</div>
-                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {data.second_order_effects?.length > 0 && (
+          <div className="second-order-section">
+            <h3>Second-Order Effects</h3>
+            <div className="effects-list">
+              {data.second_order_effects.map((effect, idx) => (
+                <div key={idx} className="second-order-item">
+                  <div className="effect-primary">{effect.primary_change}</div>
+                  <div className="effect-secondary">
+                    <span className="arrow">⟹</span>
+                    {effect.secondary_impact}
+                  </div>
+                  <div className="effect-action">
+                    Recommended action: {effect.recommended_action}
+                  </div>
                 </div>
               ))}
             </div>
@@ -353,8 +455,8 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
         return renderMarketTab(tabData);
       case 'strategy':
         return renderStrategyTab(tabData);
-      case 'raw_intelligence':
-        return renderRawIntelligenceTab(tabData);
+      case 'predictions':
+        return renderPredictionsTab(tabData);
       default:
         return <div>No data available for this tab</div>;
     }
@@ -363,8 +465,29 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
   if (loading) {
     return (
       <div className="intelligence-display-v3 loading">
-        <div className="loading-spinner"></div>
-        <p>Gathering intelligence with Claude 4...</p>
+        <div className="loading-container">
+          <div className="phase-indicator">
+            <div className="phase-name">{loadingPhase}</div>
+            <div className="phase-steps">
+              <div className={`step ${loadingPhase === 'Discovery' ? 'active' : loadingProgress > 30 ? 'complete' : ''}`}>
+                <span className="step-icon">🔍</span>
+                <span className="step-label">Discovery</span>
+              </div>
+              <div className={`step ${loadingPhase === 'Gathering' ? 'active' : loadingProgress > 60 ? 'complete' : ''}`}>
+                <span className="step-icon">📡</span>
+                <span className="step-label">Gathering</span>
+              </div>
+              <div className={`step ${loadingPhase === 'Synthesizing' ? 'active' : ''}`}>
+                <span className="step-icon">🧠</span>
+                <span className="step-label">Synthesizing</span>
+              </div>
+            </div>
+            <div className="progress-bar">
+              <div className="progress-fill" style={{ width: `${loadingProgress}%` }}></div>
+            </div>
+          </div>
+          <p className="loading-message">Analyzing with Claude Sonnet 4...</p>
+        </div>
       </div>
     );
   }

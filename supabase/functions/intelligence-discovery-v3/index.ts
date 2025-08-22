@@ -6,6 +6,9 @@ import { corsHeaders } from "../_shared/cors.ts"
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
 
+console.log('🔑 Discovery V3 - ANTHROPIC_API_KEY exists:', !!ANTHROPIC_API_KEY)
+console.log('🔑 API Key length:', ANTHROPIC_API_KEY?.length || 0)
+
 async function discoverEntities(organization: any) {
   console.log(`🎯 V3 Discovery: Identifying entities for ${organization.name}`)
   
@@ -136,12 +139,19 @@ Return ONLY valid JSON:
 }
 
 serve(async (req) => {
+  console.log('🚀 Intelligence Discovery V3 - Request received:', req.method)
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
+    if (!ANTHROPIC_API_KEY) {
+      throw new Error('ANTHROPIC_API_KEY not configured in environment')
+    }
+    
     const { organization } = await req.json()
+    console.log('📋 Discovery V3 - Organization:', organization)
     
     if (!organization?.name) {
       throw new Error('Organization name is required')
@@ -157,7 +167,12 @@ serve(async (req) => {
       }
     )
   } catch (error) {
-    console.error('Request error:', error)
+    console.error('❌ Discovery V3 error:', error)
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      hasApiKey: !!ANTHROPIC_API_KEY
+    })
     return new Response(
       JSON.stringify({
         success: false,

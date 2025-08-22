@@ -6,7 +6,14 @@
 class IntelligenceOrchestratorV3 {
   constructor() {
     this.supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co';
-    this.supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || '';
+    this.supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+    
+    console.log('🔧 V3 Orchestrator initialized:', {
+      url: this.supabaseUrl,
+      hasKey: !!this.supabaseKey,
+      keyLength: this.supabaseKey?.length,
+      keyPreview: this.supabaseKey?.substring(0, 20) + '...'
+    });
   }
 
   /**
@@ -21,6 +28,15 @@ class IntelligenceOrchestratorV3 {
     try {
       // PHASE 1: DISCOVERY (Who and what to monitor)
       console.log('🔍 Phase 1: Discovery - Identifying entities to monitor');
+      console.log('📡 Discovery Request:', {
+        url: `${this.supabaseUrl}/functions/v1/intelligence-discovery-v3`,
+        organization: organization,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.supabaseKey.substring(0, 20)}...`
+        }
+      });
+      
       const discoveryResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-discovery-v3`, {
         method: 'POST',
         headers: {
@@ -30,11 +46,16 @@ class IntelligenceOrchestratorV3 {
         body: JSON.stringify({ organization })
       });
 
+      console.log('📡 Discovery Response Status:', discoveryResponse.status);
+      
       if (!discoveryResponse.ok) {
-        throw new Error(`Discovery failed: ${discoveryResponse.status}`);
+        const errorText = await discoveryResponse.text();
+        console.error('❌ Discovery Error Response:', errorText);
+        throw new Error(`Discovery failed: ${discoveryResponse.status} - ${errorText}`);
       }
 
       const discoveryData = await discoveryResponse.json();
+      console.log('📡 Discovery Data:', discoveryData);
       
       if (!discoveryData.success) {
         throw new Error(discoveryData.error || 'Discovery failed');
@@ -47,6 +68,12 @@ class IntelligenceOrchestratorV3 {
 
       // PHASE 2: GATHERING (Track entity actions)
       console.log('📡 Phase 2: Gathering - Tracking entity actions and trends');
+      console.log('📡 Gathering Request:', {
+        url: `${this.supabaseUrl}/functions/v1/intelligence-gathering-v3`,
+        discovery: discoveryData.discovery,
+        organization: organization
+      });
+      
       const gatheringResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-gathering-v3`, {
         method: 'POST',
         headers: {
@@ -59,11 +86,16 @@ class IntelligenceOrchestratorV3 {
         })
       });
 
+      console.log('📡 Gathering Response Status:', gatheringResponse.status);
+      
       if (!gatheringResponse.ok) {
-        throw new Error(`Gathering failed: ${gatheringResponse.status}`);
+        const errorText = await gatheringResponse.text();
+        console.error('❌ Gathering Error Response:', errorText);
+        throw new Error(`Gathering failed: ${gatheringResponse.status} - ${errorText}`);
       }
 
       const gatheringData = await gatheringResponse.json();
+      console.log('📡 Gathering Data:', gatheringData);
       
       if (!gatheringData.success) {
         throw new Error(gatheringData.error || 'Gathering failed');
@@ -77,6 +109,12 @@ class IntelligenceOrchestratorV3 {
 
       // PHASE 3: SYNTHESIS (Analyze with Claude 4)
       console.log('🧠 Phase 3: Synthesis - Analyzing intelligence with Claude 4');
+      console.log('📡 Synthesis Request:', {
+        url: `${this.supabaseUrl}/functions/v1/intelligence-synthesis-v3`,
+        intelligence: gatheringData.intelligence,
+        organization: organization
+      });
+      
       const synthesisResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-synthesis-v3`, {
         method: 'POST',
         headers: {
@@ -89,11 +127,16 @@ class IntelligenceOrchestratorV3 {
         })
       });
 
+      console.log('📡 Synthesis Response Status:', synthesisResponse.status);
+      
       if (!synthesisResponse.ok) {
-        throw new Error(`Synthesis failed: ${synthesisResponse.status}`);
+        const errorText = await synthesisResponse.text();
+        console.error('❌ Synthesis Error Response:', errorText);
+        throw new Error(`Synthesis failed: ${synthesisResponse.status} - ${errorText}`);
       }
 
       const synthesisData = await synthesisResponse.json();
+      console.log('📡 Synthesis Data:', synthesisData);
       
       if (!synthesisData.success) {
         throw new Error(synthesisData.error || 'Synthesis failed');
@@ -123,6 +166,13 @@ class IntelligenceOrchestratorV3 {
 
     } catch (error) {
       console.error('❌ V3 Orchestration error:', error);
+      console.error('Error Stack:', error.stack);
+      console.error('Error Details:', {
+        message: error.message,
+        supabaseUrl: this.supabaseUrl,
+        hasKey: !!this.supabaseKey,
+        organization: organization
+      });
       
       // Return error state with empty structure
       return {

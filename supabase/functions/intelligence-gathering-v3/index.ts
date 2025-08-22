@@ -4,6 +4,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { corsHeaders } from "../_shared/cors.ts"
 
+console.log('🔑 Gathering V3 - Starting Edge Function')
+
 async function fetchWithTimeout(url: string, options: any = {}, timeoutMs: number = 5000) {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
@@ -23,6 +25,7 @@ async function fetchWithTimeout(url: string, options: any = {}, timeoutMs: numbe
 
 // Track specific entity actions in news
 async function gatherEntityActions(entities: any) {
+  console.log('🔍 Gathering entity actions for:', Object.keys(entities))
   const actions = []
   const actionKeywords = [
     'announced', 'launched', 'acquired', 'raised', 'partnered',
@@ -34,9 +37,12 @@ async function gatherEntityActions(entities: any) {
   for (const [entityType, entityList] of Object.entries(entities)) {
     if (!Array.isArray(entityList)) continue
     
+    console.log(`🎯 Processing ${entityType}:`, entityList.length, 'entities')
+    
     for (const entity of entityList.slice(0, 3)) { // Limit to top 3 per category for speed
       try {
         const entityName = entity.name
+        console.log(`  🔍 Searching for actions by: ${entityName}`)
         const searchQuery = `"${entityName}" (${actionKeywords.join(' OR ')}) when:7d`
         const url = `https://news.google.com/rss/search?q=${encodeURIComponent(searchQuery)}&hl=en-US&gl=US&ceid=US:en`
         
@@ -196,6 +202,13 @@ serve(async (req) => {
   try {
     const { discovery, organization } = await req.json()
     
+    console.log('📋 Gathering V3 - Processing for:', organization?.name)
+    console.log('📋 Discovery data received:', {
+      hasEntities: !!discovery?.entities,
+      hasTopics: !!discovery?.topics,
+      entityTypes: discovery?.entities ? Object.keys(discovery.entities) : []
+    })
+    
     if (!discovery || !organization?.name) {
       throw new Error('Discovery data and organization are required')
     }
@@ -210,7 +223,11 @@ serve(async (req) => {
       }
     )
   } catch (error) {
-    console.error('Request error:', error)
+    console.error('❌ Gathering V3 Request error:', error)
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack
+    })
     return new Response(
       JSON.stringify({
         success: false,
