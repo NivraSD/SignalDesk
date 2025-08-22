@@ -104,12 +104,12 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
         error: result.error
       });
       
-      // Debug: Log the actual executive and predictions data
-      if (result.tabs?.executive) {
-        console.log('🎯 Executive Tab Data:', result.tabs.executive);
-      }
-      if (result.tabs?.predictions) {
-        console.log('🔮 Predictions Tab Data:', result.tabs.predictions);
+      // Debug: Log ALL tab data to see structure
+      console.log('📊 ALL Tab Data:', result.tabs);
+      if (result.tabs) {
+        Object.keys(result.tabs).forEach(tabKey => {
+          console.log(`📌 Tab [${tabKey}]:`, result.tabs[tabKey]);
+        });
       }
       
       if (result.success) {
@@ -1011,9 +1011,13 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
   };
 
   const renderTabContent = () => {
-    if (!intelligence?.tabs) return null;
+    if (!intelligence?.tabs) {
+      console.log('⚠️ No tabs data in intelligence');
+      return <div>No intelligence data available</div>;
+    }
     
     const tabData = intelligence.tabs[activeTab];
+    console.log(`🎨 Rendering tab [${activeTab}] with data:`, tabData);
     
     switch (activeTab) {
       case 'executive':

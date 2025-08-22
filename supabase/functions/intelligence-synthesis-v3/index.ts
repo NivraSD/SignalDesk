@@ -415,48 +415,71 @@ Provide comprehensive analysis in this EXACT JSON structure:
     return JSON.parse(content)
   } catch (error) {
     console.error('Claude synthesis error:', error)
-    // Return structured fallback
+    // Return structured fallback matching new comprehensive structure
     return {
-      executive_briefing: {
-        strategic_headline: `Strategic situation for ${organization.name}`,
-        strategic_summary: `Currently monitoring ${entityActions.length} entity movements and ${topicTrends.length} market trends. Analysis indicates multiple stakeholder actions requiring strategic assessment.`,
-        key_insights: [
-          `${entityActions.filter(a => a.entity_type === 'competitor').length} competitor actions detected`,
-          `${topicTrends.filter(t => t.momentum === 'increasing').length} trending topics gaining momentum`,
-          `Strategic position requires continuous monitoring`
-        ],
-        situation_assessment: {
-          position: "Stable",
-          momentum: "Stable",
-          risk_level: entityActions.some(a => a.importance === 'critical') ? 'high' : 'medium'
-        },
-        immediate_priorities: [
-          "Monitor competitor movements",
-          "Assess regulatory changes",
-          "Evaluate market trends"
+      executive_summary: {
+        headline: `Strategic Intelligence Update for ${organization.name}`,
+        overview: `Currently monitoring ${entityActions.length} entity movements and ${topicTrends.length} market trends across competitive, regulatory, and media landscapes.`,
+        competitive_highlight: entityActions.find(a => a.entity_type === 'competitor')?.headline || "Monitoring competitor movements",
+        market_highlight: topicTrends.find(t => t.momentum === 'increasing')?.topic || "Tracking market dynamics",
+        regulatory_highlight: entityActions.find(a => a.entity_type === 'regulator')?.headline || "No regulatory changes",
+        media_highlight: "Media sentiment stable",
+        immediate_actions: [
+          "Monitor competitor developments",
+          "Assess market opportunities",
+          "Maintain stakeholder communications"
         ]
       },
-      entity_movements: {
-        competitor_actions: [],
-        regulatory_developments: [],
-        stakeholder_positions: []
+      competitive_landscape: {
+        competitor_actions: entityActions.filter(a => a.entity_type === 'competitor').map(a => ({
+          competitor: a.entity,
+          action: a.action,
+          details: a.headline
+        })),
+        competitive_implications: [{
+          impact: "Competitive landscape evolving",
+          severity: "medium"
+        }],
+        pr_strategy: "Maintain thought leadership position",
+        key_messages: ["Innovation leadership", "Customer focus"],
+        do_not_say: ["Direct competitor comparisons"]
       },
       market_dynamics: {
-        trending_opportunities: [],
-        emerging_risks: []
+        market_trends: topicTrends.map(t => ({
+          trend: t.topic,
+          description: t.sample_headlines?.[0] || t.topic,
+          momentum: t.momentum
+        })),
+        opportunities: [],
+        market_implications: [],
+        market_narrative: "Positioned for growth",
+        thought_leadership: ["Industry innovation"]
       },
-      strategic_recommendations: [],
-      competitive_positioning: {
-        current_position: "Monitoring market movements",
-        narrative_control: "contested",
-        momentum: "maintaining",
-        key_advantages: [],
-        vulnerabilities: []
+      regulatory_policy: {
+        regulatory_developments: entityActions.filter(a => a.entity_type === 'regulator').map(a => ({
+          regulator: a.entity,
+          development: a.headline,
+          timeline: "Ongoing"
+        })),
+        compliance_requirements: [],
+        regulatory_stance: "Full compliance and engagement",
+        stakeholder_messages: []
       },
-      predictions_and_cascades: {
-        cascades: [],
+      media_sentiment: {
+        media_coverage: [],
+        social_trends: [],
+        reputation_impact: "Neutral",
+        sentiment_trend: "stable",
+        narrative_risks: [],
+        media_strategy: "Proactive engagement",
+        media_outreach: [],
+        social_response: "Monitor and engage as needed"
+      },
+      forward_look: {
         predictions: [],
-        second_order_effects: []
+        preparation_needed: [],
+        proactive_strategy: "Stay ahead of market trends",
+        prepared_statements: []
       }
     }
   }
@@ -543,20 +566,19 @@ serve(async (req) => {
         error: error.message,
         tabs: {
           executive: {
-            strategic_headline: "Intelligence synthesis temporarily unavailable",
-            strategic_summary: error.message,
-            key_insights: [],
-            situation_assessment: {
-              position: "Unknown",
-              momentum: "Unknown",
-              risk_level: "low"
-            },
-            immediate_priorities: []
+            headline: "Intelligence synthesis temporarily unavailable",
+            overview: error.message,
+            competitive_highlight: "No data available",
+            market_highlight: "No data available",
+            regulatory_highlight: "No data available",
+            media_highlight: "No data available",
+            immediate_actions: []
           },
-          entities: { competitor_actions: [], regulatory_developments: [], stakeholder_positions: [] },
-          market: { trending_opportunities: [], emerging_risks: [] },
-          strategy: { recommendations: [], positioning: null },
-          predictions: { cascades: [], predictions: [], second_order_effects: [] }
+          competitive: { competitor_actions: [], competitive_implications: [], pr_strategy: "", key_messages: [], do_not_say: [] },
+          market: { market_trends: [], opportunities: [], market_implications: [], market_narrative: "", thought_leadership: [] },
+          regulatory: { regulatory_developments: [], compliance_requirements: [], regulatory_stance: "", stakeholder_messages: [] },
+          media: { media_coverage: [], social_trends: [], reputation_impact: "", sentiment_trend: "", narrative_risks: [], media_strategy: "", media_outreach: [], social_response: "" },
+          forward: { predictions: [], preparation_needed: [], proactive_strategy: "", prepared_statements: [] }
         }
       }),
       { 
