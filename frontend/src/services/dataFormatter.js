@@ -20,14 +20,20 @@ class DataFormatterService {
     const intelligence = orchestratorResponse.intelligence || {};
     const stats = orchestratorResponse.statistics || {};
     
-    // Check if we have V5 analytical structure from synthesized data
-    const isV5Structure = intelligence.synthesized && (
+    // Check if we have V5 analytical structure from synthesized data OR tabs
+    const isV5Structure = (intelligence.synthesized && (
       intelligence.synthesized.market_activity || 
       intelligence.synthesized.competitor_intelligence ||
       intelligence.synthesized.social_pulse ||
       intelligence.synthesized.industry_signals ||
       intelligence.synthesized.media_coverage
-    );
+    )) || (intelligence.tabs && (
+      intelligence.tabs.market_activity ||
+      intelligence.tabs.competitor_intelligence ||
+      intelligence.tabs.social_pulse ||
+      intelligence.tabs.industry_signals ||
+      intelligence.tabs.media_coverage
+    ));
     
     console.log('🔍 Data structure detection:', { 
       isV5Structure, 

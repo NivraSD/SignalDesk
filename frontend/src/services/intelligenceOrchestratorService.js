@@ -154,8 +154,8 @@ class IntelligenceOrchestratorService {
         statistics: combinedResult.statistics
       });
       
-      // Use the data formatter for consistent structure
-      return dataFormatterService.formatForDisplay(combinedResult);
+      // Return raw combined result - let claudeIntelligenceServiceV2 handle formatting
+      return combinedResult;
     } catch (error) {
       console.error('❌ Orchestration error:', error);
       return {

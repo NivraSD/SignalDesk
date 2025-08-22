@@ -7,6 +7,7 @@ import organizationProfileService from './organizationProfileService';
 import tabIntelligenceService from './tabIntelligenceService';
 import intelligentDiscoveryService from './intelligentDiscoveryService';
 import intelligenceOrchestratorService from './intelligenceOrchestratorService';
+import dataFormatterService from './dataFormatter';
 
 class ClaudeIntelligenceServiceV2 {
   constructor() {
@@ -112,51 +113,48 @@ class ClaudeIntelligenceServiceV2 {
             });
           }
           
-          // Check if orchestrator returned formatted data with tabs
-          // The dataFormatter returns data with 'tabs' property
+          // Check if orchestrator returned raw data with intelligence
           console.log('🔍 Checking orchestrator result structure:', {
-            hasTabs: !!orchestratedResult.tabs,
-            tabCount: Object.keys(orchestratedResult.tabs || {}).length,
-            hasRawIntelligence: !!orchestratedResult.raw?.intelligence,
+            hasIntelligence: !!orchestratedResult.intelligence,
+            intelligenceKeys: Object.keys(orchestratedResult.intelligence || {}),
+            hasSynthesized: !!orchestratedResult.intelligence?.synthesized,
+            synthesizedKeys: Object.keys(orchestratedResult.intelligence?.synthesized || {}),
             topLevelKeys: Object.keys(orchestratedResult)
           });
           
-          if (orchestratedResult.tabs && 
-              Object.keys(orchestratedResult.tabs).length === 5) {
-            
-            console.log('✅ Using orchestrator data (already formatted by dataFormatter)');
-            console.log('📊 Tab data check:', {
-              hasOverviewTab: !!orchestratedResult.tabs.overview,
-              overviewExecutiveSummaryType: typeof orchestratedResult.tabs.overview?.executive_summary,
-              insightsStored: orchestratedResult.stats?.insights_stored || 0
-            });
-            
-            // The orchestrator already returns properly formatted data via dataFormatter
-            // Just add profile and guidance
-            const orgForStorage = {
-              name: orgName,
-              industry: industry,
-              ...config.organization
-            };
-            
-            const profile = await organizationProfileService.getOrBuildProfile(orgForStorage);
-            
-            // Store insights from the formatted data
-            await this.storeKeyInsights(orchestratedResult, orgForStorage);
-            
-            console.log('🎯 RETURNING ORCHESTRATOR DATA DIRECTLY');
-            return {
-              ...orchestratedResult,
-              profile: {
-                confidence_level: profile.confidence_level,
-                last_updated: profile.last_updated,
-                established_facts: profile.established_facts
-              },
-              guidance: organizationProfileService.getIntelligenceGuidance(profile)
-            };
-          } else {
-            console.log('⚠️ Orchestrator returned limited data, using full flow instead');
-          }
+          // Now orchestrator returns RAW data, we need to format it
+          const formattedData = dataFormatterService.formatForDisplay(orchestratedResult);
+          
+          console.log('✅ Formatted orchestrator data');
+          console.log('📊 Formatted data check:', {
+            hasTabs: !!formattedData.tabs,
+            tabCount: Object.keys(formattedData.tabs || {}).length,
+            hasV5Tabs: !!formattedData.tabs?.market_activity,
+            insightsStored: formattedData.stats?.insights_stored || 0
+          });
+          
+          // Build organization object for storage
+          const orgForStorage = {
+            name: orgName,
+            industry: industry,
+            ...config.organization
+          };
+          
+          const profile = await organizationProfileService.getOrBuildProfile(orgForStorage);
+          
+          // Store insights from the formatted data
+          await this.storeKeyInsights(formattedData, orgForStorage);
+          
+          console.log('🎯 RETURNING FORMATTED ORCHESTRATOR DATA');
+          return {
+            ...formattedData,
+            profile: {
+              confidence_level: profile.confidence_level,
+              last_updated: profile.last_updated,
+              established_facts: profile.established_facts
+            },
+            guidance: organizationProfileService.getIntelligenceGuidance(profile)
+          };
         }
       } catch (error) {
         console.log('⚠️ Orchestrator failed, falling back to original flow:', error);

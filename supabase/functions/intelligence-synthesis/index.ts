@@ -102,14 +102,9 @@ async function synthesizeIntelligence(gatheringData: any, organization: any) {
         // Store the full V5 analysis for display
         synthesized: synthesis,
         
-        // Tab-specific data from V5 categories
-        tabs: {
-          market_activity: synthesis.market_activity || {},
-          competitor_intelligence: synthesis.competitor_intelligence || {},
-          social_pulse: synthesis.social_pulse || {},
-          industry_signals: synthesis.industry_signals || {},
-          media_coverage: synthesis.media_coverage || {}
-        },
+        // CRITICAL FIX: tabs should reference the same V5 structure
+        // This ensures dataFormatter can detect V5 structure properly
+        tabs: synthesis,
         
         // Executive summary from market activity
         executive_summary: synthesis.market_activity?.summary || `Intelligence analysis for ${organization.name}`,
