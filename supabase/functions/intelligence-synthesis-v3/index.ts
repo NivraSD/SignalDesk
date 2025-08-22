@@ -16,11 +16,14 @@ async function synthesizeWithClaude(intelligence: any, organization: any) {
   const entityActions = intelligence.entity_actions?.all || []
   const topicTrends = intelligence.topic_trends?.all || []
   
-  const prompt = `You are a PR and communications strategist for ${organization.name} in the ${organization.industry || 'business'} industry.
+  const prompt = `You are a strategic intelligence analyst for ${organization.name} in the ${organization.industry || 'business'} industry.
 
-Your role is to analyze intelligence from a PUBLIC RELATIONS and COMMUNICATIONS perspective.
+Analyze ALL intelligence using this formula for each segment:
+1. What's Happening (the events/intelligence)
+2. What It Means For Us (strategic implications for ${organization.name})
+3. PR Response (communications actions and messaging)
 
-CRITICAL: Focus on narrative control, messaging opportunities, and PR response priorities.
+IMPORTANT: Include ALL intelligence - don't filter or focus only on PR. Show everything, then explain what it means and how to respond.
 
 Analyze the following real-time intelligence:
 
@@ -30,9 +33,151 @@ ${JSON.stringify(entityActions, null, 2)}
 TOPIC TRENDS (${topicTrends.length} market trends monitored):
 ${JSON.stringify(topicTrends, null, 2)}
 
-Provide PR-focused analysis in this EXACT JSON structure:
+Provide comprehensive analysis in this EXACT JSON structure:
 
 {
+  "executive_summary": {
+    "headline": "One-line comprehensive summary of ALL intelligence",
+    "overview": "2-3 sentence overview touching on competitive, market, regulatory, and media landscapes",
+    "competitive_highlight": "Most important competitive development",
+    "market_highlight": "Most important market trend or opportunity",
+    "regulatory_highlight": "Most important regulatory development",
+    "media_highlight": "Most important media/sentiment trend",
+    "immediate_actions": [
+      "Top PR action needed #1",
+      "Top PR action needed #2",
+      "Top PR action needed #3"
+    ]
+  },
+  
+  "competitive_landscape": {
+    "competitor_actions": [
+      {
+        "competitor": "Company name",
+        "action": "What they did",
+        "details": "Additional context"
+      }
+    ],
+    "competitive_implications": [
+      {
+        "impact": "How this affects ${organization.name}",
+        "severity": "high/medium/low"
+      }
+    ],
+    "pr_strategy": "Overall PR approach to competitive developments",
+    "key_messages": [
+      "Key message to emphasize",
+      "Another key message"
+    ],
+    "do_not_say": [
+      "Messages to avoid"
+    ]
+  },
+  
+  "market_dynamics": {
+    "market_trends": [
+      {
+        "trend": "Trend name",
+        "description": "What's happening",
+        "momentum": "accelerating/stable/declining"
+      }
+    ],
+    "opportunities": [
+      {
+        "opportunity": "Opportunity name",
+        "description": "Details"
+      }
+    ],
+    "market_implications": [
+      {
+        "implication": "What this means for ${organization.name}",
+        "opportunity": "Opportunity if positive",
+        "risk": "Risk if negative"
+      }
+    ],
+    "market_narrative": "How to talk about market position",
+    "thought_leadership": [
+      "Topic where we can lead"
+    ]
+  },
+  
+  "regulatory_policy": {
+    "regulatory_developments": [
+      {
+        "regulator": "Agency/Official",
+        "development": "What's happening",
+        "timeline": "When"
+      }
+    ],
+    "compliance_requirements": [
+      {
+        "requirement": "What we need to comply with",
+        "action": "What we need to do"
+      }
+    ],
+    "regulatory_stance": "Our public position on regulatory matters",
+    "stakeholder_messages": [
+      {
+        "audience": "Regulators",
+        "message": "Key message"
+      },
+      {
+        "audience": "Investors",
+        "message": "Key message"
+      }
+    ]
+  },
+  
+  "media_sentiment": {
+    "media_coverage": [
+      {
+        "outlet": "Media name",
+        "topic": "What they're covering",
+        "sentiment": "positive/neutral/negative"
+      }
+    ],
+    "social_trends": [
+      {
+        "platform": "Twitter/LinkedIn/etc",
+        "trend": "What's trending",
+        "volume": "high/medium/low"
+      }
+    ],
+    "reputation_impact": "Overall impact on reputation",
+    "sentiment_trend": "improving/stable/declining",
+    "narrative_risks": [
+      "Negative narrative to counter"
+    ],
+    "media_strategy": "How to engage with media",
+    "media_outreach": [
+      "Proactive media action"
+    ],
+    "social_response": "Social media approach"
+  },
+  
+  "forward_look": {
+    "predictions": [
+      {
+        "timeframe": "Next 30 days",
+        "prediction": "What's likely to happen",
+        "probability": 70
+      }
+    ],
+    "preparation_needed": [
+      {
+        "scenario": "Potential scenario",
+        "impact": "Impact on ${organization.name}"
+      }
+    ],
+    "proactive_strategy": "How to get ahead of developments",
+    "prepared_statements": [
+      {
+        "scenario": "If X happens",
+        "statement": "Our response"
+      }
+    ]
+  },
+  
   "narrative_control": {
     "dominant_narratives": [
       {
@@ -348,23 +493,21 @@ serve(async (req) => {
       organization: organization.name,
       timestamp: new Date().toISOString(),
       
-      // Direct tab structure for frontend - PR focused
+      // Direct tab structure for frontend - comprehensive with PR focus
       tabs: {
+        executive: analysis.executive_summary,
+        competitive: analysis.competitive_landscape,
+        market: analysis.market_dynamics,
+        regulatory: analysis.regulatory_policy,
+        media: analysis.media_sentiment,
+        forward: analysis.forward_look,
+        
+        // Keep PR-focused structure as additional data
         narrative: analysis.narrative_control,
         response: analysis.response_priorities,
         messaging: analysis.messaging_opportunities,
         stakeholders: analysis.stakeholder_sentiment,
-        tomorrow: analysis.tomorrows_headlines,
-        
-        // Keep old structure as fallback
-        executive: analysis.executive_briefing,
-        entities: analysis.entity_movements,
-        market: analysis.market_dynamics,
-        strategy: {
-          recommendations: analysis.strategic_recommendations,
-          positioning: analysis.competitive_positioning
-        },
-        predictions: analysis.predictions_and_cascades
+        tomorrow: analysis.tomorrows_headlines
       },
       
       // Quick access to critical items

@@ -44,6 +44,329 @@
   border-bottom: 2px solid var(--tab-color);
 }
 
+/* Executive Summary Tab */
+.v3-executive-summary-tab {
+  padding: 20px;
+}
+
+.executive-header {
+  margin-bottom: 25px;
+}
+
+.executive-headline {
+  font-size: 26px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #ff00ff, #00ffcc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 12px;
+}
+
+.executive-overview {
+  font-size: 16px;
+  color: #e0e0e0;
+  line-height: 1.6;
+}
+
+.executive-highlights {
+  margin-bottom: 25px;
+}
+
+.highlights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.highlight-card {
+  background: #1a1a1a;
+  padding: 15px;
+  border-radius: 8px;
+  border-left: 3px solid;
+}
+
+.highlight-card.competitive { border-color: #00ffcc; }
+.highlight-card.market { border-color: #00ff88; }
+.highlight-card.regulatory { border-color: #ff6600; }
+.highlight-card.media { border-color: #ffcc00; }
+
+.highlight-card h4 {
+  font-size: 14px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  opacity: 0.8;
+}
+
+.highlight-card p {
+  color: #e0e0e0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.executive-actions {
+  background: rgba(255, 0, 100, 0.05);
+  border: 1px solid #ff0064;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.executive-actions h3 {
+  color: #ff0064;
+  margin-bottom: 15px;
+}
+
+.executive-actions ol {
+  padding-left: 20px;
+}
+
+.executive-actions li {
+  color: #e0e0e0;
+  padding: 8px 0;
+}
+
+/* Segment Tabs Common Structure */
+.v3-segment-tab {
+  padding: 20px;
+}
+
+.segment-section {
+  background: #1a1a1a;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #333;
+}
+
+/* Intelligence Items (What's Happening) */
+.intelligence-items {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.intelligence-item {
+  background: #0d0d0d;
+  padding: 15px;
+  border-radius: 6px;
+  border-left: 3px solid #444;
+}
+
+.intelligence-item.opportunity {
+  border-color: #00ff88;
+  background: rgba(0, 255, 136, 0.05);
+}
+
+.intelligence-item.social {
+  border-color: #00ffcc;
+}
+
+.intelligence-item.prediction {
+  border-color: #8800ff;
+  background: rgba(136, 0, 255, 0.05);
+}
+
+.item-entity,
+.item-source,
+.item-platform,
+.item-timeframe {
+  font-size: 12px;
+  color: #888;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+.item-action,
+.item-trend,
+.item-headline,
+.item-prediction {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.item-details {
+  color: #e0e0e0;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.item-momentum,
+.item-sentiment,
+.item-timeline,
+.item-volume,
+.item-probability {
+  font-size: 13px;
+  color: #aaa;
+}
+
+/* Impact Analysis (What It Means) */
+.impact-analysis {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.impact-item {
+  background: rgba(255, 204, 0, 0.05);
+  padding: 12px;
+  border-radius: 6px;
+  border-left: 3px solid #ffcc00;
+}
+
+.impact-item.risk {
+  background: rgba(255, 0, 100, 0.05);
+  border-color: #ff0064;
+}
+
+.impact-description,
+.prep-scenario {
+  color: #fff;
+  font-size: 15px;
+  margin-bottom: 8px;
+}
+
+.impact-severity,
+.impact-opportunity,
+.impact-action,
+.prep-impact {
+  font-size: 13px;
+  color: #aaa;
+}
+
+/* PR Response Section */
+.pr-response {
+  background: rgba(0, 255, 204, 0.03);
+  padding: 15px;
+  border-radius: 6px;
+}
+
+.response-strategy,
+.media-strategy,
+.proactive-strategy {
+  color: #00ffcc;
+  font-size: 15px;
+  line-height: 1.6;
+  margin-bottom: 15px;
+}
+
+.key-messages h4,
+.thought-leadership h4,
+.media-outreach h4,
+.prepared-statements h4 {
+  color: #00ffcc;
+  font-size: 14px;
+  margin-bottom: 10px;
+  margin-top: 15px;
+}
+
+.key-messages ul,
+.thought-leadership ul,
+.media-outreach ul {
+  list-style: none;
+  padding-left: 20px;
+}
+
+.key-messages li,
+.thought-leadership li,
+.media-outreach li {
+  color: #e0e0e0;
+  padding: 6px 0;
+  position: relative;
+}
+
+.key-messages li::before,
+.thought-leadership li::before {
+  content: '→';
+  position: absolute;
+  left: -20px;
+  color: #00ffcc;
+}
+
+.avoid-messages {
+  background: rgba(255, 0, 100, 0.1);
+  padding: 12px;
+  border-radius: 6px;
+  margin-top: 15px;
+}
+
+.avoid-messages h4 {
+  color: #ff0064;
+  margin-bottom: 10px;
+}
+
+.avoid-messages ul {
+  list-style: none;
+  padding-left: 20px;
+}
+
+.avoid-messages li {
+  color: #ffaaaa;
+  padding: 4px 0;
+}
+
+.avoid-messages li::before {
+  content: '✕';
+  position: absolute;
+  left: -20px;
+  color: #ff0064;
+}
+
+.stakeholder-msg {
+  padding: 8px 0;
+  color: #e0e0e0;
+}
+
+.draft-statement {
+  background: #0d0d0d;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+
+.draft-statement .scenario {
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 8px;
+}
+
+.draft-statement .statement {
+  color: #fff;
+  font-style: italic;
+  line-height: 1.5;
+}
+
+/* Specific Segment Styling */
+.v3-segment-tab.competitive .segment-section:first-child {
+  border-top: 3px solid #00ffcc;
+}
+
+.v3-segment-tab.market .segment-section:first-child {
+  border-top: 3px solid #00ff88;
+}
+
+.v3-segment-tab.regulatory .segment-section:first-child {
+  border-top: 3px solid #ff6600;
+}
+
+.v3-segment-tab.media .segment-section:first-child {
+  border-top: 3px solid #ffcc00;
+}
+
+.v3-segment-tab.forward .segment-section:first-child {
+  border-top: 3px solid #8800ff;
+}
+
 /* Narrative Control Tab */
 .v3-narrative-tab {
   padding: 20px;
