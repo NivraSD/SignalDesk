@@ -216,7 +216,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
     return (
       <div className="v3-segment-tab competitive">
         <div className="segment-section">
-          <h3 className="section-title">📊 What's Happening</h3>
+          <h3 className="section-title">📊 Competitor Actions</h3>
           <div className="intelligence-items">
             {data.competitor_actions?.map((action, idx) => (
               <div key={idx} className="intelligence-item">
@@ -228,42 +228,43 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
           </div>
         </div>
         
-        <div className="segment-section">
-          <h3 className="section-title">🎯 What It Means For Us</h3>
-          <div className="impact-analysis">
-            {data.competitive_implications?.map((impl, idx) => (
-              <div key={idx} className="impact-item">
-                <div className="impact-description">{impl.impact}</div>
-                <div className="impact-severity">Severity: {impl.severity}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-        
-        <div className="segment-section">
-          <h3 className="section-title">📢 PR Response</h3>
-          <div className="pr-response">
-            <div className="response-strategy">{data.pr_strategy}</div>
-            <div className="key-messages">
-              <h4>Key Messages:</h4>
-              <ul>
-                {data.key_messages?.map((msg, idx) => (
-                  <li key={idx}>{msg}</li>
-                ))}
-              </ul>
+        {data.strategic_implications && (
+          <div className="segment-section">
+            <h3 className="section-title">🎯 Strategic Implications</h3>
+            <div className="narrative-content">
+              <p>{data.strategic_implications}</p>
             </div>
-            {data.do_not_say && (
-              <div className="avoid-messages">
-                <h4>⚠️ Avoid:</h4>
-                <ul>
-                  {data.do_not_say.map((msg, idx) => (
-                    <li key={idx}>{msg}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
           </div>
-        </div>
+        )}
+        
+        {data.competitive_dynamics && (
+          <div className="segment-section">
+            <h3 className="section-title">⚡ Competitive Dynamics</h3>
+            <div className="narrative-content">
+              <p>{data.competitive_dynamics}</p>
+            </div>
+          </div>
+        )}
+        
+        {data.capability_gaps && (
+          <div className="segment-section">
+            <h3 className="section-title">🔧 Capability Gaps</h3>
+            <div className="narrative-content">
+              <p>{data.capability_gaps}</p>
+            </div>
+          </div>
+        )}
+        
+        {data.strategic_options?.length > 0 && (
+          <div className="segment-section">
+            <h3 className="section-title">📋 Strategic Options</h3>
+            <ul className="strategic-options">
+              {data.strategic_options.map((option, idx) => (
+                <li key={idx}>{option}</li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     );
   };
@@ -688,56 +689,53 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
     return (
       <div className="v3-segment-tab market">
         <div className="segment-section">
-          <h3 className="section-title">📊 What's Happening</h3>
+          <h3 className="section-title">📊 Market Trends</h3>
           <div className="intelligence-items">
             {data.market_trends?.map((trend, idx) => (
               <div key={idx} className="intelligence-item">
                 <div className="item-trend">{trend.trend}</div>
                 <div className="item-details">{trend.description}</div>
-                <div className="item-momentum">Momentum: {trend.momentum}</div>
-              </div>
-            ))}
-            {data.opportunities?.map((opp, idx) => (
-              <div key={idx} className="intelligence-item opportunity">
-                <div className="item-opportunity">💡 {opp.opportunity}</div>
-                <div className="item-details">{opp.description}</div>
+                <div className="item-momentum">Momentum: {trend.momentum} | Volume: {trend.volume}</div>
               </div>
             ))}
           </div>
         </div>
         
-        <div className="segment-section">
-          <h3 className="section-title">🎯 What It Means For Us</h3>
-          <div className="impact-analysis">
-            {data.market_implications?.map((impl, idx) => (
-              <div key={idx} className="impact-item">
-                <div className="impact-description">{impl.implication}</div>
-                <div className="impact-meaning">{impl.what_it_means_for_us || impl.opportunity || ''}</div>
-              </div>
-            ))}
-            {(!data.market_implications || data.market_implications.length === 0) && (
-              <div className="impact-item">{data.market_narrative || 'Analysis pending...'}</div>
-            )}
-          </div>
-        </div>
-        
-        <div className="segment-section">
-          <h3 className="section-title">📢 PR Response</h3>
-          <div className="pr-response">
-            {data.market_implications?.map((impl, idx) => (
-              impl.pr_response && <div key={idx} className="response-item">{impl.pr_response}</div>
-            ))}
-            <div className="response-strategy">{data.market_narrative}</div>
-            <div className="thought-leadership">
-              <h4>Thought Leadership Topics:</h4>
-              <ul>
-                {data.thought_leadership?.map((topic, idx) => (
-                  <li key={idx}>{topic}</li>
-                ))}
-              </ul>
+        {data.market_analysis && (
+          <div className="segment-section">
+            <h3 className="section-title">🎯 Market Analysis</h3>
+            <div className="narrative-content">
+              <p>{data.market_analysis}</p>
             </div>
           </div>
-        </div>
+        )}
+        
+        {data.strategic_opportunities && (
+          <div className="segment-section">
+            <h3 className="section-title">💡 Strategic Opportunities</h3>
+            <div className="narrative-content">
+              <p>{data.strategic_opportunities}</p>
+            </div>
+          </div>
+        )}
+        
+        {data.market_evolution && (
+          <div className="segment-section">
+            <h3 className="section-title">📈 Market Evolution</h3>
+            <div className="narrative-content">
+              <p>{data.market_evolution}</p>
+            </div>
+          </div>
+        )}
+        
+        {data.positioning_strategy && (
+          <div className="segment-section">
+            <h3 className="section-title">🎯 Positioning Strategy</h3>
+            <div className="narrative-content">
+              <p>{data.positioning_strategy}</p>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -747,55 +745,48 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
     
     return (
       <div className="v3-segment-tab regulatory">
+        {data.regulatory_landscape && (
+          <div className="segment-section">
+            <h3 className="section-title">🏛️ Regulatory Landscape</h3>
+            <div className="narrative-content">
+              <p>{data.regulatory_landscape}</p>
+            </div>
+          </div>
+        )}
+        
         <div className="segment-section">
-          <h3 className="section-title">📊 What's Happening</h3>
+          <h3 className="section-title">📊 Regulatory Developments</h3>
           <div className="intelligence-items">
             {data.regulatory_developments?.map((dev, idx) => (
               <div key={idx} className="intelligence-item">
-                <div className="item-entity">{dev.regulator || dev.source}</div>
+                <div className="item-entity">{dev.regulator}</div>
                 <div className="item-action">{dev.development}</div>
                 <div className="item-timeline">Timeline: {dev.timeline}</div>
+                {dev.strategic_impact && (
+                  <div className="item-impact">{dev.strategic_impact}</div>
+                )}
               </div>
             ))}
           </div>
         </div>
         
-        <div className="segment-section">
-          <h3 className="section-title">🎯 What It Means For Us</h3>
-          <div className="impact-analysis">
-            {data.regulatory_developments?.map((dev, idx) => (
-              dev.what_it_means_for_us && (
-                <div key={idx} className="impact-item">
-                  <div className="impact-description">{dev.what_it_means_for_us}</div>
-                </div>
-              )
-            ))}
-            {data.compliance_requirements?.map((req, idx) => (
-              <div key={idx} className="impact-item">
-                <div className="impact-description">{req.requirement}</div>
-                <div className="impact-action">Action needed: {req.action}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-        
-        <div className="segment-section">
-          <h3 className="section-title">📢 PR Response</h3>
-          <div className="pr-response">
-            {data.regulatory_developments?.map((dev, idx) => (
-              dev.pr_response && <div key={idx} className="response-item">{dev.pr_response}</div>
-            ))}
-            <div className="response-strategy">{data.regulatory_stance}</div>
-            <div className="stakeholder-messages">
-              <h4>Stakeholder Communications:</h4>
-              {data.stakeholder_messages?.map((msg, idx) => (
-                <div key={idx} className="stakeholder-msg">
-                  <strong>{msg.audience}:</strong> {msg.message}
-                </div>
-              ))}
+        {data.strategic_implications && (
+          <div className="segment-section">
+            <h3 className="section-title">🎯 Strategic Implications</h3>
+            <div className="narrative-content">
+              <p>{data.strategic_implications}</p>
             </div>
           </div>
-        </div>
+        )}
+        
+        {data.regulatory_positioning && (
+          <div className="segment-section">
+            <h3 className="section-title">📢 Regulatory Positioning</h3>
+            <div className="narrative-content">
+              <p>{data.regulatory_positioning}</p>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -805,71 +796,56 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
     
     return (
       <div className="v3-segment-tab media">
+        {data.narrative_landscape && (
+          <div className="segment-section">
+            <h3 className="section-title">📰 Narrative Landscape</h3>
+            <div className="narrative-content">
+              <p>{data.narrative_landscape}</p>
+            </div>
+          </div>
+        )}
+        
         <div className="segment-section">
-          <h3 className="section-title">📊 What's Happening</h3>
+          <h3 className="section-title">📊 Media Coverage</h3>
           <div className="intelligence-items">
             {data.media_coverage?.map((coverage, idx) => (
               <div key={idx} className="intelligence-item">
                 <div className="item-source">{coverage.outlet}</div>
-                <div className="item-headline">{coverage.headline || coverage.topic}</div>
+                <div className="item-headline">{coverage.topic}</div>
                 <div className="item-sentiment">Sentiment: {coverage.sentiment}</div>
-              </div>
-            ))}
-            {data.social_trends?.map((trend, idx) => (
-              <div key={idx} className="intelligence-item social">
-                <div className="item-platform">📱 {trend.platform}</div>
-                <div className="item-trend">{trend.trend}</div>
-                <div className="item-volume">Volume: {trend.volume}</div>
+                <div className="item-narrative">{coverage.narrative}</div>
+                <div className="item-reach">Reach: {coverage.reach}</div>
               </div>
             ))}
           </div>
         </div>
         
-        <div className="segment-section">
-          <h3 className="section-title">🎯 What It Means For Us</h3>
-          <div className="impact-analysis">
-            {data.what_it_means_for_us && (
-              <div className="impact-item">
-                <div className="impact-description">{data.what_it_means_for_us}</div>
-              </div>
-            )}
-            <div className="reputation-impact">
-              <div className="reputation-score">Reputation Impact: {data.reputation_impact}</div>
-              <div className="sentiment-shift">Sentiment Trend: {data.sentiment_trend}</div>
+        {data.sentiment_analysis && (
+          <div className="segment-section">
+            <h3 className="section-title">📊 Sentiment Analysis</h3>
+            <div className="narrative-content">
+              <p>{data.sentiment_analysis}</p>
             </div>
-            {data.narrative_risks?.map((risk, idx) => (
-              <div key={idx} className="impact-item risk">
-                <div className="risk-narrative">{risk}</div>
-              </div>
-            ))}
           </div>
-        </div>
+        )}
         
-        <div className="segment-section">
-          <h3 className="section-title">📢 PR Response</h3>
-          <div className="pr-response">
-            {data.pr_response && (
-              <div className="response-item">{data.pr_response}</div>
-            )}
-            <div className="media-strategy">{data.media_strategy}</div>
-            {data.media_outreach && (
-              <div className="media-outreach">
-                <h4>Media Outreach:</h4>
-                <ul>
-                  {data.media_outreach.map((action, idx) => (
-                    <li key={idx}>{action}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {data.social_response && (
-              <div className="social-response">
-                <h4>Social Media Response:</h4>
-                <p>{data.social_response}</p>
-              </div>
-            )}
+        {data.narrative_implications && (
+          <div className="segment-section">
+            <h3 className="section-title">🎯 Narrative Implications</h3>
+            <div className="narrative-content">
+              <p>{data.narrative_implications}</p>
+            </div>
           </div>
-        </div>
+        )}
+        
+        {data.strategic_communications && (
+          <div className="segment-section">
+            <h3 className="section-title">📢 Strategic Communications</h3>
+            <div className="narrative-content">
+              <p>{data.strategic_communications}</p>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -879,58 +855,58 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
     
     return (
       <div className="v3-segment-tab forward">
+        {data.future_landscape && (
+          <div className="segment-section">
+            <h3 className="section-title">🔮 Future Landscape</h3>
+            <div className="narrative-content">
+              <p>{data.future_landscape}</p>
+            </div>
+          </div>
+        )}
+        
         <div className="segment-section">
-          <h3 className="section-title">🔮 What's Coming</h3>
+          <h3 className="section-title">📊 Predictions</h3>
           <div className="intelligence-items">
             {data.predictions?.map((pred, idx) => (
               <div key={idx} className="intelligence-item prediction">
                 <div className="item-timeframe">{pred.timeframe}</div>
                 <div className="item-prediction">{pred.prediction}</div>
                 <div className="item-probability">Probability: {pred.probability}%</div>
+                <div className="item-indicators">Indicators: {pred.indicators}</div>
+                {pred.strategic_implications && (
+                  <div className="item-implications">{pred.strategic_implications}</div>
+                )}
               </div>
             ))}
           </div>
         </div>
         
-        <div className="segment-section">
-          <h3 className="section-title">🎯 What It Means For Us</h3>
-          <div className="impact-analysis">
-            {data.predictions?.map((pred, idx) => (
-              pred.what_it_means_for_us && (
-                <div key={idx} className="impact-item">
-                  <div className="impact-description">{pred.what_it_means_for_us}</div>
-                </div>
-              )
-            ))}
-            {data.preparation_needed?.map((prep, idx) => (
-              <div key={idx} className="impact-item">
-                <div className="prep-scenario">{prep.scenario}</div>
-                <div className="prep-impact">{prep.impact}</div>
-              </div>
-            ))}
+        {data.scenario_analysis && (
+          <div className="segment-section">
+            <h3 className="section-title">🎯 Scenario Analysis</h3>
+            <div className="narrative-content">
+              <p>{data.scenario_analysis}</p>
+            </div>
           </div>
-        </div>
+        )}
         
-        <div className="segment-section">
-          <h3 className="section-title">📢 PR Preparation</h3>
-          <div className="pr-response">
-            {data.predictions?.map((pred, idx) => (
-              pred.pr_response && <div key={idx} className="response-item">{pred.pr_response}</div>
-            ))}
-            <div className="proactive-strategy">{data.proactive_strategy}</div>
-            {data.prepared_statements && (
-              <div className="prepared-statements">
-                <h4>Draft Statements Ready:</h4>
-                {data.prepared_statements.map((stmt, idx) => (
-                  <div key={idx} className="draft-statement">
-                    <div className="scenario">If: {stmt.scenario}</div>
-                    <div className="statement">Statement: "{stmt.statement}"</div>
-                  </div>
-                ))}
-              </div>
-            )}
+        {data.strategic_preparation && (
+          <div className="segment-section">
+            <h3 className="section-title">🛡️ Strategic Preparation</h3>
+            <div className="narrative-content">
+              <p>{data.strategic_preparation}</p>
+            </div>
           </div>
-        </div>
+        )}
+        
+        {data.windows_of_opportunity && (
+          <div className="segment-section">
+            <h3 className="section-title">🌟 Windows of Opportunity</h3>
+            <div className="narrative-content">
+              <p>{data.windows_of_opportunity}</p>
+            </div>
+          </div>
+        )}
       </div>
     );
   };

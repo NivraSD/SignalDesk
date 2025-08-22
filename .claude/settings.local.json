@@ -234,7 +234,8 @@
       "WebFetch(domain:signaldesk-gjbulgow5-nivra-sd.vercel.app)",
       "WebFetch(domain:signaldesk-og2zsu368-nivra-sd.vercel.app)",
       "Bash(docker:*)",
-      "WebFetch(domain:signaldesk-kl9jqcpli-nivra-sd.vercel.app)"
+      "WebFetch(domain:signaldesk-kl9jqcpli-nivra-sd.vercel.app)",
+      "WebFetch(domain:app.supabase.com)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

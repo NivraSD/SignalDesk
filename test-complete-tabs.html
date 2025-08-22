@@ -222,31 +222,27 @@
                 {
                     name: 'Competitive',
                     tab: tabs.competitive,
-                    required: ['competitor_actions', 'competitive_implications', 'pr_strategy', 'key_messages', 'do_not_say']
+                    required: ['competitor_actions', 'strategic_implications', 'competitive_dynamics', 'capability_gaps', 'strategic_options']
                 },
                 {
                     name: 'Market & Trends',
                     tab: tabs.market,
-                    required: ['market_trends', 'opportunities', 'market_implications', 'market_narrative', 'thought_leadership'],
-                    checkNested: ['market_implications[0].what_it_means_for_us', 'market_implications[0].pr_response']
+                    required: ['market_trends', 'market_analysis', 'strategic_opportunities', 'market_evolution', 'positioning_strategy']
                 },
                 {
                     name: 'Regulatory',
                     tab: tabs.regulatory,
-                    required: ['regulatory_developments', 'compliance_requirements', 'regulatory_stance', 'stakeholder_messages'],
-                    checkNested: ['regulatory_developments[0].what_it_means_for_us', 'regulatory_developments[0].pr_response']
+                    required: ['regulatory_landscape', 'regulatory_developments', 'strategic_implications', 'regulatory_positioning']
                 },
                 {
                     name: 'Media & Sentiment',
                     tab: tabs.media,
-                    required: ['media_coverage', 'social_trends', 'reputation_impact', 'sentiment_trend', 'narrative_risks', 'media_strategy', 'media_outreach', 'social_response'],
-                    checkAdditional: ['what_it_means_for_us', 'pr_response']
+                    required: ['narrative_landscape', 'media_coverage', 'sentiment_analysis', 'narrative_implications', 'strategic_communications']
                 },
                 {
                     name: 'Forward Look',
                     tab: tabs.forward,
-                    required: ['predictions', 'preparation_needed', 'proactive_strategy', 'prepared_statements'],
-                    checkNested: ['predictions[0].what_it_means_for_us', 'predictions[0].pr_response']
+                    required: ['future_landscape', 'predictions', 'scenario_analysis', 'strategic_preparation', 'windows_of_opportunity']
                 }
             ];
             
