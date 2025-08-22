@@ -14,34 +14,44 @@ class DataFormatterService {
     const intelligence = orchestratorResponse.intelligence || {};
     const stats = orchestratorResponse.statistics || {};
     
+    // Check if we have V5 analytical structure from synthesized data
+    const isV5Structure = intelligence.synthesized && (
+      intelligence.synthesized.market_activity || 
+      intelligence.synthesized.competitor_intelligence ||
+      intelligence.synthesized.social_pulse ||
+      intelligence.synthesized.industry_signals ||
+      intelligence.synthesized.media_coverage
+    );
+    
+    console.log('🔍 Data structure detection:', { isV5Structure, hasSynthesized: !!intelligence.synthesized });
+    
     // Build properly formatted tabs
     const formattedData = {
       // CRITICAL: Include success field so claudeIntelligenceServiceV2 uses this data
       success: true,
       
-      // Overview Tab - MUST have these exact fields
-      overview: this.formatOverviewTab(intelligence),
-      
-      // Competition Tab
-      competition: this.formatCompetitionTab(intelligence),
-      
-      // Stakeholders Tab
-      stakeholders: this.formatStakeholdersTab(intelligence),
-      
-      // Topics Tab
-      topics: this.formatTopicsTab(intelligence),
-      
-      // Predictions Tab
-      predictions: this.formatPredictionsTab(intelligence),
-      
-      // Tab format for display component
-      tabs: {
+      // Tab format for display component - V5 Analytical Structure
+      tabs: isV5Structure ? {
+        market_activity: this.formatMarketActivityTab(intelligence),
+        competitor_intelligence: this.formatCompetitorIntelTab(intelligence),
+        social_pulse: this.formatSocialPulseTab(intelligence),
+        industry_signals: this.formatIndustrySignalsTab(intelligence),
+        media_coverage: this.formatMediaCoverageTab(intelligence)
+      } : {
+        // Fallback to legacy format for backward compatibility
         overview: this.formatOverviewTab(intelligence),
         competition: this.formatCompetitionTab(intelligence),
         stakeholders: this.formatStakeholdersTab(intelligence),
         topics: this.formatTopicsTab(intelligence),
         predictions: this.formatPredictionsTab(intelligence)
       },
+      
+      // Keep legacy top-level tabs for backward compatibility
+      overview: this.formatOverviewTab(intelligence),
+      competition: this.formatCompetitionTab(intelligence),
+      stakeholders: this.formatStakeholdersTab(intelligence),
+      topics: this.formatTopicsTab(intelligence),
+      predictions: this.formatPredictionsTab(intelligence),
       
       // Keep stats for reference
       stats: {
@@ -209,6 +219,68 @@ class DataFormatterService {
     };
   }
   
+  // V5 Analytical Tab Formatters
+  formatMarketActivityTab(intelligence) {
+    const marketData = intelligence.synthesized?.market_activity || {};
+    return {
+      summary: marketData.summary || 'No market activity data available',
+      statistics: marketData.statistics || {
+        total_articles: 0,
+        sources: 0,
+        time_range: 'N/A'
+      },
+      key_findings: marketData.key_findings || []
+    };
+  }
+
+  formatCompetitorIntelTab(intelligence) {
+    const competitorData = intelligence.synthesized?.competitor_intelligence || {};
+    return {
+      summary: competitorData.summary || 'No competitor intelligence available',
+      competitors_tracked: competitorData.competitors_tracked || [],
+      total_actions: competitorData.total_actions || 0,
+      movements: competitorData.movements || []
+    };
+  }
+
+  formatSocialPulseTab(intelligence) {
+    const socialData = intelligence.synthesized?.social_pulse || {};
+    return {
+      summary: socialData.summary || 'No social media data available',
+      sentiment_breakdown: socialData.sentiment_breakdown || {
+        positive: 0,
+        neutral: 0,
+        negative: 0
+      },
+      total_posts: socialData.total_posts || 0,
+      trending_topics: socialData.trending_topics || [],
+      key_discussions: socialData.key_discussions || []
+    };
+  }
+
+  formatIndustrySignalsTab(intelligence) {
+    const industryData = intelligence.synthesized?.industry_signals || {};
+    return {
+      summary: industryData.summary || 'No industry signals detected',
+      indicators: industryData.indicators || [],
+      hiring_activity: industryData.hiring_activity || {
+        total_postings: 0,
+        growth_rate: 'N/A'
+      }
+    };
+  }
+
+  formatMediaCoverageTab(intelligence) {
+    const mediaData = intelligence.synthesized?.media_coverage || {};
+    return {
+      summary: mediaData.summary || 'No media coverage data available',
+      coverage_volume: mediaData.coverage_volume || 0,
+      source_count: mediaData.source_count || 0,
+      sentiment_trend: mediaData.sentiment_trend || 'neutral',
+      top_narratives: mediaData.top_narratives || []
+    };
+  }
+
   /**
    * Helper to extract and clean arrays
    */
