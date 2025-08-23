@@ -50,17 +50,24 @@ const OpportunityModule = ({ organizationId }) => {
       if (organizationId) {
         try {
           console.log('🎯 Calling assess-opportunities-simple with org:', organizationId);
+          console.log('📋 Using configuration:', userConfig);
           const { data, error } = await supabase.functions.invoke('assess-opportunities-simple', {
             body: {
               organizationId,
-              forceRefresh: false
+              forceRefresh: false,
+              organizationProfile: userConfig // Pass the user's configuration
             }
           });
 
           console.log('📊 Edge Function response:', { data, error });
+          
+          // If there's an error, log it for debugging
+          if (error) {
+            console.error('❌ Edge Function error:', error);
+          }
 
-          // Check for successful response or fallback message
-          if (!error && data && data.opportunities && Array.isArray(data.opportunities) && data.opportunities.length > 0) {
+          // Check for successful response - accept even empty opportunities array
+          if (!error && data && data.opportunities && Array.isArray(data.opportunities)) {
             // Process opportunities from Edge Function
             const scoredOpportunities = data.opportunities.map(opp => ({
               ...opp,

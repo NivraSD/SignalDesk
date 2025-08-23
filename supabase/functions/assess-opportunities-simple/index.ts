@@ -334,13 +334,12 @@ serve(async (req) => {
   }
 
   try {
-    const { organizationId, forceRefresh } = await req.json()
+    const { organizationId, forceRefresh, organizationProfile: passedProfile } = await req.json()
     
     console.log(`🎯 Assessing opportunities for: ${organizationId}`)
     
-    // Get organization profile from localStorage (passed from frontend)
-    // In production, this would come from database
-    const organizationProfile = {
+    // Use passed profile or default configuration
+    const organizationProfile = passedProfile || {
       minimum_confidence: 70,
       opportunity_types: {
         competitor_weakness: true,
@@ -352,6 +351,8 @@ serve(async (req) => {
       risk_tolerance: 'moderate',
       preferred_tiers: ['tier1_business', 'tier1_tech', 'trade']
     }
+    
+    console.log(`📋 Using configuration:`, organizationProfile)
     
     // Step 1: Detect signals from MCPs
     const signals = await detectSignals(organizationId)
