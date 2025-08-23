@@ -14,12 +14,28 @@ const OpportunityModule = ({ organizationId }) => {
   const [userConfig, setUserConfig] = useState(null);
 
   useEffect(() => {
-    // Load user's onboarding configuration
-    const savedOnboarding = localStorage.getItem('signaldesk_onboarding');
-    if (savedOnboarding) {
-      const config = JSON.parse(savedOnboarding);
-      setUserConfig(config.opportunities);
-      console.log('📊 Opportunity Module loaded config:', config.opportunities);
+    // Load user's opportunity profile configuration
+    const opportunityProfile = localStorage.getItem('opportunity_profile');
+    if (opportunityProfile) {
+      const config = JSON.parse(opportunityProfile);
+      setUserConfig(config);
+      console.log('📊 Opportunity Module loaded profile:', config);
+    } else {
+      // Fallback to basic onboarding if no opportunity profile
+      const savedOnboarding = localStorage.getItem('signaldesk_onboarding');
+      if (savedOnboarding) {
+        const config = JSON.parse(savedOnboarding);
+        console.log('📊 Using basic onboarding config');
+        // Create a basic config from onboarding data
+        setUserConfig({
+          minimumScore: 60,
+          opportunity_types: {
+            competitor_weakness: true,
+            narrative_vacuum: true,
+            cascade_effect: true
+          }
+        });
+      }
     }
     
     if (organizationId) {
@@ -165,30 +181,42 @@ const OpportunityModule = ({ organizationId }) => {
       // Apply user configuration weights to mock data
       const scoredOpportunities = mockOpportunities.map(opp => {
         let finalScore = opp.base_score;
+        let weight = 100;
         
-        if (userConfig && userConfig[opp.opportunity_type]) {
-          const typeConfig = userConfig[opp.opportunity_type];
-          if (typeConfig.enabled) {
-            const weightMultiplier = 0.5 + (typeConfig.weight / 100);
-            finalScore = Math.round(opp.base_score * weightMultiplier);
-          } else {
+        // Check if opportunity type is enabled in config
+        if (userConfig && userConfig.opportunity_types) {
+          // Map old opportunity types to new config keys
+          const typeMapping = {
+            'trending': 'narrative_vacuum',
+            'competitor_gap': 'competitor_weakness',
+            'news_hook': 'cascade_effect',
+            'journalist_interest': 'narrative_vacuum',
+            'award': 'alliance_opening',
+            'speaking': 'alliance_opening',
+            'editorial_calendar': 'narrative_vacuum'
+          };
+          
+          const configKey = typeMapping[opp.opportunity_type] || opp.opportunity_type;
+          
+          if (userConfig.opportunity_types[configKey] === false) {
             finalScore = 0;
+            weight = 0;
           }
         }
         
         return {
           ...opp,
           priority_score: finalScore,
-          configured_weight: userConfig?.[opp.opportunity_type]?.weight || 50
+          configured_weight: weight
         };
       });
 
-      const minScore = userConfig?.minimumScore || 0;
+      const minScore = userConfig?.minimum_confidence || userConfig?.minimumScore || 0;
       
       const filtered = scoredOpportunities.filter(opp => {
-        if (userConfig && userConfig[opp.opportunity_type] && !userConfig[opp.opportunity_type].enabled) {
-          return false;
-        }
+        // Filter out disabled opportunity types
+        if (opp.priority_score === 0) return false;
+        
         if (filters.type !== 'all' && opp.opportunity_type !== filters.type) return false;
         if (opp.priority_score < filters.minScore || opp.priority_score < minScore) return false;
         if (filters.status !== 'all' && opp.status !== filters.status) return false;
