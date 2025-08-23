@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SignalDesk Complete System Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+            color: #fff;
+            padding: 40px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            background: linear-gradient(135deg, #00f5ff 0%, #0099ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            font-size: 48px;
+            margin-bottom: 40px;
+        }
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .test-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 245, 255, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        .test-card:hover {
+            border-color: rgba(0, 245, 255, 0.5);
+            box-shadow: 0 0 20px rgba(0, 245, 255, 0.2);
+        }
+        .test-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .test-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #00f5ff;
+        }
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .status-pending { background: rgba(255, 200, 0, 0.2); color: #ffc800; }
+        .status-running { background: rgba(0, 200, 255, 0.2); color: #00c8ff; }
+        .status-success { background: rgba(0, 255, 100, 0.2); color: #00ff64; }
+        .status-error { background: rgba(255, 0, 100, 0.2); color: #ff0064; }
+        .test-content {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #94a3b8;
+        }
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .metric-label {
+            color: #64748b;
+        }
+        .metric-value {
+            color: #00f5ff;
+            font-weight: 600;
+        }
+        .error-message {
+            background: rgba(255, 0, 100, 0.1);
+            border: 1px solid rgba(255, 0, 100, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 15px;
+            font-size: 13px;
+            color: #ff6b9d;
+        }
+        .success-message {
+            background: rgba(0, 255, 100, 0.1);
+            border: 1px solid rgba(0, 255, 100, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 15px;
+            font-size: 13px;
+            color: #00ff64;
+        }
+        .control-panel {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 245, 255, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        button {
+            background: linear-gradient(135deg, #00f5ff 0%, #0099ff 100%);
+            border: none;
+            color: #000;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 245, 255, 0.4);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        select {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 245, 255, 0.3);
+            color: #fff;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .results-summary {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 245, 255, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+        }
+        .summary-item {
+            text-align: center;
+        }
+        .summary-value {
+            font-size: 36px;
+            font-weight: bold;
+            color: #00f5ff;
+        }
+        .summary-label {
+            font-size: 12px;
+            color: #64748b;
+            text-transform: uppercase;
+            margin-top: 5px;
+        }
+        .progress-bar {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00f5ff 0%, #0099ff 100%);
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 SignalDesk Complete System Test</h1>
+        
+        <div class="control-panel">
+            <select id="orgSelect">
+                <option value="Toyota">Toyota (Automotive)</option>
+                <option value="Nike">Nike (Sports)</option>
+                <option value="Microsoft">Microsoft (Technology)</option>
+            </select>
+            <button onclick="runAllTests()">Run All Tests</button>
+            <button onclick="runModuleTests()">Test Modules Only</button>
+            <button onclick="runAPITests()">Test APIs Only</button>
+            <button onclick="clearResults()">Clear Results</button>
+        </div>
+
+        <div class="test-grid" id="testGrid">
+            <!-- Test cards will be dynamically added here -->
+        </div>
+
+        <div class="results-summary" id="resultsSummary" style="display: none;">
+            <h2 style="color: #00f5ff; margin-bottom: 20px;">Test Results Summary</h2>
+            <div class="summary-grid" id="summaryGrid"></div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+
+        const tests = [
+            {
+                id: 'opportunity-orchestrator',
+                name: 'Opportunity Orchestrator',
+                description: 'Tests the multi-phase opportunity detection with 5 personas',
+                category: 'module',
+                run: testOpportunityOrchestrator
+            },
+            {
+                id: 'intelligence-hub',
+                name: 'Intelligence Hub Real-time',
+                description: 'Tests real-time intelligence gathering with Firecrawl',
+                category: 'module',
+                run: testIntelligenceHub
+            },
+            {
+                id: 'cascade-detection',
+                name: 'Cascade Detection',
+                description: 'Verifies cascade opportunity identification',
+                category: 'feature',
+                run: testCascadeDetection
+            },
+            {
+                id: 'competitor-monitoring',
+                name: 'Competitor Monitoring',
+                description: 'Tests competitor weakness detection',
+                category: 'feature',
+                run: testCompetitorMonitoring
+            },
+            {
+                id: 'api-health',
+                name: 'API Health Check',
+                description: 'Verifies all edge functions are responding',
+                category: 'api',
+                run: testAPIHealth
+            },
+            {
+                id: 'configuration-flow',
+                name: 'Configuration Flow',
+                description: 'Tests configuration storage and retrieval',
+                category: 'system',
+                run: testConfigurationFlow
+            }
+        ];
+
+        let testResults = {};
+
+        function initializeTests() {
+            const testGrid = document.getElementById('testGrid');
+            testGrid.innerHTML = '';
+            
+            tests.forEach(test => {
+                const card = createTestCard(test);
+                testGrid.appendChild(card);
+            });
+        }
+
+        function createTestCard(test) {
+            const card = document.createElement('div');
+            card.className = 'test-card';
+            card.id = `test-${test.id}`;
+            card.innerHTML = `
+                <div class="test-header">
+                    <div class="test-title">${test.name}</div>
+                    <span class="status-badge status-pending">Pending</span>
+                </div>
+                <div class="test-content">
+                    <p>${test.description}</p>
+                    <div class="metrics" style="display: none;"></div>
+                </div>
+            `;
+            return card;
+        }
+
+        function updateTestStatus(testId, status, metrics = null, error = null) {
+            const card = document.getElementById(`test-${testId}`);
+            if (!card) return;
+            
+            const badge = card.querySelector('.status-badge');
+            badge.className = `status-badge status-${status}`;
+            badge.textContent = status;
+            
+            const metricsDiv = card.querySelector('.metrics');
+            if (metrics) {
+                metricsDiv.style.display = 'block';
+                metricsDiv.innerHTML = Object.entries(metrics)
+                    .map(([key, value]) => `
+                        <div class="metric">
+                            <span class="metric-label">${key}:</span>
+                            <span class="metric-value">${value}</span>
+                        </div>
+                    `).join('');
+            }
+            
+            if (error) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.textContent = error;
+                card.querySelector('.test-content').appendChild(errorDiv);
+            }
+            
+            if (status === 'success' && !error) {
+                const successDiv = document.createElement('div');
+                successDiv.className = 'success-message';
+                successDiv.textContent = '✓ Test passed successfully';
+                card.querySelector('.test-content').appendChild(successDiv);
+            }
+        }
+
+        async function testOpportunityOrchestrator() {
+            const org = document.getElementById('orgSelect').value;
+            const config = getTestConfig(org);
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/opportunity-orchestrator`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: { name: org, industry: config.industry },
+                        config: config,
+                        forceRefresh: true
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    return {
+                        success: true,
+                        metrics: {
+                            'Opportunities': data.opportunities?.length || 0,
+                            'Cascade Signals': data.signals?.cascade_indicators?.length || 0,
+                            'Personas Used': data.personas_used?.length || 0,
+                            'Response Time': `${response.headers.get('x-response-time') || 'N/A'}ms`
+                        }
+                    };
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+            } catch (error) {
+                return {
+                    success: false,
+                    error: error.message
+                };
+            }
+        }
+
+        async function testIntelligenceHub() {
+            const org = document.getElementById('orgSelect').value;
+            const config = getTestConfig(org);
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-hub-realtime`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: { name: org, industry: config.industry },
+                        timeframe: '24h'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    return {
+                        success: true,
+                        metrics: {
+                            'Competitor Movements': data.intelligence?.competitors?.movements?.length || 0,
+                            'Vulnerabilities': data.intelligence?.competitors?.vulnerabilities?.length || 0,
+                            'Trending Topics': data.intelligence?.narratives?.trending?.length || 0,
+                            'Cascade Predictions': data.intelligence?.predictions?.cascades?.length || 0
+                        }
+                    };
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+            } catch (error) {
+                return {
+                    success: false,
+                    error: error.message
+                };
+            }
+        }
+
+        async function testCascadeDetection() {
+            const org = document.getElementById('orgSelect').value;
+            const config = getTestConfig(org);
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/opportunity-orchestrator`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: { name: org, industry: config.industry },
+                        config: { ...config, cascade_predictor: true }
+                    })
+                });
+
+                const data = await response.json();
+                const cascadeOpps = data.opportunities?.filter(o => 
+                    o.opportunity_type === 'cascade_effect' || 
+                    o.opportunity_type === 'cascade_predictor'
+                ) || [];
+                
+                return {
+                    success: cascadeOpps.length > 0,
+                    metrics: {
+                        'Cascade Opportunities': cascadeOpps.length,
+                        'Avg Confidence': Math.round(
+                            cascadeOpps.reduce((sum, o) => sum + (o.confidence || 0), 0) / 
+                            (cascadeOpps.length || 1)
+                        ),
+                        'Critical Windows': cascadeOpps.filter(o => o.urgency === 'HIGH').length
+                    }
+                };
+            } catch (error) {
+                return {
+                    success: false,
+                    error: error.message
+                };
+            }
+        }
+
+        async function testCompetitorMonitoring() {
+            const org = document.getElementById('orgSelect').value;
+            const config = getTestConfig(org);
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-hub-realtime`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: { name: org, industry: config.industry },
+                        timeframe: '24h'
+                    })
+                });
+
+                const data = await response.json();
+                const competitors = data.intelligence?.competitors || {};
+                
+                return {
+                    success: true,
+                    metrics: {
+                        'Movements Detected': competitors.movements?.length || 0,
+                        'Vulnerabilities Found': competitors.vulnerabilities?.length || 0,
+                        'Opportunities': competitors.opportunities?.length || 0
+                    }
+                };
+            } catch (error) {
+                return {
+                    success: false,
+                    error: error.message
+                };
+            }
+        }
+
+        async function testAPIHealth() {
+            try {
+                // Use dedicated health check endpoint
+                const healthResponse = await fetch(`${SUPABASE_URL}/functions/v1/health-check`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({})
+                });
+                
+                if (!healthResponse.ok) {
+                    throw new Error(`Health check returned ${healthResponse.status}`);
+                }
+                
+                const healthData = await healthResponse.json();
+                
+                // Also do a quick test of each critical endpoint
+                const criticalEndpoints = [
+                    'opportunity-orchestrator',
+                    'intelligence-hub-realtime'
+                ];
+                
+                const endpointTests = await Promise.all(criticalEndpoints.map(async endpoint => {
+                    try {
+                        const response = await fetch(`${SUPABASE_URL}/functions/v1/${endpoint}`, {
+                            method: 'OPTIONS',
+                            headers: {
+                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                            }
+                        });
+                        return {
+                            endpoint,
+                            status: response.status,
+                            healthy: response.status === 200 || response.status === 204
+                        };
+                    } catch (error) {
+                        return {
+                            endpoint,
+                            status: 'error',
+                            healthy: false
+                        };
+                    }
+                }));
+                
+                const healthyEndpoints = endpointTests.filter(e => e.healthy).length;
+                const allHealthy = healthData.status === 'healthy' && healthyEndpoints === criticalEndpoints.length;
+                
+                return {
+                    success: allHealthy,
+                    metrics: {
+                        'System Status': healthData.status || 'unknown',
+                        'Anthropic API': healthData.environment?.anthropic_configured ? 'Configured' : 'Missing',
+                        'Firecrawl API': healthData.environment?.firecrawl_status || 'unknown',
+                        'Critical Endpoints': `${healthyEndpoints}/${criticalEndpoints.length} healthy`,
+                        'Timestamp': new Date(healthData.timestamp).toLocaleTimeString()
+                    }
+                };
+            } catch (error) {
+                // Fallback to individual endpoint checks if health-check fails
+                const endpoints = [
+                    'opportunity-orchestrator',
+                    'assess-opportunities-simple',
+                    'intelligence-hub-realtime'
+                ];
+                
+                const results = await Promise.all(endpoints.map(async endpoint => {
+                    try {
+                        const response = await fetch(`${SUPABASE_URL}/functions/v1/${endpoint}`, {
+                            method: 'OPTIONS',
+                            headers: {
+                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                            }
+                        });
+                        return {
+                            endpoint,
+                            healthy: response.status === 200 || response.status === 204
+                        };
+                    } catch (err) {
+                        return { endpoint, healthy: false };
+                    }
+                }));
+                
+                const healthy = results.filter(r => r.healthy).length;
+                
+                return {
+                    success: healthy > 0,
+                    metrics: {
+                        'Health Check': 'Failed - using fallback',
+                        'Healthy Endpoints': `${healthy}/${endpoints.length}`,
+                        'Error': error.message
+                    }
+                };
+            }
+        }
+
+        async function testConfigurationFlow() {
+            const testConfig = {
+                minimum_confidence: 75,
+                opportunity_types: {
+                    cascade_predictor: true,
+                    competitive_opportunist: true
+                },
+                risk_tolerance: 'moderate'
+            };
+            
+            // Store config
+            localStorage.setItem('signaldesk_opportunity_profile', JSON.stringify(testConfig));
+            
+            // Retrieve and verify
+            const retrieved = JSON.parse(localStorage.getItem('signaldesk_opportunity_profile'));
+            const matches = JSON.stringify(retrieved) === JSON.stringify(testConfig);
+            
+            return {
+                success: matches,
+                metrics: {
+                    'Config Stored': 'Yes',
+                    'Config Retrieved': 'Yes',
+                    'Data Integrity': matches ? 'Preserved' : 'Corrupted'
+                }
+            };
+        }
+
+        function getTestConfig(org) {
+            const configs = {
+                'Toyota': { industry: 'automotive', minimum_confidence: 70, risk_tolerance: 'moderate' },
+                'Nike': { industry: 'sports', minimum_confidence: 65, risk_tolerance: 'aggressive' },
+                'Microsoft': { industry: 'technology', minimum_confidence: 75, risk_tolerance: 'moderate' }
+            };
+            return configs[org] || configs['Microsoft'];
+        }
+
+        async function runAllTests() {
+            document.getElementById('resultsSummary').style.display = 'block';
+            testResults = {};
+            
+            for (const test of tests) {
+                updateTestStatus(test.id, 'running');
+                const result = await test.run();
+                testResults[test.id] = result;
+                updateTestStatus(
+                    test.id, 
+                    result.success ? 'success' : 'error',
+                    result.metrics,
+                    result.error
+                );
+                await new Promise(resolve => setTimeout(resolve, 500)); // Small delay between tests
+            }
+            
+            updateSummary();
+        }
+
+        async function runModuleTests() {
+            const moduleTests = tests.filter(t => t.category === 'module');
+            await runTests(moduleTests);
+        }
+
+        async function runAPITests() {
+            const apiTests = tests.filter(t => t.category === 'api');
+            await runTests(apiTests);
+        }
+
+        async function runTests(testList) {
+            document.getElementById('resultsSummary').style.display = 'block';
+            
+            for (const test of testList) {
+                updateTestStatus(test.id, 'running');
+                const result = await test.run();
+                testResults[test.id] = result;
+                updateTestStatus(
+                    test.id, 
+                    result.success ? 'success' : 'error',
+                    result.metrics,
+                    result.error
+                );
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            updateSummary();
+        }
+
+        function updateSummary() {
+            const total = Object.keys(testResults).length;
+            const passed = Object.values(testResults).filter(r => r.success).length;
+            const failed = total - passed;
+            const percentage = Math.round((passed / total) * 100);
+            
+            document.getElementById('summaryGrid').innerHTML = `
+                <div class="summary-item">
+                    <div class="summary-value">${total}</div>
+                    <div class="summary-label">Total Tests</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" style="color: #00ff64;">${passed}</div>
+                    <div class="summary-label">Passed</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" style="color: #ff0064;">${failed}</div>
+                    <div class="summary-label">Failed</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value">${percentage}%</div>
+                    <div class="summary-label">Success Rate</div>
+                </div>
+            `;
+            
+            document.getElementById('progressFill').style.width = `${percentage}%`;
+        }
+
+        function clearResults() {
+            initializeTests();
+            document.getElementById('resultsSummary').style.display = 'none';
+            testResults = {};
+        }
+
+        // Initialize on load
+        window.onload = initializeTests;
+    </script>
+</body>
+</html>

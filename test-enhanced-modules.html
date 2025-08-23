@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Enhanced Intelligence & Opportunity Modules</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%);
+            color: #fff;
+            padding: 40px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            background: linear-gradient(135deg, #00f5ff 0%, #0099ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 245, 255, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 8px 16px;
+            border-radius: 6px;
+            display: inline-block;
+            margin-top: 10px;
+        }
+        .success { background: rgba(0, 255, 100, 0.2); color: #00ff64; }
+        .error { background: rgba(255, 0, 100, 0.2); color: #ff0064; }
+        .pending { background: rgba(255, 200, 0, 0.2); color: #ffc800; }
+        .result {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        button {
+            background: linear-gradient(135deg, #00f5ff 0%, #0099ff 100%);
+            border: none;
+            color: #000;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .metric {
+            background: rgba(0, 245, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 245, 255, 0.3);
+        }
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #00f5ff;
+        }
+        .metric-label {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Enhanced Module Testing</h1>
+        
+        <div class="test-section">
+            <h2>📊 Test Configuration</h2>
+            <label>Organization: </label>
+            <select id="orgSelect" style="padding: 8px; margin: 10px;">
+                <option value="Toyota">Toyota (Automotive)</option>
+                <option value="Nike">Nike (Sports)</option>
+                <option value="Microsoft">Microsoft (Technology)</option>
+                <option value="JPMorgan">JPMorgan (Finance)</option>
+            </select>
+            <button onclick="runAllTests()">Run All Tests</button>
+            <button onclick="clearResults()">Clear Results</button>
+        </div>
+
+        <div class="test-section">
+            <h2>🎯 Opportunity Module (Orchestrated)</h2>
+            <button onclick="testOpportunityOrchestrator()">Test Opportunity Orchestrator</button>
+            <button onclick="testSimpleAssessment()">Test Simple Assessment (Fallback)</button>
+            <div id="opportunityStatus" class="status pending">Not tested</div>
+            <div id="opportunityMetrics" class="metrics"></div>
+            <div id="opportunityResult" class="result" style="display: none;">
+                <pre id="opportunityOutput"></pre>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🧠 Intelligence Hub (Real-time)</h2>
+            <button onclick="testIntelligenceHub()">Test Intelligence Hub</button>
+            <div id="intelligenceStatus" class="status pending">Not tested</div>
+            <div id="intelligenceMetrics" class="metrics"></div>
+            <div id="intelligenceResult" class="result" style="display: none;">
+                <pre id="intelligenceOutput"></pre>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📈 Performance Comparison</h2>
+            <div id="performanceMetrics" class="metrics"></div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+
+        // Test configuration based on organization
+        function getTestConfig(org) {
+            const configs = {
+                'Toyota': {
+                    industry: 'automotive',
+                    minimum_confidence: 70,
+                    opportunity_types: {
+                        competitive_opportunist: true,
+                        narrative_navigator: true,
+                        cascade_predictor: true,
+                        crisis_preventer: true,
+                        viral_virtuoso: false
+                    },
+                    risk_tolerance: 'moderate'
+                },
+                'Nike': {
+                    industry: 'sports',
+                    minimum_confidence: 65,
+                    opportunity_types: {
+                        competitive_opportunist: true,
+                        narrative_navigator: true,
+                        cascade_predictor: true,
+                        crisis_preventer: true,
+                        viral_virtuoso: true
+                    },
+                    risk_tolerance: 'aggressive'
+                },
+                'Microsoft': {
+                    industry: 'technology',
+                    minimum_confidence: 75,
+                    opportunity_types: {
+                        competitive_opportunist: true,
+                        narrative_navigator: true,
+                        cascade_predictor: true,
+                        crisis_preventer: true,
+                        viral_virtuoso: false
+                    },
+                    risk_tolerance: 'moderate'
+                },
+                'JPMorgan': {
+                    industry: 'finance',
+                    minimum_confidence: 80,
+                    opportunity_types: {
+                        competitive_opportunist: true,
+                        narrative_navigator: true,
+                        cascade_predictor: true,
+                        crisis_preventer: true,
+                        viral_virtuoso: false
+                    },
+                    risk_tolerance: 'conservative'
+                }
+            };
+            return configs[org] || configs['Microsoft'];
+        }
+
+        async function testOpportunityOrchestrator() {
+            const org = document.getElementById('orgSelect').value;
+            const config = getTestConfig(org);
+            
+            document.getElementById('opportunityStatus').className = 'status pending';
+            document.getElementById('opportunityStatus').textContent = 'Testing orchestrator...';
+            document.getElementById('opportunityResult').style.display = 'block';
+            document.getElementById('opportunityOutput').textContent = 'Calling opportunity-orchestrator edge function...';
+            
+            const startTime = Date.now();
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/opportunity-orchestrator`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: {
+                            name: org,
+                            industry: config.industry
+                        },
+                        config: config,
+                        forceRefresh: true
+                    })
+                });
+
+                const data = await response.json();
+                const elapsed = Date.now() - startTime;
+                
+                if (data.success) {
+                    document.getElementById('opportunityStatus').className = 'status success';
+                    document.getElementById('opportunityStatus').textContent = `Success! ${data.opportunities?.length || 0} opportunities found (${elapsed}ms)`;
+                    
+                    // Display metrics
+                    const metrics = `
+                        <div class="metric">
+                            <div class="metric-value">${data.opportunities?.length || 0}</div>
+                            <div class="metric-label">Opportunities</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">${data.signals?.competitor_signals?.length || 0}</div>
+                            <div class="metric-label">Competitor Signals</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">${data.signals?.cascade_indicators?.length || 0}</div>
+                            <div class="metric-label">Cascade Indicators</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">${data.personas_used?.length || 0}</div>
+                            <div class="metric-label">Personas Used</div>
+                        </div>
+                    `;
+                    document.getElementById('opportunityMetrics').innerHTML = metrics;
+                    
+                    // Display detailed results
+                    document.getElementById('opportunityOutput').textContent = JSON.stringify(data, null, 2);
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+            } catch (error) {
+                document.getElementById('opportunityStatus').className = 'status error';
+                document.getElementById('opportunityStatus').textContent = `Error: ${error.message}`;
+                document.getElementById('opportunityOutput').textContent = `Error: ${error.message}\n\nThis might be because:\n1. Edge function is still deploying\n2. Claude API key not configured\n3. Firecrawl rate limits`;
+            }
+        }
+
+        async function testSimpleAssessment() {
+            const org = document.getElementById('orgSelect').value;
+            const config = getTestConfig(org);
+            
+            document.getElementById('opportunityStatus').className = 'status pending';
+            document.getElementById('opportunityStatus').textContent = 'Testing simple assessment...';
+            document.getElementById('opportunityResult').style.display = 'block';
+            
+            const startTime = Date.now();
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/assess-opportunities-simple`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organizationId: org,
+                        organizationProfile: config,
+                        forceRefresh: true
+                    })
+                });
+
+                const data = await response.json();
+                const elapsed = Date.now() - startTime;
+                
+                if (data.success) {
+                    document.getElementById('opportunityStatus').className = 'status success';
+                    document.getElementById('opportunityStatus').textContent = `Simple assessment: ${data.opportunities?.length || 0} opportunities (${elapsed}ms)`;
+                    document.getElementById('opportunityOutput').textContent = JSON.stringify(data, null, 2);
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+            } catch (error) {
+                document.getElementById('opportunityStatus').className = 'status error';
+                document.getElementById('opportunityStatus').textContent = `Error: ${error.message}`;
+                document.getElementById('opportunityOutput').textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function testIntelligenceHub() {
+            const org = document.getElementById('orgSelect').value;
+            const config = getTestConfig(org);
+            
+            document.getElementById('intelligenceStatus').className = 'status pending';
+            document.getElementById('intelligenceStatus').textContent = 'Testing Intelligence Hub...';
+            document.getElementById('intelligenceResult').style.display = 'block';
+            document.getElementById('intelligenceOutput').textContent = 'Calling intelligence-hub-realtime edge function...';
+            
+            const startTime = Date.now();
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-hub-realtime`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: {
+                            name: org,
+                            industry: config.industry
+                        },
+                        timeframe: '24h'
+                    })
+                });
+
+                const data = await response.json();
+                const elapsed = Date.now() - startTime;
+                
+                if (data.success) {
+                    document.getElementById('intelligenceStatus').className = 'status success';
+                    document.getElementById('intelligenceStatus').textContent = `Success! Intelligence gathered (${elapsed}ms)`;
+                    
+                    // Display metrics
+                    const metrics = `
+                        <div class="metric">
+                            <div class="metric-value">${data.intelligence?.competitors?.movements?.length || 0}</div>
+                            <div class="metric-label">Competitor Movements</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">${data.intelligence?.competitors?.vulnerabilities?.length || 0}</div>
+                            <div class="metric-label">Vulnerabilities</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">${data.intelligence?.narratives?.trending?.length || 0}</div>
+                            <div class="metric-label">Trending Topics</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">${data.intelligence?.predictions?.cascades?.length || 0}</div>
+                            <div class="metric-label">Cascade Predictions</div>
+                        </div>
+                    `;
+                    document.getElementById('intelligenceMetrics').innerHTML = metrics;
+                    
+                    document.getElementById('intelligenceOutput').textContent = JSON.stringify(data, null, 2);
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+            } catch (error) {
+                document.getElementById('intelligenceStatus').className = 'status error';
+                document.getElementById('intelligenceStatus').textContent = `Error: ${error.message}`;
+                document.getElementById('intelligenceOutput').textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function runAllTests() {
+            console.log('Running all tests...');
+            await testOpportunityOrchestrator();
+            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds between tests
+            await testIntelligenceHub();
+            
+            // Show performance comparison
+            document.getElementById('performanceMetrics').innerHTML = `
+                <div class="metric">
+                    <div class="metric-value">✅</div>
+                    <div class="metric-label">All Tests Complete</div>
+                </div>
+            `;
+        }
+
+        function clearResults() {
+            document.getElementById('opportunityResult').style.display = 'none';
+            document.getElementById('intelligenceResult').style.display = 'none';
+            document.getElementById('opportunityMetrics').innerHTML = '';
+            document.getElementById('intelligenceMetrics').innerHTML = '';
+            document.getElementById('performanceMetrics').innerHTML = '';
+            document.getElementById('opportunityStatus').className = 'status pending';
+            document.getElementById('opportunityStatus').textContent = 'Not tested';
+            document.getElementById('intelligenceStatus').className = 'status pending';
+            document.getElementById('intelligenceStatus').textContent = 'Not tested';
+        }
+    </script>
+</body>
+</html>
