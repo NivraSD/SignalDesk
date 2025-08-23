@@ -236,7 +236,8 @@
       "Bash(docker:*)",
       "WebFetch(domain:signaldesk-kl9jqcpli-nivra-sd.vercel.app)",
       "WebFetch(domain:app.supabase.com)",
-      "WebFetch(domain:signaldesk-2ci5dp2z2-nivra-sd.vercel.app)"
+      "WebFetch(domain:signaldesk-2ci5dp2z2-nivra-sd.vercel.app)",
+      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/check-deployment-v3.sh)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",
