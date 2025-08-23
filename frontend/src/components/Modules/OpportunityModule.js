@@ -97,6 +97,8 @@ const OpportunityModule = ({ organizationId }) => {
           if (!orchestratedError && orchestratedData?.success && orchestratedData?.opportunities) {
             console.log('✅ Orchestrator succeeded with', orchestratedData.opportunities.length, 'opportunities');
             console.log('🎭 Personas used:', orchestratedData.personas_used);
+            console.log('🚀 DEPLOYMENT VERSION: 3.0 - LATEST UPDATE - Fixed filters and display');
+            alert('VERSION 3.0 DEPLOYED - You should see opportunities now!');
             
             // Process orchestrated opportunities
             const scoredOpportunities = orchestratedData.opportunities.map(opp => ({
