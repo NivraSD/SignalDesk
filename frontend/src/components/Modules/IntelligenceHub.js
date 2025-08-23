@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './IntelligenceHub.css';
 import claudeIntelligenceServiceV2 from '../../services/claudeIntelligenceServiceV2';
+import { supabase } from '../../config/supabase';
 
 const IntelligenceHub = ({ organizationId }) => {
   const [activeTab, setActiveTab] = useState('competitors');
@@ -33,8 +34,42 @@ const IntelligenceHub = ({ organizationId }) => {
         config = JSON.parse(localStorage.getItem('signaldesk_onboarding') || '{}');
       }
       
-      // Use Claude Intelligence Service V2 for real data - force refresh to bypass cache
-      console.log('🔄 Fetching fresh intelligence data (bypassing cache)...');
+      // First try the real-time Firecrawl edge function
+      console.log('🔥 Attempting real-time intelligence with Firecrawl...');
+      try {
+        const { data: realtimeData, error: realtimeError } = await supabase.functions.invoke('intelligence-hub-realtime', {
+          body: {
+            organization: config.organization || { name: 'Default Org', industry: 'technology' },
+            timeframe
+          }
+        });
+        
+        if (!realtimeError && realtimeData && realtimeData.success) {
+          console.log('✅ Real-time intelligence from Firecrawl:', realtimeData);
+          
+          // Transform the real-time data to match our UI structure
+          const transformedData = {
+            competitors: realtimeData.intelligence?.competitors || {},
+            stakeholders: realtimeData.intelligence?.stakeholders || {},
+            narrative: realtimeData.intelligence?.narratives || {},
+            campaigns: { active: [], upcoming: [] }, // Not provided by real-time
+            predictive: realtimeData.intelligence?.predictions || {},
+            executiveSummary: realtimeData.executive_summary,
+            dataSource: 'firecrawl_realtime',
+            lastUpdated: realtimeData.timestamp
+          };
+          
+          console.log('✅ Using real-time Firecrawl intelligence');
+          setIntelligenceData(transformedData);
+          setLoading(false);
+          return;
+        }
+      } catch (realtimeErr) {
+        console.warn('⚠️ Real-time intelligence not available, falling back to Claude service:', realtimeErr);
+      }
+      
+      // Fallback to Claude Intelligence Service V2
+      console.log('🔄 Falling back to Claude intelligence service...');
       const intelligence = await claudeIntelligenceServiceV2.gatherAndAnalyze(config, timeframe, { forceRefresh: true });
       
       console.log('📊 Raw intelligence received:', intelligence);
