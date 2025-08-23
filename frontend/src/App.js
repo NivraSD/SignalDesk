@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ProjectProvider } from "./contexts/ProjectContext";
 import { IntelligenceProvider } from "./context/IntelligenceContext";
 import { supabase } from "./config/supabase"; // Force Supabase to be included
+import { migrateToUnifiedProfile } from "./utils/migrateProfile"; // Auto-migrate existing data
 import Dashboard from "./components/Dashboard";
 import AIAssistant from "./components/AIAssistant";
 import ContentGenerator from "./components/ContentGenerator";

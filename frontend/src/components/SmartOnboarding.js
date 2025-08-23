@@ -1,11 +1,10 @@
 import React from 'react';
-import MinimalOnboarding from './Onboarding/MinimalOnboarding';
+import UnifiedOnboarding from './UnifiedOnboarding';
 
-// SmartOnboarding now uses the new MinimalOnboarding approach
-// Only collects: Company name, website, goals, and priorities
-// Everything else is automatically discovered by AI
+// SmartOnboarding now uses the comprehensive UnifiedOnboarding
+// Collects all necessary configuration for both Intelligence Hub and Opportunity Engine
 const SmartOnboarding = ({ onComplete }) => {
-  return <MinimalOnboarding onComplete={onComplete} />;
+  return <UnifiedOnboarding onComplete={onComplete} />;
 };
 
 export default SmartOnboarding;

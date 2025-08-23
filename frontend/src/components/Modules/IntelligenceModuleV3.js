@@ -26,7 +26,21 @@ const IntelligenceModuleV3 = ({ organizationId }) => {
     setLoading(true);
     
     // Load configuration and MCP results
-    const savedOnboarding = localStorage.getItem('signaldesk_onboarding');
+    let savedOnboarding = null;
+    const unifiedProfile = localStorage.getItem('signaldesk_unified_profile');
+    
+    if (unifiedProfile) {
+      const profile = JSON.parse(unifiedProfile);
+      // Extract the parts that Intelligence Module needs
+      savedOnboarding = JSON.stringify({
+        organization: profile.organization,
+        competitors: profile.competitors,
+        monitoring_topics: profile.monitoring_topics || []
+      });
+    } else {
+      savedOnboarding = localStorage.getItem('signaldesk_onboarding');
+    }
+    
     const mcpResults = localStorage.getItem('signaldesk_mcp_results');
     
     if (!savedOnboarding) {

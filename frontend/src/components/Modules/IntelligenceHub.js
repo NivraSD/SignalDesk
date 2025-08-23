@@ -16,7 +16,22 @@ const IntelligenceHub = ({ organizationId }) => {
     setError(null);
     
     try {
-      const config = JSON.parse(localStorage.getItem('signaldesk_onboarding') || '{}');
+      // Try to get unified profile first, fallback to onboarding
+      let config = {};
+      const unifiedProfile = localStorage.getItem('signaldesk_unified_profile');
+      
+      if (unifiedProfile) {
+        const profile = JSON.parse(unifiedProfile);
+        // Extract the parts that Intelligence Hub needs
+        config = {
+          organization: profile.organization,
+          competitors: profile.competitors,
+          monitoring_topics: profile.monitoring_topics || []
+        };
+      } else {
+        // Fallback to old onboarding data
+        config = JSON.parse(localStorage.getItem('signaldesk_onboarding') || '{}');
+      }
       
       // Use Claude Intelligence Service V2 for real data - force refresh to bypass cache
       console.log('🔄 Fetching fresh intelligence data (bypassing cache)...');
