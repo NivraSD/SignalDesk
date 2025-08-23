@@ -10,4 +10,5 @@ root.render(
   </React.StrictMode>
 );
 // Force rebuild: Wed Aug 20 10:09:09 EDT 2025
-// Force rebuild: Fixed Supabase keys - Fri Aug 23 14:15:00 EDT 2025
+// Force rebuild: Version 0.2.0 with Firecrawl - Fri Aug 23 14:30:00 EDT 2025
+console.log('🚀 SignalDesk Version 0.2.0 - Build Time:', new Date().toISOString());
