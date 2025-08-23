@@ -60,7 +60,7 @@ const OpportunityModule = ({ organizationId }) => {
           console.log('📊 Edge Function response:', { data, error });
 
           // Check for successful response or fallback message
-          if (data && data.opportunities && Array.isArray(data.opportunities)) {
+          if (!error && data && data.opportunities && Array.isArray(data.opportunities) && data.opportunities.length > 0) {
             // Process opportunities from Edge Function
             const scoredOpportunities = data.opportunities.map(opp => ({
               ...opp,
