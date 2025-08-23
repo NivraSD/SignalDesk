@@ -1,136 +1,80 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Test Edge Functions</title>
-    <style>
-        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #0f0; }
-        button { background: #00ff00; color: #000; padding: 10px 20px; margin: 10px; cursor: pointer; }
-        pre { background: #000; padding: 15px; overflow: auto; max-height: 400px; }
-        .error { color: #ff0000; }
-        .success { color: #00ff00; }
-    </style>
+  <meta charset="UTF-8">
+  <title>Test Edge Function with API Key</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-    <h1>Edge Function Test - Direct Calls</h1>
-    
-    <button onclick="testPRIntelligence()">Test PR Intelligence</button>
-    <button onclick="testNewsIntelligence()">Test News Intelligence</button>
-    <button onclick="testDirectCore()">Test IntelligenceCore Config</button>
-    
-    <div id="output"></div>
+  <h1>Edge Function Test</h1>
+  <div id="status">Testing...</div>
+  <div id="result"></div>
 
-    <script>
-        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+  <script>
+    const { createClient } = supabase;
+    
+    // Production credentials
+    const supabaseUrl = 'https://zskaxjtyuaqazydouifp.supabase.co';
+    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+    
+    const client = createClient(supabaseUrl, supabaseAnonKey);
+    
+    async function testEdgeFunction() {
+      const statusEl = document.getElementById('status');
+      const resultEl = document.getElementById('result');
+      
+      try {
+        // Test 1: Test health-check function
+        statusEl.innerHTML = 'Testing health-check edge function...';
+        const { data: healthData, error: healthError } = await client.functions.invoke('health-check');
         
-        const output = document.getElementById('output');
-        
-        async function testPRIntelligence() {
-            output.innerHTML = '<pre>Testing PR Intelligence...</pre>';
-            
-            try {
-                const response = await fetch(`${SUPABASE_URL}/functions/v1/pr-intelligence`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${SUPABASE_KEY}`
-                    },
-                    body: JSON.stringify({
-                        method: 'gather',
-                        params: {
-                            organization: {
-                                name: 'Mitsui & Co.',
-                                industry: 'conglomerate'
-                            },
-                            timeframe: '24h'
-                        }
-                    })
-                });
-                
-                const data = await response.json();
-                output.innerHTML = `
-                    <h3 class="success">PR Intelligence Response:</h3>
-                    <pre>${JSON.stringify(data, null, 2)}</pre>
-                    <h4>Analysis:</h4>
-                    <ul>
-                        <li>Competitors found: ${data.data?.summary?.totalCompetitors || 0}</li>
-                        <li>Top competitors: ${JSON.stringify(data.data?.intelligenceConfig?.topCompetitors || [])}</li>
-                        <li>Industry detected: ${data.data?.summary?.industry}</li>
-                        <li>Keywords: ${data.data?.intelligenceConfig?.monitoringKeywords?.length || 0} keywords</li>
-                    </ul>
-                `;
-            } catch (error) {
-                output.innerHTML = `<pre class="error">Error: ${error.message}</pre>`;
-            }
+        if (healthError) {
+          resultEl.innerHTML += '<p>❌ Health check failed: ' + healthError.message + '</p>';
+        } else {
+          resultEl.innerHTML += '<p>✅ Health check response:</p>';
+          resultEl.innerHTML += '<pre>' + JSON.stringify(healthData, null, 2) + '</pre>';
         }
         
-        async function testNewsIntelligence() {
-            output.innerHTML = '<pre>Testing News Intelligence...</pre>';
-            
-            try {
-                const response = await fetch(`${SUPABASE_URL}/functions/v1/news-intelligence`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${SUPABASE_KEY}`
-                    },
-                    body: JSON.stringify({
-                        method: 'gather',
-                        params: {
-                            organization: {
-                                name: 'Mitsui & Co.',
-                                industry: 'conglomerate'
-                            },
-                            timeframe: '24h'
-                        }
-                    })
-                });
-                
-                const data = await response.json();
-                output.innerHTML = `
-                    <h3 class="success">News Intelligence Response:</h3>
-                    <pre>${JSON.stringify(data, null, 2)}</pre>
-                `;
-            } catch (error) {
-                output.innerHTML = `<pre class="error">Error: ${error.message}</pre>`;
-            }
+        // Test 2: Test test-api-key function
+        statusEl.innerHTML = 'Testing API key edge function...';
+        const { data: apiKeyData, error: apiKeyError } = await client.functions.invoke('test-api-key');
+        
+        if (apiKeyError) {
+          resultEl.innerHTML += '<p>❌ API key test failed: ' + apiKeyError.message + '</p>';
+        } else {
+          resultEl.innerHTML += '<p>✅ API key test response:</p>';
+          resultEl.innerHTML += '<pre>' + JSON.stringify(apiKeyData, null, 2) + '</pre>';
         }
         
-        async function testDirectCore() {
-            output.innerHTML = '<pre>Testing direct IntelligenceCore call...</pre>';
-            
-            // This tests if the organization config is being built correctly
-            try {
-                const response = await fetch(`${SUPABASE_URL}/functions/v1/test-intelligence-core`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${SUPABASE_KEY}`
-                    },
-                    body: JSON.stringify({
-                        organization: {
-                            name: 'Mitsui & Co.',
-                            industry: 'conglomerate'
-                        }
-                    })
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-                }
-                
-                const data = await response.json();
-                output.innerHTML = `
-                    <h3 class="success">IntelligenceCore Config:</h3>
-                    <pre>${JSON.stringify(data, null, 2)}</pre>
-                `;
-            } catch (error) {
-                output.innerHTML = `
-                    <pre class="error">Error: ${error.message}</pre>
-                    <p>Note: test-intelligence-core function may not exist. Check the PR function above instead.</p>
-                `;
-            }
+        // Test 3: Test intelligence-hub-realtime with mock data
+        statusEl.innerHTML = 'Testing intelligence-hub-realtime...';
+        const { data: intelligenceData, error: intelligenceError } = await client.functions.invoke('intelligence-hub-realtime', {
+          body: {
+            organizationId: 'test-org',
+            industry: 'technology',
+            competitors: ['Microsoft', 'Google']
+          }
+        });
+        
+        if (intelligenceError) {
+          resultEl.innerHTML += '<p>❌ Intelligence hub failed: ' + intelligenceError.message + '</p>';
+          resultEl.innerHTML += '<p>Error details: ' + JSON.stringify(intelligenceError) + '</p>';
+        } else {
+          resultEl.innerHTML += '<p>✅ Intelligence hub response:</p>';
+          resultEl.innerHTML += '<pre>' + JSON.stringify(intelligenceData, null, 2) + '</pre>';
         }
-    </script>
+        
+        statusEl.innerHTML = 'Tests complete';
+        
+      } catch (error) {
+        statusEl.innerHTML = 'Error during testing';
+        resultEl.innerHTML += '<p>❌ Unexpected error: ' + error.message + '</p>';
+        console.error('Full error:', error);
+      }
+    }
+    
+    // Run test
+    testEdgeFunction();
+  </script>
 </body>
 </html>

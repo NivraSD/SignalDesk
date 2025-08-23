@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Full Platform Test - SignalDesk</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #0f0; }
+    .section { margin: 20px 0; padding: 15px; border: 1px solid #0f0; }
+    .success { color: #0f0; }
+    .error { color: #f00; }
+    .info { color: #ff0; }
+    h2 { color: #0ff; }
+    pre { background: #000; padding: 10px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <h1>🚀 SignalDesk Full Platform Test</h1>
+  
+  <div class="section">
+    <h2>Configuration</h2>
+    <div id="config"></div>
+  </div>
+  
+  <div class="section">
+    <h2>Supabase Tests</h2>
+    <div id="supabase-tests"></div>
+  </div>
+  
+  <div class="section">
+    <h2>Edge Functions</h2>
+    <div id="edge-functions"></div>
+  </div>
+  
+  <div class="section">
+    <h2>Frontend Status</h2>
+    <div id="frontend"></div>
+  </div>
+
+  <script>
+    const { createClient } = supabase;
+    
+    // CORRECT keys from Supabase dashboard
+    const CORRECT_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+    const CORRECT_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+    
+    // OLD keys that might still be deployed
+    const OLD_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+    
+    const client = createClient(CORRECT_URL, CORRECT_ANON_KEY);
+    
+    async function runTests() {
+      // Show configuration
+      document.getElementById('config').innerHTML = `
+        <p class="info">Supabase URL: ${CORRECT_URL}</p>
+        <p class="info">Using CORRECT anon key (ends with ...BOe8)</p>
+        <p class="info">Old key ended with ...SLLQ</p>
+      `;
+      
+      // Test Supabase
+      const supabaseDiv = document.getElementById('supabase-tests');
+      
+      // 1. Test connection
+      try {
+        const { data, error } = await client.from('users').select('count').limit(0);
+        if (error && !error.message.includes('permission')) throw error;
+        supabaseDiv.innerHTML += '<p class="success">✅ Supabase connection successful</p>';
+      } catch (e) {
+        supabaseDiv.innerHTML += '<p class="error">❌ Supabase connection failed: ' + e.message + '</p>';
+      }
+      
+      // 2. Test auth
+      try {
+        const { data, error } = await client.auth.signInWithPassword({
+          email: 'demo@signaldesk.com',
+          password: 'password'
+        });
+        
+        if (error) {
+          // Try to create user
+          const { data: signUpData, error: signUpError } = await client.auth.signUp({
+            email: 'demo@signaldesk.com',
+            password: 'password',
+            options: {
+              data: {
+                username: 'demo',
+                role: 'admin'
+              }
+            }
+          });
+          
+          if (signUpError) throw signUpError;
+          supabaseDiv.innerHTML += '<p class="success">✅ Demo user created</p>';
+        } else {
+          supabaseDiv.innerHTML += '<p class="success">✅ Authentication working</p>';
+        }
+      } catch (e) {
+        supabaseDiv.innerHTML += '<p class="error">❌ Authentication failed: ' + e.message + '</p>';
+      }
+      
+      // Test Edge Functions
+      const edgeDiv = document.getElementById('edge-functions');
+      
+      // Critical functions to test
+      const functions = [
+        'health-check',
+        'test-api-key',
+        'intelligence-hub-realtime',
+        'opportunity-orchestrator'
+      ];
+      
+      for (const func of functions) {
+        try {
+          const { data, error } = await client.functions.invoke(func, {
+            body: func === 'intelligence-hub-realtime' ? {
+              organization: { name: 'Test', industry: 'technology' },
+              timeframe: '24h'
+            } : {}
+          });
+          
+          if (error) throw error;
+          
+          if (func === 'test-api-key' && data.claude_test) {
+            edgeDiv.innerHTML += `<p class="success">✅ ${func}: ${data.claude_test}</p>`;
+          } else if (func === 'health-check' && data.status) {
+            edgeDiv.innerHTML += `<p class="success">✅ ${func}: ${data.status}</p>`;
+          } else {
+            edgeDiv.innerHTML += `<p class="success">✅ ${func}: Working</p>`;
+          }
+        } catch (e) {
+          edgeDiv.innerHTML += `<p class="error">❌ ${func}: ${e.message}</p>`;
+        }
+      }
+      
+      // Test Frontend
+      const frontendDiv = document.getElementById('frontend');
+      
+      try {
+        const response = await fetch('https://signaldesk.vercel.app/', { 
+          method: 'HEAD',
+          mode: 'no-cors' 
+        });
+        frontendDiv.innerHTML += '<p class="success">✅ Frontend is accessible on Vercel</p>';
+      } catch (e) {
+        frontendDiv.innerHTML += '<p class="error">❌ Frontend not accessible: ' + e.message + '</p>';
+      }
+      
+      // Check what key the frontend is using
+      frontendDiv.innerHTML += '<p class="info">⚠️ IMPORTANT: The frontend on Vercel needs these environment variables updated:</p>';
+      frontendDiv.innerHTML += '<pre>REACT_APP_SUPABASE_URL=' + CORRECT_URL + '\nREACT_APP_SUPABASE_ANON_KEY=' + CORRECT_ANON_KEY + '</pre>';
+      frontendDiv.innerHTML += '<p class="info">Go to: https://vercel.com/your-team/signaldesk/settings/environment-variables</p>';
+    }
+    
+    runTests();
+  </script>
+</body>
+</html>

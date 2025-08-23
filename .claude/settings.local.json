@@ -237,7 +237,8 @@
       "WebFetch(domain:signaldesk-kl9jqcpli-nivra-sd.vercel.app)",
       "WebFetch(domain:app.supabase.com)",
       "WebFetch(domain:signaldesk-2ci5dp2z2-nivra-sd.vercel.app)",
-      "Bash(git cherry-pick:*)"
+      "Bash(git cherry-pick:*)",
+      "Bash(git log:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

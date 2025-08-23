@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Test Supabase Auth</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <h1>Supabase Auth Test</h1>
+  <div id="status">Testing...</div>
+  <div id="result"></div>
+
+  <script>
+    const { createClient } = supabase;
+    
+    // Production credentials
+    const supabaseUrl = 'https://zskaxjtyuaqazydouifp.supabase.co';
+    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+    
+    const client = createClient(supabaseUrl, supabaseAnonKey);
+    
+    async function testAuth() {
+      const statusEl = document.getElementById('status');
+      const resultEl = document.getElementById('result');
+      
+      try {
+        // Test 1: Check Supabase connection
+        statusEl.innerHTML = 'Testing Supabase connection...';
+        const { data: healthCheck, error: healthError } = await client
+          .from('users')
+          .select('count')
+          .limit(0);
+        
+        if (healthError && !healthError.message.includes('permission')) {
+          throw new Error('Supabase connection failed: ' + healthError.message);
+        }
+        
+        resultEl.innerHTML += '<p>✅ Supabase connection successful</p>';
+        
+        // Test 2: Try demo login
+        statusEl.innerHTML = 'Testing demo login...';
+        const { data, error } = await client.auth.signInWithPassword({
+          email: 'demo@signaldesk.com',
+          password: 'password'
+        });
+        
+        if (error) {
+          resultEl.innerHTML += '<p>❌ Demo login failed: ' + error.message + '</p>';
+          
+          // Try to create demo user
+          statusEl.innerHTML = 'Creating demo user...';
+          const { data: signUpData, error: signUpError } = await client.auth.signUp({
+            email: 'demo@signaldesk.com',
+            password: 'password'
+          });
+          
+          if (signUpError) {
+            resultEl.innerHTML += '<p>❌ Demo user creation failed: ' + signUpError.message + '</p>';
+          } else {
+            resultEl.innerHTML += '<p>✅ Demo user created successfully</p>';
+            
+            // Try login again
+            const { data: retryData, error: retryError } = await client.auth.signInWithPassword({
+              email: 'demo@signaldesk.com',
+              password: 'password'
+            });
+            
+            if (retryError) {
+              resultEl.innerHTML += '<p>❌ Demo login still failed: ' + retryError.message + '</p>';
+            } else {
+              resultEl.innerHTML += '<p>✅ Demo login successful after creation</p>';
+              resultEl.innerHTML += '<pre>' + JSON.stringify(retryData.user, null, 2) + '</pre>';
+            }
+          }
+        } else {
+          resultEl.innerHTML += '<p>✅ Demo login successful</p>';
+          resultEl.innerHTML += '<pre>' + JSON.stringify(data.user, null, 2) + '</pre>';
+          
+          // Test 3: Check JWT token
+          statusEl.innerHTML = 'Checking JWT token...';
+          const session = data.session;
+          if (session && session.access_token) {
+            resultEl.innerHTML += '<p>✅ JWT token valid</p>';
+            resultEl.innerHTML += '<p>Token expires at: ' + new Date(session.expires_at * 1000).toLocaleString() + '</p>';
+          } else {
+            resultEl.innerHTML += '<p>❌ No JWT token received</p>';
+          }
+        }
+        
+        statusEl.innerHTML = 'Tests complete';
+        
+      } catch (error) {
+        statusEl.innerHTML = 'Error during testing';
+        resultEl.innerHTML += '<p>❌ Error: ' + error.message + '</p>';
+      }
+    }
+    
+    // Run test
+    testAuth();
+  </script>
+</body>
+</html>
