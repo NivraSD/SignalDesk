@@ -41,49 +41,45 @@ async function synthesizeWithClaude(intelligence: any, organization: any) {
 }
 
 async function synthesizeOffensiveIntel(entityActions: any[], topicTrends: any[], organization: any) {
-  const prompt = `You are an elite strategic intelligence analyst for ${organization.name}. Your job is to find differentiation opportunities from DIVERSE sources - competitors, activists, geopolitics, media voices.
+  const prompt = `You are a real-time intelligence analyst for ${organization.name}. Focus on WHAT JUST HAPPENED in the last 48 hours and WHAT IT MEANS RIGHT NOW.
 
-ENTITY ACTIONS (${entityActions.length} captured):
+RECENT ENTITY ACTIONS (Last 48 hours):
 ${JSON.stringify(entityActions, null, 2)}
 
-TOPIC TRENDS (${topicTrends.length} monitored):
+EMERGING TOPICS (Last 48 hours):
 ${JSON.stringify(topicTrends, null, 2)}
 
-CRITICAL: Look across ALL entity types:
-- COMPETITORS: Strategic moves and positioning
-- ACTIVISTS: Campaigns, protests, and pressure points
-- GEOPOLITICAL: Trade tensions, sanctions, regulatory shifts
-- MEDIA/INFLUENCERS: Narrative shifts and opinion leadership
-- INVESTORS: Market sentiment and activist positions
-- THOUGHT LEADERS: Executive comments, predictions, warnings
+YOUR MISSION: Analyze these SPECIFIC RECENT EVENTS, not industry trends. Tell me:
+1. What literally just happened (be specific - names, dates, actions)
+2. Why it matters TODAY (not in general)
+3. What ${organization.name} should watch for TOMORROW
+4. The hidden story in these specific events
 
-Find the NON-OBVIOUS connections between these diverse forces
+Focus on the NEWS, not the NARRATIVE. Be a reporter, not a consultant.
 
-Your analysis should help ${organization.name} DIFFERENTIATE, not just monitor.
-
-Return this JSON with STRATEGIC DIFFERENTIATION ANALYSIS:
+Return this JSON with REAL-TIME EVENT ANALYSIS:
 {
   "executive_summary": {
-    "headline": "The dominant narrative emerging from all this activity - be specific with names and numbers",
-    "overview": "Tell the complete story in 4-6 sentences. What narratives are competing for dominance? Who's winning the perception battle and why? What story will stakeholders remember?",
-    "competitive_highlight": "Most significant competitor move and how it positions them in public perception",
-    "market_highlight": "The trend that's reshaping how the market is perceived",
-    "regulatory_highlight": "Regulatory development affecting industry reputation",
-    "media_highlight": "The narrative that's gaining the most traction",
-    "narrative_watch_points": [
-      "Critical narrative development to monitor",
-      "Another perception shift to track",
-      "Third reputational consideration"
+    "headline": "The BIGGEST thing that happened in the last 48 hours - be VERY specific with WHO did WHAT WHEN",
+    "overview": "In 4-6 sentences, explain these SPECIFIC recent events. Not trends - actual things that happened. Name names, cite specific actions, quote actual statements.",
+    "competitive_highlight": "EXACTLY what [competitor name] did [specific action] on [date] and immediate impact",
+    "market_highlight": "The specific event/announcement that just shifted market dynamics",
+    "regulatory_highlight": "What regulator/government just did/said specifically",
+    "media_highlight": "The specific story/article that's driving conversation right now",
+    "immediate_watch_points": [
+      "What to watch for in next 24 hours based on these events",
+      "Expected reactions/responses to these specific events",
+      "Potential escalation of these specific situations"
     ]
   },
   "competitive_positioning": {
-    "your_position": "CRITICAL ANALYSIS (300+ words): Where does ${organization.name} currently sit in the competitive narrative? What's your unique position? What narratives are you owning vs missing?",
+    "your_position": "Based on THESE SPECIFIC EVENTS from the last 48 hours, what's ${organization.name}'s immediate position? Not general strategy - where you stand RIGHT NOW given what just happened",
     "competitor_moves": [
-      {"competitor": "Name", "action": "What they did", "personnel_signals": "Key executive quotes, thought leader comments, informal remarks", "what_theyre_not_saying": "Notable omissions or avoided topics", "differentiation_opportunity": "How ${organization.name} could position differently"}
+      {"competitor": "Specific name", "action": "EXACTLY what they did (date, specifics)", "timing": "Why they did it NOW", "immediate_impact": "What changed because of this", "your_response_window": "How long ${organization.name} has to respond"}
     ],
-    "narrative_gaps": "What stories NO ONE is telling that ${organization.name} could own?",
-    "positioning_opportunities": "Specific ways ${organization.name} could differentiate based on what others are/aren't doing",
-    "strategic_white_space": "Unclaimed narrative territory ${organization.name} could occupy"
+    "immediate_opportunities": "What ${organization.name} could do TODAY/TOMORROW based on these specific events",
+    "response_options": "Specific actions ${organization.name} could take in response to these events",
+    "timing_considerations": "Why timing matters for these specific situations"
   },
   "between_the_lines": {
     "hidden_signals": [
@@ -141,32 +137,30 @@ Return this JSON with STRATEGIC DIFFERENTIATION ANALYSIS:
 }
 
 async function synthesizeDefensiveIntel(entityActions: any[], topicTrends: any[], organization: any) {
-  const prompt = `You are an elite strategic intelligence analyst for ${organization.name}. Analyze how DIVERSE forces - activists, geopolitics, media - create risks and opportunities.
+  const prompt = `You are a real-time threat analyst for ${organization.name}. Focus on SPECIFIC EVENTS from the last 48 hours that pose risks or create urgency.
 
-ENTITY ACTIONS (${entityActions.length} captured):
+RECENT ENTITY ACTIONS (Last 48 hours):
 ${JSON.stringify(entityActions, null, 2)}
 
-TOPIC TRENDS (${topicTrends.length} monitored):
+EMERGING TOPICS (Last 48 hours):
 ${JSON.stringify(topicTrends, null, 2)}
 
-CRITICAL: Analyze the FULL spectrum of forces:
-- ACTIVIST PRESSURE: What campaigns are building? Who's being targeted?
-- GEOPOLITICAL RISKS: Trade wars, sanctions, regulatory nationalism
-- MEDIA NARRATIVES: How are influencers shaping perception?
-- INVESTOR ACTIVISM: Who's taking positions? What are they demanding?
-- REGULATORY CONVERGENCE: Global regulatory trends and divergences
-- SOCIAL MOVEMENTS: Cultural shifts affecting the industry
+Analyze THESE SPECIFIC RECENT EVENTS for:
+- What activist/critic/regulator just did SPECIFICALLY
+- What announcement/leak/rumor just emerged
+- What alliance/partnership just formed
+- What investigation/lawsuit just launched
+- What social media storm just started
 
-Return this JSON with EXPANSIVE NARRATIVE INTELLIGENCE:
+Return this JSON with REAL-TIME RISK ANALYSIS:
 {
   "regulatory_policy": {
-    "regulatory_narrative": "EXPANSIVE NARRATIVE (300+ words): What story is emerging from regulatory developments? How are regulators positioning themselves and the industry? What narrative are they creating through the ${entityActions.length} actions we're tracking?",
+    "breaking_developments": "What JUST happened in regulatory/policy space in last 48 hours - be SPECIFIC",
     "regulatory_developments": [
-      // Every regulatory signal affects perception
-      {"regulator": "Entity", "development": "DETAILED analysis of what's happening and the narrative being created", "perception_impact": "How this affects public perception of the industry", "reputation_effect": "Impact on ${organization.name}'s reputation and standing"}
+      {"regulator": "Specific agency/official", "action": "EXACTLY what they did/said/filed", "date": "When this happened", "immediate_impact": "What changes NOW", "response_deadline": "When ${organization.name} needs to respond by"}
     ],
-    "narrative_implications": "How does the regulatory narrative affect ${organization.name}'s reputation? What perceptions are being created about compliance, responsibility, and industry leadership?",
-    "perception_landscape": "How ${organization.name} is likely to be perceived in this evolving regulatory narrative"
+    "enforcement_actions": "Any fines/sanctions/investigations launched in last 48 hours",
+    "policy_signals": "What officials are signaling through recent statements/actions"
   },
   "thought_leadership": {
     "influencer_signals": [
@@ -178,14 +172,13 @@ Return this JSON with EXPANSIVE NARRATIVE INTELLIGENCE:
     "contrarian_voices": "Important dissenting opinions that could reshape the narrative"
   },
   "forward_look": {
-    "future_narratives": "EXPANSIVE NARRATIVE (400+ words): Based on the ${entityActions.length} entity actions and ${topicTrends.length} trends, what narratives will dominate tomorrow? How will reputations evolve? What stories will shape perception?",
-    "narrative_predictions": [
-      // Multiple detailed narrative predictions
-      {"timeframe": "Timeframe", "narrative_shift": "DETAILED prediction of how the narrative will evolve with evidence", "likelihood": 70, "signals": "What indicates this narrative shift", "reputation_impact": "How this affects ${organization.name}'s perceived position"}
+    "next_48_hours": "Based on THESE SPECIFIC EVENTS, what's likely to happen in next 48 hours?",
+    "expected_responses": [
+      {"who": "Specific entity", "likely_action": "What they'll probably do", "when": "Expected timing", "why": "Based on what just happened", "impact": "How this affects ${organization.name}"}
     ],
-    "perception_scenarios": "Multiple scenarios for how public perception and narrative could evolve, and what each means for ${organization.name}'s reputation",
-    "narrative_preparation": "What narrative positions ${organization.name} should understand as the landscape evolves",
-    "reputation_considerations": "Key reputational factors to monitor as these narratives develop"
+    "developing_situations": "Which of today's events will escalate? Be specific",
+    "decision_points": "What ${organization.name} needs to decide in next 24-48 hours based on these events",
+    "watch_list": "Specific things to monitor closely given what just happened"
   }
 }`
 

@@ -56,7 +56,8 @@ async function gatherEntityActions(entities: any) {
       try {
         const entityName = entity.name
         console.log(`  🔍 Searching for actions by: ${entityName}`)
-        const searchQuery = `"${entityName}" (${actionKeywords.join(' OR ')}) when:7d`
+        // Focus on VERY recent events - last 48 hours for freshness
+        const searchQuery = `"${entityName}" when:2d`
         const url = `https://news.google.com/rss/search?q=${encodeURIComponent(searchQuery)}&hl=en-US&gl=US&ceid=US:en`
         
         const response = await fetchWithTimeout(url, {}, 3000)
@@ -103,7 +104,8 @@ async function gatherTopicTrends(topics: any[]) {
   // Process more topics for diverse coverage
   for (const topic of topics.slice(0, 10)) { // Process up to 10 topics for broader coverage
     try {
-      const searchQuery = `"${topic.name}" when:7d`
+      // Recent events only - last 48 hours
+      const searchQuery = `"${topic.name}" when:2d`
       const url = `https://news.google.com/rss/search?q=${encodeURIComponent(searchQuery)}&hl=en-US&gl=US&ceid=US:en`
       
       const response = await fetchWithTimeout(url, {}, 3000)
