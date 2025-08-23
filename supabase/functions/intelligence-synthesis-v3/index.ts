@@ -137,7 +137,7 @@ Return this JSON with REAL-TIME EVENT ANALYSIS:
 }
 
 async function synthesizeDefensiveIntel(entityActions: any[], topicTrends: any[], organization: any) {
-  const prompt = `You are a real-time threat analyst for ${organization.name}. Focus on SPECIFIC EVENTS from the last 48 hours that pose risks or create urgency.
+  const prompt = `You are a pattern recognition analyst for ${organization.name}. Look for WEAK SIGNALS and SUBTLE SHIFTS in recent events.
 
 RECENT ENTITY ACTIONS (Last 48 hours):
 ${JSON.stringify(entityActions, null, 2)}
@@ -145,22 +145,23 @@ ${JSON.stringify(entityActions, null, 2)}
 EMERGING TOPICS (Last 48 hours):
 ${JSON.stringify(topicTrends, null, 2)}
 
-Analyze THESE SPECIFIC RECENT EVENTS for:
-- What activist/critic/regulator just did SPECIFICALLY
-- What announcement/leak/rumor just emerged
-- What alliance/partnership just formed
-- What investigation/lawsuit just launched
-- What social media storm just started
+Your mission: Find the SMALL things that might matter:
+- Minor regulatory comments that hint at future direction
+- Small partnerships that could signal bigger alliances
+- Subtle language changes in official statements
+- New voices entering the conversation
+- Quiet moves by usually loud players
+- Unusual timing or sequencing of events
 
-Return this JSON with REAL-TIME RISK ANALYSIS:
+Return this JSON with PATTERN ANALYSIS:
 {
   "regulatory_policy": {
-    "breaking_developments": "What JUST happened in regulatory/policy space in last 48 hours - be SPECIFIC",
+    "regulatory_narrative": "Analysis of regulatory movements in last 48 hours - focus on PATTERNS and SUBTLE SHIFTS, not just big announcements",
     "regulatory_developments": [
-      {"regulator": "Specific agency/official", "action": "EXACTLY what they did/said/filed", "date": "When this happened", "immediate_impact": "What changes NOW", "response_deadline": "When ${organization.name} needs to respond by"}
+      {"regulator": "Agency/official name", "development": "What they did/said", "perception_impact": "How this affects industry perception", "reputation_effect": "Impact on ${organization.name}'s standing"}
     ],
-    "enforcement_actions": "Any fines/sanctions/investigations launched in last 48 hours",
-    "policy_signals": "What officials are signaling through recent statements/actions"
+    "narrative_implications": "What do these regulatory signals mean for ${organization.name}? Look for patterns, not just individual actions",
+    "perception_landscape": "How is the regulatory perception shifting based on these recent developments?"
   },
   "thought_leadership": {
     "influencer_signals": [
@@ -172,13 +173,13 @@ Return this JSON with REAL-TIME RISK ANALYSIS:
     "contrarian_voices": "Important dissenting opinions that could reshape the narrative"
   },
   "forward_look": {
-    "next_48_hours": "Based on THESE SPECIFIC EVENTS, what's likely to happen in next 48 hours?",
-    "expected_responses": [
-      {"who": "Specific entity", "likely_action": "What they'll probably do", "when": "Expected timing", "why": "Based on what just happened", "impact": "How this affects ${organization.name}"}
+    "future_narratives": "WEAK SIGNALS ANALYSIS: Look at the SMALL developments from the last 48 hours. What subtle patterns are emerging? Not big predictions - what small things feel different?",
+    "narrative_predictions": [
+      {"timeframe": "Next 7 days", "narrative_shift": "Small shift you're noticing based on weak signals", "likelihood": 60, "signals": "The minor events that suggest this", "reputation_impact": "How this subtle shift affects ${organization.name}"}
     ],
-    "developing_situations": "Which of today's events will escalate? Be specific",
-    "decision_points": "What ${organization.name} needs to decide in next 24-48 hours based on these events",
-    "watch_list": "Specific things to monitor closely given what just happened"
+    "perception_scenarios": "Based on WEAK SIGNALS: What different scenarios could emerge from these small developments? Focus on subtle shifts, not major changes",
+    "narrative_preparation": "What ${organization.name} should watch for - not big events, but small indicators that something is shifting",
+    "reputation_considerations": "How these subtle patterns and weak signals might affect ${organization.name}'s standing"
   }
 }`
 
