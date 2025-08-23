@@ -60,11 +60,10 @@ const UnifiedOnboarding = ({ onComplete }) => {
 
   const steps = [
     { id: 1, title: 'Organization', icon: '🏢', required: true },
-    { id: 2, title: 'Competitors', icon: '⚔️', required: true },
-    { id: 3, title: 'Brand Voice', icon: '🎯', required: true },
-    { id: 4, title: 'Key Messages', icon: '💬', required: false },
-    { id: 5, title: 'Media Strategy', icon: '📰', required: false },
-    { id: 6, title: 'Opportunities', icon: '💎', required: true }
+    { id: 2, title: 'Brand Voice', icon: '🎯', required: true },
+    { id: 3, title: 'Key Messages', icon: '💬', required: false },
+    { id: 4, title: 'Media Strategy', icon: '📰', required: false },
+    { id: 5, title: 'Opportunities', icon: '💎', required: true }
   ];
 
   const handleNext = () => {
@@ -96,11 +95,9 @@ const UnifiedOnboarding = ({ onComplete }) => {
   const validateCurrentStep = () => {
     switch (currentStep) {
       case 1:
-        return profile.organization.name && profile.organization.industry;
+        return profile.organization.name; // Only name required now
       case 2:
-        return profile.competitors.length > 0;
-      case 3:
-        return true; // Has defaults
+        return true; // Has defaults for brand voice
       default:
         return true;
     }
@@ -137,7 +134,13 @@ const UnifiedOnboarding = ({ onComplete }) => {
       monitoring_topics: profile.monitoring_topics
     }));
     
-    onComplete(unifiedProfile);
+    // Handle completion - redirect if no onComplete provided
+    if (onComplete) {
+      onComplete(unifiedProfile);
+    } else {
+      // Redirect to main app after successful setup
+      window.location.href = '/';
+    }
   };
 
   const renderStep = () => {
@@ -145,14 +148,12 @@ const UnifiedOnboarding = ({ onComplete }) => {
       case 1:
         return renderOrganization();
       case 2:
-        return renderCompetitors();
-      case 3:
         return renderBrandVoice();
-      case 4:
+      case 3:
         return renderKeyMessages();
-      case 5:
+      case 4:
         return renderMediaStrategy();
-      case 6:
+      case 5:
         return renderOpportunities();
       default:
         return null;
@@ -162,7 +163,7 @@ const UnifiedOnboarding = ({ onComplete }) => {
   const renderOrganization = () => (
     <div className="onboarding-step">
       <h2>Tell us about your organization</h2>
-      <p className="step-description">This helps us monitor the right intelligence and customize opportunities for you.</p>
+      <p className="step-description">We'll discover your competitors and industry details through our intelligence engine.</p>
       
       <div className="form-group">
         <label>Organization Name *</label>
@@ -178,31 +179,9 @@ const UnifiedOnboarding = ({ onComplete }) => {
         />
       </div>
 
-      <div className="form-group">
-        <label>Industry *</label>
-        <select
-          value={profile.organization.industry}
-          onChange={(e) => setProfile({
-            ...profile,
-            organization: { ...profile.organization, industry: e.target.value }
-          })}
-          className="form-select"
-        >
-          <option value="">Select Industry</option>
-          <option value="automotive">Automotive</option>
-          <option value="technology">Technology</option>
-          <option value="healthcare">Healthcare</option>
-          <option value="finance">Finance</option>
-          <option value="retail">Retail</option>
-          <option value="energy">Energy</option>
-          <option value="manufacturing">Manufacturing</option>
-          <option value="media">Media & Entertainment</option>
-          <option value="other">Other</option>
-        </select>
-      </div>
 
       <div className="form-group">
-        <label>Website</label>
+        <label>Website (optional)</label>
         <input
           type="url"
           placeholder="https://www.toyota.com"
@@ -231,80 +210,7 @@ const UnifiedOnboarding = ({ onComplete }) => {
     </div>
   );
 
-  const renderCompetitors = () => (
-    <div className="onboarding-step">
-      <h2>Who are your main competitors?</h2>
-      <p className="step-description">We'll monitor their activities and identify opportunities when they show weakness.</p>
-      
-      <div className="competitors-list">
-        {profile.competitors.map((competitor, idx) => (
-          <div key={idx} className="competitor-item">
-            <input
-              type="text"
-              placeholder="Competitor name"
-              value={competitor.name}
-              onChange={(e) => {
-                const newCompetitors = [...profile.competitors];
-                newCompetitors[idx] = { ...competitor, name: e.target.value };
-                setProfile({ ...profile, competitors: newCompetitors });
-              }}
-              className="form-input"
-            />
-            <input
-              type="text"
-              placeholder="Key advantage they have (optional)"
-              value={competitor.advantage || ''}
-              onChange={(e) => {
-                const newCompetitors = [...profile.competitors];
-                newCompetitors[idx] = { ...competitor, advantage: e.target.value };
-                setProfile({ ...profile, competitors: newCompetitors });
-              }}
-              className="form-input"
-            />
-            <button
-              onClick={() => {
-                const newCompetitors = profile.competitors.filter((_, i) => i !== idx);
-                setProfile({ ...profile, competitors: newCompetitors });
-              }}
-              className="remove-btn"
-            >
-              Remove
-            </button>
-          </div>
-        ))}
-        
-        <button
-          onClick={() => setProfile({
-            ...profile,
-            competitors: [...profile.competitors, { name: '', advantage: '' }]
-          })}
-          className="add-btn"
-        >
-          + Add Competitor
-        </button>
-      </div>
-
-      {profile.organization.industry === 'automotive' && profile.competitors.length === 0 && (
-        <div className="suggestions">
-          <p>Suggested competitors for automotive:</p>
-          <div className="suggestion-chips">
-            {['Ford', 'General Motors', 'Honda', 'Nissan', 'Tesla', 'Volkswagen'].map(name => (
-              <button
-                key={name}
-                onClick={() => setProfile({
-                  ...profile,
-                  competitors: [...profile.competitors, { name, advantage: '' }]
-                })}
-                className="suggestion-chip"
-              >
-                + {name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
+  // Removed renderCompetitors - will be discovered through intelligence
 
   const renderBrandVoice = () => (
     <div className="onboarding-step">
