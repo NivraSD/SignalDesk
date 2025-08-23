@@ -1,8 +1,9 @@
-// Simplified Opportunity Assessment - Integrates with MCP array
+// Simplified Opportunity Assessment - Integrates with MCP array and Firecrawl
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { corsHeaders } from "../_shared/cors.ts"
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
+const FIRECRAWL_API_KEY = 'fc-3048810124b640eb99293880a4ab25d0'
 
 // Opportunity patterns based on MCP integration strategy
 const OPPORTUNITY_PATTERNS = {
@@ -38,71 +39,214 @@ const OPPORTUNITY_PATTERNS = {
   }
 }
 
-// Real-time signal detection from various sources
-async function detectSignals(organizationId: string) {
-  // In production, this would integrate with:
-  // - signaldesk-intelligence MCP for market scanning
-  // - signaldesk-monitor MCP for competitor tracking
-  // - signaldesk-relationships MCP for journalist activity
-  // - Playwright MCP for web scraping
-  
-  // For now, generate realistic signals based on current events
-  const currentHour = new Date().getHours()
-  const dayOfWeek = new Date().getDay()
-  
+// Real-time signal detection using Firecrawl web scraping
+async function detectSignals(organizationId: string, organizationProfile: any) {
   const signals = []
   
-  // Morning: Check overnight developments
-  if (currentHour >= 6 && currentHour <= 10) {
-    signals.push({
-      type: 'overnight_news',
-      source: 'intelligence_mcp',
-      description: 'Asian markets volatility affecting tech sector',
-      relevance: 0.7,
-      keywords: ['market', 'volatility', 'tech', 'asia']
-    })
-  }
-  
-  // Business hours: Monitor competitor activity
-  if (currentHour >= 9 && currentHour <= 17) {
-    signals.push({
-      type: 'competitor_move',
-      source: 'monitor_mcp',
-      description: 'Competitor announced product delay',
-      relevance: 0.85,
-      keywords: ['competitor', 'delay', 'product', 'announcement']
+  try {
+    // Get competitor domains based on organization
+    const competitors = getCompetitorDomains(organizationId)
+    
+    // 1. Monitor competitor websites for changes
+    for (const competitor of competitors) {
+      try {
+        // Scrape competitor press/news page
+        const pressData = await scrapeWithFirecrawl(`https://${competitor.domain}/press`, {
+          formats: ['markdown'],
+          onlyMainContent: true
+        })
+        
+        if (pressData?.markdown) {
+          // Check for negative signals
+          const negativeKeywords = ['delay', 'postpone', 'layoff', 'restructuring', 'investigation', 'lawsuit']
+          const hasNegativeSignal = negativeKeywords.some(keyword => 
+            pressData.markdown.toLowerCase().includes(keyword)
+          )
+          
+          if (hasNegativeSignal) {
+            signals.push({
+              type: 'competitor_weakness',
+              source: 'firecrawl_competitor_monitoring',
+              description: `Potential vulnerability detected at ${competitor.name}`,
+              relevance: 0.85,
+              keywords: ['competitor', 'weakness', competitor.name.toLowerCase()],
+              raw_content: pressData.markdown.substring(0, 500)
+            })
+          }
+        }
+        
+        // Check leadership page for changes
+        const leadershipData = await scrapeWithFirecrawl(`https://${competitor.domain}/leadership`, {
+          formats: ['markdown'],
+          onlyMainContent: true
+        })
+        
+        if (leadershipData?.markdown && leadershipData.markdown.includes('announce')) {
+          signals.push({
+            type: 'leadership_change',
+            source: 'firecrawl_competitor_monitoring',
+            description: `Leadership change detected at ${competitor.name}`,
+            relevance: 0.75,
+            keywords: ['leadership', 'executive', 'change', competitor.name.toLowerCase()]
+          })
+        }
+      } catch (error) {
+        console.log(`Could not scrape ${competitor.domain}:`, error)
+      }
+    }
+    
+    // 2. Search for industry news and cascade opportunities
+    const industrySearchResults = await searchWithFirecrawl(
+      `${organizationProfile?.industry || 'technology'} industry disruption OR supply chain`,
+      { limit: 5 }
+    )
+    
+    if (industrySearchResults?.data?.web) {
+      for (const result of industrySearchResults.data.web) {
+        // Check for cascade indicators
+        if (result.description?.toLowerCase().includes('supply chain') || 
+            result.description?.toLowerCase().includes('disruption')) {
+          signals.push({
+            type: 'cascade_indicator',
+            source: 'firecrawl_news_search',
+            description: result.title,
+            relevance: 0.8,
+            keywords: ['cascade', 'disruption', 'supply chain'],
+            url: result.url
+          })
+        }
+      }
+    }
+    
+    // 3. Monitor trending topics on tech news sites
+    const techNewsData = await scrapeWithFirecrawl('https://techcrunch.com', {
+      formats: ['markdown'],
+      onlyMainContent: true
     })
     
+    if (techNewsData?.markdown) {
+      // Extract trending topics from first 1000 chars
+      const trendingContent = techNewsData.markdown.substring(0, 1000)
+      if (trendingContent.toLowerCase().includes('ai') || 
+          trendingContent.toLowerCase().includes('regulation')) {
+        signals.push({
+          type: 'narrative_vacuum',
+          source: 'firecrawl_tech_news',
+          description: 'Emerging AI regulation discussion - opportunity for thought leadership',
+          relevance: 0.7,
+          keywords: ['ai', 'regulation', 'thought leadership']
+        })
+      }
+    }
+    
+    // 4. Check for journalist queries (using search)
+    const journalistSearch = await searchWithFirecrawl(
+      `"looking for sources" OR "seeking comment" ${organizationProfile?.industry || 'tech'}`,
+      { limit: 3 }
+    )
+    
+    if (journalistSearch?.data?.web) {
+      for (const result of journalistSearch.data.web) {
+        if (result.description?.includes('seeking') || result.description?.includes('sources')) {
+          signals.push({
+            type: 'journalist_query',
+            source: 'firecrawl_journalist_search',
+            description: result.title,
+            relevance: 0.75,
+            keywords: ['journalist', 'media', 'opportunity'],
+            url: result.url
+          })
+        }
+      }
+    }
+    
+  } catch (error) {
+    console.error('Error detecting signals with Firecrawl:', error)
+    // Return some fallback signals if Firecrawl fails
     signals.push({
-      type: 'journalist_query',
-      source: 'relationships_mcp',
-      description: 'WSJ reporter seeking industry comment on AI regulation',
-      relevance: 0.8,
-      keywords: ['journalist', 'wsj', 'ai', 'regulation']
-    })
-  }
-  
-  // Always check for cascade opportunities
-  signals.push({
-    type: 'cascade_indicator',
-    source: 'cascade_intelligence',
-    description: 'Supply chain disruption detected in semiconductor industry',
-    relevance: 0.75,
-    keywords: ['supply chain', 'semiconductor', 'disruption']
-  })
-  
-  // Add social media trends
-  if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Weekdays
-    signals.push({
-      type: 'social_trend',
-      source: 'social_monitor',
-      description: 'Industry topic trending on LinkedIn',
-      relevance: 0.65,
-      keywords: ['linkedin', 'trending', 'industry']
+      type: 'cascade_indicator',
+      source: 'fallback',
+      description: 'Industry monitoring active - checking for opportunities',
+      relevance: 0.6,
+      keywords: ['monitoring', 'active']
     })
   }
   
   return signals
+}
+
+// Helper function to make Firecrawl API calls
+async function scrapeWithFirecrawl(url: string, options: any = {}) {
+  try {
+    const response = await fetch('https://api.firecrawl.dev/v2/scrape', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        url,
+        ...options
+      })
+    })
+    
+    if (!response.ok) {
+      console.error(`Firecrawl scrape error for ${url}:`, response.status)
+      return null
+    }
+    
+    const result = await response.json()
+    return result.data
+  } catch (error) {
+    console.error(`Firecrawl scrape failed for ${url}:`, error)
+    return null
+  }
+}
+
+// Helper function for Firecrawl search
+async function searchWithFirecrawl(query: string, options: any = {}) {
+  try {
+    const response = await fetch('https://api.firecrawl.dev/v2/search', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        query,
+        ...options
+      })
+    })
+    
+    if (!response.ok) {
+      console.error(`Firecrawl search error:`, response.status)
+      return null
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error(`Firecrawl search failed:`, error)
+    return null
+  }
+}
+
+// Get competitor domains based on organization
+function getCompetitorDomains(organizationId: string) {
+  // Map organization to competitors
+  const competitorMap: Record<string, any[]> = {
+    'toyota': [
+      { name: 'Tesla', domain: 'tesla.com' },
+      { name: 'Ford', domain: 'ford.com' },
+      { name: 'GM', domain: 'gm.com' }
+    ],
+    'default-org': [
+      { name: 'OpenAI', domain: 'openai.com' },
+      { name: 'Anthropic', domain: 'anthropic.com' },
+      { name: 'Google', domain: 'blog.google' }
+    ]
+  }
+  
+  return competitorMap[organizationId] || competitorMap['default-org']
 }
 
 // Analyze signals for opportunity patterns
@@ -354,9 +498,9 @@ serve(async (req) => {
     
     console.log(`📋 Using configuration:`, organizationProfile)
     
-    // Step 1: Detect signals from MCPs
-    const signals = await detectSignals(organizationId)
-    console.log(`📡 Detected ${signals.length} signals`)
+    // Step 1: Detect real signals using Firecrawl
+    const signals = await detectSignals(organizationId, organizationProfile)
+    console.log(`📡 Detected ${signals.length} real-time signals from web scraping`)
     
     // Step 2: Analyze for patterns
     const opportunities = await analyzePatterns(signals, organizationProfile)
