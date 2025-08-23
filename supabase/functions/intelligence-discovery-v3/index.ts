@@ -12,35 +12,61 @@ console.log('🔑 API Key length:', ANTHROPIC_API_KEY?.length || 0)
 async function discoverEntities(organization: any) {
   console.log(`🎯 V3 Discovery: Identifying entities for ${organization.name}`)
   
-  const prompt = `You are an intelligence analyst identifying SPECIFIC entities to monitor for ${organization.name} in the ${organization.industry || 'business'} industry.
+  const prompt = `You are an intelligence analyst identifying DIVERSE entities to monitor for ${organization.name} in the ${organization.industry || 'business'} industry.
 
-Your task: Identify the MOST IMPORTANT entities that ${organization.name} needs to track for strategic intelligence.
+Your task: Cast a WIDE NET to identify ALL categories of entities that could impact ${organization.name}'s narrative and reputation.
 
-Focus on REAL, SPECIFIC entities that exist TODAY. Be precise with names.
+CRITICAL: Be comprehensive and diverse. Don't just focus on business and regulation - think about ALL forces that shape perception.
 
 For ${organization.name}, identify:
 
-1. TOP COMPETITORS (5-7 most important)
+1. TOP COMPETITORS (5-7 companies)
    - Direct competitors in their primary market
-   - Emerging threats they should watch
+   - Emerging disruptors and tech challengers
+   - Adjacent market players who could pivot into their space
    
-2. KEY REGULATORS (3-5 most relevant)
+2. REGULATORY & GOVERNMENT (4-6 entities)
    - Specific agencies that regulate them
-   - Key officials making decisions that affect them
+   - Key officials and committee chairs
+   - International regulatory bodies if applicable
    
-3. INFLUENTIAL MEDIA (3-5 journalists/outlets)
-   - Reporters who actually cover this company/industry
-   - Media outlets that shape narrative
+3. ACTIVISTS & ADVOCACY GROUPS (3-5 groups)
+   - Environmental activists targeting the industry
+   - Labor organizations and unions
+   - Consumer advocacy groups
+   - Social justice organizations relevant to their sector
    
-4. CRITICAL STAKEHOLDERS (3-5 key ones)
-   - Activist groups that target this industry
-   - Key investors or analysts who move markets
-   - Industry associations or standards bodies
+4. GEOPOLITICAL ACTORS (3-5 entities)
+   - Foreign governments affecting their markets
+   - Trade organizations and tariff authorities
+   - International sanctions bodies
+   - Geopolitical events in key markets
+   
+5. INFLUENTIAL VOICES (4-6 people/outlets)
+   - Industry journalists and reporters
+   - Influential analysts and thought leaders
+   - Podcast hosts and social media influencers
+   - Academic researchers publishing on the industry
+   
+6. FINANCIAL STAKEHOLDERS (3-5 entities)
+   - Major institutional investors
+   - Activist investors and short sellers
+   - Credit rating agencies
+   - Key analysts who move stock prices
 
-5. STRATEGIC TOPICS (5-7 trends)
-   - Technology shifts affecting the industry
-   - Regulatory changes being discussed
-   - Market trends to monitor
+7. DIVERSE TOPICS (10-15 different themes)
+   - Technology disruptions
+   - ESG and sustainability pressures
+   - Geopolitical tensions and trade wars
+   - Labor movements and unionization
+   - Climate change impacts
+   - Supply chain vulnerabilities
+   - Cybersecurity threats
+   - Consumer behavior shifts
+   - Regulatory changes across jurisdictions
+   - Economic indicators and recession risks
+   - Social movements affecting the industry
+   - Emerging market dynamics
 
 Return ONLY valid JSON:
 {
@@ -51,20 +77,27 @@ Return ONLY valid JSON:
     "regulators": [
       {"name": "Agency or Official Name", "role": "Their position", "importance": "critical/high/medium"}
     ],
-    "media": [
-      {"name": "Reporter/Outlet Name", "outlet": "Publication", "beat": "What they cover", "importance": "high/medium"}
+    "activists": [
+      {"name": "Group Name", "focus": "Their cause", "tactics": "How they operate", "importance": "high/medium"}
     ],
-    "stakeholders": [
-      {"name": "Organization/Person", "type": "activist/investor/analyst", "influence": "How they impact", "importance": "high/medium"}
+    "geopolitical": [
+      {"name": "Country/Organization", "relevance": "How they impact", "importance": "high/medium"}
+    ],
+    "media": [
+      {"name": "Reporter/Influencer Name", "platform": "Where they publish", "reach": "Audience size", "importance": "high/medium"}
+    ],
+    "investors": [
+      {"name": "Fund/Investor Name", "type": "institutional/activist/short", "influence": "Market impact", "importance": "high/medium"}
     ]
   },
   "topics": [
-    {"name": "Specific trend/topic", "category": "tech/regulatory/market", "urgency": "immediate/short-term/long-term"}
+    {"name": "Specific trend/topic", "category": "tech/regulatory/geopolitical/social/environmental/economic", "urgency": "immediate/short-term/long-term"}
   ],
   "monitoring_strategy": {
     "primary_focus": "What matters most for ${organization.name} right now",
     "crisis_triggers": ["Specific events that would require immediate attention"],
-    "opportunity_signals": ["Events that would create opportunities"]
+    "opportunity_signals": ["Events that would create opportunities"],
+    "blind_spots": ["Areas often overlooked but could surprise"]
   }
 }`
 

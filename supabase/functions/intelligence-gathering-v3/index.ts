@@ -28,9 +28,17 @@ async function gatherEntityActions(entities: any) {
   console.log('🔍 Gathering entity actions for:', Object.keys(entities))
   const actions = []
   const actionKeywords = [
+    // Business actions
     'announced', 'launched', 'acquired', 'raised', 'partnered',
     'filed', 'released', 'appointed', 'expanded', 'cut',
-    'sued', 'investigated', 'fined', 'approved', 'rejected'
+    // Legal/regulatory
+    'sued', 'investigated', 'fined', 'approved', 'rejected', 'sanctioned',
+    // Activist actions
+    'protested', 'boycott', 'petition', 'campaign', 'targeted', 'criticized',
+    // Geopolitical
+    'banned', 'restricted', 'tariff', 'embargo', 'threatened', 'tensions',
+    // Personnel/thought leadership
+    'said', 'warned', 'predicted', 'argued', 'testified', 'tweeted'
   ]
   
   // Gather actions for each entity type
@@ -39,7 +47,12 @@ async function gatherEntityActions(entities: any) {
     
     console.log(`🎯 Processing ${entityType}:`, entityList.length, 'entities')
     
-    for (const entity of entityList.slice(0, 3)) { // Limit to top 3 per category for speed
+    // Process more entities for comprehensive coverage
+    const entitiesToProcess = entityType === 'competitors' ? 5 : 
+                             entityType === 'activists' ? 4 : 
+                             entityType === 'geopolitical' ? 4 : 3
+    
+    for (const entity of entityList.slice(0, entitiesToProcess)) {
       try {
         const entityName = entity.name
         console.log(`  🔍 Searching for actions by: ${entityName}`)
@@ -87,7 +100,8 @@ async function gatherEntityActions(entities: any) {
 async function gatherTopicTrends(topics: any[]) {
   const trends = []
   
-  for (const topic of topics.slice(0, 5)) { // Top 5 topics
+  // Process more topics for diverse coverage
+  for (const topic of topics.slice(0, 10)) { // Process up to 10 topics for broader coverage
     try {
       const searchQuery = `"${topic.name}" when:7d`
       const url = `https://news.google.com/rss/search?q=${encodeURIComponent(searchQuery)}&hl=en-US&gl=US&ceid=US:en`

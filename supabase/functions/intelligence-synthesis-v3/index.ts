@@ -41,7 +41,7 @@ async function synthesizeWithClaude(intelligence: any, organization: any) {
 }
 
 async function synthesizeOffensiveIntel(entityActions: any[], topicTrends: any[], organization: any) {
-  const prompt = `You are an elite strategic intelligence analyst for ${organization.name}. Your job is to find differentiation opportunities and strategic positioning gaps, not just monitor news.
+  const prompt = `You are an elite strategic intelligence analyst for ${organization.name}. Your job is to find differentiation opportunities from DIVERSE sources - competitors, activists, geopolitics, media voices.
 
 ENTITY ACTIONS (${entityActions.length} captured):
 ${JSON.stringify(entityActions, null, 2)}
@@ -49,13 +49,15 @@ ${JSON.stringify(entityActions, null, 2)}
 TOPIC TRENDS (${topicTrends.length} monitored):
 ${JSON.stringify(topicTrends, null, 2)}
 
-CRITICAL: Look for:
-- Executive comments and thought leader statements (not just company announcements)
-- Subtle shifts in messaging and positioning
-- What competitors AREN'T talking about (narrative gaps)
-- Early signals and weak signals that others might miss
-- Personnel moves and what they signal about strategy
-- Conference remarks, podcast quotes, social media hints
+CRITICAL: Look across ALL entity types:
+- COMPETITORS: Strategic moves and positioning
+- ACTIVISTS: Campaigns, protests, and pressure points
+- GEOPOLITICAL: Trade tensions, sanctions, regulatory shifts
+- MEDIA/INFLUENCERS: Narrative shifts and opinion leadership
+- INVESTORS: Market sentiment and activist positions
+- THOUGHT LEADERS: Executive comments, predictions, warnings
+
+Find the NON-OBVIOUS connections between these diverse forces
 
 Your analysis should help ${organization.name} DIFFERENTIATE, not just monitor.
 
@@ -139,7 +141,7 @@ Return this JSON with STRATEGIC DIFFERENTIATION ANALYSIS:
 }
 
 async function synthesizeDefensiveIntel(entityActions: any[], topicTrends: any[], organization: any) {
-  const prompt = `You are an elite strategic intelligence analyst for ${organization.name}. Find unique insights that others miss - focus on personnel signals, thought leader opinions, and reading between the lines.
+  const prompt = `You are an elite strategic intelligence analyst for ${organization.name}. Analyze how DIVERSE forces - activists, geopolitics, media - create risks and opportunities.
 
 ENTITY ACTIONS (${entityActions.length} captured):
 ${JSON.stringify(entityActions, null, 2)}
@@ -147,12 +149,13 @@ ${JSON.stringify(entityActions, null, 2)}
 TOPIC TRENDS (${topicTrends.length} monitored):
 ${JSON.stringify(topicTrends, null, 2)}
 
-CRITICAL: Don't just report what happened. Look for:
-- What thought leaders and executives are really saying (and not saying)
-- Personnel moves and what they signal
-- Conference side comments and podcast remarks
-- Social media hints and LinkedIn activity
-- The stories behind the stories
+CRITICAL: Analyze the FULL spectrum of forces:
+- ACTIVIST PRESSURE: What campaigns are building? Who's being targeted?
+- GEOPOLITICAL RISKS: Trade wars, sanctions, regulatory nationalism
+- MEDIA NARRATIVES: How are influencers shaping perception?
+- INVESTOR ACTIVISM: Who's taking positions? What are they demanding?
+- REGULATORY CONVERGENCE: Global regulatory trends and divergences
+- SOCIAL MOVEMENTS: Cultural shifts affecting the industry
 
 Return this JSON with EXPANSIVE NARRATIVE INTELLIGENCE:
 {
