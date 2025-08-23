@@ -13,60 +13,135 @@ const OpportunityModule = ({ organizationId }) => {
   const [loading, setLoading] = useState(true);
   const [userConfig, setUserConfig] = useState(null);
 
+  // Load configuration once on mount
   useEffect(() => {
     // Load user's opportunity profile configuration
+    let configToUse = null;
+    
     const opportunityProfile = localStorage.getItem('opportunity_profile');
     if (opportunityProfile) {
-      const config = JSON.parse(opportunityProfile);
-      setUserConfig(config);
-      console.log('📊 Opportunity Module loaded profile:', config);
+      configToUse = JSON.parse(opportunityProfile);
+      console.log('📊 Opportunity Module loaded profile:', configToUse);
     } else {
-      // Fallback to basic onboarding if no opportunity profile
-      const savedOnboarding = localStorage.getItem('signaldesk_onboarding');
-      if (savedOnboarding) {
-        const config = JSON.parse(savedOnboarding);
-        console.log('📊 Using basic onboarding config');
-        // Create a basic config from onboarding data
-        setUserConfig({
-          minimumScore: 60,
+      // Try unified profile
+      const unifiedProfile = localStorage.getItem('signaldesk_unified_profile');
+      if (unifiedProfile) {
+        const profile = JSON.parse(unifiedProfile);
+        configToUse = {
+          minimum_confidence: profile.opportunities?.minimum_confidence || 70,
+          opportunity_types: profile.opportunities?.types || {
+            competitor_weakness: true,
+            narrative_vacuum: true,
+            cascade_effect: true,
+            crisis_prevention: true,
+            viral_moment: false
+          },
+          risk_tolerance: profile.brand?.risk_tolerance || 'moderate',
+          preferred_tiers: profile.media?.preferred_tiers || ['tier1_business', 'tier1_tech'],
+          voice: profile.brand?.voice || 'professional',
+          response_speed: profile.brand?.response_speed || 'considered',
+          core_value_props: profile.messaging?.core_value_props || [],
+          industry: profile.organization?.industry || 'technology'
+        };
+        console.log('📊 Using unified profile config:', configToUse);
+      } else {
+        // Fallback to basic config
+        configToUse = {
+          minimum_confidence: 70,
           opportunity_types: {
             competitor_weakness: true,
             narrative_vacuum: true,
-            cascade_effect: true
-          }
-        });
+            cascade_effect: true,
+            crisis_prevention: true,
+            viral_moment: false
+          },
+          risk_tolerance: 'moderate',
+          preferred_tiers: ['tier1_business', 'tier1_tech', 'trade'],
+          industry: 'technology'
+        };
+        console.log('📊 Using default config');
       }
     }
     
-    if (organizationId) {
+    setUserConfig(configToUse);
+  }, []);
+  
+  // Load opportunities when config and organizationId are ready
+  useEffect(() => {
+    if (organizationId && userConfig) {
       loadOpportunities();
     }
-  }, [organizationId, filters]);
+  }, [organizationId, filters, userConfig]);
 
   const loadOpportunities = async () => {
     setLoading(true);
     try {
-      // First try to call the Supabase Edge Function
+      // First try the new Opportunity Orchestrator (follows Intelligence Hub pattern)
       if (organizationId) {
         try {
-          console.log('🎯 Calling assess-opportunities-simple with org:', organizationId);
+          console.log('🎯 Calling opportunity-orchestrator with org:', organizationId);
           console.log('📋 Using configuration:', userConfig);
+          
+          // Try the orchestrated approach first
+          const { data: orchestratedData, error: orchestratedError } = await supabase.functions.invoke('opportunity-orchestrator', {
+            body: {
+              organization: {
+                name: organizationId,
+                industry: userConfig?.industry || 'technology'
+              },
+              config: userConfig,
+              forceRefresh: false
+            }
+          });
+
+          if (!orchestratedError && orchestratedData?.success && orchestratedData?.opportunities) {
+            console.log('✅ Orchestrator succeeded with', orchestratedData.opportunities.length, 'opportunities');
+            console.log('🎭 Personas used:', orchestratedData.personas_used);
+            
+            // Process orchestrated opportunities
+            const scoredOpportunities = orchestratedData.opportunities.map(opp => ({
+              ...opp,
+              priority_score: opp.priority_score || opp.confidence || 75,
+              configured_weight: userConfig?.[opp.opportunity_type]?.weight || 50,
+              opportunity_data: {
+                description: opp.description || opp.action || ''
+              }
+            }));
+
+            // Apply local filters
+            const filtered = scoredOpportunities.filter(opp => {
+              if (filters.type !== 'all' && opp.opportunity_type !== filters.type) return false;
+              if (opp.priority_score < filters.minScore) return false;
+              if (filters.status !== 'all' && opp.status !== filters.status) return false;
+              return true;
+            });
+
+            filtered.sort((a, b) => b.priority_score - a.priority_score);
+            setOpportunities(filtered);
+            setLoading(false);
+            return;
+          }
+        } catch (orchestratorError) {
+          console.warn('Orchestrator not available, trying simple assessment:', orchestratorError);
+        }
+        
+        // Fallback to simple assessment if orchestrator fails
+        try {
+          console.log('🎯 Falling back to assess-opportunities-simple');
           const { data, error } = await supabase.functions.invoke('assess-opportunities-simple', {
             body: {
               organizationId,
               forceRefresh: false,
-              organizationProfile: userConfig // Pass the user's configuration
+              organizationProfile: userConfig
             }
           });
 
-          console.log('📊 Edge Function response:', { data, error });
+          console.log('📊 Simple assessment response:', { data, error });
           
-          // If there's an error, log it for debugging
           if (error) {
             console.error('❌ Edge Function error:', error);
           }
 
-          // Check for successful response - accept even empty opportunities array
           if (!error && data && data.opportunities && Array.isArray(data.opportunities)) {
             // Process opportunities from Edge Function
             const scoredOpportunities = data.opportunities.map(opp => ({

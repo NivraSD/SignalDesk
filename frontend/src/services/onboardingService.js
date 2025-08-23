@@ -94,21 +94,40 @@ class OnboardingService {
    * Configure opportunity detection preferences
    */
   async configureOpportunities(orgId, opportunities) {
+    // Map old opportunity types to new persona-based types
+    const mappedTypes = {
+      competitive_opportunist: opportunities.types.competitor_weakness || false,
+      narrative_navigator: opportunities.types.narrative_vacuum || false,
+      cascade_predictor: opportunities.types.cascade_events || true, // Always enable cascade
+      crisis_preventer: opportunities.types.crisis_prevention || false,
+      viral_virtuoso: opportunities.types.trending_topics || false
+    };
+    
     // Store opportunity configuration
     const { error } = await supabase
       .from('opportunity_config')
       .insert({
         organization_id: orgId,
         enabled_types: opportunities.types,
+        opportunity_types: mappedTypes, // New persona-based types
         response_time: opportunities.response_time,
         risk_tolerance: opportunities.risk_tolerance,
+        minimum_confidence: opportunities.minimum_confidence || 70,
         active: true
       });
     
     if (error) throw error;
     
-    // Store in MemoryVault
-    await this.storeInMemoryVault(orgId, 'opportunities', 'config', opportunities);
+    // Store in MemoryVault with enhanced config
+    const enhancedConfig = {
+      ...opportunities,
+      opportunity_types: mappedTypes,
+      minimum_confidence: opportunities.minimum_confidence || 70
+    };
+    await this.storeInMemoryVault(orgId, 'opportunities', 'config', enhancedConfig);
+    
+    // Also store in localStorage for immediate use
+    localStorage.setItem('signaldesk_opportunity_profile', JSON.stringify(enhancedConfig));
   }
   
   /**

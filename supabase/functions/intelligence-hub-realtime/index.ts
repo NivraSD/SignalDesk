@@ -53,10 +53,10 @@ async function gatherCompetitorIntelligence(organization: any) {
   
   const sources = getIndustryIntelligenceSources(organization.industry)
   
-  // Monitor top 3 competitors
+  // Monitor top 3 competitors with multiple search strategies
   for (const competitor of sources.competitors.slice(0, 3)) {
     try {
-      // Search for recent competitor news
+      // Strategy 1: Search for recent announcements
       const searchResults = await searchWithFirecrawl(
         `"${competitor}" announcement OR "${competitor}" launches OR "${competitor}" partnership`,
         { limit: 3 }
@@ -70,7 +70,45 @@ async function gatherCompetitorIntelligence(organization: any) {
             title: result.title,
             description: result.description,
             url: result.url,
-            impact: assessImpact(result.description)
+            impact: assessImpact(result.description),
+            detected_at: new Date().toISOString()
+          })
+        }
+      }
+      
+      // Strategy 2: Search for vulnerabilities
+      const vulnerabilitySearch = await searchWithFirecrawl(
+        `"${competitor}" (layoffs OR lawsuit OR investigation OR recall OR outage)`,
+        { limit: 2 }
+      )
+      
+      if (vulnerabilitySearch?.data?.web) {
+        for (const result of vulnerabilitySearch.data.web) {
+          intelligence.vulnerabilities.push({
+            competitor,
+            issue: result.title,
+            description: result.description,
+            url: result.url,
+            opportunity: `Position as stable alternative to ${competitor}`,
+            confidence: 0.8
+          })
+        }
+      }
+      
+      // Strategy 3: Look for market opportunities
+      const opportunitySearch = await searchWithFirecrawl(
+        `"${competitor}" (customers OR market share OR growth OR expansion)`,
+        { limit: 2 }
+      )
+      
+      if (opportunitySearch?.data?.web) {
+        for (const result of opportunitySearch.data.web) {
+          intelligence.opportunities.push({
+            competitor,
+            opportunity: result.title,
+            description: result.description,
+            url: result.url,
+            action: 'Analyze for competitive positioning'
           })
         }
       }
@@ -136,27 +174,58 @@ async function gatherNarrativeIntelligence(organization: any) {
   
   const sources = getIndustryIntelligenceSources(organization.industry)
   
-  // Scrape industry news site for trending topics
-  try {
-    const newsData = await scrapeWithFirecrawl(`https://${sources.sites[0]}`, {
-      formats: ['markdown'],
-      onlyMainContent: true
-    })
-    
-    if (newsData?.markdown) {
-      // Extract trending topics from content
-      for (const keyword of sources.keywords) {
-        if (newsData.markdown.toLowerCase().includes(keyword.toLowerCase())) {
+  // Search for trending topics instead of scraping sites directly
+  for (const keyword of sources.keywords.slice(0, 3)) { // Check top 3 keywords
+    try {
+      // Search for recent news about each keyword
+      const trendingSearch = await searchWithFirecrawl(
+        `"${keyword}" "${organization.industry}" news "2024" OR "2025"`,
+        { limit: 2 }
+      )
+      
+      if (trendingSearch?.data?.web) {
+        for (const result of trendingSearch.data.web) {
           narratives.trending.push({
             topic: keyword,
-            source: sources.sites[0],
-            relevance: 'high'
+            title: result.title,
+            description: result.description,
+            source: new URL(result.url).hostname,
+            url: result.url,
+            relevance: 'high',
+            detected_at: new Date().toISOString()
           })
         }
       }
+    } catch (error) {
+      console.log(`Could not search for trending topic ${keyword}:`, error)
+    }
+  }
+  
+  // Also search for breaking industry news
+  try {
+    const breakingNews = await searchWithFirecrawl(
+      `"${organization.industry}" breaking news OR trending OR "hot topic"`,
+      { limit: 3 }
+    )
+    
+    if (breakingNews?.data?.web) {
+      for (const result of breakingNews.data.web) {
+        // Extract main topic from title
+        const topic = result.title.split(':')[0] || result.title.substring(0, 50)
+        
+        narratives.trending.push({
+          topic: topic,
+          title: result.title,
+          description: result.description,
+          source: new URL(result.url).hostname,
+          url: result.url,
+          relevance: 'high',
+          detected_at: new Date().toISOString()
+        })
+      }
     }
   } catch (error) {
-    console.log('Could not scrape news site:', error)
+    console.log('Could not search for breaking news:', error)
   }
   
   // Search for narrative opportunities
@@ -288,25 +357,63 @@ function analyzeSentiment(text: string) {
 // Generate executive summary using Claude
 async function generateExecutiveSummary(intelligence: any, organization: any) {
   if (!ANTHROPIC_API_KEY) {
+    // Enhanced fallback summary based on actual data
+    const insights = []
+    const recommendations = []
+    
+    if (intelligence.competitors?.movements?.length > 0) {
+      insights.push(`${intelligence.competitors.movements.length} competitor movements detected`)
+      recommendations.push('Analyze competitor strategies for positioning opportunities')
+    }
+    if (intelligence.competitors?.vulnerabilities?.length > 0) {
+      insights.push(`${intelligence.competitors.vulnerabilities.length} competitor vulnerabilities identified`)
+      recommendations.push('Position as stable alternative to vulnerable competitors')
+    }
+    if (intelligence.narratives?.trending?.length > 0) {
+      insights.push(`${intelligence.narratives.trending.length} trending topics relevant to ${organization.industry}`)
+      recommendations.push('Develop thought leadership on trending topics')
+    }
+    if (intelligence.predictions?.cascades?.length > 0) {
+      insights.push('Cascade effects predicted in next 48 hours')
+      recommendations.push('Prepare for first-mover advantage on cascade opportunities')
+    }
+    
     return {
-      summary: 'Real-time intelligence gathered successfully.',
-      key_insights: ['Competitor movements detected', 'Market opportunities identified'],
-      recommendations: ['Monitor cascade effects', 'Prepare strategic response']
+      summary: `Real-time intelligence gathered for ${organization.name}. ${insights.length} critical insights identified requiring immediate attention.`,
+      key_insights: insights.slice(0, 3),
+      recommendations: recommendations.slice(0, 3)
     }
   }
   
   try {
-    const prompt = `Analyze this real-time intelligence for ${organization.name} and provide an executive summary:
-    
-Competitor Intelligence: ${JSON.stringify(intelligence.competitors, null, 2)}
-Stakeholder Sentiment: ${JSON.stringify(intelligence.stakeholders, null, 2)}
-Narrative Trends: ${JSON.stringify(intelligence.narratives, null, 2)}
-Predictive Insights: ${JSON.stringify(intelligence.predictions, null, 2)}
+    const prompt = `You are an Executive Intelligence Analyst. Analyze this real-time intelligence for ${organization.name} and provide strategic insights.
 
-Provide:
-1. A concise executive summary (2-3 sentences)
-2. Top 3 key insights
-3. Top 3 recommendations
+Organization: ${organization.name}
+Industry: ${organization.industry || 'technology'}
+
+COMPETITOR INTELLIGENCE:
+${JSON.stringify(intelligence.competitors, null, 2)}
+
+STAKEHOLDER SENTIMENT:
+${JSON.stringify(intelligence.stakeholders, null, 2)}
+
+NARRATIVE LANDSCAPE:
+${JSON.stringify(intelligence.narratives, null, 2)}
+
+PREDICTIVE ANALYSIS:
+${JSON.stringify(intelligence.predictions, null, 2)}
+
+Provide a strategic executive briefing with:
+1. Executive Summary (2-3 impactful sentences focusing on immediate opportunities and risks)
+2. Top 3 Key Insights (specific, actionable intelligence findings)
+3. Top 3 Strategic Recommendations (concrete actions with timing)
+
+Focus on:
+- Competitive advantages to exploit
+- Time-sensitive opportunities
+- Cascade effects to leverage
+- Narrative gaps to fill
+- Stakeholder concerns to address
 
 Format as JSON with keys: summary, key_insights, recommendations`
 

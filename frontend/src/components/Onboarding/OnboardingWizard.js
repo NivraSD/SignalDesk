@@ -90,62 +90,53 @@ const OnboardingWizard = ({ onComplete }) => {
         {/* Header with Progress */}
         <div className="onboarding-header">
           <h2 className="onboarding-title">SignalDesk Setup</h2>
-          <p className="onboarding-subtitle">Step {currentStep} of {steps.length}</p>
+          <p className="onboarding-subtitle">Step {currentStep} of {steps.length} - {steps[currentStep - 1].name}</p>
           <div className="progress-bar">
-            {steps.map((step, index) => (
-              <div key={step.id} className="flex items-center">
-                <div className={`
-                  flex items-center justify-center w-10 h-10 rounded-full
-                  ${currentStep > step.id ? 'bg-green-500' : 
-                    currentStep === step.id ? 'bg-indigo-500' : 'bg-gray-700'}
-                `}>
-                  {currentStep > step.id ? (
-                    <Check className="w-5 h-5" />
-                  ) : (
-                    <step.icon className="w-5 h-5" />
-                  )}
-                </div>
-                {index < steps.length - 1 && (
-                  <div className={`w-full h-1 mx-2 ${
-                    currentStep > step.id ? 'bg-green-500' : 'bg-gray-700'
-                  }`} />
-                )}
-              </div>
+            {steps.map((step) => (
+              <div
+                key={step.id}
+                className={`progress-step ${
+                  currentStep > step.id ? 'completed' : 
+                  currentStep === step.id ? 'active' : ''
+                }`}
+              />
             ))}
-          </div>
-          <div className="text-center">
-            <h2 className="text-2xl font-bold mb-2">{steps[currentStep - 1].name}</h2>
-            <p className="text-gray-400">Step {currentStep} of 5</p>
           </div>
         </div>
 
         {/* Step Content */}
-        <div className="bg-gray-800 rounded-lg p-8 mb-8">
-          {currentStep === 1 && <OrganizationStep data={formData.organization} updateData={updateFormData} />}
-          {currentStep === 2 && <ObjectivesStep data={formData.objectives} updateData={updateFormData} />}
-          {currentStep === 3 && <OpportunitiesStep data={formData.opportunities} updateData={updateFormData} />}
-          {currentStep === 4 && <IntelligenceStep data={formData.intelligence} updateData={updateFormData} />}
-          {currentStep === 5 && <MCPStep data={formData.mcps} updateData={updateFormData} />}
+        <div className="onboarding-body">
+          <div className="step-content">
+            {currentStep === 1 && <OrganizationStep data={formData.organization} updateData={updateFormData} />}
+            {currentStep === 2 && <ObjectivesStep data={formData.objectives} updateData={updateFormData} />}
+            {currentStep === 3 && <OpportunitiesStep data={formData.opportunities} updateData={updateFormData} />}
+            {currentStep === 4 && <IntelligenceStep data={formData.intelligence} updateData={updateFormData} />}
+            {currentStep === 5 && <MCPStep data={formData.mcps} updateData={updateFormData} />}
+          </div>
         </div>
 
         {/* Navigation */}
-        <div className="flex justify-between">
-          <button
-            onClick={handleBack}
-            disabled={currentStep === 1}
-            className={`flex items-center px-6 py-3 rounded-lg font-medium
-              ${currentStep === 1 ? 'bg-gray-700 opacity-50 cursor-not-allowed' : 'bg-gray-700 hover:bg-gray-600'}`}
-          >
-            <ChevronLeft className="w-5 h-5 mr-2" />
-            Previous
-          </button>
-          <button
-            onClick={handleNext}
-            className="flex items-center px-6 py-3 bg-indigo-500 hover:bg-indigo-600 rounded-lg font-medium"
-          >
-            {currentStep === 5 ? 'Complete Setup' : 'Next Step'}
-            <ChevronRight className="w-5 h-5 ml-2" />
-          </button>
+        <div className="onboarding-footer">
+          <div className="step-indicator">
+            Step {currentStep} of {steps.length}
+          </div>
+          <div className="button-group">
+            <button
+              onClick={handleBack}
+              disabled={currentStep === 1}
+              className={`btn btn-secondary ${currentStep === 1 ? 'disabled' : ''}`}
+            >
+              <ChevronLeft className="icon" />
+              Previous
+            </button>
+            <button
+              onClick={handleNext}
+              className={`btn ${currentStep === 5 ? 'btn-success' : 'btn-primary'}`}
+            >
+              {currentStep === 5 ? 'Complete Setup' : 'Next Step'}
+              <ChevronRight className="icon" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

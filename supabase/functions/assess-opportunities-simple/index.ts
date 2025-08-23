@@ -46,12 +46,14 @@ async function detectSignals(organizationId: string, organizationProfile: any) {
   try {
     // Get competitor domains based on organization AND industry
     const competitors = getCompetitorDomains(organizationId, organizationProfile?.industry)
+    console.log(`🔍 Monitoring competitors:`, competitors.map(c => c.name).join(', '))
     
     // Get industry-specific news sources from MasterSourceRegistry
     const industrySources = getIndustryNewsSources(organizationProfile?.industry || 'technology')
+    console.log(`📰 Industry sources:`, industrySources.sites.join(', '))
     
-    // 1. Monitor competitor websites for changes
-    for (const competitor of competitors) {
+    // 1. Monitor competitor websites for changes (limit to top 2 for speed)
+    for (const competitor of competitors.slice(0, 2)) {
       try {
         // Scrape competitor press/news page
         const pressData = await scrapeWithFirecrawl(`https://${competitor.domain}/press`, {
@@ -246,6 +248,9 @@ async function searchWithFirecrawl(query: string, options: any = {}) {
 
 // Get competitor domains and industry sources based on organization
 function getCompetitorDomains(organizationId: string, industry?: string) {
+  // Normalize organizationId to lowercase for consistent matching
+  const normalizedOrgId = organizationId?.toLowerCase() || ''
+  
   // Map organization to competitors
   const competitorMap: Record<string, any[]> = {
     'toyota': [
@@ -277,7 +282,7 @@ function getCompetitorDomains(organizationId: string, industry?: string) {
     }
   }
   
-  return competitorMap[organizationId] || competitorMap['default-org']
+  return competitorMap[normalizedOrgId] || competitorMap['default-org']
 }
 
 // Get industry-specific competitors based on MasterSourceRegistry industries
