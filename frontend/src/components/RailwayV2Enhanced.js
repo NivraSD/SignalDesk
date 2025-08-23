@@ -48,6 +48,11 @@ const RailwayV2Enhanced = () => {
       };
     }
     
+    // Ensure organization has an ID (use name as fallback ID)
+    if (!orgData.id) {
+      orgData.id = orgData.name?.toLowerCase().replace(/\s+/g, '-') || 'default-org';
+    }
+    
     console.log('🏢 RailwayV2Enhanced setting organization:', orgData);
     setOrganizationData(orgData);
   }, []);

@@ -6,6 +6,7 @@ const UnifiedOnboarding = ({ onComplete }) => {
   const [profile, setProfile] = useState({
     // Organization Basics (used by Intelligence Hub)
     organization: {
+      id: '',
       name: '',
       industry: '',
       website: '',
@@ -104,6 +105,11 @@ const UnifiedOnboarding = ({ onComplete }) => {
   };
 
   const saveProfile = async () => {
+    // Ensure organization has an ID
+    if (!profile.organization.id && profile.organization.name) {
+      profile.organization.id = profile.organization.name.toLowerCase().replace(/\s+/g, '-');
+    }
+    
     // Save unified profile
     const unifiedProfile = {
       ...profile,

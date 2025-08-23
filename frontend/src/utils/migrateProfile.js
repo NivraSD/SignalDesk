@@ -22,6 +22,7 @@ export const migrateToUnifiedProfile = () => {
   const unifiedProfile = {
     // Organization Basics (from legacy onboarding)
     organization: {
+      id: '',
       name: '',
       industry: '',
       website: '',
@@ -175,6 +176,11 @@ export const migrateToUnifiedProfile = () => {
     }
   }
 
+  // Ensure organization has an ID
+  if (!unifiedProfile.organization.id && unifiedProfile.organization.name) {
+    unifiedProfile.organization.id = unifiedProfile.organization.name.toLowerCase().replace(/\s+/g, '-');
+  }
+  
   // Save the unified profile
   localStorage.setItem('signaldesk_unified_profile', JSON.stringify(unifiedProfile));
   
