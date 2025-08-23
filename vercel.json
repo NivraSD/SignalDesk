@@ -1,11 +1,22 @@
 {
-  "buildCommand": "cd frontend && npm install --legacy-peer-deps && CI=false npm run build",
+  "buildCommand": "cd frontend && rm -rf node_modules build && npm install --legacy-peer-deps && CI=false npm run build",
   "outputDirectory": "frontend/build",
   "framework": null,
   "rewrites": [
     {
       "source": "/(.*)",
       "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/static/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
     }
   ]
 }

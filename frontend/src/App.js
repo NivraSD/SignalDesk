@@ -87,6 +87,8 @@ function App() {
   console.log("⚡⚡⚡ RAILWAY V2 NEON INTERFACE - DEPLOYED:", new Date().toISOString());
   console.log("🎯 Modern Railway design with neon buttons");
   console.log("💎 Intelligence Hub with practical insights");
+  console.log("🚀 VERSION 0.2.0 - Firecrawl Integration Active");
+  console.log("📅 Build Date: August 23, 2025");
   
   return (
     <BrowserRouter>
