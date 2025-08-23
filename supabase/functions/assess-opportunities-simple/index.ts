@@ -44,8 +44,11 @@ async function detectSignals(organizationId: string, organizationProfile: any) {
   const signals = []
   
   try {
-    // Get competitor domains based on organization
-    const competitors = getCompetitorDomains(organizationId)
+    // Get competitor domains based on organization AND industry
+    const competitors = getCompetitorDomains(organizationId, organizationProfile?.industry)
+    
+    // Get industry-specific news sources from MasterSourceRegistry
+    const industrySources = getIndustryNewsSources(organizationProfile?.industry || 'technology')
     
     // 1. Monitor competitor websites for changes
     for (const competitor of competitors) {
@@ -118,24 +121,35 @@ async function detectSignals(organizationId: string, organizationProfile: any) {
       }
     }
     
-    // 3. Monitor trending topics on tech news sites
-    const techNewsData = await scrapeWithFirecrawl('https://techcrunch.com', {
-      formats: ['markdown'],
-      onlyMainContent: true
-    })
-    
-    if (techNewsData?.markdown) {
-      // Extract trending topics from first 1000 chars
-      const trendingContent = techNewsData.markdown.substring(0, 1000)
-      if (trendingContent.toLowerCase().includes('ai') || 
-          trendingContent.toLowerCase().includes('regulation')) {
-        signals.push({
-          type: 'narrative_vacuum',
-          source: 'firecrawl_tech_news',
-          description: 'Emerging AI regulation discussion - opportunity for thought leadership',
-          relevance: 0.7,
-          keywords: ['ai', 'regulation', 'thought leadership']
+    // 3. Monitor industry-specific news sites from MasterSourceRegistry
+    for (const site of industrySources.sites.slice(0, 3)) { // Check top 3 sites
+      try {
+        const newsData = await scrapeWithFirecrawl(`https://${site}`, {
+          formats: ['markdown'],
+          onlyMainContent: true
         })
+        
+        if (newsData?.markdown) {
+          // Extract trending topics from first 1000 chars
+          const trendingContent = newsData.markdown.substring(0, 1000)
+          
+          // Check for industry-specific keywords
+          const industryKeywords = industrySources.searches || []
+          for (const keyword of industryKeywords) {
+            if (trendingContent.toLowerCase().includes(keyword.toLowerCase())) {
+              signals.push({
+                type: 'narrative_vacuum',
+                source: `firecrawl_${site}`,
+                description: `Emerging ${keyword} discussion on ${site} - opportunity for thought leadership`,
+                relevance: 0.75,
+                keywords: [keyword.toLowerCase(), 'thought leadership', organizationProfile?.industry || 'industry']
+              })
+              break // Only one signal per site
+            }
+          }
+        }
+      } catch (error) {
+        console.log(`Could not scrape ${site}:`, error)
       }
     }
     
@@ -230,14 +244,23 @@ async function searchWithFirecrawl(query: string, options: any = {}) {
   }
 }
 
-// Get competitor domains based on organization
-function getCompetitorDomains(organizationId: string) {
+// Get competitor domains and industry sources based on organization
+function getCompetitorDomains(organizationId: string, industry?: string) {
   // Map organization to competitors
   const competitorMap: Record<string, any[]> = {
     'toyota': [
       { name: 'Tesla', domain: 'tesla.com' },
       { name: 'Ford', domain: 'ford.com' },
-      { name: 'GM', domain: 'gm.com' }
+      { name: 'GM', domain: 'gm.com' },
+      { name: 'Rivian', domain: 'rivian.com' },
+      { name: 'Lucid', domain: 'lucidmotors.com' }
+    ],
+    'nike': [
+      { name: 'Adidas', domain: 'adidas.com' },
+      { name: 'Under Armour', domain: 'underarmour.com' },
+      { name: 'Puma', domain: 'puma.com' },
+      { name: 'New Balance', domain: 'newbalance.com' },
+      { name: 'Reebok', domain: 'reebok.com' }
     ],
     'default-org': [
       { name: 'OpenAI', domain: 'openai.com' },
@@ -246,7 +269,85 @@ function getCompetitorDomains(organizationId: string) {
     ]
   }
   
+  // If we have industry-specific competitors from MasterSourceRegistry mapping
+  if (industry) {
+    const industryCompetitors = getIndustryCompetitors(industry)
+    if (industryCompetitors.length > 0) {
+      return industryCompetitors
+    }
+  }
+  
   return competitorMap[organizationId] || competitorMap['default-org']
+}
+
+// Get industry-specific competitors based on MasterSourceRegistry industries
+function getIndustryCompetitors(industry: string) {
+  const industryMap: Record<string, any[]> = {
+    'automotive': [
+      { name: 'Tesla', domain: 'tesla.com' },
+      { name: 'Ford', domain: 'ford.com' },
+      { name: 'GM', domain: 'gm.com' }
+    ],
+    'technology': [
+      { name: 'Microsoft', domain: 'microsoft.com' },
+      { name: 'Apple', domain: 'apple.com' },
+      { name: 'Google', domain: 'google.com' }
+    ],
+    'finance': [
+      { name: 'JPMorgan', domain: 'jpmorganchase.com' },
+      { name: 'Goldman Sachs', domain: 'goldmansachs.com' },
+      { name: 'Morgan Stanley', domain: 'morganstanley.com' }
+    ],
+    'healthcare': [
+      { name: 'Johnson & Johnson', domain: 'jnj.com' },
+      { name: 'Pfizer', domain: 'pfizer.com' },
+      { name: 'Merck', domain: 'merck.com' }
+    ],
+    'retail': [
+      { name: 'Amazon', domain: 'amazon.com' },
+      { name: 'Walmart', domain: 'walmart.com' },
+      { name: 'Target', domain: 'target.com' }
+    ],
+    'sports': [
+      { name: 'Nike', domain: 'nike.com' },
+      { name: 'Adidas', domain: 'adidas.com' },
+      { name: 'Under Armour', domain: 'underarmour.com' }
+    ]
+  }
+  
+  return industryMap[industry?.toLowerCase()] || []
+}
+
+// Get industry-specific news sources from MasterSourceRegistry
+function getIndustryNewsSources(industry: string) {
+  // These mirror the MasterSourceRegistry structure
+  const industrySources: Record<string, any> = {
+    'automotive': {
+      sites: ['autonews.com', 'electrek.co', 'greencarreports.com'],
+      searches: ['electric vehicles', 'autonomous driving', 'automotive chips']
+    },
+    'technology': {
+      sites: ['techcrunch.com', 'theverge.com', 'arstechnica.com'],
+      searches: ['artificial intelligence', 'cloud computing', 'cybersecurity']
+    },
+    'finance': {
+      sites: ['ft.com', 'bloomberg.com', 'wsj.com'],
+      searches: ['interest rates', 'fintech', 'cryptocurrency']
+    },
+    'healthcare': {
+      sites: ['statnews.com', 'fiercepharma.com', 'modernhealthcare.com'],
+      searches: ['FDA approval', 'clinical trials', 'drug development']
+    },
+    'sports': {
+      sites: ['espn.com', 'theathletic.com', 'hypebeast.com'],
+      searches: ['athlete sponsorship', 'sports apparel', 'sneaker release']
+    }
+  }
+  
+  return industrySources[industry?.toLowerCase()] || {
+    sites: ['techcrunch.com', 'bloomberg.com'],
+    searches: [`${industry} news`, `${industry} trends`]
+  }
 }
 
 // Analyze signals for opportunity patterns
