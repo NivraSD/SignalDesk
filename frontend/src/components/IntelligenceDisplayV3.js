@@ -180,11 +180,11 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
   };
 
   const tabs = [
-    { id: 'executive', name: 'Executive Summary', Icon: RocketIcon, color: '#ff00ff' },
-    { id: 'competitive', name: 'Competitive', Icon: TargetIcon, color: '#00ffcc' },
-    { id: 'market', name: 'Market & Trends', Icon: TrendingUpIcon, color: '#00ff88' },
+    { id: 'executive', name: 'Executive', Icon: RocketIcon, color: '#ff00ff' },
+    { id: 'positioning', name: 'Your Position', Icon: TargetIcon, color: '#00ffcc' },
+    { id: 'between', name: 'Between Lines', Icon: TrendingUpIcon, color: '#00ff88' },
+    { id: 'thought', name: 'Thought Leaders', Icon: ChartIcon, color: '#ffcc00' },
     { id: 'regulatory', name: 'Regulatory', Icon: AlertIcon, color: '#ff6600' },
-    { id: 'media', name: 'Media & Sentiment', Icon: ChartIcon, color: '#ffcc00' },
     { id: 'forward', name: 'Forward Look', Icon: BuildingIcon, color: '#8800ff' }
   ];
 
@@ -244,13 +244,178 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
     );
   };
   
+  const renderCompetitivePositioningTab = (data) => {
+    if (!data) return null;
+    
+    return (
+      <div className="v3-segment-tab positioning">
+        {data.your_position && (
+          <div className="segment-section highlight-section">
+            <h3 className="section-title"><span className="neon-icon">⬢</span> Your Strategic Position</h3>
+            <div className="narrative-content">
+              <p>{data.your_position}</p>
+            </div>
+          </div>
+        )}
+        
+        <div className="segment-section">
+          <h3 className="section-title"><span className="neon-icon">◆</span> Competitor Moves & Signals</h3>
+          <div className="intelligence-items">
+            {data.competitor_moves?.map((move, idx) => (
+              <div key={idx} className="intelligence-item strategic">
+                <div className="item-entity">{move.competitor}</div>
+                <div className="item-action">{move.action}</div>
+                {move.personnel_signals && (
+                  <div className="item-signals">💭 Personnel: {move.personnel_signals}</div>
+                )}
+                {move.what_theyre_not_saying && (
+                  <div className="item-omissions">🤐 Not saying: {move.what_theyre_not_saying}</div>
+                )}
+                {move.differentiation_opportunity && (
+                  <div className="item-opportunity">🎯 Your opportunity: {move.differentiation_opportunity}</div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        {data.narrative_gaps && (
+          <div className="segment-section opportunity-section">
+            <h3 className="section-title"><span className="neon-icon">◉</span> Narrative Gaps You Could Own</h3>
+            <div className="narrative-content">
+              <p>{data.narrative_gaps}</p>
+            </div>
+          </div>
+        )}
+        
+        {data.strategic_white_space && (
+          <div className="segment-section">
+            <h3 className="section-title"><span className="neon-icon">⟡</span> Unclaimed Territory</h3>
+            <div className="narrative-content">
+              <p>{data.strategic_white_space}</p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderBetweenTheLinesTab = (data) => {
+    if (!data) return null;
+    
+    return (
+      <div className="v3-segment-tab between-lines">
+        <div className="segment-section">
+          <h3 className="section-title"><span className="neon-icon">👁</span> Hidden Signals</h3>
+          <div className="intelligence-items">
+            {data.hidden_signals?.map((signal, idx) => (
+              <div key={idx} className="intelligence-item signal">
+                <div className="signal-header">{signal.signal}</div>
+                <div className="signal-source">📍 {signal.source}</div>
+                <div className="signal-meaning">💡 {signal.why_it_matters}</div>
+                <div className="signal-implication">🎯 {signal.strategic_implication}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        {data.executive_tea_leaves && (
+          <div className="segment-section">
+            <h3 className="section-title"><span className="neon-icon">🍃</span> Executive Tea Leaves</h3>
+            <div className="narrative-content">
+              <p>{data.executive_tea_leaves}</p>
+            </div>
+          </div>
+        )}
+        
+        {data.connecting_dots && (
+          <div className="segment-section">
+            <h3 className="section-title"><span className="neon-icon">🔗</span> Connecting the Dots</h3>
+            <div className="narrative-content">
+              <p>{data.connecting_dots}</p>
+            </div>
+          </div>
+        )}
+        
+        {data.contrarian_view && (
+          <div className="segment-section contrarian">
+            <h3 className="section-title"><span className="neon-icon">🔄</span> Contrarian View</h3>
+            <div className="narrative-content">
+              <p>{data.contrarian_view}</p>
+            </div>
+          </div>
+        )}
+        
+        {data.early_warnings && (
+          <div className="segment-section warning">
+            <h3 className="section-title"><span className="neon-icon">⚠️</span> Early Warning Signals</h3>
+            <div className="narrative-content">
+              <p>{data.early_warnings}</p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderThoughtLeadershipTab = (data) => {
+    if (!data) return null;
+    
+    return (
+      <div className="v3-segment-tab thought-leadership">
+        <div className="segment-section">
+          <h3 className="section-title"><span className="neon-icon">🎙</span> Influencer Signals</h3>
+          <div className="intelligence-items">
+            {data.influencer_signals?.map((signal, idx) => (
+              <div key={idx} className="intelligence-item influencer">
+                <div className="influencer-name">{signal.influencer}</div>
+                <div className="influencer-signal">"{signal.signal}"</div>
+                <div className="signal-platform">📍 {signal.platform}</div>
+                <div className="signal-subtext">🔍 {signal.subtext}</div>
+                <div className="signal-impact">💫 {signal.impact}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        {data.executive_commentary && (
+          <div className="segment-section">
+            <h3 className="section-title"><span className="neon-icon">💬</span> Executive Commentary</h3>
+            <div className="narrative-content">
+              <p>{data.executive_commentary}</p>
+            </div>
+          </div>
+        )}
+        
+        {data.thought_leader_consensus && (
+          <div className="segment-section">
+            <h3 className="section-title"><span className="neon-icon">🤝</span> Consensus vs Divergence</h3>
+            <div className="narrative-content">
+              <p>{data.thought_leader_consensus}</p>
+            </div>
+          </div>
+        )}
+        
+        {data.contrarian_voices && (
+          <div className="segment-section contrarian">
+            <h3 className="section-title"><span className="neon-icon">🗣</span> Contrarian Voices</h3>
+            <div className="narrative-content">
+              <p>{data.contrarian_voices}</p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Keep the old renderCompetitiveTab for backward compatibility
   const renderCompetitiveTab = (data) => {
     if (!data) return null;
     
     return (
       <div className="v3-segment-tab competitive">
         <div className="segment-section">
-          <h3 className="section-title"><span className="neon-icon">◆</span> Competitor Positioning</h3>
+          <h3 className="section-title"><span className="neon-icon">◆</span> Competitor Actions</h3>
           <div className="intelligence-items">
             {data.competitor_positioning?.map((action, idx) => (
               <div key={idx} className="intelligence-item">
@@ -1074,14 +1239,16 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0 }) => {
     switch (activeTab) {
       case 'executive':
         return renderExecutiveSummaryTab(tabData);
-      case 'competitive':
-        return renderCompetitiveTab(tabData);
+      case 'positioning':
+        return renderCompetitivePositioningTab(tabData);
+      case 'between':
+        return renderBetweenTheLinesTab(tabData);
       case 'market':
         return renderMarketSegmentTab(tabData);
       case 'regulatory':
         return renderRegulatoryTab(tabData);
-      case 'media':
-        return renderMediaTab(tabData);
+      case 'thought':
+        return renderThoughtLeadershipTab(tabData);
       case 'forward':
         return renderForwardTab(tabData);
       

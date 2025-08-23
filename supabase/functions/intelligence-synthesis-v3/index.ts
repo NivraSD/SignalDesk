@@ -41,7 +41,7 @@ async function synthesizeWithClaude(intelligence: any, organization: any) {
 }
 
 async function synthesizeOffensiveIntel(entityActions: any[], topicTrends: any[], organization: any) {
-  const prompt = `You are an elite narrative intelligence analyst for ${organization.name}. Analyze how these developments affect reputation, perception, and narrative positioning.
+  const prompt = `You are an elite strategic intelligence analyst for ${organization.name}. Your job is to find differentiation opportunities and strategic positioning gaps, not just monitor news.
 
 ENTITY ACTIONS (${entityActions.length} captured):
 ${JSON.stringify(entityActions, null, 2)}
@@ -49,13 +49,17 @@ ${JSON.stringify(entityActions, null, 2)}
 TOPIC TRENDS (${topicTrends.length} monitored):
 ${JSON.stringify(topicTrends, null, 2)}
 
-Provide EXPANSIVE NARRATIVE INTELLIGENCE. We're monitoring ${entityActions.length} entity movements and ${topicTrends.length} trends. 
-Show the SCALE of what's happening. Focus on REPUTATION, NARRATIVE, and PERCEPTION implications - NOT business strategy.
+CRITICAL: Look for:
+- Executive comments and thought leader statements (not just company announcements)
+- Subtle shifts in messaging and positioning
+- What competitors AREN'T talking about (narrative gaps)
+- Early signals and weak signals that others might miss
+- Personnel moves and what they signal about strategy
+- Conference remarks, podcast quotes, social media hints
 
-Write DETAILED NARRATIVES for each section. 
-Think: "How does this reshape the narrative landscape? What perceptions are being created?"
+Your analysis should help ${organization.name} DIFFERENTIATE, not just monitor.
 
-Return this JSON with EXPANSIVE NARRATIVE ANALYSIS:
+Return this JSON with STRATEGIC DIFFERENTIATION ANALYSIS:
 {
   "executive_summary": {
     "headline": "The dominant narrative emerging from all this activity - be specific with names and numbers",
@@ -70,19 +74,23 @@ Return this JSON with EXPANSIVE NARRATIVE ANALYSIS:
       "Third reputational consideration"
     ]
   },
-  "competitive_landscape": {
-    "competitor_positioning": [
-      // List EVERY significant competitor move - show narrative positioning
-      {"competitor": "Name", "action": "What they did", "narrative_impact": "EXPANSIVE analysis of how this positions them in public perception, what story they're telling, how stakeholders will interpret this, what reputation they're building"}
+  "competitive_positioning": {
+    "your_position": "CRITICAL ANALYSIS (300+ words): Where does ${organization.name} currently sit in the competitive narrative? What's your unique position? What narratives are you owning vs missing?",
+    "competitor_moves": [
+      {"competitor": "Name", "action": "What they did", "personnel_signals": "Key executive quotes, thought leader comments, informal remarks", "what_theyre_not_saying": "Notable omissions or avoided topics", "differentiation_opportunity": "How ${organization.name} could position differently"}
     ],
-    "narrative_implications": "DETAILED NARRATIVE (500+ words): How are competitors reshaping the narrative landscape? What stories are they telling? How does this affect ${organization.name}'s perceived position? What new perceptions are being created about the industry and its players?",
-    "perception_dynamics": "How public perception and stakeholder sentiment is shifting based on these moves",
-    "reputation_considerations": "What these competitor moves mean for industry reputation and ${organization.name}'s standing",
-    "narrative_positions": [
-      "Position 1: How ${organization.name} could be perceived given these developments",
-      "Position 2: Alternative narrative positioning",
-      "Position 3: Another reputational consideration"
-    ]
+    "narrative_gaps": "What stories NO ONE is telling that ${organization.name} could own?",
+    "positioning_opportunities": "Specific ways ${organization.name} could differentiate based on what others are/aren't doing",
+    "strategic_white_space": "Unclaimed narrative territory ${organization.name} could occupy"
+  },
+  "between_the_lines": {
+    "hidden_signals": [
+      {"signal": "Subtle development", "source": "Executive comment/personnel move/small announcement", "why_it_matters": "What this really indicates", "strategic_implication": "How ${organization.name} should interpret this"}
+    ],
+    "executive_tea_leaves": "What key executives and thought leaders are signaling through their comments, posts, and appearances",
+    "connecting_dots": "Non-obvious connections between seemingly unrelated developments",
+    "early_warnings": "Weak signals that could become major narratives",
+    "contrarian_view": "What if the conventional wisdom is wrong? Alternative interpretation of events"
   },
   "market_dynamics": {
     "trend_narratives": [
@@ -131,7 +139,7 @@ Return this JSON with EXPANSIVE NARRATIVE ANALYSIS:
 }
 
 async function synthesizeDefensiveIntel(entityActions: any[], topicTrends: any[], organization: any) {
-  const prompt = `You are an elite narrative intelligence analyst for ${organization.name}. Analyze how regulatory, media, and future developments affect reputation and narrative positioning.
+  const prompt = `You are an elite strategic intelligence analyst for ${organization.name}. Find unique insights that others miss - focus on personnel signals, thought leader opinions, and reading between the lines.
 
 ENTITY ACTIONS (${entityActions.length} captured):
 ${JSON.stringify(entityActions, null, 2)}
@@ -139,8 +147,12 @@ ${JSON.stringify(entityActions, null, 2)}
 TOPIC TRENDS (${topicTrends.length} monitored):
 ${JSON.stringify(topicTrends, null, 2)}
 
-Provide EXPANSIVE NARRATIVE ANALYSIS. We're tracking ${entityActions.length} entity actions and ${topicTrends.length} trends.
-Focus on REPUTATION, PERCEPTION, and NARRATIVE IMPLICATIONS for ${organization.name}, not business recommendations.
+CRITICAL: Don't just report what happened. Look for:
+- What thought leaders and executives are really saying (and not saying)
+- Personnel moves and what they signal
+- Conference side comments and podcast remarks
+- Social media hints and LinkedIn activity
+- The stories behind the stories
 
 Return this JSON with EXPANSIVE NARRATIVE INTELLIGENCE:
 {
@@ -153,15 +165,14 @@ Return this JSON with EXPANSIVE NARRATIVE INTELLIGENCE:
     "narrative_implications": "How does the regulatory narrative affect ${organization.name}'s reputation? What perceptions are being created about compliance, responsibility, and industry leadership?",
     "perception_landscape": "How ${organization.name} is likely to be perceived in this evolving regulatory narrative"
   },
-  "media_sentiment": {
-    "narrative_landscape": "EXPANSIVE ANALYSIS (400+ words): What stories are dominating media coverage? How are narratives evolving? What's capturing attention across the ${topicTrends.length} trends we're tracking? Who's controlling the narrative?",
-    "media_coverage": [
-      // Show the SCALE and diversity of narratives
-      {"outlet": "Source", "topic": "What they're covering", "sentiment": "positive/neutral/negative", "narrative": "The specific story they're telling", "influence": "How this shapes public perception"}
+  "thought_leadership": {
+    "influencer_signals": [
+      {"influencer": "Name/Role", "signal": "What they said/did", "platform": "Conference/podcast/social", "subtext": "What they're really signaling", "impact": "How this shapes industry narrative"}
     ],
-    "perception_analysis": "Deep dive into how ${organization.name} and the industry are being portrayed. What narratives are sticking? How is public perception evolving?",
-    "reputation_implications": "What do these media narratives mean for ${organization.name}'s reputation? How do they affect stakeholder trust and confidence?",
-    "narrative_considerations": "Key narrative dynamics ${organization.name} should understand about how the story is being told"
+    "executive_commentary": "Key quotes and remarks from executives that reveal strategic thinking - focus on informal comments, not press releases",
+    "thought_leader_consensus": "What opinion leaders agree on vs where they diverge",
+    "narrative_momentum": "Which ideas are gaining traction among influencers",
+    "contrarian_voices": "Important dissenting opinions that could reshape the narrative"
   },
   "forward_look": {
     "future_narratives": "EXPANSIVE NARRATIVE (400+ words): Based on the ${entityActions.length} entity actions and ${topicTrends.length} trends, what narratives will dominate tomorrow? How will reputations evolve? What stories will shape perception?",
@@ -244,10 +255,11 @@ serve(async (req) => {
       // Direct tab structure for frontend - ALL tabs from Claude's actual analysis
       tabs: {
         executive: analysis.executive_summary || {},
-        competitive: analysis.competitive_landscape || {},
+        positioning: analysis.competitive_positioning || {},
+        between: analysis.between_the_lines || {},
+        thought: analysis.thought_leadership || {},
         market: analysis.market_dynamics || {},
         regulatory: analysis.regulatory_policy || {},
-        media: analysis.media_sentiment || {},
         forward: analysis.forward_look || {},
         
         // Keep PR-focused structure as additional data

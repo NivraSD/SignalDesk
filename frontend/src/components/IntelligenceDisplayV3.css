@@ -760,3 +760,133 @@
 .v3-segment-tab.forward .segment-section:first-child {
   border-top: 3px solid #8800ff;
 }
+
+/* New Strategic Tabs */
+.v3-segment-tab.positioning .segment-section:first-child {
+  border-top: 3px solid #00ffcc;
+}
+
+.v3-segment-tab.positioning .highlight-section {
+  background: rgba(0, 255, 204, 0.05);
+  border: 1px solid rgba(0, 255, 204, 0.2);
+}
+
+.v3-segment-tab.positioning .opportunity-section {
+  background: rgba(255, 204, 0, 0.05);
+  border: 1px solid rgba(255, 204, 0, 0.2);
+}
+
+.v3-segment-tab.between-lines .segment-section:first-child {
+  border-top: 3px solid #00ff88;
+}
+
+.v3-segment-tab.between-lines .contrarian {
+  background: rgba(255, 0, 255, 0.05);
+  border: 1px solid rgba(255, 0, 255, 0.2);
+}
+
+.v3-segment-tab.between-lines .warning {
+  background: rgba(255, 102, 0, 0.05);
+  border: 1px solid rgba(255, 102, 0, 0.2);
+}
+
+.v3-segment-tab.thought-leadership .segment-section:first-child {
+  border-top: 3px solid #ffcc00;
+}
+
+/* Strategic Intelligence Items */
+.intelligence-item.strategic {
+  background: rgba(0, 255, 255, 0.02);
+  border-left: 3px solid rgba(0, 255, 255, 0.3);
+}
+
+.intelligence-item .item-signals {
+  color: #00ffcc;
+  font-size: 0.9em;
+  margin-top: 8px;
+  font-style: italic;
+}
+
+.intelligence-item .item-omissions {
+  color: #ff6600;
+  font-size: 0.9em;
+  margin-top: 8px;
+}
+
+.intelligence-item .item-opportunity {
+  color: #ffcc00;
+  font-size: 0.95em;
+  margin-top: 12px;
+  font-weight: 600;
+  background: rgba(255, 204, 0, 0.1);
+  padding: 8px;
+  border-radius: 4px;
+}
+
+/* Signal Items */
+.intelligence-item.signal {
+  background: rgba(0, 255, 136, 0.02);
+  padding: 16px;
+}
+
+.signal-header {
+  font-size: 1.1em;
+  font-weight: 600;
+  color: #00ff88;
+  margin-bottom: 8px;
+}
+
+.signal-source {
+  color: #888;
+  font-size: 0.9em;
+  margin: 4px 0;
+}
+
+.signal-meaning {
+  color: #00ffcc;
+  margin: 8px 0;
+}
+
+.signal-implication {
+  color: #ffcc00;
+  font-weight: 600;
+  margin-top: 12px;
+}
+
+/* Influencer Items */
+.intelligence-item.influencer {
+  background: rgba(255, 204, 0, 0.02);
+  padding: 16px;
+}
+
+.influencer-name {
+  font-weight: 600;
+  color: #ffcc00;
+  font-size: 1.1em;
+  margin-bottom: 8px;
+}
+
+.influencer-signal {
+  color: #fff;
+  font-style: italic;
+  font-size: 1.05em;
+  margin: 12px 0;
+  padding-left: 20px;
+  border-left: 3px solid rgba(255, 204, 0, 0.3);
+}
+
+.signal-platform {
+  color: #888;
+  font-size: 0.9em;
+}
+
+.signal-subtext {
+  color: #00ffcc;
+  margin: 8px 0;
+}
+
+.signal-impact {
+  color: #ff00ff;
+  font-weight: 600;
+  margin-top: 8px;
+}
