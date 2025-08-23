@@ -1,49 +1,51 @@
 # Opportunity Engine MCP Integration Strategy
 
 ## Executive Summary
+
 This document outlines how to integrate Playwright browser automation, existing MCPs, and monitoring capabilities to create a real-time Opportunity Engine that continuously detects and acts on strategic PR opportunities.
 
 ## Architecture Overview
 
 ```mermaid
-graph TB
+graph TB!!!
+
     subgraph "Signal Collection Layer"
         RSS[RSS Feeds]
         PLAY[Playwright Web Scraping]
         API[API Integrations]
     end
-    
+
     subgraph "MCP Intelligence Layer"
         INT[Intelligence MCP]
         REL[Relationships MCP]
         MON[Monitor MCP]
         ANA[Analytics MCP]
     end
-    
+
     subgraph "Processing Layer"
         SIG[Signal Detector]
         CASCADE[Cascade Intelligence]
         PATTERN[Pattern Matcher]
     end
-    
+
     subgraph "Action Layer"
         OPP[Opportunity Engine]
         CONTENT[Content MCP]
         CAMPAIGN[Campaign MCP]
     end
-    
+
     RSS --> INT
     PLAY --> INT
     API --> INT
-    
+
     INT --> SIG
     REL --> SIG
     MON --> SIG
-    
+
     SIG --> PATTERN
     PATTERN --> CASCADE
     CASCADE --> OPP
-    
+
     OPP --> CONTENT
     OPP --> CAMPAIGN
     ANA --> OPP
@@ -57,66 +59,72 @@ Create a Playwright-powered scraping service that goes beyond RSS feeds:
 
 ```javascript
 // mcp-servers/signaldesk-scraper/src/index.ts
-import { chromium } from 'playwright';
+import { chromium } from "playwright";
 
 class SignalDeskScraper {
   async scrapeCompetitorWebsite(url: string) {
     const browser = await chromium.launch();
     const page = await browser.newPage();
-    
+
     // Intelligent scraping based on site structure
     await page.goto(url);
-    
+
     const signals = {
       // Leadership page changes
       leadership: await this.scrapeLeadershipChanges(page),
-      
+
       // Product updates
       products: await this.scrapeProductUpdates(page),
-      
+
       // Press releases
       press: await this.scrapePressReleases(page),
-      
+
       // Job postings (growth indicators)
       jobs: await this.scrapeJobPostings(page),
-      
+
       // Events & webinars
-      events: await this.scrapeEvents(page)
+      events: await this.scrapeEvents(page),
     };
-    
+
     await browser.close();
     return signals;
   }
-  
+
   async monitorSocialMedia(handle: string, platform: string) {
     // Monitor without API access
     const browser = await chromium.launch();
     const page = await browser.newPage();
-    
-    switch(platform) {
-      case 'linkedin':
+
+    switch (platform) {
+      case "linkedin":
         return await this.scrapeLinkedIn(page, handle);
-      case 'twitter':
+      case "twitter":
         return await this.scrapeTwitter(page, handle);
       // Add more platforms
     }
   }
-  
+
   async detectPageChanges(url: string, previousSnapshot: string) {
     // Visual regression testing for change detection
     const browser = await chromium.launch();
     const page = await browser.newPage();
     await page.goto(url);
-    
+
     const currentSnapshot = await page.screenshot();
-    const changes = await this.compareSnapshots(previousSnapshot, currentSnapshot);
-    
+    const changes = await this.compareSnapshots(
+      previousSnapshot,
+      currentSnapshot
+    );
+
     if (changes.detected) {
       // Extract what changed
-      const changedContent = await this.extractChangedContent(page, changes.regions);
+      const changedContent = await this.extractChangedContent(
+        page,
+        changes.regions
+      );
       return { hasChanges: true, content: changedContent };
     }
-    
+
     return { hasChanges: false };
   }
 }
@@ -130,33 +138,33 @@ Update the Intelligence MCP to use Playwright for enhanced monitoring:
 // signaldesk-intelligence/src/index.ts additions
 tools: [
   {
-    name: 'deep_web_monitor',
-    description: 'Monitor competitor websites beyond RSS',
+    name: "deep_web_monitor",
+    description: "Monitor competitor websites beyond RSS",
     inputSchema: {
-      type: 'object',
+      type: "object",
       properties: {
-        target_urls: { type: 'array', items: { type: 'string' } },
-        monitor_type: { 
-          type: 'string', 
-          enum: ['leadership', 'products', 'press', 'jobs', 'all'] 
+        target_urls: { type: "array", items: { type: "string" } },
+        monitor_type: {
+          type: "string",
+          enum: ["leadership", "products", "press", "jobs", "all"],
         },
-        frequency: { type: 'string', enum: ['hourly', 'daily', 'weekly'] }
-      }
-    }
+        frequency: { type: "string", enum: ["hourly", "daily", "weekly"] },
+      },
+    },
   },
   {
-    name: 'social_sentiment_tracker',
-    description: 'Track social media sentiment without APIs',
+    name: "social_sentiment_tracker",
+    description: "Track social media sentiment without APIs",
     inputSchema: {
-      type: 'object',
+      type: "object",
       properties: {
-        handles: { type: 'array', items: { type: 'string' } },
-        platforms: { type: 'array', items: { type: 'string' } },
-        keywords: { type: 'array', items: { type: 'string' } }
-      }
-    }
-  }
-]
+        handles: { type: "array", items: { type: "string" } },
+        platforms: { type: "array", items: { type: "string" } },
+        keywords: { type: "array", items: { type: "string" } },
+      },
+    },
+  },
+];
 ```
 
 ## Phase 2: Signal Detection Pipeline
@@ -173,24 +181,24 @@ class SignalProcessor {
       intelligence: new IntelligenceMCP(),
       relationships: new RelationshipsMCP(),
       monitor: new MonitorMCP(),
-      analytics: new AnalyticsMCP()
+      analytics: new AnalyticsMCP(),
     };
-    
+
     this.detectors = {
       competitor: new CompetitorSignalDetector(),
       narrative: new NarrativeVacuumDetector(),
       cascade: new CascadeDetector(),
-      viral: new ViralMomentDetector()
+      viral: new ViralMomentDetector(),
     };
   }
-  
+
   async processSignal(signal) {
     // Enrich signal with MCP data
     const enriched = await this.enrichSignal(signal);
-    
+
     // Detect opportunity patterns
     const opportunities = [];
-    
+
     for (const [type, detector] of Object.entries(this.detectors)) {
       const detected = await detector.analyze(enriched);
       if (detected.isOpportunity) {
@@ -199,32 +207,36 @@ class SignalProcessor {
           confidence: detected.confidence,
           window: detected.actionWindow,
           signal: enriched,
-          suggestedAction: detected.action
+          suggestedAction: detected.action,
         });
       }
     }
-    
+
     return opportunities;
   }
-  
+
   async enrichSignal(signal) {
     // Add intelligence context
-    const intelligence = await this.mcps.intelligence.getMarketContext(signal.keywords);
-    
+    const intelligence = await this.mcps.intelligence.getMarketContext(
+      signal.keywords
+    );
+
     // Find relevant journalists
-    const journalists = await this.mcps.relationships.findJournalists(signal.topic);
-    
+    const journalists = await this.mcps.relationships.findJournalists(
+      signal.topic
+    );
+
     // Get performance metrics
     const metrics = await this.mcps.analytics.getRelevantMetrics(signal.type);
-    
+
     return {
       ...signal,
       context: {
         intelligence,
         journalists,
         metrics,
-        timestamp: new Date()
-      }
+        timestamp: new Date(),
+      },
     };
   }
 }
@@ -239,52 +251,67 @@ Implement the opportunity patterns from your strategy:
 class OpportunityPatternMatcher {
   patterns = {
     competitorStumble: {
-      requiredSignals: ['negative_sentiment', 'leadership_change', 'product_issue'],
+      requiredSignals: [
+        "negative_sentiment",
+        "leadership_change",
+        "product_issue",
+      ],
       confidence: (signals) => {
-        const score = signals.filter(s => s.present).length / 3;
+        const score = signals.filter((s) => s.present).length / 3;
         return score > 0.6 ? score : 0;
       },
-      actionWindow: '24-48 hours',
-      suggestedResponse: 'Position as stable alternative'
+      actionWindow: "24-48 hours",
+      suggestedResponse: "Position as stable alternative",
     },
-    
+
     narrativeVacuum: {
-      requiredSignals: ['high_search_volume', 'low_expert_coverage', 'journalist_interest'],
+      requiredSignals: [
+        "high_search_volume",
+        "low_expert_coverage",
+        "journalist_interest",
+      ],
       confidence: (signals) => {
         // Complex scoring based on signal strength
         return this.calculateNarrativeOpportunity(signals);
       },
-      actionWindow: '3-5 days',
-      suggestedResponse: 'Offer executive as expert source'
+      actionWindow: "3-5 days",
+      suggestedResponse: "Offer executive as expert source",
     },
-    
+
     cascadeEvent: {
-      requiredSignals: ['primary_disruption', 'industry_impact', 'supply_chain_effect'],
+      requiredSignals: [
+        "primary_disruption",
+        "industry_impact",
+        "supply_chain_effect",
+      ],
       confidence: (signals) => {
         return this.predictCascadeProbability(signals);
       },
-      actionWindow: '1-3 days for first mover',
-      suggestedResponse: 'Pre-position for cascade effects'
-    }
+      actionWindow: "1-3 days for first mover",
+      suggestedResponse: "Pre-position for cascade effects",
+    },
   };
-  
+
   async matchPatterns(enrichedSignal) {
     const matches = [];
-    
+
     for (const [patternName, pattern] of Object.entries(this.patterns)) {
-      const signals = await this.extractPatternSignals(enrichedSignal, pattern.requiredSignals);
+      const signals = await this.extractPatternSignals(
+        enrichedSignal,
+        pattern.requiredSignals
+      );
       const confidence = pattern.confidence(signals);
-      
+
       if (confidence > 0.5) {
         matches.push({
           pattern: patternName,
           confidence,
           window: pattern.actionWindow,
-          action: pattern.suggestedResponse
+          action: pattern.suggestedResponse,
         });
       }
     }
-    
+
     return matches;
   }
 }
@@ -303,7 +330,7 @@ class CascadeIntelligence {
     this.historicalCascades = new CascadeDatabase();
     this.industryGraph = new IndustryRelationshipGraph();
   }
-  
+
   async predictCascade(primaryEvent) {
     // Map the cascade potential
     const cascade = {
@@ -311,54 +338,54 @@ class CascadeIntelligence {
       firstOrder: [], // Direct impacts
       secondOrder: [], // Indirect impacts
       thirdOrder: [], // System-wide effects
-      opportunities: []
+      opportunities: [],
     };
-    
+
     // Analyze first-order effects
     cascade.firstOrder = await this.analyzeDirectImpacts(primaryEvent);
-    
+
     // Predict second-order effects
     for (const impact of cascade.firstOrder) {
       const secondary = await this.analyzeSecondaryImpacts(impact);
       cascade.secondOrder.push(...secondary);
     }
-    
+
     // Identify opportunities in the cascade
     cascade.opportunities = this.identifyOpportunityWindows(cascade);
-    
+
     return cascade;
   }
-  
+
   identifyOpportunityWindows(cascade) {
     const opportunities = [];
-    
+
     // Immediate opportunities (1-3 days)
-    if (cascade.firstOrder.some(i => i.type === 'competitor_weakness')) {
+    if (cascade.firstOrder.some((i) => i.type === "competitor_weakness")) {
       opportunities.push({
-        timing: 'immediate',
-        action: 'Position as stable alternative',
-        confidence: 0.85
+        timing: "immediate",
+        action: "Position as stable alternative",
+        confidence: 0.85,
       });
     }
-    
+
     // Near-term opportunities (1-2 weeks)
-    if (cascade.secondOrder.some(i => i.type === 'market_disruption')) {
+    if (cascade.secondOrder.some((i) => i.type === "market_disruption")) {
       opportunities.push({
-        timing: 'near-term',
-        action: 'Thought leadership on industry resilience',
-        confidence: 0.70
+        timing: "near-term",
+        action: "Thought leadership on industry resilience",
+        confidence: 0.7,
       });
     }
-    
+
     // Long-term positioning (1-3 months)
-    if (cascade.thirdOrder.some(i => i.type === 'regulatory_response')) {
+    if (cascade.thirdOrder.some((i) => i.type === "regulatory_response")) {
       opportunities.push({
-        timing: 'long-term',
-        action: 'Shape regulatory narrative',
-        confidence: 0.60
+        timing: "long-term",
+        action: "Shape regulatory narrative",
+        confidence: 0.6,
       });
     }
-    
+
     return opportunities;
   }
 }
@@ -376,39 +403,45 @@ class CascadeLearningSystem {
     await this.db.saveCascadeOutcome({
       predicted: cascade,
       actual: actualOutcome,
-      accuracy: this.calculateAccuracy(cascade, actualOutcome)
+      accuracy: this.calculateAccuracy(cascade, actualOutcome),
     });
-    
+
     // Update prediction models
     await this.updatePredictionWeights(cascade, actualOutcome);
-    
+
     // Identify new patterns
     const newPatterns = await this.identifyNewPatterns(actualOutcome);
     if (newPatterns.length > 0) {
       await this.addNewPatterns(newPatterns);
     }
   }
-  
+
   async improveFromHistory() {
     const historicalCascades = await this.db.getHistoricalCascades();
-    
+
     // Analyze what we got right and wrong
     const analysis = {
       accuratePredictions: [],
       missedOpportunities: [],
-      falsePositives: []
+      falsePositives: [],
     };
-    
+
     for (const cascade of historicalCascades) {
       if (cascade.accuracy > 0.7) {
         analysis.accuratePredictions.push(cascade);
-      } else if (cascade.actual.hadOpportunity && !cascade.predicted.opportunities) {
+      } else if (
+        cascade.actual.hadOpportunity &&
+        !cascade.predicted.opportunities
+      ) {
         analysis.missedOpportunities.push(cascade);
-      } else if (!cascade.actual.hadOpportunity && cascade.predicted.opportunities) {
+      } else if (
+        !cascade.actual.hadOpportunity &&
+        cascade.predicted.opportunities
+      ) {
         analysis.falsePositives.push(cascade);
       }
     }
-    
+
     // Update models based on analysis
     await this.refineModels(analysis);
   }
@@ -433,10 +466,10 @@ class MCPOrchestrator {
       campaigns: new CampaignsMCP(),
       monitor: new MonitorMCP(),
       memory: new MemoryMCP(),
-      playwright: new PlaywrightMCP()
+      playwright: new PlaywrightMCP(),
     };
   }
-  
+
   async runOpportunityDiscovery(organization) {
     // Deploy MCPs in parallel for maximum efficiency
     const [
@@ -444,39 +477,39 @@ class MCPOrchestrator {
       competitorMoves,
       journalistActivity,
       performanceData,
-      webChanges
+      webChanges,
     ] = await Promise.all([
       this.mcps.intelligence.scanMarket(organization),
       this.mcps.monitor.checkCompetitors(organization),
       this.mcps.relationships.getJournalistBeat(organization),
       this.mcps.analytics.getMetrics(organization),
-      this.mcps.playwright.monitorWebChanges(organization)
+      this.mcps.playwright.monitorWebChanges(organization),
     ]);
-    
+
     // Process signals through pattern matching
     const signals = this.combineSignals({
       marketIntel,
       competitorMoves,
       journalistActivity,
       performanceData,
-      webChanges
+      webChanges,
     });
-    
+
     // Check for cascade potential
     const cascades = await this.detectCascades(signals);
-    
+
     // Generate opportunities
     const opportunities = await this.generateOpportunities(signals, cascades);
-    
+
     // Prepare content for high-priority opportunities
-    for (const opp of opportunities.filter(o => o.priority === 'high')) {
+    for (const opp of opportunities.filter((o) => o.priority === "high")) {
       opp.preparedContent = await this.mcps.content.generateContent(opp);
       opp.campaign = await this.mcps.campaigns.planCampaign(opp);
     }
-    
+
     // Store in memory for learning
     await this.mcps.memory.storeOpportunities(opportunities);
-    
+
     return opportunities;
   }
 }
@@ -493,50 +526,64 @@ class ContinuousMonitor {
     this.orchestrator = new MCPOrchestrator();
     this.intervals = new Map();
   }
-  
+
   async startMonitoring(organization) {
     // High-priority: Check every 15 minutes
-    this.intervals.set(`${organization.id}-high`, setInterval(async () => {
-      const opportunities = await this.orchestrator.runOpportunityDiscovery(organization);
-      const urgent = opportunities.filter(o => o.window < '6 hours');
-      
-      if (urgent.length > 0) {
-        await this.alertUrgentOpportunities(urgent, organization);
-      }
-    }, 15 * 60 * 1000));
-    
+    this.intervals.set(
+      `${organization.id}-high`,
+      setInterval(async () => {
+        const opportunities = await this.orchestrator.runOpportunityDiscovery(
+          organization
+        );
+        const urgent = opportunities.filter((o) => o.window < "6 hours");
+
+        if (urgent.length > 0) {
+          await this.alertUrgentOpportunities(urgent, organization);
+        }
+      }, 15 * 60 * 1000)
+    );
+
     // Medium-priority: Check every hour
-    this.intervals.set(`${organization.id}-medium`, setInterval(async () => {
-      const opportunities = await this.orchestrator.runOpportunityDiscovery(organization);
-      const medium = opportunities.filter(o => 
-        o.window >= '6 hours' && o.window < '48 hours'
-      );
-      
-      if (medium.length > 0) {
-        await this.queueOpportunities(medium, organization);
-      }
-    }, 60 * 60 * 1000));
-    
+    this.intervals.set(
+      `${organization.id}-medium`,
+      setInterval(async () => {
+        const opportunities = await this.orchestrator.runOpportunityDiscovery(
+          organization
+        );
+        const medium = opportunities.filter(
+          (o) => o.window >= "6 hours" && o.window < "48 hours"
+        );
+
+        if (medium.length > 0) {
+          await this.queueOpportunities(medium, organization);
+        }
+      }, 60 * 60 * 1000)
+    );
+
     // Cascade detection: Check every 30 minutes
-    this.intervals.set(`${organization.id}-cascade`, setInterval(async () => {
-      const cascades = await this.detectEmergingCascades(organization);
-      
-      if (cascades.length > 0) {
-        await this.alertCascadeOpportunities(cascades, organization);
-      }
-    }, 30 * 60 * 1000));
+    this.intervals.set(
+      `${organization.id}-cascade`,
+      setInterval(async () => {
+        const cascades = await this.detectEmergingCascades(organization);
+
+        if (cascades.length > 0) {
+          await this.alertCascadeOpportunities(cascades, organization);
+        }
+      }, 30 * 60 * 1000)
+    );
   }
-  
+
   async detectEmergingCascades(organization) {
     // Use Playwright to monitor specific indicators
-    const indicators = await this.orchestrator.mcps.playwright.monitorCascadeIndicators([
-      'supply chain disruption news',
-      'regulatory announcements',
-      'major tech outages',
-      'executive scandals',
-      'data breaches'
-    ]);
-    
+    const indicators =
+      await this.orchestrator.mcps.playwright.monitorCascadeIndicators([
+        "supply chain disruption news",
+        "regulatory announcements",
+        "major tech outages",
+        "executive scandals",
+        "data breaches",
+      ]);
+
     // Analyze for cascade potential
     const cascades = [];
     for (const indicator of indicators) {
@@ -545,7 +592,7 @@ class ContinuousMonitor {
         cascades.push(cascade);
       }
     }
-    
+
     return cascades;
   }
 }
@@ -566,52 +613,59 @@ class OpportunityBriefGenerator {
       headline: await this.generateHeadline(opportunity),
       urgency: opportunity.window,
       confidence: opportunity.confidence,
-      
+
       // Situation Analysis
       situation: {
         what: opportunity.signal.description,
         why: opportunity.pattern.explanation,
-        impact: await this.assessImpact(opportunity, organization)
+        impact: await this.assessImpact(opportunity, organization),
       },
-      
+
       // Strategic Approach
       strategy: {
         positioning: await this.determinePositioning(opportunity, organization),
         keyMessages: await this.mcps.content.generateKeyMessages(opportunity),
-        differentiators: await this.identifyDifferentiators(opportunity, organization)
+        differentiators: await this.identifyDifferentiators(
+          opportunity,
+          organization
+        ),
       },
-      
+
       // Pre-generated Assets
       assets: {
         pressRelease: await this.mcps.content.generatePressRelease(opportunity),
         pitchEmail: await this.mcps.content.generatePitch(opportunity),
         socialPosts: await this.mcps.content.generateSocialContent(opportunity),
-        talkingPoints: await this.mcps.content.generateTalkingPoints(opportunity)
+        talkingPoints: await this.mcps.content.generateTalkingPoints(
+          opportunity
+        ),
       },
-      
+
       // Media Strategy
       media: {
-        journalists: await this.mcps.relationships.getBestJournalists(opportunity),
+        journalists: await this.mcps.relationships.getBestJournalists(
+          opportunity
+        ),
         outlets: await this.mcps.relationships.getTargetOutlets(opportunity),
-        timing: this.calculateOptimalTiming(opportunity)
+        timing: this.calculateOptimalTiming(opportunity),
       },
-      
+
       // Execution Plan
       execution: {
         timeline: this.createTimeline(opportunity),
         tasks: await this.mcps.campaigns.generateTasks(opportunity),
         resources: this.identifyResources(opportunity),
-        approvals: this.getRequiredApprovals(opportunity)
+        approvals: this.getRequiredApprovals(opportunity),
       },
-      
+
       // Success Metrics
       metrics: {
         kpis: this.defineKPIs(opportunity),
         tracking: await this.mcps.analytics.setupTracking(opportunity),
-        reporting: this.scheduleReporting(opportunity)
-      }
+        reporting: this.scheduleReporting(opportunity),
+      },
     };
-    
+
     return brief;
   }
 }
@@ -627,47 +681,47 @@ class IntelligentAlertSystem {
   async evaluateAlert(opportunity, organization) {
     // Get organization readiness
     const readiness = await this.assessReadiness(organization, opportunity);
-    
+
     // Calculate opportunity score
     const score = this.calculateOpportunityScore(opportunity, readiness);
-    
+
     // Determine alert level
-    if (score > 90 && opportunity.window < '6 hours') {
+    if (score > 90 && opportunity.window < "6 hours") {
       return {
-        level: 'URGENT',
-        channels: ['email', 'sms', 'slack'],
-        message: 'High-value opportunity requiring immediate action'
+        level: "URGENT",
+        channels: ["email", "sms", "slack"],
+        message: "High-value opportunity requiring immediate action",
       };
-    } else if (score > 75 && opportunity.window < '24 hours') {
+    } else if (score > 75 && opportunity.window < "24 hours") {
       return {
-        level: 'HIGH',
-        channels: ['email', 'slack'],
-        message: 'Strategic opportunity within action window'
+        level: "HIGH",
+        channels: ["email", "slack"],
+        message: "Strategic opportunity within action window",
       };
     } else if (score > 60) {
       return {
-        level: 'MEDIUM',
-        channels: ['email'],
-        message: 'Opportunity for consideration'
+        level: "MEDIUM",
+        channels: ["email"],
+        message: "Opportunity for consideration",
       };
     } else {
       return {
-        level: 'LOW',
-        channels: ['dashboard'],
-        message: 'Logged for review'
+        level: "LOW",
+        channels: ["dashboard"],
+        message: "Logged for review",
       };
     }
   }
-  
+
   calculateOpportunityScore(opportunity, readiness) {
     const factors = {
       patternConfidence: opportunity.confidence * 30,
       cascadePotential: (opportunity.cascade?.potential || 0) * 20,
       competitiveAdvantage: this.assessAdvantage(opportunity) * 20,
       organizationReadiness: readiness * 15,
-      mediaInterest: opportunity.mediaRelevance * 15
+      mediaInterest: opportunity.mediaRelevance * 15,
     };
-    
+
     return Object.values(factors).reduce((sum, val) => sum + val, 0);
   }
 }
@@ -676,24 +730,28 @@ class IntelligentAlertSystem {
 ## Implementation Roadmap
 
 ### Week 1-2: Foundation
+
 1. Install and configure Playwright MCP
 2. Create web scraping service
 3. Connect to existing Intelligence MCP
 4. Test basic signal collection
 
 ### Week 3-4: Signal Processing
+
 1. Build signal detection pipeline
 2. Implement pattern matching
 3. Create cascade detection system
 4. Test with historical data
 
 ### Week 5-6: MCP Integration
+
 1. Create MCP orchestrator
 2. Implement continuous monitoring
 3. Connect all MCPs for enrichment
 4. Test real-time detection
 
 ### Week 7-8: Action System
+
 1. Build brief generation system
 2. Implement smart alerting
 3. Create feedback loop
