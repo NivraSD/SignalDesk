@@ -8,7 +8,7 @@ const OpportunityModule = ({ organizationId }) => {
   const [filters, setFilters] = useState({
     type: 'all',
     minScore: 0,
-    status: 'pending'
+    status: 'all'  // Changed from 'pending' to 'all' to show all opportunities by default
   });
   const [loading, setLoading] = useState(true);
   const [userConfig, setUserConfig] = useState(null);
@@ -103,6 +103,7 @@ const OpportunityModule = ({ organizationId }) => {
               ...opp,
               priority_score: opp.priority_score || opp.confidence || 75,
               configured_weight: userConfig?.[opp.opportunity_type]?.weight || 50,
+              status: opp.status || 'pending',  // Ensure all opportunities have a status
               opportunity_data: {
                 description: opp.description || opp.action || ''
               }
