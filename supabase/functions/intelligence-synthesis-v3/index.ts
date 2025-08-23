@@ -49,13 +49,16 @@ ${JSON.stringify(entityActions, null, 2)}
 EMERGING TOPICS (Last 48 hours):
 ${JSON.stringify(topicTrends, null, 2)}
 
-YOUR MISSION: Analyze these SPECIFIC RECENT EVENTS, not industry trends. Tell me:
-1. What literally just happened (be specific - names, dates, actions)
-2. Why it matters TODAY (not in general)
-3. What ${organization.name} should watch for TOMORROW
-4. The hidden story in these specific events
+YOUR MISSION: Find what's GENUINELY INTERESTING in these events. Tell me:
+1. What just happened that's SURPRISING or UNEXPECTED
+2. The WEIRD coincidence or timing that catches your eye
+3. The HUMAN story - who's under pressure, who's taking risks
+4. The connection nobody else is making
+5. What made you go "wait, what?" when you saw it
 
-Focus on the NEWS, not the NARRATIVE. Be a reporter, not a consultant.
+Be a detective finding clues, not a consultant writing reports.
+Look for: Plot twists, strange bedfellows, broken patterns, desperate moves, bold gambles.
+Ask yourself: What would make someone lean forward and say "tell me more"?
 
 Return this JSON with REAL-TIME EVENT ANALYSIS:
 {
@@ -85,10 +88,10 @@ Return this JSON with REAL-TIME EVENT ANALYSIS:
     "hidden_signals": [
       {"signal": "Subtle development", "source": "Executive comment/personnel move/small announcement", "why_it_matters": "What this really indicates", "strategic_implication": "How ${organization.name} should interpret this"}
     ],
-    "executive_tea_leaves": "What key executives and thought leaders are signaling through their comments, posts, and appearances",
-    "connecting_dots": "Non-obvious connections between seemingly unrelated developments",
-    "early_warnings": "Weak signals that could become major narratives",
-    "contrarian_view": "What if the conventional wisdom is wrong? Alternative interpretation of events"
+    "the_interesting_connection": "FIND THE STORY: What's the most INTERESTING connection between these events? Not obvious - something that makes you go 'huh, that's weird/fascinating'. Connect dots others might miss.",
+    "the_plot_twist": "What's the SURPRISE in these events? What breaks the expected pattern? What would make someone do a double-take?",
+    "the_human_story": "Behind the corporate speak - what's the HUMAN drama here? Who's under pressure? Who's making a bold move? What personal stakes are at play?",
+    "the_question_nobody_asks": "What's the uncomfortable question these events raise that nobody wants to talk about?"
   },
   "market_dynamics": {
     "trend_narratives": [
