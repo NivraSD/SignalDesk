@@ -179,6 +179,7 @@ const OpportunityModulePR = ({ organizationId, sharedIntelligence, onIntelligenc
   };
 
   const gatherPRIntelligence = async (orgData) => {
+    console.log('🚀 Starting PR Intelligence gathering, setting loading=true');
     setLoading(true);
     try {
       console.log('🎯 Gathering PR Intelligence for:', orgData.name);
@@ -239,6 +240,7 @@ const OpportunityModulePR = ({ organizationId, sharedIntelligence, onIntelligenc
       console.error('❌ Error gathering PR intelligence:', error);
       setOpportunities([]);
     } finally {
+      console.log('🏁 Finished gathering PR intelligence, setting loading=false');
       setLoading(false);
     }
   };
@@ -446,10 +448,12 @@ const OpportunityModulePR = ({ organizationId, sharedIntelligence, onIntelligenc
   };
 
   if (loading) {
+    console.log('🌀 Rendering loading state');
     return (
       <div className="module-loading">
         <div className="loading-spinner"></div>
-        <p>Analyzing intelligence for PR opportunities...</p>
+        <div className="loading-text">Loading Opportunities</div>
+        <div className="loading-detail">Analyzing intelligence for PR opportunities...</div>
       </div>
     );
   }
