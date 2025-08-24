@@ -1,6 +1,0 @@
-{
-  "buildCommand": "cd frontend && npm install --legacy-peer-deps --force && CI=false npm run build && ls -la build/",
-  "outputDirectory": "frontend/build",
-  "installCommand": "echo 'Install handled by buildCommand'",
-  "framework": "create-react-app"
-}
