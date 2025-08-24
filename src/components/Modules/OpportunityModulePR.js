@@ -209,11 +209,15 @@ const OpportunityModulePR = ({ organizationId, sharedIntelligence, onIntelligenc
 
       if (!error && data) {
         console.log('✅ PR Intelligence gathered:', data);
+        console.log('🔍 Opportunities array:', data.opportunities);
+        console.log('🔢 Number of opportunities:', data.opportunities?.length || 0);
         
         // Check if we got opportunities
         if (data.opportunities && data.opportunities.length > 0) {
+          console.log('📦 Processing opportunities for PR action...');
           // Process opportunities for PR action
           const prOpportunities = processPROpportunities(data.opportunities, orgData);
+          console.log('✨ Processed opportunities:', prOpportunities);
           setOpportunities(prOpportunities);
           
           // Share intelligence with other modules
@@ -222,10 +226,13 @@ const OpportunityModulePR = ({ organizationId, sharedIntelligence, onIntelligenc
           }
         } else {
           console.warn('📭 No opportunities returned from API');
+          console.warn('Full response data:', JSON.stringify(data, null, 2));
           setOpportunities([]);
         }
       } else {
         console.error('❌ API error:', error);
+        console.error('Response data:', data);
+        console.error('Full error details:', JSON.stringify(error, null, 2));
         setOpportunities([]);
       }
     } catch (error) {
