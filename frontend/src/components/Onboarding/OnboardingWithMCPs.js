@@ -149,6 +149,7 @@ const OnboardingWithMCPs = () => {
     localStorage.setItem('signaldesk_onboarding', JSON.stringify(formData));
     localStorage.setItem('signaldesk_organization', JSON.stringify(formData.organization));
     localStorage.setItem('signaldesk_completed', 'true');
+    localStorage.setItem('signaldesk_just_onboarded', 'true');  // Flag for auto-starting intelligence
     
     // Show completion
     setAnalysisResults(prev => ({

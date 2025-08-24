@@ -620,12 +620,58 @@
 }
 
 .highlight-card {
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(0, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 16px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 24px;
   position: relative;
   z-index: 1;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.highlight-card h4 {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 12px;
+  opacity: 0.9;
+  color: #00ffff;
+}
+
+.highlight-main {
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+.highlight-details {
+  background: rgba(0, 255, 255, 0.05);
+  border-left: 3px solid rgba(0, 255, 255, 0.5);
+  padding: 12px;
+  border-radius: 4px;
+  margin-top: auto;
+}
+
+.detail-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(0, 255, 255, 0.8);
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+
+.detail-text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .highlight-label {
@@ -889,4 +935,59 @@
   color: #ff00ff;
   font-weight: 600;
   margin-top: 8px;
+}
+/* Enhanced Content Styles for Richer Display */
+.section-intro {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+
+.detailed-list {
+  padding-left: 24px;
+}
+
+.detailed-list li {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.detailed-list li:last-child {
+  border-bottom: none;
+}
+
+.watch-point-main {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.95);
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+.watch-point-context {
+  font-size: 13px;
+  color: rgba(0, 255, 255, 0.7);
+  font-style: italic;
+  margin-left: 20px;
+}
+
+/* Enhanced Executive Overview */
+.executive-overview {
+  font-size: 16px !important;
+  line-height: 1.8 !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.executive-headline {
+  font-size: 28px !important;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.executive-actions h3 {
+  font-size: 20px !important;
+  font-weight: 600;
+  color: #00ffff;
+  margin-bottom: 12px;
 }

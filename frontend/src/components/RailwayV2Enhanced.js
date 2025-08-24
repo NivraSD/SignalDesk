@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './RailwayV2Enhanced.css';
 import IntelligenceDisplayV3 from './IntelligenceDisplayV3';
-import OpportunityModule from './Modules/OpportunityModule';
+import OpportunityModulePR from './Modules/OpportunityModulePR';
 import ExecutionModule from './Modules/ExecutionModule';
 import MemoryVaultModule from './Modules/MemoryVaultModule';
 import NivStrategicAdvisor from './Niv/NivStrategicAdvisor';
@@ -9,8 +10,10 @@ import OrganizationSettings from './OrganizationSettings';
 import IntelligenceSettings from './IntelligenceSettings';
 import DiagnosticPanel from './DiagnosticPanel';
 import { IntelligenceIcon, OpportunityIcon, ExecutionIcon, MemoryIcon, RefreshIcon, SettingsIcon } from './Icons/NeonIcons';
+import { getUnifiedOrganization } from '../utils/unifiedDataLoader';
 
 const RailwayV2Enhanced = () => {
+  const navigate = useNavigate();
   const [activeModule, setActiveModule] = useState('intelligence');
   const [organizationData, setOrganizationData] = useState(null);
   const [nivMinimized, setNivMinimized] = useState(false);
@@ -18,34 +21,17 @@ const RailwayV2Enhanced = () => {
   const [showIntelSettings, setShowIntelSettings] = useState(false);
   const [timeframe, setTimeframe] = useState('24h');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [sharedIntelligence, setSharedIntelligence] = useState(null);
 
   useEffect(() => {
-    // Get organization data - try both possible localStorage keys
-    let orgData = null;
+    // Use unified data loader to get organization
+    const orgData = getUnifiedOrganization();
     
-    // First try signaldesk_organization
-    const savedOrg = localStorage.getItem('signaldesk_organization');
-    if (savedOrg) {
-      orgData = JSON.parse(savedOrg);
-    }
-    
-    // If not found, try signaldesk_onboarding
-    if (!orgData) {
-      const onboarding = localStorage.getItem('signaldesk_onboarding');
-      if (onboarding) {
-        const parsed = JSON.parse(onboarding);
-        if (parsed.organization) {
-          orgData = parsed.organization;
-        }
-      }
-    }
-    
-    // Default to Toyota if nothing found
-    if (!orgData) {
-      orgData = {
-        name: 'Toyota',
-        industry: 'automotive'
-      };
+    // If no organization data exists, redirect to onboarding
+    if (!orgData || !orgData.name) {
+      console.log('📋 No organization data found, redirecting to onboarding...');
+      navigate('/onboarding');
+      return;
     }
     
     // Ensure organization has an ID (use name as fallback ID)
@@ -53,9 +39,9 @@ const RailwayV2Enhanced = () => {
       orgData.id = orgData.name?.toLowerCase().replace(/\s+/g, '-') || 'default-org';
     }
     
-    console.log('🏢 RailwayV2Enhanced setting organization:', orgData);
+    console.log('🏢 RailwayV2Enhanced loaded organization:', orgData);
     setOrganizationData(orgData);
-  }, []);
+  }, [navigate]);
 
   const modules = [
     { id: 'intelligence', name: 'Intelligence', Icon: IntelligenceIcon, color: '#00ffcc' },
@@ -70,9 +56,14 @@ const RailwayV2Enhanced = () => {
         return <IntelligenceDisplayV3 
           organization={organizationData} 
           refreshTrigger={refreshKey}
+          onIntelligenceUpdate={setSharedIntelligence}
         />;
       case 'opportunities':
-        return <OpportunityModule organizationId={organizationData?.id} />;
+        return <OpportunityModulePR 
+          organizationId={organizationData?.id}
+          sharedIntelligence={sharedIntelligence}
+          onIntelligenceUpdate={setSharedIntelligence}
+        />;
       case 'execution':
         return <ExecutionModule organizationId={organizationData?.id} />;
       case 'memory':
