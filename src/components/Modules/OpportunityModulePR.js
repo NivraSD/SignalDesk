@@ -212,6 +212,21 @@ const OpportunityModulePR = ({ organizationId, sharedIntelligence, onIntelligenc
         console.log('✅ PR Intelligence gathered:', data);
         console.log('🔍 Opportunities array:', data.opportunities);
         console.log('🔢 Number of opportunities:', data.opportunities?.length || 0);
+        console.log('🎭 Personas used:', data.personas_used);
+        console.log('📊 Phases completed:', data.phases_completed);
+        console.log('🔥 Data sources:', data.data_sources);
+        
+        // Check if we're getting real data or fallbacks
+        if (data.opportunities && data.opportunities.length > 0) {
+          const firstOpp = data.opportunities[0];
+          console.log('🔍 Sample opportunity details:', {
+            title: firstOpp.title || firstOpp.name,
+            persona: firstOpp.persona,
+            confidence: firstOpp.confidence,
+            source: firstOpp.source,
+            hasRealData: !!firstOpp.url || !!firstOpp.source
+          });
+        }
         
         // Check if we got opportunities
         if (data.opportunities && data.opportunities.length > 0) {
