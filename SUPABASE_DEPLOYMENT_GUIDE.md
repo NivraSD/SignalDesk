@@ -1,221 +1,235 @@
 # SignalDesk Supabase Deployment Guide
 
-## Complete Migration from Railway to Supabase
+## Complete Setup Checklist for Supabase Project
 
-### Prerequisites
-- Supabase account and project (you have: zskaxjtyuaqazydouifp)
-- Vercel account for frontend hosting
-- Node.js 18+ installed locally
+Your Supabase project URL: `https://zskaxjtyuaqazydouifp.supabase.co`
 
-### Step 1: Database Setup
+## Prerequisites
 
-1. **Run the database schema setup:**
+1. **Supabase CLI** (for Edge Functions deployment)
    ```bash
-   ./setup-supabase.sh
+   npm install -g supabase
    ```
 
-2. **Get your database connection string:**
-   - Go to https://app.supabase.com
-   - Navigate to Settings > Database
-   - Copy the "Connection string" (URI format)
-   - It should look like: `postgresql://postgres.[ref]:[password]@aws-0-us-west-1.pooler.supabase.com:6543/postgres`
+2. **Anthropic API Key** for Claude integration
+   - Get from: https://console.anthropic.com/
 
-3. **Get your service role key (for admin operations):**
-   - Go to Settings > API
-   - Copy the "service_role" key (keep this secret!)
+## Step 1: Database Setup
 
-### Step 2: Environment Configuration
+### 1.1 Run the Database Migration
 
-1. **Update backend/.env:**
-   ```env
-   # Supabase Configuration
-   DATABASE_URL=your_connection_string_here
-   SUPABASE_URL=https://zskaxjtyuaqazydouifp.supabase.co
-   SUPABASE_ANON_KEY=your_anon_key_here
-   SUPABASE_SERVICE_KEY=your_service_key_here
-   
-   # Other configs
-   ANTHROPIC_API_KEY=your_anthropic_key
-   JWT_SECRET=your_jwt_secret
-   PORT=3001
-   ```
+1. Go to your Supabase Dashboard: https://supabase.com/dashboard/project/zskaxjtyuaqazydouifp
+2. Navigate to **SQL Editor**
+3. Click **New query**
+4. Copy and paste the entire contents of `supabase-setup.sql`
+5. Click **Run** to execute
 
-2. **Update frontend/.env.local:**
-   ```env
-   REACT_APP_SUPABASE_URL=https://zskaxjtyuaqazydouifp.supabase.co
-   REACT_APP_SUPABASE_ANON_KEY=your_anon_key_here
-   REACT_APP_API_URL=https://your-backend-url.vercel.app/api
-   ```
+This will create:
+- All required tables (users, organizations, intelligence_findings, etc.)
+- Row Level Security (RLS) policies
+- Indexes for performance
+- Real-time subscriptions setup
+- Default organization
 
-### Step 3: MCP Configuration
+### 1.2 Verify Tables Created
 
-1. **Update Claude Desktop config** (`~/Library/Application Support/Claude/claude_desktop_config.json`):
-   - Ensure all MCPs use the correct DATABASE_URL
-   - All MCPs should have SUPABASE_URL and SUPABASE_ANON_KEY
+Go to **Table Editor** in Supabase Dashboard and verify these tables exist:
+- [ ] organizations
+- [ ] users
+- [ ] intelligence_targets
+- [ ] intelligence_findings
+- [ ] monitoring_runs
+- [ ] opportunity_queue
+- [ ] projects
+- [ ] content
+- [ ] memoryvault_items
 
-### Step 4: Deploy Backend to Vercel
+## Step 2: Authentication Setup
 
-1. **Install Vercel CLI:**
-   ```bash
-   npm i -g vercel
-   ```
+### 2.1 Create Admin User
 
-2. **Deploy backend:**
-   ```bash
-   cd backend
-   vercel --prod
-   ```
+1. Go to **Authentication** > **Users**
+2. Click **Invite user**
+3. Enter:
+   - Email: `admin2@signaldesk.com`
+   - Password: Choose a secure password
+4. Click **Send invitation**
 
-3. **Set environment variables in Vercel:**
-   ```bash
-   vercel env add DATABASE_URL
-   vercel env add SUPABASE_URL
-   vercel env add SUPABASE_ANON_KEY
-   vercel env add SUPABASE_SERVICE_KEY
-   vercel env add ANTHROPIC_API_KEY
-   vercel env add JWT_SECRET
-   ```
+### 2.2 Link User to Organization
 
-### Step 5: Deploy Frontend to Vercel
+After user is created, run this SQL in SQL Editor:
+```sql
+UPDATE users 
+SET 
+  organization_id = (SELECT id FROM organizations WHERE name = 'SignalDesk Demo'),
+  role = 'admin',
+  full_name = 'Admin User'
+WHERE email = 'admin2@signaldesk.com';
+```
 
-1. **Deploy frontend:**
-   ```bash
-   cd frontend
-   vercel --prod
-   ```
+## Step 3: Edge Functions Deployment
 
-2. **Set environment variables:**
-   ```bash
-   vercel env add REACT_APP_SUPABASE_URL
-   vercel env add REACT_APP_SUPABASE_ANON_KEY
-   vercel env add REACT_APP_API_URL
-   ```
+### 3.1 Login to Supabase CLI
 
-### Step 6: Configure Supabase Realtime (Optional)
+```bash
+supabase login
+```
 
-1. **Enable Realtime for tables:**
-   - Go to Supabase Dashboard > Database > Replication
-   - Enable replication for tables that need real-time updates:
-     - opportunities
-     - monitoring_alerts
-     - cascade_predictions
+### 3.2 Link Your Project
 
-### Step 7: Set up Edge Functions (Optional)
+```bash
+cd /Users/jonathanliebowitz/Desktop/SignalDesk/frontend
+supabase link --project-ref zskaxjtyuaqazydouifp
+```
 
-For advanced MCP operations, you can use Supabase Edge Functions:
+### 3.3 Set Environment Secrets
 
-1. **Install Supabase CLI:**
-   ```bash
-   brew install supabase/tap/supabase
-   ```
+```bash
+# Set your Anthropic API key
+supabase secrets set ANTHROPIC_API_KEY=your_anthropic_api_key_here
+```
 
-2. **Create edge functions:**
-   ```bash
-   supabase functions new opportunity-detector
-   supabase functions new cascade-predictor
-   ```
+### 3.4 Deploy Edge Functions
 
-3. **Deploy functions:**
-   ```bash
-   supabase functions deploy
-   ```
+```bash
+# Deploy all functions
+supabase functions deploy claude-chat
+supabase functions deploy monitor-intelligence
+supabase functions deploy niv-chat
+```
 
-### Step 8: Verify Deployment
+### 3.5 Verify Deployment
 
-1. **Test database connection:**
-   ```bash
-   node -e "
-   const { createClient } = require('@supabase/supabase-js');
-   const supabase = createClient(
-     'https://zskaxjtyuaqazydouifp.supabase.co',
-     'your_anon_key'
-   );
-   supabase.from('opportunities').select('*').limit(1)
-     .then(({ data, error }) => {
-       if (error) console.error('Error:', error);
-       else console.log('Success! Connected to Supabase');
-     });
-   "
-   ```
+Check function status:
+```bash
+supabase functions list
+```
 
-2. **Test MCPs:**
-   - Restart Claude Desktop
-   - Check that all MCPs show as "running"
+## Step 4: Frontend Configuration
 
-3. **Test frontend:**
-   - Visit your Vercel URL
-   - Login and verify all features work
+### 4.1 Environment Variables
 
-### Database Connection Strings
+Ensure `.env` file has:
+```env
+REACT_APP_SUPABASE_URL=https://zskaxjtyuaqazydouifp.supabase.co
+REACT_APP_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8
+```
 
-Supabase provides different connection strings for different use cases:
+### 4.2 Test the Connection
 
-- **Direct connection:** For server-side Node.js apps
-  ```
-  postgresql://postgres:[password]@db.zskaxjtyuaqazydouifp.supabase.co:5432/postgres
-  ```
+Run the verification script:
+```bash
+npm install @supabase/supabase-js dotenv
+node verify-supabase-setup.js
+```
 
-- **Connection pooling (recommended):** For serverless/edge functions
-  ```
-  postgresql://postgres.[ref]:[password]@aws-0-us-west-1.pooler.supabase.com:6543/postgres
-  ```
+## Step 5: Enable Real-time
 
-- **Transaction pooling:** For high-volume apps
-  ```
-  postgresql://postgres.[ref]:[password]@aws-0-us-west-1.pooler.supabase.com:5432/postgres?pgbouncer=true
-  ```
+1. Go to **Database** > **Replication** in Supabase Dashboard
+2. Enable replication for:
+   - [ ] intelligence_findings
+   - [ ] monitoring_runs
+   - [ ] opportunity_queue
 
-### Troubleshooting
+## Step 6: Optional - Storage Setup
 
-1. **"Tenant or user not found" error:**
-   - Check that you're using the correct password
-   - Try using the direct connection string instead of pooler
+If you need file storage:
 
-2. **MCPs not connecting:**
-   - Ensure DATABASE_URL is set in Claude Desktop config
-   - Check that the connection string includes SSL mode
+1. Go to **Storage** in Supabase Dashboard
+2. Create buckets:
+   - `content-assets` - for content files
+   - `organization-logos` - for org branding
+3. Set policies as needed
 
-3. **Frontend can't reach backend:**
-   - Verify REACT_APP_API_URL points to your Vercel backend
-   - Check CORS settings in backend
+## Verification Checklist
 
-### Monitoring
+Run all these checks to ensure everything works:
 
-1. **Database metrics:**
-   - Supabase Dashboard > Reports
-   - Monitor query performance and connections
+### Database
+- [ ] Can query all tables
+- [ ] RLS policies are active
+- [ ] Triggers work (updated_at auto-updates)
 
-2. **API metrics:**
-   - Supabase Dashboard > API
-   - Track request counts and latency
+### Authentication
+- [ ] admin2@signaldesk.com can login
+- [ ] User profile is created in users table
+- [ ] User is linked to organization
 
-3. **Logs:**
-   - Supabase Dashboard > Logs
-   - View database and function logs
+### Edge Functions
+- [ ] claude-chat responds to test requests
+- [ ] monitor-intelligence can create monitoring runs
+- [ ] niv-chat provides strategic responses
 
-### Security Best Practices
+### Real-time
+- [ ] Subscriptions connect successfully
+- [ ] Changes trigger real-time updates
 
-1. **Never commit secrets to git**
-2. **Use environment variables for all sensitive data**
-3. **Enable Row Level Security (RLS) on all tables**
-4. **Use service_role key only on backend, never in frontend**
-5. **Regularly rotate API keys**
+### Frontend Integration
+- [ ] Login works from the app
+- [ ] Data fetching works
+- [ ] Real-time updates appear
+- [ ] AI features respond
 
-### Next Steps
+## Troubleshooting
 
-1. Set up CI/CD with GitHub Actions
-2. Configure custom domain
-3. Set up monitoring and alerts
-4. Implement backup strategy
+### Issue: Authentication fails
+- Check user exists in Auth > Users
+- Verify password is correct
+- Check users table has profile
 
-### Support
+### Issue: Edge Functions return 404
+- Ensure functions are deployed: `supabase functions list`
+- Check function logs: `supabase functions logs function-name`
+
+### Issue: Edge Functions return API key error
+- Set the secret: `supabase secrets set ANTHROPIC_API_KEY=your_key`
+- Verify: `supabase secrets list`
+
+### Issue: Tables not accessible
+- Check RLS policies are created
+- Verify user has organization_id set
+- Test with service role key (bypasses RLS)
+
+### Issue: Real-time not working
+- Enable replication for tables
+- Check WebSocket connection in browser console
+- Verify anon key has proper permissions
+
+## Production Considerations
+
+1. **API Keys Security**
+   - Never commit API keys to git
+   - Use environment variables
+   - Rotate keys regularly
+
+2. **Rate Limiting**
+   - Implement rate limiting on Edge Functions
+   - Monitor Claude API usage
+
+3. **Backup Strategy**
+   - Enable point-in-time recovery
+   - Regular backups of critical data
+
+4. **Monitoring**
+   - Set up alerts for Edge Function errors
+   - Monitor database performance
+   - Track API usage and costs
+
+5. **Scaling**
+   - Consider connection pooling for high traffic
+   - Optimize queries with proper indexes
+   - Use caching where appropriate
+
+## Support Resources
 
 - Supabase Documentation: https://supabase.com/docs
-- Vercel Documentation: https://vercel.com/docs
-- SignalDesk Issues: Create an issue in your repository
+- Supabase Discord: https://discord.supabase.com
+- Project Dashboard: https://supabase.com/dashboard/project/zskaxjtyuaqazydouifp
 
----
+## Next Steps
 
-## Migration Complete! 🎉
-
-Your SignalDesk platform is now fully migrated to Supabase and ready for production deployment.
+1. Complete all setup steps above
+2. Run verification script
+3. Test all features in the app
+4. Monitor logs for any issues
+5. Set up production monitoring

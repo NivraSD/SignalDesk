@@ -1,0 +1,446 @@
+/* Minimal Onboarding - Properly Matching SignalDesk's Neon Theme */
+
+.minimal-onboarding {
+  min-height: 100vh;
+  background: #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  color: #ffffff;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.onboarding-wrapper {
+  width: 100%;
+  max-width: 720px;
+  background: rgba(15, 15, 25, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 255, 204, 0.2);
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 0 100px rgba(0, 255, 204, 0.1);
+}
+
+/* Progress */
+.progress-container {
+  margin-bottom: 32px;
+}
+
+.progress-track {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00ffcc, #00ff88);
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 20px #00ffcc;
+}
+
+.progress-dots {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.progress-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.progress-dot.active {
+  background: rgba(0, 255, 204, 0.3);
+  border-color: rgba(0, 255, 204, 0.5);
+}
+
+.progress-dot.current {
+  background: #00ffcc;
+  border-color: #00ffcc;
+  box-shadow: 0 0 20px #00ffcc;
+  transform: scale(1.3);
+}
+
+/* Header */
+.onboarding-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.onboarding-header h1 {
+  margin: 0 0 8px 0;
+  font-size: 32px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #00ffcc, #00ff88);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.5px;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Content */
+.onboarding-content {
+  min-height: 400px;
+  margin-bottom: 32px;
+}
+
+.step-content {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Form Elements */
+.form-section {
+  margin-bottom: 24px;
+}
+
+.input-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.required {
+  color: #00ffcc;
+}
+
+.neon-input,
+.neon-textarea,
+.neon-select {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(0, 255, 204, 0.2);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 15px;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.3s ease;
+}
+
+.neon-input::placeholder,
+.neon-textarea::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.neon-input:focus,
+.neon-textarea:focus,
+.neon-select:focus {
+  outline: none;
+  border-color: #00ffcc;
+  background: rgba(0, 0, 0, 0.6);
+  box-shadow: 
+    0 0 0 2px rgba(0, 255, 204, 0.1),
+    0 0 20px rgba(0, 255, 204, 0.1);
+}
+
+.neon-textarea {
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.5;
+}
+
+.neon-select {
+  cursor: pointer;
+}
+
+.neon-select option {
+  background: #0a0a0f;
+  color: #ffffff;
+}
+
+.field-hint {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* AI Discovery Note */
+.ai-discovery-note {
+  display: flex;
+  gap: 16px;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(0, 255, 204, 0.1), rgba(0, 255, 136, 0.05));
+  border: 1px solid rgba(0, 255, 204, 0.2);
+  border-radius: 12px;
+  margin-top: 24px;
+}
+
+.note-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.note-icon svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 10px rgba(0, 255, 204, 0.5)) drop-shadow(0 0 20px rgba(0, 255, 204, 0.3));
+}
+
+.note-content {
+  flex: 1;
+}
+
+.note-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #00ffcc;
+  margin-bottom: 8px;
+}
+
+.note-text {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.5;
+}
+
+/* Goals Grid */
+.goals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.goal-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.goal-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0, 255, 204, 0.3);
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.goal-card.selected {
+  background: linear-gradient(135deg, rgba(0, 255, 204, 0.15), rgba(0, 255, 136, 0.1));
+  border-color: #00ffcc;
+  box-shadow: 0 0 20px rgba(0, 255, 204, 0.2);
+}
+
+.goal-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  transition: all 0.3s ease;
+}
+
+.goal-icon svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 8px currentColor);
+}
+
+.goal-card.selected .goal-icon {
+  opacity: 1;
+}
+
+.goal-card.selected .goal-icon svg {
+  filter: drop-shadow(0 0 12px currentColor) drop-shadow(0 0 20px currentColor);
+}
+
+.goal-info {
+  flex: 1;
+}
+
+.goal-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 4px;
+}
+
+.goal-desc {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.goal-card.selected .goal-desc {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.goal-checkbox {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  font-size: 12px;
+  font-weight: bold;
+  color: #000;
+}
+
+.goal-checkbox.checked {
+  background: linear-gradient(135deg, #00ffcc, #00ff88);
+  border-color: #00ffcc;
+  box-shadow: 0 0 10px rgba(0, 255, 204, 0.3);
+}
+
+.selection-counter {
+  text-align: center;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 12px;
+  background: rgba(0, 255, 204, 0.05);
+  border: 1px solid rgba(0, 255, 204, 0.1);
+  border-radius: 8px;
+}
+
+/* Radio Groups */
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.radio-option input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  accent-color: #00ffcc;
+  cursor: pointer;
+}
+
+.radio-card {
+  flex: 1;
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.radio-option input[type="radio"]:checked + .radio-card {
+  background: linear-gradient(135deg, rgba(0, 255, 204, 0.15), rgba(0, 255, 136, 0.1));
+  border-color: #00ffcc;
+  box-shadow: 0 0 20px rgba(0, 255, 204, 0.1);
+}
+
+.radio-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 4px;
+}
+
+.radio-desc {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Actions */
+.onboarding-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.onboarding-actions:only-child {
+  justify-content: flex-end;
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #00ffcc, #00ff88);
+  border: none;
+  color: #000;
+  box-shadow: 0 0 20px rgba(0, 255, 204, 0.2);
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 4px 20px rgba(0, 255, 204, 0.3),
+    0 0 40px rgba(0, 255, 204, 0.2);
+}
+
+.btn-primary:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .onboarding-wrapper {
+    padding: 24px;
+  }
+  
+  .goals-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .onboarding-header h1 {
+    font-size: 24px;
+  }
+}

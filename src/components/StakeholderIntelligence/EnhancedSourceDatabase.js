@@ -1,0 +1,2061 @@
+// Pre-indexed stakeholder source database
+export const StakeholderSourceDatabase = {
+  // Major institutional investors
+  institutional_investors: {
+    blackrock: {
+      id: 'inst_blackrock',
+      name: 'BlackRock Inc.',
+      type: 'institutional_investor',
+      influence: 10,
+      sources: {
+        official: [
+          {
+            name: 'BlackRock Investor Relations',
+            url: 'https://ir.blackrock.com',
+            type: 'web',
+            extractionMethod: 'scraping',
+            sections: ['news', 'events', 'financials']
+          },
+          {
+            name: 'Larry Fink Annual Letters',
+            url: 'https://www.blackrock.com/corporate/investor-relations/larry-fink-ceo-letter',
+            type: 'web',
+            extractionMethod: 'scraping',
+            frequency: 'annual'
+          },
+          {
+            name: 'BlackRock Investment Stewardship',
+            url: 'https://www.blackrock.com/corporate/about-us/investment-stewardship',
+            type: 'web',
+            extractionMethod: 'scraping',
+            sections: ['voting-guidelines', 'engagement-priorities']
+          }
+        ],
+        regulatory: [
+          {
+            name: 'BlackRock SEC Filings',
+            url: 'https://www.sec.gov/cgi-bin/browse-edgar?CIK=1364742&action=getcompany',
+            type: 'regulatory',
+            extractionMethod: 'api',
+            forms: ['13F', '13D', '13G', 'N-Q', 'N-CSR'],
+            rss: 'https://www.sec.gov/cgi-bin/browse-edgar?CIK=1364742&action=getcompany&output=atom'
+          }
+        ],
+        social: [
+          {
+            name: 'BlackRock Twitter',
+            url: 'https://twitter.com/blackrock',
+            type: 'social',
+            extractionMethod: 'api',
+            handle: '@blackrock'
+          },
+          {
+            name: 'Larry Fink Twitter',
+            url: 'https://twitter.com/LarryFink',
+            type: 'social',
+            extractionMethod: 'api',
+            handle: '@LarryFink'
+          },
+          {
+            name: 'BlackRock LinkedIn',
+            url: 'https://www.linkedin.com/company/blackrock',
+            type: 'professional',
+            extractionMethod: 'manual'
+          }
+        ],
+        news: [
+          {
+            name: 'BlackRock Bloomberg Coverage',
+            url: 'https://www.bloomberg.com/quote/BLK:US',
+            type: 'financial',
+            extractionMethod: 'api',
+            keywords: ['BlackRock', 'Larry Fink', 'iShares']
+          },
+          {
+            name: 'BlackRock Reuters Coverage',
+            url: 'https://www.reuters.com/companies/BLK.N',
+            type: 'news',
+            extractionMethod: 'rss'
+          }
+        ]
+      },
+      monitoringTopics: {
+        universal: ['ESG', 'sustainability', 'climate', 'governance', 'proxy voting'],
+        byIndustry: {
+          technology: ['AI ethics', 'data privacy', 'innovation', 'R&D investment'],
+          finance: ['capital allocation', 'dividends', 'risk management'],
+          healthcare: ['drug pricing', 'R&D pipeline', 'regulatory compliance']
+        }
+      }
+    },
+    
+    vanguard: {
+      id: 'inst_vanguard',
+      name: 'The Vanguard Group',
+      type: 'institutional_investor',
+      influence: 9,
+      sources: {
+        official: [
+          {
+            name: 'Vanguard Investor Relations',
+            url: 'https://investor.vanguard.com',
+            type: 'web',
+            extractionMethod: 'scraping'
+          },
+          {
+            name: 'Vanguard Investment Stewardship',
+            url: 'https://corporate.vanguard.com/content/corporatesite/us/en/corp/how-we-advocate/investment-stewardship.html',
+            type: 'web',
+            extractionMethod: 'scraping'
+          }
+        ],
+        regulatory: [
+          {
+            name: 'Vanguard SEC Filings',
+            url: 'https://www.sec.gov/edgar/browse/?CIK=102909',
+            type: 'regulatory',
+            extractionMethod: 'api',
+            forms: ['13F', 'N-Q', 'N-CSR']
+          }
+        ]
+      }
+    },
+    
+    statestreet: {
+      id: 'inst_statestreet',
+      name: 'State Street Global Advisors',
+      type: 'institutional_investor',
+      influence: 9,
+      sources: {
+        official: [
+          {
+            name: 'State Street Investor Relations',
+            url: 'https://investors.statestreet.com',
+            type: 'web',
+            extractionMethod: 'scraping'
+          },
+          {
+            name: 'State Street Stewardship',
+            url: 'https://www.ssga.com/us/en/institutional/etfs/capabilities/stewardship',
+            type: 'web',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    }
+  },
+
+  // Major regulators
+  regulators: {
+    sec: {
+      id: 'reg_sec',
+      name: 'Securities and Exchange Commission',
+      type: 'regulator',
+      influence: 10,
+      jurisdiction: 'United States',
+      sources: {
+        official: [
+          {
+            name: 'SEC Press Releases',
+            url: 'https://www.sec.gov/news/pressreleases',
+            type: 'regulatory',
+            extractionMethod: 'rss',
+            rss: 'https://www.sec.gov/rss/news/press.xml'
+          },
+          {
+            name: 'SEC Enforcement Actions',
+            url: 'https://www.sec.gov/litigation/litreleases',
+            type: 'regulatory',
+            extractionMethod: 'rss',
+            rss: 'https://www.sec.gov/rss/litigation/litreleases.xml'
+          },
+          {
+            name: 'SEC Proposed Rules',
+            url: 'https://www.sec.gov/rules/proposed',
+            type: 'regulatory',
+            extractionMethod: 'scraping'
+          },
+          {
+            name: 'SEC Speeches & Statements',
+            url: 'https://www.sec.gov/news/speeches-statements',
+            type: 'regulatory',
+            extractionMethod: 'scraping'
+          }
+        ],
+        personnel: [
+          {
+            name: 'Gary Gensler Twitter',
+            url: 'https://twitter.com/GaryGensler',
+            type: 'social',
+            extractionMethod: 'api',
+            handle: '@GaryGensler'
+          }
+        ]
+      },
+      monitoringTopics: {
+        universal: ['compliance', 'disclosure', 'enforcement', 'market manipulation'],
+        byIndustry: {
+          crypto: ['digital assets', 'DeFi', 'stablecoins', 'custody'],
+          ai: ['algorithmic trading', 'AI disclosure', 'model risk'],
+          fintech: ['payment for order flow', 'gamification', 'robo-advisors']
+        }
+      }
+    },
+    
+    ftc: {
+      id: 'reg_ftc',
+      name: 'Federal Trade Commission',
+      type: 'regulator',
+      influence: 9,
+      jurisdiction: 'United States',
+      sources: {
+        official: [
+          {
+            name: 'FTC News & Events',
+            url: 'https://www.ftc.gov/news-events/news',
+            type: 'regulatory',
+            extractionMethod: 'rss',
+            rss: 'https://www.ftc.gov/feeds/press-releases.xml'
+          },
+          {
+            name: 'FTC Enforcement Actions',
+            url: 'https://www.ftc.gov/legal-library/browse/cases-proceedings',
+            type: 'regulatory',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    }
+  },
+
+  // Major media outlets
+  media: {
+    techcrunch: {
+      id: 'media_techcrunch',
+      name: 'TechCrunch',
+      type: 'media_outlet',
+      influence: 8,
+      sources: {
+        main: [
+          {
+            name: 'TechCrunch Main Feed',
+            url: 'https://techcrunch.com',
+            type: 'news',
+            extractionMethod: 'rss',
+            rss: 'https://techcrunch.com/feed/'
+          },
+          {
+            name: 'TechCrunch Startups',
+            url: 'https://techcrunch.com/category/startups/',
+            type: 'news',
+            extractionMethod: 'rss',
+            rss: 'https://techcrunch.com/category/startups/feed/'
+          }
+        ],
+        reporters: [
+          {
+            name: 'Key TC Reporters',
+            url: 'https://twitter.com/i/lists/techcrunch-reporters',
+            type: 'social',
+            extractionMethod: 'api'
+          }
+        ]
+      }
+    },
+    
+    wsj: {
+      id: 'media_wsj',
+      name: 'Wall Street Journal',
+      type: 'media_outlet',
+      influence: 9,
+      sources: {
+        main: [
+          {
+            name: 'WSJ Business',
+            url: 'https://www.wsj.com/news/business',
+            type: 'news',
+            extractionMethod: 'rss',
+            rss: 'https://feeds.a.dj.com/rss/WSJcomUSBusiness.xml'
+          },
+          {
+            name: 'WSJ Tech',
+            url: 'https://www.wsj.com/news/technology',
+            type: 'news',
+            extractionMethod: 'rss',
+            rss: 'https://feeds.a.dj.com/rss/RSSWSJD.xml'
+          }
+        ]
+      }
+    }
+  },
+
+  // Industry analysts
+  analysts: {
+    gartner: {
+      id: 'analyst_gartner',
+      name: 'Gartner',
+      type: 'industry_analyst',
+      influence: 9,
+      sources: {
+        official: [
+          {
+            name: 'Gartner Newsroom',
+            url: 'https://www.gartner.com/en/newsroom',
+            type: 'industry',
+            extractionMethod: 'scraping'
+          },
+          {
+            name: 'Gartner Research',
+            url: 'https://www.gartner.com/en/research',
+            type: 'industry',
+            extractionMethod: 'manual'
+          }
+        ]
+      }
+    },
+    forrester: {
+      id: 'analyst_forrester',
+      name: 'Forrester Research',
+      type: 'industry_analyst',
+      influence: 8,
+      sources: {
+        official: [
+          {
+            name: 'Forrester Blogs',
+            url: 'https://www.forrester.com/blogs',
+            type: 'industry',
+            extractionMethod: 'rss',
+            rss: 'https://www.forrester.com/blogs/rss'
+          }
+        ]
+      }
+    },
+    idc: {
+      id: 'analyst_idc',
+      name: 'IDC',
+      type: 'industry_analyst',
+      influence: 8,
+      sources: {
+        official: [
+          {
+            name: 'IDC Research',
+            url: 'https://www.idc.com/research',
+            type: 'industry',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    }
+  },
+
+  // Technology companies
+  tech_companies: {
+    microsoft: {
+      id: 'tech_microsoft',
+      name: 'Microsoft',
+      type: 'technology_company',
+      influence: 10,
+      aliases: ['MSFT', 'Microsoft Corporation'],
+      sources: {
+        official: [
+          {
+            name: 'Microsoft News Center',
+            url: 'https://news.microsoft.com',
+            type: 'corporate',
+            extractionMethod: 'rss',
+            rss: 'https://news.microsoft.com/feed/'
+          },
+          {
+            name: 'Microsoft Blog',
+            url: 'https://blogs.microsoft.com',
+            type: 'corporate',
+            extractionMethod: 'rss'
+          }
+        ],
+        social: [
+          {
+            name: 'Satya Nadella Twitter',
+            url: 'https://twitter.com/satyanadella',
+            type: 'social',
+            extractionMethod: 'api'
+          }
+        ],
+        investor: [
+          {
+            name: 'Microsoft Investor Relations',
+            url: 'https://www.microsoft.com/en-us/investor',
+            type: 'investor',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    },
+    google: {
+      id: 'tech_google',
+      name: 'Google',
+      type: 'technology_company',
+      influence: 10,
+      aliases: ['Alphabet', 'GOOGL', 'GOOG'],
+      sources: {
+        official: [
+          {
+            name: 'Google Blog',
+            url: 'https://blog.google',
+            type: 'corporate',
+            extractionMethod: 'rss',
+            rss: 'https://blog.google/rss/'
+          },
+          {
+            name: 'Google AI Blog',
+            url: 'https://ai.googleblog.com',
+            type: 'corporate',
+            extractionMethod: 'rss',
+            rss: 'https://ai.googleblog.com/feeds/posts/default'
+          }
+        ],
+        social: [
+          {
+            name: 'Sundar Pichai Twitter',
+            url: 'https://twitter.com/sundarpichai',
+            type: 'social',
+            extractionMethod: 'api'
+          }
+        ]
+      }
+    },
+    apple: {
+      id: 'tech_apple',
+      name: 'Apple',
+      type: 'technology_company',
+      influence: 10,
+      aliases: ['AAPL', 'Apple Inc.'],
+      sources: {
+        official: [
+          {
+            name: 'Apple Newsroom',
+            url: 'https://www.apple.com/newsroom',
+            type: 'corporate',
+            extractionMethod: 'rss',
+            rss: 'https://www.apple.com/newsroom/rss-feed.rss'
+          }
+        ],
+        social: [
+          {
+            name: 'Tim Cook Twitter',
+            url: 'https://twitter.com/tim_cook',
+            type: 'social',
+            extractionMethod: 'api'
+          }
+        ]
+      }
+    },
+    amazon: {
+      id: 'tech_amazon',
+      name: 'Amazon',
+      type: 'technology_company',
+      influence: 10,
+      aliases: ['AMZN', 'AWS'],
+      sources: {
+        official: [
+          {
+            name: 'Amazon News',
+            url: 'https://press.aboutamazon.com',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          },
+          {
+            name: 'AWS News Blog',
+            url: 'https://aws.amazon.com/blogs/aws/',
+            type: 'corporate',
+            extractionMethod: 'rss',
+            rss: 'https://aws.amazon.com/blogs/aws/feed/'
+          }
+        ]
+      }
+    },
+    meta: {
+      id: 'tech_meta',
+      name: 'Meta',
+      type: 'technology_company',
+      influence: 9,
+      aliases: ['Facebook', 'META', 'Meta Platforms'],
+      sources: {
+        official: [
+          {
+            name: 'Meta Newsroom',
+            url: 'https://about.fb.com/news/',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          }
+        ],
+        social: [
+          {
+            name: 'Mark Zuckerberg Facebook',
+            url: 'https://www.facebook.com/zuck',
+            type: 'social',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    },
+    salesforce: {
+      id: 'tech_salesforce',
+      name: 'Salesforce',
+      type: 'technology_company',
+      influence: 8,
+      aliases: ['CRM', 'Salesforce.com'],
+      sources: {
+        official: [
+          {
+            name: 'Salesforce News',
+            url: 'https://www.salesforce.com/news/',
+            type: 'corporate',
+            extractionMethod: 'rss',
+            rss: 'https://www.salesforce.com/news/rss/'
+          }
+        ],
+        social: [
+          {
+            name: 'Marc Benioff Twitter',
+            url: 'https://twitter.com/Benioff',
+            type: 'social',
+            extractionMethod: 'api'
+          }
+        ]
+      }
+    },
+    oracle: {
+      id: 'tech_oracle',
+      name: 'Oracle',
+      type: 'technology_company',
+      influence: 8,
+      aliases: ['ORCL', 'Oracle Corporation'],
+      sources: {
+        official: [
+          {
+            name: 'Oracle News',
+            url: 'https://www.oracle.com/news/',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    },
+    nvidia: {
+      id: 'tech_nvidia',
+      name: 'NVIDIA',
+      type: 'technology_company',
+      influence: 9,
+      aliases: ['NVDA'],
+      sources: {
+        official: [
+          {
+            name: 'NVIDIA Blog',
+            url: 'https://blogs.nvidia.com',
+            type: 'corporate',
+            extractionMethod: 'rss',
+            rss: 'https://blogs.nvidia.com/feed/'
+          },
+          {
+            name: 'NVIDIA News',
+            url: 'https://nvidianews.nvidia.com',
+            type: 'corporate',
+            extractionMethod: 'rss'
+          }
+        ],
+        social: [
+          {
+            name: 'Jensen Huang Twitter',
+            url: 'https://twitter.com/nvidia',
+            type: 'social',
+            extractionMethod: 'api'
+          }
+        ]
+      }
+    }
+  },
+
+  // Venture Capital firms
+  venture_capital: {
+    sequoia: {
+      id: 'vc_sequoia',
+      name: 'Sequoia Capital',
+      type: 'venture_capital',
+      influence: 9,
+      sources: {
+        official: [
+          {
+            name: 'Sequoia Publication',
+            url: 'https://www.sequoiacap.com/article/',
+            type: 'financial',
+            extractionMethod: 'scraping'
+          }
+        ],
+        social: [
+          {
+            name: 'Sequoia Twitter',
+            url: 'https://twitter.com/sequoia',
+            type: 'social',
+            extractionMethod: 'api'
+          }
+        ]
+      }
+    },
+    a16z: {
+      id: 'vc_a16z',
+      name: 'Andreessen Horowitz',
+      type: 'venture_capital',
+      influence: 9,
+      aliases: ['a16z'],
+      sources: {
+        official: [
+          {
+            name: 'a16z Blog',
+            url: 'https://a16z.com/blog/',
+            type: 'financial',
+            extractionMethod: 'rss'
+          },
+          {
+            name: 'Future Newsletter',
+            url: 'https://future.a16z.com',
+            type: 'financial',
+            extractionMethod: 'email'
+          }
+        ],
+        social: [
+          {
+            name: 'Marc Andreessen Twitter',
+            url: 'https://twitter.com/pmarca',
+            type: 'social',
+            extractionMethod: 'api'
+          },
+          {
+            name: 'Ben Horowitz Twitter',
+            url: 'https://twitter.com/bhorowitz',
+            type: 'social',
+            extractionMethod: 'api'
+          }
+        ]
+      }
+    },
+    accel: {
+      id: 'vc_accel',
+      name: 'Accel',
+      type: 'venture_capital',
+      influence: 8,
+      sources: {
+        official: [
+          {
+            name: 'Accel Blog',
+            url: 'https://www.accel.com/blog',
+            type: 'financial',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    },
+    benchmark: {
+      id: 'vc_benchmark',
+      name: 'Benchmark',
+      type: 'venture_capital',
+      influence: 8,
+      sources: {
+        official: [
+          {
+            name: 'Benchmark Twitter',
+            url: 'https://twitter.com/benchmark',
+            type: 'social',
+            extractionMethod: 'api'
+          }
+        ]
+      }
+    },
+    greylock: {
+      id: 'vc_greylock',
+      name: 'Greylock Partners',
+      type: 'venture_capital',
+      influence: 8,
+      sources: {
+        official: [
+          {
+            name: 'Greymatter Podcast',
+            url: 'https://greylock.com/greymatter/',
+            type: 'financial',
+            extractionMethod: 'rss'
+          }
+        ]
+      }
+    },
+    kleiner_perkins: {
+      id: 'vc_kleiner',
+      name: 'Kleiner Perkins',
+      type: 'venture_capital',
+      influence: 8,
+      sources: {
+        official: [
+          {
+            name: 'Kleiner Perkins News',
+            url: 'https://www.kleinerperkins.com/news/',
+            type: 'financial',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    }
+  },
+
+  // Financial institutions
+  financial_institutions: {
+    jpmorgan: {
+      id: 'bank_jpmorgan',
+      name: 'JPMorgan Chase',
+      type: 'financial_institution',
+      influence: 9,
+      aliases: ['JPM', 'Chase'],
+      sources: {
+        official: [
+          {
+            name: 'JPMorgan News',
+            url: 'https://www.jpmorganchase.com/news',
+            type: 'financial',
+            extractionMethod: 'scraping'
+          }
+        ],
+        investor: [
+          {
+            name: 'JPMorgan Investor Relations',
+            url: 'https://www.jpmorganchase.com/ir',
+            type: 'investor',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    },
+    goldman: {
+      id: 'bank_goldman',
+      name: 'Goldman Sachs',
+      type: 'financial_institution',
+      influence: 9,
+      aliases: ['GS'],
+      sources: {
+        official: [
+          {
+            name: 'Goldman Sachs Insights',
+            url: 'https://www.goldmansachs.com/insights/',
+            type: 'financial',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    },
+    morgan_stanley: {
+      id: 'bank_morgan',
+      name: 'Morgan Stanley',
+      type: 'financial_institution',
+      influence: 9,
+      aliases: ['MS'],
+      sources: {
+        official: [
+          {
+            name: 'Morgan Stanley Ideas',
+            url: 'https://www.morganstanley.com/ideas',
+            type: 'financial',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    }
+  },
+
+  // Healthcare companies
+  healthcare_companies: {
+    johnson_johnson: {
+      id: 'health_jnj',
+      name: 'Johnson & Johnson',
+      type: 'healthcare_company',
+      influence: 9,
+      aliases: ['J&J', 'JNJ'],
+      sources: {
+        official: [
+          {
+            name: 'J&J News Center',
+            url: 'https://www.jnj.com/media-center',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    },
+    pfizer: {
+      id: 'health_pfizer',
+      name: 'Pfizer',
+      type: 'healthcare_company',
+      influence: 9,
+      aliases: ['PFE'],
+      sources: {
+        official: [
+          {
+            name: 'Pfizer News',
+            url: 'https://www.pfizer.com/news',
+            type: 'corporate',
+            extractionMethod: 'rss',
+            rss: 'https://www.pfizer.com/rss/news'
+          }
+        ]
+      }
+    },
+    unitedhealth: {
+      id: 'health_unh',
+      name: 'UnitedHealth Group',
+      type: 'healthcare_company',
+      influence: 9,
+      aliases: ['UNH', 'United Healthcare'],
+      sources: {
+        official: [
+          {
+            name: 'UnitedHealth News',
+            url: 'https://www.unitedhealthgroup.com/newsroom',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    }
+  },
+
+  // Retail companies
+  retail_companies: {
+    walmart: {
+      id: 'retail_walmart',
+      name: 'Walmart',
+      type: 'retail_company',
+      influence: 9,
+      aliases: ['WMT'],
+      sources: {
+        official: [
+          {
+            name: 'Walmart Corporate News',
+            url: 'https://corporate.walmart.com/news',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    },
+    target: {
+      id: 'retail_target',
+      name: 'Target',
+      type: 'retail_company',
+      influence: 8,
+      aliases: ['TGT'],
+      sources: {
+        official: [
+          {
+            name: 'Target Corporate News',
+            url: 'https://corporate.target.com/press',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    },
+    home_depot: {
+      id: 'retail_homedepot',
+      name: 'Home Depot',
+      type: 'retail_company',
+      influence: 8,
+      aliases: ['HD'],
+      sources: {
+        official: [
+          {
+            name: 'Home Depot News',
+            url: 'https://corporate.homedepot.com/news',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    }
+  },
+
+  // Energy companies
+  energy_companies: {
+    exxon: {
+      id: 'energy_exxon',
+      name: 'ExxonMobil',
+      type: 'energy_company',
+      influence: 9,
+      aliases: ['XOM', 'Exxon'],
+      sources: {
+        official: [
+          {
+            name: 'ExxonMobil News',
+            url: 'https://corporate.exxonmobil.com/news',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    },
+    chevron: {
+      id: 'energy_chevron',
+      name: 'Chevron',
+      type: 'energy_company',
+      influence: 8,
+      aliases: ['CVX'],
+      sources: {
+        official: [
+          {
+            name: 'Chevron News',
+            url: 'https://www.chevron.com/newsroom',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    }
+  },
+
+  // PR & Marketing Agencies
+  pr_agencies: {
+    edelman: {
+      id: 'pr_edelman',
+      name: 'Edelman',
+      type: 'pr_agency',
+      influence: 8,
+      sources: {
+        official: [
+          {
+            name: 'Edelman Insights',
+            url: 'https://www.edelman.com/insights',
+            type: 'industry',
+            extractionMethod: 'scraping'
+          }
+        ],
+        social: [
+          {
+            name: 'Edelman Twitter',
+            url: 'https://twitter.com/EdelmanPR',
+            type: 'social',
+            extractionMethod: 'api'
+          }
+        ]
+      }
+    },
+    weber_shandwick: {
+      id: 'pr_weber',
+      name: 'Weber Shandwick',
+      type: 'pr_agency',
+      influence: 8,
+      sources: {
+        official: [
+          {
+            name: 'Weber Shandwick News',
+            url: 'https://www.webershandwick.com/news/',
+            type: 'industry',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    },
+    ketchum: {
+      id: 'pr_ketchum',
+      name: 'Ketchum',
+      type: 'pr_agency',
+      influence: 7,
+      sources: {
+        official: [
+          {
+            name: 'Ketchum Blog',
+            url: 'https://www.ketchum.com/blog/',
+            type: 'industry',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    },
+    fleishmanhillard: {
+      id: 'pr_fleishman',
+      name: 'FleishmanHillard',
+      type: 'pr_agency',
+      influence: 7,
+      sources: {
+        official: [
+          {
+            name: 'FleishmanHillard Insights',
+            url: 'https://fleishmanhillard.com/insights/',
+            type: 'industry',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    },
+    ogilvy: {
+      id: 'pr_ogilvy',
+      name: 'Ogilvy',
+      type: 'pr_agency',
+      influence: 8,
+      sources: {
+        official: [
+          {
+            name: 'Ogilvy News',
+            url: 'https://www.ogilvy.com/news',
+            type: 'industry',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    }
+  },
+
+  // Telecommunications Companies
+  telecom_companies: {
+    att: {
+      id: 'telecom_att',
+      name: 'AT&T',
+      type: 'telecom_company',
+      influence: 9,
+      aliases: ['T'],
+      sources: {
+        official: [
+          {
+            name: 'AT&T Newsroom',
+            url: 'https://about.att.com/newsroom',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          }
+        ],
+        investor: [
+          {
+            name: 'AT&T Investor Relations',
+            url: 'https://investors.att.com',
+            type: 'investor',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    },
+    verizon: {
+      id: 'telecom_verizon',
+      name: 'Verizon',
+      type: 'telecom_company',
+      influence: 9,
+      aliases: ['VZ'],
+      sources: {
+        official: [
+          {
+            name: 'Verizon News Center',
+            url: 'https://www.verizon.com/about/news',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    },
+    tmobile: {
+      id: 'telecom_tmobile',
+      name: 'T-Mobile',
+      type: 'telecom_company',
+      influence: 8,
+      aliases: ['TMUS'],
+      sources: {
+        official: [
+          {
+            name: 'T-Mobile Newsroom',
+            url: 'https://www.t-mobile.com/news',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    },
+    comcast: {
+      id: 'telecom_comcast',
+      name: 'Comcast',
+      type: 'telecom_company',
+      influence: 8,
+      aliases: ['CMCSA'],
+      sources: {
+        official: [
+          {
+            name: 'Comcast Press',
+            url: 'https://corporate.comcast.com/press',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    }
+  },
+
+  // Automotive Companies
+  automotive_companies: {
+    tesla: {
+      id: 'auto_tesla',
+      name: 'Tesla',
+      type: 'automotive_company',
+      influence: 9,
+      aliases: ['TSLA'],
+      sources: {
+        official: [
+          {
+            name: 'Tesla Blog',
+            url: 'https://www.tesla.com/blog',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          }
+        ],
+        social: [
+          {
+            name: 'Elon Musk Twitter',
+            url: 'https://twitter.com/elonmusk',
+            type: 'social',
+            extractionMethod: 'api'
+          }
+        ]
+      }
+    },
+    ford: {
+      id: 'auto_ford',
+      name: 'Ford',
+      type: 'automotive_company',
+      influence: 8,
+      aliases: ['F', 'Ford Motor Company'],
+      sources: {
+        official: [
+          {
+            name: 'Ford Media Center',
+            url: 'https://media.ford.com',
+            type: 'corporate',
+            extractionMethod: 'rss',
+            rss: 'https://media.ford.com/content/fordmedia/fna/us/en/news.rss'
+          }
+        ]
+      }
+    },
+    gm: {
+      id: 'auto_gm',
+      name: 'General Motors',
+      type: 'automotive_company',
+      influence: 8,
+      aliases: ['GM'],
+      sources: {
+        official: [
+          {
+            name: 'GM News',
+            url: 'https://news.gm.com',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    },
+    toyota: {
+      id: 'auto_toyota',
+      name: 'Toyota',
+      type: 'automotive_company',
+      influence: 9,
+      aliases: ['TM'],
+      sources: {
+        official: [
+          {
+            name: 'Toyota Newsroom',
+            url: 'https://pressroom.toyota.com',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    }
+  },
+
+  // Food & Beverage Companies
+  food_beverage_companies: {
+    mcdonalds: {
+      id: 'food_mcdonalds',
+      name: "McDonald's",
+      type: 'food_beverage_company',
+      influence: 8,
+      aliases: ['MCD'],
+      sources: {
+        official: [
+          {
+            name: "McDonald's News",
+            url: 'https://corporate.mcdonalds.com/corpmcd/en-us/our-stories.html',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    },
+    starbucks: {
+      id: 'food_starbucks',
+      name: 'Starbucks',
+      type: 'food_beverage_company',
+      influence: 8,
+      aliases: ['SBUX'],
+      sources: {
+        official: [
+          {
+            name: 'Starbucks Stories',
+            url: 'https://stories.starbucks.com',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          }
+        ],
+        investor: [
+          {
+            name: 'Starbucks Investor Relations',
+            url: 'https://investor.starbucks.com',
+            type: 'investor',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    },
+    cocacola: {
+      id: 'food_cocacola',
+      name: 'Coca-Cola',
+      type: 'food_beverage_company',
+      influence: 9,
+      aliases: ['KO', 'Coke'],
+      sources: {
+        official: [
+          {
+            name: 'Coca-Cola Journey',
+            url: 'https://www.coca-colacompany.com/news',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    },
+    pepsi: {
+      id: 'food_pepsi',
+      name: 'PepsiCo',
+      type: 'food_beverage_company',
+      influence: 9,
+      aliases: ['PEP'],
+      sources: {
+        official: [
+          {
+            name: 'PepsiCo News',
+            url: 'https://www.pepsico.com/news/press-release',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    }
+  },
+
+  // Airlines
+  airline_companies: {
+    delta: {
+      id: 'airline_delta',
+      name: 'Delta Air Lines',
+      type: 'airline_company',
+      influence: 8,
+      aliases: ['DAL'],
+      sources: {
+        official: [
+          {
+            name: 'Delta News Hub',
+            url: 'https://news.delta.com',
+            type: 'corporate',
+            extractionMethod: 'rss',
+            rss: 'https://news.delta.com/rss'
+          }
+        ]
+      }
+    },
+    united: {
+      id: 'airline_united',
+      name: 'United Airlines',
+      type: 'airline_company',
+      influence: 8,
+      aliases: ['UAL'],
+      sources: {
+        official: [
+          {
+            name: 'United Hub',
+            url: 'https://hub.united.com',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    },
+    american: {
+      id: 'airline_american',
+      name: 'American Airlines',
+      type: 'airline_company',
+      influence: 8,
+      aliases: ['AAL'],
+      sources: {
+        official: [
+          {
+            name: 'AA Newsroom',
+            url: 'http://news.aa.com',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    },
+    southwest: {
+      id: 'airline_southwest',
+      name: 'Southwest Airlines',
+      type: 'airline_company',
+      influence: 7,
+      aliases: ['LUV'],
+      sources: {
+        official: [
+          {
+            name: 'Southwest Media',
+            url: 'https://www.swamedia.com',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    }
+  },
+
+  // Real Estate Companies
+  real_estate_companies: {
+    cbre: {
+      id: 'realestate_cbre',
+      name: 'CBRE Group',
+      type: 'real_estate_company',
+      influence: 8,
+      aliases: ['CBRE'],
+      sources: {
+        official: [
+          {
+            name: 'CBRE News',
+            url: 'https://www.cbre.com/about-us/media-center',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    },
+    zillow: {
+      id: 'realestate_zillow',
+      name: 'Zillow Group',
+      type: 'real_estate_company',
+      influence: 7,
+      aliases: ['ZG', 'Z'],
+      sources: {
+        official: [
+          {
+            name: 'Zillow Media Room',
+            url: 'https://www.zillowgroup.com/news/',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    },
+    redfin: {
+      id: 'realestate_redfin',
+      name: 'Redfin',
+      type: 'real_estate_company',
+      influence: 6,
+      aliases: ['RDFN'],
+      sources: {
+        official: [
+          {
+            name: 'Redfin News',
+            url: 'https://www.redfin.com/news/',
+            type: 'corporate',
+            extractionMethod: 'rss',
+            rss: 'https://www.redfin.com/news/feed/'
+          }
+        ]
+      }
+    }
+  },
+
+  // Pharmaceutical Companies
+  pharma_companies: {
+    moderna: {
+      id: 'pharma_moderna',
+      name: 'Moderna',
+      type: 'pharmaceutical_company',
+      influence: 8,
+      aliases: ['MRNA'],
+      sources: {
+        official: [
+          {
+            name: 'Moderna News',
+            url: 'https://investors.modernatx.com/news',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    },
+    merck: {
+      id: 'pharma_merck',
+      name: 'Merck',
+      type: 'pharmaceutical_company',
+      influence: 9,
+      aliases: ['MRK'],
+      sources: {
+        official: [
+          {
+            name: 'Merck Newsroom',
+            url: 'https://www.merck.com/news/',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    },
+    abbvie: {
+      id: 'pharma_abbvie',
+      name: 'AbbVie',
+      type: 'pharmaceutical_company',
+      influence: 8,
+      aliases: ['ABBV'],
+      sources: {
+        official: [
+          {
+            name: 'AbbVie News Center',
+            url: 'https://news.abbvie.com',
+            type: 'corporate',
+            extractionMethod: 'rss',
+            rss: 'https://news.abbvie.com/rss'
+          }
+        ]
+      }
+    }
+  },
+
+  // Entertainment & Media Companies
+  entertainment_companies: {
+    disney: {
+      id: 'media_disney',
+      name: 'Walt Disney Company',
+      type: 'entertainment_company',
+      influence: 10,
+      aliases: ['DIS', 'Disney'],
+      sources: {
+        official: [
+          {
+            name: 'Disney News',
+            url: 'https://thewaltdisneycompany.com/news/',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    },
+    netflix: {
+      id: 'media_netflix',
+      name: 'Netflix',
+      type: 'entertainment_company',
+      influence: 9,
+      aliases: ['NFLX'],
+      sources: {
+        official: [
+          {
+            name: 'Netflix Media Center',
+            url: 'https://media.netflix.com',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          }
+        ],
+        social: [
+          {
+            name: 'Netflix Twitter',
+            url: 'https://twitter.com/netflix',
+            type: 'social',
+            extractionMethod: 'api'
+          }
+        ]
+      }
+    },
+    warnerbros: {
+      id: 'media_warnerbros',
+      name: 'Warner Bros Discovery',
+      type: 'entertainment_company',
+      influence: 8,
+      aliases: ['WBD'],
+      sources: {
+        official: [
+          {
+            name: 'Warner Bros Discovery News',
+            url: 'https://press.wbd.com',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    }
+  },
+
+  // Consulting Firms
+  consulting_firms: {
+    mckinsey: {
+      id: 'consulting_mckinsey',
+      name: 'McKinsey & Company',
+      type: 'consulting_firm',
+      influence: 9,
+      sources: {
+        official: [
+          {
+            name: 'McKinsey Insights',
+            url: 'https://www.mckinsey.com/featured-insights',
+            type: 'industry',
+            extractionMethod: 'scraping'
+          }
+        ],
+        social: [
+          {
+            name: 'McKinsey Twitter',
+            url: 'https://twitter.com/McKinsey',
+            type: 'social',
+            extractionMethod: 'api'
+          }
+        ]
+      }
+    },
+    bcg: {
+      id: 'consulting_bcg',
+      name: 'Boston Consulting Group',
+      type: 'consulting_firm',
+      influence: 9,
+      aliases: ['BCG'],
+      sources: {
+        official: [
+          {
+            name: 'BCG Insights',
+            url: 'https://www.bcg.com/publications',
+            type: 'industry',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    },
+    bain: {
+      id: 'consulting_bain',
+      name: 'Bain & Company',
+      type: 'consulting_firm',
+      influence: 8,
+      sources: {
+        official: [
+          {
+            name: 'Bain Insights',
+            url: 'https://www.bain.com/insights/',
+            type: 'industry',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    },
+    deloitte: {
+      id: 'consulting_deloitte',
+      name: 'Deloitte',
+      type: 'consulting_firm',
+      influence: 9,
+      sources: {
+        official: [
+          {
+            name: 'Deloitte Insights',
+            url: 'https://www2.deloitte.com/insights',
+            type: 'industry',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    },
+    accenture: {
+      id: 'consulting_accenture',
+      name: 'Accenture',
+      type: 'consulting_firm',
+      influence: 9,
+      aliases: ['ACN'],
+      sources: {
+        official: [
+          {
+            name: 'Accenture Newsroom',
+            url: 'https://newsroom.accenture.com',
+            type: 'corporate',
+            extractionMethod: 'rss',
+            rss: 'https://newsroom.accenture.com/rss'
+          }
+        ]
+      }
+    }
+  },
+
+  // Government Agencies (beyond regulators)
+  government_agencies: {
+    whitehouse: {
+      id: 'gov_whitehouse',
+      name: 'The White House',
+      type: 'government_agency',
+      influence: 10,
+      sources: {
+        official: [
+          {
+            name: 'White House Briefings',
+            url: 'https://www.whitehouse.gov/briefing-room/',
+            type: 'government',
+            extractionMethod: 'scraping'
+          }
+        ],
+        social: [
+          {
+            name: 'POTUS Twitter',
+            url: 'https://twitter.com/POTUS',
+            type: 'social',
+            extractionMethod: 'api'
+          }
+        ]
+      }
+    },
+    treasury: {
+      id: 'gov_treasury',
+      name: 'U.S. Department of Treasury',
+      type: 'government_agency',
+      influence: 9,
+      sources: {
+        official: [
+          {
+            name: 'Treasury Press Releases',
+            url: 'https://home.treasury.gov/news/press-releases',
+            type: 'government',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    },
+    commerce: {
+      id: 'gov_commerce',
+      name: 'U.S. Department of Commerce',
+      type: 'government_agency',
+      influence: 8,
+      sources: {
+        official: [
+          {
+            name: 'Commerce News',
+            url: 'https://www.commerce.gov/news',
+            type: 'government',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    }
+  },
+
+  // Environmental Organizations
+  environmental_orgs: {
+    greenpeace: {
+      id: 'env_greenpeace',
+      name: 'Greenpeace',
+      type: 'environmental_org',
+      influence: 7,
+      sources: {
+        official: [
+          {
+            name: 'Greenpeace News',
+            url: 'https://www.greenpeace.org/international/press/',
+            type: 'advocacy',
+            extractionMethod: 'scraping'
+          }
+        ],
+        social: [
+          {
+            name: 'Greenpeace Twitter',
+            url: 'https://twitter.com/Greenpeace',
+            type: 'social',
+            extractionMethod: 'api'
+          }
+        ]
+      }
+    },
+    sierra_club: {
+      id: 'env_sierra',
+      name: 'Sierra Club',
+      type: 'environmental_org',
+      influence: 6,
+      sources: {
+        official: [
+          {
+            name: 'Sierra Club Press',
+            url: 'https://www.sierraclub.org/press-releases',
+            type: 'advocacy',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    },
+    nrdc: {
+      id: 'env_nrdc',
+      name: 'Natural Resources Defense Council',
+      type: 'environmental_org',
+      influence: 7,
+      aliases: ['NRDC'],
+      sources: {
+        official: [
+          {
+            name: 'NRDC News',
+            url: 'https://www.nrdc.org/news',
+            type: 'advocacy',
+            extractionMethod: 'scraping'
+          }
+        ]
+      }
+    }
+  },
+
+  // Cryptocurrency & Blockchain
+  crypto_companies: {
+    coinbase: {
+      id: 'crypto_coinbase',
+      name: 'Coinbase',
+      type: 'crypto_company',
+      influence: 8,
+      aliases: ['COIN'],
+      sources: {
+        official: [
+          {
+            name: 'Coinbase Blog',
+            url: 'https://www.coinbase.com/blog',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          }
+        ],
+        social: [
+          {
+            name: 'Brian Armstrong Twitter',
+            url: 'https://twitter.com/brian_armstrong',
+            type: 'social',
+            extractionMethod: 'api'
+          }
+        ]
+      }
+    },
+    binance: {
+      id: 'crypto_binance',
+      name: 'Binance',
+      type: 'crypto_company',
+      influence: 9,
+      sources: {
+        official: [
+          {
+            name: 'Binance Blog',
+            url: 'https://www.binance.com/en/blog',
+            type: 'corporate',
+            extractionMethod: 'scraping'
+          }
+        ],
+        social: [
+          {
+            name: 'CZ Twitter',
+            url: 'https://twitter.com/cz_binance',
+            type: 'social',
+            extractionMethod: 'api'
+          }
+        ]
+      }
+    },
+    kraken: {
+      id: 'crypto_kraken',
+      name: 'Kraken',
+      type: 'crypto_company',
+      influence: 7,
+      sources: {
+        official: [
+          {
+            name: 'Kraken Blog',
+            url: 'https://blog.kraken.com',
+            type: 'corporate',
+            extractionMethod: 'rss',
+            rss: 'https://blog.kraken.com/feed/'
+          }
+        ]
+      }
+    }
+  }
+};
+
+// Function to find pre-indexed stakeholders
+export const findPreIndexedStakeholder = (stakeholderName) => {
+  if (!stakeholderName) return null;
+  
+  const searchName = stakeholderName.toLowerCase().trim();
+  
+  // Check for special group names first
+  if (searchName.includes('competing') && searchName.includes('pr')) {
+    // Return multiple PR agencies as a group
+    const prAgencies = Object.values(StakeholderSourceDatabase.pr_agencies || {});
+    if (prAgencies.length > 0) {
+      const allSources = prAgencies.flatMap(agency => flattenSources(agency.sources));
+      return {
+        id: 'pr_agencies_group',
+        name: 'Competing PR Agencies',
+        category: 'pr_agencies',
+        sources: allSources,
+        isGroup: true
+      };
+    }
+  }
+  
+  if (searchName.includes('venture capital') || searchName.includes('growth investor')) {
+    // Return multiple VCs as a group
+    const vcs = Object.values(StakeholderSourceDatabase.venture_capital || {});
+    if (vcs.length > 0) {
+      const allSources = vcs.flatMap(vc => flattenSources(vc.sources));
+      return {
+        id: 'vc_group',
+        name: 'Venture Capital Firms',
+        category: 'venture_capital',
+        sources: allSources,
+        isGroup: true
+      };
+    }
+  }
+  
+  if (searchName.includes('tech companies') || searchName.includes('technology companies')) {
+    // Return tech companies as a group
+    const techCos = Object.values(StakeholderSourceDatabase.tech_companies || {});
+    if (techCos.length > 0) {
+      const allSources = techCos.flatMap(company => flattenSources(company.sources));
+      return {
+        id: 'tech_companies_group',
+        name: 'Technology Companies',
+        category: 'tech_companies',
+        sources: allSources,
+        isGroup: true
+      };
+    }
+  }
+  
+  if (searchName.includes('telecom') || searchName.includes('telecommunications')) {
+    // Return telecom companies as a group
+    const telecoms = Object.values(StakeholderSourceDatabase.telecom_companies || {});
+    if (telecoms.length > 0) {
+      const allSources = telecoms.flatMap(company => flattenSources(company.sources));
+      return {
+        id: 'telecom_companies_group',
+        name: 'Telecommunications Companies',
+        category: 'telecom_companies',
+        sources: allSources,
+        isGroup: true
+      };
+    }
+  }
+  
+  if (searchName.includes('automotive') || searchName.includes('auto manufacturer')) {
+    // Return automotive companies as a group
+    const autos = Object.values(StakeholderSourceDatabase.automotive_companies || {});
+    if (autos.length > 0) {
+      const allSources = autos.flatMap(company => flattenSources(company.sources));
+      return {
+        id: 'automotive_companies_group',
+        name: 'Automotive Companies',
+        category: 'automotive_companies',
+        sources: allSources,
+        isGroup: true
+      };
+    }
+  }
+  
+  if (searchName.includes('food') || searchName.includes('beverage') || searchName.includes('restaurant')) {
+    // Return food & beverage companies as a group
+    const foodCos = Object.values(StakeholderSourceDatabase.food_beverage_companies || {});
+    if (foodCos.length > 0) {
+      const allSources = foodCos.flatMap(company => flattenSources(company.sources));
+      return {
+        id: 'food_beverage_group',
+        name: 'Food & Beverage Companies',
+        category: 'food_beverage_companies',
+        sources: allSources,
+        isGroup: true
+      };
+    }
+  }
+  
+  if (searchName.includes('airline')) {
+    // Return airlines as a group
+    const airlines = Object.values(StakeholderSourceDatabase.airline_companies || {});
+    if (airlines.length > 0) {
+      const allSources = airlines.flatMap(company => flattenSources(company.sources));
+      return {
+        id: 'airline_companies_group',
+        name: 'Airline Companies',
+        category: 'airline_companies',
+        sources: allSources,
+        isGroup: true
+      };
+    }
+  }
+  
+  if (searchName.includes('consulting') || searchName.includes('advisory')) {
+    // Return consulting firms as a group
+    const consultants = Object.values(StakeholderSourceDatabase.consulting_firms || {});
+    if (consultants.length > 0) {
+      const allSources = consultants.flatMap(firm => flattenSources(firm.sources));
+      return {
+        id: 'consulting_firms_group',
+        name: 'Consulting Firms',
+        category: 'consulting_firms',
+        sources: allSources,
+        isGroup: true
+      };
+    }
+  }
+  
+  if (searchName.includes('crypto') || searchName.includes('blockchain') || searchName.includes('digital asset')) {
+    // Return crypto companies as a group
+    const cryptos = Object.values(StakeholderSourceDatabase.crypto_companies || {});
+    if (cryptos.length > 0) {
+      const allSources = cryptos.flatMap(company => flattenSources(company.sources));
+      return {
+        id: 'crypto_companies_group',
+        name: 'Cryptocurrency Companies',
+        category: 'crypto_companies',
+        sources: allSources,
+        isGroup: true
+      };
+    }
+  }
+  
+  if (searchName.includes('environmental') || searchName.includes('climate') || searchName.includes('sustainability org')) {
+    // Return environmental orgs as a group
+    const envOrgs = Object.values(StakeholderSourceDatabase.environmental_orgs || {});
+    if (envOrgs.length > 0) {
+      const allSources = envOrgs.flatMap(org => flattenSources(org.sources));
+      return {
+        id: 'environmental_orgs_group',
+        name: 'Environmental Organizations',
+        category: 'environmental_orgs',
+        sources: allSources,
+        isGroup: true
+      };
+    }
+  }
+  
+  // Search through all categories for individual matches
+  for (const [category, stakeholders] of Object.entries(StakeholderSourceDatabase)) {
+    for (const [key, stakeholder] of Object.entries(stakeholders)) {
+      // Check name, aliases, and key
+      if (stakeholder.name.toLowerCase().includes(searchName) || 
+          searchName.includes(stakeholder.name.toLowerCase()) ||
+          searchName.includes(key) ||
+          stakeholder.aliases?.some(alias => alias.toLowerCase().includes(searchName) || searchName.includes(alias.toLowerCase()))) {
+        return {
+          ...stakeholder,
+          category,
+          sources: flattenSources(stakeholder.sources)
+        };
+      }
+    }
+  }
+  
+  return null;
+};
+
+// Flatten sources for easy use
+const flattenSources = (sourcesObj) => {
+  const flattened = [];
+  
+  for (const [category, sources] of Object.entries(sourcesObj)) {
+    sources.forEach(source => {
+      flattened.push({
+        ...source,
+        category,
+        id: `${source.name.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}`,
+        active: true,
+        isPreIndexed: true
+      });
+    });
+  }
+  
+  return flattened;
+};
+
+// Get sources by stakeholder type
+export const getSourcesByType = (stakeholderType) => {
+  const type = stakeholderType.toLowerCase();
+  const sources = [];
+  
+  if (type.includes('investor') || type.includes('shareholder')) {
+    // Add all institutional investor sources
+    Object.values(StakeholderSourceDatabase.institutional_investors).forEach(investor => {
+      sources.push(...flattenSources(investor.sources));
+    });
+  }
+  
+  if (type.includes('regulator') || type.includes('government')) {
+    // Add all regulator sources
+    Object.values(StakeholderSourceDatabase.regulators).forEach(regulator => {
+      sources.push(...flattenSources(regulator.sources));
+    });
+  }
+  
+  if (type.includes('media') || type.includes('press')) {
+    // Add all media sources
+    Object.values(StakeholderSourceDatabase.media).forEach(outlet => {
+      sources.push(...flattenSources(outlet.sources));
+    });
+  }
+  
+  if (type.includes('analyst') || type.includes('research')) {
+    // Add all analyst sources
+    Object.values(StakeholderSourceDatabase.analysts).forEach(analyst => {
+      sources.push(...flattenSources(analyst.sources));
+    });
+  }
+  
+  return sources;
+};
+
+// Get monitoring topics for a stakeholder
+export const getMonitoringTopics = (stakeholder, industry) => {
+  const preIndexed = findPreIndexedStakeholder(stakeholder.name);
+  
+  if (preIndexed && preIndexed.monitoringTopics) {
+    const universal = preIndexed.monitoringTopics.universal || [];
+    const industrySpecific = preIndexed.monitoringTopics.byIndustry?.[industry] || [];
+    
+    return {
+      topics: [...universal, ...industrySpecific],
+      source: 'pre-indexed database'
+    };
+  }
+  
+  // Fallback topics by stakeholder type
+  const type = stakeholder.name.toLowerCase();
+  
+  if (type.includes('investor')) {
+    return {
+      topics: ['financial performance', 'guidance', 'ESG', 'capital allocation', 'competitive position'],
+      source: 'default'
+    };
+  }
+  
+  if (type.includes('regulator')) {
+    return {
+      topics: ['compliance', 'enforcement', 'policy changes', 'industry practices'],
+      source: 'default'
+    };
+  }
+  
+  if (type.includes('media')) {
+    return {
+      topics: ['company news', 'product launches', 'executive changes', 'controversies'],
+      source: 'default'
+    };
+  }
+  
+  return {
+    topics: [],
+    source: 'custom'
+  };
+};

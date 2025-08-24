@@ -1,19 +1,33 @@
--- Create Demo User for SignalDesk
--- Password: Demo123
+-- Create a demo user with confirmed email
+-- Run this in Supabase SQL Editor
 
--- First, check if users table exists and what columns it has
--- \d users
+-- First, check if user exists and delete if needed
+DELETE FROM auth.users WHERE email = 'demo@signaldesk.com';
 
--- Insert demo user (if not exists)
-INSERT INTO users (name, email, password, created_at, updated_at) 
-VALUES (
-    'Demo User', 
-    'demo@signaldesk.com', 
-    '$2a$10$76FMC6IpkWV6gkQaGuOmEOMw7UibAur06xJs5j6EhzV8FcUtLKSL6', -- Demo123 hashed
-    NOW(), 
-    NOW()
-)
-ON CONFLICT (email) DO NOTHING;
+-- Create new user with confirmed email
+INSERT INTO auth.users (
+    id,
+    email,
+    encrypted_password,
+    email_confirmed_at,
+    created_at,
+    updated_at,
+    raw_app_meta_data,
+    raw_user_meta_data,
+    is_super_admin,
+    role
+) VALUES (
+    gen_random_uuid(),
+    'demo@signaldesk.com',
+    crypt('DemoPassword123!', gen_salt('bf')),
+    now(), -- This confirms the email immediately
+    now(),
+    now(),
+    '{"provider": "email", "providers": ["email"]}',
+    '{}',
+    false,
+    'authenticated'
+);
 
 -- Verify the user was created
-SELECT id, name, email, created_at FROM users WHERE email = 'demo@signaldesk.com';
+SELECT id, email, email_confirmed_at FROM auth.users WHERE email = 'demo@signaldesk.com';

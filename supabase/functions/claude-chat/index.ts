@@ -1,7 +1,4 @@
-// Supabase Edge Function: Claude AI Chat
-// Handles all Claude AI interactions for the platform
-
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -10,138 +7,69 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // Get request body
-    const { prompt, model, max_tokens, temperature, system } = await req.json()
-
-    // Get Anthropic API key
-    const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY')
-    if (!anthropicApiKey) {
-      throw new Error('ANTHROPIC_API_KEY not configured')
-    }
-
-    // Initialize Supabase client for logging
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
-
-    // Get user from auth header
-    const authHeader = req.headers.get('Authorization')
-    let userId = null
-    let organizationId = null
-
-    if (authHeader) {
-      const token = authHeader.replace('Bearer ', '')
-      const { data: { user } } = await supabase.auth.getUser(token)
-      if (user) {
-        userId = user.id
-        // Get user's organization
-        const { data: userData } = await supabase
-          .from('users')
-          .select('organization_id')
-          .eq('id', userId)
-          .single()
-        organizationId = userData?.organization_id
-      }
-    }
-
-    console.log(`🤖 Claude request from user: ${userId}, org: ${organizationId}`)
-
-    // Prepare Claude API request
-    const messages = []
+    const requestBody = await req.json()
+    // Support both 'message' and 'prompt' fields for backwards compatibility
+    const { message, prompt, model = 'claude-3-haiku-20240307', max_tokens = 1000, ...options } = requestBody
+    const userPrompt = message || prompt || ''
     
-    // Add system message if provided
-    if (system) {
-      messages.push({
-        role: 'assistant',
-        content: system
-      })
+    if (!userPrompt) {
+      throw new Error('No message or prompt provided')
     }
 
-    // Add user message
-    messages.push({
-      role: 'user',
-      content: prompt
-    })
+    // Get Anthropic API key from environment
+    const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
+    if (!ANTHROPIC_API_KEY) {
+      throw new Error('Anthropic API key not configured')
+    }
 
-    // Call Claude API
+    // Call Anthropic API
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': anthropicApiKey,
+        'x-api-key': ANTHROPIC_API_KEY,
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: model || 'claude-sonnet-4-20250514',
-        max_tokens: max_tokens || 1000,
-        temperature: temperature || 0.7,
-        messages: messages
+        model,
+        max_tokens,
+        messages: [{ role: 'user', content: userPrompt }],
+        ...options
       })
     })
 
     if (!response.ok) {
       const error = await response.text()
-      console.error('Claude API error:', error)
-      throw new Error(`Claude API error: ${response.status}`)
+      throw new Error(`Anthropic API error: ${error}`)
     }
 
     const data = await response.json()
-    const responseText = data.content[0].text
-
-    // Log usage to database if user is authenticated
-    if (userId && organizationId) {
-      try {
-        await supabase
-          .from('ai_usage_logs')
-          .insert({
-            user_id: userId,
-            organization_id: organizationId,
-            model: model || 'claude-sonnet-4-20250514',
-            prompt_tokens: data.usage?.input_tokens || 0,
-            completion_tokens: data.usage?.output_tokens || 0,
-            total_tokens: (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0),
-            purpose: 'chat',
-            metadata: {
-              model: model,
-              max_tokens: max_tokens
-            }
-          })
-      } catch (logError) {
-        console.error('Failed to log usage:', logError)
-        // Don't fail the request if logging fails
-      }
-    }
-
-    // Return Claude's response
+    
     return new Response(
-      JSON.stringify({
-        success: true,
-        response: responseText,
+      JSON.stringify({ 
+        success: true, 
+        content: data.content?.[0]?.text || '',
         usage: data.usage,
-        model: data.model
+        model: data.model 
       }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
-
   } catch (error) {
-    console.error('❌ Error in claude-chat function:', error)
+    console.error('Claude chat error:', error)
     return new Response(
       JSON.stringify({ 
         success: false,
-        error: error.message 
+        error: error.message || 'Internal server error',
+        details: error.toString()
       }),
       { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     )
   }

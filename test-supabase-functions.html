@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Supabase Edge Functions</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+            white-space: pre-wrap;
+            font-family: 'Monaco', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status.connected {
+            background: #28a745;
+            color: white;
+        }
+        .status.disconnected {
+            background: #dc3545;
+            color: white;
+        }
+        .test-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        @media (max-width: 768px) {
+            .test-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Supabase Edge Functions Test Suite 
+            <span id="connectionStatus" class="status disconnected">Disconnected</span>
+        </h1>
+        
+        <div class="test-section">
+            <h2>1. Authentication Test</h2>
+            <input type="email" id="authEmail" placeholder="Email" value="demo@signaldesk.ai">
+            <input type="password" id="authPassword" placeholder="Password" value="demo123">
+            <button onclick="testAuth()">Test Authentication</button>
+            <button onclick="testSignOut()">Sign Out</button>
+            <div id="authResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. Claude Chat Function</h2>
+            <textarea id="claudePrompt" placeholder="Enter your prompt for Claude...">What are the key trends in AI for 2024?</textarea>
+            <select id="claudeModel">
+                <option value="claude-3-haiku">Claude 3 Haiku (Fast)</option>
+                <option value="claude-3-sonnet">Claude 3 Sonnet (Balanced)</option>
+                <option value="claude-3-opus">Claude 3 Opus (Powerful)</option>
+            </select>
+            <button onclick="testClaudeChat()">Test Claude Chat</button>
+            <div id="claudeResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>3. Monitor Intelligence Function</h2>
+            <input type="text" id="orgId" placeholder="Organization ID (optional)">
+            <select id="monitorMode">
+                <option value="quick">Quick Scan</option>
+                <option value="comprehensive">Comprehensive</option>
+                <option value="deep">Deep Analysis</option>
+            </select>
+            <button onclick="testMonitoring()">Test Monitoring</button>
+            <div id="monitorResult" class="result"></div>
+        </div>
+
+        <div class="test-grid">
+            <div class="test-section">
+                <h3>4. Create Intelligence Target</h3>
+                <input type="text" id="targetName" placeholder="Target Name" value="OpenAI">
+                <select id="targetType">
+                    <option value="competitor">Competitor</option>
+                    <option value="topic">Topic</option>
+                    <option value="company">Company</option>
+                    <option value="person">Person</option>
+                </select>
+                <button onclick="createTarget()">Create Target</button>
+                <div id="targetResult" class="result"></div>
+            </div>
+
+            <div class="test-section">
+                <h3>5. Real-time Subscriptions</h3>
+                <button onclick="subscribeToFindings()">Subscribe to Findings</button>
+                <button onclick="unsubscribeFromFindings()">Unsubscribe</button>
+                <div id="subscriptionResult" class="result"></div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>6. Database Operations</h2>
+            <button onclick="testDatabase()">Test Database Connection</button>
+            <button onclick="getFindings()">Get Recent Findings</button>
+            <button onclick="getTargets()">Get Targets</button>
+            <div id="dbResult" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Supabase client
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        let currentUser = null;
+        let findingsSubscription = null;
+
+        // Check connection on load
+        window.onload = async () => {
+            await checkConnection();
+            await checkAuth();
+        };
+
+        async function checkConnection() {
+            try {
+                const { data, error } = await supabase.from('organizations').select('count', { count: 'exact' });
+                if (!error) {
+                    document.getElementById('connectionStatus').textContent = 'Connected';
+                    document.getElementById('connectionStatus').className = 'status connected';
+                }
+            } catch (e) {
+                console.error('Connection check failed:', e);
+            }
+        }
+
+        async function checkAuth() {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                currentUser = user;
+                document.getElementById('authResult').innerHTML = `<div class="success">Already logged in as: ${user.email}</div>`;
+            }
+        }
+
+        // 1. Test Authentication
+        async function testAuth() {
+            const email = document.getElementById('authEmail').value;
+            const password = document.getElementById('authPassword').value;
+            
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
+                });
+                
+                if (error) throw error;
+                
+                currentUser = data.user;
+                document.getElementById('authResult').innerHTML = `
+                    <div class="success">
+                        ✅ Authentication successful!
+                        User ID: ${data.user.id}
+                        Email: ${data.user.email}
+                        Session: ${data.session ? 'Active' : 'None'}
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('authResult').innerHTML = `
+                    <div class="error">❌ Authentication failed: ${error.message}</div>
+                `;
+            }
+        }
+
+        async function testSignOut() {
+            try {
+                const { error } = await supabase.auth.signOut();
+                if (error) throw error;
+                
+                currentUser = null;
+                document.getElementById('authResult').innerHTML = `
+                    <div class="info">Signed out successfully</div>
+                `;
+            } catch (error) {
+                document.getElementById('authResult').innerHTML = `
+                    <div class="error">❌ Sign out failed: ${error.message}</div>
+                `;
+            }
+        }
+
+        // 2. Test Claude Chat
+        async function testClaudeChat() {
+            const prompt = document.getElementById('claudePrompt').value;
+            const model = document.getElementById('claudeModel').value;
+            
+            if (!prompt) {
+                alert('Please enter a prompt');
+                return;
+            }
+            
+            document.getElementById('claudeResult').innerHTML = '<div class="info">Calling Claude API...</div>';
+            
+            try {
+                const { data, error } = await supabase.functions.invoke('claude-chat', {
+                    body: {
+                        prompt,
+                        model,
+                        max_tokens: 1000,
+                        userId: currentUser?.id,
+                        organizationId: 'd3f4b5c6-7a8b-9c0d-1e2f-3a4b5c6d7e8f' // Demo org
+                    }
+                });
+                
+                if (error) throw error;
+                
+                document.getElementById('claudeResult').innerHTML = `
+                    <div class="success">
+                        <strong>Claude Response:</strong>
+                        ${data.response || data}
+                        
+                        ${data.usage ? `
+                        <hr>
+                        <small>
+                        Model: ${data.model}
+                        Tokens: Input: ${data.usage.input_tokens}, Output: ${data.usage.output_tokens}
+                        </small>` : ''}
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('claudeResult').innerHTML = `
+                    <div class="error">❌ Claude chat failed: ${error.message}</div>
+                `;
+            }
+        }
+
+        // 3. Test Monitoring
+        async function testMonitoring() {
+            const orgId = document.getElementById('orgId').value || 'd3f4b5c6-7a8b-9c0d-1e2f-3a4b5c6d7e8f';
+            const mode = document.getElementById('monitorMode').value;
+            
+            document.getElementById('monitorResult').innerHTML = '<div class="info">Running monitoring...</div>';
+            
+            try {
+                const { data, error } = await supabase.functions.invoke('monitor-intelligence', {
+                    body: {
+                        organizationId: orgId,
+                        mode,
+                        sources: ['web', 'social', 'news'],
+                        includeAnalysis: true
+                    }
+                });
+                
+                if (error) throw error;
+                
+                document.getElementById('monitorResult').innerHTML = `
+                    <div class="success">
+                        ✅ Monitoring completed!
+                        Monitoring Run ID: ${data.monitoring_run_id}
+                        Findings: ${data.findings_count}
+                        Targets Processed: ${data.targets_processed}
+                        Mode: ${data.mode}
+                        
+                        ${data.processed_targets ? `
+                        <hr>
+                        <strong>Processed Targets:</strong>
+                        ${JSON.stringify(data.processed_targets, null, 2)}` : ''}
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('monitorResult').innerHTML = `
+                    <div class="error">❌ Monitoring failed: ${error.message}</div>
+                `;
+            }
+        }
+
+        // 4. Create Target
+        async function createTarget() {
+            const name = document.getElementById('targetName').value;
+            const type = document.getElementById('targetType').value;
+            
+            if (!name) {
+                alert('Please enter a target name');
+                return;
+            }
+            
+            try {
+                const { data, error } = await supabase
+                    .from('intelligence_targets')
+                    .insert({
+                        organization_id: 'd3f4b5c6-7a8b-9c0d-1e2f-3a4b5c6d7e8f',
+                        name,
+                        type,
+                        description: `Monitoring ${name}`,
+                        keywords: [name.toLowerCase()],
+                        active: true
+                    })
+                    .select()
+                    .single();
+                
+                if (error) throw error;
+                
+                document.getElementById('targetResult').innerHTML = `
+                    <div class="success">
+                        ✅ Target created!
+                        ID: ${data.id}
+                        Name: ${data.name}
+                        Type: ${data.type}
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('targetResult').innerHTML = `
+                    <div class="error">❌ Failed to create target: ${error.message}</div>
+                `;
+            }
+        }
+
+        // 5. Real-time Subscriptions
+        async function subscribeToFindings() {
+            try {
+                findingsSubscription = supabase
+                    .channel('intelligence-findings')
+                    .on(
+                        'postgres_changes',
+                        {
+                            event: 'INSERT',
+                            schema: 'public',
+                            table: 'intelligence_findings'
+                        },
+                        (payload) => {
+                            console.log('New finding:', payload);
+                            document.getElementById('subscriptionResult').innerHTML = `
+                                <div class="success">
+                                    📨 New finding received!
+                                    ${JSON.stringify(payload.new, null, 2)}
+                                </div>
+                            `;
+                        }
+                    )
+                    .subscribe();
+                
+                document.getElementById('subscriptionResult').innerHTML = `
+                    <div class="info">✅ Subscribed to real-time findings</div>
+                `;
+            } catch (error) {
+                document.getElementById('subscriptionResult').innerHTML = `
+                    <div class="error">❌ Subscription failed: ${error.message}</div>
+                `;
+            }
+        }
+
+        async function unsubscribeFromFindings() {
+            if (findingsSubscription) {
+                await supabase.removeChannel(findingsSubscription);
+                findingsSubscription = null;
+                document.getElementById('subscriptionResult').innerHTML = `
+                    <div class="info">Unsubscribed from findings</div>
+                `;
+            }
+        }
+
+        // 6. Database Operations
+        async function testDatabase() {
+            try {
+                const { data, error } = await supabase
+                    .from('organizations')
+                    .select('*')
+                    .limit(5);
+                
+                if (error) throw error;
+                
+                document.getElementById('dbResult').innerHTML = `
+                    <div class="success">
+                        ✅ Database connection successful!
+                        Organizations found: ${data.length}
+                        ${JSON.stringify(data, null, 2)}
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('dbResult').innerHTML = `
+                    <div class="error">❌ Database test failed: ${error.message}</div>
+                `;
+            }
+        }
+
+        async function getFindings() {
+            try {
+                const { data, error } = await supabase
+                    .from('intelligence_findings')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+                
+                if (error) throw error;
+                
+                document.getElementById('dbResult').innerHTML = `
+                    <div class="success">
+                        Found ${data.length} recent findings:
+                        ${JSON.stringify(data, null, 2)}
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('dbResult').innerHTML = `
+                    <div class="error">❌ Failed to get findings: ${error.message}</div>
+                `;
+            }
+        }
+
+        async function getTargets() {
+            try {
+                const { data, error } = await supabase
+                    .from('intelligence_targets')
+                    .select('*')
+                    .eq('active', true)
+                    .limit(10);
+                
+                if (error) throw error;
+                
+                document.getElementById('dbResult').innerHTML = `
+                    <div class="success">
+                        Found ${data.length} active targets:
+                        ${JSON.stringify(data, null, 2)}
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('dbResult').innerHTML = `
+                    <div class="error">❌ Failed to get targets: ${error.message}</div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

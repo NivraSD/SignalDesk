@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase Direct Auth Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-color: #bee5eb;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border-color: #ffeaa7;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Supabase Authentication Debug</h1>
+        
+        <div class="test-section info">
+            <h3>Configuration</h3>
+            <pre id="config">Loading...</pre>
+        </div>
+
+        <div class="test-section">
+            <h3>Test Credentials</h3>
+            <input type="email" id="email" placeholder="Email" value="demo@signaldesk.com" />
+            <input type="password" id="password" placeholder="Password" value="DemoPassword123!" />
+            <button onclick="testSignUp()">Test Sign Up</button>
+            <button onclick="testSignIn()">Test Sign In</button>
+            <button onclick="testAnonymous()">Test Anonymous</button>
+            <button onclick="checkSession()">Check Session</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.55.0/+esm';
+
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Display configuration
+        document.getElementById('config').textContent = JSON.stringify({
+            url: SUPABASE_URL,
+            key_prefix: SUPABASE_ANON_KEY.substring(0, 50) + '...',
+            client_version: '2.55.0'
+        }, null, 2);
+
+        function addResult(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `test-section ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong><br>${message}`;
+            results.insertBefore(div, results.firstChild);
+        }
+
+        window.testSignUp = async function() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            addResult('Testing sign up...', 'info');
+            
+            try {
+                const { data, error } = await supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: {
+                            created_via: 'test_page'
+                        }
+                    }
+                });
+
+                if (error) {
+                    addResult(`Sign up failed: ${error.message}<br>Code: ${error.code}<br>Status: ${error.status}`, 'error');
+                    console.error('Full error:', error);
+                } else {
+                    addResult(`Sign up successful!<br>User ID: ${data.user?.id}<br>Email: ${data.user?.email}<br>Confirmation: ${data.user?.confirmed_at ? 'Confirmed' : 'Pending'}`, 'success');
+                    console.log('Sign up data:', data);
+                }
+            } catch (err) {
+                addResult(`Exception: ${err.message}<br>${err.stack}`, 'error');
+            }
+        };
+
+        window.testSignIn = async function() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            addResult('Testing sign in...', 'info');
+            
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
+                });
+
+                if (error) {
+                    addResult(`Sign in failed: ${error.message}<br>Code: ${error.code}<br>Status: ${error.status}`, 'error');
+                    console.error('Full error:', error);
+                    
+                    // Try to provide helpful debugging info
+                    if (error.message.includes('Invalid login credentials')) {
+                        addResult('Invalid credentials. User may not exist or password is incorrect.', 'warning');
+                    }
+                } else {
+                    addResult(`Sign in successful!<br>User: ${data.user?.email}<br>Session: ${data.session?.access_token?.substring(0, 30)}...`, 'success');
+                    console.log('Sign in data:', data);
+                    
+                    // Auto sign out after 3 seconds for testing
+                    setTimeout(() => {
+                        supabase.auth.signOut();
+                        addResult('Auto signed out for testing', 'info');
+                    }, 3000);
+                }
+            } catch (err) {
+                addResult(`Exception: ${err.message}<br>${err.stack}`, 'error');
+            }
+        };
+
+        window.testAnonymous = async function() {
+            addResult('Testing anonymous sign in...', 'info');
+            
+            try {
+                const { data, error } = await supabase.auth.signInAnonymously();
+
+                if (error) {
+                    addResult(`Anonymous sign in failed: ${error.message}<br>This might be disabled in your Supabase project settings.`, 'error');
+                } else {
+                    addResult(`Anonymous sign in successful!<br>User ID: ${data.user?.id}`, 'success');
+                }
+            } catch (err) {
+                addResult(`Exception: ${err.message}`, 'error');
+            }
+        };
+
+        window.checkSession = async function() {
+            addResult('Checking current session...', 'info');
+            
+            try {
+                const { data: { session }, error } = await supabase.auth.getSession();
+
+                if (error) {
+                    addResult(`Session check error: ${error.message}`, 'error');
+                } else if (session) {
+                    addResult(`Active session found!<br>User: ${session.user?.email}<br>Expires: ${new Date(session.expires_at * 1000).toLocaleString()}`, 'success');
+                } else {
+                    addResult('No active session', 'warning');
+                }
+
+                // Also check user
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                    addResult(`Current user: ${user.email}<br>ID: ${user.id}`, 'info');
+                }
+            } catch (err) {
+                addResult(`Exception: ${err.message}`, 'error');
+            }
+        };
+
+        // Check session on load
+        window.addEventListener('load', () => {
+            checkSession();
+        });
+
+        // Listen for auth state changes
+        supabase.auth.onAuthStateChange((event, session) => {
+            addResult(`Auth event: ${event}<br>Session: ${session ? 'Active' : 'None'}`, 'info');
+        });
+    </script>
+</body>
+</html>

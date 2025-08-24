@@ -1,0 +1,449 @@
+
+> signaldesk-api@1.0.0 start
+> node backend/server-enhanced.js
+
+Database configuration: {
+  DATABASE_URL: 'Not set',
+  PGHOST: 'Not set',
+  PGDATABASE: 'Not set',
+  NODE_ENV: 'Not set'
+}
+🔍 ATTEMPTING POSTGRES CONNECTION...
+DATABASE_URL starts with: NOT SET!!!
+🔍 Testing connection to ChromaDB...
+The 'path' argument is deprecated. Please use 'ssl', 'host', and 'port' instead
+🚀 Initializing Enhanced Monitoring Service
+🚀 Starting Enhanced SignalDesk Server...
+📊 Starting monitoring service...
+
+╔════════════════════════════════════════════════════╗
+║                                                    ║
+║     SignalDesk Enhanced Platform v2.0             ║
+║                                                    ║
+║     🚀 Server running on port 3001                ║
+║     🔌 WebSocket server active                    ║
+║     📊 Monitoring service running                 ║
+║     🧠 AI Assistant ready                        ║
+║     💾 MemoryVault enhanced                      ║
+║     🔍 Semantic search enabled                   ║
+║                                                    ║
+║     Environment: development                    ║
+║                                                    ║
+╚════════════════════════════════════════════════════╝
+      
+✅ Redis connected for Context Manager
+ChromaDB connection error: ChromaConnectionError: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.
+    at chromaFetch (/Users/jonathanliebowitz/Desktop/SignalDesk/node_modules/chromadb/dist/cjs/chromadb.cjs:1727:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async o (/Users/jonathanliebowitz/Desktop/SignalDesk/node_modules/chromadb/dist/cjs/chromadb.cjs:398:26)
+    at async ChromaClient.heartbeat (/Users/jonathanliebowitz/Desktop/SignalDesk/node_modules/chromadb/dist/cjs/chromadb.cjs:1994:22)
+    at async VectorDBConfig.testChromaDB (/Users/jonathanliebowitz/Desktop/SignalDesk/backend/src/config/vectordb.js:88:25)
+    at async VectorDBConfig.testConnection (/Users/jonathanliebowitz/Desktop/SignalDesk/backend/src/config/vectordb.js:67:18)
+    at async MemoryVaultService.initializeServices (/Users/jonathanliebowitz/Desktop/SignalDesk/backend/src/services/memoryvault/MemoryVaultService.js:16:5) {
+  cause: undefined
+}
+✅ Redis connected for WebSocket server
+✅✅✅ POSTGRES CONNECTED SUCCESSFULLY ✅✅✅
+Connected to: { host: 'localhost', database: 'signaldesk', port: 5432 }
+Error loading monitoring targets: error: operator does not exist: character varying = uuid
+    at /Users/jonathanliebowitz/Desktop/SignalDesk/backend/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async EnhancedMonitoringService.loadActiveTargets (/Users/jonathanliebowitz/Desktop/SignalDesk/backend/src/services/monitoring/EnhancedMonitoringService.js:39:23)
+    at async EnhancedMonitoringService.initializeMonitoring (/Users/jonathanliebowitz/Desktop/SignalDesk/backend/src/services/monitoring/EnhancedMonitoringService.js:25:5) {
+  length: 210,
+  severity: 'ERROR',
+  code: '42883',
+  detail: undefined,
+  hint: 'No operator matches the given name and argument types. You might need to add explicit type casts.',
+  position: '121',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_oper.c',
+  line: '644',
+  routine: 'op_error'
+}
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+📊 Performing hourly analysis
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+📈 Generating daily monitoring summary
+[2025-08-10T13:00:00.094Z] [PID: 17046] [32m[NODE-CRON][32m [31m[ERROR][0m this.io.emit is not a function TypeError: this.io.emit is not a function
+    at EnhancedMonitoringService.generateDailySummary (/Users/jonathanliebowitz/Desktop/SignalDesk/backend/src/services/monitoring/EnhancedMonitoringService.js:418:13)
+    at /Users/jonathanliebowitz/Desktop/SignalDesk/backend/src/services/monitoring/EnhancedMonitoringService.js:84:18
+    at Runner.onMatch (/Users/jonathanliebowitz/Desktop/SignalDesk/node_modules/node-cron/dist/cjs/tasks/inline-scheduled-task.js:69:20)
+    at Timeout._onTimeout (/Users/jonathanliebowitz/Desktop/SignalDesk/node_modules/node-cron/dist/cjs/scheduler/runner.js:70:55)
+    at listOnTimeout (node:internal/timers:608:17)
+    at process.processTimers (node:internal/timers:543:7)
+📊 Performing hourly analysis
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+📊 Performing hourly analysis
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+📊 Performing hourly analysis
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+📊 Performing hourly analysis
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+📊 Performing hourly analysis
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+📊 Performing hourly analysis
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+📊 Performing hourly analysis
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+📊 Performing hourly analysis
+[2025-08-10T20:07:15.272Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 16:05:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T20:27:44.473Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 16:10:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T20:27:44.477Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 16:15:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T20:27:44.483Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 16:20:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T20:27:44.484Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 16:25:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T20:39:52.074Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 16:30:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T20:39:52.078Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 16:35:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T20:41:01.311Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 16:40:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T20:46:58.534Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 16:45:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T20:50:06.825Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 16:50:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T21:11:27.092Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 16:55:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T21:11:27.095Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 17:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T21:11:27.098Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 17:05:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T21:11:27.100Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 17:10:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T21:11:27.106Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 17:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T21:15:42.368Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 17:15:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T21:27:40.212Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 17:20:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T21:27:40.220Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 17:25:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T21:31:36.125Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 17:30:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T21:36:30.826Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 17:35:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T21:53:38.409Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 17:40:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T21:53:38.416Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 17:45:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T21:53:38.419Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 17:50:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T22:24:07.677Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 17:55:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T22:24:07.684Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 18:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T22:24:07.685Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 18:05:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T22:24:07.686Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 18:10:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T22:24:07.689Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 18:15:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T22:24:07.690Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 18:20:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T22:24:07.693Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 18:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T22:45:49.088Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 18:25:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T22:45:49.094Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 18:30:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T22:45:49.097Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 18:35:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T22:45:49.099Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 18:40:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T22:45:49.101Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 18:45:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T23:11:19.843Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 18:50:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T23:11:19.848Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 18:55:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T23:11:19.852Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 19:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T23:11:19.853Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 19:05:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T23:11:19.853Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 19:10:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T23:11:19.856Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 19:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T23:31:27.125Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 19:15:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T23:31:27.128Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 19:20:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T23:31:27.131Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 19:25:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T23:31:27.134Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 19:30:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T23:40:52.044Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 19:35:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T23:40:52.048Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 19:40:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T23:47:16.045Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 19:45:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T23:51:01.306Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 19:50:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-10T23:55:41.005Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 19:55:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+📊 Performing hourly analysis
+🔄 Performing real-time monitoring check
+[2025-08-11T00:35:09.698Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 20:05:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T00:35:09.699Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 20:10:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T00:35:09.700Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 20:15:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T00:35:09.702Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 20:20:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T00:35:09.703Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 20:25:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T00:35:09.704Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 20:30:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T00:35:09.705Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 20:35:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T00:46:38.584Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 20:40:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T00:46:38.590Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 20:45:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T00:52:39.589Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 20:50:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T00:55:21.172Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 20:55:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T01:13:05.186Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 21:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T01:13:05.197Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 21:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T01:13:05.199Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 21:05:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T01:13:05.202Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 21:10:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T01:18:31.601Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 21:15:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T01:36:54.452Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 21:20:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T01:36:54.458Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 21:25:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T01:36:54.461Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 21:30:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T01:36:54.464Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 21:35:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T01:57:37.092Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 21:40:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T01:57:37.098Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 21:45:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T01:57:37.102Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 21:50:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T01:57:37.105Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 21:55:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T02:03:24.239Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 22:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T02:03:24.249Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 22:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T02:28:16.404Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 22:05:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T02:28:16.410Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 22:10:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T02:28:16.414Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 22:15:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T02:28:16.416Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 22:20:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T02:28:16.418Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 22:25:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T02:38:35.615Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 22:30:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T02:38:35.618Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 22:35:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T02:58:36.339Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 22:40:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T02:58:36.342Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 22:45:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T02:58:36.344Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 22:50:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T02:58:36.347Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 22:55:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T03:26:05.226Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 23:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T03:26:05.234Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 23:05:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T03:26:05.236Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 23:10:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T03:26:05.239Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 23:15:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T03:26:05.242Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 23:20:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T03:26:05.244Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 23:25:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T03:26:05.250Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 23:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T03:50:38.340Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 23:30:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T03:50:38.345Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 23:35:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T03:50:38.348Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 23:40:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T03:50:38.349Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 23:45:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T03:50:38.350Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 23:50:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T04:15:20.177Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Sun Aug 10 2025 23:55:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T04:15:20.182Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 00:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T04:15:20.185Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 00:05:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T04:15:20.186Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 00:10:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T04:15:20.187Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 00:15:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T04:15:20.190Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 00:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T04:28:26.530Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 00:20:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T04:28:26.535Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 00:25:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T04:35:59.140Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 00:30:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T04:35:59.145Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 00:35:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T05:00:36.582Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 00:40:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T05:00:36.586Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 00:45:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T05:00:36.588Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 00:50:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T05:00:36.590Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 00:55:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T05:00:36.592Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 01:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T05:00:36.598Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 01:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T05:33:36.967Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 01:05:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T05:33:36.971Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 01:10:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T05:33:36.975Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 01:15:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T05:33:36.978Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 01:20:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T05:33:36.980Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 01:25:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T05:33:36.982Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 01:30:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T06:17:30.965Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 01:35:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T06:17:30.975Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 01:40:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T06:17:30.977Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 01:45:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T06:17:30.985Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 01:50:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T06:17:30.987Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 01:55:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T06:17:30.989Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 02:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T06:17:30.991Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 02:05:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T06:17:30.993Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 02:10:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T06:17:30.995Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 02:15:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T06:17:30.999Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 02:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T06:43:21.383Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 02:20:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T06:43:21.384Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 02:25:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T06:43:21.386Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 02:30:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T06:43:21.387Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 02:35:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T06:43:21.388Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 02:40:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T06:55:14.684Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 02:45:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T06:55:14.690Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 02:50:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T06:55:14.693Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 02:55:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T07:03:19.247Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 03:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T07:03:19.257Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 03:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T07:37:19.710Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 03:05:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T07:37:19.712Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 03:10:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T07:37:19.714Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 03:15:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T07:37:19.716Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 03:20:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T07:37:19.718Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 03:25:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T07:37:19.719Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 03:30:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T07:37:19.721Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 03:35:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T08:03:33.853Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 03:40:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T08:03:33.856Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 03:45:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T08:03:33.860Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 03:50:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T08:03:33.863Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 03:55:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T08:03:33.864Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 04:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T08:03:33.866Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 04:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T08:11:33.400Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 04:05:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T08:11:33.406Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 04:10:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T08:16:47.780Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 04:15:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T08:33:07.744Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 04:20:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T08:33:07.749Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 04:25:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T08:33:07.753Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 04:30:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T09:09:30.106Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 04:35:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T09:09:30.110Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 04:40:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T09:09:30.114Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 04:45:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T09:09:30.117Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 04:50:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T09:09:30.119Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 04:55:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T09:09:30.122Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 05:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T09:09:30.124Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 05:05:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T09:09:30.129Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 05:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T09:10:02.719Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 05:10:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T09:45:06.301Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 05:15:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T09:45:06.306Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 05:20:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T09:45:06.310Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 05:25:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T09:45:06.313Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 05:30:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T09:45:06.315Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 05:35:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T09:45:06.317Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 05:40:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T09:45:06.320Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 05:45:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T10:05:09.946Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 05:50:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T10:05:09.950Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 05:55:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T10:05:09.954Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 06:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T10:05:09.957Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 06:05:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T10:05:09.963Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 06:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T10:36:54.468Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 06:10:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T10:36:54.473Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 06:15:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T10:36:54.477Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 06:20:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T10:36:54.480Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 06:25:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T10:36:54.482Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 06:30:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T10:36:54.484Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 06:35:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T11:09:36.676Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 06:40:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T11:09:36.680Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 06:45:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T11:09:36.683Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 06:50:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T11:09:36.686Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 06:55:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T11:09:36.688Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 07:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T11:09:36.690Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 07:05:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T11:09:36.696Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 07:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T11:26:01.379Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 07:10:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T11:26:01.383Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 07:15:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T11:26:01.385Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 07:20:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T11:26:01.388Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 07:25:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T11:39:58.098Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 07:30:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T11:39:58.105Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 07:35:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T11:44:31.082Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 07:40:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T11:56:10.469Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 07:45:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T11:56:10.472Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 07:50:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T11:56:10.474Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 07:55:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T12:00:14.131Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 08:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T12:00:14.134Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 08:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T12:07:32.964Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 08:05:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T12:13:51.953Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 08:10:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+🔄 Performing real-time monitoring check
+[2025-08-11T12:22:27.698Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 08:20:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T12:28:36.122Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 08:25:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T12:31:39.947Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 08:30:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T12:37:31.430Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 08:35:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+🔄 Performing real-time monitoring check
+[2025-08-11T12:45:28.499Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 08:45:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T12:50:23.185Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 08:50:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T13:13:04.031Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 08:55:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T13:13:04.038Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 09:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T13:13:04.039Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 09:05:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T13:13:04.040Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 09:10:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T13:13:04.044Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 09:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2025-08-11T13:13:04.047Z] [PID: 17046] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Mon Aug 11 2025 09:00:00 GMT-0400 (Eastern Daylight Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+📊 Performing hourly analysis
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+📊 Performing hourly analysis
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+🔄 Performing real-time monitoring check
+📛 SIGTERM received, shutting down gracefully...
+🛑 Stopping monitoring service
+✅ Server closed

@@ -1,0 +1,312 @@
+/**
+ * Niv Direct Service - Bypasses Edge Functions for reliability
+ * Uses direct API calls with client-side processing
+ */
+
+import { supabase } from '../config/supabase';
+
+class NivDirectService {
+  constructor() {
+    // Use environment variable or fallback to localStorage for API key
+    this.claudeApiKey = process.env.REACT_APP_CLAUDE_API_KEY || localStorage.getItem('claude_api_key');
+    this.openaiApiKey = process.env.REACT_APP_OPENAI_API_KEY || localStorage.getItem('openai_api_key');
+    this.sessionId = this.generateSessionId();
+  }
+
+  generateSessionId() {
+    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  /**
+   * Call Claude API directly from frontend
+   * Note: In production, use a proxy server to hide API keys
+   */
+  async callClaude(messages, systemPrompt) {
+    if (!this.claudeApiKey) {
+      throw new Error('Claude API key not configured. Please add it in settings.');
+    }
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': this.claudeApiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-3-sonnet-20240229',
+        max_tokens: 4000,
+        temperature: 0.7,
+        system: systemPrompt,
+        messages: messages.map(msg => ({
+          role: msg.role === 'user' ? 'user' : 'assistant',
+          content: msg.content
+        }))
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Claude API error: ${response.status} - ${error}`);
+    }
+
+    const data = await response.json();
+    return data.content[0].text;
+  }
+
+  /**
+   * Call OpenAI API as fallback
+   */
+  async callOpenAI(messages, systemPrompt) {
+    if (!this.openaiApiKey) {
+      throw new Error('OpenAI API key not configured');
+    }
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.openaiApiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...messages
+        ],
+        temperature: 0.7,
+        max_tokens: 4000
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`OpenAI API error: ${response.status} - ${error}`);
+    }
+
+    const data = await response.json();
+    return data.choices[0].message.content;
+  }
+
+  /**
+   * Process message with Niv intelligence
+   */
+  async processMessage(message, conversationHistory) {
+    const systemPrompt = `You are Niv, SignalDesk's elite AI PR strategist. Your mission is to transform how organizations approach public relations through strategic insights and tactical excellence.
+    
+    When users request specific PR materials (media lists, press releases, strategic plans, social content, key messaging, FAQs), you should:
+    1. First gather context through 2-3 consultative questions if needed
+    2. Then generate comprehensive, professional-quality content
+    3. Structure your responses clearly with headers and bullet points
+    
+    Be conversational yet professional. You're not just an advisor - you're a strategic partner helping organizations achieve PR excellence.`;
+
+    const fullHistory = [...conversationHistory, { role: 'user', content: message }];
+    
+    try {
+      // Try Claude first
+      const response = await this.callClaude(fullHistory, systemPrompt);
+      
+      // Check if this response should be an artifact
+      const artifact = this.detectArtifact(message, response);
+      
+      // Save to database
+      await this.saveConversation(message, response, artifact);
+      
+      return {
+        chatMessage: artifact ? this.getArtifactSummary(artifact) : response,
+        artifact: artifact
+      };
+    } catch (claudeError) {
+      console.warn('Claude API failed, trying OpenAI:', claudeError);
+      
+      try {
+        // Fallback to OpenAI
+        const response = await this.callOpenAI(fullHistory, systemPrompt);
+        const artifact = this.detectArtifact(message, response);
+        
+        await this.saveConversation(message, response, artifact);
+        
+        return {
+          chatMessage: artifact ? this.getArtifactSummary(artifact) : response,
+          artifact: artifact
+        };
+      } catch (openaiError) {
+        console.error('Both APIs failed:', openaiError);
+        throw new Error('Unable to process request. Please check API keys in settings.');
+      }
+    }
+  }
+
+  /**
+   * Detect if response should be an artifact
+   */
+  detectArtifact(userMessage, aiResponse) {
+    const lowerMessage = userMessage.toLowerCase();
+    const contentTypes = {
+      'media-list': ['media list', 'journalist list', 'reporter list'],
+      'press-release': ['press release', 'announcement'],
+      'strategic-plan': ['strategic plan', 'pr strategy', 'campaign'],
+      'social-content': ['social media', 'social posts', 'twitter'],
+      'key-messaging': ['key messages', 'messaging', 'talking points'],
+      'faq-document': ['faq', 'frequently asked questions']
+    };
+
+    for (const [type, triggers] of Object.entries(contentTypes)) {
+      for (const trigger of triggers) {
+        if (lowerMessage.includes(trigger) && aiResponse.length > 500) {
+          return {
+            id: `artifact_${Date.now()}`,
+            type: type,
+            title: this.generateTitle(type),
+            content: this.parseContent(aiResponse),
+            created: new Date().toISOString()
+          };
+        }
+      }
+    }
+
+    return null;
+  }
+
+  generateTitle(type) {
+    const titles = {
+      'media-list': 'Media List - Strategic Outreach',
+      'press-release': 'Press Release',
+      'strategic-plan': 'PR Strategic Plan',
+      'social-content': 'Social Media Content',
+      'key-messaging': 'Key Messaging Framework',
+      'faq-document': 'FAQ Document'
+    };
+    return titles[type] || 'PR Content';
+  }
+
+  parseContent(text) {
+    // Convert text response to structured content
+    return {
+      raw: text,
+      sections: text.split('\n\n').filter(s => s.trim()),
+      formatted: text
+    };
+  }
+
+  getArtifactSummary(artifact) {
+    const summaries = {
+      'media-list': "I've created a comprehensive media list for your outreach. You can view and edit it in the right panel.",
+      'press-release': "I've drafted a press release for your announcement. It's available in the right panel for review.",
+      'strategic-plan': "I've developed a strategic PR plan for your campaign. You can access it in the right panel.",
+      'social-content': "I've created social media content for your campaign. The posts are available in the right panel.",
+      'key-messaging': "I've developed your key messaging framework. It's ready for review in the right panel.",
+      'faq-document': "I've prepared an FAQ document. You can access it in the right panel."
+    };
+    return summaries[artifact.type] || "I've created content for you. It's available in the right panel.";
+  }
+
+  /**
+   * Save conversation to Supabase
+   */
+  async saveConversation(userMessage, aiResponse, artifact) {
+    try {
+      // Save user message
+      await supabase.from('niv_conversations').insert({
+        session_id: this.sessionId,
+        role: 'user',
+        content: userMessage,
+        artifact_id: null
+      });
+
+      // Save AI response
+      const { data: aiMsg } = await supabase.from('niv_conversations').insert({
+        session_id: this.sessionId,
+        role: 'assistant',
+        content: aiResponse,
+        artifact_id: artifact?.id
+      }).select().single();
+
+      // Save artifact if created
+      if (artifact) {
+        await supabase.from('niv_artifacts').insert({
+          id: artifact.id,
+          session_id: this.sessionId,
+          type: artifact.type,
+          title: artifact.title,
+          content: artifact.content,
+          status: 'draft'
+        });
+      }
+
+      return aiMsg;
+    } catch (error) {
+      console.error('Failed to save to database:', error);
+      // Don't throw - continue working even if DB save fails
+    }
+  }
+
+  /**
+   * Load conversation history
+   */
+  async loadConversationHistory(sessionId) {
+    try {
+      const { data, error } = await supabase
+        .from('niv_conversations')
+        .select('*')
+        .eq('session_id', sessionId || this.sessionId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      
+      return data.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
+    } catch (error) {
+      console.error('Failed to load history:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Load artifacts
+   */
+  async loadArtifacts(sessionId) {
+    try {
+      const { data, error } = await supabase
+        .from('niv_artifacts')
+        .select('*')
+        .eq('session_id', sessionId || this.sessionId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Failed to load artifacts:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Update artifact
+   */
+  async updateArtifact(artifactId, updates) {
+    try {
+      const { data, error } = await supabase
+        .from('niv_artifacts')
+        .update({
+          content: updates.content,
+          title: updates.title,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', artifactId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Failed to update artifact:', error);
+      throw error;
+    }
+  }
+}
+
+export default new NivDirectService();

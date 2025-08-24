@@ -1,211 +1,204 @@
-// Supabase Edge Function: MCP Bridge
-// Connects to MCP servers for advanced intelligence processing
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-requested-with',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Credentials': 'false',
-  'Access-Control-Max-Age': '86400'
-}
-
-interface MCPRequest {
-  server: string // Which MCP server to call
-  method: string // Which method to invoke
-  params: any // Parameters for the method
-  organizationId: string
-}
-
-// MCP Server endpoints - Using REAL Supabase Edge Functions (no fallback data)
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || 'https://zskaxjtyuaqazydouifp.supabase.co'
-
-const MCP_SERVERS = {
-  // ALL Real API-powered MCPs (Supabase Edge Functions) - NO FALLBACK DATA
-  intelligence: `${SUPABASE_URL}/functions/v1/pr-intelligence`,
-  media: `${SUPABASE_URL}/functions/v1/media-intelligence`, 
-  news: `${SUPABASE_URL}/functions/v1/news-intelligence`,
-  scraper: `${SUPABASE_URL}/functions/v1/scraper-intelligence`,
-  opportunities: `${SUPABASE_URL}/functions/v1/opportunities-intelligence`,
-  orchestrator: `${SUPABASE_URL}/functions/v1/orchestrator-intelligence`,
-  relationships: `${SUPABASE_URL}/functions/v1/relationships-intelligence`,
-  analytics: `${SUPABASE_URL}/functions/v1/analytics-intelligence`,
-  monitor: `${SUPABASE_URL}/functions/v1/monitor-intelligence`,
-  crisis: `${SUPABASE_URL}/functions/v1/crisis-intelligence`,
-  social: `${SUPABASE_URL}/functions/v1/social-intelligence`,
-  
-  // Aliases for different naming conventions
-  'media-monitoring': `${SUPABASE_URL}/functions/v1/media-intelligence`,
-  'competitor-analysis': `${SUPABASE_URL}/functions/v1/pr-intelligence`,
-  'opportunity-scanner': `${SUPABASE_URL}/functions/v1/opportunities-intelligence`,
-  'media_monitoring': `${SUPABASE_URL}/functions/v1/media-intelligence`,
-  'competitor_analysis': `${SUPABASE_URL}/functions/v1/pr-intelligence`,
-  'opportunity_scanner': `${SUPABASE_URL}/functions/v1/opportunities-intelligence`
-}
-
-async function callMCPServer(server: string, method: string, params: any) {
-  const serverUrl = MCP_SERVERS[server]
-  
-  if (!serverUrl) {
-    throw new Error(`Unknown MCP server: ${server}`)
-  }
-  
-  try {
-    const response = await fetch(serverUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        method: method,
-        params: params
-      })
-    })
-
-    if (!response.ok) {
-      throw new Error(`MCP server ${server} returned ${response.status}`)
-    }
-
-    const data = await response.json()
-    
-    if (!data.success) {
-      throw new Error(data.error || `MCP server ${server} error`)
-    }
-
-    return data.data
-  } catch (error) {
-    console.error(`Error calling MCP server ${server}:`, error)
-    throw error
-  }
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response(null, { 
-      status: 204,
-      headers: corsHeaders 
-    })
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // Skip JWT verification - this is a public bridge for MCPs
-    // The actual authentication happens in the frontend
-    
-    // Initialize Supabase client with service role key for database access
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(supabaseUrl, supabaseKey)
 
-    const request: MCPRequest = await req.json()
-    const { server, method, params, organizationId } = request
+    const { mcp, tool, params } = await req.json()
 
-    if (!organizationId) {
-      throw new Error('organizationId is required')
-    }
-
-    console.log(`🔌 MCP Bridge: Calling ${server}.${method} for org ${organizationId}`)
-
-    // Try to get organization configuration, but don't fail if not found
-    let orgData = null
-    try {
-      const { data, error } = await supabase
-        .from('organizations')
-        .select('*')
-        .eq('id', organizationId)
-        .single()
-      
-      if (!error && data) {
-        orgData = data
-      }
-    } catch (e) {
-      console.log('Organization not in database, using defaults')
-    }
-
-    // Add organization context to params (merge with existing if present)
-    const enrichedParams = {
-      ...params,
-      organization: {
-        id: organizationId,
-        name: params.organization?.name || orgData?.name || 'Test Organization',
-        industry: params.organization?.industry || orgData?.industry || params.industry || 'technology',
-        size: params.organization?.size || orgData?.size || 'medium',
-        configuration: orgData?.configuration || {}
-      }
-    }
-
-    // Call the appropriate MCP server
-    const result = await callMCPServer(server, method, enrichedParams)
-
-    // Store results if needed
-    if (server === 'opportunities' && method === 'assess') {
-      // Store discovered opportunities
-      if (result.opportunities && result.opportunities.length > 0) {
-        const { error: insertError } = await supabase
-          .from('opportunity_queue')
-          .insert(result.opportunities.map((opp: any) => ({
-            ...opp,
-            organization_id: organizationId,
-            discovered_at: new Date().toISOString()
-          })))
-        
-        if (insertError) {
-          console.error('Error storing opportunities:', insertError)
-        }
-      }
-    } else if (server === 'cascade' && method === 'predict') {
-      // Store cascade predictions
-      if (result.predictions) {
-        const { error: insertError } = await supabase
-          .from('cascade_predictions')
-          .insert({
-            organization_id: organizationId,
-            event_data: params.event,
-            predictions: result.predictions,
-            created_at: new Date().toISOString()
-          })
-        
-        if (insertError) {
-          console.error('Error storing cascade predictions:', insertError)
-        }
-      }
+    // Route to appropriate MCP handler
+    let result;
+    switch(mcp) {
+      case 'intelligence':
+        result = await handleIntelligenceMCP(supabase, tool, params)
+        break
+      case 'relationships':
+        result = await handleRelationshipsMCP(supabase, tool, params)
+        break
+      case 'analytics':
+        result = await handleAnalyticsMCP(supabase, tool, params)
+        break
+      case 'content':
+        result = await handleContentMCP(supabase, tool, params)
+        break
+      default:
+        throw new Error(`Unknown MCP: ${mcp}`)
     }
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        result: result,
-        server: server,
-        method: method,
-        timestamp: new Date().toISOString()
-      }),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache, no-store, must-revalidate'
-        },
-        status: 200
-      }
+      JSON.stringify({ success: true, data: result }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
-
   } catch (error) {
-    console.error('❌ Error in MCP bridge:', error)
-    
-    // FAIL FAST - NO FALLBACK DATA
+    console.error('MCP Bridge Error:', error)
     return new Response(
-      JSON.stringify({ 
-        success: false,
-        error: error.message,
-        service: 'MCP Bridge',
-        message: `${server} MCP service unavailable - no fallback data available`
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 503 // Service unavailable when MCPs fail
-      }
+      JSON.stringify({ success: false, error: error.message }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
     )
   }
 })
+
+async function handleIntelligenceMCP(supabase: any, tool: string, params: any) {
+  switch(tool) {
+    case 'market_narrative_tracking':
+      // Track market narratives
+      const narratives = await supabase
+        .from('intelligence_findings')
+        .select('*')
+        .ilike('content', `%${params.keywords}%`)
+        .order('created_at', { ascending: false })
+        .limit(10)
+      
+      return {
+        tool: 'market_narrative_tracking',
+        narratives: narratives.data || [],
+        keywords: params.keywords,
+        timestamp: new Date().toISOString()
+      }
+
+    case 'stakeholder_sentiment_analysis':
+      // Analyze stakeholder sentiment
+      const sentiments = await supabase
+        .from('sentiment_analysis')
+        .select('*')
+        .eq('target_id', params.stakeholder_id)
+        .order('created_at', { ascending: false })
+        .limit(5)
+      
+      return {
+        tool: 'stakeholder_sentiment_analysis',
+        sentiments: sentiments.data || [],
+        stakeholder_id: params.stakeholder_id
+      }
+
+    default:
+      return { message: `Intelligence tool ${tool} not implemented yet` }
+  }
+}
+
+async function handleRelationshipsMCP(supabase: any, tool: string, params: any) {
+  switch(tool) {
+    case 'find_best_journalists':
+      // Find journalists for a specific beat
+      const journalists = await supabase
+        .from('media_contacts')
+        .select('*')
+        .contains('beats', [params.beat])
+        .order('influence_score', { ascending: false })
+        .limit(10)
+      
+      return {
+        tool: 'find_best_journalists',
+        journalists: journalists.data || [],
+        beat: params.beat
+      }
+
+    case 'analyze_journalist_preferences':
+      // Get journalist preferences
+      const preferences = await supabase
+        .from('journalist_interactions')
+        .select('*')
+        .eq('journalist_id', params.journalist_id)
+        .order('created_at', { ascending: false })
+      
+      return {
+        tool: 'analyze_journalist_preferences',
+        preferences: preferences.data || [],
+        journalist_id: params.journalist_id
+      }
+
+    default:
+      return { message: `Relationships tool ${tool} not implemented yet` }
+  }
+}
+
+async function handleAnalyticsMCP(supabase: any, tool: string, params: any) {
+  switch(tool) {
+    case 'generate_performance_dashboard':
+      // Get performance metrics
+      const metrics = await supabase
+        .from('campaign_metrics')
+        .select('*')
+        .gte('created_at', params.start_date || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+        .order('created_at', { ascending: false })
+      
+      return {
+        tool: 'generate_performance_dashboard',
+        metrics: metrics.data || [],
+        period: params.period || '30d'
+      }
+
+    case 'opportunity_scoring':
+      // Score opportunities
+      const opportunities = await supabase
+        .from('opportunities')
+        .select('*')
+        .order('score', { ascending: false })
+        .limit(params.limit || 10)
+      
+      return {
+        tool: 'opportunity_scoring',
+        opportunities: opportunities.data || [],
+        scoring_criteria: params.criteria
+      }
+
+    default:
+      return { message: `Analytics tool ${tool} not implemented yet` }
+  }
+}
+
+async function handleContentMCP(supabase: any, tool: string, params: any) {
+  switch(tool) {
+    case 'generate_pitch':
+      // Generate a pitch based on opportunity
+      const opportunity = await supabase
+        .from('opportunities')
+        .select('*')
+        .eq('id', params.opportunity_id)
+        .single()
+      
+      // Get relevant templates
+      const templates = await supabase
+        .from('content_templates')
+        .select('*')
+        .eq('type', 'pitch')
+        .limit(3)
+      
+      return {
+        tool: 'generate_pitch',
+        opportunity: opportunity.data,
+        templates: templates.data || [],
+        customization: params.customization
+      }
+
+    case 'optimize_press_release':
+      // Optimize a press release
+      return {
+        tool: 'optimize_press_release',
+        original: params.content,
+        optimizations: [
+          'Add more compelling headline',
+          'Include relevant statistics',
+          'Strengthen call-to-action',
+          'Optimize for SEO keywords'
+        ],
+        seo_keywords: params.keywords
+      }
+
+    default:
+      return { message: `Content tool ${tool} not implemented yet` }
+  }
+}
