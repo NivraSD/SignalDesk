@@ -246,14 +246,22 @@ const OpportunityModulePR = ({ organizationId, sharedIntelligence, onIntelligenc
   };
 
   const processPROpportunities = (opportunities, orgData) => {
-    return opportunities.map(opp => ({
-      ...opp,
-      id: opp.id || `opp-${Date.now()}-${Math.random()}`,
-      type: mapOpportunityType(opp.opportunity_type),
-      urgency: calculateUrgency(opp),
-      action_plan: opp.action_plan || generateActionPlan(opp.opportunity_type, orgData),
-      rationale: opp.rationale || generateRationale(opp, orgData)
-    }));
+    return opportunities.map(opp => {
+      // Map the actual fields from Edge Function to what the UI expects
+      const processed = {
+        ...opp,
+        id: opp.id || `opp-${Date.now()}-${Math.random()}`,
+        // CRITICAL: Map the actual field names to what UI expects
+        title: opp.title || opp.name || opp.headline || opp.opportunity_name || 'Untitled Opportunity',
+        description: opp.description || opp.details || opp.summary || opp.opportunity_description || 'No description available',
+        type: mapOpportunityType(opp.opportunity_type || opp.type),
+        urgency: calculateUrgency(opp),
+        action_plan: opp.action_plan || generateActionPlan(opp.opportunity_type, orgData),
+        rationale: opp.rationale || generateRationale(opp, orgData)
+      };
+      console.log('📦 Processed opportunity:', processed);
+      return processed;
+    });
   };
 
   const mapOpportunityType = (apiType) => {
@@ -458,6 +466,9 @@ const OpportunityModulePR = ({ organizationId, sharedIntelligence, onIntelligenc
     );
   }
 
+  console.log('🎨 Rendering main component with opportunities:', opportunities.length);
+  console.log('📋 First opportunity:', opportunities[0]);
+  
   return (
     <div className="pr-opportunity-module">
       {selectedOpportunity ? (
@@ -473,7 +484,16 @@ const OpportunityModulePR = ({ organizationId, sharedIntelligence, onIntelligenc
 
           <div className="opportunities-grid">
             {opportunities && opportunities.length > 0 ? (
-              opportunities.filter(opp => opp && opp.title && opp.description).map(opp => renderOpportunityCard(opp))
+              (() => {
+                const filtered = opportunities.filter(opp => opp && opp.title && opp.description);
+                console.log('🔍 Filtered opportunities:', filtered.length, 'from', opportunities.length);
+                console.log('🔍 Filter check - first opp:', { 
+                  hasTitle: !!opportunities[0]?.title, 
+                  hasDescription: !!opportunities[0]?.description,
+                  opportunity: opportunities[0]
+                });
+                return filtered.map(opp => renderOpportunityCard(opp));
+              })()
             ) : (
               <div className="no-opportunities">
                 <p>No immediate PR opportunities detected.</p>
