@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Debug LocalStorage</title>
+</head>
+<body>
+  <h1>LocalStorage Debug</h1>
+  <div id="storage"></div>
+  
+  <script>
+    const storageDiv = document.getElementById('storage');
+    
+    // Check all SignalDesk related storage
+    const keys = [
+      'signaldesk_unified_profile',
+      'signaldesk_organization', 
+      'opportunity_profile',
+      'signaldesk_onboarding'
+    ];
+    
+    keys.forEach(key => {
+      const value = localStorage.getItem(key);
+      if (value) {
+        storageDiv.innerHTML += `<h2>${key}</h2><pre>${JSON.stringify(JSON.parse(value), null, 2)}</pre><hr>`;
+      } else {
+        storageDiv.innerHTML += `<h2>${key}</h2><p>Not found</p><hr>`;
+      }
+    });
+  </script>
+</body>
+</html>

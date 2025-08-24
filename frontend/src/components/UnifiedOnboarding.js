@@ -1,8 +1,30 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import intelligentDiscoveryService from '../services/intelligentDiscoveryService';
 import './UnifiedOnboarding.css';
 
 const UnifiedOnboarding = ({ onComplete }) => {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisComplete, setAnalysisComplete] = useState(false);
+  
+  // Clear all SignalDesk data when onboarding starts
+  useEffect(() => {
+    console.log('🧹 Clearing all previous organization data for fresh onboarding...');
+    const keysToClean = [
+      'signaldesk_unified_profile',
+      'signaldesk_organization', 
+      'opportunity_profile',
+      'signaldesk_onboarding'
+    ];
+    
+    keysToClean.forEach(key => {
+      localStorage.removeItem(key);
+      console.log(`  ✅ Cleared ${key}`);
+    });
+  }, []); // Only run once on mount
+  
   const [profile, setProfile] = useState({
     // Organization Basics (used by Intelligence Hub)
     organization: {
@@ -67,8 +89,15 @@ const UnifiedOnboarding = ({ onComplete }) => {
     { id: 5, title: 'Opportunities', icon: '💎', required: true }
   ];
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (validateCurrentStep()) {
+      // Run AI discovery when leaving step 1
+      if (currentStep === 1 && !analysisComplete && profile.organization.name) {
+        await runAnalysis();
+        // Wait a moment for state to update
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      
       if (currentStep < steps.length) {
         setCurrentStep(currentStep + 1);
       } else {
@@ -101,6 +130,49 @@ const UnifiedOnboarding = ({ onComplete }) => {
         return true; // Has defaults for brand voice
       default:
         return true;
+    }
+  };
+
+  const analyzeOrganization = async () => {
+    if (!profile.organization.name.trim()) return;
+    
+    setIsAnalyzing(true);
+    try {
+      console.log('🔍 Analyzing organization with Claude:', profile.organization.name);
+      
+      const intelligence = await intelligentDiscoveryService.discoverCompanyIntelligence(
+        profile.organization.name,
+        profile.organization.website,
+        profile.organization.description
+      );
+      
+      if (intelligence && intelligence.company) {
+        console.log('✅ Claude analysis complete:', intelligence.company);
+        
+        // Update organization with Claude's analysis
+        setProfile(prev => ({
+          ...prev,
+          organization: {
+            ...prev.organization,
+            industry: intelligence.company.industry || prev.organization.industry,
+            description: intelligence.company.description || prev.organization.description,
+            business_model: intelligence.company.business_model,
+            market_position: intelligence.company.market_position,
+            key_products: intelligence.company.key_products,
+            target_customers: intelligence.company.target_customers
+          },
+          // Auto-populate competitors from Claude analysis
+          competitors: intelligence.competitors || [],
+          // Auto-populate monitoring topics
+          monitoring_topics: intelligence.topics || []
+        }));
+        
+        setAnalysisComplete(true);
+      }
+    } catch (error) {
+      console.error('❌ Claude analysis failed:', error);
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -140,13 +212,14 @@ const UnifiedOnboarding = ({ onComplete }) => {
       monitoring_topics: profile.monitoring_topics
     }));
     
-    // Handle completion - redirect if no onComplete provided
+    // Handle completion
     if (onComplete) {
       onComplete(unifiedProfile);
-    } else {
-      // Redirect to main app after successful setup
-      window.location.href = '/';
     }
+    
+    // Redirect to main app after successful setup
+    console.log('✅ Onboarding complete, navigating to main app...');
+    navigate('/');
   };
 
   const renderStep = () => {
@@ -175,7 +248,7 @@ const UnifiedOnboarding = ({ onComplete }) => {
         <label>Organization Name *</label>
         <input
           type="text"
-          placeholder="e.g., Toyota"
+          placeholder="Enter your organization name"
           value={profile.organization.name}
           onChange={(e) => setProfile({
             ...profile,
@@ -190,7 +263,7 @@ const UnifiedOnboarding = ({ onComplete }) => {
         <label>Website (optional)</label>
         <input
           type="url"
-          placeholder="https://www.toyota.com"
+          placeholder="https://www.example.com"
           value={profile.organization.website}
           onChange={(e) => setProfile({
             ...profile,
@@ -212,6 +285,53 @@ const UnifiedOnboarding = ({ onComplete }) => {
           className="form-textarea"
           rows={3}
         />
+      </div>
+
+      {/* AI Analysis Status */}
+      <div className="analysis-section">
+
+        {isAnalyzing && (
+          <div className="ai-discovery-status">
+            <div className="discovery-spinner"></div>
+            <p className="discovery-text">🤖 AI is analyzing your organization...</p>
+            <p className="discovery-detail">Discovering competitors, industry trends, and strategic opportunities</p>
+          </div>
+        )}
+
+        {analysisComplete && (
+          <div className="discovered-info neon-card">
+            <h3 className="discovered-title">
+              <span className="neon-icon">✨</span>
+              AI-Discovered Intelligence
+            </h3>
+            <div className="discovered-grid">
+              {profile.organization.industry && (
+                <div className="discovered-item">
+                  <div className="discovered-label">Industry</div>
+                  <div className="discovered-value">{profile.organization.industry}</div>
+                </div>
+              )}
+              {profile.competitors.length > 0 && (
+                <div className="discovered-item">
+                  <div className="discovered-label">Key Competitors</div>
+                  <div className="discovered-value">
+                    {profile.competitors.slice(0, 3).join(', ')}
+                    {profile.competitors.length > 3 && ` +${profile.competitors.length - 3} more`}
+                  </div>
+                </div>
+              )}
+              {profile.monitoring_topics.length > 0 && (
+                <div className="discovered-item">
+                  <div className="discovered-label">Topics to Monitor</div>
+                  <div className="discovered-value">
+                    {profile.monitoring_topics.slice(0, 3).join(', ')}
+                    {profile.monitoring_topics.length > 3 && ` +${profile.monitoring_topics.length - 3} more`}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

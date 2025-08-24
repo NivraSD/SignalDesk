@@ -239,7 +239,8 @@
       "WebFetch(domain:signaldesk-2ci5dp2z2-nivra-sd.vercel.app)",
       "Bash(git cherry-pick:*)",
       "Bash(git log:*)",
-      "WebFetch(domain:signaldesk-1yputw3wj-nivra-sd.vercel.app)"
+      "WebFetch(domain:signaldesk-1yputw3wj-nivra-sd.vercel.app)",
+      "WebFetch(domain:signaldesk-iyue9lf7d-nivra-sd.vercel.app)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

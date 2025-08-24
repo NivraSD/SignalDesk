@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../config/supabase';
+import { getUnifiedOrganization, getUnifiedOpportunityConfig } from '../../utils/unifiedDataLoader';
 import './ModuleStyles.css';
 
 const OpportunityModule = ({ organizationId }) => {
@@ -15,53 +16,9 @@ const OpportunityModule = ({ organizationId }) => {
 
   // Load configuration once on mount
   useEffect(() => {
-    // Load user's opportunity profile configuration
-    let configToUse = null;
-    
-    const opportunityProfile = localStorage.getItem('opportunity_profile');
-    if (opportunityProfile) {
-      configToUse = JSON.parse(opportunityProfile);
-      console.log('📊 Opportunity Module loaded profile:', configToUse);
-    } else {
-      // Try unified profile
-      const unifiedProfile = localStorage.getItem('signaldesk_unified_profile');
-      if (unifiedProfile) {
-        const profile = JSON.parse(unifiedProfile);
-        configToUse = {
-          minimum_confidence: profile.opportunities?.minimum_confidence || 70,
-          opportunity_types: profile.opportunities?.types || {
-            competitor_weakness: true,
-            narrative_vacuum: true,
-            cascade_effect: true,
-            crisis_prevention: true,
-            viral_moment: false
-          },
-          risk_tolerance: profile.brand?.risk_tolerance || 'moderate',
-          preferred_tiers: profile.media?.preferred_tiers || ['tier1_business', 'tier1_tech'],
-          voice: profile.brand?.voice || 'professional',
-          response_speed: profile.brand?.response_speed || 'considered',
-          core_value_props: profile.messaging?.core_value_props || [],
-          industry: profile.organization?.industry || 'technology'
-        };
-        console.log('📊 Using unified profile config:', configToUse);
-      } else {
-        // Fallback to basic config
-        configToUse = {
-          minimum_confidence: 70,
-          opportunity_types: {
-            competitor_weakness: true,
-            narrative_vacuum: true,
-            cascade_effect: true,
-            crisis_prevention: true,
-            viral_moment: false
-          },
-          risk_tolerance: 'moderate',
-          preferred_tiers: ['tier1_business', 'tier1_tech', 'trade'],
-          industry: 'technology'
-        };
-        console.log('📊 Using default config');
-      }
-    }
+    // Use unified data loaders for consistency
+    const configToUse = getUnifiedOpportunityConfig();
+    console.log('📊 Opportunity Module loaded unified config:', configToUse);
     
     setUserConfig(configToUse);
   }, []);
@@ -76,18 +33,21 @@ const OpportunityModule = ({ organizationId }) => {
   const loadOpportunities = async () => {
     setLoading(true);
     try {
+      // Get the actual organization data, not just the ID
+      const orgData = getUnifiedOrganization();
+      
       // First try the new Opportunity Orchestrator (follows Intelligence Hub pattern)
-      if (organizationId) {
+      if (orgData && orgData.name) {
         try {
-          console.log('🎯 Calling opportunity-orchestrator with org:', organizationId);
+          console.log('🎯 Calling opportunity-orchestrator with org:', orgData.name);
           console.log('📋 Using configuration:', userConfig);
           
           // Try the orchestrated approach first
           const { data: orchestratedData, error: orchestratedError } = await supabase.functions.invoke('opportunity-orchestrator', {
             body: {
               organization: {
-                name: organizationId,
-                industry: userConfig?.industry || 'technology'
+                name: orgData.name,  // Use actual organization name
+                industry: orgData.industry || userConfig?.industry || 'technology'
               },
               config: userConfig,
               forceRefresh: false
@@ -98,28 +58,40 @@ const OpportunityModule = ({ organizationId }) => {
             console.log('✅ Orchestrator succeeded with', orchestratedData.opportunities.length, 'opportunities');
             console.log('🎭 Personas used:', orchestratedData.personas_used);
             
-            // Process orchestrated opportunities
-            const scoredOpportunities = orchestratedData.opportunities.map(opp => ({
-              ...opp,
-              priority_score: opp.priority_score || opp.confidence || 75,
-              configured_weight: userConfig?.[opp.opportunity_type]?.weight || 50,
-              opportunity_data: {
-                description: opp.description || opp.action || ''
-              }
-            }));
+            try {
+              // Process orchestrated opportunities
+              console.log('📦 Processing opportunities...');
+              const scoredOpportunities = orchestratedData.opportunities.map(opp => ({
+                ...opp,
+                priority_score: opp.priority_score || opp.confidence || 75,
+                configured_weight: 50, // Simplified - removed problematic userConfig access
+                status: opp.status || 'pending', // Ensure status field exists
+                opportunity_data: {
+                  description: opp.description || opp.action || ''
+                }
+              }));
+              console.log('✅ Scored opportunities:', scoredOpportunities.length);
 
-            // Apply local filters
-            const filtered = scoredOpportunities.filter(opp => {
-              if (filters.type !== 'all' && opp.opportunity_type !== filters.type) return false;
-              if (opp.priority_score < filters.minScore) return false;
-              if (filters.status !== 'all' && opp.status !== filters.status) return false;
-              return true;
-            });
+              // Apply local filters
+              const filtered = scoredOpportunities.filter(opp => {
+                if (filters.type !== 'all' && opp.opportunity_type !== filters.type) return false;
+                if (opp.priority_score < filters.minScore) return false;
+                if (filters.status !== 'all' && opp.status !== filters.status) return false;
+                return true;
+              });
+              console.log('✅ Filtered opportunities:', filtered.length);
 
-            filtered.sort((a, b) => b.priority_score - a.priority_score);
-            setOpportunities(filtered);
-            setLoading(false);
-            return;
+              filtered.sort((a, b) => b.priority_score - a.priority_score);
+              setOpportunities(filtered);
+              console.log('✅ Set opportunities in state');
+              setLoading(false);
+              return;
+            } catch (processingError) {
+              console.error('❌ Error processing opportunities:', processingError);
+              setOpportunities([]);
+              setLoading(false);
+              return;
+            }
           }
         } catch (orchestratorError) {
           console.warn('Orchestrator not available, trying simple assessment:', orchestratorError);
