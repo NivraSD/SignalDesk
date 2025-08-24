@@ -93,7 +93,7 @@ const UnifiedOnboarding = ({ onComplete }) => {
     if (validateCurrentStep()) {
       // Run AI discovery when leaving step 1
       if (currentStep === 1 && !analysisComplete && profile.organization.name) {
-        await runAnalysis();
+        await analyzeOrganization();
         // Wait a moment for state to update
         await new Promise(resolve => setTimeout(resolve, 500));
       }
