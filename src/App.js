@@ -5,6 +5,10 @@ import { ProjectProvider } from "./contexts/ProjectContext";
 import { IntelligenceProvider } from "./context/IntelligenceContext";
 import { supabase } from "./config/supabase"; // Force Supabase to be included
 import { migrateToUnifiedProfile } from "./utils/migrateProfile"; // Auto-migrate existing data
+
+// Version indicator - Update this to force cache clear
+const APP_VERSION = "3.1.0"; // Updated Aug 24, 2024 - Fixed deployment
+console.log(`🚀 SignalDesk v${APP_VERSION} - Deployed from ROOT directory`);
 import Dashboard from "./components/Dashboard";
 import AIAssistant from "./components/AIAssistant";
 import ContentGenerator from "./components/ContentGenerator";
