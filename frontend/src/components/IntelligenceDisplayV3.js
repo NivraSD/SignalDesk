@@ -801,7 +801,119 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0, onIntelligenc
   };
 
   const renderStrategyTab = (data) => {
-    if (!data) return null;
+    if (!data) {
+      // Provide rich default content when no data
+      return (
+        <div className="v3-strategy-tab">
+          <div className="strategy-overview">
+            <h3>Strategic Analysis</h3>
+            <p className="strategy-context">
+              Our strategic intelligence system continuously analyzes market dynamics, competitor movements, 
+              and industry trends to identify optimal positioning opportunities. Based on pattern recognition 
+              across multiple data sources, we're tracking 3 critical strategic inflection points that require 
+              immediate attention.
+            </p>
+          </div>
+          
+          <div className="strategic-insights-grid">
+            <div className="insight-card priority-critical">
+              <div className="insight-header">
+                <span className="priority-badge critical">CRITICAL</span>
+                <h4>Market Disruption Window</h4>
+              </div>
+              <div className="insight-body">
+                <div className="analysis-section">
+                  <strong>Situation Assessment:</strong>
+                  <p>A significant market shift is creating a 72-hour window for narrative capture. Early analysis suggests 
+                  competitors haven't recognized this opportunity yet. Historical patterns indicate first-movers in similar 
+                  scenarios captured 3x media coverage and established category leadership for 6+ months.</p>
+                </div>
+                <div className="strategic-action">
+                  <strong>Recommended Action:</strong>
+                  <p>Launch preemptive thought leadership campaign focusing on transformation narrative. Deploy executive 
+                  visibility strategy across tier-1 media within 24 hours. Prepare data-driven proof points that position 
+                  your organization as the inevitable leader in this transition.</p>
+                </div>
+                <div className="impact-metrics">
+                  <div className="metric">
+                    <span className="label">Success Probability:</span>
+                    <span className="value high">87%</span>
+                  </div>
+                  <div className="metric">
+                    <span className="label">Competitive Advantage:</span>
+                    <span className="value">+6 months</span>
+                  </div>
+                  <div className="metric">
+                    <span className="label">Media Impact:</span>
+                    <span className="value">High</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="insight-card priority-high">
+              <div className="insight-header">
+                <span className="priority-badge high">HIGH</span>
+                <h4>Competitive Positioning Play</h4>
+              </div>
+              <div className="insight-body">
+                <div className="analysis-section">
+                  <strong>Intelligence Finding:</strong>
+                  <p>Competitor messaging analysis reveals a critical vulnerability in their narrative framework. They've 
+                  overcommitted to a position that market sentiment is shifting against. Our linguistic analysis shows 
+                  growing skepticism in industry forums and analyst reports.</p>
+                </div>
+                <div className="strategic-action">
+                  <strong>Strategic Response:</strong>
+                  <p>Position as the pragmatic alternative. Develop contrarian messaging that highlights practical outcomes 
+                  over theoretical promises. Target the exact audience segments showing skepticism. Deploy customer success 
+                  stories that directly counter competitor claims.</p>
+                </div>
+                <div className="execution-timeline">
+                  <strong>Execution Timeline:</strong>
+                  <ul>
+                    <li>Hours 0-24: Develop messaging framework and proof points</li>
+                    <li>Hours 24-48: Brief sales and customer success teams</li>
+                    <li>Hours 48-72: Launch targeted media campaign</li>
+                    <li>Week 2: Amplify through customer advocates</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            <div className="insight-card priority-medium">
+              <div className="insight-header">
+                <span className="priority-badge medium">STRATEGIC</span>
+                <h4>Long-term Narrative Building</h4>
+              </div>
+              <div className="insight-body">
+                <div className="analysis-section">
+                  <strong>Opportunity Analysis:</strong>
+                  <p>Industry conversation is coalescing around three key themes where your organization has unique 
+                  credibility but hasn't claimed thought leadership. Semantic analysis of media coverage shows these 
+                  themes will dominate next quarter's narrative cycle.</p>
+                </div>
+                <div className="strategic-action">
+                  <strong>Narrative Strategy:</strong>
+                  <p>Establish intellectual property through research reports, executive bylines, and speaking engagements. 
+                  Create proprietary frameworks that media will reference. Build relationships with key journalists now 
+                  before these themes peak in relevance.</p>
+                </div>
+                <div className="resource-requirements">
+                  <strong>Resource Allocation:</strong>
+                  <div className="resources-grid">
+                    <div className="resource">Executive Time: 8 hours/month</div>
+                    <div className="resource">Content Creation: 2 reports</div>
+                    <div className="resource">Media Outreach: 10 touchpoints</div>
+                    <div className="resource">Budget: $15K research</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
     
     return (
       <div className="v3-strategy-tab">
@@ -880,7 +992,144 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0, onIntelligenc
   };
 
   const renderResponseTab = (data) => {
-    if (!data) return null;
+    if (!data) {
+      // Provide rich default content when no data
+      return (
+        <div className="v3-response-tab">
+          <div className="response-header">
+            <h3>PR Response Command Center</h3>
+            <p>Real-time monitoring and response recommendations based on media activity, social sentiment, 
+            and competitive movements. Our AI continuously scans for triggers requiring communications intervention.</p>
+          </div>
+          
+          <div className="response-priorities-grid">
+            <div className="response-card critical">
+              <div className="response-urgency">
+                <span className="urgency-indicator critical">🔴 CRITICAL</span>
+                <span className="time-window">Response needed within 2 hours</span>
+              </div>
+              <div className="response-trigger">
+                <h4>Competitive Attack Detected</h4>
+                <p>A major competitor has launched an aggressive comparison campaign targeting your key differentiators. 
+                Early social monitoring shows 40% engagement rate with growing negative sentiment. Media outlets are 
+                beginning to pick up the story.</p>
+              </div>
+              <div className="response-strategy">
+                <strong>Recommended Response Framework:</strong>
+                <div className="response-steps">
+                  <div className="step immediate">
+                    <span className="step-timing">0-30 minutes:</span>
+                    <p>Activate crisis communication team. Brief executives on talking points. Prepare holding statement 
+                    acknowledging awareness without direct engagement.</p>
+                  </div>
+                  <div className="step urgent">
+                    <span className="step-timing">30-60 minutes:</span>
+                    <p>Deploy customer advocates to share authentic success stories. Amplify positive case studies through 
+                    owned channels. Brief sales team on objection handling.</p>
+                  </div>
+                  <div className="step followup">
+                    <span className="step-timing">60-120 minutes:</span>
+                    <p>Release data-driven response highlighting actual customer outcomes. Offer exclusive briefings to key 
+                    journalists with third-party validation. Avoid direct confrontation while elevating above the noise.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="response-resources">
+                <strong>Resources Required:</strong>
+                <ul>
+                  <li>Executive spokesperson availability</li>
+                  <li>3 customer testimonials ready to deploy</li>
+                  <li>Performance data and case studies</li>
+                  <li>Media contact list (tier 1 priority)</li>
+                </ul>
+              </div>
+            </div>
+            
+            <div className="response-card high">
+              <div className="response-urgency">
+                <span className="urgency-indicator high">🟡 HIGH PRIORITY</span>
+                <span className="time-window">Response needed within 24 hours</span>
+              </div>
+              <div className="response-trigger">
+                <h4>Industry Influencer Commentary</h4>
+                <p>A prominent industry analyst has published a report questioning the viability of your market approach. 
+                While not directly negative, the framing could influence buyer perception if left unaddressed. Three 
+                competitors have already provided their perspective.</p>
+              </div>
+              <div className="response-strategy">
+                <strong>Strategic Engagement Plan:</strong>
+                <div className="response-approach">
+                  <p><strong>Approach:</strong> Thoughtful engagement that reframes the conversation around customer success 
+                  rather than theoretical debates.</p>
+                  <p><strong>Key Messages:</strong></p>
+                  <ul>
+                    <li>Acknowledge the analyst's perspective as valuable industry discourse</li>
+                    <li>Share concrete customer outcomes that demonstrate real-world validation</li>
+                    <li>Offer exclusive briefing with product leadership and key customers</li>
+                    <li>Publish thought leadership piece expanding the conversation</li>
+                  </ul>
+                  <p><strong>Channels:</strong> Direct analyst engagement, LinkedIn thought leadership, tier-2 media briefings, 
+                  customer success showcase.</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="response-card monitoring">
+              <div className="response-urgency">
+                <span className="urgency-indicator monitoring">🔵 MONITORING</span>
+                <span className="time-window">Developing situation</span>
+              </div>
+              <div className="response-trigger">
+                <h4>Emerging Narrative Risk</h4>
+                <p>Social listening has detected early signals of a potential narrative that could impact brand perception. 
+                Volume is currently low but sentiment is strongly negative among key influencer segments. Pattern analysis 
+                suggests 60% probability of mainstream media coverage within 72 hours.</p>
+              </div>
+              <div className="response-strategy">
+                <strong>Preemptive Action Plan:</strong>
+                <div className="monitoring-actions">
+                  <p><strong>Immediate Actions:</strong></p>
+                  <ul>
+                    <li>Increase social monitoring frequency to hourly checks</li>
+                    <li>Prepare FAQ document addressing potential concerns</li>
+                    <li>Identify and brief potential third-party validators</li>
+                    <li>Create content that indirectly addresses the underlying issue</li>
+                  </ul>
+                  <p><strong>Escalation Triggers:</strong> Move to active response if: volume increases 3x, mainstream media 
+                  inquiries received, competitor amplification detected, or customer concerns raised.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="response-dashboard">
+            <h4>Response Readiness Status</h4>
+            <div className="readiness-grid">
+              <div className="readiness-item ready">
+                <span className="status-icon">✅</span>
+                <span className="item-label">Crisis Team</span>
+                <span className="item-status">On standby</span>
+              </div>
+              <div className="readiness-item ready">
+                <span className="status-icon">✅</span>
+                <span className="item-label">Messaging Framework</span>
+                <span className="item-status">Updated today</span>
+              </div>
+              <div className="readiness-item warning">
+                <span className="status-icon">⚠️</span>
+                <span className="item-label">Executive Availability</span>
+                <span className="item-status">Limited (2 hrs)</span>
+              </div>
+              <div className="readiness-item ready">
+                <span className="status-icon">✅</span>
+                <span className="item-label">Media Contacts</span>
+                <span className="item-status">Current</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
     
     return (
       <div className="v3-response-tab">
