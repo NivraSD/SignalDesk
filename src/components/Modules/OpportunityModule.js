@@ -41,6 +41,14 @@ const OpportunityModule = ({ organizationId }) => {
         try {
           console.log('🎯 Calling opportunity-orchestrator with org:', orgData.name);
           console.log('📋 Using configuration:', userConfig);
+          console.log('🔍 Full request body:', {
+            organization: {
+              name: orgData.name,
+              industry: orgData.industry || userConfig?.industry || 'technology'
+            },
+            config: userConfig,
+            forceRefresh: false
+          });
           
           // Try the orchestrated approach first
           const { data: orchestratedData, error: orchestratedError } = await supabase.functions.invoke('opportunity-orchestrator', {
@@ -54,7 +62,28 @@ const OpportunityModule = ({ organizationId }) => {
             }
           });
 
-          if (!orchestratedError && orchestratedData?.success && orchestratedData?.opportunities) {
+          console.log('🔍 Orchestrator Response:', { 
+            data: orchestratedData, 
+            error: orchestratedError,
+            hasOpportunities: orchestratedData?.opportunities?.length,
+            success: orchestratedData?.success,
+            message: orchestratedData?.message
+          });
+          
+          // Check different possible response formats
+          if (orchestratedError) {
+            console.error('❌ Orchestrator error:', orchestratedError);
+          } else if (!orchestratedData) {
+            console.error('❌ No data returned from orchestrator');
+          } else if (!orchestratedData.success) {
+            console.error('❌ Orchestrator returned success=false:', orchestratedData.message);
+          } else if (!orchestratedData.opportunities) {
+            console.error('❌ No opportunities array in response');
+          } else if (orchestratedData.opportunities.length === 0) {
+            console.warn('⚠️ Empty opportunities array returned');
+          }
+          
+          if (!orchestratedError && orchestratedData?.opportunities && Array.isArray(orchestratedData.opportunities)) {
             console.log('✅ Orchestrator succeeded with', orchestratedData.opportunities.length, 'opportunities');
             console.log('🎭 Personas used:', orchestratedData.personas_used);
             
@@ -94,7 +123,7 @@ const OpportunityModule = ({ organizationId }) => {
             }
           }
         } catch (orchestratorError) {
-          console.warn('Orchestrator not available, trying simple assessment:', orchestratorError);
+          console.warn('⚠️ Orchestrator not available, trying simple assessment:', orchestratorError);
         }
         
         // Fallback to simple assessment if orchestrator fails
@@ -108,13 +137,22 @@ const OpportunityModule = ({ organizationId }) => {
             }
           });
 
-          console.log('📊 Simple assessment response:', { data, error });
+          console.log('📊 Simple assessment response:', { 
+            data, 
+            error,
+            hasOpportunities: data?.opportunities?.length,
+            success: data?.success 
+          });
           
           if (error) {
             console.error('❌ Edge Function error:', error);
+          } else if (!data) {
+            console.error('❌ No data from simple assessment');
+          } else if (!data.opportunities) {
+            console.error('❌ No opportunities in simple assessment response');
           }
 
-          if (!error && data && data.opportunities && Array.isArray(data.opportunities)) {
+          if (!error && data?.opportunities && Array.isArray(data.opportunities) && data.opportunities.length > 0) {
             // Process opportunities from Edge Function
             const scoredOpportunities = data.opportunities.map(opp => ({
               ...opp,
@@ -144,8 +182,14 @@ const OpportunityModule = ({ organizationId }) => {
         }
       }
 
-      // Fallback to mock data if Edge Function fails or no organizationId
-      const mockOpportunities = [
+      // No fallback - show actual error to user
+      console.error('❌ No opportunities loaded - Edge Functions not responding');
+      setOpportunities([]);
+      setLoading(false);
+      return;
+      
+      // REMOVED mock data - we want real data only
+      /*const mockOpportunities = [
         {
           id: 1,
           opportunity_type: 'trending',
