@@ -5,10 +5,6 @@ import { ProjectProvider } from "./contexts/ProjectContext";
 import { IntelligenceProvider } from "./context/IntelligenceContext";
 import { supabase } from "./config/supabase"; // Force Supabase to be included
 import { migrateToUnifiedProfile } from "./utils/migrateProfile"; // Auto-migrate existing data
-
-// Version indicator - Update this to force cache clear
-const APP_VERSION = "3.1.0"; // Updated Aug 24, 2024 - Fixed deployment
-console.log(`🚀 SignalDesk v${APP_VERSION} - Deployed from ROOT directory`);
 import Dashboard from "./components/Dashboard";
 import AIAssistant from "./components/AIAssistant";
 import ContentGenerator from "./components/ContentGenerator";
@@ -88,9 +84,10 @@ function PrivateRoute({ children }) {
 
 function App() {
   // BRAND NEW RailwayV2 with Neon Effects and Intelligence
-  console.log("⚡⚡⚡ RAILWAY V2 NEON INTERFACE - DEPLOYED:", new Date().toISOString());
+  console.log("⚡⚡⚡ RAILWAY V2 NEON INTERFACE v3.1.0 - DEPLOYED:", new Date().toISOString());
   console.log("🎯 Modern Railway design with neon buttons");
   console.log("💎 Intelligence Hub with practical insights");
+  console.log("📍 Deployed from ROOT directory - Fixed Aug 24, 2024");
   console.log("🚀 VERSION 0.2.0 - Firecrawl Integration Active");
   console.log("📅 Build Date: August 23, 2025");
   
