@@ -14,7 +14,7 @@ The Claude API integration has been analyzed and fixed. The system is now config
 **Solution:** Created new route file `/backend/src/routes/aiClaudeRoutes.js` with proper Claude endpoints
 
 ### 3. Invalid Claude API Key
-**Problem:** Backend `.env` has placeholder key `sk-ant-api03-placeholder-key-for-testing`
+**Problem:** Backend `.env` has placeholder key `[PLACEHOLDER-KEY]`
 **Solution:** Need to add real Anthropic API key (see setup instructions below)
 
 ## Setup Instructions
@@ -31,7 +31,7 @@ The Claude API integration has been analyzed and fixed. The system is now config
 #### For Local Development:
 Edit `/backend/.env`:
 ```env
-ANTHROPIC_API_KEY=sk-ant-api03-YOUR-ACTUAL-KEY-HERE
+ANTHROPIC_API_KEY=YOUR-ACTUAL-KEY-HERE
 ```
 
 #### For Production (Railway/Vercel):
