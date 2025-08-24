@@ -694,25 +694,7 @@ const UnifiedOnboarding = ({ onComplete }) => {
           <p>Let's configure your intelligent opportunity engine</p>
         </div>
 
-        <div className="progress-bar">
-          <div 
-            className="progress-fill" 
-            style={{ width: `${(currentStep / steps.length) * 100}%` }}
-          />
-          <div className="progress-steps">
-            {steps.map((step) => (
-              <div
-                key={step.id}
-                className={`progress-step ${currentStep >= step.id ? 'completed' : ''} ${currentStep === step.id ? 'active' : ''}`}
-              >
-                <div className="step-circle">
-                  <span className="step-icon">{step.icon}</span>
-                </div>
-                <span className="step-label">{step.title}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        {/* Progress bar removed - was causing cutoff issue */}
 
         <div className="onboarding-content">
           {renderStep()}

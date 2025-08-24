@@ -276,36 +276,47 @@ const OpportunityModulePR = ({ organizationId, sharedIntelligence, onIntelligenc
     return labels[urgency] || urgency.toUpperCase();
   };
 
-  const renderOpportunityCard = (opp) => (
-    <div 
-      key={opp.id} 
-      className="pr-opportunity-card"
-      onClick={() => setSelectedOpportunity(opp)}
-    >
-      <div className="pr-opp-header">
-        <div className="pr-opp-type">{opp.type}</div>
-        <div 
-          className="pr-opp-urgency"
-          style={{ 
-            backgroundColor: getUrgencyColor(opp.urgency),
-            color: '#FFF',
-            fontWeight: 'bold'
-          }}
-        >
-          {getUrgencyLabel(opp.urgency)}
+  const renderOpportunityCard = (opp) => {
+    // Filter out empty or invalid opportunities
+    if (!opp || !opp.title || !opp.description) return null;
+    
+    return (
+      <div 
+        key={opp.id} 
+        className="pr-opportunity-card"
+        onClick={() => setSelectedOpportunity(opp)}
+      >
+        <div className="pr-opp-header">
+          <div className="pr-opp-type">{opp.type}</div>
+          <div 
+            className="pr-opp-urgency"
+            style={{ 
+              backgroundColor: getUrgencyColor(opp.urgency),
+              color: '#FFF',
+              fontWeight: 'bold'
+            }}
+          >
+            {opp.window || getUrgencyLabel(opp.urgency)}
+          </div>
         </div>
+
+        <h3 className="pr-opp-title">{opp.title}</h3>
+        <p className="pr-opp-description">{opp.description}</p>
+        
+        {opp.why && (
+          <div className="pr-opp-reason">
+            <strong>Why act now:</strong> {opp.why}
+          </div>
+        )}
+
+        {opp.source && (
+          <div className="pr-opp-source">
+            {opp.source}
+          </div>
+        )}
       </div>
-
-      <h3 className="pr-opp-title">{opp.title}</h3>
-      <p className="pr-opp-description">{opp.description}</p>
-
-      {opp.source && (
-        <div className="pr-opp-source">
-          Source: {opp.source}
-        </div>
-      )}
-    </div>
-  );
+    );
+  };
 
   const renderSelectedOpportunity = () => {
     if (!selectedOpportunity) return null;
@@ -342,17 +353,27 @@ const OpportunityModulePR = ({ organizationId, sharedIntelligence, onIntelligenc
         </div>
 
         <div className="detail-section">
-          <h3>💡 Why This Matters</h3>
-          <p>{selectedOpportunity.rationale}</p>
+          <h3>⚡ Why Act Now</h3>
+          <p>{selectedOpportunity.why || selectedOpportunity.rationale || "This opportunity has a limited window based on current news cycle momentum. Acting quickly positions you ahead of competitors."}</p>
         </div>
 
         <div className="detail-section">
-          <h3>🎯 Action Plan</h3>
-          <ol className="action-plan-list">
-            {selectedOpportunity.action_plan.map((step, idx) => (
-              <li key={idx}>{step}</li>
-            ))}
-          </ol>
+          <h3>🎯 How to Execute</h3>
+          {selectedOpportunity.how ? (
+            <div className="how-to-execute">
+              {selectedOpportunity.how.split('\\n').map((step, idx) => (
+                <p key={idx} className="execution-step">{step}</p>
+              ))}
+            </div>
+          ) : selectedOpportunity.action_plan ? (
+            <ol className="action-plan-list">
+              {selectedOpportunity.action_plan.map((step, idx) => (
+                <li key={idx}>{step}</li>
+              ))}
+            </ol>
+          ) : (
+            <p>Develop your unique angle and reach out to relevant media contacts immediately.</p>
+          )}
         </div>
 
         <div className="action-buttons">

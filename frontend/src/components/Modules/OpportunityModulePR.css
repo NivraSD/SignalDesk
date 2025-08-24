@@ -97,11 +97,32 @@
 }
 
 .pr-opp-source {
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(0, 255, 255, 0.6);
   font-size: 12px;
-  font-style: italic;
+  font-weight: 600;
   padding-top: 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pr-opp-reason {
+  background: rgba(0, 255, 255, 0.05);
+  border-left: 3px solid rgba(0, 255, 255, 0.4);
+  padding: 12px;
+  margin: 16px 0;
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.pr-opp-reason strong {
+  color: #00ffff;
+  display: block;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 1px;
 }
 
 /* No Opportunities State */
@@ -241,6 +262,30 @@
   counter-reset: item;
 }
 
+.how-to-execute {
+  background: rgba(0, 0, 0, 0.3);
+  border-left: 3px solid rgba(0, 255, 255, 0.4);
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.execution-step {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 15px;
+  line-height: 1.6;
+  margin-bottom: 16px;
+  padding-left: 24px;
+  position: relative;
+}
+
+.execution-step:before {
+  content: "▸";
+  color: #00ffff;
+  position: absolute;
+  left: 0;
+  font-weight: bold;
+}
+
 /* Action Buttons */
 .action-buttons {
   display: flex;
@@ -293,17 +338,36 @@
   align-items: center;
   justify-content: center;
   height: 400px;
-  color: rgba(255, 255, 255, 0.6);
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(0, 255, 255, 0.1);
+  border-radius: 12px;
+  margin: 20px;
 }
 
 .loading-spinner {
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   border: 3px solid rgba(0, 255, 255, 0.2);
   border-top: 3px solid #00ffff;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  filter: drop-shadow(0 0 10px rgba(0, 255, 255, 0.5));
+}
+
+.loading-text {
+  color: #00ffff;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.loading-detail {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  font-style: italic;
 }
 
 @keyframes spin {
