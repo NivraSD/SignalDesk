@@ -1,160 +1,401 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Direct Synthesis Test</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Synthesis Edge Function Directly</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
-        .success { background-color: #d4edda; }
-        .error { background-color: #f8d7da; }
-        pre { background: #f8f9fa; padding: 10px; overflow-x: auto; }
-        button { padding: 10px 20px; margin: 5px; }
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #00ff88;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .container {
+            background: rgba(0, 255, 136, 0.05);
+            border: 1px solid #00ff88;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        h1, h2 {
+            color: #00ffcc;
+            text-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
+        }
+        .test-button {
+            background: linear-gradient(135deg, #00ff88, #00ffcc);
+            color: #0a0a0a;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s;
+        }
+        .test-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+        }
+        .result {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #00ff88;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-size: 12px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .success {
+            color: #00ff88;
+            border-color: #00ff88;
+        }
+        .error {
+            color: #ff0088;
+            border-color: #ff0088;
+        }
+        .loading {
+            color: #ffcc00;
+            border-color: #ffcc00;
+        }
+        .section {
+            margin: 20px 0;
+        }
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            background: rgba(0, 0, 0, 0.5);
+            color: #00ff88;
+            border: 1px solid #00ff88;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
-    <h1>🧪 Direct Edge Function Tests</h1>
-    
-    <div class="test-section">
-        <h2>Test Claude V5 Synthesizer Directly</h2>
-        <button onclick="testV5Directly()">Test V5 Synthesizer</button>
-        <div id="v5-results"></div>
+    <div class="container">
+        <h1>🧠 Test Intelligence Synthesis V3 Edge Function</h1>
+        <p>Direct testing of the synthesis phase with different intelligence data</p>
     </div>
 
-    <div class="test-section">
-        <h2>Test Intelligence Gathering</h2>
-        <button onclick="testGathering()">Test Gathering</button>
-        <div id="gathering-results"></div>
+    <div class="container">
+        <h2>Configuration</h2>
+        <div class="section">
+            <label>Organization Name:</label><br>
+            <input type="text" id="orgName" value="Target Corporation" style="width: 300px; background: #000; color: #00ff88; border: 1px solid #00ff88; padding: 5px;">
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Test Cases</h2>
+        
+        <div class="section">
+            <button class="test-button" onclick="testMinimalData()">
+                Test 1: Minimal Valid Data
+            </button>
+            <div id="result-minimal"></div>
+        </div>
+
+        <div class="section">
+            <button class="test-button" onclick="testRichData()">
+                Test 2: Rich Intelligence Data
+            </button>
+            <div id="result-rich"></div>
+        </div>
+
+        <div class="section">
+            <button class="test-button" onclick="testEmptyData()">
+                Test 3: Empty Intelligence Data
+            </button>
+            <div id="result-empty"></div>
+        </div>
+
+        <div class="section">
+            <button class="test-button" onclick="testCustomData()">
+                Test 4: Custom Intelligence Data
+            </button>
+            <textarea id="customData" placeholder="Paste custom intelligence JSON here...">{
+  "entity_actions": {
+    "all": [
+      {
+        "entity": "Walmart",
+        "type": "competitor",
+        "action": "Launched new same-day delivery service",
+        "timestamp": "2025-01-25T10:00:00Z",
+        "impact": "high",
+        "source": "Press Release"
+      }
+    ]
+  },
+  "topic_trends": {
+    "all": [
+      {
+        "topic": "Supply Chain Disruption",
+        "trend": "increasing",
+        "mentions": 45,
+        "sentiment": "negative",
+        "key_developments": ["Port delays", "Driver shortage"]
+      }
+    ]
+  }
+}</textarea>
+            <div id="result-custom"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Test Results Summary</h2>
+        <div id="summary"></div>
     </div>
 
     <script>
         const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
-        const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
 
-        async function testV5Directly() {
-            const resultsDiv = document.getElementById('v5-results');
-            resultsDiv.innerHTML = '<p>🔍 Testing V5 synthesizer directly...</p>';
-            
-            try {
-                // Create test data
-                const testData = {
-                    intelligence: {
-                        raw_intelligence: {
-                            'news-intelligence': {
-                                totalArticles: 10,
-                                articles: [{title: 'Test Article', content: 'Test content'}],
-                                breakingNews: ['Breaking news item'],
-                                opportunities: ['Opportunity 1']
-                            }
-                        },
-                        organization: 'Acme Corp',
-                        industry: 'technology',
-                        discovered_context: {
-                            name: 'Acme Corp',
-                            industry: 'technology',
-                            competitors: ['Competitor 1', 'Competitor 2']
-                        }
-                    }
-                };
-
-                const response = await fetch(`${SUPABASE_URL}/functions/v1/claude-intelligence-synthesizer-v5`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${ANON_KEY}`
-                    },
-                    body: JSON.stringify(testData)
-                });
-
-                const data = await response.json();
-                
-                resultsDiv.innerHTML = `
-                    <div class="test-section ${data.success ? 'success' : 'error'}">
-                        <h3>V5 Synthesizer Response</h3>
-                        <p><strong>Success:</strong> ${data.success}</p>
-                        <p><strong>Has Analysis:</strong> ${!!data.analysis}</p>
-                        
-                        <h4>Analysis Structure:</h4>
-                        <ul>
-                            <li>Market Activity: ${!!data.analysis?.market_activity}</li>
-                            <li>Competitor Intel: ${!!data.analysis?.competitor_intelligence}</li>
-                            <li>Social Pulse: ${!!data.analysis?.social_pulse}</li>
-                            <li>Industry Signals: ${!!data.analysis?.industry_signals}</li>
-                            <li>Media Coverage: ${!!data.analysis?.media_coverage}</li>
-                        </ul>
-                        
-                        <details>
-                            <summary>Full Response</summary>
-                            <pre>${JSON.stringify(data, null, 2)}</pre>
-                        </details>
-                    </div>
-                `;
-            } catch (error) {
-                resultsDiv.innerHTML = `
-                    <div class="test-section error">
-                        <h3>❌ Error</h3>
-                        <p>${error.message}</p>
-                    </div>
-                `;
-            }
+        function displayResult(elementId, data, status) {
+            const element = document.getElementById(elementId);
+            const className = status === 'success' ? 'success' : status === 'error' ? 'error' : 'loading';
+            element.className = `result ${className}`;
+            element.textContent = typeof data === 'object' ? JSON.stringify(data, null, 2) : data;
         }
 
-        async function testGathering() {
-            const resultsDiv = document.getElementById('gathering-results');
-            resultsDiv.innerHTML = '<p>🔍 Testing intelligence gathering...</p>';
+        async function callSynthesis(intelligence, testName) {
+            const orgName = document.getElementById('orgName').value;
+            const url = `${SUPABASE_URL}/functions/v1/intelligence-synthesis-v3`;
+            
+            console.log(`🧪 ${testName} - Calling synthesis with:`, intelligence);
             
             try {
-                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-gathering`, {
+                const response = await fetch(url, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${ANON_KEY}`
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
                     },
                     body: JSON.stringify({
+                        intelligence: intelligence,
                         organization: {
-                            name: 'Acme Corp',
-                            industry: 'technology'
+                            name: orgName,
+                            industry: 'retail'
                         }
                     })
                 });
 
-                const data = await response.json();
+                const responseText = await response.text();
+                console.log(`📡 ${testName} - Raw response:`, responseText);
+
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                } catch (e) {
+                    throw new Error(`Invalid JSON response: ${responseText}`);
+                }
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${JSON.stringify(data)}`);
+                }
+
+                // Check structure of response
+                const analysis = {
+                    success: data.success,
+                    hasError: !!data.error,
+                    hasTabs: !!data.tabs,
+                    tabCount: data.tabs ? Object.keys(data.tabs).length : 0,
+                    tabs: data.tabs ? Object.keys(data.tabs) : [],
+                    hasAlerts: !!data.alerts,
+                    alertCount: data.alerts?.length || 0,
+                    hasExecutiveTab: !!data.tabs?.executive,
+                    executiveHeadline: data.tabs?.executive?.headline,
+                    hasCompetitiveTab: !!data.tabs?.competitive,
+                    competitorActions: data.tabs?.competitive?.competitor_actions?.length || 0
+                };
+
+                console.log(`✅ ${testName} - Analysis:`, analysis);
                 
-                resultsDiv.innerHTML = `
-                    <div class="test-section ${data.success ? 'success' : 'error'}">
-                        <h3>Gathering Response</h3>
-                        <p><strong>Success:</strong> ${data.success}</p>
-                        <p><strong>Phases:</strong> ${JSON.stringify(data.phases)}</p>
-                        
-                        <h4>Statistics:</h4>
-                        <ul>
-                            <li>Competitors: ${data.statistics?.competitors_identified || 0}</li>
-                            <li>Sources Attempted: ${data.statistics?.sources_attempted || 0}</li>
-                            <li>Sources Succeeded: ${data.statistics?.sources_succeeded || 0}</li>
-                            <li>Total Articles: ${data.statistics?.total_articles || 0}</li>
-                        </ul>
-                        
-                        <h4>Raw Intelligence Sources:</h4>
-                        <ul>
-                            ${Object.keys(data.raw_intelligence || {}).map(key => 
-                                `<li>${key}: ${data.raw_intelligence[key]?.success !== false ? '✅' : '❌'}</li>`
-                            ).join('')}
-                        </ul>
-                        
-                        <details>
-                            <summary>Full Response</summary>
-                            <pre>${JSON.stringify(data, null, 2)}</pre>
-                        </details>
-                    </div>
-                `;
+                return {
+                    status: 'success',
+                    analysis,
+                    fullResponse: data
+                };
             } catch (error) {
-                resultsDiv.innerHTML = `
-                    <div class="test-section error">
-                        <h3>❌ Error</h3>
-                        <p>${error.message}</p>
-                    </div>
-                `;
+                console.error(`❌ ${testName} - Error:`, error);
+                return {
+                    status: 'error',
+                    error: error.message
+                };
             }
         }
+
+        async function testMinimalData() {
+            displayResult('result-minimal', 'Testing with minimal valid data...', 'loading');
+            
+            const intelligence = {
+                entity_actions: {
+                    all: [
+                        {
+                            entity: "Test Competitor",
+                            type: "competitor",
+                            action: "Announced price reduction",
+                            timestamp: new Date().toISOString(),
+                            impact: "medium"
+                        }
+                    ]
+                },
+                topic_trends: {
+                    all: [
+                        {
+                            topic: "Market Expansion",
+                            trend: "increasing",
+                            mentions: 10
+                        }
+                    ]
+                }
+            };
+
+            const result = await callSynthesis(intelligence, 'Minimal Data Test');
+            displayResult('result-minimal', result, result.status);
+            updateSummary();
+        }
+
+        async function testRichData() {
+            displayResult('result-rich', 'Testing with rich intelligence data...', 'loading');
+            
+            const intelligence = {
+                entity_actions: {
+                    all: [
+                        {
+                            entity: "Walmart",
+                            type: "competitor",
+                            action: "Launched new same-day delivery service in 100 cities",
+                            timestamp: new Date().toISOString(),
+                            impact: "high",
+                            source: "Press Release",
+                            details: "Competing directly with Amazon Prime"
+                        },
+                        {
+                            entity: "Amazon",
+                            type: "competitor", 
+                            action: "Acquired logistics startup for $2B",
+                            timestamp: new Date(Date.now() - 86400000).toISOString(),
+                            impact: "high",
+                            source: "Reuters"
+                        },
+                        {
+                            entity: "FTC",
+                            type: "regulator",
+                            action: "Announced new guidelines for retail pricing transparency",
+                            timestamp: new Date(Date.now() - 172800000).toISOString(),
+                            impact: "medium",
+                            source: "FTC.gov"
+                        },
+                        {
+                            entity: "Bloomberg",
+                            type: "media",
+                            action: "Published critical article on supply chain practices",
+                            timestamp: new Date(Date.now() - 3600000).toISOString(),
+                            impact: "medium",
+                            sentiment: "negative"
+                        }
+                    ]
+                },
+                topic_trends: {
+                    all: [
+                        {
+                            topic: "Supply Chain Innovation",
+                            trend: "increasing",
+                            mentions: 145,
+                            sentiment: "positive",
+                            key_developments: [
+                                "AI-powered inventory management",
+                                "Drone delivery pilots",
+                                "Sustainable packaging initiatives"
+                            ]
+                        },
+                        {
+                            topic: "Labor Relations",
+                            trend: "stable",
+                            mentions: 67,
+                            sentiment: "mixed",
+                            key_developments: [
+                                "Union organizing efforts",
+                                "Wage increase announcements"
+                            ]
+                        },
+                        {
+                            topic: "E-commerce Growth",
+                            trend: "increasing",
+                            mentions: 203,
+                            sentiment: "positive",
+                            key_developments: [
+                                "Mobile shopping surge",
+                                "Social commerce integration"
+                            ]
+                        }
+                    ]
+                }
+            };
+
+            const result = await callSynthesis(intelligence, 'Rich Data Test');
+            displayResult('result-rich', result, result.status);
+            updateSummary();
+        }
+
+        async function testEmptyData() {
+            displayResult('result-empty', 'Testing with empty intelligence data...', 'loading');
+            
+            const intelligence = {
+                entity_actions: { all: [] },
+                topic_trends: { all: [] }
+            };
+
+            const result = await callSynthesis(intelligence, 'Empty Data Test');
+            displayResult('result-empty', result, result.status);
+            updateSummary();
+        }
+
+        async function testCustomData() {
+            displayResult('result-custom', 'Testing with custom data...', 'loading');
+            
+            try {
+                const customDataStr = document.getElementById('customData').value;
+                const intelligence = JSON.parse(customDataStr);
+                
+                const result = await callSynthesis(intelligence, 'Custom Data Test');
+                displayResult('result-custom', result, result.status);
+            } catch (error) {
+                displayResult('result-custom', { error: `Invalid JSON: ${error.message}` }, 'error');
+            }
+            updateSummary();
+        }
+
+        function updateSummary() {
+            const results = document.querySelectorAll('.result');
+            let successCount = 0;
+            let errorCount = 0;
+            
+            results.forEach(result => {
+                if (result.classList.contains('success')) successCount++;
+                if (result.classList.contains('error')) errorCount++;
+            });
+            
+            document.getElementById('summary').innerHTML = `
+                <p>✅ Successful: ${successCount}</p>
+                <p>❌ Failed: ${errorCount}</p>
+                <p>⏳ Pending: ${results.length - successCount - errorCount}</p>
+            `;
+        }
+
+        // Initialize
+        updateSummary();
+        console.log('🧠 Synthesis Test Tool Ready');
+        console.log('📡 Using Supabase URL:', SUPABASE_URL);
     </script>
 </body>
 </html>

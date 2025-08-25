@@ -18,61 +18,131 @@ async function synthesizeWithClaude(intelligence: any, organization: any) {
     throw new Error('No intelligence data available for synthesis')
   }
   
-  // Create all 12 tabs with rich content
+  // Generate executive content with Claude
+  const executiveContent = await generateExecutiveContent(entityActions, topicTrends, organization, ANTHROPIC_API_KEY)
+  
+  // Extract competitive actions
+  const competitorActions = entityActions
+    .filter(a => a.type === 'competitor')
+    .map(a => ({
+      entity: a.entity,
+      action: a.action,
+      impact: a.impact || 'medium',
+      timestamp: a.timestamp,
+      response_needed: a.impact === 'high' || a.impact === 'critical'
+    }))
+  
+  // Extract media coverage
+  const mediaCoverage = entityActions
+    .filter(a => a.type === 'media')
+    .map(a => ({
+      outlet: a.entity,
+      coverage: a.action,
+      sentiment: a.sentiment || 'neutral',
+      timestamp: a.timestamp
+    }))
+  
+  // Extract regulatory developments
+  const regulatoryDevelopments = entityActions
+    .filter(a => a.type === 'regulator')
+    .map(a => ({
+      regulator: a.entity,
+      development: a.action,
+      compliance_impact: a.impact || 'medium',
+      deadline: a.deadline || 'TBD'
+    }))
+  
+  // Create comprehensive tab structure matching frontend expectations
   const tabs = {
     executive: {
-      title: "Executive Brief",
-      content: await generateExecutiveContent(entityActions, topicTrends, organization, ANTHROPIC_API_KEY)
+      headline: `Intelligence Update: ${entityActions.length} Actions, ${topicTrends.length} Trends`,
+      overview: executiveContent,
+      competitive_highlight: competitorActions[0] ? 
+        `${competitorActions[0].entity}: ${competitorActions[0].action}` : 
+        'No significant competitor moves detected',
+      market_highlight: topicTrends[0] ? 
+        `${topicTrends[0].topic} showing ${topicTrends[0].trend} trend` : 
+        'Market conditions stable',
+      regulatory_highlight: regulatoryDevelopments[0] ? 
+        `${regulatoryDevelopments[0].regulator}: ${regulatoryDevelopments[0].development}` : 
+        'No new regulatory changes',
+      media_highlight: mediaCoverage[0] ? 
+        `${mediaCoverage[0].outlet}: ${mediaCoverage[0].coverage}` : 
+        'Limited media coverage',
+      immediate_actions: competitorActions
+        .filter(a => a.response_needed)
+        .slice(0, 3)
+        .map(a => `Respond to ${a.entity}'s ${a.action}`)
     },
-    positioning: {
-      title: "Competitive Positioning",
-      content: "Based on recent competitor actions:\n\n" + 
-               entityActions.map(a => `• ${a.entity}: ${a.action}`).join('\n') +
-               "\n\nRecommended positioning: Focus on differentiation in areas where competitors show weakness."
-    },
-    between: {
-      title: "Read Between Lines",
-      content: "Hidden patterns in the data suggest:\n\n" +
-               "1. Market consolidation is accelerating\n" +
-               "2. Regulatory scrutiny increasing\n" +
-               "3. Technology convergence creating new opportunities"
-    },
-    thought: {
-      title: "Thought Leadership",
-      content: "Key topics for thought leadership:\n\n" +
-               topicTrends.map(t => `• ${t.topic}: ${t.trend} trend`).join('\n')
+    competitive: {
+      competitor_actions: competitorActions,
+      competitive_implications: competitorActions.slice(0, 3).map(a => 
+        `${a.entity}'s action suggests strategic shift in market positioning`
+      ),
+      pr_strategy: 'Emphasize our unique value propositions and market leadership',
+      key_messages: [
+        'We remain the market leader in innovation',
+        'Our customer-first approach sets us apart',
+        'Strategic investments position us for future growth'
+      ],
+      do_not_say: [
+        'Avoid direct comparisons with competitors',
+        'Do not acknowledge market challenges publicly',
+        'Refrain from defensive messaging'
+      ]
     },
     market: {
-      title: "Market Intelligence",
-      content: "Market dynamics show significant shifts in customer preferences and competitive landscape."
+      market_trends: topicTrends.map(t => ({
+        topic: t.topic,
+        trend: t.trend,
+        implications: `${t.topic} ${t.trend === 'increasing' ? 'presents growth opportunities' : 'requires monitoring'}`
+      })),
+      opportunities: topicTrends
+        .filter(t => t.trend === 'increasing')
+        .map(t => `Capitalize on growing interest in ${t.topic}`),
+      market_implications: ['Market dynamics favor innovation', 'Customer preferences shifting rapidly'],
+      market_narrative: 'The market is experiencing rapid transformation driven by technology and changing consumer behavior',
+      thought_leadership: topicTrends.slice(0, 3).map(t => t.topic)
     },
     regulatory: {
-      title: "Regulatory Landscape",
-      content: "Regulatory environment is evolving with new compliance requirements on the horizon."
+      regulatory_developments: regulatoryDevelopments,
+      compliance_requirements: regulatoryDevelopments.map(r => r.development),
+      regulatory_stance: 'Proactive compliance and engagement with regulators',
+      stakeholder_messages: [
+        'We welcome regulatory clarity',
+        'Compliance is core to our operations',
+        'We exceed regulatory requirements'
+      ]
+    },
+    media: {
+      media_coverage: mediaCoverage,
+      social_trends: topicTrends.filter(t => t.mentions > 50),
+      reputation_impact: mediaCoverage.length > 0 ? 
+        (mediaCoverage.filter(m => m.sentiment === 'positive').length > mediaCoverage.length / 2 ? 'positive' : 'mixed') : 
+        'neutral',
+      sentiment_trend: 'stable',
+      narrative_risks: ['Competitor messaging gaining traction', 'Need to address perception gaps'],
+      media_strategy: 'Proactive engagement with key media outlets',
+      media_outreach: ['Exclusive briefings for tier-1 media', 'Executive thought leadership pieces'],
+      social_response: 'Monitor and engage authentically with community feedback'
     },
     forward: {
-      title: "Forward Intelligence",
-      content: "Predictive analysis indicates major industry shifts in the next 6-12 months."
-    },
-    narrative: {
-      title: "Narrative Intelligence",
-      content: "Current media narratives focus on innovation, sustainability, and market disruption."
-    },
-    response: {
-      title: "Response Strategies",
-      content: "Recommended responses to competitor actions and market changes."
-    },
-    messaging: {
-      title: "Messaging Framework",
-      content: "Key messages to reinforce market position and counter competitor narratives."
-    },
-    stakeholders: {
-      title: "Stakeholder Analysis",
-      content: "Stakeholder sentiment and recommended engagement strategies."
-    },
-    tomorrow: {
-      title: "Tomorrow's Headlines",
-      content: "Anticipated news and how to prepare proactive responses."
+      predictions: [
+        'Market consolidation likely in next 6 months',
+        'Regulatory framework will clarify by Q3',
+        'Technology disruption will accelerate'
+      ],
+      preparation_needed: [
+        'Develop contingency plans for market shifts',
+        'Strengthen competitive positioning',
+        'Build strategic partnerships'
+      ],
+      proactive_strategy: 'Position ahead of market trends through innovation and strategic communication',
+      prepared_statements: [
+        'Statement on market leadership ready',
+        'Response to competitor moves prepared',
+        'Regulatory compliance messaging updated'
+      ]
     }
   }
   
@@ -140,10 +210,32 @@ serve(async (req) => {
     
     const tabs = await synthesizeWithClaude(intelligence, organization)
     
+    // Count actions and trends
+    const entityActions = intelligence.entity_actions?.all || []
+    const topicTrends = intelligence.topic_trends?.all || []
+    
+    // Generate alerts based on high-impact actions
+    const alerts = entityActions
+      .filter(action => action.impact === 'high' || action.impact === 'critical')
+      .slice(0, 3)
+      .map(action => ({
+        type: action.impact === 'critical' ? 'critical' : 'warning',
+        title: `${action.entity} Action Alert`,
+        message: action.action,
+        timestamp: action.timestamp || new Date().toISOString()
+      }))
+    
     return new Response(
       JSON.stringify({
         success: true,
         tabs,
+        alerts,
+        statistics: {
+          entities_tracked: new Set(entityActions.map(a => a.entity)).size,
+          actions_captured: entityActions.length,
+          topics_monitored: topicTrends.length,
+          critical_items: alerts.filter(a => a.type === 'critical').length
+        },
         timestamp: new Date().toISOString()
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
