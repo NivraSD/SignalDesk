@@ -11,6 +11,7 @@ import IntelligenceSettings from './IntelligenceSettings';
 import DiagnosticPanel from './DiagnosticPanel';
 import { IntelligenceIcon, OpportunityIcon, ExecutionIcon, MemoryIcon, RefreshIcon, SettingsIcon } from './Icons/NeonIcons';
 import { getUnifiedOrganization } from '../utils/unifiedDataLoader';
+import cacheManager from '../utils/cacheManager';
 
 const RailwayV2Enhanced = () => {
   const navigate = useNavigate();
@@ -24,6 +25,9 @@ const RailwayV2Enhanced = () => {
   const [sharedIntelligence, setSharedIntelligence] = useState(null);
 
   useEffect(() => {
+    // Check cache status on mount
+    console.log('📊 Cache status:', cacheManager.getCacheStatus());
+    
     // Use unified data loader to get organization
     const orgData = getUnifiedOrganization();
     
@@ -42,6 +46,16 @@ const RailwayV2Enhanced = () => {
     console.log('🏢 RailwayV2Enhanced loaded organization:', orgData);
     setOrganizationData(orgData);
   }, [navigate]);
+  
+  const handleNewSearch = () => {
+    console.log('🔄 Starting new search...');
+    // Clear intelligence cache but keep organization
+    cacheManager.startNewSearch();
+    // Trigger refresh
+    setRefreshKey(prev => prev + 1);
+    // Reset to intelligence module
+    setActiveModule('intelligence');
+  };
 
   // V3 DEPLOYMENT MARKER - NO FALLBACKS
   const deploymentVersion = "V3.1 - NO FALLBACKS - 2025-08-24";
@@ -130,6 +144,24 @@ const RailwayV2Enhanced = () => {
         </nav>
 
         <div className="railway-status">
+          <button 
+            className="new-search-btn"
+            onClick={handleNewSearch}
+            title="Start New Search"
+            style={{
+              background: 'linear-gradient(135deg, #00ff88, #00ffcc)',
+              color: '#000',
+              border: 'none',
+              padding: '8px 16px',
+              borderRadius: '20px',
+              marginRight: '10px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              fontSize: '12px'
+            }}
+          >
+            🔄 New Search
+          </button>
           <button 
             className="org-settings-btn"
             onClick={() => setShowOrgSettings(true)}

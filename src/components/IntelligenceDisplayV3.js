@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './IntelligenceDisplayV3.css';
 import intelligenceOrchestratorV3 from '../services/intelligenceOrchestratorV3';
 import { getUnifiedOrganization, getUnifiedCompleteProfile } from '../utils/unifiedDataLoader';
-import cacheManager from '../utils/smartCache';
+import cacheManager from '../utils/cacheManager';
 import RealIntelligenceDisplay from './RealIntelligenceDisplay';
 import { 
   RocketIcon, AlertIcon, TrendingUpIcon, TargetIcon, 
@@ -35,13 +35,15 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0, onIntelligenc
       hasOrgName: !!organization?.name
     });
     
-    // Smart cache management - only cache real data, not in development
-    const cachedData = cacheManager.getIntelligence(organization);
-    if (cachedData) {
-      console.log('📦 Using cached intelligence');
-      setIntelligence(cachedData);
-      setLoading(false);
-      return;
+    // Check for cached intelligence (skip if refresh triggered)
+    if (refreshTrigger === 0) {
+      const cachedData = cacheManager.getIntelligence();
+      if (cachedData) {
+        console.log('📦 Using cached intelligence');
+        setIntelligence(cachedData);
+        setLoading(false);
+        return;
+      }
     }
     
     // Auto-fetch intelligence when organization changes or on refresh
@@ -185,18 +187,15 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0, onIntelligenc
       if (result.success) {
         setIntelligence(result);
         
-        // Save opportunities to cache for Opportunity Engine
+        // Save intelligence and synthesis to cache
         if (result.opportunities && result.opportunities.length > 0) {
           console.log('💾 Caching opportunities for Opportunity Engine:', result.opportunities.length);
-          const cacheData = {
-            data: result,
-            timestamp: new Date().toISOString()
-          };
-          localStorage.setItem('signaldesk_intelligence_cache', JSON.stringify(cacheData));
+          // Save synthesis for opportunity engine
+          cacheManager.saveSynthesis(result);
         }
         
-        // Smart cache - only saves real data, not templates
-        cacheManager.saveIntelligence(result, profileToUse?.organization);
+        // Save intelligence data
+        cacheManager.saveIntelligence(result);
         
         // Share intelligence with other modules
         if (onIntelligenceUpdate && result) {

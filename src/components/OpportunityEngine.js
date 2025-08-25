@@ -105,39 +105,25 @@ const OpportunityEngine = ({ onAIMessage, isDragging = false }) => {
   const loadOpportunities = async () => {
     setLoading(true);
     try {
-      // First try to load from cached intelligence data
-      const cachedIntelligence = localStorage.getItem('signaldesk_intelligence_cache');
+      // Import cache manager at top of component if not already
+      const cacheManager = (await import('../utils/cacheManager')).default;
       
-      if (cachedIntelligence) {
-        try {
-          const intelligence = JSON.parse(cachedIntelligence);
-          
-          // Check if intelligence has opportunities
-          if (intelligence.data?.opportunities && intelligence.data.opportunities.length > 0) {
-            console.log('📊 Loading opportunities from intelligence cache:', intelligence.data.opportunities.length);
-            setOpportunities(intelligence.data.opportunities);
-            setLoading(false);
-            return;
-          }
-        } catch (e) {
-          console.log('Failed to parse cached intelligence:', e);
-        }
+      // Try to load from synthesis cache
+      const synthesis = cacheManager.getSynthesis();
+      if (synthesis && synthesis.opportunities && synthesis.opportunities.length > 0) {
+        console.log('🎯 Loading opportunities from cache:', synthesis.opportunities.length);
+        setOpportunities(synthesis.opportunities);
+        setLoading(false);
+        return;
       }
       
-      // Try to load from synthesis response
-      const lastSynthesis = localStorage.getItem('signaldesk_last_synthesis');
-      if (lastSynthesis) {
-        try {
-          const synthesis = JSON.parse(lastSynthesis);
-          if (synthesis.opportunities && synthesis.opportunities.length > 0) {
-            console.log('🎯 Loading opportunities from synthesis:', synthesis.opportunities.length);
-            setOpportunities(synthesis.opportunities);
-            setLoading(false);
-            return;
-          }
-        } catch (e) {
-          console.log('Failed to parse synthesis:', e);
-        }
+      // Try to load from intelligence cache
+      const intelligence = cacheManager.getIntelligence();
+      if (intelligence && intelligence.opportunities && intelligence.opportunities.length > 0) {
+        console.log('📊 Loading opportunities from intelligence:', intelligence.opportunities.length);
+        setOpportunities(intelligence.opportunities);
+        setLoading(false);
+        return;
       }
       
       // Fall back to mock data if no real opportunities

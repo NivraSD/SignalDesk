@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Verify Discovery</title>
+    <style>
+        body { 
+            background: #0a0a0a; 
+            color: #00ff88; 
+            font-family: monospace; 
+            padding: 20px;
+        }
+        .success { color: #00ff88; }
+        .error { color: #ff0088; }
+        pre { 
+            background: rgba(0,255,136,0.1); 
+            padding: 10px; 
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Discovery Verification</h1>
+    <div id="results"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+
+        async function testDiscovery() {
+            const results = document.getElementById('results');
+            
+            // Test data matching what onboarding sends
+            const testData = {
+                organization: { 
+                    name: 'Microsoft', 
+                    industry: 'technology' 
+                },
+                stakeholders: {
+                    competitors: ['Google', 'Amazon', 'Apple'],
+                    regulators: ['FTC', 'SEC'],
+                    activists: [],
+                    media_outlets: ['TechCrunch', 'The Verge'],
+                    investors: [],
+                    analysts: []
+                },
+                monitoring_topics: ['AI', 'cloud']
+            };
+
+            results.innerHTML = '<h2>Testing Discovery...</h2>';
+
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-discovery-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify(testData)
+                });
+
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    results.innerHTML += '<h3 class="success">✅ Discovery Works!</h3>';
+                    results.innerHTML += `<p>Media outlets passed: ${data.entities?.media?.length || 0}</p>`;
+                    results.innerHTML += '<pre>' + JSON.stringify(data.entities, null, 2) + '</pre>';
+                } else {
+                    results.innerHTML += '<h3 class="error">❌ Discovery Failed</h3>';
+                    results.innerHTML += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                }
+            } catch (error) {
+                results.innerHTML += '<h3 class="error">❌ Error: ' + error.message + '</h3>';
+            }
+        }
+
+        testDiscovery();
+    </script>
+</body>
+</html>

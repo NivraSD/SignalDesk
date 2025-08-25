@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import intelligentDiscoveryService from '../services/intelligentDiscoveryService';
 import { clearAllIntelligenceCache } from '../utils/clearCache';
+import cacheManager from '../utils/cacheManager';
 import './UnifiedOnboarding.css';
 
 const UnifiedOnboarding = ({ onComplete }) => {
@@ -16,33 +17,15 @@ const UnifiedOnboarding = ({ onComplete }) => {
     // This prevents data contamination between organizations
     console.log('🧹 COMPREHENSIVE RESET: Clearing ALL cached data on onboarding entry');
     
-    // 1. Clear ALL localStorage keys related to SignalDesk
-    const allKeys = Object.keys(localStorage);
-    const signaldeskKeys = allKeys.filter(key => 
-      key.includes('signaldesk') || 
-      key.includes('organization') || 
-      key.includes('onboarding') || 
-      key.includes('opportunity') ||
-      key.includes('intelligence') ||
-      key.includes('cache') ||
-      key === 'current_organization' ||
-      key === 'onboarding_config'
-    );
+    // Use centralized cache manager to clear everything
+    const cleared = cacheManager.clearAll();
+    console.log(`  ✅ Cleared ${cleared} localStorage items`);
     
-    signaldeskKeys.forEach(key => {
-      localStorage.removeItem(key);
-      console.log(`  ✅ Cleared localStorage: ${key}`);
-    });
-    
-    // 2. Clear ALL intelligence caches
-    clearAllIntelligenceCache();
-    console.log('  ✅ Cleared all intelligence caches');
-    
-    // 3. Clear sessionStorage completely
+    // Clear sessionStorage completely
     sessionStorage.clear();
     console.log('  ✅ Cleared all sessionStorage');
     
-    // 4. Clear discovery service in-memory cache
+    // Clear discovery service in-memory cache
     if (intelligentDiscoveryService && intelligentDiscoveryService.cache) {
       intelligentDiscoveryService.cache.clear();
       console.log('  ✅ Cleared discovery service in-memory cache');
