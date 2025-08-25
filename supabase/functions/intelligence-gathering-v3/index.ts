@@ -1,10 +1,13 @@
 // Intelligence Gathering V3 - Streamlined Entity Action Tracking
-// Gathers actual intelligence about entity movements and trends
+// Gathers actual intelligence using Firecrawl API and RSS feeds
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { corsHeaders } from "../_shared/cors.ts"
 
-console.log('🔑 Gathering V3 - Starting Edge Function')
+const FIRECRAWL_API_KEY = 'fc-3048810124b640eb99293880a4ab25d0'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8'
+
+console.log('🔑 Gathering V3 - Starting Edge Function with Firecrawl and RSS')
 
 async function fetchWithTimeout(url: string, options: any = {}, timeoutMs: number = 5000) {
   const controller = new AbortController()
@@ -23,8 +26,57 @@ async function fetchWithTimeout(url: string, options: any = {}, timeoutMs: numbe
   }
 }
 
-// Track specific entity actions in news
-async function gatherEntityActions(entities: any) {
+// Search using Firecrawl API
+async function searchWithFirecrawl(query: string, limit: number = 5) {
+  try {
+    console.log(`🔥 Firecrawl search: ${query}`)
+    const response = await fetch('https://api.firecrawl.dev/v1/search', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ query, limit })
+    })
+    
+    if (response.ok) {
+      const result = await response.json()
+      console.log(`✅ Firecrawl returned ${result?.data?.length || 0} results`)
+      return result?.data || []
+    }
+  } catch (error) {
+    console.error('Firecrawl search failed:', error)
+  }
+  return []
+}
+
+// Fetch RSS feeds from source-registry
+async function fetchRSSFeeds(industry: string, limit: number = 20) {
+  try {
+    console.log(`📡 Fetching RSS feeds for industry: ${industry}`)
+    const response = await fetch(
+      `https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/source-registry?industry=${industry}&limit=${limit}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    )
+    
+    if (response.ok) {
+      const data = await response.json()
+      console.log(`✅ Got ${data.articles?.length || 0} RSS articles`)
+      return data.articles || []
+    }
+  } catch (error) {
+    console.error('RSS feed fetch failed:', error)
+  }
+  return []
+}
+
+// Track specific entity actions using Firecrawl and RSS
+async function gatherEntityActions(entities: any, organization: any) {
   console.log('🔍 Gathering entity actions for:', Object.keys(entities))
   const actions = []
   const actionKeywords = [
@@ -41,60 +93,132 @@ async function gatherEntityActions(entities: any) {
     'said', 'warned', 'predicted', 'argued', 'testified', 'tweeted'
   ]
   
-  // Gather actions for each entity type
-  for (const [entityType, entityList] of Object.entries(entities)) {
-    if (!Array.isArray(entityList)) continue
+  // FIRST: Get RSS feeds for the industry
+  const rssArticles = await fetchRSSFeeds(organization?.industry || 'technology', 30)
+  console.log(`📰 Processing ${rssArticles.length} RSS articles`)
+  
+  // Process RSS articles for entity mentions AND general industry intelligence
+  for (const article of rssArticles.slice(0, 10)) { // Process top 10 RSS articles
+    let articleAdded = false
     
-    console.log(`🎯 Processing ${entityType}:`, entityList.length, 'entities')
-    
-    // Process more entities for comprehensive coverage
-    const entitiesToProcess = entityType === 'competitors' ? 5 : 
-                             entityType === 'activists' ? 4 : 
-                             entityType === 'geopolitical' ? 4 : 3
-    
-    for (const entity of entityList.slice(0, entitiesToProcess)) {
-      try {
-        const entityName = entity.name
-        console.log(`  🔍 Searching for actions by: ${entityName}`)
-        // Focus on VERY recent events - last 48 hours for freshness
-        const searchQuery = `"${entityName}" when:2d`
-        const url = `https://news.google.com/rss/search?q=${encodeURIComponent(searchQuery)}&hl=en-US&gl=US&ceid=US:en`
+    // First check if article mentions any specific entities
+    for (const [entityType, entityList] of Object.entries(entities)) {
+      if (!Array.isArray(entityList)) continue
+      
+      for (const entity of entityList) {
+        const entityName = entity.name?.toLowerCase()
+        if (!entityName) continue
         
-        const response = await fetchWithTimeout(url, {}, 3000)
-        if (response.ok) {
-          const xmlText = await response.text()
-          const items = xmlText.match(/<item>[\s\S]*?<\/item>/gi) || []
+        if (article.title?.toLowerCase().includes(entityName) || 
+            article.description?.toLowerCase().includes(entityName)) {
           
-          for (const item of items.slice(0, 5)) { // Top 5 actions per entity
-            const title = item.match(/<title>(.*?)<\/title>/)?.[1] || ''
-            const pubDate = item.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || ''
-            const source = item.match(/<source.*?>(.*?)<\/source>/)?.[1] || 'Unknown'
-            
-            if (title) {
-              // Determine action type
-              const actionType = actionKeywords.find(keyword => 
-                title.toLowerCase().includes(keyword.toLowerCase())
-              ) || 'mentioned'
-              
-              actions.push({
-                entity: entityName,
-                entity_type: entityType,
-                action: actionType,
-                headline: title.replace(/<!\\[CDATA\\[|\\]\\]>/g, '').replace(/&amp;/g, '&'),
-                source: source.replace(/<!\\[CDATA\\[|\\]\\]>/g, ''),
-                timestamp: pubDate,
-                importance: entity.importance || 'medium'
-              })
-            }
-          }
+          const actionType = actionKeywords.find(keyword => 
+            article.title?.toLowerCase().includes(keyword.toLowerCase()) ||
+            article.description?.toLowerCase().includes(keyword.toLowerCase())
+          ) || 'mentioned'
+          
+          actions.push({
+            entity: entity.name,
+            entity_type: entityType,
+            action: actionType,
+            headline: article.title,
+            source: article.source,
+            timestamp: article.published,
+            importance: entity.importance || 'medium',
+            data_source: 'rss',
+            url: article.url
+          })
+          articleAdded = true
+          break
         }
-      } catch (error) {
-        console.log(`Error fetching actions for ${entity.name}: ${error.message}`)
+      }
+      if (articleAdded) break
+    }
+    
+    // If article doesn't mention specific entities but has important keywords, 
+    // add it as industry intelligence
+    if (!articleAdded) {
+      const relevantKeywords = ['AI', 'artificial intelligence', 'design', 'creative', 'software', 
+                                'cloud', 'SaaS', 'startup', 'funding', 'acquisition', 'partnership']
+      const isRelevant = relevantKeywords.some(kw => 
+        article.title?.toLowerCase().includes(kw.toLowerCase()) ||
+        article.description?.toLowerCase().includes(kw.toLowerCase())
+      )
+      
+      if (isRelevant) {
+        const actionType = actionKeywords.find(keyword => 
+          article.title?.toLowerCase().includes(keyword.toLowerCase()) ||
+          article.description?.toLowerCase().includes(keyword.toLowerCase())
+        ) || 'industry_news'
+        
+        actions.push({
+          entity: 'Industry',
+          entity_type: 'market',
+          action: actionType,
+          headline: article.title,
+          source: article.source,
+          timestamp: article.published,
+          importance: 'medium',
+          data_source: 'rss',
+          url: article.url
+        })
       }
     }
   }
   
-  return actions
+  // SECOND: Use Firecrawl for targeted searches on key entities
+  for (const [entityType, entityList] of Object.entries(entities)) {
+    if (!Array.isArray(entityList)) continue
+    
+    console.log(`🎯 Processing ${entityType} with Firecrawl:`, entityList.length, 'entities')
+    
+    // Process top entities with Firecrawl for deeper intelligence
+    const entitiesToProcess = entityType === 'competitors' ? 3 : 
+                             entityType === 'activists' ? 2 : 
+                             entityType === 'geopolitical' ? 2 : 1
+    
+    for (const entity of entityList.slice(0, entitiesToProcess)) {
+      try {
+        const entityName = entity.name
+        console.log(`  🔥 Firecrawl search for: ${entityName}`)
+        
+        // Search for recent news about this entity
+        const searchResults = await searchWithFirecrawl(`"${entityName}" news 2024`, 5)
+        
+        for (const result of searchResults) {
+          if (result.title && result.url) {
+            const actionType = actionKeywords.find(keyword => 
+              result.title?.toLowerCase().includes(keyword.toLowerCase()) ||
+              result.description?.toLowerCase().includes(keyword.toLowerCase())
+            ) || 'activity'
+            
+            actions.push({
+              entity: entityName,
+              entity_type: entityType,
+              action: actionType,
+              headline: result.title,
+              source: new URL(result.url).hostname,
+              timestamp: new Date().toISOString(),
+              importance: entity.importance || 'high',
+              data_source: 'firecrawl',
+              url: result.url
+            })
+          }
+        }
+      } catch (error) {
+        console.log(`Error with Firecrawl for ${entity.name}: ${error.message}`)
+      }
+    }
+  }
+  
+  // Sort by timestamp (newest first) and remove duplicates
+  const uniqueActions = Array.from(
+    new Map(actions.map(a => [`${a.entity}-${a.headline}`, a])).values()
+  )
+  
+  return uniqueActions.sort((a, b) => 
+    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  )
 }
 
 // Monitor trending topics
@@ -148,7 +272,7 @@ async function gatherIntelligence(discovery: any, organization: any) {
   try {
     // Parallel gathering
     const [entityActions, topicTrends] = await Promise.all([
-      gatherEntityActions(discovery.entities || {}),
+      gatherEntityActions(discovery.entities || {}, organization),
       gatherTopicTrends(discovery.topics || [])
     ])
     

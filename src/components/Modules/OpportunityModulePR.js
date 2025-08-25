@@ -8,6 +8,8 @@ const OpportunityModulePR = ({ organizationId, sharedIntelligence, onIntelligenc
   const [loading, setLoading] = useState(true);
   const [selectedOpportunity, setSelectedOpportunity] = useState(null);
 
+  console.log('🎯 OpportunityModulePR component mounted/updated');
+  
   useEffect(() => {
     const orgData = getUnifiedOrganization();
     console.log('🔍 OpportunityModulePR - Organization data:', orgData);

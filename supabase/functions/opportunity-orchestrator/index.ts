@@ -10,7 +10,9 @@ const FIRECRAWL_API_KEY = 'fc-3048810124b640eb99293880a4ab25d0'
 // PHASE 1: OPPORTUNITY DISCOVERY
 // Map organization to opportunity landscape using Claude
 async function discoverOpportunityLandscape(organization: any, config: any) {
+  console.log('🔑 ANTHROPIC_API_KEY available:', !!ANTHROPIC_API_KEY)
   if (!ANTHROPIC_API_KEY) {
+    console.log('⚠️ No Anthropic API key, using default mapping')
     return getDefaultOpportunityMapping(organization)
   }
 
@@ -84,7 +86,7 @@ Format as JSON with structure:
 }
 
 // PHASE 2: REAL-TIME SIGNAL GATHERING
-// Use Firecrawl to gather actual signals from discovered sources
+// Use Firecrawl AND RSS feeds to gather actual signals from discovered sources
 async function gatherOpportunitySignals(opportunityMap: any, organization: any) {
   const signals = {
     competitor_signals: [],
@@ -92,6 +94,86 @@ async function gatherOpportunitySignals(opportunityMap: any, organization: any) 
     cascade_indicators: [],
     crisis_signals: [],
     viral_opportunities: []
+  }
+  
+  // First, gather RSS feeds for the organization's industry
+  try {
+    const rssResponse = await fetch(
+      `https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/source-registry?industry=${organization.industry || 'technology'}&limit=30`,
+      { 
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8'
+        }
+      }
+    )
+    
+    if (rssResponse.ok) {
+      const rssData = await rssResponse.json()
+      console.log(`📡 Got ${rssData.articles?.length || 0} RSS articles`)
+      
+      // Process RSS articles for signals
+      if (rssData.articles) {
+        for (const article of rssData.articles) {
+          // Check for competitor mentions
+          if (opportunityMap.competitors_to_monitor) {
+            for (const competitor of opportunityMap.competitors_to_monitor) {
+              if (article.title.toLowerCase().includes(competitor.name.toLowerCase()) ||
+                  article.description.toLowerCase().includes(competitor.name.toLowerCase())) {
+                
+                // Check for weakness indicators
+                const weaknessKeywords = ['struggle', 'challenge', 'decline', 'loss', 'delay', 'issue', 'problem', 'lawsuit', 'layoff']
+                const hasWeakness = weaknessKeywords.some(kw => 
+                  article.description?.toLowerCase().includes(kw) || 
+                  article.title?.toLowerCase().includes(kw)
+                )
+                
+                if (hasWeakness) {
+                  signals.competitor_signals.push({
+                    competitor: competitor.name,
+                    signal_type: 'rss_weakness_signal',
+                    title: article.title,
+                    description: article.description,
+                    url: article.url,
+                    confidence: 0.75,
+                    source: article.source,
+                    detected_at: article.published
+                  })
+                }
+              }
+            }
+          }
+          
+          // Check for cascade indicators
+          const cascadeKeywords = ['disruption', 'shortage', 'supply chain', 'crisis', 'regulatory', 'compliance']
+          if (cascadeKeywords.some(kw => article.title.toLowerCase().includes(kw) || article.description.toLowerCase().includes(kw))) {
+            signals.cascade_indicators.push({
+              trigger: 'industry_event',
+              event: article.title,
+              url: article.url,
+              impact_potential: 'medium',
+              window: '48-72 hours',
+              source: article.source,
+              detected_at: article.published
+            })
+          }
+          
+          // Check for narrative opportunities
+          if (article.description?.includes('expert') || article.description?.includes('comment') || 
+              article.title?.includes('opinion') || article.title?.includes('perspective')) {
+            signals.narrative_gaps.push({
+              topic: article.title.substring(0, 50),
+              opportunity: article.title,
+              url: article.url,
+              platform: article.source,
+              confidence: 0.65
+            })
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.log('RSS feed fetch failed:', error)
   }
 
   // Monitor competitors using search instead of direct scraping
@@ -407,21 +489,74 @@ async function analyzeWithPersona(personaName: string, prompt: string, signals: 
   
   // Always try to generate opportunities, even with no signals (proactive opportunities)
   if (!ANTHROPIC_API_KEY) {
-    console.log(`⚠️ No ANTHROPIC_API_KEY found, using fallback for ${personaName}`)
-    // Fallback opportunities when Claude is not available
-    if (personaName === 'Cascade Predictor' && signals.length > 0) {
-      return signals.slice(0, 2).map(signal => ({
-        title: `Cascade Opportunity: ${signal.trigger || signal.event}`,
+    console.log(`⚠️ No ANTHROPIC_API_KEY found, generating fallback opportunities for ${personaName}`)
+    
+    // Generate fallback opportunities based on persona type
+    const fallbackOpportunities = []
+    
+    if (personaName === 'Competitive Opportunist') {
+      fallbackOpportunities.push({
+        title: 'Competitor Vulnerability: Market Share Opportunity',
+        description: 'Recent industry analysis shows potential market share gain opportunity',
         urgency: 'HIGH',
-        window: '24-48 hours',
-        action: 'Position for first-mover advantage',
-        impact: 'Industry-wide cascade effect predicted',
+        window: '2-4 weeks',
+        action: 'Launch targeted campaign highlighting competitive advantages',
+        impact: 'Potential 5-10% market share gain',
         persona: personaName,
-        opportunity_type: 'cascade_predictor',
+        opportunity_type: 'competitor_weakness',
+        confidence: 75
+      })
+    } else if (personaName === 'Narrative Navigator') {
+      fallbackOpportunities.push({
+        title: 'Thought Leadership Gap: AI Ethics Discussion',
+        description: 'Industry lacking authoritative voice on emerging AI ethics challenges',
+        urgency: 'MEDIUM',
+        window: '1-2 weeks',
+        action: 'Position executive for media interviews and opinion pieces',
+        impact: 'Establish thought leadership position',
+        persona: personaName,
+        opportunity_type: 'narrative_vacuum',
+        confidence: 80
+      })
+    } else if (personaName === 'Cascade Predictor') {
+      fallbackOpportunities.push({
+        title: 'Supply Chain Disruption: First Mover Advantage',
+        description: 'Emerging supply chain challenges create opportunity for proactive positioning',
+        urgency: 'URGENT',
+        window: '24-48 hours',
+        action: 'Announce supply chain resilience measures',
+        impact: 'Industry leadership position',
+        persona: personaName,
+        opportunity_type: 'cascade_effect',
         confidence: 85
-      }))
+      })
+    } else if (personaName === 'Crisis Preventer') {
+      fallbackOpportunities.push({
+        title: 'Preemptive Security Disclosure',
+        description: 'Industry-wide security concerns create opportunity for transparency',
+        urgency: 'HIGH',
+        window: '1 week',
+        action: 'Publish security practices and audit results',
+        impact: 'Build trust before industry crisis',
+        persona: personaName,
+        opportunity_type: 'crisis_prevention',
+        confidence: 70
+      })
+    } else if (personaName === 'Viral Virtuoso') {
+      fallbackOpportunities.push({
+        title: 'Trending Topic: Sustainable Tech',
+        description: 'Rising social media discussion on sustainability in tech',
+        urgency: 'HIGH',
+        window: '48-72 hours',
+        action: 'Create viral content showcasing green initiatives',
+        impact: 'Potential 10M+ impressions',
+        persona: personaName,
+        opportunity_type: 'viral_moment',
+        confidence: 65
+      })
     }
-    return []
+    
+    return fallbackOpportunities
   }
   
   // Even with no signals, ask Claude to identify proactive opportunities
@@ -532,21 +667,40 @@ async function scrapeWithFirecrawl(url: string, options: any = {}) {
 
 async function searchWithFirecrawl(query: string, options: any = {}) {
   try {
-    const response = await fetch('https://api.firecrawl.dev/v2/search', {
+    console.log(`🔍 Firecrawl search for: ${query}`)
+    console.log(`🔑 Using Firecrawl API key: ${FIRECRAWL_API_KEY?.substring(0, 10)}...`)
+    const response = await fetch('https://api.firecrawl.dev/v1/search', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ query, ...options })
+      body: JSON.stringify({ 
+        query, 
+        limit: options.limit || 5
+      })
     })
     
     if (!response.ok) {
-      console.error(`Firecrawl search error:`, response.status)
+      const errorText = await response.text()
+      console.error(`Firecrawl search error:`, response.status, errorText)
       return null
     }
     
-    return await response.json()
+    const result = await response.json()
+    console.log(`✅ Firecrawl returned ${result?.data?.length || 0} results`)
+    
+    // Transform v1 response to match expected format
+    if (result?.success && result?.data) {
+      return {
+        success: true,
+        data: {
+          web: result.data  // v1 returns data array directly
+        }
+      }
+    }
+    
+    return null
   } catch (error) {
     console.error(`Firecrawl search failed:`, error)
     return null

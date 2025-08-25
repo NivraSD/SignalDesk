@@ -43,12 +43,64 @@ function getIndustryIntelligenceSources(industry: string) {
   return sources[industry?.toLowerCase()] || sources['technology']
 }
 
-// Scrape competitor intelligence
+// Scrape competitor intelligence from Firecrawl AND RSS feeds
 async function gatherCompetitorIntelligence(organization: any) {
   const intelligence = {
     movements: [],
     vulnerabilities: [],
     opportunities: []
+  }
+  
+  // First, gather RSS feeds for the organization's industry
+  try {
+    const rssResponse = await fetch(
+      `https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/source-registry?industry=${organization.industry || 'technology'}&limit=30`,
+      { 
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8'
+        }
+      }
+    )
+    
+    if (rssResponse.ok) {
+      const rssData = await rssResponse.json()
+      console.log(`📡 Got ${rssData.articles?.length || 0} RSS articles for intelligence`)
+      
+      // Process RSS articles for intelligence
+      if (rssData.articles) {
+        for (const article of rssData.articles) {
+          // Categorize the intelligence
+          const movementKeywords = ['launch', 'announce', 'release', 'introduce', 'unveil', 'partner', 'acquisition', 'merger']
+          const vulnerabilityKeywords = ['layoff', 'lawsuit', 'investigation', 'recall', 'outage', 'breach', 'decline', 'loss']
+          
+          if (movementKeywords.some(kw => article.title.toLowerCase().includes(kw))) {
+            intelligence.movements.push({
+              competitor: 'Industry',
+              type: 'rss_movement',
+              title: article.title,
+              description: article.description,
+              url: article.url,
+              impact: 'medium',
+              detected_at: article.published,
+              source: article.source
+            })
+          } else if (vulnerabilityKeywords.some(kw => article.title.toLowerCase().includes(kw) || article.description.toLowerCase().includes(kw))) {
+            intelligence.vulnerabilities.push({
+              competitor: 'Industry',
+              issue: article.title,
+              description: article.description,
+              url: article.url,
+              opportunity: 'Market opportunity identified',
+              confidence: 0.7,
+              source: article.source
+            })
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.log('RSS feed fetch failed:', error)
   }
   
   const sources = getIndustryIntelligenceSources(organization.industry)
@@ -307,7 +359,8 @@ async function scrapeWithFirecrawl(url: string, options: any = {}) {
 
 async function searchWithFirecrawl(query: string, options: any = {}) {
   try {
-    const response = await fetch('https://api.firecrawl.dev/v2/search', {
+    console.log(`🔍 Firecrawl search for: ${query}`)
+    const response = await fetch('https://api.firecrawl.dev/v1/search', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
@@ -315,16 +368,30 @@ async function searchWithFirecrawl(query: string, options: any = {}) {
       },
       body: JSON.stringify({
         query,
-        ...options
+        limit: options.limit || 5
       })
     })
     
     if (!response.ok) {
-      console.error(`Firecrawl search error:`, response.status)
+      const errorText = await response.text()
+      console.error(`Firecrawl search error:`, response.status, errorText)
       return null
     }
     
-    return await response.json()
+    const result = await response.json()
+    console.log(`✅ Firecrawl returned ${result?.data?.length || 0} results`)
+    
+    // Transform v1 response to match expected format
+    if (result?.success && result?.data) {
+      return {
+        success: true,
+        data: {
+          web: result.data  // v1 returns data array directly
+        }
+      }
+    }
+    
+    return null
   } catch (error) {
     console.error(`Firecrawl search failed:`, error)
     return null
