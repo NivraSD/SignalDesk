@@ -4,13 +4,17 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { corsHeaders } from "../_shared/cors.ts"
 
-const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
+// Get API keys dynamically to ensure they're always fresh
 const FIRECRAWL_API_KEY = 'fc-3048810124b640eb99293880a4ab25d0'
 
 // PHASE 1: OPPORTUNITY DISCOVERY
 // Map organization to opportunity landscape using Claude
 async function discoverOpportunityLandscape(organization: any, config: any) {
+  // Get API key at runtime, not module load time
+  const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
   console.log('🔑 ANTHROPIC_API_KEY available:', !!ANTHROPIC_API_KEY)
+  console.log('🔑 Key length:', ANTHROPIC_API_KEY?.length || 0)
+  
   if (!ANTHROPIC_API_KEY) {
     console.log('⚠️ No Anthropic API key, using default mapping')
     return getDefaultOpportunityMapping(organization)
@@ -486,6 +490,9 @@ async function synthesizeOpportunities(signals: any, opportunityMap: any, organi
 // Helper function for persona analysis
 async function analyzeWithPersona(personaName: string, prompt: string, signals: any[]) {
   console.log(`🎭 ${personaName}: Analyzing ${signals.length} signals`)
+  
+  // Get API key at runtime
+  const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
   
   // Always try to generate opportunities, even with no signals (proactive opportunities)
   if (!ANTHROPIC_API_KEY) {

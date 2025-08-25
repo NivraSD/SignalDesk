@@ -226,7 +226,8 @@ const OpportunityModulePR = ({ organizationId, sharedIntelligence, onIntelligenc
             persona: firstOpp.persona,
             confidence: firstOpp.confidence,
             source: firstOpp.source,
-            hasRealData: !!firstOpp.url || !!firstOpp.source
+            // Check for real data by looking for actual content fields
+            hasRealData: !!(firstOpp.action && firstOpp.expected_impact) || !!firstOpp.url || !!firstOpp.source
           });
         }
         

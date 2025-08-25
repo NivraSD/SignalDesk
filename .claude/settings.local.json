@@ -243,7 +243,9 @@
       "WebFetch(domain:signaldesk-iyue9lf7d-nivra-sd.vercel.app)",
       "Bash(ln:*)",
       "Bash(git rev-parse:*)",
-      "WebFetch(domain:signaldesk-lvzi998u9-nivra-sd.vercel.app)"
+      "WebFetch(domain:signaldesk-lvzi998u9-nivra-sd.vercel.app)",
+      "WebFetch(domain:signaldesk-4k3khier7-nivra-sd.vercel.app)",
+      "Bash(./FIX_EDGE_FUNCTIONS.sh:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

@@ -1,58 +1,75 @@
-// Test function to verify secrets are accessible
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-}
+import { corsHeaders } from "../_shared/cors.ts"
 
 serve(async (req) => {
+  // Handle CORS
   if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // Get all relevant environment variables
-    const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
-    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    // Test what environment variables are accessible
+    const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')
     
-    // Check if they exist and their format
     const result = {
-      anthropic_key: {
-        exists: !!ANTHROPIC_API_KEY,
-        length: ANTHROPIC_API_KEY?.length || 0,
-        starts_with: ANTHROPIC_API_KEY?.substring(0, 15) || 'NOT_SET',
-        ends_with: ANTHROPIC_API_KEY?.substring(ANTHROPIC_API_KEY.length - 5) || 'NOT_SET',
+      timestamp: new Date().toISOString(),
+      environment: {
+        has_anthropic_key: !!anthropicKey,
+        anthropic_key_length: anthropicKey?.length || 0,
+        anthropic_key_prefix: anthropicKey?.substring(0, 10) || 'NOT_SET',
+        has_supabase_url: !!supabaseUrl,
+        has_supabase_anon_key: !!supabaseAnonKey,
+        deno_deployment_id: Deno.env.get('DENO_DEPLOYMENT_ID'),
       },
-      supabase_url: {
-        exists: !!SUPABASE_URL,
-        value: SUPABASE_URL || 'NOT_SET'
-      },
-      service_role: {
-        exists: !!SUPABASE_SERVICE_ROLE_KEY,
-        length: SUPABASE_SERVICE_ROLE_KEY?.length || 0
-      },
-      env_vars_available: Object.keys(Deno.env.toObject()).sort(),
-      timestamp: new Date().toISOString()
+      test_claude_call: false,
+      claude_response: null
     }
-    
-    console.log('Secret check result:', result)
-    
+
+    // If we have the key, try to make a simple Claude call
+    if (anthropicKey) {
+      console.log('Testing Claude API with key...')
+      const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': anthropicKey,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: 'claude-3-haiku-20240307',
+          max_tokens: 100,
+          messages: [{
+            role: 'user',
+            content: 'Say "API key works!" in exactly 3 words.'
+          }]
+        })
+      })
+
+      if (claudeResponse.ok) {
+        const data = await claudeResponse.json()
+        result.test_claude_call = true
+        result.claude_response = data.content[0].text
+      } else {
+        result.test_claude_call = false
+        result.claude_response = `Error: ${claudeResponse.status} ${await claudeResponse.text()}`
+      }
+    }
+
     return new Response(
-      JSON.stringify(result),
+      JSON.stringify(result, null, 2),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200
       }
     )
   } catch (error) {
-    console.error('Error checking secrets:', error)
+    console.error('Error in test-secrets:', error)
     return new Response(
-      JSON.stringify({
+      JSON.stringify({ 
         error: error.message,
-        timestamp: new Date().toISOString()
+        stack: error.stack 
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
