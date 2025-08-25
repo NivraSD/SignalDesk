@@ -144,14 +144,65 @@ async function gatherRealIntelligence(entities: any, organization: any) {
     console.error('RSS fetch error:', error)
   }
   
-  // 2. Search for specific competitor news using Firecrawl
+  // 2. Call monitoring intelligence to get stored findings
+  try {
+    console.log('📡 Fetching stored intelligence from monitoring...')
+    const monitorResponse = await fetch(
+      'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/monitor-intelligence',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0'
+        },
+        body: JSON.stringify({
+          action: 'getFindings',
+          organizationId: organization.id || organization.name
+        })
+      }
+    )
+    
+    if (monitorResponse.ok) {
+      const monitorData = await monitorResponse.json()
+      console.log(`✅ Got ${monitorData.findings?.length || 0} monitoring findings`)
+      
+      // Add monitoring findings to intelligence
+      if (monitorData.findings) {
+        for (const finding of monitorData.findings) {
+          intelligence.entity_actions.all.push({
+            entity: finding.entity || 'Monitored Entity',
+            type: finding.type || 'monitoring',
+            action: finding.title || finding.action,
+            description: finding.description || finding.message,
+            source: finding.source || 'Intelligence Monitoring',
+            url: finding.url || '#',
+            timestamp: finding.created_at || new Date().toISOString(),
+            impact: finding.severity || 'medium',
+            relevance: 0.8
+          })
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Monitoring fetch error:', error)
+  }
+  
+  // 3. Add delay to prevent rushing through data collection
+  console.log('⏱️ Allowing data to process (2 second delay)...')
+  await new Promise(resolve => setTimeout(resolve, 2000))
+  
+  // 3. Search for specific competitor news using Firecrawl
   if (entities.competitors?.length > 0 && FIRECRAWL_API_KEY) {
     console.log(`🔥 Firecrawl search for ${entities.competitors.length} competitors`)
-    for (const competitor of entities.competitors.slice(0, 3)) {
+    for (const competitor of entities.competitors.slice(0, 5)) {  // Increased from 3 to 5
       // Handle both string and object formats
       const competitorName = competitor.name || competitor
       try {
         console.log(`🔍 Searching for "${competitorName}" news with Firecrawl...`)
+        
+        // Add delay between searches to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        
         const searchResponse = await fetch('https://api.firecrawl.dev/v1/search', {
           method: 'POST',
           headers: {
@@ -159,8 +210,8 @@ async function gatherRealIntelligence(entities: any, organization: any) {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            query: `"${competitorName}" latest news 2024 2025`,
-            limit: 5
+            query: `"${competitorName}" latest news announcements developments 2024 2025`,
+            limit: 10  // Increased from 5 to 10
           })
         })
         

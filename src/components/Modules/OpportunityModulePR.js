@@ -18,8 +18,14 @@ const OpportunityModulePR = ({ organizationId, sharedIntelligence, onIntelligenc
     // Always show loading initially
     setLoading(true);
     
-    // Wait for shared intelligence to be available
-    if (sharedIntelligence && (sharedIntelligence.news || sharedIntelligence.gaps || sharedIntelligence.risks)) {
+    // Check for opportunities directly from synthesis
+    if (sharedIntelligence && sharedIntelligence.opportunities && sharedIntelligence.opportunities.length > 0) {
+      console.log('🎯 Using opportunities from synthesis:', sharedIntelligence.opportunities.length);
+      setOpportunities(sharedIntelligence.opportunities);
+      setTimeout(() => setLoading(false), 500);
+    }
+    // Fallback to old structure for backward compatibility
+    else if (sharedIntelligence && (sharedIntelligence.news || sharedIntelligence.gaps || sharedIntelligence.risks)) {
       console.log('📊 Using shared intelligence to generate opportunities');
       console.log('  - News items:', sharedIntelligence.news?.length || 0);
       console.log('  - Gaps:', sharedIntelligence.gaps?.length || 0);
