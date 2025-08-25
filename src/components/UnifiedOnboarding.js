@@ -10,10 +10,33 @@ const UnifiedOnboarding = ({ onComplete }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
   
-  // Only clear data if we're starting a fresh onboarding (no existing organization)
+  // Handle onboarding initialization
   useEffect(() => {
     const existingOrg = localStorage.getItem('signaldesk_organization');
     const existingProfile = localStorage.getItem('signaldesk_unified_profile');
+    
+    // Check if this is a new organization being added
+    const urlParams = new URLSearchParams(window.location.search);
+    const isNewOrg = urlParams.get('new') === 'true';
+    
+    if (isNewOrg) {
+      console.log('🆕 Starting onboarding for new organization - clearing old data...');
+      // Clear all data for fresh start
+      clearAllIntelligenceCache();
+      localStorage.removeItem('signaldesk_unified_profile');
+      localStorage.removeItem('signaldesk_organization');
+      localStorage.removeItem('signaldesk_onboarding');
+      localStorage.removeItem('opportunity_profile');
+      
+      // Clear discovery service cache
+      if (intelligentDiscoveryService && intelligentDiscoveryService.cache) {
+        intelligentDiscoveryService.cache.clear();
+      }
+      
+      // Reset to default profile
+      setProfile(getDefaultProfile());
+      return;
+    }
     
     // Only clear if both are missing (truly fresh start)
     if (!existingOrg && !existingProfile) {
@@ -47,8 +70,11 @@ const UnifiedOnboarding = ({ onComplete }) => {
           setProfile(prev => ({
             ...prev,
             ...existing,
-            // Preserve form structure even if some fields are missing
-            organization: existing.organization || prev.organization,
+            // Reset website to empty to avoid mixing organizations
+            organization: {
+              ...existing.organization,
+              website: existing.organization?.website || ''
+            },
             competitors: existing.competitors || prev.competitors,
             monitoring_topics: existing.monitoring_topics || prev.monitoring_topics
           }));
@@ -60,8 +86,9 @@ const UnifiedOnboarding = ({ onComplete }) => {
     }
   }, []); // Only run once on mount
   
-  const [profile, setProfile] = useState({
-    // Organization Basics (used by Intelligence Hub)
+  // Helper to get default profile
+  const getDefaultProfile = () => ({
+    // Organization basics (used by all)
     organization: {
       id: '',
       name: '',
@@ -78,9 +105,9 @@ const UnifiedOnboarding = ({ onComplete }) => {
     
     // Brand & Voice (Opportunity Engine)
     brand: {
-      voice: 'professional', // professional, conversational, bold, technical
-      risk_tolerance: 'moderate', // conservative, moderate, aggressive
-      response_speed: 'considered' // immediate, considered, strategic
+      voice: 'professional',
+      risk_tolerance: 'moderate',
+      response_speed: 'considered'
     },
     
     // Key Messages (Opportunity Engine)
@@ -93,7 +120,7 @@ const UnifiedOnboarding = ({ onComplete }) => {
     
     // Media Strategy (Opportunity Engine)
     media: {
-      preferred_tiers: [], // tier1_business, tier1_tech, trade, regional
+      preferred_tiers: [],
       journalist_relationships: [],
       no_comment_topics: [],
       exclusive_partners: []
@@ -102,19 +129,21 @@ const UnifiedOnboarding = ({ onComplete }) => {
     // Spokespeople (Opportunity Engine)
     spokespeople: [],
     
-    // Opportunity Preferences (Opportunity Engine)
+    // Opportunity Settings (Opportunity Engine)
     opportunities: {
       types: {
         competitor_weakness: true,
         narrative_vacuum: true,
         cascade_effect: true,
         crisis_prevention: true,
-        alliance_opening: false
+        viral_moment: false
       },
       minimum_confidence: 70,
       auto_execute_threshold: 95
     }
   });
+  
+  const [profile, setProfile] = useState(() => getDefaultProfile());
 
   const steps = [
     { id: 1, title: 'Organization', icon: '🏢', required: true },

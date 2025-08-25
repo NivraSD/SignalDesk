@@ -69,10 +69,31 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0, onIntelligenc
         return;
       }
     } else {
-      // Even if we have organization, get the complete profile for stakeholders
+      // Even if we have organization, ALWAYS get the complete profile for stakeholders
       profileToUse = getUnifiedCompleteProfile();
+      console.log('📦 Using complete profile with stakeholders:', {
+        hasOrganization: !!profileToUse?.organization,
+        competitors: profileToUse?.competitors?.length || 0,
+        media: profileToUse?.media_outlets?.length || 0,
+        regulators: profileToUse?.regulators?.length || 0,
+        analysts: profileToUse?.analysts?.length || 0,
+        investors: profileToUse?.investors?.length || 0,
+        activists: profileToUse?.activists?.length || 0
+      });
+      
       if (!profileToUse?.organization) {
-        profileToUse = { organization, competitors: [], monitoring_topics: [] };
+        // Fallback: use provided organization with empty stakeholders
+        profileToUse = { 
+          organization, 
+          competitors: [], 
+          monitoring_topics: [],
+          stakeholders: {},
+          regulators: [],
+          activists: [],
+          media_outlets: [],
+          investors: [],
+          analysts: []
+        };
       }
     }
     
