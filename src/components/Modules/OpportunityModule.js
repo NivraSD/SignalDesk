@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../config/supabase';
-import { getUnifiedOrganization, getUnifiedOpportunityConfig } from '../../utils/unifiedDataLoader';
+import { getUnifiedOrganization, getUnifiedOpportunityConfig, getUnifiedCompleteProfile } from '../../utils/unifiedDataLoader';
 import './ModuleStyles.css';
 
 const OpportunityModule = ({ organizationId }) => {
@@ -50,15 +50,23 @@ const OpportunityModule = ({ organizationId }) => {
             forceRefresh: false
           });
           
-          // Try the orchestrated approach first
-          const { data: orchestratedData, error: orchestratedError } = await supabase.functions.invoke('opportunity-orchestrator', {
+          // First, get the intelligence data that Intelligence Hub uses
+          console.log('📊 Fetching intelligence data for opportunity detection...');
+          const orchestrator = new (await import('../../services/intelligenceOrchestratorV3')).default();
+          // Get COMPLETE profile with all stakeholders
+          const completeProfile = getUnifiedCompleteProfile();
+          const intelligenceData = await orchestrator.orchestrate(completeProfile);
+          
+          console.log('🔍 Intelligence gathered:', {
+            actions: intelligenceData?.entity_actions?.total_count || 0,
+            topics: intelligenceData?.topic_trends?.total_monitored || 0
+          });
+          
+          // Use the new opportunity detector that consumes intelligence
+          const { data: orchestratedData, error: orchestratedError } = await supabase.functions.invoke('opportunity-detector-v3', {
             body: {
-              organization: {
-                name: orgData.name,  // Use actual organization name
-                industry: orgData.industry || userConfig?.industry || 'technology'
-              },
-              config: userConfig,
-              forceRefresh: false
+              intelligence: intelligenceData,
+              organization: orgData
             }
           });
 

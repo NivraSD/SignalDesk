@@ -59,6 +59,13 @@ const RSS_FEEDS = {
     'https://www.forbes.com/real-time/feed2/',
     'https://www.businessinsider.com/rss'
   ],
+  retail: [
+    'https://www.retaildive.com/feeds/news/',
+    'https://www.businessoffashion.com/rss',
+    'https://www.retailweek.com/rss/',
+    'https://www.forbes.com/real-time/feed2/',
+    'https://www.businessinsider.com/rss'
+  ],
   ai: [
     'https://www.artificialintelligence-news.com/feed/',
     'https://feeds.feedburner.com/venturebeat/SZYF',

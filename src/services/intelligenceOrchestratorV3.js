@@ -6,7 +6,7 @@
 class IntelligenceOrchestratorV3 {
   constructor() {
     this.supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co';
-    this.supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+    this.supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
     
     console.log('🔧 V3 Orchestrator initialized:', {
       url: this.supabaseUrl,
@@ -22,7 +22,9 @@ class IntelligenceOrchestratorV3 {
    * Phase 2: Gathering - Track entity actions and trends
    * Phase 3: Synthesis - Analyze and structure for display
    */
-  async orchestrate(organization) {
+  async orchestrate(config) {
+    // Extract organization and stakeholders from config
+    const organization = config.organization || config;
     console.log(`🚀 V3 Orchestration starting for ${organization.name}`);
     
     try {
@@ -31,6 +33,13 @@ class IntelligenceOrchestratorV3 {
       console.log('📡 Discovery Request:', {
         url: `${this.supabaseUrl}/functions/v1/intelligence-discovery-v3`,
         organization: organization,
+        stakeholders: {
+          competitors: config.competitors?.length || 0,
+          regulators: config.regulators?.length || 0,
+          activists: config.activists?.length || 0,
+          media: config.media_outlets?.length || 0,
+          investors: config.investors?.length || 0
+        },
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${this.supabaseKey.substring(0, 20)}...`
@@ -43,7 +52,19 @@ class IntelligenceOrchestratorV3 {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${this.supabaseKey}`
         },
-        body: JSON.stringify({ organization })
+        body: JSON.stringify({ 
+          organization,
+          // Pass ALL stakeholder data from onboarding
+          stakeholders: {
+            competitors: config.competitors || [],
+            regulators: config.regulators || [],
+            activists: config.activists || [],
+            media: config.media_outlets || [],
+            investors: config.investors || [],
+            analysts: config.analysts || []
+          },
+          monitoring_topics: config.monitoring_topics || []
+        })
       });
 
       console.log('📡 Discovery Response Status:', discoveryResponse.status);

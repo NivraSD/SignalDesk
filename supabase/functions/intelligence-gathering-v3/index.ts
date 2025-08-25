@@ -29,14 +29,23 @@ async function fetchWithTimeout(url: string, options: any = {}, timeoutMs: numbe
 // Search using Firecrawl API
 async function searchWithFirecrawl(query: string, limit: number = 5) {
   try {
-    console.log(`🔥 Firecrawl search: ${query}`)
+    // Add timestamp to force fresh results
+    const timestampedQuery = `${query} ${new Date().toISOString().split('T')[0]} -site:archive.org`
+    console.log(`🔥 Firecrawl search: ${timestampedQuery}`)
+    
     const response = await fetch('https://api.firecrawl.dev/v1/search', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ query, limit })
+      body: JSON.stringify({ 
+        query: timestampedQuery, 
+        limit,
+        pageOptions: {
+          onlyMainContent: true
+        }
+      })
     })
     
     if (response.ok) {
@@ -97,11 +106,11 @@ async function gatherEntityActions(entities: any, organization: any) {
   const rssArticles = await fetchRSSFeeds(organization?.industry || 'technology', 30)
   console.log(`📰 Processing ${rssArticles.length} RSS articles`)
   
-  // Process RSS articles for entity mentions AND general industry intelligence
-  for (const article of rssArticles.slice(0, 10)) { // Process top 10 RSS articles
+  // Process RSS articles for entity mentions - PRIORITIZE STAKEHOLDER MENTIONS
+  for (const article of rssArticles.slice(0, 20)) { // Process more articles for better coverage
     let articleAdded = false
     
-    // First check if article mentions any specific entities
+    // Check if article mentions any specific stakeholder entities
     for (const [entityType, entityList] of Object.entries(entities)) {
       if (!Array.isArray(entityList)) continue
       
@@ -115,7 +124,7 @@ async function gatherEntityActions(entities: any, organization: any) {
           const actionType = actionKeywords.find(keyword => 
             article.title?.toLowerCase().includes(keyword.toLowerCase()) ||
             article.description?.toLowerCase().includes(keyword.toLowerCase())
-          ) || 'mentioned'
+          ) || 'activity'
           
           actions.push({
             entity: entity.name,
@@ -124,22 +133,28 @@ async function gatherEntityActions(entities: any, organization: any) {
             headline: article.title,
             source: article.source,
             timestamp: article.published,
-            importance: entity.importance || 'medium',
+            importance: entity.importance || 'high',
             data_source: 'rss',
-            url: article.url
+            url: article.url,
+            stakeholder_category: entityType // Mark as stakeholder intelligence
           })
           articleAdded = true
-          break
+          
+          console.log(`✅ Found ${entityType} mention: ${entity.name} in ${article.title}`)
         }
       }
-      if (articleAdded) break
     }
     
-    // If article doesn't mention specific entities but has important keywords, 
-    // add it as industry intelligence
-    if (!articleAdded) {
-      const relevantKeywords = ['AI', 'artificial intelligence', 'design', 'creative', 'software', 
-                                'cloud', 'SaaS', 'startup', 'funding', 'acquisition', 'partnership']
+    // Only add as general industry if it's ACTUALLY relevant to the organization's industry
+    if (!articleAdded && organization?.industry) {
+      const industryKeywords = {
+        'retail': ['fashion', 'clothing', 'apparel', 'retail', 'shopping', 'store', 'brand'],
+        'technology': ['tech', 'software', 'AI', 'cloud', 'digital', 'platform', 'startup'],
+        'finance': ['banking', 'finance', 'investment', 'trading', 'fintech', 'payment'],
+        'healthcare': ['health', 'medical', 'pharma', 'biotech', 'hospital', 'treatment']
+      }
+      
+      const relevantKeywords = industryKeywords[organization.industry] || industryKeywords['technology']
       const isRelevant = relevantKeywords.some(kw => 
         article.title?.toLowerCase().includes(kw.toLowerCase()) ||
         article.description?.toLowerCase().includes(kw.toLowerCase())
@@ -149,10 +164,10 @@ async function gatherEntityActions(entities: any, organization: any) {
         const actionType = actionKeywords.find(keyword => 
           article.title?.toLowerCase().includes(keyword.toLowerCase()) ||
           article.description?.toLowerCase().includes(keyword.toLowerCase())
-        ) || 'industry_news'
+        ) || 'industry_trend'
         
         actions.push({
-          entity: 'Industry',
+          entity: `${organization.industry} Industry`,
           entity_type: 'market',
           action: actionType,
           headline: article.title,
@@ -180,10 +195,27 @@ async function gatherEntityActions(entities: any, organization: any) {
     for (const entity of entityList.slice(0, entitiesToProcess)) {
       try {
         const entityName = entity.name
-        console.log(`  🔥 Firecrawl search for: ${entityName}`)
+        console.log(`  🔥 Firecrawl search for ${entityType}: ${entityName}`)
         
-        // Search for recent news about this entity
-        const searchResults = await searchWithFirecrawl(`"${entityName}" news 2024`, 5)
+        // Build targeted search based on entity type
+        let searchQuery = ''
+        const currentYear = new Date().getFullYear()
+        
+        if (entityType === 'competitors') {
+          searchQuery = `"${entityName}" (announcement OR product OR earnings OR strategy) ${currentYear}`
+        } else if (entityType === 'regulators') {
+          searchQuery = `"${entityName}" (regulation OR policy OR investigation OR ruling) ${currentYear}`
+        } else if (entityType === 'activists') {
+          searchQuery = `"${entityName}" (campaign OR protest OR report OR demands) ${currentYear}`
+        } else if (entityType === 'media') {
+          searchQuery = `"${entityName}" (article OR investigation OR report) ${currentYear}`
+        } else if (entityType === 'investors') {
+          searchQuery = `"${entityName}" (investment OR portfolio OR ESG OR activism) ${currentYear}`
+        } else {
+          searchQuery = `"${entityName}" news ${currentYear}`
+        }
+        
+        const searchResults = await searchWithFirecrawl(searchQuery, 5)
         
         for (const result of searchResults) {
           if (result.title && result.url) {
@@ -228,9 +260,10 @@ async function gatherTopicTrends(topics: any[]) {
   // Process more topics for diverse coverage
   for (const topic of topics.slice(0, 10)) { // Process up to 10 topics for broader coverage
     try {
-      // Recent events only - last 48 hours
-      const searchQuery = `"${topic.name}" when:2d`
-      const url = `https://news.google.com/rss/search?q=${encodeURIComponent(searchQuery)}&hl=en-US&gl=US&ceid=US:en`
+      // Recent events only - last 24 hours with timestamp
+      const searchQuery = `"${topic.name}" when:1d`
+      const timestamp = Date.now()
+      const url = `https://news.google.com/rss/search?q=${encodeURIComponent(searchQuery)}&hl=en-US&gl=US&ceid=US:en&t=${timestamp}`
       
       const response = await fetchWithTimeout(url, {}, 3000)
       if (response.ok) {

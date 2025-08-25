@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Organization Switching & Cache</title>
+    <style>
+        body {
+            font-family: 'SF Pro Text', -apple-system, sans-serif;
+            padding: 40px;
+            background: #1a1a2e;
+            color: #eee;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .org-switcher {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .status {
+            background: #2a2a3e;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .success {
+            color: #4ade80;
+        }
+        .error {
+            color: #f87171;
+        }
+        .warning {
+            color: #fbbf24;
+        }
+        pre {
+            background: #0f0f23;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Organization Switching & Cache Test</h1>
+        
+        <div class="org-switcher">
+            <button onclick="switchToOrg('Zara', 'retail')">Switch to Zara (Retail)</button>
+            <button onclick="switchToOrg('OpenAI', 'technology')">Switch to OpenAI (Tech)</button>
+            <button onclick="switchToOrg('Nike', 'sportswear')">Switch to Nike (Sportswear)</button>
+            <button onclick="clearAllCache()">🧹 Clear All Cache</button>
+            <button onclick="testIntelligence()">🔍 Test Intelligence</button>
+        </div>
+
+        <div class="status" id="current-org">
+            <h3>Current Organization</h3>
+            <pre id="org-display">Loading...</pre>
+        </div>
+
+        <div class="status" id="cache-status">
+            <h3>Cache Status</h3>
+            <pre id="cache-display">Loading...</pre>
+        </div>
+
+        <div class="status" id="test-results">
+            <h3>Intelligence Test Results</h3>
+            <pre id="results-display">Click "Test Intelligence" to run test</pre>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+
+        function displayCurrentOrg() {
+            const profile = JSON.parse(localStorage.getItem('signaldesk_unified_profile') || '{}');
+            const org = profile.organization || { name: 'None', industry: 'None' };
+            document.getElementById('org-display').textContent = JSON.stringify(org, null, 2);
+        }
+
+        function displayCacheStatus() {
+            const cacheKeys = [
+                'signaldesk_unified_profile',
+                'signaldesk_organization',
+                'signaldesk_onboarding',
+                'intelligence_data',
+                'opportunity_cache'
+            ];
+            
+            const status = {};
+            cacheKeys.forEach(key => {
+                const value = localStorage.getItem(key);
+                if (value) {
+                    try {
+                        const parsed = JSON.parse(value);
+                        status[key] = {
+                            exists: true,
+                            size: value.length,
+                            timestamp: parsed.timestamp || parsed.lastUpdated || 'unknown'
+                        };
+                    } catch {
+                        status[key] = { exists: true, size: value.length };
+                    }
+                } else {
+                    status[key] = { exists: false };
+                }
+            });
+            
+            document.getElementById('cache-display').textContent = JSON.stringify(status, null, 2);
+        }
+
+        function switchToOrg(name, industry) {
+            console.log(`Switching to ${name} (${industry})`);
+            
+            // Clear any existing cache
+            clearAllCache();
+            
+            // Create new organization profile
+            const newOrg = {
+                name: name,
+                industry: industry,
+                description: `${name} - Leading company in ${industry}`,
+                id: `org-${Date.now()}`
+            };
+            
+            // Create minimal profile
+            const profile = {
+                organization: newOrg,
+                competitors: [],
+                monitoring_topics: [],
+                timestamp: new Date().toISOString(),
+                cacheInvalidated: true
+            };
+            
+            // Save to localStorage
+            localStorage.setItem('signaldesk_unified_profile', JSON.stringify(profile));
+            localStorage.setItem('signaldesk_organization', JSON.stringify(newOrg));
+            
+            // Update display
+            displayCurrentOrg();
+            displayCacheStatus();
+            
+            document.getElementById('results-display').innerHTML = 
+                `<span class="success">✅ Switched to ${name}</span>\n` +
+                `Organization ID: ${newOrg.id}\n` +
+                `Industry: ${industry}\n` +
+                `Cache cleared: YES\n` +
+                `Ready for fresh intelligence gathering`;
+        }
+
+        function clearAllCache() {
+            console.log('Clearing all cache...');
+            
+            // Clear specific intelligence keys
+            const keysToRemove = [
+                'signaldesk_intelligence_cache',
+                'signaldesk_last_fetch',
+                'signaldesk_cached_results',
+                'intelligence_data',
+                'opportunity_cache',
+                'last_intelligence_timestamp'
+            ];
+            
+            keysToRemove.forEach(key => {
+                if (localStorage.getItem(key)) {
+                    localStorage.removeItem(key);
+                    console.log(`Removed ${key}`);
+                }
+            });
+            
+            // Clear session storage
+            sessionStorage.clear();
+            
+            displayCacheStatus();
+            document.getElementById('results-display').innerHTML = 
+                '<span class="success">✅ All cache cleared!</span>';
+        }
+
+        async function testIntelligence() {
+            const profile = JSON.parse(localStorage.getItem('signaldesk_unified_profile') || '{}');
+            const org = profile.organization || { name: 'Test Org', industry: 'technology' };
+            
+            document.getElementById('results-display').innerHTML = 
+                '<span class="warning">⏳ Testing intelligence gathering...</span>';
+            
+            try {
+                // Test all three phases
+                console.log('Testing with org:', org);
+                
+                // Phase 1: Discovery
+                const discoveryResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-discovery-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        organization: org,
+                        timestamp: Date.now()
+                    })
+                });
+                
+                const discovery = await discoveryResponse.json();
+                
+                // Phase 2: Gathering
+                const gatheringResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-gathering-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        discovery: discovery.discovery,
+                        organization: org,
+                        timestamp: Date.now(),
+                        forceRefresh: true
+                    })
+                });
+                
+                const gathering = await gatheringResponse.json();
+                
+                // Display results
+                const results = {
+                    organization: org.name,
+                    industry: org.industry,
+                    discovery: {
+                        success: discovery.success,
+                        entities: discovery.statistics?.total_entities || 0,
+                        topics: discovery.statistics?.total_topics || 0
+                    },
+                    gathering: {
+                        success: gathering.success,
+                        actions: gathering.statistics?.actions_captured || 0,
+                        topics: gathering.statistics?.topics_monitored || 0,
+                        firecrawl: gathering.intelligence?.entity_actions?.all?.filter(a => a.data_source === 'firecrawl').length || 0,
+                        rss: gathering.intelligence?.entity_actions?.all?.filter(a => a.data_source === 'rss').length || 0
+                    },
+                    samples: {
+                        firstAction: gathering.intelligence?.entity_actions?.all?.[0]?.headline || 'None',
+                        firstTopic: gathering.intelligence?.topic_trends?.all?.[0]?.topic || 'None'
+                    }
+                };
+                
+                document.getElementById('results-display').innerHTML = 
+                    `<span class="success">✅ Intelligence Test Complete!</span>\n\n` +
+                    JSON.stringify(results, null, 2);
+                    
+            } catch (error) {
+                document.getElementById('results-display').innerHTML = 
+                    `<span class="error">❌ Error: ${error.message}</span>`;
+            }
+        }
+
+        // Initialize display
+        displayCurrentOrg();
+        displayCacheStatus();
+    </script>
+</body>
+</html>

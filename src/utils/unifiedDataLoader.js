@@ -47,6 +47,49 @@ export const getUnifiedOrganization = () => {
   return null;
 };
 
+export const getUnifiedCompleteProfile = () => {
+  // Get the COMPLETE profile including all stakeholders
+  const unifiedProfile = localStorage.getItem('signaldesk_unified_profile');
+  if (unifiedProfile) {
+    try {
+      const profile = JSON.parse(unifiedProfile);
+      return {
+        organization: profile.organization,
+        competitors: profile.competitors || [],
+        monitoring_topics: profile.monitoring_topics || [],
+        // Include ALL stakeholder types
+        stakeholders: profile.stakeholders || {},
+        regulators: profile.regulators || [],
+        activists: profile.activists || [],
+        media_outlets: profile.media_outlets || [],
+        investors: profile.investors || [],
+        analysts: profile.analysts || [],
+        // Include opportunity config
+        opportunities: profile.opportunities,
+        brand: profile.brand,
+        messaging: profile.messaging,
+        media: profile.media,
+        spokespeople: profile.spokespeople
+      };
+    } catch (e) {
+      console.warn('Error parsing unified profile:', e);
+    }
+  }
+  
+  // Fallback to organization only
+  return {
+    organization: getUnifiedOrganization(),
+    competitors: [],
+    monitoring_topics: [],
+    stakeholders: {},
+    regulators: [],
+    activists: [],
+    media_outlets: [],
+    investors: [],
+    analysts: []
+  };
+};
+
 export const getUnifiedOpportunityConfig = () => {
   // Priority: opportunity_profile > signaldesk_unified_profile > defaults
   

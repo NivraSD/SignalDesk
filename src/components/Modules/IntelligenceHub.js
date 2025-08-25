@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './IntelligenceHub.css';
-import claudeIntelligenceServiceV2 from '../../services/claudeIntelligenceServiceV2';
+import IntelligenceOrchestratorV3 from '../../services/intelligenceOrchestratorV3';
 import { supabase } from '../../config/supabase';
 
 const IntelligenceHub = ({ organizationId }) => {
@@ -17,17 +17,24 @@ const IntelligenceHub = ({ organizationId }) => {
     setError(null);
     
     try {
-      // Try to get unified profile first, fallback to onboarding
+      // Always get fresh profile from localStorage (no caching)
       let config = {};
       const unifiedProfile = localStorage.getItem('signaldesk_unified_profile');
       
       if (unifiedProfile) {
         const profile = JSON.parse(unifiedProfile);
-        // Extract the parts that Intelligence Hub needs
+        // Extract ALL stakeholder data for Intelligence Hub
         config = {
           organization: profile.organization,
           competitors: profile.competitors,
-          monitoring_topics: profile.monitoring_topics || []
+          monitoring_topics: profile.monitoring_topics || [],
+          // Include ALL stakeholder types for comprehensive monitoring
+          stakeholders: profile.stakeholders || {},
+          regulators: profile.regulators || [],
+          activists: profile.activists || [],
+          media_outlets: profile.media_outlets || [],
+          investors: profile.investors || [],
+          analysts: profile.analysts || []
         };
       } else {
         // Fallback to old onboarding data
@@ -37,11 +44,17 @@ const IntelligenceHub = ({ organizationId }) => {
       // First try the real-time Firecrawl edge function
       console.log('🔥 Attempting real-time intelligence with Firecrawl...');
       console.log('📊 Config being sent:', { organization: config.organization, timeframe });
+      
+      // Add timestamp to force fresh results
+      const requestTimestamp = Date.now();
+      
       try {
         const { data: realtimeData, error: realtimeError } = await supabase.functions.invoke('intelligence-hub-realtime', {
           body: {
             organization: config.organization || { name: 'Default Org', industry: 'technology' },
-            timeframe
+            timeframe,
+            timestamp: requestTimestamp,
+            forceRefresh: true
           }
         });
         
@@ -68,12 +81,14 @@ const IntelligenceHub = ({ organizationId }) => {
           return;
         }
       } catch (realtimeErr) {
-        console.warn('⚠️ Real-time intelligence not available, falling back to Claude service:', realtimeErr);
+        console.warn('⚠️ Real-time intelligence not available, using V3 orchestrator:', realtimeErr);
       }
       
-      // Fallback to Claude Intelligence Service V2
-      console.log('🔄 Falling back to Claude intelligence service...');
-      const intelligence = await claudeIntelligenceServiceV2.gatherAndAnalyze(config, timeframe, { forceRefresh: true });
+      // Use Intelligence Orchestrator V3 for fresh real-time data
+      console.log('🚀 Using Intelligence Orchestrator V3 for fresh data...');
+      const orchestrator = new IntelligenceOrchestratorV3();
+      // Pass FULL config with all stakeholders, not just organization
+      const intelligence = await orchestrator.orchestrate(config);
       
       console.log('📊 Raw intelligence received:', intelligence);
       

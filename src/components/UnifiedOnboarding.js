@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import intelligentDiscoveryService from '../services/intelligentDiscoveryService';
+import { clearAllIntelligenceCache } from '../utils/clearCache';
 import './UnifiedOnboarding.css';
 
 const UnifiedOnboarding = ({ onComplete }) => {
@@ -164,7 +165,14 @@ const UnifiedOnboarding = ({ onComplete }) => {
           // Auto-populate competitors from Claude analysis
           competitors: intelligence.competitors || [],
           // Auto-populate monitoring topics
-          monitoring_topics: intelligence.topics || []
+          monitoring_topics: intelligence.topics || [],
+          // CRITICAL: Save ALL stakeholder data for Intelligence Hub
+          stakeholders: intelligence.stakeholders || {},
+          regulators: intelligence.stakeholders?.regulators || [],
+          activists: intelligence.stakeholders?.activists || [],
+          media_outlets: intelligence.stakeholders?.media || [],
+          investors: intelligence.stakeholders?.investors || [],
+          analysts: intelligence.stakeholders?.analysts || []
         }));
         
         setAnalysisComplete(true);
@@ -188,6 +196,9 @@ const UnifiedOnboarding = ({ onComplete }) => {
       timestamp: new Date().toISOString(),
       version: '2.0'
     };
+    
+    // Clear all cached intelligence data before saving new profile
+    clearAllIntelligenceCache();
     
     // Save to localStorage
     localStorage.setItem('signaldesk_unified_profile', JSON.stringify(unifiedProfile));
