@@ -34,12 +34,12 @@ class IntelligenceOrchestratorV4 {
         body: JSON.stringify({ 
           organization,
           entities: {
-            competitors: config.competitors || [],
-            regulators: config.regulators || [],
-            activists: config.activists || [],
-            media_outlets: config.media_outlets || [],
-            investors: config.investors || [],
-            analysts: config.analysts || []
+            competitors: config.competitors || organization.competitors || [],
+            regulators: config.regulators || organization.regulators || [],
+            activists: config.activists || organization.activists || [],
+            media_outlets: config.media_outlets || organization.media_outlets || [],
+            investors: config.investors || organization.investors || [],
+            analysts: config.analysts || organization.analysts || []
           }
         })
       });
@@ -54,20 +54,12 @@ class IntelligenceOrchestratorV4 {
         sources: collectionData.intelligence?.metadata?.sources || []
       });
 
-      // PHASE 2: DEEP ANALYSIS
+      // PHASE 2: DEEP ANALYSIS - Direct to Edge Function synthesis
       let analysisResult;
       
-      // Try MCP analysis first (if MCP server is running)
-      try {
-        console.log('🧠 Phase 2a: Attempting MCP Deep Analysis');
-        analysisResult = await this.callMCPAnalysis(collectionData.intelligence, organization);
-        console.log('✅ MCP Analysis successful');
-      } catch (mcpError) {
-        console.log('⚠️ MCP not available, falling back to Edge Function synthesis');
-        
-        // Fallback to Edge Function synthesis
-        analysisResult = await this.callEdgeSynthesis(collectionData.intelligence, organization);
-      }
+      console.log('🧠 Phase 2: Deep Analysis via Edge Function');
+      // Go straight to Edge Function synthesis (no MCP attempt)
+      analysisResult = await this.callEdgeSynthesis(collectionData.intelligence, organization);
 
       // PHASE 3: FORMAT FOR DISPLAY
       const formattedResult = this.formatForDisplay(analysisResult, collectionData);
@@ -94,33 +86,7 @@ class IntelligenceOrchestratorV4 {
     }
   }
 
-  async callMCPAnalysis(intelligence, organization) {
-    // Call MCP server for deep analysis
-    // This would connect to the local MCP server
-    try {
-      const response = await fetch('http://localhost:3100/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          signals: intelligence.raw_signals,
-          organization
-        }),
-        timeout: 10000 // 10 second timeout for MCP check
-      });
-
-      if (!response.ok) {
-        throw new Error('MCP not available');
-      }
-
-      const analysis = await response.json();
-      return {
-        ...analysis,
-        analysis_type: 'mcp-deep'
-      };
-    } catch (error) {
-      throw new Error('MCP analysis failed');
-    }
-  }
+  // MCP analysis removed - using Edge Functions only for Vercel deployment
 
   async callEdgeSynthesis(intelligence, organization) {
     // Transform raw signals into format expected by synthesis
