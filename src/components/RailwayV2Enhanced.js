@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './RailwayV2Enhanced.css';
-import IntelligenceDisplayV3 from './IntelligenceDisplayV3';
-import PRDashboard from './PRDashboard';
+import IntelligenceHubV5 from './IntelligenceHubV5';
 import OpportunityModulePR from './Modules/OpportunityModulePR';
 import ExecutionModule from './Modules/ExecutionModule';
 import MemoryVaultModule from './Modules/MemoryVaultModule';
@@ -78,9 +77,10 @@ const RailwayV2Enhanced = () => {
   const renderModule = () => {
     switch(activeModule) {
       case 'intelligence':
-        // Use PR Dashboard for better PR-focused intelligence
-        return <PRDashboard 
+        // Intelligence Hub for stakeholder monitoring
+        return <IntelligenceHubV5 
           organization={organizationData}
+          onIntelligenceUpdate={setSharedIntelligence}
         />;
       case 'opportunities':
         return <OpportunityModulePR 
@@ -93,9 +93,9 @@ const RailwayV2Enhanced = () => {
       case 'memory':
         return <MemoryVaultModule organizationId={organizationData?.id} />;
       default:
-        return <IntelligenceDisplayV3 
-          organization={organizationData} 
-          refreshTrigger={refreshKey}
+        return <IntelligenceHubV5 
+          organization={organizationData}
+          onIntelligenceUpdate={setSharedIntelligence}
         />;
     }
   };
