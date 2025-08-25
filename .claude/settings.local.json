@@ -251,7 +251,8 @@
       "Bash(./FIX_ALL_CRITICAL_FUNCTIONS.sh:*)",
       "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/FIX_OPPORTUNITY_ORCHESTRATOR_COMPLETELY.sh:*)",
       "Bash(./FIX_EVERYTHING_PROPERLY.sh:*)",
-      "Bash(./FIX_ONBOARDING_AND_CACHING_FOREVER.sh:*)"
+      "Bash(./FIX_ONBOARDING_AND_CACHING_FOREVER.sh:*)",
+      "WebFetch(domain:signaldesk-fiy59i1k2-nivra-sd.vercel.app)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

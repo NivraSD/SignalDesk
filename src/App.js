@@ -44,7 +44,8 @@ import SystemInitializer from "./components/SystemInitializer";
 import SmartOnboarding from "./components/SmartOnboarding";
 
 // DEPLOYMENT MARKER - V3.2 CACHE FIX
-console.log("🚨 DEPLOYMENT: 2025-08-25 16:30:00 | COMMIT: 54168f8a0 | CACHE MANAGEMENT FIXED");
+console.log("🚨 DEPLOYMENT: 2025-08-25 16:35:00 | COMMIT: 8b0cf6e20 | CACHE MANAGEMENT FIXED");
+console.log("🔄 NEW SEARCH BUTTON ADDED | CACHE CLEARING FIXED | DATA ACCUMULATION RESOLVED");
 
 // Log Supabase initialization for debugging
 console.log('🚀 SignalDesk initialized with Supabase:', supabase ? 'Connected' : 'Not connected');
