@@ -51,28 +51,64 @@ async function gatherRealIntelligence(entities: any, organization: any) {
             ...(entities.analysts || [])
           ]
           
+          // Check relevance to any monitored entity or industry topics
+          let matchedEntity = null
+          let relevanceScore = 0
+          
           for (const entity of allEntities) {
             const entityName = entity.name || entity
-            if (article.title?.toLowerCase().includes(entityName.toLowerCase()) ||
-                article.description?.toLowerCase().includes(entityName.toLowerCase())) {
-              
-              intelligence.entity_actions.all.push({
-                entity: entityName,
-                type: getEntityType(entityName, entities),
-                action: article.title,
-                description: article.description,
-                source: article.source,
-                url: article.url,
-                timestamp: article.published || new Date().toISOString(),
-                impact: 'medium',
-                relevance: 0.8
-              })
-              
-              // Group by entity
-              if (!intelligence.entity_actions.by_entity[entityName]) {
-                intelligence.entity_actions.by_entity[entityName] = []
+            const entityLower = entityName.toLowerCase()
+            const titleLower = article.title?.toLowerCase() || ''
+            const descLower = article.description?.toLowerCase() || ''
+            
+            // Direct entity mention = high relevance
+            if (titleLower.includes(entityLower) || descLower.includes(entityLower)) {
+              matchedEntity = entityName
+              relevanceScore = 0.9
+              break
+            }
+          }
+          
+          // If no direct entity match, check for industry relevance
+          if (!matchedEntity && organization.industry) {
+            const industryKeywords = {
+              technology: ['tech', 'software', 'cloud', 'ai', 'data', 'digital', 'cyber'],
+              retail: ['retail', 'ecommerce', 'store', 'shopping', 'consumer', 'supply chain'],
+              finance: ['finance', 'banking', 'investment', 'fintech', 'trading', 'market']
+            }
+            
+            const keywords = industryKeywords[organization.industry] || []
+            const text = (article.title + ' ' + article.description).toLowerCase()
+            
+            for (const keyword of keywords) {
+              if (text.includes(keyword)) {
+                matchedEntity = 'Industry'
+                relevanceScore = 0.5
+                break
               }
-              intelligence.entity_actions.by_entity[entityName].push({
+            }
+          }
+          
+          // Add to intelligence if relevant
+          if (matchedEntity && relevanceScore > 0.4) {
+            intelligence.entity_actions.all.push({
+              entity: matchedEntity,
+              type: matchedEntity === 'Industry' ? 'general' : getEntityType(matchedEntity, entities),
+              action: article.title,
+              description: article.description,
+              source: article.source,
+              url: article.url,
+              timestamp: article.published || new Date().toISOString(),
+              impact: relevanceScore > 0.7 ? 'high' : 'medium',
+              relevance: relevanceScore
+            })
+            
+            // Group by entity
+            if (matchedEntity) {
+              if (!intelligence.entity_actions.by_entity[matchedEntity]) {
+                intelligence.entity_actions.by_entity[matchedEntity] = []
+              }
+              intelligence.entity_actions.by_entity[matchedEntity].push({
                 action: article.title,
                 source: article.source,
                 url: article.url,
@@ -169,9 +205,18 @@ async function gatherRealIntelligence(entities: any, organization: any) {
     })
   }
   
-  // Always return some data even if searches fail
+  // Log what we actually gathered
+  console.log('📊 Real intelligence gathered:', {
+    total_actions: intelligence.entity_actions.all.length,
+    by_source: {
+      rss: intelligence.entity_actions.all.filter(a => a.source && !a.url?.includes('#')).length,
+      firecrawl: intelligence.entity_actions.all.filter(a => a.url && !a.url.includes('#') && a.source).length,
+    }
+  })
+  
+  // Only add fallback if we have NO real data
   if (intelligence.entity_actions.all.length === 0) {
-    console.log('⚠️ No specific entity actions found, adding simulated competitive intelligence')
+    console.log('⚠️ No real intelligence found, adding minimal fallback data')
     
     // Add simulated competitive actions based on actual competitor names
     if (entities.competitors?.length > 0) {

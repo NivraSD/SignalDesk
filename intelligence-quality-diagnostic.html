@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intelligence Quality Diagnostic</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #00ff88;
+            padding: 20px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .section {
+            background: rgba(0, 255, 136, 0.05);
+            border: 1px solid #00ff88;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        h1, h2, h3 { 
+            color: #00ffcc; 
+            text-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
+        }
+        button {
+            background: linear-gradient(135deg, #00ff88, #00ffcc);
+            color: #0a0a0a;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .result {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #00ff88;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .intelligence-item {
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #00ff88;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .relevant { border-color: #00ff88; box-shadow: 0 0 10px rgba(0, 255, 136, 0.5); }
+        .maybe { border-color: #ffcc00; }
+        .irrelevant { border-color: #ff0088; opacity: 0.7; }
+        .score {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .high-score { background: #00ff88; color: #000; }
+        .med-score { background: #ffcc00; color: #000; }
+        .low-score { background: #ff0088; color: #fff; }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid #00ff88;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #00ffcc;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #00ff88;
+            margin-top: 5px;
+        }
+        input, select {
+            background: #000;
+            color: #00ff88;
+            border: 1px solid #00ff88;
+            padding: 8px;
+            border-radius: 4px;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎯 Intelligence Quality Diagnostic Tool</h1>
+    
+    <div class="section">
+        <h2>Configuration</h2>
+        <div>
+            <label>Company:</label>
+            <input type="text" id="companyName" value="Microsoft" style="width: 200px;">
+            
+            <label>Competitors:</label>
+            <input type="text" id="competitors" value="Google, Amazon, Apple, Oracle, Salesforce" style="width: 400px;">
+            
+            <label>Industry:</label>
+            <select id="industry">
+                <option value="technology">Technology</option>
+                <option value="retail">Retail</option>
+                <option value="finance">Finance</option>
+                <option value="healthcare">Healthcare</option>
+            </select>
+            
+            <button onclick="runDiagnostic()">Run Complete Diagnostic</button>
+        </div>
+    </div>
+
+    <div class="stats" id="stats" style="display: none;">
+        <div class="stat-card">
+            <div class="stat-value" id="totalFound">0</div>
+            <div class="stat-label">Total Articles</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="relevantCount">0</div>
+            <div class="stat-label">Relevant</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="avgScore">0%</div>
+            <div class="stat-label">Avg Relevance</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="uniqueSources">0</div>
+            <div class="stat-label">Unique Sources</div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div>
+            <div class="section">
+                <h3>📡 RSS Feed Intelligence</h3>
+                <div id="rss-results"></div>
+            </div>
+        </div>
+        
+        <div>
+            <div class="section">
+                <h3>🔥 Firecrawl Intelligence</h3>
+                <div id="firecrawl-results"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>📊 Intelligence Analysis</h3>
+        <div id="analysis"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+
+        function calculateRelevance(article, company, competitors) {
+            let score = 0;
+            const text = (article.title + ' ' + article.description).toLowerCase();
+            const companyLower = company.toLowerCase();
+            const competitorList = competitors.split(',').map(c => c.trim().toLowerCase());
+            
+            // Direct company mention = high relevance
+            if (text.includes(companyLower)) {
+                score += 50;
+            }
+            
+            // Competitor mentions = medium relevance
+            competitorList.forEach(comp => {
+                if (text.includes(comp)) {
+                    score += 30;
+                }
+            });
+            
+            // Industry keywords
+            const techKeywords = ['ai', 'cloud', 'software', 'technology', 'digital', 'data', 'cyber', 'innovation'];
+            const retailKeywords = ['retail', 'ecommerce', 'supply chain', 'customer', 'store', 'shopping'];
+            const financeKeywords = ['finance', 'banking', 'investment', 'market', 'trading', 'fintech'];
+            
+            const industry = document.getElementById('industry').value;
+            let keywords = [];
+            if (industry === 'technology') keywords = techKeywords;
+            else if (industry === 'retail') keywords = retailKeywords;
+            else if (industry === 'finance') keywords = financeKeywords;
+            
+            keywords.forEach(keyword => {
+                if (text.includes(keyword)) {
+                    score += 5;
+                }
+            });
+            
+            // Recent date = higher relevance
+            if (article.published) {
+                const daysOld = (Date.now() - new Date(article.published)) / (1000 * 60 * 60 * 24);
+                if (daysOld < 1) score += 20;
+                else if (daysOld < 7) score += 10;
+                else if (daysOld < 30) score += 5;
+            }
+            
+            return Math.min(score, 100);
+        }
+
+        function renderIntelligence(articles, containerId, source) {
+            const container = document.getElementById(containerId);
+            const company = document.getElementById('companyName').value;
+            const competitors = document.getElementById('competitors').value;
+            
+            if (!articles || articles.length === 0) {
+                container.innerHTML = '<div class="result">No intelligence found</div>';
+                return { relevant: 0, total: 0, avgScore: 0, sources: new Set() };
+            }
+            
+            let html = '';
+            let relevantCount = 0;
+            let totalScore = 0;
+            const sources = new Set();
+            
+            articles.forEach((article, i) => {
+                const relevance = calculateRelevance(article, company, competitors);
+                totalScore += relevance;
+                
+                let relevanceClass = 'irrelevant';
+                let scoreClass = 'low-score';
+                if (relevance >= 70) {
+                    relevanceClass = 'relevant';
+                    scoreClass = 'high-score';
+                    relevantCount++;
+                } else if (relevance >= 40) {
+                    relevanceClass = 'maybe';
+                    scoreClass = 'med-score';
+                    relevantCount++;
+                }
+                
+                sources.add(article.source || 'unknown');
+                
+                html += `
+                    <div class="intelligence-item ${relevanceClass}">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <h4 style="margin: 0; color: #00ffcc;">${i+1}. ${article.title || 'Untitled'}</h4>
+                            <span class="score ${scoreClass}">Relevance: ${relevance}%</span>
+                        </div>
+                        <p style="color: #aaa; margin: 10px 0;">${article.description || 'No description'}</p>
+                        <div style="font-size: 11px; color: #888;">
+                            Source: ${article.source || 'Unknown'} | 
+                            ${article.published ? new Date(article.published).toLocaleDateString() : 'No date'} |
+                            ${article.url ? `<a href="${article.url}" target="_blank" style="color: #00ff88;">Link</a>` : 'No URL'}
+                        </div>
+                        <div style="margin-top: 10px; font-size: 11px;">
+                            <strong>Why this score:</strong>
+                            ${relevance >= 50 ? '✓ Mentions company/competitors' : ''}
+                            ${relevance >= 30 && relevance < 50 ? '✓ Industry relevant' : ''}
+                            ${relevance < 30 ? '✗ Low relevance to monitoring targets' : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html || '<div class="result">No articles to display</div>';
+            
+            return {
+                relevant: relevantCount,
+                total: articles.length,
+                avgScore: articles.length > 0 ? Math.round(totalScore / articles.length) : 0,
+                sources: sources
+            };
+        }
+
+        async function runDiagnostic() {
+            const company = document.getElementById('companyName').value;
+            const competitors = document.getElementById('competitors').value;
+            const industry = document.getElementById('industry').value;
+            
+            document.getElementById('stats').style.display = 'grid';
+            document.getElementById('rss-results').innerHTML = '<div class="result">Loading RSS feeds...</div>';
+            document.getElementById('firecrawl-results').innerHTML = '<div class="result">Loading Firecrawl data...</div>';
+            document.getElementById('analysis').innerHTML = '<div class="result">Analyzing...</div>';
+            
+            // Test complete gathering
+            const testData = {
+                entities: {
+                    competitors: competitors.split(',').map(c => c.trim()),
+                    regulators: ['FTC', 'SEC'],
+                    media: ['Reuters', 'Bloomberg'],
+                    activists: [],
+                    investors: [],
+                    analysts: []
+                },
+                organization: {
+                    name: company,
+                    industry: industry
+                }
+            };
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-gathering-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                const data = await response.json();
+                console.log('Gathering response:', data);
+                
+                // Separate RSS and Firecrawl results based on source
+                const rssArticles = [];
+                const firecrawlArticles = [];
+                
+                if (data.entity_actions?.all) {
+                    data.entity_actions.all.forEach(action => {
+                        const article = {
+                            title: action.action,
+                            description: action.description || '',
+                            source: action.source,
+                            url: action.url,
+                            published: action.timestamp,
+                            entity: action.entity,
+                            type: action.type
+                        };
+                        
+                        // Guess source based on URL or source field
+                        if (action.source?.includes('.com') || action.source?.includes('.org')) {
+                            if (action.url === '#' || !action.url) {
+                                // Simulated data
+                            } else if (action.source?.includes('forbes') || action.source?.includes('techcrunch') || action.source?.includes('wired')) {
+                                rssArticles.push(article);
+                            } else {
+                                firecrawlArticles.push(article);
+                            }
+                        }
+                    });
+                }
+                
+                // Render RSS results
+                const rssStats = renderIntelligence(rssArticles, 'rss-results', 'RSS');
+                
+                // Render Firecrawl results
+                const firecrawlStats = renderIntelligence(firecrawlArticles, 'firecrawl-results', 'Firecrawl');
+                
+                // Update stats
+                const totalArticles = rssStats.total + firecrawlStats.total;
+                const totalRelevant = rssStats.relevant + firecrawlStats.relevant;
+                const avgScore = totalArticles > 0 ? 
+                    Math.round((rssStats.avgScore * rssStats.total + firecrawlStats.avgScore * firecrawlStats.total) / totalArticles) : 0;
+                const allSources = new Set([...rssStats.sources, ...firecrawlStats.sources]);
+                
+                document.getElementById('totalFound').textContent = totalArticles;
+                document.getElementById('relevantCount').textContent = totalRelevant;
+                document.getElementById('avgScore').textContent = avgScore + '%';
+                document.getElementById('uniqueSources').textContent = allSources.size;
+                
+                // Analysis
+                let analysis = '<h4>Intelligence Quality Report</h4>';
+                
+                if (totalArticles === 0) {
+                    analysis += '<p style="color: #ff0088;">❌ No intelligence gathered - monitoring systems may be offline</p>';
+                } else {
+                    analysis += `<p>✅ Successfully gathered ${totalArticles} pieces of intelligence</p>`;
+                    
+                    if (avgScore < 30) {
+                        analysis += '<p style="color: #ff0088;">⚠️ Low relevance score - Most content is not related to your monitoring targets</p>';
+                        analysis += '<p>Recommendations:</p>';
+                        analysis += '<ul>';
+                        analysis += '<li>Verify competitor names are exact matches</li>';
+                        analysis += '<li>Consider adding more specific industry keywords</li>';
+                        analysis += '<li>Check if RSS feeds are industry-appropriate</li>';
+                        analysis += '</ul>';
+                    } else if (avgScore < 60) {
+                        analysis += '<p style="color: #ffcc00;">⚠️ Medium relevance - Some useful intelligence but also noise</p>';
+                        analysis += '<p>The system is finding industry-relevant content but not specifically about your targets.</p>';
+                    } else {
+                        analysis += '<p style="color: #00ff88;">✅ High relevance - Intelligence is well-targeted</p>';
+                        analysis += '<p>The monitoring system is successfully tracking your specified entities.</p>';
+                    }
+                    
+                    analysis += '<h4>Source Breakdown</h4>';
+                    analysis += `<p>RSS Feeds: ${rssStats.total} articles (${rssStats.relevant} relevant)</p>`;
+                    analysis += `<p>Firecrawl: ${firecrawlStats.total} articles (${firecrawlStats.relevant} relevant)</p>`;
+                    analysis += `<p>Unique sources: ${Array.from(allSources).join(', ')}</p>`;
+                    
+                    if (rssStats.total === 0) {
+                        analysis += '<p style="color: #ff0088;">⚠️ RSS feeds not returning data - check source-registry function</p>';
+                    }
+                    if (firecrawlStats.total === 0) {
+                        analysis += '<p style="color: #ff0088;">⚠️ Firecrawl not returning data - check API key and endpoint</p>';
+                    }
+                }
+                
+                document.getElementById('analysis').innerHTML = analysis;
+                
+            } catch (error) {
+                document.getElementById('analysis').innerHTML = `<div class="result error">Error: ${error.message}</div>`;
+            }
+        }
+
+        // Auto-run on load
+        window.addEventListener('load', () => {
+            runDiagnostic();
+        });
+    </script>
+</body>
+</html>
