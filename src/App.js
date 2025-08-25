@@ -1,4 +1,3 @@
-console.log("🚨 DEPLOYMENT: 2025-08-24 23:26:07 | COMMIT: d6943be3a | NO FALLBACKS - V3 ONLY");
 import React, { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
@@ -43,6 +42,9 @@ import NivDirect from "./pages/NivDirect"; // Direct API integration - most reli
 import RailwayV2Enhanced from "./components/RailwayV2Enhanced";
 import SystemInitializer from "./components/SystemInitializer";
 import SmartOnboarding from "./components/SmartOnboarding";
+
+// DEPLOYMENT MARKER - V3 ONLY
+console.log("🚨 DEPLOYMENT: 2025-08-24 23:26:07 | COMMIT: d6943be3a | NO FALLBACKS - V3 ONLY");
 
 // Log Supabase initialization for debugging
 console.log('🚀 SignalDesk initialized with Supabase:', supabase ? 'Connected' : 'Not connected');
