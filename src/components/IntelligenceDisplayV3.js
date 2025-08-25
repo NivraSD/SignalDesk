@@ -3,6 +3,7 @@ import './IntelligenceDisplayV3.css';
 import intelligenceOrchestratorV3 from '../services/intelligenceOrchestratorV3';
 import { getUnifiedOrganization, getUnifiedCompleteProfile } from '../utils/unifiedDataLoader';
 import cacheManager from '../utils/smartCache';
+import RealIntelligenceDisplay from './RealIntelligenceDisplay';
 import { 
   RocketIcon, AlertIcon, TrendingUpIcon, TargetIcon, 
   ChartIcon, BuildingIcon
@@ -216,6 +217,8 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0, onIntelligenc
 
   const tabs = [
     { id: 'executive', name: 'Executive', Icon: RocketIcon, color: '#ff00ff' },
+    { id: 'competitive', name: 'Competitive Intel', Icon: TargetIcon, color: '#00ff88' },
+    { id: 'market', name: 'Market Trends', Icon: TrendingUpIcon, color: '#00ffcc' },
     { id: 'positioning', name: 'Your Position', Icon: TargetIcon, color: '#00ffcc' },
     { id: 'between', name: 'Between Lines', Icon: TrendingUpIcon, color: '#00ff88' },
     { id: 'thought', name: 'Thought Leaders', Icon: ChartIcon, color: '#ffcc00' },
@@ -1591,15 +1594,16 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0, onIntelligenc
     const tabData = intelligence.tabs[activeTab];
     console.log(`🎨 Rendering tab [${activeTab}] with data:`, tabData);
     
+    // Use RealIntelligenceDisplay for tabs that show raw intelligence
+    if (activeTab === 'competitive' || activeTab === 'market' || activeTab === 'positioning') {
+      return <RealIntelligenceDisplay intelligence={intelligence} tab={activeTab} />;
+    }
+    
     switch (activeTab) {
       case 'executive':
         return renderExecutiveSummaryTab(tabData);
-      case 'positioning':
-        return renderCompetitivePositioningTab(tabData);
       case 'between':
         return renderBetweenTheLinesTab(tabData);
-      case 'market':
-        return renderMarketSegmentTab(tabData);
       case 'regulatory':
         return renderRegulatoryTab(tabData);
       case 'thought':

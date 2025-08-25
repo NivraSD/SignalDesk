@@ -214,53 +214,14 @@ async function gatherRealIntelligence(entities: any, organization: any) {
     }
   })
   
-  // Only add fallback if we have NO real data
+  // NO FALLBACK DATA - Return only real intelligence
+  // If no data found, frontend should show "No intelligence available" or refresh
   if (intelligence.entity_actions.all.length === 0) {
-    console.log('⚠️ No real intelligence found, adding minimal fallback data')
-    
-    // Add simulated competitive actions based on actual competitor names
-    if (entities.competitors?.length > 0) {
-      const competitors = entities.competitors.slice(0, 3)
-      for (const competitor of competitors) {
-        const competitorName = competitor.name || competitor
-        intelligence.entity_actions.all.push({
-          entity: competitorName,
-          type: 'competitor',
-          action: `Continues strategic market positioning`,
-          description: `${competitorName} maintains active presence in the market with ongoing operations`,
-          source: 'Market Analysis',
-          url: '#',
-          timestamp: new Date().toISOString(),
-          impact: 'medium',
-          relevance: 0.6
-        })
-      }
-    } else {
-      // Fallback if no competitors specified
-      intelligence.entity_actions.all.push({
-        entity: 'Industry',
-        type: 'general',
-        action: 'Technology sector shows continued growth amid AI boom',
-        description: 'Latest industry reports indicate strong momentum',
-        source: 'Industry Analysis',
-        url: '#',
-        timestamp: new Date().toISOString(),
-        impact: 'low',
-        relevance: 0.5
-      })
-    }
+    console.log('⚠️ No real intelligence found - returning empty (no fallbacks)')
   }
   
-  // Ensure we have at least one trend
   if (intelligence.topic_trends.all.length === 0) {
-    console.log('⚠️ No trending topics found, adding default market trend')
-    intelligence.topic_trends.all.push({
-      topic: 'Market Dynamics',
-      trend: 'stable',
-      mentions: 25,
-      sentiment: 'neutral',
-      key_developments: ['Ongoing market activity', 'Standard competitive positioning']
-    })
+    console.log('⚠️ No trending topics found - returning empty (no fallbacks)')
   }
   
   return intelligence
