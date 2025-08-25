@@ -195,16 +195,24 @@ const UnifiedOnboarding = ({ onComplete }) => {
         console.log('✅ Claude analysis complete with data:', intelligence.company);
         
         // Update organization with Claude's analysis
+        console.log('📦 Processing intelligence data:', {
+          hasCompany: !!intelligence.company,
+          hasCompetitors: !!intelligence.competitors,
+          hasStakeholders: !!intelligence.stakeholders,
+          stakeholderKeys: intelligence.stakeholders ? Object.keys(intelligence.stakeholders) : [],
+          mediaInStakeholders: intelligence.stakeholders?.media?.length || 0
+        });
+        
         const updatedProfile = {
           ...profile,
           organization: {
             ...profile.organization,
-            industry: intelligence.company.industry || profile.organization.industry,
-            description: intelligence.company.description || profile.organization.description,
-            business_model: intelligence.company.business_model,
-            market_position: intelligence.company.market_position,
-            key_products: intelligence.company.key_products,
-            target_customers: intelligence.company.target_customers
+            industry: intelligence.company?.industry || profile.organization.industry,
+            description: intelligence.company?.description || profile.organization.description,
+            business_model: intelligence.company?.business_model,
+            market_position: intelligence.company?.market_position,
+            key_products: intelligence.company?.key_products,
+            target_customers: intelligence.company?.target_customers
           },
           // Auto-populate competitors from Claude analysis
           competitors: intelligence.competitors || [],
