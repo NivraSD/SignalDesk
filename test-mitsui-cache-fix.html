@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Mitsui Cache Fix</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #0a0e27;
+            color: #fff;
+        }
+        .test-container {
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #4169E1;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            background: rgba(0,255,0,0.1);
+            border: 1px solid #00ff00;
+        }
+        .error {
+            background: rgba(255,0,0,0.1);
+            border: 1px solid #ff0000;
+        }
+        .warning {
+            background: rgba(255,255,0,0.1);
+            border: 1px solid #ffff00;
+        }
+        button {
+            background: #4169E1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #5179F1;
+        }
+        pre {
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Test Mitsui & Co Cache Fix</h1>
+    
+    <div class="test-container">
+        <h2>Test Scenario</h2>
+        <p>This test verifies that searching for "Mitsui & Co" returns Mitsui data, not cached Netflix data.</p>
+        
+        <div id="cache-status" class="status warning">
+            Checking cache status...
+        </div>
+        
+        <button onclick="clearAllCaches()">1. Clear All Caches</button>
+        <button onclick="testNetflixDiscovery()">2. Test Netflix Discovery</button>
+        <button onclick="testMitsuiDiscovery()">3. Test Mitsui Discovery</button>
+        <button onclick="verifyNoCachePollution()">4. Verify No Cache Pollution</button>
+    </div>
+    
+    <div class="test-container">
+        <h2>Test Results</h2>
+        <pre id="results"></pre>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : '📊';
+            results.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            console.log(message);
+        }
+        
+        function clearAllCaches() {
+            // Clear localStorage
+            const keysToRemove = [
+                'signaldesk_intelligence_cache',
+                'signaldesk_last_fetch',
+                'signaldesk_cached_results',
+                'intelligence_data',
+                'opportunity_cache',
+                'last_intelligence_timestamp',
+                'signaldesk_unified_profile',
+                'signaldesk_organization',
+                'opportunity_profile',
+                'signaldesk_onboarding'
+            ];
+            
+            keysToRemove.forEach(key => {
+                if (localStorage.getItem(key)) {
+                    localStorage.removeItem(key);
+                    log(`Cleared ${key}`, 'success');
+                }
+            });
+            
+            // Clear sessionStorage
+            sessionStorage.clear();
+            log('Cleared sessionStorage', 'success');
+            
+            document.getElementById('cache-status').className = 'status success';
+            document.getElementById('cache-status').textContent = '✅ All caches cleared';
+        }
+        
+        async function testNetflixDiscovery() {
+            log('Testing Netflix discovery...');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-discovery-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: {
+                            name: 'Netflix',
+                            industry: 'entertainment'
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.discovery?.entities?.competitors) {
+                    const competitors = data.discovery.entities.competitors.map(c => c.name).join(', ');
+                    log(`Netflix competitors: ${competitors}`, 'success');
+                    
+                    // Check if Netflix-specific competitors are found
+                    const hasNetflixCompetitors = competitors.toLowerCase().includes('disney') || 
+                                                   competitors.toLowerCase().includes('hbo') ||
+                                                   competitors.toLowerCase().includes('amazon prime');
+                    
+                    if (hasNetflixCompetitors) {
+                        log('✅ Netflix discovery returned Netflix-specific data', 'success');
+                    } else {
+                        log('⚠️ Netflix discovery may not be specific enough', 'warning');
+                    }
+                } else {
+                    log('No competitors found for Netflix', 'error');
+                }
+                
+            } catch (error) {
+                log(`Netflix discovery error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testMitsuiDiscovery() {
+            log('Testing Mitsui & Co discovery...');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-discovery-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: {
+                            name: 'Mitsui & Co',
+                            industry: 'trading'
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.discovery?.entities?.competitors) {
+                    const competitors = data.discovery.entities.competitors.map(c => c.name).join(', ');
+                    log(`Mitsui competitors: ${competitors}`, 'success');
+                    
+                    // Check for Japanese trading company competitors
+                    const hasTradingCompetitors = competitors.toLowerCase().includes('mitsubishi') || 
+                                                   competitors.toLowerCase().includes('itochu') ||
+                                                   competitors.toLowerCase().includes('sumitomo') ||
+                                                   competitors.toLowerCase().includes('marubeni');
+                    
+                    // Check for Netflix pollution
+                    const hasNetflixPollution = competitors.toLowerCase().includes('disney') || 
+                                                 competitors.toLowerCase().includes('netflix') ||
+                                                 competitors.toLowerCase().includes('hbo');
+                    
+                    if (hasTradingCompetitors && !hasNetflixPollution) {
+                        log('✅ CACHE FIX VERIFIED: Mitsui discovery returned correct trading company data!', 'success');
+                        document.getElementById('cache-status').className = 'status success';
+                        document.getElementById('cache-status').textContent = '✅ Cache fix working! No cross-company pollution detected';
+                    } else if (hasNetflixPollution) {
+                        log('❌ CACHE ISSUE PERSISTS: Mitsui discovery returned Netflix data!', 'error');
+                        document.getElementById('cache-status').className = 'status error';
+                        document.getElementById('cache-status').textContent = '❌ Cache issue detected: Cross-company data pollution';
+                    } else {
+                        log('⚠️ Mitsui discovery returned generic data', 'warning');
+                    }
+                } else {
+                    log('No competitors found for Mitsui', 'error');
+                }
+                
+            } catch (error) {
+                log(`Mitsui discovery error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function verifyNoCachePollution() {
+            log('Running complete cache pollution test...');
+            
+            // Clear everything first
+            clearAllCaches();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Test Netflix
+            await testNetflixDiscovery();
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Test Mitsui - should NOT have Netflix data
+            await testMitsuiDiscovery();
+            
+            log('Cache pollution test complete. Check results above.', 'info');
+        }
+        
+        // Auto-run basic check on load
+        window.addEventListener('load', () => {
+            log('Page loaded. Ready to test cache fix.');
+            
+            // Check if any cached data exists
+            const cacheKeys = [
+                'signaldesk_intelligence_cache',
+                'signaldesk_last_fetch',
+                'signaldesk_cached_results'
+            ];
+            
+            const hasCache = cacheKeys.some(key => localStorage.getItem(key));
+            if (hasCache) {
+                document.getElementById('cache-status').className = 'status warning';
+                document.getElementById('cache-status').textContent = '⚠️ Cached data detected. Clear caches before testing.';
+            } else {
+                document.getElementById('cache-status').className = 'status success';
+                document.getElementById('cache-status').textContent = '✅ No cached data detected';
+            }
+        });
+    </script>
+</body>
+</html>

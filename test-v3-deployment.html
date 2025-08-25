@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>V3 Deployment Verification</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #0a0e27;
+            color: #fff;
+        }
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .test-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        .pending { background: #666; }
+        .testing { background: #f39c12; }
+        .success { background: #27ae60; }
+        .error { background: #e74c3c; }
+        h1 { color: #4169E1; }
+        h3 { margin-top: 0; }
+        button {
+            background: #4169E1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #5179F1; }
+        pre {
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            overflow-x: auto;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .summary {
+            background: rgba(65,105,225,0.1);
+            border: 1px solid #4169E1;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 V3 Deployment Verification</h1>
+    <p>This test verifies all V3 components are deployed and working correctly.</p>
+    
+    <button onclick="runAllTests()">Run All Tests</button>
+    <button onclick="clearResults()">Clear Results</button>
+    
+    <div class="test-grid">
+        <div class="test-card">
+            <h3>1. Frontend Deployment</h3>
+            <div id="frontend-status" class="status pending">PENDING</div>
+            <pre id="frontend-result">Not tested yet</pre>
+        </div>
+        
+        <div class="test-card">
+            <h3>2. Discovery V3</h3>
+            <div id="discovery-status" class="status pending">PENDING</div>
+            <pre id="discovery-result">Not tested yet</pre>
+        </div>
+        
+        <div class="test-card">
+            <h3>3. Gathering V3</h3>
+            <div id="gathering-status" class="status pending">PENDING</div>
+            <pre id="gathering-result">Not tested yet</pre>
+        </div>
+        
+        <div class="test-card">
+            <h3>4. Synthesis V3</h3>
+            <div id="synthesis-status" class="status pending">PENDING</div>
+            <pre id="synthesis-result">Not tested yet</pre>
+        </div>
+        
+        <div class="test-card">
+            <h3>5. Opportunity Detector V3</h3>
+            <div id="opportunity-status" class="status pending">PENDING</div>
+            <pre id="opportunity-result">Not tested yet</pre>
+        </div>
+        
+        <div class="test-card">
+            <h3>6. Source Registry</h3>
+            <div id="source-status" class="status pending">PENDING</div>
+            <pre id="source-result">Not tested yet</pre>
+        </div>
+    </div>
+    
+    <div class="summary" id="summary" style="display: none;">
+        <h2>Test Summary</h2>
+        <div id="summary-content"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        const FRONTEND_URL = 'https://signaldesk-nivra-sd.vercel.app';
+        
+        async function testFrontend() {
+            updateStatus('frontend', 'testing');
+            try {
+                const response = await fetch(FRONTEND_URL);
+                const html = await response.text();
+                
+                // Check for V3 indicators
+                const hasV3Orchestrator = html.includes('IntelligenceOrchestratorV3') || 
+                                         html.includes('intelligenceOrchestratorV3');
+                const hasOpportunityV3 = html.includes('opportunity-detector-v3');
+                const hasClearCache = html.includes('clearAllIntelligenceCache');
+                
+                const result = {
+                    status: response.status,
+                    deployment: response.headers.get('x-vercel-id'),
+                    hasV3Orchestrator,
+                    hasOpportunityV3,
+                    hasClearCache,
+                    bundleSize: html.length
+                };
+                
+                if (hasV3Orchestrator || hasOpportunityV3) {
+                    updateStatus('frontend', 'success');
+                    updateResult('frontend', '✅ V3 code detected!\n' + JSON.stringify(result, null, 2));
+                } else {
+                    updateStatus('frontend', 'error');
+                    updateResult('frontend', '❌ V3 code NOT found\n' + JSON.stringify(result, null, 2));
+                }
+            } catch (error) {
+                updateStatus('frontend', 'error');
+                updateResult('frontend', '❌ Error: ' + error.message);
+            }
+        }
+        
+        async function testDiscovery() {
+            updateStatus('discovery', 'testing');
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-discovery-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: { name: 'Test Corp', industry: 'technology' },
+                        stakeholders: {
+                            competitors: ['Microsoft', 'Google'],
+                            regulators: ['FTC', 'EU Commission']
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.discovery) {
+                    updateStatus('discovery', 'success');
+                    updateResult('discovery', '✅ Discovery V3 working\n' + 
+                        `Entities: ${data.statistics?.total_entities || 0}\n` +
+                        `Topics: ${data.statistics?.total_topics || 0}`);
+                } else {
+                    updateStatus('discovery', 'error');
+                    updateResult('discovery', '❌ Discovery failed\n' + JSON.stringify(data, null, 2));
+                }
+            } catch (error) {
+                updateStatus('discovery', 'error');
+                updateResult('discovery', '❌ Error: ' + error.message);
+            }
+        }
+        
+        async function testGathering() {
+            updateStatus('gathering', 'testing');
+            try {
+                // First get discovery data
+                const discoveryResp = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-discovery-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: { name: 'Apple', industry: 'technology' }
+                    })
+                });
+                
+                const discoveryData = await discoveryResp.json();
+                
+                // Then test gathering
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-gathering-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        discovery: discoveryData.discovery,
+                        organization: { name: 'Apple', industry: 'technology' }
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.intelligence) {
+                    updateStatus('gathering', 'success');
+                    updateResult('gathering', '✅ Gathering V3 working\n' + 
+                        `Actions: ${data.intelligence?.entity_actions?.total_count || 0}\n` +
+                        `Topics: ${data.intelligence?.topic_trends?.total_monitored || 0}`);
+                } else {
+                    updateStatus('gathering', 'error');
+                    updateResult('gathering', '❌ Gathering failed\n' + JSON.stringify(data, null, 2));
+                }
+            } catch (error) {
+                updateStatus('gathering', 'error');
+                updateResult('gathering', '❌ Error: ' + error.message);
+            }
+        }
+        
+        async function testSynthesis() {
+            updateStatus('synthesis', 'testing');
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-synthesis-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        intelligence: {
+                            entity_actions: {
+                                all: [
+                                    {
+                                        entity: 'Microsoft',
+                                        action: 'launched',
+                                        headline: 'Microsoft launches new AI feature'
+                                    }
+                                ],
+                                total_count: 1
+                            },
+                            topic_trends: {
+                                all: [],
+                                total_monitored: 0
+                            }
+                        },
+                        organization: { name: 'Test Corp' }
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.tabs) {
+                    updateStatus('synthesis', 'success');
+                    const tabCount = Object.keys(data.tabs).length;
+                    updateResult('synthesis', `✅ Synthesis V3 working\nTabs: ${Object.keys(data.tabs).join(', ')}\nTotal: ${tabCount} tabs`);
+                } else {
+                    updateStatus('synthesis', 'error');
+                    updateResult('synthesis', '❌ Synthesis failed\n' + JSON.stringify(data, null, 2));
+                }
+            } catch (error) {
+                updateStatus('synthesis', 'error');
+                updateResult('synthesis', '❌ Error: ' + error.message);
+            }
+        }
+        
+        async function testOpportunityDetector() {
+            updateStatus('opportunity', 'testing');
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/opportunity-detector-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        intelligence: {
+                            entity_actions: {
+                                all: [
+                                    {
+                                        entity: 'Competitor X',
+                                        entity_type: 'competitors',
+                                        action: 'lawsuit',
+                                        headline: 'Competitor X faces major data breach lawsuit',
+                                        url: 'https://example.com',
+                                        timestamp: new Date().toISOString()
+                                    }
+                                ],
+                                total_count: 1
+                            },
+                            topic_trends: {
+                                all: [],
+                                total_monitored: 0
+                            }
+                        },
+                        organization: { name: 'Test Corp' }
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.opportunities) {
+                    updateStatus('opportunity', 'success');
+                    updateResult('opportunity', `✅ Opportunity V3 working\nOpportunities: ${data.opportunities.length}\n` +
+                        (data.opportunities[0] ? `First: ${data.opportunities[0].title}` : 'No opportunities'));
+                } else {
+                    updateStatus('opportunity', 'error');
+                    updateResult('opportunity', '❌ Opportunity detection failed\n' + JSON.stringify(data, null, 2));
+                }
+            } catch (error) {
+                updateStatus('opportunity', 'error');
+                updateResult('opportunity', '❌ Error: ' + error.message);
+            }
+        }
+        
+        async function testSourceRegistry() {
+            updateStatus('source', 'testing');
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/source-registry?industry=technology&limit=5`, {
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.articles && Array.isArray(data.articles)) {
+                    updateStatus('source', 'success');
+                    updateResult('source', `✅ Source Registry working\nArticles: ${data.articles.length}\n` +
+                        `Sources: ${data.total_sources || 'unknown'}`);
+                } else {
+                    updateStatus('source', 'error');
+                    updateResult('source', '❌ Source Registry failed\n' + JSON.stringify(data, null, 2));
+                }
+            } catch (error) {
+                updateStatus('source', 'error');
+                updateResult('source', '❌ Error: ' + error.message);
+            }
+        }
+        
+        function updateStatus(test, status) {
+            const element = document.getElementById(`${test}-status`);
+            element.className = `status ${status}`;
+            element.textContent = status.toUpperCase();
+        }
+        
+        function updateResult(test, result) {
+            document.getElementById(`${test}-result`).textContent = result;
+        }
+        
+        async function runAllTests() {
+            clearResults();
+            
+            // Run tests in sequence with delays
+            await testFrontend();
+            await new Promise(r => setTimeout(r, 1000));
+            
+            await testDiscovery();
+            await new Promise(r => setTimeout(r, 1000));
+            
+            await testGathering();
+            await new Promise(r => setTimeout(r, 1000));
+            
+            await testSynthesis();
+            await new Promise(r => setTimeout(r, 1000));
+            
+            await testOpportunityDetector();
+            await new Promise(r => setTimeout(r, 1000));
+            
+            await testSourceRegistry();
+            
+            showSummary();
+        }
+        
+        function clearResults() {
+            const tests = ['frontend', 'discovery', 'gathering', 'synthesis', 'opportunity', 'source'];
+            tests.forEach(test => {
+                updateStatus(test, 'pending');
+                updateResult(test, 'Not tested yet');
+            });
+            document.getElementById('summary').style.display = 'none';
+        }
+        
+        function showSummary() {
+            const statuses = document.querySelectorAll('.status');
+            let passed = 0, failed = 0;
+            
+            statuses.forEach(status => {
+                if (status.classList.contains('success')) passed++;
+                if (status.classList.contains('error')) failed++;
+            });
+            
+            const summary = document.getElementById('summary');
+            const content = document.getElementById('summary-content');
+            
+            if (failed === 0) {
+                content.innerHTML = `<h3 style="color: #27ae60;">✅ ALL TESTS PASSED!</h3>
+                    <p>All V3 components are deployed and working correctly.</p>
+                    <p>• Frontend has V3 code<br>
+                    • All Edge Functions responding<br>
+                    • Intelligence pipeline operational<br>
+                    • Opportunity detection active</p>`;
+            } else {
+                content.innerHTML = `<h3 style="color: #e74c3c;">⚠️ Some tests failed</h3>
+                    <p>Passed: ${passed} | Failed: ${failed}</p>
+                    <p>Check the failed tests above for details.</p>`;
+            }
+            
+            summary.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Deployment Audit</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #000;
+            color: #0f0;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 { color: #ff0; }
+        .section {
+            border: 1px solid #0f0;
+            padding: 10px;
+            margin: 10px 0;
+            background: rgba(0,255,0,0.05);
+        }
+        .error { color: #f00; }
+        .success { color: #0f0; }
+        .warning { color: #ff0; }
+        pre {
+            background: #111;
+            padding: 10px;
+            overflow-x: auto;
+            border: 1px solid #333;
+        }
+        button {
+            background: #0f0;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin: 5px;
+            font-weight: bold;
+        }
+        button:hover { background: #0ff; }
+        .critical { 
+            background: rgba(255,0,0,0.2); 
+            border: 2px solid #f00;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 COMPLETE DEPLOYMENT AUDIT</h1>
+    <p>This audit will check EVERYTHING to find why updates aren't deploying.</p>
+    
+    <button onclick="runCompleteAudit()">RUN COMPLETE AUDIT</button>
+    <button onclick="clearResults()">CLEAR</button>
+    
+    <div class="section">
+        <h2>1. VERCEL DEPLOYMENT CHECK</h2>
+        <pre id="vercel-check">Not tested yet...</pre>
+    </div>
+    
+    <div class="section">
+        <h2>2. FRONTEND CODE CHECK</h2>
+        <pre id="frontend-check">Not tested yet...</pre>
+    </div>
+    
+    <div class="section">
+        <h2>3. EDGE FUNCTIONS CHECK</h2>
+        <pre id="edge-check">Not tested yet...</pre>
+    </div>
+    
+    <div class="section">
+        <h2>4. ACTUAL FLOW TEST</h2>
+        <pre id="flow-check">Not tested yet...</pre>
+    </div>
+    
+    <div class="section">
+        <h2>5. CACHE & STORAGE CHECK</h2>
+        <pre id="cache-check">Not tested yet...</pre>
+    </div>
+    
+    <div class="critical" id="findings" style="display:none;">
+        <h2>🚨 CRITICAL FINDINGS</h2>
+        <pre id="findings-content"></pre>
+    </div>
+
+    <script>
+        const VERCEL_URL = 'https://signaldesk-nivra-sd.vercel.app';
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        let findings = [];
+        
+        function log(section, message, type = 'info') {
+            const element = document.getElementById(section);
+            const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warning' ? '⚠️' : '📊';
+            element.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            
+            if (type === 'error') {
+                findings.push(`${section.toUpperCase()}: ${message}`);
+            }
+        }
+        
+        async function checkVercelDeployment() {
+            log('vercel-check', 'Checking Vercel deployment...', 'info');
+            
+            try {
+                // Check main page
+                const response = await fetch(VERCEL_URL);
+                const html = await response.text();
+                
+                // Check deployment ID
+                const deploymentId = response.headers.get('x-vercel-id');
+                log('vercel-check', `Deployment ID: ${deploymentId}`, 'info');
+                
+                // Check for V3 code indicators
+                const hasV3 = html.includes('IntelligenceOrchestratorV3') || 
+                             html.includes('opportunity-detector-v3');
+                const hasV2 = html.includes('claudeIntelligenceServiceV2');
+                const hasOldOpportunity = html.includes('assess-opportunities-simple');
+                
+                if (!hasV3) {
+                    log('vercel-check', 'V3 CODE NOT FOUND IN DEPLOYMENT!', 'error');
+                    log('vercel-check', 'Deployment is serving OLD code without V3 updates', 'error');
+                }
+                
+                if (hasV2) {
+                    log('vercel-check', 'Still using V2 services (claudeIntelligenceServiceV2)', 'warning');
+                }
+                
+                if (hasOldOpportunity) {
+                    log('vercel-check', 'Old opportunity endpoint (assess-opportunities-simple) still in code', 'warning');
+                }
+                
+                // Check build info
+                const buildTime = html.match(/buildTime['":\s]+([^'"]+)/)?.[1];
+                const buildId = html.match(/buildId['":\s]+([^'"]+)/)?.[1];
+                log('vercel-check', `Build Time: ${buildTime || 'NOT FOUND'}`, buildTime ? 'info' : 'error');
+                log('vercel-check', `Build ID: ${buildId || 'NOT FOUND'}`, buildId ? 'info' : 'error');
+                
+                // Check bundle size (indicator of changes)
+                log('vercel-check', `HTML size: ${html.length} bytes`, 'info');
+                
+                // Try to fetch the main JS bundle
+                const scriptMatch = html.match(/<script[^>]*src="([^"]*main[^"]*\.js)"/);
+                if (scriptMatch) {
+                    const scriptUrl = scriptMatch[1].startsWith('http') ? scriptMatch[1] : VERCEL_URL + scriptMatch[1];
+                    const scriptResp = await fetch(scriptUrl);
+                    const scriptText = await scriptResp.text();
+                    
+                    const scriptHasV3 = scriptText.includes('opportunity-detector-v3');
+                    const scriptHasOrchestrator = scriptText.includes('IntelligenceOrchestratorV3');
+                    
+                    log('vercel-check', `Main JS bundle size: ${scriptText.length} bytes`, 'info');
+                    log('vercel-check', `JS has opportunity-detector-v3: ${scriptHasV3}`, scriptHasV3 ? 'success' : 'error');
+                    log('vercel-check', `JS has IntelligenceOrchestratorV3: ${scriptHasOrchestrator}`, scriptHasOrchestrator ? 'success' : 'error');
+                }
+                
+            } catch (error) {
+                log('vercel-check', `Failed to check Vercel: ${error.message}`, 'error');
+            }
+        }
+        
+        async function checkFrontendCode() {
+            log('frontend-check', 'Checking what frontend code is actually calling...', 'info');
+            
+            try {
+                // Test what happens when we create a new org
+                const testOrgName = `TestOrg_${Date.now()}`;
+                log('frontend-check', `Testing with org name: ${testOrgName}`, 'info');
+                
+                // Check localStorage for cached data
+                const cachedKeys = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key.includes('intelligence') || key.includes('cache') || key.includes('signaldesk')) {
+                        cachedKeys.push(key);
+                    }
+                }
+                
+                if (cachedKeys.length > 0) {
+                    log('frontend-check', `Found ${cachedKeys.length} cached items: ${cachedKeys.join(', ')}`, 'warning');
+                }
+                
+                // Check what the deployed app configuration shows
+                if (window.__SIGNALDESK_CONFIG__) {
+                    log('frontend-check', `App config: ${JSON.stringify(window.__SIGNALDESK_CONFIG__)}`, 'info');
+                } else {
+                    log('frontend-check', 'No app config found in window object', 'warning');
+                }
+                
+            } catch (error) {
+                log('frontend-check', `Frontend check failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function checkEdgeFunctions() {
+            log('edge-check', 'Testing all Edge Functions...', 'info');
+            
+            const functions = [
+                { name: 'intelligence-discovery-v3', test: { organization: { name: 'Test' } } },
+                { name: 'intelligence-gathering-v3', test: { discovery: { entities: {} }, organization: { name: 'Test' } } },
+                { name: 'intelligence-synthesis-v3', test: { intelligence: { entity_actions: { all: [] } }, organization: { name: 'Test' } } },
+                { name: 'opportunity-detector-v3', test: { intelligence: { entity_actions: { all: [] } }, organization: { name: 'Test' } } },
+                { name: 'assess-opportunities-simple', test: { organizationId: 'test' } },
+                { name: 'opportunity-orchestrator', test: { organization: { name: 'Test' } } }
+            ];
+            
+            for (const func of functions) {
+                try {
+                    const response = await fetch(`${SUPABASE_URL}/functions/v1/${func.name}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${SUPABASE_KEY}`
+                        },
+                        body: JSON.stringify(func.test)
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (func.name === 'assess-opportunities-simple' && data.opportunities?.length > 0) {
+                        log('edge-check', `${func.name}: RETURNING FALLBACK DATA! (${data.opportunities.length} items)`, 'error');
+                        log('edge-check', `  First item: "${data.opportunities[0].title}"`, 'error');
+                    } else if (func.name === 'opportunity-detector-v3' && data.opportunities?.length === 0) {
+                        log('edge-check', `${func.name}: Correctly returns empty (no fallbacks)`, 'success');
+                    } else {
+                        log('edge-check', `${func.name}: ${response.status} - ${data.success ? 'Success' : 'Failed'}`, data.success ? 'success' : 'warning');
+                    }
+                    
+                } catch (error) {
+                    log('edge-check', `${func.name}: ERROR - ${error.message}`, 'error');
+                }
+            }
+        }
+        
+        async function checkActualFlow() {
+            log('flow-check', 'Testing actual data flow...', 'info');
+            
+            try {
+                // 1. Test Discovery
+                log('flow-check', 'Step 1: Testing Discovery V3...', 'info');
+                const discoveryResp = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-discovery-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: { name: 'Apple', industry: 'technology' }
+                    })
+                });
+                
+                const discovery = await discoveryResp.json();
+                log('flow-check', `Discovery returned: ${discovery.statistics?.total_entities || 0} entities`, discovery.success ? 'success' : 'error');
+                
+                // 2. Test Gathering
+                if (discovery.success) {
+                    log('flow-check', 'Step 2: Testing Gathering V3...', 'info');
+                    const gatheringResp = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-gathering-v3`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${SUPABASE_KEY}`
+                        },
+                        body: JSON.stringify({
+                            discovery: discovery.discovery,
+                            organization: { name: 'Apple', industry: 'technology' }
+                        })
+                    });
+                    
+                    const gathering = await gatheringResp.json();
+                    log('flow-check', `Gathering returned: ${gathering.intelligence?.entity_actions?.total_count || 0} actions`, gathering.success ? 'success' : 'error');
+                    
+                    // 3. Test Opportunity Detection
+                    if (gathering.success) {
+                        log('flow-check', 'Step 3: Testing Opportunity Detector V3...', 'info');
+                        const oppResp = await fetch(`${SUPABASE_URL}/functions/v1/opportunity-detector-v3`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${SUPABASE_KEY}`
+                            },
+                            body: JSON.stringify({
+                                intelligence: gathering.intelligence,
+                                organization: { name: 'Apple' }
+                            })
+                        });
+                        
+                        const opportunities = await oppResp.json();
+                        log('flow-check', `Opportunities returned: ${opportunities.opportunities?.length || 0} items`, 'info');
+                        
+                        if (opportunities.opportunities?.length > 0) {
+                            const first = opportunities.opportunities[0];
+                            log('flow-check', `First opportunity: "${first.title}"`, 'info');
+                            log('flow-check', `Has MCP reference: ${first.description?.includes('MCP')}`, first.description?.includes('MCP') ? 'error' : 'success');
+                            log('flow-check', `Has real source: ${!!first.source?.stakeholder}`, first.source?.stakeholder ? 'success' : 'warning');
+                        }
+                    }
+                }
+                
+            } catch (error) {
+                log('flow-check', `Flow test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function checkCacheAndStorage() {
+            log('cache-check', 'Checking all caches and storage...', 'info');
+            
+            // Check localStorage
+            const storageItems = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.includes('signaldesk') || key.includes('intelligence') || key.includes('cache')) {
+                    const value = localStorage.getItem(key);
+                    try {
+                        const parsed = JSON.parse(value);
+                        storageItems[key] = {
+                            size: value.length,
+                            type: typeof parsed,
+                            sample: JSON.stringify(parsed).substring(0, 100)
+                        };
+                    } catch {
+                        storageItems[key] = {
+                            size: value.length,
+                            type: 'string',
+                            sample: value.substring(0, 100)
+                        };
+                    }
+                }
+            }
+            
+            if (Object.keys(storageItems).length > 0) {
+                log('cache-check', `Found ${Object.keys(storageItems).length} cached items:`, 'warning');
+                for (const [key, info] of Object.entries(storageItems)) {
+                    log('cache-check', `  ${key}: ${info.size} bytes`, 'info');
+                }
+            } else {
+                log('cache-check', 'No cached items found', 'success');
+            }
+            
+            // Check sessionStorage
+            const sessionItems = [];
+            for (let i = 0; i < sessionStorage.length; i++) {
+                sessionItems.push(sessionStorage.key(i));
+            }
+            
+            if (sessionItems.length > 0) {
+                log('cache-check', `SessionStorage has ${sessionItems.length} items: ${sessionItems.join(', ')}`, 'warning');
+            }
+            
+            // Check for service workers (they can cache responses)
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                if (registrations.length > 0) {
+                    log('cache-check', `Found ${registrations.length} service workers - THESE CAN CACHE OLD CODE!`, 'error');
+                    for (const reg of registrations) {
+                        log('cache-check', `  Unregistering: ${reg.scope}`, 'info');
+                        await reg.unregister();
+                    }
+                }
+            }
+        }
+        
+        async function runCompleteAudit() {
+            clearResults();
+            findings = [];
+            
+            await checkVercelDeployment();
+            await checkFrontendCode();
+            await checkEdgeFunctions();
+            await checkActualFlow();
+            await checkCacheAndStorage();
+            
+            if (findings.length > 0) {
+                document.getElementById('findings').style.display = 'block';
+                document.getElementById('findings-content').textContent = findings.join('\n\n');
+            }
+        }
+        
+        function clearResults() {
+            ['vercel-check', 'frontend-check', 'edge-check', 'flow-check', 'cache-check'].forEach(id => {
+                document.getElementById(id).textContent = 'Not tested yet...';
+            });
+            document.getElementById('findings').style.display = 'none';
+            findings = [];
+        }
+    </script>
+</body>
+</html>

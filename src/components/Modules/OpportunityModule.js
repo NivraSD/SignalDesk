@@ -131,67 +131,16 @@ const OpportunityModule = ({ organizationId }) => {
             }
           }
         } catch (orchestratorError) {
-          console.warn('⚠️ Orchestrator not available, trying simple assessment:', orchestratorError);
-        }
-        
-        // Fallback to simple assessment if orchestrator fails
-        try {
-          console.log('🎯 Falling back to assess-opportunities-simple');
-          const { data, error } = await supabase.functions.invoke('assess-opportunities-simple', {
-            body: {
-              organizationId,
-              forceRefresh: false,
-              organizationProfile: userConfig
-            }
-          });
-
-          console.log('📊 Simple assessment response:', { 
-            data, 
-            error,
-            hasOpportunities: data?.opportunities?.length,
-            success: data?.success 
-          });
-          
-          if (error) {
-            console.error('❌ Edge Function error:', error);
-          } else if (!data) {
-            console.error('❌ No data from simple assessment');
-          } else if (!data.opportunities) {
-            console.error('❌ No opportunities in simple assessment response');
-          }
-
-          if (!error && data?.opportunities && Array.isArray(data.opportunities) && data.opportunities.length > 0) {
-            // Process opportunities from Edge Function
-            const scoredOpportunities = data.opportunities.map(opp => ({
-              ...opp,
-              priority_score: opp.adjusted_score || opp.score || opp.base_score,
-              configured_weight: userConfig?.[opp.opportunity_type]?.weight || 50,
-              opportunity_data: {
-                description: opp.description || opp.suggested_action || ''
-              }
-            }));
-
-            // Apply local filters
-            const filtered = scoredOpportunities.filter(opp => {
-              if (filters.type !== 'all' && opp.opportunity_type !== filters.type) return false;
-              if (opp.priority_score < filters.minScore) return false;
-              if (filters.status !== 'all' && opp.status !== filters.status) return false;
-              return true;
-            });
-
-            filtered.sort((a, b) => b.priority_score - a.priority_score);
-            setOpportunities(filtered);
-            setLoading(false);
-            return;
-          }
-        } catch (edgeFunctionError) {
-          console.warn('Edge Function not available, using fallback:', edgeFunctionError);
-          // Continue to fallback mock data
+          console.error('❌ V3 Orchestrator error:', orchestratorError);
+          console.error('❌ No fallbacks - V3 only. Check Edge Functions.');
+          setOpportunities([]);
+          setLoading(false);
+          return;
         }
       }
 
-      // No fallback - show actual error to user
-      console.error('❌ No opportunities loaded - Edge Functions not responding');
+      // If we get here, no org data was available
+      console.error('❌ No organization data available');
       setOpportunities([]);
       setLoading(false);
       return;
