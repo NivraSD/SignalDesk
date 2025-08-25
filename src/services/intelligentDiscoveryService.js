@@ -136,16 +136,40 @@ class IntelligentDiscoveryService {
         console.log('✅ Claude API Response:', {
           success: data.success,
           hasAnalysis: !!data.analysis,
-          competitors: data.analysis?.competitors,
-          stakeholders: data.analysis?.stakeholders,
+          baseCompetitors: data.analysis?.competitors,
+          realCompetitors: data.analysis?.additional_niche_competitors,
+          mediaOutlets: data.analysis?.key_media_outlets,
           enhancedByClaude: data.analysis?.enhanced_by_claude,
           fullData: data
         });
-        // Make sure we return the full analysis with competitors
+        
         if (data.analysis) {
-          console.log('🎯 Discovered competitors:', data.analysis.competitors);
-          console.log('🎯 Discovered stakeholders:', data.analysis.stakeholders);
-          return data.analysis;
+          // Map the Edge Function response to our expected structure
+          const mappedAnalysis = {
+            ...data.analysis,
+            // Merge base competitors with additional niche competitors
+            competitors: [
+              ...(data.analysis.additional_niche_competitors || []),
+              ...(data.analysis.competitors || []).filter(c => !c.includes('Industry Leader'))
+            ].filter(Boolean),
+            // Build proper stakeholders object from various fields
+            stakeholders: {
+              regulators: data.analysis.stakeholders?.regulators || [],
+              activists: data.analysis.stakeholders?.activists || [],
+              media: data.analysis.key_media_outlets || data.analysis.stakeholders?.media || [],
+              investors: data.analysis.stakeholders?.investors || [],
+              analysts: data.analysis.stakeholders?.analysts || []
+            },
+            // Use emerging_trends if available
+            topics: data.analysis.emerging_trends || data.analysis.topics || [],
+            // Industry from industryInsights
+            industry: data.analysis.industryInsights?.industry || data.analysis.industry || 'general'
+          };
+          
+          console.log('🎯 Mapped competitors:', mappedAnalysis.competitors);
+          console.log('🎯 Mapped stakeholders:', mappedAnalysis.stakeholders);
+          
+          return mappedAnalysis;
         }
         console.warn('⚠️ No analysis in response, using default');
         return this.getDefaultAnalysis(companyName);
