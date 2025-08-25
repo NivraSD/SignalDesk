@@ -43,6 +43,9 @@ const RailwayV2Enhanced = () => {
     setOrganizationData(orgData);
   }, [navigate]);
 
+  // V3 DEPLOYMENT MARKER - NO FALLBACKS
+  const deploymentVersion = "V3.1 - NO FALLBACKS - 2025-08-24";
+  
   const modules = [
     { id: 'intelligence', name: 'Intelligence', Icon: IntelligenceIcon, color: '#00ffcc' },
     { id: 'opportunities', name: 'Opportunities', Icon: OpportunityIcon, color: '#ff00ff' },
@@ -80,6 +83,23 @@ const RailwayV2Enhanced = () => {
     <div className="railway-v2">
       {/* Animated Background */}
       <div className="railway-bg-animation"></div>
+      
+      {/* Version Badge - V3 NO FALLBACKS */}
+      <div style={{
+        position: 'fixed',
+        top: '10px',
+        right: '10px',
+        background: 'linear-gradient(135deg, #ff00ff, #00ffcc)',
+        color: 'white',
+        padding: '5px 15px',
+        borderRadius: '20px',
+        fontSize: '12px',
+        fontWeight: 'bold',
+        zIndex: 9999,
+        boxShadow: '0 0 20px rgba(255,0,255,0.5)'
+      }}>
+        {deploymentVersion}
+      </div>
       
       {/* Fixed Header */}
       <header className="railway-header">
