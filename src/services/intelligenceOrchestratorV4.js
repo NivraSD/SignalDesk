@@ -90,22 +90,23 @@ class IntelligenceOrchestratorV4 {
 
   async callEdgeSynthesis(intelligence, organization) {
     // Transform raw signals into format expected by synthesis
+    // Since raw signals don't have entity field, we'll create entity actions from all signals
     const transformedIntelligence = {
       entity_actions: {
-        all: intelligence.raw_signals.filter(s => s.entity).map(signal => ({
-          entity: signal.entity,
-          type: signal.entity_type || 'other',
-          action: signal.title,
-          description: signal.content,
-          source: signal.source,
-          url: signal.url,
+        all: (intelligence.raw_signals || []).map(signal => ({
+          entity: signal.entity || signal.source || 'Industry',
+          type: signal.entity_type || signal.type || 'general',
+          action: signal.title || 'No title',
+          description: signal.content || signal.description || '',
+          source: signal.source || 'Unknown',
+          url: signal.url || signal.raw?.url || '',
           timestamp: signal.published || new Date().toISOString(),
           impact: 'medium',
           relevance: 0.7
         }))
       },
       topic_trends: {
-        all: this.extractTopicTrends(intelligence.raw_signals)
+        all: this.extractTopicTrends(intelligence.raw_signals || [])
       }
     };
 
@@ -136,23 +137,25 @@ class IntelligenceOrchestratorV4 {
     const topicCounts = new Map();
     const trendKeywords = ['AI', 'sustainability', 'privacy', 'security', 'innovation', 'growth'];
     
-    signals.forEach(signal => {
-      const text = (signal.title + ' ' + (signal.content || '')).toLowerCase();
-      trendKeywords.forEach(keyword => {
-        if (text.includes(keyword.toLowerCase())) {
-          const count = topicCounts.get(keyword) || 0;
-          topicCounts.set(keyword, count + 1);
-        }
+    if (signals && signals.length > 0) {
+      signals.forEach(signal => {
+        const text = ((signal.title || '') + ' ' + (signal.content || '')).toLowerCase();
+        trendKeywords.forEach(keyword => {
+          if (text.includes(keyword.toLowerCase())) {
+            const count = topicCounts.get(keyword) || 0;
+            topicCounts.set(keyword, count + 1);
+          }
+        });
       });
-    });
+    }
 
     return Array.from(topicCounts.entries()).map(([topic, count]) => ({
       topic,
       trend: count > 3 ? 'increasing' : 'stable',
       mentions: count,
-      sources: [...new Set(signals.filter(s => 
-        (s.title + ' ' + (s.content || '')).toLowerCase().includes(topic.toLowerCase())
-      ).map(s => s.source))]
+      sources: [...new Set((signals || []).filter(s => 
+        ((s.title || '') + ' ' + (s.content || '')).toLowerCase().includes(topic.toLowerCase())
+      ).map(s => s.source || 'Unknown'))]
     }));
   }
 

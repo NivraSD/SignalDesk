@@ -37,16 +37,59 @@ class CacheManager {
     const keys = Object.keys(localStorage);
     let cleared = 0;
     
+    // More comprehensive list of keys to clear
+    const clearPatterns = [
+      'signaldesk',
+      'onboarding', 
+      'organization',
+      'intelligence',
+      'opportunity',
+      'synthesis',
+      'gathering',
+      'discovery',
+      'monitoring',
+      'cache',
+      'profile',
+      'stakeholder',
+      'competitor',
+      'regulator',
+      'analyst',
+      'investor',
+      'media',
+      'activist',
+      'mcp_results',
+      'just_onboarded',
+      'completed'
+    ];
+    
     keys.forEach(key => {
-      if (key.includes('signaldesk') || 
-          key.includes('onboarding') || 
-          key.includes('organization') ||
-          key.includes('intelligence') ||
-          key.includes('opportunity')) {
+      const shouldClear = clearPatterns.some(pattern => 
+        key.toLowerCase().includes(pattern)
+      );
+      
+      if (shouldClear) {
         localStorage.removeItem(key);
         cleared++;
+        console.log(`  🗑️ Removed: ${key}`);
       }
     });
+    
+    // Also clear any window-level caches
+    if (typeof window !== 'undefined') {
+      // Clear any window-level intelligence cache
+      if (window.__SIGNALDESK_INTELLIGENCE__) {
+        window.__SIGNALDESK_INTELLIGENCE__ = null;
+        console.log('  🗑️ Cleared window.__SIGNALDESK_INTELLIGENCE__');
+      }
+      if (window.__SIGNALDESK_CACHE__) {
+        window.__SIGNALDESK_CACHE__ = null;
+        console.log('  🗑️ Cleared window.__SIGNALDESK_CACHE__');
+      }
+      if (window.__SIGNALDESK_ORG__) {
+        window.__SIGNALDESK_ORG__ = null;
+        console.log('  🗑️ Cleared window.__SIGNALDESK_ORG__');
+      }
+    }
     
     console.log(`✅ Cleared ${cleared} cache items`);
     return cleared;
@@ -202,9 +245,63 @@ class CacheManager {
   
   // Start new search (clear intelligence but keep organization)
   startNewSearch() {
-    console.log('🔄 Starting new search...');
+    console.log('🔄 Starting new search - clearing ALL intelligence data...');
     this.clearIntelligence();
+    
+    // Also clear window-level intelligence caches
+    if (typeof window !== 'undefined') {
+      if (window.__SIGNALDESK_INTELLIGENCE__) {
+        window.__SIGNALDESK_INTELLIGENCE__ = null;
+        console.log('  🗑️ Cleared window.__SIGNALDESK_INTELLIGENCE__');
+      }
+      if (window.__SIGNALDESK_CACHE__) {
+        window.__SIGNALDESK_CACHE__ = null;
+        console.log('  🗑️ Cleared window.__SIGNALDESK_CACHE__');
+      }
+    }
+    
+    // Verify what's left
+    this.verifyCacheState();
+    
     return true;
+  }
+  
+  // Verify cache state - useful for debugging
+  verifyCacheState() {
+    const state = {
+      localStorage: {},
+      windowCaches: {},
+      totalItems: 0
+    };
+    
+    // Check localStorage
+    const keys = Object.keys(localStorage);
+    keys.forEach(key => {
+      if (key.includes('signaldesk') || 
+          key.includes('organization') ||
+          key.includes('intelligence') ||
+          key.includes('opportunity') ||
+          key.includes('profile')) {
+        try {
+          const value = localStorage.getItem(key);
+          const parsed = JSON.parse(value);
+          state.localStorage[key] = parsed ? '✅ Has data' : '⚠️ Empty';
+        } catch {
+          state.localStorage[key] = '⚠️ Invalid JSON';
+        }
+        state.totalItems++;
+      }
+    });
+    
+    // Check window caches
+    if (typeof window !== 'undefined') {
+      state.windowCaches.__SIGNALDESK_INTELLIGENCE__ = window.__SIGNALDESK_INTELLIGENCE__ ? '✅ Has data' : '❌ Empty';
+      state.windowCaches.__SIGNALDESK_CACHE__ = window.__SIGNALDESK_CACHE__ ? '✅ Has data' : '❌ Empty';
+      state.windowCaches.__SIGNALDESK_ORG__ = window.__SIGNALDESK_ORG__ ? '✅ Has data' : '❌ Empty';
+    }
+    
+    console.log('📊 Cache State Verification:', state);
+    return state;
   }
   
   // Get cache status for debugging
@@ -224,4 +321,59 @@ class CacheManager {
 
 // Export singleton instance
 const cacheManager = new CacheManager();
+
+// Add global debug functions for testing cache issues
+if (typeof window !== 'undefined') {
+  window.debugCache = () => cacheManager.verifyCacheState();
+  window.clearAllCache = () => cacheManager.clearAll();
+  window.checkCacheContamination = () => {
+    const state = cacheManager.verifyCacheState();
+    const issues = [];
+    
+    // Check for multiple organizations in cache
+    const orgKeys = Object.keys(state.localStorage).filter(k => 
+      k.includes('organization') || k.includes('profile')
+    );
+    
+    if (orgKeys.length > 3) {
+      issues.push(`⚠️ Multiple organization keys found: ${orgKeys.length}`);
+    }
+    
+    // Check for stale intelligence
+    const intelKeys = Object.keys(state.localStorage).filter(k => 
+      k.includes('intelligence') || k.includes('synthesis')
+    );
+    
+    intelKeys.forEach(key => {
+      try {
+        const data = JSON.parse(localStorage.getItem(key));
+        if (data && data.timestamp) {
+          const age = Date.now() - new Date(data.timestamp).getTime();
+          if (age > 30 * 60 * 1000) { // 30 minutes
+            issues.push(`⚠️ Stale cache: ${key} is ${Math.round(age / 60000)} minutes old`);
+          }
+        }
+      } catch {}
+    });
+    
+    // Check for window-level contamination
+    if (window.__SIGNALDESK_INTELLIGENCE__ || window.__SIGNALDESK_CACHE__) {
+      issues.push('⚠️ Window-level caches still active');
+    }
+    
+    if (issues.length > 0) {
+      console.log('🚨 Cache contamination detected:', issues);
+    } else {
+      console.log('✅ Cache is clean');
+    }
+    
+    return issues;
+  };
+  
+  console.log('🛠️ Cache debug functions available:');
+  console.log('  - window.debugCache() - Show cache state');
+  console.log('  - window.clearAllCache() - Clear all caches');
+  console.log('  - window.checkCacheContamination() - Check for issues');
+}
+
 export default cacheManager;
