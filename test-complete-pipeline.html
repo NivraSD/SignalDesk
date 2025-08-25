@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Pipeline Debug Test</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #00ff88;
+            padding: 20px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        .section {
+            background: rgba(0, 255, 136, 0.05);
+            border: 1px solid #00ff88;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        h1, h2 {
+            color: #00ffcc;
+            text-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
+        }
+        .test-button {
+            background: linear-gradient(135deg, #00ff88, #00ffcc);
+            color: #0a0a0a;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .result {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #00ff88;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success { border-color: #00ff88; color: #00ff88; }
+        .error { border-color: #ff0088; color: #ff0088; }
+        .warning { border-color: #ffcc00; color: #ffcc00; }
+        .stage {
+            margin: 20px 0;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Complete Intelligence Pipeline Debug Test</h1>
+    
+    <div class="section">
+        <h2>Test Configuration</h2>
+        <label>Organization Name:</label>
+        <input type="text" id="orgName" value="Target Corporation" style="width: 300px; background: #000; color: #00ff88; border: 1px solid #00ff88; padding: 5px; margin: 10px;">
+        <br>
+        <button class="test-button" onclick="runCompleteFlowTest()">Run Complete Flow Test</button>
+    </div>
+
+    <div class="section">
+        <h2>Stage 1: Onboarding Data Structure</h2>
+        <div id="stage1" class="stage"></div>
+    </div>
+
+    <div class="section">
+        <h2>Stage 2: Discovery Request & Response</h2>
+        <div id="stage2" class="stage"></div>
+    </div>
+
+    <div class="section">
+        <h2>Stage 3: Gathering Request & Response</h2>
+        <div id="stage3" class="stage"></div>
+    </div>
+
+    <div class="section">
+        <h2>Stage 4: Synthesis Request & Response</h2>
+        <div id="stage4" class="stage"></div>
+    </div>
+
+    <div class="section">
+        <h2>Stage 5: Frontend Tab Rendering</h2>
+        <div id="stage5" class="stage"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+
+        function logStage(stageId, message, data, type = 'info') {
+            const element = document.getElementById(stageId);
+            const className = type === 'error' ? 'error' : type === 'warning' ? 'warning' : 'success';
+            element.innerHTML += `<div class="result ${className}">${message}\n${data ? JSON.stringify(data, null, 2) : ''}</div>`;
+        }
+
+        async function runCompleteFlowTest() {
+            const orgName = document.getElementById('orgName').value;
+            
+            // Clear previous results
+            for (let i = 1; i <= 5; i++) {
+                document.getElementById(`stage${i}`).innerHTML = '';
+            }
+
+            // STAGE 1: Create onboarding data structure
+            logStage('stage1', '📦 Creating onboarding data structure...');
+            const onboardingData = {
+                organization: {
+                    name: orgName,
+                    industry: 'retail',
+                    website: 'https://target.com',
+                    description: 'Major retail corporation'
+                },
+                competitors: ['Walmart', 'Amazon', 'Costco', 'CVS', 'Kroger'],
+                monitoring_topics: [
+                    'E-commerce growth',
+                    'Supply chain optimization',
+                    'Customer experience',
+                    'Sustainability initiatives',
+                    'Digital transformation'
+                ],
+                stakeholders: {
+                    regulators: ['FTC', 'SEC', 'FDA'],
+                    activists: ['Greenpeace', 'Labor Rights Watch'],
+                    media: ['Reuters', 'Bloomberg', 'CNBC', 'Wall Street Journal'],
+                    investors: ['Vanguard', 'BlackRock', 'State Street'],
+                    analysts: ['Morgan Stanley', 'Goldman Sachs']
+                },
+                // Also include at root level as some code expects it
+                regulators: ['FTC', 'SEC', 'FDA'],
+                activists: ['Greenpeace', 'Labor Rights Watch'],
+                media_outlets: ['Reuters', 'Bloomberg', 'CNBC', 'Wall Street Journal'],
+                investors: ['Vanguard', 'BlackRock', 'State Street'],
+                analysts: ['Morgan Stanley', 'Goldman Sachs']
+            };
+            
+            logStage('stage1', 'Onboarding data structure:', onboardingData);
+
+            // STAGE 2: Test Discovery
+            logStage('stage2', '🔍 Testing Discovery Edge Function...');
+            try {
+                const discoveryRequest = {
+                    organization: onboardingData.organization,
+                    stakeholders: onboardingData.stakeholders,
+                    monitoring_topics: onboardingData.monitoring_topics
+                };
+                
+                logStage('stage2', 'Discovery Request:', discoveryRequest);
+                
+                const discoveryResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-discovery-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify(discoveryRequest)
+                });
+
+                const discoveryData = await discoveryResponse.json();
+                logStage('stage2', 'Discovery Response:', discoveryData, discoveryData.success ? 'info' : 'error');
+                
+                if (!discoveryData.success) {
+                    logStage('stage2', '❌ Discovery failed', null, 'error');
+                    return;
+                }
+
+                // STAGE 3: Test Gathering
+                logStage('stage3', '📡 Testing Gathering Edge Function...');
+                const gatheringRequest = {
+                    entities: discoveryData.entities || {},
+                    organization: onboardingData.organization
+                };
+                
+                logStage('stage3', 'Gathering Request:', gatheringRequest);
+                
+                const gatheringResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-gathering-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify(gatheringRequest)
+                });
+
+                const gatheringData = await gatheringResponse.json();
+                logStage('stage3', 'Gathering Response:', {
+                    success: gatheringData.success,
+                    entity_actions_count: gatheringData.entity_actions?.all?.length || 0,
+                    topic_trends_count: gatheringData.topic_trends?.all?.length || 0,
+                    sample_action: gatheringData.entity_actions?.all?.[0],
+                    sample_trend: gatheringData.topic_trends?.all?.[0]
+                }, gatheringData.success ? 'info' : 'error');
+
+                if (!gatheringData.success) {
+                    logStage('stage3', '❌ Gathering failed', null, 'error');
+                    return;
+                }
+
+                // STAGE 4: Test Synthesis
+                logStage('stage4', '🧠 Testing Synthesis Edge Function...');
+                const synthesisRequest = {
+                    intelligence: {
+                        entity_actions: gatheringData.entity_actions || { all: [] },
+                        topic_trends: gatheringData.topic_trends || { all: [] }
+                    },
+                    organization: onboardingData.organization
+                };
+                
+                logStage('stage4', 'Synthesis Request:', {
+                    entity_actions_count: synthesisRequest.intelligence.entity_actions.all.length,
+                    topic_trends_count: synthesisRequest.intelligence.topic_trends.all.length
+                });
+                
+                const synthesisResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-synthesis-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify(synthesisRequest)
+                });
+
+                const synthesisData = await synthesisResponse.json();
+                logStage('stage4', 'Synthesis Response:', {
+                    success: synthesisData.success,
+                    tabs: synthesisData.tabs ? Object.keys(synthesisData.tabs) : [],
+                    alerts: synthesisData.alerts?.length || 0,
+                    statistics: synthesisData.statistics,
+                    executive_headline: synthesisData.tabs?.executive?.headline,
+                    positioning_data: synthesisData.tabs?.positioning ? 'Present' : 'Missing',
+                    between_data: synthesisData.tabs?.between ? 'Present' : 'Missing'
+                }, synthesisData.success ? 'info' : 'error');
+
+                // STAGE 5: Check what frontend expects
+                logStage('stage5', '🎨 Checking Frontend Tab Structure...');
+                
+                const expectedTabs = [
+                    'executive', 'positioning', 'between', 'thought', 
+                    'regulatory', 'forward', 'narrative', 'response',
+                    'messaging', 'stakeholders', 'tomorrow'
+                ];
+                
+                const tabAnalysis = {};
+                for (const tab of expectedTabs) {
+                    if (synthesisData.tabs && synthesisData.tabs[tab]) {
+                        const tabData = synthesisData.tabs[tab];
+                        tabAnalysis[tab] = {
+                            present: true,
+                            hasData: Object.keys(tabData).length > 0,
+                            fields: Object.keys(tabData)
+                        };
+                    } else {
+                        tabAnalysis[tab] = {
+                            present: false,
+                            hasData: false,
+                            fields: []
+                        };
+                    }
+                }
+                
+                logStage('stage5', 'Tab Analysis:', tabAnalysis);
+                
+                // Check specific field requirements
+                const fieldChecks = {
+                    'executive.overview': synthesisData.tabs?.executive?.overview ? '✅' : '❌',
+                    'executive.headline': synthesisData.tabs?.executive?.headline ? '✅' : '❌',
+                    'positioning.competitor_moves': synthesisData.tabs?.positioning?.competitor_moves ? '✅' : '❌',
+                    'positioning.your_position': synthesisData.tabs?.positioning?.your_position ? '✅' : '❌',
+                    'between.hidden_patterns': synthesisData.tabs?.between?.hidden_patterns ? '✅' : '❌',
+                    'competitive.competitor_actions': synthesisData.tabs?.competitive?.competitor_actions ? '✅' : '❌'
+                };
+                
+                logStage('stage5', 'Field Validation:', fieldChecks);
+
+            } catch (error) {
+                console.error('Test failed:', error);
+                logStage('stage1', `❌ Error: ${error.message}`, null, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -81,16 +81,27 @@ async function enhanceOrganizationData(organization: any) {
   }
   
   // Build base response with REAL data
+  // CRITICAL: Include stakeholders both nested AND at root level for onboarding compatibility
   const baseData = {
     competitors: competitors.length > 0 ? competitors : ['Industry Leader 1', 'Industry Leader 2'],
     stakeholders,
+    // ALSO include stakeholders at root level for direct access by onboarding
+    regulators: stakeholders.regulators,
+    activists: stakeholders.activists,
+    media_outlets: stakeholders.media,  // Note: media_outlets at root, media in stakeholders
+    investors: stakeholders.investors,
+    analysts: stakeholders.analysts,
     topics: [`${detectedIndustry} trends`, 'market dynamics', 'regulatory changes', 'innovation'],
     keywords: [organization.name, ...competitors.slice(0, 3)],
     industryInsights: {
       industry: detectedIndustry,
       competitive_landscape: `${organization.name} operates in the ${detectedIndustry} industry`,
       key_trends: ['digital transformation', 'sustainability', 'market consolidation', 'AI adoption']
-    }
+    },
+    // Additional fields for backward compatibility
+    additional_niche_competitors: competitors.slice(0, 5),
+    key_media_outlets: stakeholders.media,
+    emerging_trends: [`${detectedIndustry} innovation`, 'sustainability', 'customer experience']
   }
   
   // If we have an API key, enhance with Claude
