@@ -149,9 +149,15 @@ class IntelligenceOrchestratorV3 {
 
       // PHASE 3: SYNTHESIS (Analyze with Claude 4)
       console.log('🧠 Phase 3: Synthesis - Analyzing intelligence with Claude 4');
+      console.log('📊 Intelligence data being sent to synthesis:', {
+        entity_actions_count: intelligence.entity_actions?.all?.length || 0,
+        topic_trends_count: intelligence.topic_trends?.all?.length || 0,
+        sample_action: intelligence.entity_actions?.all?.[0],
+        sample_trend: intelligence.topic_trends?.all?.[0],
+        full_intelligence: intelligence
+      });
       console.log('📡 Synthesis Request:', {
         url: `${this.supabaseUrl}/functions/v1/intelligence-synthesis-v3`,
-        intelligence: intelligence,
         organization: organization
       });
       
@@ -176,22 +182,35 @@ class IntelligenceOrchestratorV3 {
       }
 
       const synthesisData = await synthesisResponse.json();
-      console.log('📡 Synthesis Data:', synthesisData);
-      console.log('🎯 Synthesis Tabs:', synthesisData.tabs ? Object.keys(synthesisData.tabs) : 'No tabs');
+      console.log('📡 Synthesis Response received:', {
+        success: synthesisData.success,
+        hasError: !!synthesisData.error,
+        hasTabs: !!synthesisData.tabs,
+        tabKeys: synthesisData.tabs ? Object.keys(synthesisData.tabs) : [],
+        hasAlerts: !!synthesisData.alerts,
+        alertCount: synthesisData.alerts?.length || 0
+      });
+      console.log('🎯 Full Synthesis Data:', synthesisData);
       
-      // Log a sample of each tab's data
+      // Log a detailed sample of each tab's data
       if (synthesisData.tabs) {
         if (synthesisData.tabs.executive) {
-          console.log('📊 Executive tab sample:', {
+          console.log('📊 Executive tab:', {
             headline: synthesisData.tabs.executive.headline,
-            has_highlights: !!(synthesisData.tabs.executive.competitive_highlight)
+            overview: synthesisData.tabs.executive.overview?.substring(0, 100),
+            immediate_actions: synthesisData.tabs.executive.immediate_actions?.length || 0,
+            has_competitive_highlight: !!synthesisData.tabs.executive.competitive_highlight,
+            has_market_highlight: !!synthesisData.tabs.executive.market_highlight
           });
         }
         if (synthesisData.tabs.competitive) {
-          console.log('🎯 Competitive tab sample:', {
-            actions_count: synthesisData.tabs.competitive.competitor_actions?.length || 0
+          console.log('🎯 Competitive tab:', {
+            actions_count: synthesisData.tabs.competitive.competitor_actions?.length || 0,
+            first_action: synthesisData.tabs.competitive.competitor_actions?.[0]
           });
         }
+      } else {
+        console.log('⚠️ No tabs in synthesis response!');
       }
       
       if (!synthesisData.success) {
