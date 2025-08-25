@@ -17,12 +17,13 @@ class IntelligentDiscoveryService {
   async discoverCompanyIntelligence(companyName, website = null, description = null) {
     console.log(`🔍 Starting intelligent discovery for ${companyName}`);
     
-    // Check cache first
+    // DISABLED CACHE - was returning wrong company data
+    // Cache was returning Netflix data for Mitsui & Co searches
+    // Always do fresh discovery for accuracy
     const cacheKey = `${companyName}_${website}`;
-    if (this.cache.has(cacheKey)) {
-      console.log('📦 Using cached discovery');
-      return this.cache.get(cacheKey);
-    }
+    
+    // Clear any existing cache for safety
+    this.cache.clear();
 
     try {
       // Step 1: Use Claude to analyze the company
@@ -55,8 +56,7 @@ class IntelligentDiscoveryService {
         discovered_at: new Date().toISOString()
       };
       
-      // Cache the discovery
-      this.cache.set(cacheKey, discovery);
+      // CACHE DISABLED - was causing cross-company data pollution
       
       return discovery;
       

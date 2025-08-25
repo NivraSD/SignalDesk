@@ -13,6 +13,11 @@ const UnifiedOnboarding = ({ onComplete }) => {
   // Clear all SignalDesk data when onboarding starts
   useEffect(() => {
     console.log('🧹 Clearing all previous organization data for fresh onboarding...');
+    
+    // Clear ALL intelligence caches first
+    clearAllIntelligenceCache();
+    
+    // Then clear profile data
     const keysToClean = [
       'signaldesk_unified_profile',
       'signaldesk_organization', 
@@ -24,6 +29,12 @@ const UnifiedOnboarding = ({ onComplete }) => {
       localStorage.removeItem(key);
       console.log(`  ✅ Cleared ${key}`);
     });
+    
+    // Also clear the in-memory cache of the discovery service
+    if (intelligentDiscoveryService && intelligentDiscoveryService.cache) {
+      intelligentDiscoveryService.cache.clear();
+      console.log('  ✅ Cleared discovery service in-memory cache');
+    }
   }, []); // Only run once on mount
   
   const [profile, setProfile] = useState({
