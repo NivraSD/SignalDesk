@@ -16,9 +16,10 @@ const PRDashboard = ({ organization }) => {
   const fetchPRIntelligence = async () => {
     setLoading(true);
     try {
-      // First gather PR intelligence
+      // Use existing intelligence gathering for now (Firecrawl out of credits)
+      // Fall back to v3 gathering which uses RSS feeds
       const gatherResponse = await fetch(
-        'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/pr-intelligence-gathering',
+        'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/intelligence-gathering-v3',
         {
           method: 'POST',
           headers: {
@@ -26,14 +27,25 @@ const PRDashboard = ({ organization }) => {
             'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0'
           },
           body: JSON.stringify({
-            organization,
-            competitors: organization.competitors || ['Walmart', 'Amazon', 'Costco']
+            entities: {
+              competitors: organization?.competitors || ['Walmart', 'Amazon', 'Costco']
+            },
+            organization
           })
         }
       );
 
       if (gatherResponse.ok) {
-        const intelligence = await gatherResponse.json();
+        const gatherData = await gatherResponse.json();
+        
+        // Transform v3 data to PR intelligence format
+        const intelligence = {
+          competitor_moves: gatherData.entity_actions?.all?.filter(a => a.type === 'competitor' || a.relevance > 0.7) || [],
+          trending_narratives: gatherData.topic_trends?.all || [],
+          media_opportunities: [],
+          journalist_activity: [],
+          crisis_signals: []
+        };
         
         // Then synthesize into PR dashboard
         const synthesisResponse = await fetch(

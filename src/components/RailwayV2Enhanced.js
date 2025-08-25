@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './RailwayV2Enhanced.css';
 import IntelligenceDisplayV3 from './IntelligenceDisplayV3';
+import PRDashboard from './PRDashboard';
 import OpportunityModulePR from './Modules/OpportunityModulePR';
 import ExecutionModule from './Modules/ExecutionModule';
 import MemoryVaultModule from './Modules/MemoryVaultModule';
@@ -77,10 +78,9 @@ const RailwayV2Enhanced = () => {
   const renderModule = () => {
     switch(activeModule) {
       case 'intelligence':
-        return <IntelligenceDisplayV3 
-          organization={organizationData} 
-          refreshTrigger={refreshKey}
-          onIntelligenceUpdate={setSharedIntelligence}
+        // Use PR Dashboard for better PR-focused intelligence
+        return <PRDashboard 
+          organization={organizationData}
         />;
       case 'opportunities':
         return <OpportunityModulePR 
