@@ -5,5 +5,26 @@
   "installCommand": "npm install --legacy-peer-deps",
   "rewrites": [
     {"source": "/(.*)", "destination": "/index.html"}
+  ],
+  "build": {
+    "env": {
+      "CI": "false",
+      "SKIP_PREFLIGHT_CHECK": "true"
+    }
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        },
+        {
+          "key": "X-Build-Version",
+          "value": "v3.2-cache-fix-2025-08-25"
+        }
+      ]
+    }
   ]
 }
