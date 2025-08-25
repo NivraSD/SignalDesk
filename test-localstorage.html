@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LocalStorage Debug</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #0f0f0f;
+            color: #fff;
+        }
+        .storage-item {
+            background: #1a1a1a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+        h2 {
+            color: #00ff00;
+            margin-top: 0;
+        }
+        .key-name {
+            color: #00ff00;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .content {
+            background: #0a0a0a;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        button {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #00cc00;
+        }
+        button.danger {
+            background: #ff0000;
+        }
+        button.danger:hover {
+            background: #cc0000;
+        }
+        .stats {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .missing {
+            color: #ff0000;
+        }
+        .present {
+            color: #00ff00;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 SignalDesk LocalStorage Debug</h1>
+    
+    <div style="margin: 20px 0;">
+        <button onclick="refreshData()">🔄 Refresh</button>
+        <button onclick="clearIntelligenceCaches()">🧹 Clear Intelligence Caches Only</button>
+        <button onclick="clearAllData()" class="danger">🗑️ Clear ALL Data</button>
+        <button onclick="simulateOnboarding()">🚀 Simulate Onboarding Save</button>
+    </div>
+
+    <div id="storage-content"></div>
+
+    <script>
+        const KEYS_TO_CHECK = [
+            'signaldesk_unified_profile',
+            'signaldesk_organization',
+            'signaldesk_onboarding',
+            'opportunity_profile',
+            'signaldesk_intelligence_cache',
+            'signaldesk_opportunities_cache',
+            'signaldesk_opportunity_cache_timestamp',
+            'signaldesk_intelligence_cache_timestamp'
+        ];
+
+        function refreshData() {
+            const container = document.getElementById('storage-content');
+            container.innerHTML = '';
+            
+            // Stats section
+            const statsDiv = document.createElement('div');
+            statsDiv.className = 'stats';
+            statsDiv.innerHTML = '<h2>📊 Storage Status</h2>';
+            
+            let foundCount = 0;
+            let missingCount = 0;
+            
+            KEYS_TO_CHECK.forEach(key => {
+                const value = localStorage.getItem(key);
+                if (value) {
+                    foundCount++;
+                    statsDiv.innerHTML += `<div class="present">✅ ${key}</div>`;
+                } else {
+                    missingCount++;
+                    statsDiv.innerHTML += `<div class="missing">❌ ${key} (not found)</div>`;
+                }
+            });
+            
+            statsDiv.innerHTML += `<div style="margin-top: 15px;">Total: ${foundCount} present, ${missingCount} missing</div>`;
+            container.appendChild(statsDiv);
+            
+            // Detailed content
+            KEYS_TO_CHECK.forEach(key => {
+                const value = localStorage.getItem(key);
+                if (value) {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'storage-item';
+                    
+                    let parsed;
+                    let summary = '';
+                    try {
+                        parsed = JSON.parse(value);
+                        
+                        // Create summary based on key
+                        if (key === 'signaldesk_unified_profile') {
+                            summary = `
+Organization: ${parsed.organization?.name || 'Not set'}
+Competitors: ${parsed.competitors?.length || 0}
+Regulators: ${parsed.regulators?.length || 0}
+Media Outlets: ${parsed.media_outlets?.length || 0}
+Topics: ${parsed.monitoring_topics?.length || 0}
+Timestamp: ${parsed.timestamp || 'Not set'}`;
+                        } else if (key === 'signaldesk_organization') {
+                            summary = `
+Name: ${parsed.name || 'Not set'}
+Industry: ${parsed.industry || 'Not set'}
+Website: ${parsed.website || 'Not set'}`;
+                        }
+                    } catch (e) {
+                        parsed = value;
+                    }
+                    
+                    itemDiv.innerHTML = `
+                        <div class="key-name">${key}</div>
+                        ${summary ? `<div style="margin: 10px 0; padding: 10px; background: #0a0a0a; border-radius: 4px;">${summary}</div>` : ''}
+                        <div class="content">${JSON.stringify(parsed, null, 2)}</div>
+                    `;
+                    container.appendChild(itemDiv);
+                }
+            });
+            
+            // Also show any other signaldesk keys
+            const otherKeys = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.includes('signaldesk') && !KEYS_TO_CHECK.includes(key)) {
+                    otherKeys.push(key);
+                }
+            }
+            
+            if (otherKeys.length > 0) {
+                const otherDiv = document.createElement('div');
+                otherDiv.className = 'storage-item';
+                otherDiv.innerHTML = `<div class="key-name">Other SignalDesk Keys Found:</div>
+                    <div class="content">${otherKeys.join('\n')}</div>`;
+                container.appendChild(otherDiv);
+            }
+        }
+
+        function clearIntelligenceCaches() {
+            const cachesToClear = [
+                'signaldesk_intelligence_cache',
+                'signaldesk_opportunities_cache',
+                'signaldesk_opportunity_cache_timestamp',
+                'signaldesk_intelligence_cache_timestamp'
+            ];
+            
+            cachesToClear.forEach(key => {
+                localStorage.removeItem(key);
+            });
+            
+            alert('Intelligence caches cleared!');
+            refreshData();
+        }
+
+        function clearAllData() {
+            if (confirm('Are you sure? This will clear ALL SignalDesk data!')) {
+                const keys = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key.includes('signaldesk')) {
+                        keys.push(key);
+                    }
+                }
+                keys.forEach(key => localStorage.removeItem(key));
+                alert('All SignalDesk data cleared!');
+                refreshData();
+            }
+        }
+
+        function simulateOnboarding() {
+            const testProfile = {
+                organization: {
+                    id: 'test-corp',
+                    name: 'Test Corporation',
+                    industry: 'technology',
+                    website: 'https://testcorp.com',
+                    description: 'A test company for debugging'
+                },
+                competitors: ['Microsoft', 'Google', 'Apple'],
+                monitoring_topics: ['AI trends', 'cloud computing', 'cybersecurity'],
+                stakeholders: {
+                    regulators: ['FTC', 'SEC'],
+                    media: ['TechCrunch', 'The Verge'],
+                    activists: ['EFF', 'Privacy International'],
+                    investors: ['Sequoia Capital', 'Andreessen Horowitz'],
+                    analysts: ['Gartner', 'Forrester']
+                },
+                regulators: ['FTC', 'SEC'],
+                media_outlets: ['TechCrunch', 'The Verge'],
+                activists: ['EFF', 'Privacy International'],
+                investors: ['Sequoia Capital', 'Andreessen Horowitz'],
+                analysts: ['Gartner', 'Forrester'],
+                brand: {
+                    voice: 'professional',
+                    risk_tolerance: 'moderate',
+                    response_speed: 'immediate'
+                },
+                timestamp: new Date().toISOString(),
+                version: '2.0'
+            };
+            
+            // Save like onboarding would
+            localStorage.setItem('signaldesk_unified_profile', JSON.stringify(testProfile));
+            localStorage.setItem('signaldesk_organization', JSON.stringify(testProfile.organization));
+            localStorage.setItem('signaldesk_onboarding', JSON.stringify({
+                organization: testProfile.organization,
+                competitors: testProfile.competitors,
+                monitoring_topics: testProfile.monitoring_topics,
+                stakeholders: testProfile.stakeholders
+            }));
+            
+            alert('Test data saved! Check the display.');
+            refreshData();
+        }
+
+        // Load on page load
+        refreshData();
+    </script>
+</body>
+</html>

@@ -10,30 +10,53 @@ const UnifiedOnboarding = ({ onComplete }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
   
-  // Clear all SignalDesk data when onboarding starts
+  // Only clear data if we're starting a fresh onboarding (no existing organization)
   useEffect(() => {
-    console.log('🧹 Clearing all previous organization data for fresh onboarding...');
+    const existingOrg = localStorage.getItem('signaldesk_organization');
+    const existingProfile = localStorage.getItem('signaldesk_unified_profile');
     
-    // Clear ALL intelligence caches first
-    clearAllIntelligenceCache();
-    
-    // Then clear profile data
-    const keysToClean = [
-      'signaldesk_unified_profile',
-      'signaldesk_organization', 
-      'opportunity_profile',
-      'signaldesk_onboarding'
-    ];
-    
-    keysToClean.forEach(key => {
-      localStorage.removeItem(key);
-      console.log(`  ✅ Cleared ${key}`);
-    });
-    
-    // Also clear the in-memory cache of the discovery service
-    if (intelligentDiscoveryService && intelligentDiscoveryService.cache) {
-      intelligentDiscoveryService.cache.clear();
-      console.log('  ✅ Cleared discovery service in-memory cache');
+    // Only clear if both are missing (truly fresh start)
+    if (!existingOrg && !existingProfile) {
+      console.log('🧹 Starting fresh onboarding - clearing any stale data...');
+      
+      // Clear ALL intelligence caches first
+      clearAllIntelligenceCache();
+      
+      // Clear any partial/stale profile data
+      const keysToClean = [
+        'opportunity_profile',
+        'signaldesk_onboarding'
+      ];
+      
+      keysToClean.forEach(key => {
+        localStorage.removeItem(key);
+        console.log(`  ✅ Cleared ${key}`);
+      });
+      
+      // Also clear the in-memory cache of the discovery service
+      if (intelligentDiscoveryService && intelligentDiscoveryService.cache) {
+        intelligentDiscoveryService.cache.clear();
+        console.log('  ✅ Cleared discovery service in-memory cache');
+      }
+    } else {
+      console.log('📋 Existing organization found, preserving data for re-onboarding');
+      // Load existing data if re-onboarding
+      if (existingProfile) {
+        try {
+          const existing = JSON.parse(existingProfile);
+          setProfile(prev => ({
+            ...prev,
+            ...existing,
+            // Preserve form structure even if some fields are missing
+            organization: existing.organization || prev.organization,
+            competitors: existing.competitors || prev.competitors,
+            monitoring_topics: existing.monitoring_topics || prev.monitoring_topics
+          }));
+          console.log('✅ Loaded existing profile data');
+        } catch (e) {
+          console.warn('Could not load existing profile:', e);
+        }
+      }
     }
   }, []); // Only run once on mount
   
@@ -172,12 +195,12 @@ const UnifiedOnboarding = ({ onComplete }) => {
         console.log('✅ Claude analysis complete with data:', intelligence.company);
         
         // Update organization with Claude's analysis
-        setProfile(prev => ({
-          ...prev,
+        const updatedProfile = {
+          ...profile,
           organization: {
-            ...prev.organization,
-            industry: intelligence.company.industry || prev.organization.industry,
-            description: intelligence.company.description || prev.organization.description,
+            ...profile.organization,
+            industry: intelligence.company.industry || profile.organization.industry,
+            description: intelligence.company.description || profile.organization.description,
             business_model: intelligence.company.business_model,
             market_position: intelligence.company.market_position,
             key_products: intelligence.company.key_products,
@@ -194,9 +217,67 @@ const UnifiedOnboarding = ({ onComplete }) => {
           media_outlets: intelligence.stakeholders?.media || [],
           investors: intelligence.stakeholders?.investors || [],
           analysts: intelligence.stakeholders?.analysts || []
+        };
+        
+        setProfile(updatedProfile);
+        setAnalysisComplete(true);
+        
+        // CRITICAL: Save the discovered data immediately to localStorage
+        console.log('💾 Saving discovered data to localStorage immediately...');
+        const discoveredProfile = {
+          ...updatedProfile,
+          timestamp: new Date().toISOString(),
+          version: '2.0'
+        };
+        
+        // Save unified profile with all discovered data
+        localStorage.setItem('signaldesk_unified_profile', JSON.stringify(discoveredProfile));
+        console.log('✅ Saved unified profile with stakeholders:', {
+          competitors: discoveredProfile.competitors?.length || 0,
+          regulators: discoveredProfile.regulators?.length || 0,
+          media: discoveredProfile.media_outlets?.length || 0,
+          topics: discoveredProfile.monitoring_topics?.length || 0
+        });
+        
+        // Also save for backward compatibility
+        localStorage.setItem('signaldesk_organization', JSON.stringify(discoveredProfile.organization));
+        localStorage.setItem('signaldesk_onboarding', JSON.stringify({
+          organization: discoveredProfile.organization,
+          competitors: discoveredProfile.competitors,
+          monitoring_topics: discoveredProfile.monitoring_topics,
+          stakeholders: discoveredProfile.stakeholders
         }));
         
-        setAnalysisComplete(true);
+        // Save opportunity profile for Opportunity Engine (with defaults since we're early in onboarding)
+        localStorage.setItem('opportunity_profile', JSON.stringify({
+          voice: discoveredProfile.brand?.voice || 'professional',
+          risk_tolerance: discoveredProfile.brand?.risk_tolerance || 'moderate',
+          response_speed: discoveredProfile.brand?.response_speed || 'immediate',
+          core_value_props: discoveredProfile.messaging?.core_value_props || [],
+          proof_points: discoveredProfile.messaging?.proof_points || [],
+          competitive_advantages: discoveredProfile.messaging?.competitive_advantages || [],
+          key_narratives: discoveredProfile.messaging?.key_narratives || [],
+          preferred_tiers: discoveredProfile.media?.preferred_tiers || ['tier1_business', 'tier1_tech'],
+          journalist_relationships: discoveredProfile.media?.journalist_relationships || [],
+          no_comment_topics: discoveredProfile.media?.no_comment_topics || [],
+          exclusive_partners: discoveredProfile.media?.exclusive_partners || [],
+          spokespeople: discoveredProfile.spokespeople || [],
+          opportunity_types: discoveredProfile.opportunities?.types || {
+            competitor_weakness: true,
+            narrative_vacuum: true,
+            cascade_effect: true,
+            crisis_prevention: true,
+            viral_moment: false
+          },
+          minimum_confidence: discoveredProfile.opportunities?.minimum_confidence || 70,
+          auto_execute_threshold: discoveredProfile.opportunities?.auto_execute_threshold || 95,
+          competitors: discoveredProfile.competitors || []
+        }));
+        
+        console.log('🔍 Verification - localStorage now contains:');
+        console.log('- signaldesk_unified_profile:', localStorage.getItem('signaldesk_unified_profile') ? '✅' : '❌');
+        console.log('- signaldesk_organization:', localStorage.getItem('signaldesk_organization') ? '✅' : '❌');
+        console.log('- signaldesk_onboarding:', localStorage.getItem('signaldesk_onboarding') ? '✅' : '❌');
       }
     } catch (error) {
       console.error('❌ Claude analysis failed:', error);
