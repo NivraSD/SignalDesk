@@ -463,7 +463,6 @@ const OpportunityModulePR = ({ organizationId, sharedIntelligence, onIntelligenc
             </ol>
           </div>
         )}
-        </div>
 
         <div className="action-buttons">
           <button className="btn-primary">Create Content</button>
