@@ -43,8 +43,8 @@ import RailwayV2Enhanced from "./components/RailwayV2Enhanced";
 import SystemInitializer from "./components/SystemInitializer";
 import SmartOnboarding from "./components/SmartOnboarding";
 
-// DEPLOYMENT MARKER - V3 ONLY
-console.log("🚨 DEPLOYMENT: 2025-08-24 23:26:07 | COMMIT: d6943be3a | NO FALLBACKS - V3 ONLY");
+// DEPLOYMENT MARKER - V3.2 CACHE FIX
+console.log("🚨 DEPLOYMENT: 2025-08-25 16:30:00 | COMMIT: 54168f8a0 | CACHE MANAGEMENT FIXED");
 
 // Log Supabase initialization for debugging
 console.log('🚀 SignalDesk initialized with Supabase:', supabase ? 'Connected' : 'Not connected');

@@ -64,8 +64,8 @@ const RailwayV2Enhanced = () => {
     }
   };
 
-  // V3 DEPLOYMENT MARKER - NO FALLBACKS
-  const deploymentVersion = "V3.1 - NO FALLBACKS - 2025-08-24";
+  // V3.2 DEPLOYMENT MARKER - CACHE FIX
+  const deploymentVersion = "V3.2 - CACHE FIX - 2025-08-25";
   
   const modules = [
     { id: 'intelligence', name: 'Intelligence', Icon: IntelligenceIcon, color: '#00ffcc' },
