@@ -1,1 +1,0 @@
-{"ast":null,"code":"import GoTrueClient from './GoTrueClient';\nconst AuthClient = GoTrueClient;\nexport default AuthClient;\n//# sourceMappingURL=AuthClient.js.map","map":null,"metadata":{},"sourceType":"module","externalDependencies":[]}
