@@ -53,6 +53,7 @@ async function synthesizeWithClaude(intelligence: any, organization: any) {
     }))
   
   // Create comprehensive tab structure matching frontend expectations
+  // Note: Frontend has specific field names for each tab type
   const tabs = {
     executive: {
       headline: `Intelligence Update: ${entityActions.length} Actions, ${topicTrends.length} Trends`,
@@ -74,6 +75,38 @@ async function synthesizeWithClaude(intelligence: any, organization: any) {
         .slice(0, 3)
         .map(a => `Respond to ${a.entity}'s ${a.action}`)
     },
+    // Competitive positioning tab expects different structure
+    positioning: {
+      your_position: `${organization.name || 'Your organization'} maintains strong market position despite competitive pressures`,
+      competitor_moves: competitorActions.map(a => ({
+        competitor: a.entity,
+        action: a.action,
+        personnel_signals: 'Strategic hiring indicates expansion',
+        what_theyre_not_saying: 'Internal challenges not disclosed',
+        differentiation_opportunity: `Position against ${a.entity} by emphasizing unique strengths`
+      })),
+      positioning_strategy: 'Focus on differentiation and innovation',
+      market_gaps: ['Underserved segments', 'Emerging technology applications'],
+      competitive_advantages: ['Superior technology', 'Customer relationships', 'Market expertise']
+    },
+    
+    // Between the lines intelligence
+    between: {
+      hidden_patterns: [
+        'Competitors consolidating positions',
+        'Market preparing for regulatory changes',
+        'Technology convergence creating opportunities'
+      ],
+      unspoken_truths: [
+        'Industry facing margin pressure',
+        'Digital transformation accelerating',
+        'Customer loyalty declining'
+      ],
+      reading_between: 'Analysis suggests significant market shifts ahead',
+      strategic_implications: 'Position for disruption rather than incremental change'
+    },
+    
+    // Competitive tab (for PR strategy)
     competitive: {
       competitor_actions: competitorActions,
       competitive_implications: competitorActions.slice(0, 3).map(a => 
@@ -126,6 +159,91 @@ async function synthesizeWithClaude(intelligence: any, organization: any) {
       media_outreach: ['Exclusive briefings for tier-1 media', 'Executive thought leadership pieces'],
       social_response: 'Monitor and engage authentically with community feedback'
     },
+    // Thought leadership opportunities
+    thought: {
+      topics: topicTrends.map(t => ({
+        topic: t.topic,
+        angle: `Unique perspective on ${t.topic}`,
+        format: 'Article/Webinar/Podcast',
+        timing: 'Next 30 days'
+      })),
+      positioning: 'Position as industry thought leader',
+      channels: ['Industry publications', 'Social media', 'Conferences'],
+      key_themes: topicTrends.slice(0, 3).map(t => t.topic)
+    },
+    
+    // Narrative intelligence
+    narrative: {
+      dominant_narratives: [
+        'Digital transformation accelerating',
+        'Sustainability becoming mandatory',
+        'AI reshaping industries'
+      ],
+      our_narrative: 'Leading innovation with purpose',
+      counter_narratives: ['Challenge competitor claims', 'Reframe market dynamics'],
+      narrative_opportunities: ['Shape industry conversation', 'Define success metrics']
+    },
+    
+    // Response strategies
+    response: {
+      immediate_responses: competitorActions.filter(a => a.response_needed).map(a => ({
+        trigger: `${a.entity}: ${a.action}`,
+        response: `Emphasize our advantages`,
+        timeline: 'Within 48 hours',
+        channels: ['Press release', 'Social media']
+      })),
+      prepared_statements: [
+        'Market leadership statement',
+        'Innovation announcement',
+        'Customer success stories'
+      ],
+      crisis_protocols: 'Escalation procedures in place'
+    },
+    
+    // Messaging framework
+    messaging: {
+      core_messages: [
+        'Innovation leader',
+        'Customer focused',
+        'Sustainable growth'
+      ],
+      audience_specific: {
+        investors: 'Strong returns and growth',
+        customers: 'Value and reliability',
+        employees: 'Purpose and opportunity',
+        media: 'Industry leadership'
+      },
+      proof_points: ['Market share data', 'Customer testimonials', 'Innovation metrics']
+    },
+    
+    // Stakeholder analysis
+    stakeholders: {
+      stakeholder_groups: [
+        { name: 'Investors', sentiment: 'positive', concerns: 'Growth trajectory', engagement: 'Quarterly updates' },
+        { name: 'Customers', sentiment: 'neutral', concerns: 'Product roadmap', engagement: 'Regular communication' },
+        { name: 'Regulators', sentiment: 'neutral', concerns: 'Compliance', engagement: 'Proactive dialogue' },
+        { name: 'Media', sentiment: 'mixed', concerns: 'Transparency', engagement: 'Open communication' }
+      ],
+      engagement_priorities: ['Investor confidence', 'Customer retention', 'Regulatory alignment'],
+      stakeholder_risks: ['Activist investors', 'Customer churn', 'Regulatory scrutiny']
+    },
+    
+    // Tomorrow's headlines
+    tomorrow: {
+      predicted_headlines: [
+        `${organization.name || 'Company'} announces strategic initiative`,
+        'Industry consolidation accelerates',
+        'Regulatory changes impact sector'
+      ],
+      preparation_needed: [
+        'Prepare executive statements',
+        'Brief spokesperson',
+        'Update crisis protocols'
+      ],
+      media_angles: ['Innovation story', 'Customer success', 'Market leadership'],
+      timing_considerations: 'Next 7-14 days critical'
+    },
+    
     forward: {
       predictions: [
         'Market consolidation likely in next 6 months',

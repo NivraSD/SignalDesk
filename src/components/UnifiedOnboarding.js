@@ -12,78 +12,59 @@ const UnifiedOnboarding = ({ onComplete }) => {
   
   // Handle onboarding initialization
   useEffect(() => {
-    const existingOrg = localStorage.getItem('signaldesk_organization');
-    const existingProfile = localStorage.getItem('signaldesk_unified_profile');
+    // ALWAYS perform comprehensive reset when entering onboarding
+    // This prevents data contamination between organizations
+    console.log('🧹 COMPREHENSIVE RESET: Clearing ALL cached data on onboarding entry');
     
-    // Check if this is a new organization being added
+    // 1. Clear ALL localStorage keys related to SignalDesk
+    const allKeys = Object.keys(localStorage);
+    const signaldeskKeys = allKeys.filter(key => 
+      key.includes('signaldesk') || 
+      key.includes('organization') || 
+      key.includes('onboarding') || 
+      key.includes('opportunity') ||
+      key.includes('intelligence') ||
+      key.includes('cache') ||
+      key === 'current_organization' ||
+      key === 'onboarding_config'
+    );
+    
+    signaldeskKeys.forEach(key => {
+      localStorage.removeItem(key);
+      console.log(`  ✅ Cleared localStorage: ${key}`);
+    });
+    
+    // 2. Clear ALL intelligence caches
+    clearAllIntelligenceCache();
+    console.log('  ✅ Cleared all intelligence caches');
+    
+    // 3. Clear sessionStorage completely
+    sessionStorage.clear();
+    console.log('  ✅ Cleared all sessionStorage');
+    
+    // 4. Clear discovery service in-memory cache
+    if (intelligentDiscoveryService && intelligentDiscoveryService.cache) {
+      intelligentDiscoveryService.cache.clear();
+      console.log('  ✅ Cleared discovery service in-memory cache');
+    }
+    
+    // 5. Reset to clean default profile
+    const cleanProfile = getDefaultProfile();
+    // Ensure organization ID is reset
+    cleanProfile.organization.id = '';
+    cleanProfile.organization.website = '';
+    setProfile(cleanProfile);
+    console.log('  ✅ Reset profile to clean defaults');
+    
+    // Check if user wants to explicitly start fresh
     const urlParams = new URLSearchParams(window.location.search);
     const isNewOrg = urlParams.get('new') === 'true';
     
     if (isNewOrg) {
-      console.log('🆕 Starting onboarding for new organization - clearing old data...');
-      // Clear all data for fresh start
-      clearAllIntelligenceCache();
-      localStorage.removeItem('signaldesk_unified_profile');
-      localStorage.removeItem('signaldesk_organization');
-      localStorage.removeItem('signaldesk_onboarding');
-      localStorage.removeItem('opportunity_profile');
-      
-      // Clear discovery service cache
-      if (intelligentDiscoveryService && intelligentDiscoveryService.cache) {
-        intelligentDiscoveryService.cache.clear();
-      }
-      
-      // Reset to default profile
-      setProfile(getDefaultProfile());
-      return;
+      console.log('🆕 URL parameter new=true detected - extra confirmation of fresh start');
     }
     
-    // Only clear if both are missing (truly fresh start)
-    if (!existingOrg && !existingProfile) {
-      console.log('🧹 Starting fresh onboarding - clearing any stale data...');
-      
-      // Clear ALL intelligence caches first
-      clearAllIntelligenceCache();
-      
-      // Clear any partial/stale profile data
-      const keysToClean = [
-        'opportunity_profile',
-        'signaldesk_onboarding'
-      ];
-      
-      keysToClean.forEach(key => {
-        localStorage.removeItem(key);
-        console.log(`  ✅ Cleared ${key}`);
-      });
-      
-      // Also clear the in-memory cache of the discovery service
-      if (intelligentDiscoveryService && intelligentDiscoveryService.cache) {
-        intelligentDiscoveryService.cache.clear();
-        console.log('  ✅ Cleared discovery service in-memory cache');
-      }
-    } else {
-      console.log('📋 Existing organization found, preserving data for re-onboarding');
-      // Load existing data if re-onboarding
-      if (existingProfile) {
-        try {
-          const existing = JSON.parse(existingProfile);
-          setProfile(prev => ({
-            ...prev,
-            ...existing,
-            // Reset website to empty to avoid mixing organizations
-            organization: {
-              ...existing.organization,
-              website: existing.organization?.website || ''
-            },
-            competitors: existing.competitors || prev.competitors,
-            monitoring_topics: existing.monitoring_topics || prev.monitoring_topics
-          }));
-          console.log('✅ Loaded existing profile data');
-        } catch (e) {
-          console.warn('Could not load existing profile:', e);
-        }
-      }
-    }
+    console.log('✨ Onboarding ready with completely clean slate');
   }, []); // Only run once on mount
   
   // Helper to get default profile
