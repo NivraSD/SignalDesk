@@ -55,13 +55,18 @@ const IntelligenceHubV5 = ({ organization, onIntelligenceUpdate }) => {
         const processedIntelligence = processIntelligenceForDisplay(result);
         setIntelligence(processedIntelligence);
         
-        // Pass intelligence to Opportunity Engine
+        // Pass the raw result (which has opportunities) to Opportunity Engine
+        // but include the processed intelligence for display
         if (onIntelligenceUpdate) {
-          onIntelligenceUpdate(processedIntelligence);
+          const intelligenceWithOpportunities = {
+            ...result, // This has the opportunities array
+            processed: processedIntelligence // This has the display data
+          };
+          onIntelligenceUpdate(intelligenceWithOpportunities);
         }
         
-        // Cache for opportunity detection
-        cacheManager.saveSynthesis(processedIntelligence);
+        // Cache the full result for opportunity detection
+        cacheManager.saveSynthesis(result);
       } else {
         setError(result.error);
       }
@@ -74,14 +79,156 @@ const IntelligenceHubV5 = ({ organization, onIntelligenceUpdate }) => {
   };
 
   const processIntelligenceForDisplay = (rawIntelligence) => {
-    // Structure intelligence for 5 focused tabs
+    // Check if this is already synthesized data with tabs
+    if (rawIntelligence.tabs) {
+      // Process synthesized data from v4
+      return {
+        executive: processSynthesizedExecutive(rawIntelligence.tabs.executive),
+        competitors: processSynthesizedCompetitive(rawIntelligence.tabs.competitive),
+        stakeholders: processSynthesizedStakeholders(rawIntelligence.tabs),
+        trending: processSynthesizedMarket(rawIntelligence.tabs.market),
+        cascade: processSynthesizedForward(rawIntelligence.tabs.forward),
+        raw: rawIntelligence // Keep raw data for opportunity detection
+      };
+    } else {
+      // Process raw intelligence data (fallback)
+      return {
+        executive: generateExecutiveSummary(rawIntelligence),
+        competitors: extractCompetitorIntelligence(rawIntelligence),
+        stakeholders: extractStakeholderIntelligence(rawIntelligence),
+        trending: extractTrendingTopics(rawIntelligence),
+        cascade: generateCascadePredictions(rawIntelligence),
+        raw: rawIntelligence // Keep raw data for opportunity detection
+      };
+    }
+  };
+
+  // Process synthesized data from v4
+  const processSynthesizedExecutive = (execData) => {
+    if (!execData) return {
+      headline: 'No data available',
+      keyFindings: [],
+      prImplications: [],
+      metrics: { stakeholdersMonitored: 0, actionsDetected: 0, trendsIdentified: 0, urgentItems: 0 }
+    };
+    
     return {
-      executive: generateExecutiveSummary(rawIntelligence),
-      competitors: extractCompetitorIntelligence(rawIntelligence),
-      stakeholders: extractStakeholderIntelligence(rawIntelligence),
-      trending: extractTrendingTopics(rawIntelligence),
-      cascade: generateCascadePredictions(rawIntelligence),
-      raw: rawIntelligence // Keep raw data for opportunity detection
+      headline: execData.headline || 'Intelligence Summary',
+      keyFindings: [
+        execData.competitive_highlight || 'No competitive activity',
+        execData.market_highlight || 'No market trends detected'
+      ],
+      prImplications: execData.immediate_actions || [],
+      metrics: {
+        stakeholdersMonitored: execData.statistics?.entities_tracked || 0,
+        actionsDetected: execData.statistics?.actions_captured || 0,
+        trendsIdentified: execData.statistics?.topics_monitored || 0,
+        urgentItems: execData.immediate_actions?.length || 0
+      }
+    };
+  };
+
+  const processSynthesizedCompetitive = (compData) => {
+    if (!compData) return {
+      recentMoves: [],
+      analysis: {
+        whatHappened: [],
+        whatItMeans: 'No competitive data available',
+        prImplications: []
+      }
+    };
+    
+    return {
+      recentMoves: (compData.competitor_actions || []).map(action => ({
+        competitor: action.entity,
+        action: action.action,
+        source: action.source || 'Various sources',
+        timestamp: action.timestamp || new Date().toISOString(),
+        impact: action.impact || 'medium',
+        prResponse: action.pr_response || `Counter ${action.entity}'s move`
+      })),
+      analysis: {
+        whatHappened: compData.competitive_implications || [],
+        whatItMeans: compData.pr_strategy || 'Monitor competitive landscape',
+        prImplications: compData.key_messages || []
+      }
+    };
+  };
+
+  const processSynthesizedStakeholders = (tabs) => {
+    const stakeholderData = {
+      media: tabs.media?.media_coverage || [],
+      regulators: tabs.regulatory?.regulatory_developments || [],
+      investors: [],
+      analysts: [],
+      activists: []
+    };
+    
+    return {
+      byType: stakeholderData,
+      analysis: {
+        mediaActivity: tabs.media?.media_coverage?.length > 0 ? 
+          'Media actively covering industry' : 'Low media activity',
+        regulatoryRisk: tabs.regulatory?.regulatory_developments?.length > 0 ?
+          'Regulatory attention detected' : 'No regulatory concerns',
+        investorSentiment: 'Stable investor environment'
+      },
+      prImplications: {
+        media: tabs.media?.media_strategy || 'Maintain media engagement',
+        regulatory: tabs.regulatory?.regulatory_stance || 'Continue compliance messaging',
+        investors: 'Keep investor relations informed'
+      }
+    };
+  };
+
+  const processSynthesizedMarket = (marketData) => {
+    if (!marketData) return {
+      topics: [],
+      analysis: {
+        hotTopics: [],
+        emergingThemes: [],
+        decliningInterest: []
+      }
+    };
+    
+    return {
+      topics: (marketData.market_trends || []).map(trend => ({
+        topic: trend.topic,
+        momentum: trend.trend || 'stable',
+        mentions: trend.mentions || 0,
+        sources: trend.sources || [],
+        opportunity: marketData.opportunities?.find(o => o.topic === trend.topic)?.opportunity || `Engage on ${trend.topic}`,
+        prAngle: `Position as thought leader on ${trend.topic}`
+      })),
+      analysis: {
+        hotTopics: marketData.market_trends?.filter(t => t.mentions > 10).map(t => t.topic) || [],
+        emergingThemes: marketData.market_trends?.filter(t => t.trend === 'increasing').map(t => t.topic) || [],
+        decliningInterest: marketData.market_trends?.filter(t => t.trend === 'decreasing').map(t => t.topic) || []
+      }
+    };
+  };
+
+  const processSynthesizedForward = (forwardData) => {
+    if (!forwardData) return {
+      predictions: [],
+      analysis: {
+        immediateOpportunities: 0,
+        strategicWindows: []
+      }
+    };
+    
+    return {
+      predictions: (forwardData.predictions || []).map(pred => ({
+        trigger: pred.trigger,
+        immediate: pred.immediate_impact || 'Monitor closely',
+        nearTerm: pred.near_term || 'Prepare response',
+        longTerm: pred.long_term || 'Strategic adjustment needed',
+        prStrategy: pred.pr_strategy || forwardData.proactive_strategy || 'Develop messaging'
+      })),
+      analysis: {
+        immediateOpportunities: forwardData.predictions?.filter(p => p.immediate_impact).length || 0,
+        strategicWindows: forwardData.predictions?.map(p => p.trigger) || []
+      }
     };
   };
 
