@@ -110,9 +110,12 @@ async function gatherRealIntelligence(entities: any, organization: any) {
   
   // 2. Search for specific competitor news using Firecrawl
   if (entities.competitors?.length > 0 && FIRECRAWL_API_KEY) {
+    console.log(`🔥 Firecrawl search for ${entities.competitors.length} competitors`)
     for (const competitor of entities.competitors.slice(0, 3)) {
+      // Handle both string and object formats
+      const competitorName = competitor.name || competitor
       try {
-        console.log(`🔍 Searching for ${competitor.name} news...`)
+        console.log(`🔍 Searching for "${competitorName}" news with Firecrawl...`)
         const searchResponse = await fetch('https://api.firecrawl.dev/v1/search', {
           method: 'POST',
           headers: {
@@ -120,32 +123,50 @@ async function gatherRealIntelligence(entities: any, organization: any) {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            query: `"${competitor.name}" latest news 2024 2025`,
+            query: `"${competitorName}" latest news 2024 2025`,
             limit: 5
           })
         })
         
+        console.log(`📡 Firecrawl response status: ${searchResponse.status}`)
+        
         if (searchResponse.ok) {
           const searchData = await searchResponse.json()
+          console.log(`📊 Firecrawl data:`, searchData)
+          
           if (searchData.success && searchData.data) {
             for (const result of searchData.data) {
               intelligence.entity_actions.all.push({
-                entity: competitor.name,
-                entity_type: 'competitor',
+                entity: competitorName,
+                type: 'competitor',
                 action: result.title,
                 description: result.description,
                 source: new URL(result.url).hostname,
                 url: result.url,
                 timestamp: new Date().toISOString(),
+                impact: 'medium',
                 relevance: 0.7
               })
             }
+            console.log(`✅ Found ${searchData.data.length} results for ${competitorName}`)
+          } else {
+            console.log(`⚠️ No Firecrawl results for ${competitorName}`)
           }
+        } else {
+          // Log Firecrawl error
+          const errorText = await searchResponse.text()
+          console.error(`❌ Firecrawl API error (${searchResponse.status}):`, errorText)
         }
       } catch (error) {
-        console.log(`Search failed for ${competitor.name}:`, error)
+        console.log(`Search failed for ${competitorName}:`, error)
       }
     }
+  } else {
+    console.log('⚠️ Skipping Firecrawl search:', {
+      hasCompetitors: entities.competitors?.length > 0,
+      hasApiKey: !!FIRECRAWL_API_KEY,
+      apiKeyPreview: FIRECRAWL_API_KEY ? FIRECRAWL_API_KEY.substring(0, 10) + '...' : 'none'
+    })
   }
   
   // Always return some data even if searches fail

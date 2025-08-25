@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Real Monitoring Capabilities</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #00ff88;
+            padding: 20px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        .section {
+            background: rgba(0, 255, 136, 0.05);
+            border: 1px solid #00ff88;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        h1, h2 { color: #00ffcc; }
+        button {
+            background: linear-gradient(135deg, #00ff88, #00ffcc);
+            color: #0a0a0a;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .result {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #00ff88;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-size: 12px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .success { border-color: #00ff88; }
+        .error { border-color: #ff0088; color: #ff0088; }
+        .warning { border-color: #ffcc00; color: #ffcc00; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Test Real Monitoring Capabilities</h1>
+    
+    <div class="section">
+        <h2>Test 1: Source Registry (RSS Feeds)</h2>
+        <button onclick="testSourceRegistry()">Test RSS Feeds</button>
+        <div id="rss-result" class="result"></div>
+    </div>
+
+    <div class="section">
+        <h2>Test 2: Firecrawl Search</h2>
+        <input type="text" id="searchQuery" value="Microsoft" placeholder="Enter company name" 
+               style="width: 300px; background: #000; color: #00ff88; border: 1px solid #00ff88; padding: 5px;">
+        <button onclick="testFirecrawl()">Test Firecrawl</button>
+        <div id="firecrawl-result" class="result"></div>
+    </div>
+
+    <div class="section">
+        <h2>Test 3: Complete Gathering with Real Entities</h2>
+        <button onclick="testGatheringWithRealData()">Test Gathering</button>
+        <div id="gathering-result" class="result"></div>
+    </div>
+
+    <div class="section">
+        <h2>Test 4: Full Pipeline with Known Companies</h2>
+        <select id="testCompany" style="background: #000; color: #00ff88; border: 1px solid #00ff88; padding: 5px;">
+            <option value="Microsoft">Microsoft</option>
+            <option value="Apple">Apple</option>
+            <option value="Amazon">Amazon</option>
+            <option value="Target">Target</option>
+            <option value="Walmart">Walmart</option>
+        </select>
+        <button onclick="testFullPipelineKnown()">Test Full Pipeline</button>
+        <div id="pipeline-result" class="result"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        const FIRECRAWL_KEY = 'fc-3048810124b640eb99293880a4ab25d0';
+
+        async function testSourceRegistry() {
+            const result = document.getElementById('rss-result');
+            result.textContent = 'Testing RSS feeds...\n\n';
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/source-registry?industry=technology&limit=5`, {
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    }
+                });
+                
+                const data = await response.json();
+                result.textContent += `Status: ${response.status}\n`;
+                result.textContent += `Success: ${data.success}\n`;
+                result.textContent += `Articles found: ${data.articles?.length || 0}\n\n`;
+                
+                if (data.articles) {
+                    data.articles.forEach((article, i) => {
+                        result.textContent += `${i+1}. ${article.title}\n`;
+                        result.textContent += `   Source: ${article.source}\n`;
+                        result.textContent += `   URL: ${article.url}\n\n`;
+                    });
+                } else {
+                    result.textContent += 'No articles returned';
+                }
+            } catch (error) {
+                result.textContent += `Error: ${error.message}`;
+                result.className = 'result error';
+            }
+        }
+
+        async function testFirecrawl() {
+            const query = document.getElementById('searchQuery').value;
+            const result = document.getElementById('firecrawl-result');
+            result.textContent = `Testing Firecrawl search for "${query}"...\n\n`;
+            
+            try {
+                const response = await fetch('https://api.firecrawl.dev/v1/search', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${FIRECRAWL_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        query: `"${query}" latest news 2024 2025`,
+                        limit: 5
+                    })
+                });
+                
+                const data = await response.json();
+                result.textContent += `Status: ${response.status}\n`;
+                result.textContent += `Success: ${data.success}\n`;
+                result.textContent += `Results: ${data.data?.length || 0}\n\n`;
+                
+                if (data.data) {
+                    data.data.forEach((item, i) => {
+                        result.textContent += `${i+1}. ${item.title}\n`;
+                        result.textContent += `   ${item.description}\n`;
+                        result.textContent += `   URL: ${item.url}\n\n`;
+                    });
+                }
+            } catch (error) {
+                result.textContent += `Error: ${error.message}`;
+                result.className = 'result error';
+            }
+        }
+
+        async function testGatheringWithRealData() {
+            const result = document.getElementById('gathering-result');
+            result.textContent = 'Testing gathering with real competitors...\n\n';
+            
+            const testData = {
+                entities: {
+                    competitors: ['Microsoft', 'Apple', 'Amazon', 'Google', 'Meta'],
+                    regulators: ['FTC', 'SEC', 'DOJ'],
+                    media: ['TechCrunch', 'The Verge', 'Reuters'],
+                    activists: [],
+                    investors: [],
+                    analysts: []
+                },
+                organization: {
+                    name: 'Test Corp',
+                    industry: 'technology'
+                }
+            };
+            
+            result.textContent += `Sending: ${JSON.stringify(testData, null, 2)}\n\n`;
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-gathering-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                const data = await response.json();
+                result.textContent += `Status: ${response.status}\n`;
+                result.textContent += `Success: ${data.success}\n`;
+                result.textContent += `Entity actions: ${data.entity_actions?.all?.length || 0}\n`;
+                result.textContent += `Topic trends: ${data.topic_trends?.all?.length || 0}\n\n`;
+                
+                if (data.entity_actions?.all?.length > 0) {
+                    result.textContent += 'Sample actions:\n';
+                    data.entity_actions.all.slice(0, 3).forEach((action, i) => {
+                        result.textContent += `${i+1}. ${action.entity}: ${action.action}\n`;
+                        result.textContent += `   Type: ${action.type}, Impact: ${action.impact}\n`;
+                        result.textContent += `   Source: ${action.source}\n\n`;
+                    });
+                } else {
+                    result.textContent += '⚠️ No entity actions found!\n';
+                    result.className = 'result warning';
+                }
+            } catch (error) {
+                result.textContent += `Error: ${error.message}`;
+                result.className = 'result error';
+            }
+        }
+
+        async function testFullPipelineKnown() {
+            const company = document.getElementById('testCompany').value;
+            const result = document.getElementById('pipeline-result');
+            result.textContent = `Testing full pipeline for ${company}...\n\n`;
+            
+            const competitors = {
+                'Microsoft': ['Google', 'Amazon', 'Apple', 'Oracle', 'Salesforce'],
+                'Apple': ['Samsung', 'Google', 'Microsoft', 'Sony', 'Dell'],
+                'Amazon': ['Walmart', 'Microsoft', 'Google', 'Alibaba', 'Target'],
+                'Target': ['Walmart', 'Amazon', 'Costco', 'CVS', 'Kroger'],
+                'Walmart': ['Amazon', 'Target', 'Costco', 'Kroger', 'Home Depot']
+            };
+            
+            try {
+                // 1. Discovery
+                result.textContent += '1️⃣ DISCOVERY\n';
+                const discoveryReq = {
+                    organization: { name: company, industry: 'retail' },
+                    stakeholders: {
+                        competitors: competitors[company] || [],
+                        regulators: ['FTC', 'SEC'],
+                        media: ['Reuters', 'Bloomberg'],
+                        activists: [],
+                        investors: [],
+                        analysts: []
+                    },
+                    monitoring_topics: ['market trends', 'innovation', 'customer experience']
+                };
+                
+                const discoveryResp = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-discovery-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify(discoveryReq)
+                });
+                
+                const discoveryData = await discoveryResp.json();
+                result.textContent += `Discovery: ${discoveryData.success ? '✅' : '❌'}\n\n`;
+                
+                // 2. Gathering
+                result.textContent += '2️⃣ GATHERING\n';
+                const gatheringResp = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-gathering-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        entities: discoveryData.entities || {},
+                        organization: { name: company, industry: 'retail' }
+                    })
+                });
+                
+                const gatheringData = await gatheringResp.json();
+                result.textContent += `Gathering: ${gatheringData.success ? '✅' : '❌'}\n`;
+                result.textContent += `Actions found: ${gatheringData.entity_actions?.all?.length || 0}\n`;
+                result.textContent += `Trends found: ${gatheringData.topic_trends?.all?.length || 0}\n\n`;
+                
+                // Show actual intelligence found
+                if (gatheringData.entity_actions?.all?.length > 0) {
+                    result.textContent += 'REAL INTELLIGENCE FOUND:\n';
+                    gatheringData.entity_actions.all.slice(0, 5).forEach((action, i) => {
+                        result.textContent += `\n${i+1}. ${action.entity}\n`;
+                        result.textContent += `   Action: ${action.action}\n`;
+                        result.textContent += `   Source: ${action.source || 'N/A'}\n`;
+                        result.textContent += `   Impact: ${action.impact || 'N/A'}\n`;
+                    });
+                } else {
+                    result.textContent += '⚠️ NO REAL INTELLIGENCE FOUND - Using fallback data\n';
+                }
+                
+            } catch (error) {
+                result.textContent += `\n❌ Error: ${error.message}`;
+                result.className = 'result error';
+            }
+        }
+    </script>
+</body>
+</html>
