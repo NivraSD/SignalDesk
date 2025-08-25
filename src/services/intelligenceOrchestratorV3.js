@@ -161,7 +161,7 @@ class IntelligenceOrchestratorV3 {
         organization: organization
       });
       
-      const synthesisResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-synthesis-v3`, {
+      const synthesisResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-synthesis-v4`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

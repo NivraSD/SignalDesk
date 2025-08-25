@@ -442,32 +442,27 @@ const OpportunityModulePR = ({ organizationId, sharedIntelligence, onIntelligenc
         </div>
 
         <div className="detail-section">
-          <h3>📋 Situation</h3>
+          <h3>Situation</h3>
           <p>{selectedOpportunity.description}</p>
         </div>
 
-        <div className="detail-section">
-          <h3>⚡ Why Act Now</h3>
-          <p>{selectedOpportunity.why || selectedOpportunity.rationale || "This opportunity has a limited window based on current news cycle momentum. Acting quickly positions you ahead of competitors."}</p>
-        </div>
+        {selectedOpportunity.deadline && (
+          <div className="detail-section">
+            <h3>Timeline</h3>
+            <p className="deadline">Action needed within: {selectedOpportunity.deadline}</p>
+          </div>
+        )}
 
-        <div className="detail-section">
-          <h3>🎯 How to Execute</h3>
-          {selectedOpportunity.how ? (
-            <div className="how-to-execute">
-              {selectedOpportunity.how.split('\n').map((step, idx) => (
-                <p key={idx} className="execution-step">{step}</p>
-              ))}
-            </div>
-          ) : selectedOpportunity.action_plan ? (
+        {selectedOpportunity.action_plan && selectedOpportunity.action_plan.length > 0 && (
+          <div className="detail-section">
+            <h3>Action Plan</h3>
             <ol className="action-plan-list">
               {selectedOpportunity.action_plan.map((step, idx) => (
                 <li key={idx}>{step}</li>
               ))}
             </ol>
-          ) : (
-            <p>Develop your unique angle and reach out to relevant media contacts immediately.</p>
-          )}
+          </div>
+        )}
         </div>
 
         <div className="action-buttons">

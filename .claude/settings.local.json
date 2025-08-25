@@ -253,7 +253,8 @@
       "Bash(./FIX_EVERYTHING_PROPERLY.sh:*)",
       "Bash(./FIX_ONBOARDING_AND_CACHING_FOREVER.sh:*)",
       "WebFetch(domain:signaldesk-fiy59i1k2-nivra-sd.vercel.app)",
-      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/verify-deployment-cache.sh)"
+      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/verify-deployment-cache.sh)",
+      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/test-v3-deployment.sh)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",
