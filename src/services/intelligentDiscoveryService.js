@@ -29,17 +29,32 @@ class IntelligentDiscoveryService {
       // Step 1: Use Claude to analyze the company
       const companyAnalysis = await this.analyzeCompanyWithClaude(companyName, website, description);
       
-      // Step 2: Discover actual competitors (not placeholders!)
-      const competitors = await this.discoverRealCompetitors(companyName, companyAnalysis.industry);
+      // Use Claude's data if available, otherwise discover manually
+      const competitors = companyAnalysis.competitors?.length > 0 
+        ? companyAnalysis.competitors 
+        : await this.discoverRealCompetitors(companyName, companyAnalysis.industry);
       
-      // Step 3: Map actual stakeholders
-      const stakeholders = await this.mapRealStakeholders(companyName, companyAnalysis.industry);
+      const stakeholders = companyAnalysis.stakeholders 
+        ? companyAnalysis.stakeholders
+        : await this.mapRealStakeholders(companyName, companyAnalysis.industry);
       
-      // Step 4: Identify relevant topics based on industry
-      const topics = await this.identifyRelevantTopics(companyAnalysis);
+      const topics = companyAnalysis.topics?.length > 0
+        ? companyAnalysis.topics
+        : await this.identifyRelevantTopics(companyAnalysis);
       
-      // Step 5: Generate monitoring keywords
-      const keywords = await this.generateSmartKeywords(companyName, companyAnalysis);
+      const keywords = companyAnalysis.keywords?.length > 0
+        ? companyAnalysis.keywords
+        : await this.generateSmartKeywords(companyName, companyAnalysis);
+      
+      console.log('🔧 Discovery assembled:', {
+        competitors: competitors?.length || 0,
+        hasStakeholders: !!stakeholders,
+        regulators: stakeholders?.regulators?.length || 0,
+        media: stakeholders?.media?.length || 0,
+        activists: stakeholders?.activists?.length || 0,
+        investors: stakeholders?.investors?.length || 0,
+        analysts: stakeholders?.analysts?.length || 0
+      });
       
       const discovery = {
         company: {
@@ -118,12 +133,21 @@ class IntelligentDiscoveryService {
       
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Claude analysis successful:', data);
+        console.log('✅ Claude API Response:', {
+          success: data.success,
+          hasAnalysis: !!data.analysis,
+          competitors: data.analysis?.competitors,
+          stakeholders: data.analysis?.stakeholders,
+          enhancedByClaude: data.analysis?.enhanced_by_claude,
+          fullData: data
+        });
         // Make sure we return the full analysis with competitors
         if (data.analysis) {
           console.log('🎯 Discovered competitors:', data.analysis.competitors);
+          console.log('🎯 Discovered stakeholders:', data.analysis.stakeholders);
           return data.analysis;
         }
+        console.warn('⚠️ No analysis in response, using default');
         return this.getDefaultAnalysis(companyName);
       } else {
         const errorText = await response.text();
