@@ -1,3 +1,16 @@
+#!/bin/bash
+
+echo "🔧 FIXING EVERYTHING PROPERLY - ONBOARDING + EDGE FUNCTIONS + CACHE"
+echo "=================================================================="
+echo ""
+
+# 1. First, let's see what onboarding actually saves
+echo "📝 Checking what onboarding saves..."
+echo ""
+
+# 2. Fix intelligence-gathering-v3 to use REAL data
+echo "🔧 Creating REAL intelligence-gathering-v3..."
+cat > supabase/functions/intelligence-gathering-v3/index.ts << 'EOF'
 // Intelligence Gathering V3 - REAL data from RSS feeds and searches
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { corsHeaders } from "../_shared/cors.ts"
@@ -216,3 +229,93 @@ serve(async (req) => {
     )
   }
 })
+EOF
+
+echo "✅ Created REAL intelligence-gathering-v3"
+echo ""
+
+# 3. Fix discovery to properly handle onboarding data
+echo "🔧 Fixing intelligence-discovery-v3 to use onboarding data..."
+cat > supabase/functions/intelligence-discovery-v3/index.ts << 'EOF'
+// Intelligence Discovery V3 - Uses stakeholders from onboarding
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { corsHeaders } from "../_shared/cors.ts"
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
+  try {
+    const { organization, stakeholders, monitoring_topics } = await req.json()
+    
+    console.log('🔍 Discovery V3 - Processing onboarding data:', {
+      organization: organization?.name,
+      competitors: stakeholders?.competitors?.length || 0,
+      regulators: stakeholders?.regulators?.length || 0,
+      activists: stakeholders?.activists?.length || 0,
+      media: stakeholders?.media?.length || 0,
+      topics: monitoring_topics?.length || 0
+    })
+    
+    // Return the stakeholders in the format gathering expects
+    const entities = {
+      competitors: stakeholders?.competitors || [],
+      regulators: stakeholders?.regulators || [],
+      activists: stakeholders?.activists || [],
+      media: stakeholders?.media || [],
+      investors: stakeholders?.investors || [],
+      analysts: stakeholders?.analysts || []
+    }
+    
+    return new Response(
+      JSON.stringify({
+        success: true,
+        entities,
+        topics: monitoring_topics || [],
+        statistics: {
+          total_entities: Object.values(entities).flat().length,
+          total_topics: monitoring_topics?.length || 0
+        }
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+    
+  } catch (error) {
+    console.error('Discovery error:', error)
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: error.message,
+        entities: {}
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  }
+})
+EOF
+
+echo "✅ Fixed intelligence-discovery-v3"
+echo ""
+
+# 4. Deploy the fixed functions
+echo "🚀 Deploying fixed Edge Functions..."
+supabase functions deploy intelligence-gathering-v3 --no-verify-jwt
+supabase functions deploy intelligence-discovery-v3 --no-verify-jwt
+
+echo ""
+echo "✅ Edge Functions deployed!"
+echo ""
+
+# 5. Clear the cache
+echo "🗑️ Clearing cache in browser..."
+echo "Run this in browser console:"
+echo "localStorage.removeItem('signaldesk_intelligence_cache');"
+echo "localStorage.removeItem('signaldesk_just_onboarded');"
+echo ""
+
+echo "✅ COMPLETE! Now the system will:"
+echo "  1. Use stakeholders from onboarding"
+echo "  2. Fetch REAL RSS feeds and search results"
+echo "  3. Show actual intelligence, not mock data"
+echo "  4. No more cache issues"

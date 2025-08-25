@@ -152,22 +152,28 @@ OPPORTUNITIES=$(curl -s -X POST $BASE_URL/opportunity-orchestrator \
     }
   }')
 
-# Check opportunities
+# Check opportunities  
 OPP_COUNT=$(echo "$OPPORTUNITIES" | jq -r '.opportunities | length')
 FIRST_OPP_ACTION=$(echo "$OPPORTUNITIES" | jq -r '.opportunities[0].action // "NONE"')
-FIRST_OPP_IMPACT=$(echo "$OPPORTUNITIES" | jq -r '.opportunities[0].expected_impact // "NONE"')
+FIRST_OPP_SOURCE=$(echo "$OPPORTUNITIES" | jq -r '.opportunities[0].source_signal.source // "NONE"')
+FIRST_OPP_URL=$(echo "$OPPORTUNITIES" | jq -r '.opportunities[0].source_url // "NONE"')
 HAS_REAL_CONTENT=false
 
-if [ "$FIRST_OPP_ACTION" != "NONE" ] && [ "$FIRST_OPP_ACTION" != "null" ] && [ "$FIRST_OPP_IMPACT" != "NONE" ]; then
-    # Check if it's not a template
-    if [[ "$FIRST_OPP_ACTION" != *"Microsoft"* ]] || [[ "$FIRST_OPP_ACTION" == *"specific"* ]]; then
+# New format: check for source_signal and source_url (real signals)
+if [ "$FIRST_OPP_SOURCE" != "NONE" ] && [ "$FIRST_OPP_SOURCE" != "null" ]; then
+    HAS_REAL_CONTENT=true
+elif [ "$FIRST_OPP_URL" != "NONE" ] && [ "$FIRST_OPP_URL" != "null" ]; then
+    HAS_REAL_CONTENT=true
+elif [ "$FIRST_OPP_ACTION" != "NONE" ] && [ "$FIRST_OPP_ACTION" != "null" ]; then
+    # Also check old format but exclude templates
+    if [[ "$FIRST_OPP_ACTION" != *"Microsoft"* ]] && [[ "$FIRST_OPP_ACTION" != *"Google"* ]]; then
         HAS_REAL_CONTENT=true
     fi
 fi
 
 if [ "$OPP_COUNT" -gt 0 ] && [ "$HAS_REAL_CONTENT" = true ]; then
-    echo -e "${GREEN}✅ Opportunities have REAL actions and impact${NC}"
-    echo "   Found $OPP_COUNT opportunities with actionable content"
+    echo -e "${GREEN}✅ Opportunities have REAL actions from real signals${NC}"
+    echo "   Found $OPP_COUNT opportunities (source: $FIRST_OPP_SOURCE)"
     ((TESTS_PASSED++))
 else
     echo -e "${RED}❌ Opportunities are TEMPLATES (Microsoft/Google generic)${NC}"

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './IntelligenceDisplayV3.css';
 import intelligenceOrchestratorV3 from '../services/intelligenceOrchestratorV3';
-import { getUnifiedOrganization } from '../utils/unifiedDataLoader';
+import { getUnifiedOrganization, getUnifiedCompleteProfile } from '../utils/unifiedDataLoader';
+import cacheManager from '../utils/smartCache';
 import { 
   RocketIcon, AlertIcon, TrendingUpIcon, TargetIcon, 
   ChartIcon, BuildingIcon
@@ -33,38 +34,20 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0, onIntelligenc
       hasOrgName: !!organization?.name
     });
     
-    // Check if we have cached intelligence
-    const cachedIntel = localStorage.getItem('signaldesk_intelligence_cache');
-    if (cachedIntel && refreshTrigger === 0) {  // Don't use cache if manual refresh
-      try {
-        const cached = JSON.parse(cachedIntel);
-        // Use cached data indefinitely until manual refresh
-        if (cached.data && cached.organizationName === organization?.name) {
-          console.log('📦 Using cached intelligence for:', organization?.name);
-          console.log('🕐 Cached at:', new Date(cached.timestamp).toLocaleString());
-          setIntelligence(cached.data);
-          // Share intelligence with other modules
-          if (onIntelligenceUpdate && cached.data) {
-            onIntelligenceUpdate(cached.data);
-          }
-          setLoading(false);
-          return;
-        }
-      } catch (e) {
-        console.log('Cache parse error:', e);
-      }
+    // Smart cache management - only cache real data, not in development
+    const cachedData = cacheManager.getIntelligence(organization);
+    if (cachedData) {
+      console.log('📦 Using cached intelligence');
+      setIntelligence(cachedData);
+      setLoading(false);
+      return;
     }
     
-    // Auto-fetch intelligence immediately after onboarding or on refresh
+    // Auto-fetch intelligence when organization changes or on refresh
     if (organization?.name) {
-      const hasJustOnboarded = localStorage.getItem('signaldesk_just_onboarded') === 'true';
-      if (hasJustOnboarded || !intelligence || refreshTrigger > 0) {
+      if (!intelligence || refreshTrigger > 0) {
         console.log('🚀 Auto-fetching intelligence for:', organization.name);
-        console.log('📍 Reason:', hasJustOnboarded ? 'Just onboarded' : refreshTrigger > 0 ? 'Manual refresh' : 'No intelligence yet');
-        // Clear the onboarding flag
-        if (hasJustOnboarded) {
-          localStorage.removeItem('signaldesk_just_onboarded');
-        }
+        console.log('📍 Reason:', refreshTrigger > 0 ? 'Manual refresh' : 'No intelligence yet');
         fetchIntelligence();
       }
     }
@@ -73,17 +56,23 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0, onIntelligenc
   const fetchIntelligence = async () => {
     console.log('🔍 V3 fetchIntelligence called, organization:', organization);
     
-    // Use unified organization data loader
-    let orgToUse = organization;
+    // Use unified COMPLETE profile data loader to get stakeholders too
+    let profileToUse = null;
     
-    if (!orgToUse?.name) {
+    if (!organization?.name) {
       console.log('⚠️ No organization provided, using unified data loader...');
-      orgToUse = getUnifiedOrganization();
-      console.log('📦 Unified organization loaded:', orgToUse);
+      profileToUse = getUnifiedCompleteProfile();
+      console.log('📦 Unified COMPLETE profile loaded:', profileToUse);
       
-      if (!orgToUse?.name) {
+      if (!profileToUse?.organization?.name) {
         console.log('❌ No organization found in any storage location');
         return;
+      }
+    } else {
+      // Even if we have organization, get the complete profile for stakeholders
+      profileToUse = getUnifiedCompleteProfile();
+      if (!profileToUse?.organization) {
+        profileToUse = { organization, competitors: [], monitoring_topics: [] };
       }
     }
     
@@ -93,7 +82,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0, onIntelligenc
     setLoadingProgress(0);
     setPhaseProgress({ gathering: 0, analysis: 0, synthesis: 0, preparing: 0 });
     
-    console.log('🚀 Starting V3 orchestration with:', orgToUse);
+    console.log('🚀 Starting V3 orchestration with complete profile:', profileToUse);
     
     // Start all progress bars animation with overlapping phases
     let elapsed = 0;
@@ -141,7 +130,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0, onIntelligenc
     }, 100);
     
     try {
-      const result = await intelligenceOrchestratorV3.orchestrate(orgToUse);
+      const result = await intelligenceOrchestratorV3.orchestrate(profileToUse);
       clearInterval(progressInterval);
       setLoadingProgress(100);
       setPhaseProgress({ gathering: 100, analysis: 100, synthesis: 100, preparing: 100 });
@@ -164,17 +153,8 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0, onIntelligenc
       if (result.success) {
         setIntelligence(result);
         
-        // Cache the intelligence data with organization name
-        try {
-          localStorage.setItem('signaldesk_intelligence_cache', JSON.stringify({
-            data: result,
-            organizationName: orgToUse?.name,
-            timestamp: Date.now()
-          }));
-          console.log('💾 Cached intelligence for:', orgToUse?.name);
-        } catch (e) {
-          console.error('Error caching intelligence:', e);
-        }
+        // Smart cache - only saves real data, not templates
+        cacheManager.saveIntelligence(result, profileToUse?.organization);
         
         // Share intelligence with other modules
         if (onIntelligenceUpdate && result) {
@@ -194,7 +174,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0, onIntelligenc
       console.error('Error details:', {
         message: err.message,
         stack: err.stack,
-        organization: orgToUse
+        organization: profileToUse?.organization
       });
       clearInterval(progressInterval);
       setError(err.message);

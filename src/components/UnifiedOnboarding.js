@@ -105,6 +105,7 @@ const UnifiedOnboarding = ({ onComplete }) => {
     if (validateCurrentStep()) {
       // Run AI discovery when leaving step 1
       if (currentStep === 1 && !analysisComplete && profile.organization.name) {
+        console.log('🚀 NEXT BUTTON CLICKED - Starting API call to analyze:', profile.organization.name);
         await analyzeOrganization();
         // Wait a moment for state to update
         await new Promise(resolve => setTimeout(resolve, 500));
@@ -149,8 +150,15 @@ const UnifiedOnboarding = ({ onComplete }) => {
     if (!profile.organization.name.trim()) return;
     
     setIsAnalyzing(true);
+    console.log('🎯 API CALL STARTING NOW for:', profile.organization.name);
+    console.log('📡 Environment:', {
+      supabaseUrl: intelligentDiscoveryService.supabaseUrl,
+      hasKey: !!intelligentDiscoveryService.supabaseKey,
+      keyPreview: intelligentDiscoveryService.supabaseKey?.substring(0, 30) + '...'
+    });
+    
     try {
-      console.log('🔍 Analyzing organization with Claude:', profile.organization.name);
+      console.log('🔍 Calling intelligentDiscoveryService.discoverCompanyIntelligence()...');
       
       const intelligence = await intelligentDiscoveryService.discoverCompanyIntelligence(
         profile.organization.name,
@@ -158,8 +166,10 @@ const UnifiedOnboarding = ({ onComplete }) => {
         profile.organization.description
       );
       
+      console.log('📥 API Response received:', intelligence);
+      
       if (intelligence && intelligence.company) {
-        console.log('✅ Claude analysis complete:', intelligence.company);
+        console.log('✅ Claude analysis complete with data:', intelligence.company);
         
         // Update organization with Claude's analysis
         setProfile(prev => ({
@@ -278,6 +288,32 @@ const UnifiedOnboarding = ({ onComplete }) => {
           })}
           className="form-input"
         />
+        
+        {/* Debug: Manual API trigger button */}
+        {profile.organization.name && !analysisComplete && (
+          <button 
+            type="button"
+            onClick={analyzeOrganization}
+            disabled={isAnalyzing}
+            style={{ 
+              marginTop: '10px',
+              background: isAnalyzing ? '#666' : '#00ff00',
+              color: '#000',
+              padding: '8px 16px',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: isAnalyzing ? 'wait' : 'pointer'
+            }}
+          >
+            {isAnalyzing ? '🔄 Analyzing...' : '🚀 Analyze Now (Debug)'}
+          </button>
+        )}
+        
+        {analysisComplete && (
+          <div style={{ marginTop: '10px', color: '#00ff00' }}>
+            ✅ Analysis complete! Found {profile.competitors?.length || 0} competitors
+          </div>
+        )}
       </div>
 
 

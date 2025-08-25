@@ -11,7 +11,7 @@ const corsHeaders = {
   'Access-Control-Max-Age': '86400'
 }
 
-const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
+// const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
 
 // Single analytical persona - focused on organizing and analyzing data
 const INTELLIGENCE_ANALYST = {

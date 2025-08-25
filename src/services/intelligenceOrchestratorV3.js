@@ -91,7 +91,7 @@ class IntelligenceOrchestratorV3 {
       console.log('📡 Phase 2: Gathering - Tracking entity actions and trends');
       console.log('📡 Gathering Request:', {
         url: `${this.supabaseUrl}/functions/v1/intelligence-gathering-v3`,
-        discovery: discoveryData.discovery,
+        entities: discoveryData.entities || discoveryData.discovery || {},
         organization: organization
       });
       
@@ -102,7 +102,7 @@ class IntelligenceOrchestratorV3 {
           'Authorization': `Bearer ${this.supabaseKey}`
         },
         body: JSON.stringify({ 
-          discovery: discoveryData.discovery,
+          entities: discoveryData.entities || discoveryData.discovery || {},
           organization 
         })
       });
@@ -117,10 +117,17 @@ class IntelligenceOrchestratorV3 {
 
       const gatheringData = await gatheringResponse.json();
       console.log('📡 Gathering Data:', gatheringData);
+      
+      // The gathering response has entity_actions and topic_trends at the root level
+      const intelligence = {
+        entity_actions: gatheringData.entity_actions || { all: [] },
+        topic_trends: gatheringData.topic_trends || { all: [] }
+      };
+      
       console.log('📊 Intelligence to synthesize:', {
-        entity_actions_count: gatheringData.intelligence?.entity_actions?.all?.length || 0,
-        topic_trends_count: gatheringData.intelligence?.topic_trends?.all?.length || 0,
-        has_data: !!(gatheringData.intelligence?.entity_actions?.all?.length || gatheringData.intelligence?.topic_trends?.all?.length)
+        entity_actions_count: intelligence.entity_actions?.all?.length || 0,
+        topic_trends_count: intelligence.topic_trends?.all?.length || 0,
+        has_data: !!(intelligence.entity_actions?.all?.length || intelligence.topic_trends?.all?.length)
       });
       
       if (!gatheringData.success) {
@@ -128,8 +135,8 @@ class IntelligenceOrchestratorV3 {
       }
       
       console.log('✅ Gathering complete:', {
-        actions_captured: gatheringData.statistics?.actions_captured || 0,
-        topics_monitored: gatheringData.statistics?.topics_monitored || 0,
+        actions_captured: intelligence.entity_actions?.all?.length || 0,
+        topics_monitored: intelligence.topic_trends?.all?.length || 0,
         critical_items: gatheringData.statistics?.critical_items || 0
       });
 
@@ -137,7 +144,7 @@ class IntelligenceOrchestratorV3 {
       console.log('🧠 Phase 3: Synthesis - Analyzing intelligence with Claude 4');
       console.log('📡 Synthesis Request:', {
         url: `${this.supabaseUrl}/functions/v1/intelligence-synthesis-v3`,
-        intelligence: gatheringData.intelligence,
+        intelligence: intelligence,
         organization: organization
       });
       
@@ -148,7 +155,7 @@ class IntelligenceOrchestratorV3 {
           'Authorization': `Bearer ${this.supabaseKey}`
         },
         body: JSON.stringify({
-          intelligence: gatheringData.intelligence,
+          intelligence: intelligence,
           organization
         })
       });

@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API Connection</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #0f0f0f;
+            color: #fff;
+        }
+        .test-section {
+            background: #1a1a1a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+        h2 {
+            color: #00ff00;
+            margin-top: 0;
+        }
+        button {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #00cc00;
+        }
+        .result {
+            background: #0a0a0a;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success { border-left: 4px solid #00ff00; }
+        .error { border-left: 4px solid #ff0000; }
+        .pending { border-left: 4px solid #ffff00; }
+        input {
+            background: #0a0a0a;
+            color: #fff;
+            border: 1px solid #333;
+            padding: 8px;
+            margin: 5px;
+            border-radius: 4px;
+            width: 300px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔬 SignalDesk API Connection Test</h1>
+    
+    <div class="test-section">
+        <h2>Environment Configuration</h2>
+        <div id="env-config" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Claude Intelligence Synthesizer V2 (Onboarding)</h2>
+        <input type="text" id="org-name" placeholder="Enter organization name" value="Budweiser">
+        <button onclick="testClaudeV2()">Test Claude V2</button>
+        <div id="claude-v2-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Intelligence Discovery V3</h2>
+        <button onclick="testDiscoveryV3()">Test Discovery V3</button>
+        <div id="discovery-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Intelligence Gathering V3</h2>
+        <button onclick="testGatheringV3()">Test Gathering V3</button>
+        <div id="gathering-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Complete Frontend Flow</h2>
+        <button onclick="testFrontendFlow()">Test Frontend Service Call</button>
+        <div id="frontend-result" class="result"></div>
+    </div>
+
+    <script>
+        // Configuration
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        // Display configuration
+        document.getElementById('env-config').innerHTML = `
+SUPABASE_URL: ${SUPABASE_URL}
+SUPABASE_KEY: ${SUPABASE_ANON_KEY.substring(0, 50)}...
+`;
+
+        async function testClaudeV2() {
+            const resultDiv = document.getElementById('claude-v2-result');
+            const orgName = document.getElementById('org-name').value;
+            
+            resultDiv.className = 'result pending';
+            resultDiv.textContent = '⏳ Testing Claude Intelligence Synthesizer V2...';
+            
+            try {
+                const url = `${SUPABASE_URL}/functions/v1/claude-intelligence-synthesizer-v2`;
+                console.log('🔍 Calling:', url);
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        intelligence_type: 'company_analysis',
+                        organization: { 
+                            name: orgName,
+                            industry: 'beverage'
+                        },
+                        prompt: `Analyze ${orgName} and provide competitors and stakeholders`
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ SUCCESS - Status: ${response.status}\n\n` + 
+                        JSON.stringify(data, null, 2);
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `❌ ERROR - Status: ${response.status}\n\n` + 
+                        JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ NETWORK ERROR:\n${error.message}\n\nThis usually means CORS or the function isn't deployed`;
+            }
+        }
+
+        async function testDiscoveryV3() {
+            const resultDiv = document.getElementById('discovery-result');
+            resultDiv.className = 'result pending';
+            resultDiv.textContent = '⏳ Testing Intelligence Discovery V3...';
+            
+            try {
+                const url = `${SUPABASE_URL}/functions/v1/intelligence-discovery-v3`;
+                console.log('🔍 Calling:', url);
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: { 
+                            name: 'Budweiser',
+                            industry: 'beverage'
+                        },
+                        stakeholders: {
+                            competitors: ['Heineken', 'Corona', 'Stella Artois'],
+                            regulators: ['TTB', 'FDA'],
+                            media: ['Beer Business Daily', 'Brewbound']
+                        },
+                        monitoring_topics: ['beer sales', 'craft beer trends']
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ SUCCESS - Status: ${response.status}\n\n` + 
+                        JSON.stringify(data, null, 2);
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `❌ ERROR - Status: ${response.status}\n\n` + 
+                        JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ NETWORK ERROR:\n${error.message}`;
+            }
+        }
+
+        async function testGatheringV3() {
+            const resultDiv = document.getElementById('gathering-result');
+            resultDiv.className = 'result pending';
+            resultDiv.textContent = '⏳ Testing Intelligence Gathering V3...';
+            
+            try {
+                const url = `${SUPABASE_URL}/functions/v1/intelligence-gathering-v3`;
+                console.log('🔍 Calling:', url);
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: { 
+                            name: 'Budweiser',
+                            industry: 'beverage'
+                        },
+                        entities: {
+                            competitors: ['Heineken', 'Corona'],
+                            regulators: ['TTB'],
+                            media: ['Beer Business Daily']
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ SUCCESS - Status: ${response.status}\n\n` + 
+                        JSON.stringify(data, null, 2);
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `❌ ERROR - Status: ${response.status}\n\n` + 
+                        JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ NETWORK ERROR:\n${error.message}`;
+            }
+        }
+
+        async function testFrontendFlow() {
+            const resultDiv = document.getElementById('frontend-result');
+            resultDiv.className = 'result pending';
+            resultDiv.textContent = '⏳ Testing Frontend Service Flow (what onboarding uses)...';
+            
+            try {
+                // This mimics what intelligentDiscoveryService does
+                const companyName = 'Budweiser';
+                const prompt = `
+                    Analyze this company and provide structured intelligence:
+                    Company: ${companyName}
+                    
+                    Provide a JSON response with:
+                    1. industry: The PRIMARY industry
+                    2. business_model: How they make money
+                    3. competitors: List of real competitors
+                    4. stakeholders: regulators, media, activists, investors
+                `;
+                
+                const url = `${SUPABASE_URL}/functions/v1/claude-intelligence-synthesizer-v2`;
+                console.log('🔍 Calling (like frontend does):', url);
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        intelligence_type: 'company_analysis',
+                        prompt: prompt,
+                        organization: { name: companyName }
+                    })
+                });
+                
+                console.log('Response headers:', response.headers);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ SUCCESS - Frontend service would receive:\n\n` + 
+                        JSON.stringify(data, null, 2) + 
+                        `\n\n✨ Key Data Extracted:\n` +
+                        `- Competitors: ${data.analysis?.competitors?.join(', ') || 'None found'}\n` +
+                        `- Industry: ${data.analysis?.industryInsights?.industry || 'Not detected'}\n` +
+                        `- Stakeholders: ${JSON.stringify(data.analysis?.stakeholders || {}, null, 2)}`;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `❌ ERROR - Status: ${response.status}\n\n` + 
+                        JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ NETWORK ERROR:\n${error.message}\n\n` +
+                    `This could mean:\n` +
+                    `1. Edge function not deployed\n` +
+                    `2. CORS issue (check Supabase dashboard)\n` +
+                    `3. Network connectivity issue`;
+            }
+        }
+    </script>
+</body>
+</html>

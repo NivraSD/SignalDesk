@@ -8,7 +8,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
+// const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
 
 // PR Impact Analyst - focuses on how everything affects YOUR organization's PR
 const PR_IMPACT_ANALYST = {

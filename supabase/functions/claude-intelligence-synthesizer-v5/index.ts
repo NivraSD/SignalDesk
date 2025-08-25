@@ -8,7 +8,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
+// const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
 
 // Single analytical persona - no recommendations
 const INTELLIGENCE_ANALYST = {

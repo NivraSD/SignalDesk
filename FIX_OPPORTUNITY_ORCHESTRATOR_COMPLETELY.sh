@@ -1,3 +1,15 @@
+#!/bin/bash
+
+echo "🔧 FIXING OPPORTUNITY ORCHESTRATOR - REMOVING ALL FALLBACKS"
+echo "=========================================================="
+echo ""
+
+# Backup current version
+cp supabase/functions/opportunity-orchestrator/index.ts supabase/functions/opportunity-orchestrator/index.ts.backup-with-fallbacks
+
+echo "📝 Creating clean opportunity-orchestrator WITHOUT any fallbacks..."
+
+cat > supabase/functions/opportunity-orchestrator/index.ts << 'EOF'
 // Opportunity Orchestrator - REAL opportunities from REAL signals ONLY
 // NO FALLBACKS, NO TEMPLATES, NO HARDCODED MICROSOFT/GOOGLE
 
@@ -390,3 +402,21 @@ serve(async (req) => {
     )
   }
 })
+EOF
+
+echo "✅ Created clean opportunity-orchestrator"
+echo ""
+echo "🚀 Deploying the fixed function..."
+supabase functions deploy opportunity-orchestrator --no-verify-jwt
+
+echo ""
+echo "✅ Opportunity Orchestrator fixed and deployed!"
+echo ""
+echo "Key changes:"
+echo "  - ✅ Removed ALL hardcoded Microsoft/Google fallbacks"
+echo "  - ✅ Removed ALL template opportunities"  
+echo "  - ✅ Only creates opportunities from REAL signals"
+echo "  - ✅ Returns empty array if no real signals (no fake data)"
+echo "  - ✅ Gets API key at runtime for all operations"
+echo ""
+echo "Testing the fixed function..."

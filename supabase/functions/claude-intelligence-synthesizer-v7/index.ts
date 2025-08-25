@@ -5,7 +5,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { corsHeaders } from "../_shared/cors.ts"
 
 async function analyzeWithClaude(intelligence: any, context: any) {
-  const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
+  // const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
   if (!ANTHROPIC_API_KEY) {
     throw new Error('ANTHROPIC_API_KEY not configured')
   }
