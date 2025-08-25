@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './RailwayV2Enhanced.css';
-import IntelligenceHubV6 from './IntelligenceHubV6';
+import IntelligenceHubV7 from './IntelligenceHubV7';
 import OpportunityModulePR from './Modules/OpportunityModulePR';
 import ExecutionModule from './Modules/ExecutionModule';
 import MemoryVaultModule from './Modules/MemoryVaultModule';
@@ -64,8 +64,8 @@ const RailwayV2Enhanced = () => {
     }
   };
 
-  // V6.0 DEPLOYMENT MARKER - PURE ANALYSIS UI
-  const deploymentVersion = "V6.0 - INTELLIGENCE ANALYSIS - 2025-08-25";
+  // V7.0 DEPLOYMENT MARKER - ELITE PR ANALYSIS
+  const deploymentVersion = "V7.0 - ELITE ANALYSIS - 2025-08-25";
   
   const modules = [
     { id: 'intelligence', name: 'Intelligence', Icon: IntelligenceIcon, color: '#00ffcc' },
@@ -78,7 +78,7 @@ const RailwayV2Enhanced = () => {
     switch(activeModule) {
       case 'intelligence':
         // Intelligence Hub for stakeholder monitoring
-        return <IntelligenceHubV6 
+        return <IntelligenceHubV7 
           organization={organizationData}
           onIntelligenceUpdate={setSharedIntelligence}
         />;
@@ -93,7 +93,7 @@ const RailwayV2Enhanced = () => {
       case 'memory':
         return <MemoryVaultModule organizationId={organizationData?.id} />;
       default:
-        return <IntelligenceHubV6 
+        return <IntelligenceHubV7 
           organization={organizationData}
           onIntelligenceUpdate={setSharedIntelligence}
         />;
