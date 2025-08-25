@@ -240,22 +240,36 @@ class IntelligentDiscoveryService {
       partners: [],
       regulators: [],
       analysts: [],
-      media: []
+      media: [],
+      activists: [] // Add activists
     };
 
-    // Industry-specific stakeholders
+    // Industry-specific stakeholders - ALWAYS populate these
     if (industry === 'automotive') {
       stakeholders.regulators = ['NHTSA', 'EPA', 'CARB', 'EU Commission', 'METI (Japan)'];
       stakeholders.analysts = ['Cox Automotive', 'JD Power', 'IHS Markit', 'Bloomberg Intelligence'];
       stakeholders.media = ['Automotive News', 'Car and Driver', 'Motor Trend', 'Electrek'];
+      stakeholders.activists = ['Sierra Club', 'Greenpeace', 'Transport & Environment'];
+      stakeholders.investors = ['BlackRock', 'Vanguard', 'State Street', 'Fidelity'];
     } else if (industry === 'finance' || industry === 'trading') {
       stakeholders.regulators = ['SEC', 'FINRA', 'Federal Reserve', 'FSA (Japan)', 'FCA (UK)'];
       stakeholders.analysts = ['Moody\'s', 'S&P Global', 'Fitch Ratings', 'Bloomberg'];
       stakeholders.media = ['Wall Street Journal', 'Financial Times', 'Bloomberg', 'Reuters'];
+      stakeholders.activists = ['Better Markets', 'Public Citizen', 'Americans for Financial Reform'];
+      stakeholders.investors = ['Berkshire Hathaway', 'JPMorgan Chase', 'Goldman Sachs'];
     } else if (industry === 'technology') {
       stakeholders.regulators = ['FTC', 'EU Commission', 'FCC', 'Data Protection Authorities'];
       stakeholders.analysts = ['Gartner', 'Forrester', 'IDC', 'CB Insights'];
       stakeholders.media = ['TechCrunch', 'The Verge', 'Wired', 'Ars Technica', 'The Information'];
+      stakeholders.activists = ['EFF', 'Privacy International', 'Center for AI Safety'];
+      stakeholders.investors = ['Sequoia', 'Andreessen Horowitz', 'Accel', 'SoftBank'];
+    } else {
+      // Default stakeholders for any industry
+      stakeholders.regulators = ['FTC', 'SEC', 'EPA', 'EU Commission'];
+      stakeholders.analysts = ['Gartner', 'McKinsey', 'BCG', 'Deloitte'];
+      stakeholders.media = ['Wall Street Journal', 'Bloomberg', 'Reuters', 'Financial Times', 'TechCrunch'];
+      stakeholders.activists = ['Consumer Reports', 'Public Interest Groups'];
+      stakeholders.investors = ['BlackRock', 'Vanguard', 'State Street'];
     }
 
     return stakeholders;
