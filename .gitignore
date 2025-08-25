@@ -5,3 +5,8 @@
 frontend/.env.local
 frontend/frontend/.env.local
 mcp-servers/.env
+
+# Build directories - NEVER commit these
+build/
+dist/
+out/
