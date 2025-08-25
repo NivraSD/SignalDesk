@@ -54,10 +54,27 @@ class CacheManager {
   
   // Clear only intelligence/synthesis data (keep organization)
   clearIntelligence() {
-    console.log('🗑️ Clearing intelligence cache...');
+    console.log('🗑️ Clearing ALL intelligence data...');
+    
+    // Clear primary intelligence keys
     localStorage.removeItem(this.CACHE_KEYS.INTELLIGENCE);
     localStorage.removeItem(this.CACHE_KEYS.LAST_SYNTHESIS);
     localStorage.removeItem(this.CACHE_KEYS.INTELLIGENCE_HUB);
+    
+    // Clear any other intelligence-related keys that might exist
+    const allKeys = Object.keys(localStorage);
+    allKeys.forEach(key => {
+      if ((key.includes('intelligence') || 
+           key.includes('synthesis') || 
+           key.includes('gathering') ||
+           key.includes('opportunity') ||
+           key.includes('cache')) && 
+          !key.includes('organization') && 
+          !key.includes('profile')) {
+        console.log(`  🗑️ Removing: ${key}`);
+        localStorage.removeItem(key);
+      }
+    });
   }
   
   // Clear stale data based on age

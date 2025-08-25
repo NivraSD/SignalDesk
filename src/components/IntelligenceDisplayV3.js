@@ -35,6 +35,13 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0, onIntelligenc
       hasOrgName: !!organization?.name
     });
     
+    // If refresh triggered, clear current intelligence first
+    if (refreshTrigger > 0) {
+      console.log('🔄 Refresh triggered - clearing current intelligence');
+      setIntelligence(null);
+      setError(null);
+    }
+    
     // Check for cached intelligence (skip if refresh triggered)
     if (refreshTrigger === 0) {
       const cachedData = cacheManager.getIntelligence();

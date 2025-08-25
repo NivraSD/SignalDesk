@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Cache Accumulation Test</title>
+    <style>
+        body { 
+            background: #0a0a0a; 
+            color: #00ff88; 
+            font-family: monospace; 
+            padding: 20px;
+        }
+        button {
+            background: #00ff88;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .section {
+            background: rgba(0,255,136,0.1);
+            border: 1px solid #00ff88;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        pre {
+            background: #000;
+            padding: 10px;
+            border-radius: 5px;
+            overflow: auto;
+            max-height: 300px;
+        }
+        .error { color: #ff0088; }
+        .success { color: #00ff88; }
+    </style>
+</head>
+<body>
+    <h1>Cache Accumulation Debug</h1>
+    
+    <div>
+        <button onclick="checkAllCaches()">Check All Caches</button>
+        <button onclick="clearIntelligenceOnly()">Clear Intelligence Only</button>
+        <button onclick="clearEverything()">Clear Everything</button>
+        <button onclick="simulateNewSearch()">Simulate New Search</button>
+    </div>
+
+    <div class="section">
+        <h2>Cache Contents</h2>
+        <div id="cache-contents"></div>
+    </div>
+
+    <div class="section">
+        <h2>Data Analysis</h2>
+        <div id="analysis"></div>
+    </div>
+
+    <script>
+        function checkAllCaches() {
+            const contents = document.getElementById('cache-contents');
+            const analysis = document.getElementById('analysis');
+            
+            let html = '<h3>All SignalDesk Keys:</h3>';
+            let analysisHtml = '';
+            
+            const keys = Object.keys(localStorage).filter(k => 
+                k.includes('signaldesk') || 
+                k.includes('intelligence') || 
+                k.includes('synthesis') ||
+                k.includes('onboarding') ||
+                k.includes('organization')
+            );
+            
+            keys.forEach(key => {
+                const value = localStorage.getItem(key);
+                let size = value ? value.length : 0;
+                html += `<div><strong>${key}</strong> (${size} bytes)</div>`;
+                
+                // Parse and analyze content
+                if (value) {
+                    try {
+                        const data = JSON.parse(value);
+                        
+                        // Check for accumulated data
+                        if (key.includes('synthesis') || key.includes('intelligence')) {
+                            if (data.opportunities && data.opportunities.length > 0) {
+                                analysisHtml += `<div>${key} has ${data.opportunities.length} opportunities</div>`;
+                                
+                                // Check for duplicates
+                                const titles = data.opportunities.map(o => o.title);
+                                const uniqueTitles = new Set(titles);
+                                if (titles.length !== uniqueTitles.size) {
+                                    analysisHtml += `<div class="error">⚠️ DUPLICATES FOUND in ${key}</div>`;
+                                }
+                            }
+                            
+                            if (data.entity_actions?.all) {
+                                analysisHtml += `<div>${key} has ${data.entity_actions.all.length} entity actions</div>`;
+                            }
+                            
+                            if (data.tabs?.competitive?.competitor_actions) {
+                                analysisHtml += `<div>${key} has ${data.tabs.competitive.competitor_actions.length} competitor actions</div>`;
+                            }
+                        }
+                        
+                        // Show sample data
+                        html += `<pre>${JSON.stringify(data, null, 2).substring(0, 500)}...</pre>`;
+                        
+                    } catch (e) {
+                        html += `<div class="error">Invalid JSON</div>`;
+                    }
+                }
+            });
+            
+            contents.innerHTML = html;
+            analysis.innerHTML = analysisHtml || '<div>No intelligence data found</div>';
+        }
+
+        function clearIntelligenceOnly() {
+            // Simulate what the "New Search" button does
+            localStorage.removeItem('signaldesk_intelligence_cache');
+            localStorage.removeItem('signaldesk_last_synthesis');
+            localStorage.removeItem('signaldesk_intelligence_hub');
+            
+            document.getElementById('analysis').innerHTML = '<div class="success">✅ Cleared intelligence caches</div>';
+            checkAllCaches();
+        }
+
+        function clearEverything() {
+            const keys = Object.keys(localStorage).filter(k => 
+                k.includes('signaldesk') || 
+                k.includes('intelligence') || 
+                k.includes('synthesis') ||
+                k.includes('onboarding') ||
+                k.includes('organization')
+            );
+            
+            keys.forEach(key => localStorage.removeItem(key));
+            
+            document.getElementById('analysis').innerHTML = `<div class="success">✅ Cleared ${keys.length} keys</div>`;
+            checkAllCaches();
+        }
+
+        function simulateNewSearch() {
+            // This simulates what happens when you click "New Search"
+            clearIntelligenceOnly();
+            
+            // Check what remains
+            setTimeout(() => {
+                const remaining = Object.keys(localStorage).filter(k => 
+                    k.includes('signaldesk') || 
+                    k.includes('intelligence')
+                );
+                
+                document.getElementById('analysis').innerHTML = `
+                    <div class="success">✅ Simulated new search</div>
+                    <div>Remaining keys: ${remaining.join(', ') || 'none'}</div>
+                `;
+            }, 100);
+        }
+
+        // Auto-check on load
+        checkAllCaches();
+    </script>
+</body>
+</html>

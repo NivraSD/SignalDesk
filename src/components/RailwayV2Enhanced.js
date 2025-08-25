@@ -51,10 +51,17 @@ const RailwayV2Enhanced = () => {
     console.log('🔄 Starting new search...');
     // Clear intelligence cache but keep organization
     cacheManager.startNewSearch();
-    // Trigger refresh
+    // Clear shared intelligence state
+    setSharedIntelligence(null);
+    // Force a hard refresh by incrementing key
     setRefreshKey(prev => prev + 1);
     // Reset to intelligence module
     setActiveModule('intelligence');
+    
+    // Also clear window-level caches if they exist
+    if (window.__SIGNALDESK_INTELLIGENCE__) {
+      window.__SIGNALDESK_INTELLIGENCE__ = null;
+    }
   };
 
   // V3 DEPLOYMENT MARKER - NO FALLBACKS
