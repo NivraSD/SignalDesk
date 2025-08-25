@@ -49,6 +49,19 @@ export const getUnifiedOrganization = () => {
 
 export const getUnifiedCompleteProfile = () => {
   // Get the COMPLETE profile including all stakeholders
+  // Check both possible keys (complete_profile is the new standard)
+  const completeProfile = localStorage.getItem('signaldesk_complete_profile');
+  if (completeProfile) {
+    try {
+      const profile = JSON.parse(completeProfile);
+      console.log('📂 Loaded complete profile from cache');
+      return profile;
+    } catch (e) {
+      console.warn('Error parsing complete profile:', e);
+    }
+  }
+  
+  // Fallback to unified profile
   const unifiedProfile = localStorage.getItem('signaldesk_unified_profile');
   if (unifiedProfile) {
     try {

@@ -231,9 +231,11 @@ const UnifiedOnboarding = ({ onComplete }) => {
           version: '2.0'
         };
         
-        // Save unified profile with all discovered data
+        // Save complete profile with all discovered data (use cache manager)
+        cacheManager.saveCompleteProfile(discoveredProfile);
+        // Also save as unified for backward compatibility
         localStorage.setItem('signaldesk_unified_profile', JSON.stringify(discoveredProfile));
-        console.log('✅ Saved unified profile with stakeholders:', {
+        console.log('✅ Saved complete profile with stakeholders:', {
           competitors: discoveredProfile.competitors?.length || 0,
           regulators: discoveredProfile.regulators?.length || 0,
           media: discoveredProfile.media_outlets?.length || 0,
@@ -303,7 +305,9 @@ const UnifiedOnboarding = ({ onComplete }) => {
     // Clear all cached intelligence data before saving new profile
     clearAllIntelligenceCache();
     
-    // Save to localStorage
+    // Save complete profile using cache manager
+    cacheManager.saveCompleteProfile(unifiedProfile);
+    // Also save as unified for backward compatibility
     localStorage.setItem('signaldesk_unified_profile', JSON.stringify(unifiedProfile));
     
     // Also save specific parts for backward compatibility
