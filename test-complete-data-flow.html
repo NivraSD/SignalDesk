@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Data Flow Test</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #00ff88;
+            padding: 20px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        h1, h2 { 
+            color: #00ffcc; 
+            text-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
+        }
+        .section {
+            background: rgba(0, 255, 136, 0.05);
+            border: 1px solid #00ff88;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .success { color: #00ff88; }
+        .error { color: #ff0088; }
+        .warning { color: #ffcc00; }
+        .result {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #00ff88;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        button {
+            background: linear-gradient(135deg, #00ff88, #00ffcc);
+            color: #0a0a0a;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .tab-item {
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #00ff88;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .opportunity-card {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔄 Complete Data Flow Verification</h1>
+    
+    <div class="section">
+        <h2>Test Configuration</h2>
+        <div>
+            <label>Company: </label>
+            <input type="text" id="company" value="Microsoft" style="background: #000; color: #00ff88; border: 1px solid #00ff88; padding: 5px;">
+            <label> Competitors: </label>
+            <input type="text" id="competitors" value="Google, Amazon, Apple" style="background: #000; color: #00ff88; border: 1px solid #00ff88; padding: 5px; width: 300px;">
+            <button onclick="testCompleteFlow()">Test Complete Flow</button>
+            <button onclick="checkCachedData()">Check Cached Data</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>📊 Flow Status</h2>
+        <div id="flow-status"></div>
+    </div>
+
+    <div class="section">
+        <h2>📑 Tab Population Status</h2>
+        <div id="tab-status"></div>
+    </div>
+
+    <div class="section">
+        <h2>🎯 Opportunities Generated</h2>
+        <div id="opportunities"></div>
+    </div>
+
+    <div class="section">
+        <h2>🔍 Raw Data Analysis</h2>
+        <div id="raw-data"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+
+        async function testCompleteFlow() {
+            const company = document.getElementById('company').value;
+            const competitors = document.getElementById('competitors').value.split(',').map(c => c.trim());
+            
+            const flowStatus = document.getElementById('flow-status');
+            const tabStatus = document.getElementById('tab-status');
+            const opportunitiesDiv = document.getElementById('opportunities');
+            const rawData = document.getElementById('raw-data');
+            
+            flowStatus.innerHTML = '<div class="result">Starting complete flow test...</div>';
+            
+            try {
+                // 1. DISCOVERY
+                flowStatus.innerHTML += '<div class="result">📡 Phase 1: Discovery...</div>';
+                const discoveryResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligent-discovery-v2`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: { name: company, industry: 'technology' },
+                        competitors: competitors
+                    })
+                });
+                
+                const discoveryData = await discoveryResponse.json();
+                flowStatus.innerHTML += `<div class="result success">✅ Discovery: Found ${discoveryData.competitors?.length || 0} competitors, ${discoveryData.regulators?.length || 0} regulators, ${discoveryData.media_outlets?.length || 0} media outlets</div>`;
+                
+                // 2. GATHERING
+                flowStatus.innerHTML += '<div class="result">📡 Phase 2: Gathering intelligence...</div>';
+                const gatheringResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-gathering-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        entities: {
+                            competitors: discoveryData.competitors || competitors,
+                            regulators: discoveryData.regulators || [],
+                            media: discoveryData.media_outlets || [],
+                            activists: discoveryData.activists || [],
+                            investors: discoveryData.investors || [],
+                            analysts: discoveryData.analysts || []
+                        },
+                        organization: { name: company, industry: 'technology' }
+                    })
+                });
+                
+                const gatheringData = await gatheringResponse.json();
+                flowStatus.innerHTML += `<div class="result success">✅ Gathering: ${gatheringData.entity_actions?.all?.length || 0} actions, ${gatheringData.topic_trends?.all?.length || 0} trends</div>`;
+                
+                // 3. SYNTHESIS
+                flowStatus.innerHTML += '<div class="result">🧠 Phase 3: Synthesis with Claude...</div>';
+                const synthesisResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-synthesis-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        intelligence: {
+                            entity_actions: gatheringData.entity_actions || { all: [] },
+                            topic_trends: gatheringData.topic_trends || { all: [] }
+                        },
+                        organization: { name: company, industry: 'technology' }
+                    })
+                });
+                
+                const synthesisData = await synthesisResponse.json();
+                console.log('Full synthesis response:', synthesisData);
+                
+                flowStatus.innerHTML += `<div class="result success">✅ Synthesis: ${synthesisData.success ? 'Complete' : 'Failed'}</div>`;
+                
+                // CHECK TAB POPULATION
+                if (synthesisData.tabs) {
+                    let tabHtml = '<h3>Tab Data Available:</h3>';
+                    const tabChecks = [
+                        { name: 'Executive', key: 'executive', required: ['headline', 'overview'] },
+                        { name: 'Competitive', key: 'competitive', required: ['competitor_actions'] },
+                        { name: 'Market', key: 'market', required: ['market_trends'] },
+                        { name: 'Positioning', key: 'positioning', required: ['your_position', 'competitor_moves'] },
+                        { name: 'Between Lines', key: 'between', required: ['hidden_patterns'] },
+                        { name: 'Regulatory', key: 'regulatory', required: ['regulatory_developments'] },
+                        { name: 'Media', key: 'media', required: ['media_coverage'] },
+                        { name: 'Thought', key: 'thought', required: ['topics'] }
+                    ];
+                    
+                    tabChecks.forEach(tab => {
+                        const tabData = synthesisData.tabs[tab.key];
+                        if (tabData) {
+                            const hasRequired = tab.required.every(field => tabData[field]);
+                            tabHtml += `<div class="tab-item ${hasRequired ? 'success' : 'warning'}">`;
+                            tabHtml += `<strong>${tab.name}:</strong> ${hasRequired ? '✅ Populated' : '⚠️ Partial'}<br>`;
+                            tabHtml += `Fields: ${Object.keys(tabData).slice(0, 5).join(', ')}`;
+                            if (tab.key === 'competitive' && tabData.competitor_actions) {
+                                tabHtml += `<br>Actions: ${tabData.competitor_actions.length}`;
+                            }
+                            if (tab.key === 'market' && tabData.market_trends) {
+                                tabHtml += `<br>Trends: ${tabData.market_trends.length}`;
+                            }
+                            tabHtml += '</div>';
+                        } else {
+                            tabHtml += `<div class="tab-item error"><strong>${tab.name}:</strong> ❌ Missing</div>`;
+                        }
+                    });
+                    
+                    tabStatus.innerHTML = tabHtml;
+                } else {
+                    tabStatus.innerHTML = '<div class="result error">❌ No tabs in synthesis response!</div>';
+                }
+                
+                // CHECK OPPORTUNITIES
+                if (synthesisData.opportunities && synthesisData.opportunities.length > 0) {
+                    let oppHtml = `<h3 class="success">✅ ${synthesisData.opportunities.length} Opportunities Generated</h3>`;
+                    synthesisData.opportunities.forEach(opp => {
+                        oppHtml += `
+                            <div class="opportunity-card">
+                                <strong>${opp.title}</strong><br>
+                                Type: ${opp.type} | Score: ${opp.score} | Urgency: ${opp.urgency}<br>
+                                ${opp.description}<br>
+                                <em>Action: ${opp.suggestedAction}</em>
+                            </div>
+                        `;
+                    });
+                    opportunitiesDiv.innerHTML = oppHtml;
+                    
+                    // Save to localStorage for Opportunity Engine
+                    localStorage.setItem('signaldesk_last_synthesis', JSON.stringify(synthesisData));
+                    opportunitiesDiv.innerHTML += '<div class="result success">💾 Saved opportunities to cache for Opportunity Engine</div>';
+                } else {
+                    opportunitiesDiv.innerHTML = '<div class="result warning">⚠️ No opportunities generated</div>';
+                }
+                
+                // RAW DATA ANALYSIS
+                let rawHtml = '<h3>Raw Intelligence Analysis:</h3>';
+                rawHtml += `<div class="result">`;
+                rawHtml += `Entity Actions: ${gatheringData.entity_actions?.all?.length || 0}\n`;
+                rawHtml += `- Competitors: ${gatheringData.entity_actions?.all?.filter(a => a.type === 'competitor').length || 0}\n`;
+                rawHtml += `- Media: ${gatheringData.entity_actions?.all?.filter(a => a.type === 'media').length || 0}\n`;
+                rawHtml += `- Regulators: ${gatheringData.entity_actions?.all?.filter(a => a.type === 'regulator').length || 0}\n`;
+                rawHtml += `\nTopic Trends: ${gatheringData.topic_trends?.all?.length || 0}\n`;
+                rawHtml += `- Increasing: ${gatheringData.topic_trends?.all?.filter(t => t.trend === 'increasing').length || 0}\n`;
+                rawHtml += `- Decreasing: ${gatheringData.topic_trends?.all?.filter(t => t.trend === 'decreasing').length || 0}\n`;
+                rawHtml += `\nQuality Metrics:\n`;
+                rawHtml += `- High relevance (>0.7): ${gatheringData.entity_actions?.all?.filter(a => a.relevance > 0.7).length || 0}\n`;
+                rawHtml += `- Real URLs: ${gatheringData.entity_actions?.all?.filter(a => a.url && a.url !== '#').length || 0}\n`;
+                rawHtml += `</div>`;
+                rawData.innerHTML = rawHtml;
+                
+            } catch (error) {
+                flowStatus.innerHTML += `<div class="result error">❌ Error: ${error.message}</div>`;
+                console.error('Flow test error:', error);
+            }
+        }
+
+        function checkCachedData() {
+            const rawData = document.getElementById('raw-data');
+            let html = '<h3>Cached Data Check:</h3>';
+            
+            // Check synthesis cache
+            const synthesis = localStorage.getItem('signaldesk_last_synthesis');
+            if (synthesis) {
+                try {
+                    const data = JSON.parse(synthesis);
+                    html += `<div class="result success">✅ Synthesis cache found with ${data.opportunities?.length || 0} opportunities</div>`;
+                } catch (e) {
+                    html += '<div class="result error">❌ Synthesis cache corrupted</div>';
+                }
+            } else {
+                html += '<div class="result warning">⚠️ No synthesis cache</div>';
+            }
+            
+            // Check intelligence cache
+            const intelligence = localStorage.getItem('signaldesk_intelligence_cache');
+            if (intelligence) {
+                try {
+                    const data = JSON.parse(intelligence);
+                    html += `<div class="result success">✅ Intelligence cache found from ${data.timestamp}</div>`;
+                } catch (e) {
+                    html += '<div class="result error">❌ Intelligence cache corrupted</div>';
+                }
+            } else {
+                html += '<div class="result warning">⚠️ No intelligence cache</div>';
+            }
+            
+            rawData.innerHTML = html;
+        }
+
+        // Auto-run on load
+        window.addEventListener('load', () => {
+            checkCachedData();
+        });
+    </script>
+</body>
+</html>

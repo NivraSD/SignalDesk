@@ -15,16 +15,19 @@ serve(async (req) => {
       competitors: stakeholders?.competitors?.length || 0,
       regulators: stakeholders?.regulators?.length || 0,
       activists: stakeholders?.activists?.length || 0,
-      media: stakeholders?.media?.length || 0,
+      media: stakeholders?.media?.length || stakeholders?.media_outlets?.length || 0,
+      investors: stakeholders?.investors?.length || 0,
+      analysts: stakeholders?.analysts?.length || 0,
       topics: monitoring_topics?.length || 0
     })
     
     // Return the stakeholders in the format gathering expects
+    // Handle both 'media' and 'media_outlets' field names
     const entities = {
       competitors: stakeholders?.competitors || [],
       regulators: stakeholders?.regulators || [],
       activists: stakeholders?.activists || [],
-      media: stakeholders?.media || [],
+      media: stakeholders?.media || stakeholders?.media_outlets || [],
       investors: stakeholders?.investors || [],
       analysts: stakeholders?.analysts || []
     }

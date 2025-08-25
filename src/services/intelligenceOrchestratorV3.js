@@ -46,7 +46,7 @@ class IntelligenceOrchestratorV3 {
           competitors: config.competitors || [],
           regulators: config.regulators || [],
           activists: config.activists || [],
-          media: config.media_outlets || [],
+          media_outlets: config.media_outlets || [], // Keep consistent field name
           investors: config.investors || [],
           analysts: config.analysts || []
         },
@@ -66,7 +66,7 @@ class IntelligenceOrchestratorV3 {
             competitors: config.competitors || [],
             regulators: config.regulators || [],
             activists: config.activists || [],
-            media: config.media_outlets || [],
+            media_outlets: config.media_outlets || [], // Keep consistent field name
             investors: config.investors || [],
             analysts: config.analysts || []
           },
