@@ -105,26 +105,44 @@ const OpportunityEngine = ({ onAIMessage, isDragging = false }) => {
   const loadOpportunities = async () => {
     setLoading(true);
     try {
-      // No backend API - use mock data
-      const token = localStorage.getItem('token');
-      const response = { ok: false };
+      // First try to load from cached intelligence data
+      const cachedIntelligence = localStorage.getItem('signaldesk_intelligence_cache');
       
-      /* Original Railway API call disabled:
-      const response = await fetch('/api/opportunities/discover', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      if (cachedIntelligence) {
+        try {
+          const intelligence = JSON.parse(cachedIntelligence);
+          
+          // Check if intelligence has opportunities
+          if (intelligence.data?.opportunities && intelligence.data.opportunities.length > 0) {
+            console.log('📊 Loading opportunities from intelligence cache:', intelligence.data.opportunities.length);
+            setOpportunities(intelligence.data.opportunities);
+            setLoading(false);
+            return;
+          }
+        } catch (e) {
+          console.log('Failed to parse cached intelligence:', e);
         }
-      });
-      */
-      
-      if (response.ok) {
-        const data = await response.json();
-        setOpportunities(data.opportunities || []);
-      } else {
-        // Fall back to mock data if backend fails
-        setOpportunities(mockOpportunities);
       }
+      
+      // Try to load from synthesis response
+      const lastSynthesis = localStorage.getItem('signaldesk_last_synthesis');
+      if (lastSynthesis) {
+        try {
+          const synthesis = JSON.parse(lastSynthesis);
+          if (synthesis.opportunities && synthesis.opportunities.length > 0) {
+            console.log('🎯 Loading opportunities from synthesis:', synthesis.opportunities.length);
+            setOpportunities(synthesis.opportunities);
+            setLoading(false);
+            return;
+          }
+        } catch (e) {
+          console.log('Failed to parse synthesis:', e);
+        }
+      }
+      
+      // Fall back to mock data if no real opportunities
+      console.log('⚠️ No real opportunities found, using mock data');
+      setOpportunities(mockOpportunities);
       setLoading(false);
     } catch (error) {
       console.error('Error loading opportunities:', error);

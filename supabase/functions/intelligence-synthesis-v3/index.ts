@@ -75,6 +75,40 @@ async function synthesizeWithClaude(intelligence: any, organization: any) {
         .slice(0, 3)
         .map(a => `Respond to ${a.entity}'s ${a.action}`)
     },
+    // Competitive tab with raw intelligence data
+    competitive: {
+      competitor_actions: competitorActions,
+      market_movements: entityActions.filter(a => a.type === 'competitor'),
+      competitive_gaps: competitorActions.map(a => ({
+        entity: a.entity,
+        gap: `Opportunity to counter ${a.entity}'s ${a.action}`,
+        action: 'Develop differentiated response'
+      })),
+      response_priorities: competitorActions
+        .filter(a => a.response_needed)
+        .map(a => ({
+          competitor: a.entity,
+          priority: 'HIGH',
+          response: `Counter ${a.action}`,
+          timeline: '48 hours'
+        }))
+    },
+    // Market tab with trends
+    market: {
+      market_trends: topicTrends.map(t => ({
+        topic: t.topic,
+        trend: t.trend,
+        mentions: t.mentions || 0,
+        sentiment: t.sentiment || 'neutral',
+        sources: t.sources || [],
+        key_developments: [`${t.topic} showing ${t.trend} activity`]
+      })),
+      emerging_signals: topicTrends.filter(t => t.trend === 'increasing'),
+      market_dynamics: 'Analysis of market trends and competitive movements',
+      opportunities: topicTrends
+        .filter(t => t.trend === 'increasing')
+        .map(t => `Capitalize on ${t.topic} trend`)
+    },
     // Competitive positioning tab expects different structure
     positioning: {
       your_position: `${organization.name || 'Your organization'} maintains strong market position despite competitive pressures`,
@@ -343,16 +377,77 @@ serve(async (req) => {
         timestamp: action.timestamp || new Date().toISOString()
       }))
     
+    // Generate opportunities for the Opportunity Engine
+    const opportunities = []
+    
+    // Opportunities from competitor actions
+    entityActions
+      .filter(a => a.type === 'competitor' && a.relevance > 0.5)
+      .slice(0, 5)
+      .forEach(action => {
+        opportunities.push({
+          id: `comp-${Date.now()}-${Math.random()}`,
+          type: 'competitor_gap',
+          title: `Respond to ${action.entity}'s ${action.action}`,
+          description: action.description || 'Strategic response opportunity',
+          score: Math.round((action.relevance || 0.5) * 100),
+          urgency: action.impact === 'high' ? 'high' : 'medium',
+          relevantJournalists: [],
+          suggestedAction: `Develop counter-positioning against ${action.entity}`,
+          deadline: '1 week',
+          keywords: [action.entity, 'competitive', 'response'],
+          source: action.source,
+          url: action.url
+        })
+      })
+    
+    // Opportunities from trending topics
+    topicTrends
+      .filter(t => t.trend === 'increasing' && t.mentions > 10)
+      .slice(0, 3)
+      .forEach(trend => {
+        opportunities.push({
+          id: `trend-${Date.now()}-${Math.random()}`,
+          type: 'trending',
+          title: `${trend.topic} Trending - Thought Leadership Opportunity`,
+          description: `${trend.topic} is gaining traction with ${trend.mentions} mentions`,
+          score: Math.min(95, 50 + trend.mentions),
+          urgency: 'high',
+          relevantJournalists: ['Industry media covering this trend'],
+          suggestedAction: `Publish thought leadership content on ${trend.topic}`,
+          deadline: '3 days',
+          keywords: [trend.topic, 'trending', 'thought leadership']
+        })
+      })
+    
+    // Media opportunities
+    if (entityActions.some(a => a.type === 'media')) {
+      opportunities.push({
+        id: `media-${Date.now()}`,
+        type: 'journalist_interest',
+        title: 'Media Interest in Industry Topics',
+        description: 'Journalists actively covering your industry',
+        score: 78,
+        urgency: 'medium',
+        relevantJournalists: entityActions.filter(a => a.type === 'media').map(a => a.entity),
+        suggestedAction: 'Proactive media outreach with expert commentary',
+        deadline: '5 days',
+        keywords: ['media', 'coverage', 'PR']
+      })
+    }
+    
     return new Response(
       JSON.stringify({
         success: true,
         tabs,
         alerts,
+        opportunities, // Add opportunities at root level for Opportunity Engine
         statistics: {
           entities_tracked: new Set(entityActions.map(a => a.entity)).size,
           actions_captured: entityActions.length,
           topics_monitored: topicTrends.length,
-          critical_items: alerts.filter(a => a.type === 'critical').length
+          critical_items: alerts.filter(a => a.type === 'critical').length,
+          opportunities_identified: opportunities.length
         },
         timestamp: new Date().toISOString()
       }),

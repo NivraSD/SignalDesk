@@ -220,8 +220,15 @@ class IntelligenceOrchestratorV3 {
       console.log('✅ Synthesis complete:', {
         has_immediate_actions: synthesisData.tabs?.executive?.immediate_actions?.length > 0,
         alert_count: synthesisData.alerts?.length || 0,
+        opportunities_count: synthesisData.opportunities?.length || 0,
         tabs: Object.keys(synthesisData.tabs || {})
       });
+
+      // Save synthesis data for Opportunity Engine
+      if (synthesisData.opportunities && synthesisData.opportunities.length > 0) {
+        console.log('💾 Saving synthesis with opportunities for Opportunity Engine');
+        localStorage.setItem('signaldesk_last_synthesis', JSON.stringify(synthesisData));
+      }
 
       // Return the complete, formatted intelligence
       return {

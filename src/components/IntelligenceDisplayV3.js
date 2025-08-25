@@ -185,6 +185,16 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0, onIntelligenc
       if (result.success) {
         setIntelligence(result);
         
+        // Save opportunities to cache for Opportunity Engine
+        if (result.opportunities && result.opportunities.length > 0) {
+          console.log('💾 Caching opportunities for Opportunity Engine:', result.opportunities.length);
+          const cacheData = {
+            data: result,
+            timestamp: new Date().toISOString()
+          };
+          localStorage.setItem('signaldesk_intelligence_cache', JSON.stringify(cacheData));
+        }
+        
         // Smart cache - only saves real data, not templates
         cacheManager.saveIntelligence(result, profileToUse?.organization);
         

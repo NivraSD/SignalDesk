@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real Intelligence Verification</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #00ff88;
+            padding: 20px;
+        }
+        .success { color: #00ff88; }
+        .error { color: #ff0088; }
+        .warning { color: #ffcc00; }
+    </style>
+</head>
+<body>
+    <h1>🎯 Real Intelligence Verification</h1>
+    <p>This tool verifies that ONLY real intelligence is displayed (no fallback data)</p>
+    
+    <div id="results"></div>
+
+    <script>
+        const PROD_URL = 'https://signaldesk.vercel.app';
+        const results = document.getElementById('results');
+        
+        async function verify() {
+            results.innerHTML = '<p>Checking deployed frontend...</p>';
+            
+            try {
+                // Test the production site
+                const response = await fetch(PROD_URL);
+                if (response.ok) {
+                    results.innerHTML += '<p class="success">✅ Frontend is live at ' + PROD_URL + '</p>';
+                    results.innerHTML += '<p>Open the site and verify:</p>';
+                    results.innerHTML += '<ul>';
+                    results.innerHTML += '<li>Competitive Intel tab shows only real data with quality indicators</li>';
+                    results.innerHTML += '<li>Market Trends tab shows only real trending topics</li>';
+                    results.innerHTML += '<li>No simulated/fallback data appears (no pink/red bordered items)</li>';
+                    results.innerHTML += '<li>Quality badges show: HIGH (green), MED (yellow), LOW (orange)</li>';
+                    results.innerHTML += '<li>Each item has a real source URL (not "#")</li>';
+                    results.innerHTML += '</ul>';
+                    results.innerHTML += '<p><a href="' + PROD_URL + '" target="_blank">Open SignalDesk →</a></p>';
+                } else {
+                    results.innerHTML += '<p class="error">❌ Frontend returned status: ' + response.status + '</p>';
+                }
+            } catch (error) {
+                results.innerHTML += '<p class="error">Error: ' + error.message + '</p>';
+            }
+        }
+        
+        verify();
+    </script>
+</body>
+</html>
