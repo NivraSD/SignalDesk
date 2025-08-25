@@ -82,7 +82,17 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0, onIntelligenc
     setLoadingProgress(0);
     setPhaseProgress({ gathering: 0, analysis: 0, synthesis: 0, preparing: 0 });
     
-    console.log('🚀 Starting V3 orchestration with complete profile:', profileToUse);
+    console.log('🚀 Starting V3 orchestration with complete profile:', {
+      organizationName: profileToUse?.organization?.name,
+      competitors: profileToUse?.competitors,
+      regulators: profileToUse?.regulators,
+      media_outlets: profileToUse?.media_outlets,
+      activists: profileToUse?.activists,
+      investors: profileToUse?.investors,
+      analysts: profileToUse?.analysts,
+      monitoring_topics: profileToUse?.monitoring_topics,
+      fullProfile: profileToUse
+    });
     
     // Start all progress bars animation with overlapping phases
     let elapsed = 0;

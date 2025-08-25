@@ -53,6 +53,16 @@ export const getUnifiedCompleteProfile = () => {
   if (unifiedProfile) {
     try {
       const profile = JSON.parse(unifiedProfile);
+      console.log('📂 Loaded profile from localStorage:', {
+        hasOrganization: !!profile.organization,
+        competitors: profile.competitors,
+        regulators: profile.regulators,
+        media_outlets: profile.media_outlets,
+        activists: profile.activists,
+        investors: profile.investors,
+        analysts: profile.analysts
+      });
+      
       return {
         organization: profile.organization,
         competitors: profile.competitors || [],

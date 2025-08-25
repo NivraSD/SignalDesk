@@ -30,20 +30,27 @@ class IntelligenceOrchestratorV3 {
     try {
       // PHASE 1: DISCOVERY (Who and what to monitor)
       console.log('🔍 Phase 1: Discovery - Identifying entities to monitor');
-      console.log('📡 Discovery Request:', {
+      console.log('📡 Discovery - What we received:', {
+        competitors: config.competitors,
+        regulators: config.regulators,
+        activists: config.activists,
+        media_outlets: config.media_outlets,
+        investors: config.investors,
+        analysts: config.analysts,
+        monitoring_topics: config.monitoring_topics
+      });
+      console.log('📡 Discovery Request being sent:', {
         url: `${this.supabaseUrl}/functions/v1/intelligence-discovery-v3`,
         organization: organization,
         stakeholders: {
-          competitors: config.competitors?.length || 0,
-          regulators: config.regulators?.length || 0,
-          activists: config.activists?.length || 0,
-          media: config.media_outlets?.length || 0,
-          investors: config.investors?.length || 0
+          competitors: config.competitors || [],
+          regulators: config.regulators || [],
+          activists: config.activists || [],
+          media: config.media_outlets || [],
+          investors: config.investors || [],
+          analysts: config.analysts || []
         },
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.supabaseKey.substring(0, 20)}...`
-        }
+        monitoring_topics: config.monitoring_topics || []
       });
       
       const discoveryResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-discovery-v3`, {
