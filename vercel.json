@@ -6,12 +6,6 @@
   "rewrites": [
     {"source": "/(.*)", "destination": "/index.html"}
   ],
-  "build": {
-    "env": {
-      "CI": "false",
-      "SKIP_PREFLIGHT_CHECK": "true"
-    }
-  },
   "headers": [
     {
       "source": "/(.*)",
