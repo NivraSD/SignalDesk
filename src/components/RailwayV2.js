@@ -1,43 +1,218 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './RailwayV2.css';
-import IntelligenceDisplayV3 from './IntelligenceDisplayV3';
-import OpportunityModule from './Modules/OpportunityModule';
+import IntelligenceHubV8 from './IntelligenceHubV8';
+import MultiStageIntelligence from './MultiStageIntelligence';
+import OpportunityModulePR from './Modules/OpportunityModulePR';
 import ExecutionModule from './Modules/ExecutionModule';
 import MemoryVaultModule from './Modules/MemoryVaultModule';
 import NivStrategicAdvisor from './Niv/NivStrategicAdvisor';
+import OrganizationSettings from './OrganizationSettings';
+import IntelligenceSettings from './IntelligenceSettings';
+import DiagnosticPanel from './DiagnosticPanel';
+import { IntelligenceIcon, OpportunityIcon, ExecutionIcon, MemoryIcon, RefreshIcon, SettingsIcon } from './Icons/NeonIcons';
+import { getUnifiedOrganization } from '../utils/unifiedDataLoader';
+import cacheManager from '../utils/cacheManager';
 
 const RailwayV2 = () => {
+  const navigate = useNavigate();
   const [activeModule, setActiveModule] = useState('intelligence');
-  const [organizationData, setOrganizationData] = useState(null);
-  const [showNiv, setShowNiv] = useState(true);
+  // Initialize with data from localStorage immediately
+  const [organizationData, setOrganizationData] = useState(() => {
+    const saved = localStorage.getItem('organization');
+    if (saved) {
+      try {
+        const org = JSON.parse(saved);
+        return org;
+      } catch (e) {
+        console.error('Failed to parse initial organization:', e);
+      }
+    }
+    return null;
+  });
+  const [nivMinimized, setNivMinimized] = useState(false);
+  const [showOrgSettings, setShowOrgSettings] = useState(false);
+  const [showIntelSettings, setShowIntelSettings] = useState(false);
+  const [timeframe, setTimeframe] = useState('24h');
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [sharedIntelligence, setSharedIntelligence] = useState(null);
 
   useEffect(() => {
-    // Get organization data
-    const savedOrg = localStorage.getItem('signaldesk_organization');
-    if (savedOrg) {
-      setOrganizationData(JSON.parse(savedOrg));
+    // Skip if we already have organization data from initial state
+    if (organizationData && organizationData.name) {
+      return;
     }
-  }, []);
+    
+    
+    // Load organization data from localStorage
+    const loadOrganization = () => {
+      let orgData = null;
+      
+      // SOURCE 1: Direct localStorage check
+      const savedOrg = localStorage.getItem('organization');
+      if (savedOrg) {
+        try {
+          const discoveredOrg = JSON.parse(savedOrg);
+        
+        // Validate the data has the minimum required fields
+        if (discoveredOrg.name && (discoveredOrg.competitors || discoveredOrg.stakeholders)) {
+          orgData = discoveredOrg;
+        } else {
+        }
+      } catch (e) {
+      }
+    } else {
+    }
+    
+    // SOURCE 2: Check other localStorage keys
+    if (!orgData) {
+      const orgName = localStorage.getItem('organizationName');
+      if (orgName) {
+        // Try to reconstruct basic data
+        orgData = {
+          id: orgName.toLowerCase().replace(/\s+/g, '-'),
+          name: orgName,
+          industry: 'Unknown',
+          competitors: [],
+          stakeholders: { media: [], regulators: [], analysts: [] }
+        };
+      }
+    }
+    
+    // SOURCE 3: Unified data loader (last resort)
+    if (!orgData) {
+      const unifiedData = getUnifiedOrganization();
+      if (unifiedData && unifiedData.name) {
+        orgData = unifiedData;
+      }
+    }
+    
+      // DECISION POINT
+      if (orgData && orgData.name) {
+        // Ensure required fields exist
+        if (!orgData.id) {
+          orgData.id = orgData.name.toLowerCase().replace(/\s+/g, '-');
+        }
+        
+        
+        return orgData;
+      }
+      
+      return null;
+    };
+    
+    const orgData = loadOrganization();
+    
+    if (orgData) {
+      setOrganizationData(orgData);
+    } else {
+      navigate('/onboarding');
+    }
+  }, [navigate, refreshKey]);
+  
+  
+  // DISABLED: Focus handler was causing infinite loops
+  // useEffect(() => {
+  //   const handleFocus = () => {
+  //     const savedOrg = localStorage.getItem('organization');
+  //     if (savedOrg && !organizationData) {
+  //       console.log('🔄 Window focused, loading new organization data...');
+  //       setRefreshKey(prev => prev + 1);
+  //     }
+  //   };
+  //   
+  //   window.addEventListener('focus', handleFocus);
+  //   return () => window.removeEventListener('focus', handleFocus);
+  // }, [organizationData]);
+  
+  const handleNewSearch = () => {
+    
+    // Nuclear option - clear EVERYTHING
+    const keysToRemove = [
+      'organization',
+      'organizationName', 
+      'intelligenceCache',
+      'opportunityCache',
+      'analysisCache',
+      'stageResults',
+      'currentIntelligence',
+      'cachedResults',
+      'intelligence_data',
+      'opportunity_data',
+      'stakeholders',
+      'competitors',
+      'media_data',
+      'regulatory_data',
+      'synthesis_data',
+      'hasCompletedOnboarding'
+    ];
+    
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(key);
+    });
+    
+    // Clear sessionStorage
+    sessionStorage.clear();
+    
+    // Clear window-level caches
+    if (typeof window !== 'undefined') {
+      window.__SIGNALDESK_INTELLIGENCE__ = null;
+      window.__SIGNALDESK_CACHE__ = null;
+      window.__ORGANIZATION_DATA__ = null;
+    }
+    
+    // Clear cache manager
+    cacheManager.clearAll();
+    
+    
+    // Redirect to fresh onboarding
+    navigate('/onboarding');
+  };
 
+  
   const modules = [
-    { id: 'intelligence', name: 'Intelligence', icon: '🎯', color: '#00ffcc' },
-    { id: 'opportunities', name: 'Opportunities', icon: '💎', color: '#ff00ff' },
-    { id: 'execution', name: 'Execution', icon: '🚀', color: '#00ff88' },
-    { id: 'memory', name: 'Memory', icon: '🧠', color: '#8800ff' }
+    { id: 'intelligence', name: 'Intelligence', Icon: IntelligenceIcon, color: '#00ffcc' },
+    { id: 'opportunities', name: 'Opportunities', Icon: OpportunityIcon, color: '#ff00ff' },
+    { id: 'execution', name: 'Execution', Icon: ExecutionIcon, color: '#00ff88' },
+    { id: 'memory', name: 'Memory', Icon: MemoryIcon, color: '#8800ff' }
   ];
 
   const renderModule = () => {
     switch(activeModule) {
       case 'intelligence':
-        return <IntelligenceDisplayV3 organization={organizationData} />;
+        // Multi-Stage Intelligence Pipeline - Deep Analysis
+        
+        // Don't render MultiStageIntelligence until we have organization data
+        if (!organizationData || !organizationData.name) {
+          return (
+            <div style={{ padding: '40px', textAlign: 'center', color: '#00ffcc' }}>
+              <div style={{ fontSize: '18px', marginBottom: '10px' }}>🔄 Loading Organization Data...</div>
+              <div style={{ fontSize: '14px', opacity: 0.7 }}>
+                Waiting for organization data to initialize intelligence pipeline
+              </div>
+            </div>
+          );
+        }
+        
+        return <MultiStageIntelligence 
+          organization={organizationData}
+          onComplete={setSharedIntelligence}
+        />;
       case 'opportunities':
-        return <OpportunityModule organizationId={organizationData?.id} />;
+        return <OpportunityModulePR 
+          organizationId={organizationData?.id}
+          sharedIntelligence={sharedIntelligence}
+          onIntelligenceUpdate={setSharedIntelligence}
+        />;
       case 'execution':
         return <ExecutionModule organizationId={organizationData?.id} />;
       case 'memory':
         return <MemoryVaultModule organizationId={organizationData?.id} />;
       default:
-        return <IntelligenceDisplayV3 organization={organizationData} />;
+        return <IntelligenceHubV8 
+          organization={organizationData}
+          onIntelligenceUpdate={setSharedIntelligence}
+        />;
     }
   };
 
@@ -46,7 +221,8 @@ const RailwayV2 = () => {
       {/* Animated Background */}
       <div className="railway-bg-animation"></div>
       
-      {/* Main Header */}
+      
+      {/* Fixed Header */}
       <header className="railway-header">
         <div className="railway-logo">
           <span className="logo-text">SIGNALDESK</span>
@@ -58,9 +234,16 @@ const RailwayV2 = () => {
               key={module.id}
               className={`nav-button ${activeModule === module.id ? 'active' : ''}`}
               onClick={() => setActiveModule(module.id)}
-              style={{ '--neon-color': module.color }}
+              style={{ 
+                '--neon-color': module.color,
+                '--neon-rgb': module.id === 'intelligence' ? '0, 255, 204' :
+                             module.id === 'opportunities' ? '255, 0, 255' :
+                             module.id === 'execution' ? '0, 255, 136' : '136, 0, 255'
+              }}
             >
-              <span className="nav-icon">{module.icon}</span>
+              <span className="nav-icon">
+                <module.Icon size={20} color={activeModule === module.id ? module.color : 'rgba(255,255,255,0.7)'} />
+              </span>
               <span className="nav-text">{module.name}</span>
               <div className="neon-glow"></div>
             </button>
@@ -68,48 +251,146 @@ const RailwayV2 = () => {
         </nav>
 
         <div className="railway-status">
+          <button 
+            className="new-search-btn"
+            onClick={handleNewSearch}
+            title="Start New Search"
+            style={{
+              background: 'linear-gradient(135deg, #00ff88, #00ffcc)',
+              color: '#000',
+              border: 'none',
+              padding: '8px 16px',
+              borderRadius: '20px',
+              marginRight: '10px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              fontSize: '12px'
+            }}
+          >
+            🔄 New Search
+          </button>
+          <button 
+            className="org-settings-btn"
+            onClick={() => setShowOrgSettings(true)}
+            title="Organization Settings"
+          >
+            <span className="settings-icon">⚙</span>
+            <span className="org-name">{organizationData?.name || 'Select Organization'}</span>
+          </button>
           <div className="status-indicator active"></div>
-          <span>{organizationData?.name || 'System'}</span>
         </div>
       </header>
 
-      {/* Module Container */}
-      <main className="railway-main">
-        <div className="module-container">
-          <div className="module-header">
-            <h2 className="module-title">
-              {modules.find(m => m.id === activeModule)?.icon} {' '}
-              {modules.find(m => m.id === activeModule)?.name}
-            </h2>
-            <div className="module-actions">
-              <button className="action-btn refresh">↻ Refresh</button>
-              <button className="action-btn settings">⚙</button>
+      {/* Main Body with Fixed Layout */}
+      <div className="railway-body">
+        {/* Main Content Area */}
+        <div className={`railway-content ${nivMinimized ? 'niv-collapsed' : ''}`}>
+          <div className="module-container">
+            <div className="module-header">
+              <h2 className="module-title">
+                <span className="module-icon">
+                  {modules.find(m => m.id === activeModule)?.Icon && 
+                    React.createElement(modules.find(m => m.id === activeModule).Icon, {
+                      size: 24,
+                      color: modules.find(m => m.id === activeModule)?.color
+                    })
+                  }
+                </span>
+                {modules.find(m => m.id === activeModule)?.name} Hub
+              </h2>
+              <div className="module-actions">
+                {activeModule === 'intelligence' && (
+                  <>
+                    <select 
+                      value={timeframe} 
+                      onChange={(e) => setTimeframe(e.target.value)}
+                      className="action-select timeframe"
+                    >
+                      <option value="24h">24 Hours</option>
+                      <option value="7d">7 Days</option>
+                      <option value="30d">30 Days</option>
+                    </select>
+                    <button 
+                      className="action-btn refresh"
+                      onClick={() => setRefreshKey(prev => prev + 1)}
+                      title="Refresh Intelligence"
+                    >
+                      <RefreshIcon size={16} color="#00ff88" />
+                      <span>Refresh</span>
+                    </button>
+                  </>
+                )}
+                <button 
+                  className="action-btn settings"
+                  onClick={() => {
+                    if (activeModule === 'intelligence') {
+                      setShowIntelSettings(true);
+                    } else {
+                      setShowOrgSettings(true);
+                    }
+                  }}
+                >
+                  <SettingsIcon size={16} color="#00ffcc" />
+                  <span>Settings</span>
+                </button>
+              </div>
+            </div>
+            
+            <div className="module-content">
+              {renderModule()}
             </div>
           </div>
-          
-          <div className="module-content">
-            {renderModule()}
-          </div>
         </div>
-      </main>
 
-      {/* Niv Strategic Advisor */}
-      {showNiv && (
-        <NivStrategicAdvisor 
-          organizationId={organizationData?.id}
-          onClose={() => setShowNiv(false)}
+        {/* Niv Panel - Fixed Right Side */}
+        <div className={`niv-panel ${nivMinimized ? 'minimized' : ''}`}>
+          <div className="niv-panel-header">
+            <div className="niv-title">
+              <span className="niv-icon">🤖</span>
+              <span className="niv-name">Niv Strategic Advisor</span>
+            </div>
+            <button 
+              className="niv-minimize-btn"
+              onClick={() => setNivMinimized(!nivMinimized)}
+              title={nivMinimized ? 'Expand' : 'Minimize'}
+            >
+              {nivMinimized ? '◀' : '▶'}
+            </button>
+          </div>
+          
+          {!nivMinimized && (
+            <NivStrategicAdvisor 
+              organizationId={organizationData?.id}
+              activeModule={activeModule}
+              embedded={true}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Organization Settings Modal */}
+      {showOrgSettings && (
+        <OrganizationSettings
+          onClose={() => setShowOrgSettings(false)}
+          onOrganizationChange={(org) => {
+            setOrganizationData(org);
+            // Reload the page to refresh with new organization
+            window.location.reload();
+          }}
+        />
+      )}
+
+      {/* Intelligence Settings Modal */}
+      {showIntelSettings && (
+        <IntelligenceSettings
+          onClose={() => setShowIntelSettings(false)}
+          onSave={(config) => {
+            setShowIntelSettings(false);
+            // Configuration is saved to localStorage, page will reload
+          }}
         />
       )}
       
-      {/* Niv Toggle Button */}
-      {!showNiv && (
-        <div className="niv-floating">
-          <button className="niv-trigger" onClick={() => setShowNiv(true)}>
-            <span className="niv-icon">🤖</span>
-            <span className="niv-pulse"></span>
-          </button>
-        </div>
-      )}
     </div>
   );
 };

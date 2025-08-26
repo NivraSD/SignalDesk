@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pipeline Flow Test</title>
+    <style>
+        body {
+            font-family: 'SF Mono', monospace;
+            background: #000;
+            color: #00ff00;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #00ffcc;
+            text-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
+        }
+        .controls {
+            margin: 20px 0;
+            padding: 20px;
+            background: #111;
+            border: 1px solid #00ff00;
+            border-radius: 5px;
+        }
+        button {
+            background: linear-gradient(135deg, #00ff88, #00ffcc);
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        button:hover {
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+        }
+        button:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+        }
+        .stage-container {
+            margin: 20px 0;
+            padding: 20px;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 5px;
+        }
+        .stage-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .stage-title {
+            font-size: 18px;
+            color: #00ffcc;
+        }
+        .stage-status {
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-waiting { background: #333; color: #999; }
+        .status-running { background: #ff6600; color: #fff; animation: pulse 1s infinite; }
+        .status-complete { background: #00ff88; color: #000; }
+        .status-error { background: #ff0044; color: #fff; }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .stage-timing {
+            color: #888;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        .stage-result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #050505;
+            border-left: 3px solid #00ff88;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .error {
+            color: #ff0044;
+        }
+        .success {
+            color: #00ff88;
+        }
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .metric {
+            background: #111;
+            padding: 15px;
+            border: 1px solid #333;
+            border-radius: 5px;
+        }
+        .metric-label {
+            color: #888;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        .metric-value {
+            color: #00ffcc;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        pre {
+            background: #050505;
+            padding: 10px;
+            overflow-x: auto;
+            border-radius: 3px;
+        }
+        .log-entry {
+            margin: 2px 0;
+            font-size: 12px;
+        }
+        .time { color: #666; }
+        .level-info { color: #00ffcc; }
+        .level-error { color: #ff0044; }
+        .level-success { color: #00ff88; }
+        #fullResults {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: #050505;
+            border: 1px solid #00ff88;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 SignalDesk Pipeline Flow Test</h1>
+        
+        <div class="controls">
+            <button onclick="runFullPipeline()">Run Full Pipeline (5 Stages)</button>
+            <button onclick="runStage(1)">Test Stage 1 Only</button>
+            <button onclick="runStage(2)">Test Stage 2 Only</button>
+            <button onclick="clearResults()">Clear Results</button>
+            <button onclick="toggleFullResults()">Toggle Full JSON</button>
+        </div>
+
+        <div class="metrics">
+            <div class="metric">
+                <div class="metric-label">Total Time</div>
+                <div class="metric-value" id="totalTime">0s</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Stages Complete</div>
+                <div class="metric-value" id="stagesComplete">0/5</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Data Points</div>
+                <div class="metric-value" id="dataPoints">0</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">API Calls</div>
+                <div class="metric-value" id="apiCalls">0</div>
+            </div>
+        </div>
+
+        <div id="stages">
+            <!-- Stages will be populated here -->
+        </div>
+
+        <div id="fullResults">
+            <h3>Full Pipeline Results (JSON)</h3>
+            <pre id="jsonOutput"></pre>
+        </div>
+
+        <div style="margin-top: 20px; padding: 20px; background: #111; border: 1px solid #333; border-radius: 5px;">
+            <h3>Activity Log</h3>
+            <div id="activityLog" style="max-height: 300px; overflow-y: auto; font-family: monospace;"></div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+
+        const stages = [
+            {
+                id: 'competitors',
+                name: 'Competitor Deep Dive',
+                endpoint: 'intelligence-stage-1-competitors',
+                expectedDuration: 45
+            },
+            {
+                id: 'media',
+                name: 'Media Landscape Analysis',
+                endpoint: 'intelligence-stage-2-media',
+                expectedDuration: 45
+            },
+            {
+                id: 'regulatory',
+                name: 'Regulatory & Stakeholder Environment',
+                endpoint: 'intelligence-stage-3-regulatory',
+                expectedDuration: 45
+            },
+            {
+                id: 'trends',
+                name: 'Market Trends & Topics',
+                endpoint: 'intelligence-stage-4-trends',
+                expectedDuration: 30
+            },
+            {
+                id: 'synthesis',
+                name: 'Pattern Recognition & Strategic Synthesis',
+                endpoint: 'intelligence-stage-5-synthesis',
+                expectedDuration: 45
+            }
+        ];
+
+        let pipelineStartTime = null;
+        let stageResults = {};
+        let apiCallCount = 0;
+
+        function initializeStages() {
+            const container = document.getElementById('stages');
+            container.innerHTML = stages.map((stage, index) => `
+                <div class="stage-container" id="stage-${index + 1}">
+                    <div class="stage-header">
+                        <div class="stage-title">Stage ${index + 1}: ${stage.name}</div>
+                        <div class="stage-status status-waiting" id="status-${index + 1}">Waiting</div>
+                    </div>
+                    <div class="stage-timing" id="timing-${index + 1}">Expected: ${stage.expectedDuration}s</div>
+                    <div class="stage-result" id="result-${index + 1}" style="display: none;"></div>
+                </div>
+            `).join('');
+        }
+
+        function log(message, level = 'info') {
+            const logDiv = document.getElementById('activityLog');
+            const time = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `<span class="time">${time}</span> <span class="level-${level}">${message}</span>`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(`[${level}] ${message}`);
+        }
+
+        async function runFullPipeline() {
+            log('🚀 Starting full pipeline test...', 'info');
+            pipelineStartTime = Date.now();
+            stageResults = {};
+            apiCallCount = 0;
+            
+            // Reset UI
+            initializeStages();
+            updateMetrics();
+            
+            // Get organization data
+            const organization = await getOrganization();
+            
+            // Run stages sequentially
+            for (let i = 0; i < stages.length; i++) {
+                const success = await executeStage(i + 1, organization);
+                if (!success) {
+                    log(`❌ Pipeline failed at stage ${i + 1}`, 'error');
+                    break;
+                }
+                updateMetrics();
+            }
+            
+            // Show final results
+            const totalTime = Math.round((Date.now() - pipelineStartTime) / 1000);
+            log(`✅ Pipeline complete in ${totalTime}s`, 'success');
+            
+            // Display full results
+            document.getElementById('jsonOutput').textContent = JSON.stringify(stageResults, null, 2);
+        }
+
+        async function runStage(stageNum) {
+            log(`🔍 Running single stage ${stageNum} test...`, 'info');
+            initializeStages();
+            const organization = await getOrganization();
+            await executeStage(stageNum, organization);
+        }
+
+        async function getOrganization() {
+            // Try localStorage first
+            const saved = localStorage.getItem('organization');
+            if (saved) {
+                try {
+                    const org = JSON.parse(saved);
+                    log(`📊 Using cached organization: ${org.name}`, 'info');
+                    return org;
+                } catch (e) {
+                    log('Failed to parse cached organization', 'error');
+                }
+            }
+            
+            // Default test organization
+            return {
+                name: 'OpenAI',
+                industry: 'Artificial Intelligence',
+                competitors: ['Anthropic', 'Google DeepMind', 'Microsoft', 'Meta AI', 'Cohere', 'Stability AI'],
+                stakeholders: {
+                    media: ['TechCrunch', 'The Verge', 'Wired', 'Reuters', 'Bloomberg'],
+                    regulators: ['FTC', 'SEC', 'EU Commission'],
+                    analysts: ['Gartner', 'Forrester', 'IDC']
+                }
+            };
+        }
+
+        async function executeStage(stageNum, organization) {
+            const stageIndex = stageNum - 1;
+            const stage = stages[stageIndex];
+            
+            log(`📍 Stage ${stageNum}: ${stage.name}`, 'info');
+            
+            // Update UI
+            document.getElementById(`status-${stageNum}`).className = 'stage-status status-running';
+            document.getElementById(`status-${stageNum}`).textContent = 'Running';
+            
+            const startTime = Date.now();
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/${stage.endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: organization,
+                        competitors: organization.competitors,
+                        stakeholders: organization.stakeholders,
+                        previousResults: stageResults
+                    })
+                });
+                
+                apiCallCount++;
+                const duration = Math.round((Date.now() - startTime) / 1000);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    stageResults[stage.id] = result.data;
+                    
+                    // Update UI
+                    document.getElementById(`status-${stageNum}`).className = 'stage-status status-complete';
+                    document.getElementById(`status-${stageNum}`).textContent = 'Complete';
+                    document.getElementById(`timing-${stageNum}`).innerHTML = `
+                        Actual: ${duration}s | Expected: ${stage.expectedDuration}s
+                        ${duration < stage.expectedDuration / 2 ? '<span class="error"> (TOO FAST - likely using mock data)</span>' : ''}
+                    `;
+                    
+                    // Show summary
+                    const resultDiv = document.getElementById(`result-${stageNum}`);
+                    resultDiv.style.display = 'block';
+                    resultDiv.innerHTML = generateStageSummary(stage.id, result.data);
+                    
+                    log(`✅ Stage ${stageNum} complete in ${duration}s`, 'success');
+                    return true;
+                } else {
+                    throw new Error(result.error || 'Stage failed');
+                }
+                
+            } catch (error) {
+                log(`❌ Stage ${stageNum} error: ${error.message}`, 'error');
+                document.getElementById(`status-${stageNum}`).className = 'stage-status status-error';
+                document.getElementById(`status-${stageNum}`).textContent = 'Error';
+                document.getElementById(`result-${stageNum}`).style.display = 'block';
+                document.getElementById(`result-${stageNum}`).innerHTML = `<span class="error">Error: ${error.message}</span>`;
+                return false;
+            }
+        }
+
+        function generateStageSummary(stageId, data) {
+            switch(stageId) {
+                case 'competitors':
+                    const totalCompetitors = 
+                        (data.competitors?.direct?.length || 0) +
+                        (data.competitors?.indirect?.length || 0) +
+                        (data.competitors?.emerging?.length || 0);
+                    const threats = data.competitors?.direct?.filter(c => c.threat_level === 'high').length || 0;
+                    return `
+                        <div class="success">✅ Analyzed ${totalCompetitors} competitors</div>
+                        <div>• High threats: ${threats}</div>
+                        <div>• Direct competitors: ${data.competitors?.direct?.length || 0}</div>
+                        <div>• Recent actions captured: ${countActions(data.competitors)}</div>
+                    `;
+                
+                case 'media':
+                    return `
+                        <div class="success">✅ Media landscape mapped</div>
+                        <div>• Journalists: ${data.media_landscape?.journalists?.length || 0}</div>
+                        <div>• Outlets: ${data.media_landscape?.outlets?.length || 0}</div>
+                        <div>• Opportunities: ${data.opportunities?.length || 0}</div>
+                    `;
+                
+                case 'regulatory':
+                    return `
+                        <div class="success">✅ Regulatory environment analyzed</div>
+                        <div>• Bodies tracked: ${data.regulatory?.bodies?.length || 0}</div>
+                        <div>• Recent developments: ${data.regulatory?.recent_developments?.length || 0}</div>
+                        <div>• Risk level: ${data.regulatory?.risk_level || 'Unknown'}</div>
+                    `;
+                
+                case 'trends':
+                    return `
+                        <div class="success">✅ Market trends identified</div>
+                        <div>• Trending topics: ${data.trending_topics?.length || 0}</div>
+                        <div>• Conversation gaps: ${data.conversation_gaps?.length || 0}</div>
+                        <div>• Sentiment: ${data.market_sentiment || 'Neutral'}</div>
+                    `;
+                
+                case 'synthesis':
+                    return `
+                        <div class="success">✅ Strategic synthesis complete</div>
+                        <div>• Patterns identified: ${data.patterns?.length || 0}</div>
+                        <div>• Hidden connections: ${data.elite_insights?.hidden_connections?.length || 0}</div>
+                        <div>• Strategic priorities: ${data.strategic_priorities?.length || 0}</div>
+                    `;
+                
+                default:
+                    return '<div class="success">✅ Stage complete</div>';
+            }
+        }
+
+        function countActions(competitors) {
+            let count = 0;
+            if (competitors) {
+                ['direct', 'indirect', 'emerging'].forEach(category => {
+                    if (competitors[category]) {
+                        competitors[category].forEach(c => {
+                            count += c.recent_actions?.length || 0;
+                        });
+                    }
+                });
+            }
+            return count;
+        }
+
+        function updateMetrics() {
+            if (pipelineStartTime) {
+                const elapsed = Math.round((Date.now() - pipelineStartTime) / 1000);
+                document.getElementById('totalTime').textContent = `${elapsed}s`;
+            }
+            
+            const complete = Object.keys(stageResults).length;
+            document.getElementById('stagesComplete').textContent = `${complete}/5`;
+            
+            // Count data points
+            let dataPoints = 0;
+            Object.values(stageResults).forEach(result => {
+                dataPoints += countDataPoints(result);
+            });
+            document.getElementById('dataPoints').textContent = dataPoints;
+            
+            document.getElementById('apiCalls').textContent = apiCallCount;
+        }
+
+        function countDataPoints(obj) {
+            let count = 0;
+            if (Array.isArray(obj)) {
+                return obj.length;
+            }
+            if (obj && typeof obj === 'object') {
+                Object.values(obj).forEach(value => {
+                    if (Array.isArray(value)) {
+                        count += value.length;
+                    } else if (typeof value === 'object' && value !== null) {
+                        count += countDataPoints(value);
+                    } else {
+                        count++;
+                    }
+                });
+            }
+            return count;
+        }
+
+        function clearResults() {
+            initializeStages();
+            stageResults = {};
+            apiCallCount = 0;
+            pipelineStartTime = null;
+            document.getElementById('activityLog').innerHTML = '';
+            document.getElementById('fullResults').style.display = 'none';
+            updateMetrics();
+            log('🧹 Results cleared', 'info');
+        }
+
+        function toggleFullResults() {
+            const div = document.getElementById('fullResults');
+            div.style.display = div.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Initialize on load
+        initializeStages();
+        log('🎯 Pipeline test ready', 'success');
+    </script>
+</body>
+</html>

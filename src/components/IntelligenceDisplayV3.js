@@ -171,7 +171,20 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0, onIntelligenc
     }, 100);
     
     try {
-      const result = await intelligenceOrchestratorV3.orchestrate(profileToUse);
+      // CRITICAL: Ensure we have proper structure before calling orchestrator
+      const orchestratorConfig = {
+        organization: profileToUse?.organization || { name: 'Unknown', industry: 'Technology' },
+        competitors: profileToUse?.competitors || [],
+        regulators: profileToUse?.regulators || [],
+        activists: profileToUse?.activists || [],
+        media_outlets: profileToUse?.media_outlets || [],
+        investors: profileToUse?.investors || [],
+        analysts: profileToUse?.analysts || [],
+        monitoring_topics: profileToUse?.monitoring_topics || []
+      };
+      
+      console.log('🎯 Calling orchestrator with config:', orchestratorConfig);
+      const result = await intelligenceOrchestratorV3.orchestrate(orchestratorConfig);
       clearInterval(progressInterval);
       setLoadingProgress(100);
       setPhaseProgress({ gathering: 100, analysis: 100, synthesis: 100, preparing: 100 });

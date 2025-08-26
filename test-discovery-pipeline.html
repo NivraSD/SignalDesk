@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Discovery & Pipeline</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #000;
+            color: #0f0;
+            padding: 20px;
+        }
+        .section {
+            border: 1px solid #0f0;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        button {
+            background: #0f0;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        pre {
+            background: #111;
+            padding: 10px;
+            overflow-x: auto;
+        }
+        .error {
+            color: #f00;
+        }
+        .success {
+            color: #0f0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Discovery & Pipeline</h1>
+    
+    <div class="section">
+        <h2>1. Test Organization Discovery</h2>
+        <input type="text" id="orgName" placeholder="Organization name" value="OpenAI">
+        <button onclick="testDiscovery()">Test Original Discovery</button>
+        <button onclick="testClaudeDiscovery()">Test Claude Discovery</button>
+        <button onclick="testMockDiscovery()">Test Mock Discovery</button>
+        <pre id="discoveryResult"></pre>
+    </div>
+
+    <div class="section">
+        <h2>2. Test Stage 1</h2>
+        <button onclick="testStage1()">Test Stage 1</button>
+        <pre id="stage1Result"></pre>
+    </div>
+
+    <div class="section">
+        <h2>3. Full Pipeline Test</h2>
+        <button onclick="testFullPipeline()">Run Full Pipeline</button>
+        <pre id="pipelineResult"></pre>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+
+        let discoveredOrg = null;
+
+        async function testMockDiscovery() {
+            const orgName = document.getElementById('orgName').value;
+            const result = document.getElementById('discoveryResult');
+            
+            result.textContent = 'Testing mock discovery...';
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/test-discovery`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organizationName: orgName
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    discoveredOrg = data.organization;
+                    result.innerHTML = `<span class="success">✓ Mock discovery successful!</span>\n\n` + 
+                        `Organization: ${data.organization?.name}\n` +
+                        `Industry: ${data.organization?.industry}\n` +
+                        `Competitors: ${data.organization?.competitors?.join(', ') || 'None'}\n` +
+                        `Media: ${data.organization?.stakeholders?.media?.join(', ') || 'None'}\n\n` +
+                        `Full data:\n${JSON.stringify(data, null, 2)}`;
+                } else {
+                    result.innerHTML = `<span class="error">✗ Mock discovery failed: ${response.status}</span>\n\n${JSON.stringify(data, null, 2)}`;
+                }
+            } catch (error) {
+                result.innerHTML = `<span class="error">✗ Error: ${error.message}</span>`;
+            }
+        }
+
+        async function testClaudeDiscovery() {
+            const orgName = document.getElementById('orgName').value;
+            const result = document.getElementById('discoveryResult');
+            
+            result.textContent = 'Testing Claude discovery...';
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/claude-discovery`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organizationName: orgName
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    discoveredOrg = data.organization;
+                    result.innerHTML = `<span class="success">✓ Claude discovery successful!</span>\n\n` + 
+                        `Organization: ${data.organization?.name}\n` +
+                        `Industry: ${data.organization?.industry}\n` +
+                        `Competitors: ${data.organization?.competitors?.join(', ') || 'None'}\n` +
+                        `Media: ${data.organization?.stakeholders?.media?.join(', ') || 'None'}\n` +
+                        `Topics: ${data.organization?.topics?.join(', ') || 'None'}\n\n` +
+                        `Full data:\n${JSON.stringify(data, null, 2)}`;
+                } else {
+                    result.innerHTML = `<span class="error">✗ Claude discovery failed: ${response.status}</span>\n\n${JSON.stringify(data, null, 2)}`;
+                }
+            } catch (error) {
+                result.innerHTML = `<span class="error">✗ Error: ${error.message}</span>`;
+            }
+        }
+
+        async function testDiscovery() {
+            const orgName = document.getElementById('orgName').value;
+            const result = document.getElementById('discoveryResult');
+            
+            result.textContent = 'Testing discovery...';
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/organization-discovery`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organizationName: orgName,
+                        url: ''
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    discoveredOrg = data.organization;
+                    result.innerHTML = `<span class="success">✓ Discovery successful!</span>\n\n` + 
+                        `Organization: ${data.organization?.name}\n` +
+                        `Industry: ${data.organization?.industry}\n` +
+                        `Competitors: ${data.organization?.competitors?.join(', ') || 'None'}\n` +
+                        `Media: ${data.organization?.stakeholders?.media?.join(', ') || 'None'}\n\n` +
+                        `Full data:\n${JSON.stringify(data, null, 2)}`;
+                } else {
+                    result.innerHTML = `<span class="error">✗ Discovery failed: ${response.status}</span>\n\n${JSON.stringify(data, null, 2)}`;
+                }
+            } catch (error) {
+                result.innerHTML = `<span class="error">✗ Error: ${error.message}</span>`;
+            }
+        }
+
+        async function testStage1() {
+            const result = document.getElementById('stage1Result');
+            
+            if (!discoveredOrg) {
+                result.textContent = 'Please run discovery first!';
+                return;
+            }
+            
+            result.textContent = 'Testing Stage 1...';
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-1-competitors`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: discoveredOrg,
+                        competitors: discoveredOrg.competitors || [],
+                        stakeholders: discoveredOrg.stakeholders || {}
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    result.innerHTML = `<span class="success">✓ Stage 1 successful!</span>\n\n${JSON.stringify(data, null, 2)}`;
+                } else {
+                    result.innerHTML = `<span class="error">✗ Stage 1 failed: ${response.status}</span>\n\n${JSON.stringify(data, null, 2)}`;
+                }
+            } catch (error) {
+                result.innerHTML = `<span class="error">✗ Error: ${error.message}</span>`;
+            }
+        }
+
+        async function testFullPipeline() {
+            const result = document.getElementById('pipelineResult');
+            
+            if (!discoveredOrg) {
+                result.textContent = 'Please run discovery first!';
+                return;
+            }
+            
+            result.textContent = 'Running full pipeline...\n';
+            
+            const stages = [
+                { name: 'Competitor Deep Dive', endpoint: 'intelligence-stage-1-competitors' },
+                { name: 'Media Landscape', endpoint: 'intelligence-stage-2-media' },
+                { name: 'Regulatory Environment', endpoint: 'intelligence-stage-3-regulatory' },
+                { name: 'Market Trends', endpoint: 'intelligence-stage-4-trends' },
+                { name: 'Strategic Synthesis', endpoint: 'intelligence-stage-5-synthesis' }
+            ];
+
+            let previousResults = {};
+
+            for (let i = 0; i < stages.length; i++) {
+                const stage = stages[i];
+                result.textContent += `\n📍 Stage ${i + 1}: ${stage.name}...\n`;
+                
+                try {
+                    const response = await fetch(`${SUPABASE_URL}/functions/v1/${stage.endpoint}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${SUPABASE_KEY}`
+                        },
+                        body: JSON.stringify({
+                            organization: discoveredOrg,
+                            competitors: discoveredOrg.competitors || [],
+                            stakeholders: discoveredOrg.stakeholders || {},
+                            previousResults: previousResults
+                        })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        result.textContent += `   ✓ Stage ${i + 1} complete\n`;
+                        previousResults[stage.endpoint] = data;
+                    } else {
+                        result.textContent += `   ✗ Stage ${i + 1} failed: ${data.error || response.status}\n`;
+                        break;
+                    }
+                } catch (error) {
+                    result.textContent += `   ✗ Stage ${i + 1} error: ${error.message}\n`;
+                    break;
+                }
+            }
+            
+            result.textContent += '\n\n=== FINAL RESULTS ===\n' + JSON.stringify(previousResults, null, 2);
+        }
+    </script>
+</body>
+</html>

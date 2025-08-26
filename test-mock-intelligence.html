@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Mock Intelligence Test</title>
+    <style>
+        body {
+            background: #0a0a0a;
+            color: #00ffcc;
+            font-family: 'SF Mono', monospace;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 { color: #ff00ff; }
+        h2 { color: #00ff88; margin-top: 30px; }
+        .status {
+            padding: 15px;
+            border: 1px solid #00ffcc;
+            border-radius: 8px;
+            margin: 20px 0;
+            background: rgba(0, 255, 204, 0.05);
+        }
+        .success { border-color: #00ff88; }
+        .error { border-color: #ff00ff; }
+        pre {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 5px;
+            overflow: auto;
+            max-height: 400px;
+        }
+        button {
+            background: #00ffcc;
+            color: #0a0a0a;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:hover { background: #00ff88; }
+        .info { color: #888; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <h1>🎭 Mock Intelligence Data Test</h1>
+    
+    <div class="status">
+        <h2>Configuration</h2>
+        <p>This page tests the mock intelligence data structure that the app should be using.</p>
+        <p class="info">The app is configured to use MOCK DATA instead of making API calls to Supabase.</p>
+    </div>
+
+    <div class="status">
+        <h2>Expected Behavior</h2>
+        <ul>
+            <li>✅ MultiStageIntelligence should generate mock data locally</li>
+            <li>✅ No API calls should be made to Supabase</li>
+            <li>✅ Intelligence Hub should display mock competitor data</li>
+            <li>✅ All 5 stages should complete with mock data</li>
+            <li>✅ No "undefined" errors for competitors</li>
+        </ul>
+    </div>
+
+    <div class="status">
+        <h2>Mock Data Structure</h2>
+        <p>The mock data includes:</p>
+        <pre id="mockStructure"></pre>
+    </div>
+
+    <div style="margin-top: 30px;">
+        <button onclick="checkApp()">Check App Status</button>
+        <button onclick="showMockData()">Show Full Mock Data</button>
+        <button onclick="goToApp()">Go to App</button>
+    </div>
+
+    <div id="results" style="margin-top: 30px;"></div>
+
+    <script>
+        const APP_URL = 'http://localhost:3000';
+        
+        // Mock data structure
+        const mockDataStructure = {
+            stages: {
+                competitors: {
+                    competitors: {
+                        direct: ["CompetitorX", "MarketLeader Inc"],
+                        indirect: ["TechGiant Corp"],
+                        emerging: ["StartupAI"]
+                    }
+                },
+                media: {
+                    outlets: ["TechCrunch", "WSJ", "Reuters"],
+                    total_mentions: 1000,
+                    our_mentions: 350
+                },
+                regulatory: {
+                    regulatory: {
+                        primary_concern: "Data privacy and AI governance",
+                        risk_level: "MODERATE"
+                    }
+                },
+                trends: {
+                    trending_topics: [
+                        "AI Transformation",
+                        "Sustainability Tech",
+                        "Remote Work Tools"
+                    ]
+                },
+                synthesis: {
+                    elite_insights: {
+                        executive_headline: "Competitive pressure intensifying...",
+                        hidden_connections: ["3 patterns detected"]
+                    }
+                }
+            }
+        };
+
+        function checkApp() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<div class="status">Checking app at ' + APP_URL + '...</div>';
+            
+            fetch(APP_URL)
+                .then(response => {
+                    if (response.ok) {
+                        results.innerHTML = `
+                            <div class="status success">
+                                <h3>✅ App is running!</h3>
+                                <p>The app is accessible at ${APP_URL}</p>
+                                <p class="info">Navigate to the app and check:</p>
+                                <ol>
+                                    <li>Go to Intelligence Hub</li>
+                                    <li>Click "Gather Intelligence"</li>
+                                    <li>Watch the 5 stages complete with mock data</li>
+                                    <li>Verify no API errors in console</li>
+                                    <li>Check that competitor data displays properly</li>
+                                </ol>
+                            </div>
+                        `;
+                    } else {
+                        results.innerHTML = '<div class="status error">App returned status: ' + response.status + '</div>';
+                    }
+                })
+                .catch(error => {
+                    results.innerHTML = '<div class="status error">Cannot connect to app: ' + error.message + '</div>';
+                });
+        }
+
+        function showMockData() {
+            const results = document.getElementById('results');
+            results.innerHTML = `
+                <div class="status">
+                    <h3>Full Mock Data Sample</h3>
+                    <pre>${JSON.stringify(mockDataStructure, null, 2)}</pre>
+                </div>
+            `;
+        }
+
+        function goToApp() {
+            window.location.href = APP_URL;
+        }
+
+        // Show structure on load
+        document.getElementById('mockStructure').textContent = JSON.stringify(mockDataStructure, null, 2);
+    </script>
+</body>
+</html>

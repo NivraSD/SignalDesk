@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Intelligence Flow Test</title>
+    <style>
+        body {
+            background: #0a0a0a;
+            color: #00ffcc;
+            font-family: 'SF Mono', monospace;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #00ffcc;
+            border-radius: 8px;
+        }
+        .success { border-color: #00ff88; color: #00ff88; }
+        .error { border-color: #ff00ff; color: #ff00ff; }
+        h2 { color: #ff00ff; }
+        pre {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 5px;
+            overflow: auto;
+            font-size: 12px;
+            max-height: 300px;
+        }
+        .checklist {
+            list-style: none;
+            padding: 0;
+        }
+        .checklist li {
+            margin: 10px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+        .checklist li:before {
+            content: '☐';
+            position: absolute;
+            left: 0;
+        }
+        .checklist li.done:before {
+            content: '✅';
+        }
+        button {
+            background: #00ffcc;
+            color: #0a0a0a;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:hover { background: #00ff88; }
+    </style>
+</head>
+<body>
+    <h1>🔬 Intelligence Flow Testing</h1>
+
+    <div class="test-section">
+        <h2>Expected Flow (with Mock Data)</h2>
+        <ol>
+            <li>User navigates to Intelligence Hub</li>
+            <li>Clicks "Gather Intelligence"</li>
+            <li>MultiStageIntelligence component starts</li>
+            <li>For each of 5 stages:
+                <ul>
+                    <li>runStage() calls generateMockIntelligence()</li>
+                    <li>Extracts stage-specific data</li>
+                    <li>Stores in stageResults[stage.id]</li>
+                    <li>Waits 1.5 seconds (simulated delay)</li>
+                </ul>
+            </li>
+            <li>After all stages complete, handleComplete() is called</li>
+            <li>handleComplete() checks all stages are present</li>
+            <li>Creates finalIntelligence with structure:
+                <pre>{
+  success: true,
+  duration: number,
+  stages: {
+    competitors: { competitors: { direct: [...], indirect: [...] } },
+    media: { outlets: [...], journalists: [...] },
+    regulatory: { regulatory: { primary_concern: "..." } },
+    trends: { trending_topics: [...] },
+    synthesis: { elite_insights: {...} }
+  },
+  analysis: {...},
+  metadata: {...}
+}</pre>
+            </li>
+            <li>IntelligenceDisplay renders with finalIntelligence</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>Critical Data Paths to Verify</h2>
+        <ul class="checklist">
+            <li>intelligenceData.stages.competitors.competitors.direct[0].name</li>
+            <li>intelligenceData.stages.competitors.competitors.direct[0].threat_level</li>
+            <li>intelligenceData.stages.media.outlets</li>
+            <li>intelligenceData.stages.regulatory.regulatory.primary_concern</li>
+            <li>intelligenceData.stages.trends.trending_topics[0].topic</li>
+            <li>intelligenceData.stages.synthesis.elite_insights.executive_headline</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>Changes Made</h2>
+        <ol>
+            <li>✅ Created mockIntelligenceData.js with complete structure</li>
+            <li>✅ Updated runStage to use mock data instead of API</li>
+            <li>✅ Added safe navigation (?.) to all data access</li>
+            <li>✅ Fixed stale closure issue in handleComplete</li>
+            <li>✅ Added validation to ensure all stages complete</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Actions</h2>
+        <button onclick="goToApp()">Go to App</button>
+        <button onclick="checkConsole()">Check Console Instructions</button>
+    </div>
+
+    <div id="instructions" style="display: none;" class="test-section">
+        <h2>Console Commands to Test</h2>
+        <pre>
+// In browser console at http://localhost:3000
+
+// 1. Check if mock data is being used
+console.log('Look for: 🎭 Using MOCK DATA for Stage');
+
+// 2. Check stage completion
+console.log('Look for: ✅ Stage N complete (MOCK)');
+
+// 3. Check final intelligence structure
+console.log('Look for: 🎉 All stages complete');
+console.log('Look for: 📊 Final results');
+
+// 4. Verify no errors about 'undefined' or 'competitors'
+</pre>
+    </div>
+
+    <script>
+        function goToApp() {
+            window.location.href = 'http://localhost:3000';
+        }
+
+        function checkConsole() {
+            document.getElementById('instructions').style.display = 'block';
+        }
+    </script>
+</body>
+</html>

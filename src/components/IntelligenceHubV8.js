@@ -214,8 +214,16 @@ const IntelligenceHubV8 = ({ organization, onIntelligenceUpdate }) => {
           <div className="immediate-actions">
             <h3>Immediate Actions Required:</h3>
             <ul>
-              {data.immediate_actions.map((action, idx) => (
-                <li key={idx}>{action}</li>
+              {data.immediate_actions.map((item, idx) => (
+                <li key={idx}>
+                  {typeof item === 'string' ? item : (
+                    <>
+                      <strong>{item.action}</strong>
+                      {item.priority && <span className="priority"> ({item.priority})</span>}
+                      {item.timeline && <span className="timeline"> - {item.timeline}</span>}
+                    </>
+                  )}
+                </li>
               ))}
             </ul>
           </div>

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SignalDesk Current State Check</title>
+    <style>
+        body {
+            background: #0a0a0a;
+            color: #00ffcc;
+            font-family: monospace;
+            padding: 20px;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #00ffcc;
+            border-radius: 5px;
+        }
+        .error { 
+            color: #ff00ff; 
+            border-color: #ff00ff;
+        }
+        .success { 
+            color: #00ff88; 
+            border-color: #00ff88;
+        }
+        button {
+            background: #00ffcc;
+            color: #0a0a0a;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #00ff88;
+        }
+        pre {
+            background: #1a1a1a;
+            padding: 10px;
+            overflow: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 SignalDesk Current State Check</h1>
+    
+    <div class="status" id="appStatus">
+        <h2>App Status</h2>
+        <div id="appInfo">Checking...</div>
+    </div>
+
+    <div class="status" id="consoleErrors">
+        <h2>Console Errors</h2>
+        <pre id="errorLog"></pre>
+    </div>
+
+    <div class="status" id="localStorage">
+        <h2>LocalStorage Data</h2>
+        <pre id="storageData"></pre>
+    </div>
+
+    <div style="margin-top: 30px;">
+        <button onclick="checkApp()">Check App State</button>
+        <button onclick="clearCache()">Clear Cache</button>
+        <button onclick="goToApp()">Go to App</button>
+    </div>
+
+    <script>
+        const APP_URL = 'http://localhost:3000';
+
+        async function checkApp() {
+            const statusDiv = document.getElementById('appInfo');
+            
+            try {
+                // Check if app is responding
+                const response = await fetch(APP_URL);
+                if (response.ok) {
+                    statusDiv.innerHTML = '<span style="color: #00ff88">✅ App is running on port 3000</span>';
+                    
+                    // Open in iframe to check for errors
+                    checkForErrors();
+                } else {
+                    statusDiv.innerHTML = '<span style="color: #ff00ff">❌ App returned status: ' + response.status + '</span>';
+                }
+            } catch (error) {
+                statusDiv.innerHTML = '<span style="color: #ff00ff">❌ Cannot connect to app: ' + error.message + '</span>';
+            }
+        }
+
+        function checkForErrors() {
+            // Create hidden iframe to check for console errors
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = APP_URL;
+            document.body.appendChild(iframe);
+            
+            setTimeout(() => {
+                try {
+                    // Try to access iframe content (might be blocked by CORS)
+                    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                    document.getElementById('errorLog').textContent = 'No access to console due to CORS. Open the app directly to see console errors.';
+                } catch (e) {
+                    document.getElementById('errorLog').textContent = 'Cannot access app console from this page. Open developer tools in the app directly.';
+                }
+                document.body.removeChild(iframe);
+            }, 2000);
+        }
+
+        function showLocalStorage() {
+            const data = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                try {
+                    const value = localStorage.getItem(key);
+                    if (key.includes('signaldesk') || key.includes('organization') || key.includes('supabase')) {
+                        data[key] = value.length > 100 ? value.substring(0, 100) + '...' : value;
+                    }
+                } catch (e) {
+                    data[key] = 'Error reading value';
+                }
+            }
+            document.getElementById('storageData').textContent = JSON.stringify(data, null, 2);
+        }
+
+        function clearCache() {
+            const keys = ['signaldesk_cache', 'signaldesk_intelligence_cache'];
+            keys.forEach(key => {
+                localStorage.removeItem(key);
+                console.log('Cleared:', key);
+            });
+            alert('Cache cleared! Refresh the app.');
+            showLocalStorage();
+        }
+
+        function goToApp() {
+            window.location.href = APP_URL;
+        }
+
+        // Initial checks
+        checkApp();
+        showLocalStorage();
+    </script>
+</body>
+</html>

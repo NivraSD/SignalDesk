@@ -23,21 +23,27 @@ class IntelligenceOrchestratorV3 {
    * Phase 3: Synthesis - Analyze and structure for display
    */
   async orchestrate(config) {
+    // Ensure config exists
+    if (!config) {
+      console.error('❌ No config provided to orchestrator');
+      config = {};
+    }
+    
     // Extract organization and stakeholders from config
     const organization = config.organization || config;
-    console.log(`🚀 V3 Orchestration starting for ${organization.name}`);
+    console.log(`🚀 V3 Orchestration starting for ${organization?.name || 'Unknown'}`);
     
     try {
       // PHASE 1: DISCOVERY (Who and what to monitor)
       console.log('🔍 Phase 1: Discovery - Identifying entities to monitor');
       console.log('📡 Discovery - What we received:', {
-        competitors: config.competitors,
-        regulators: config.regulators,
-        activists: config.activists,
-        media_outlets: config.media_outlets,
-        investors: config.investors,
-        analysts: config.analysts,
-        monitoring_topics: config.monitoring_topics
+        competitors: config?.competitors,
+        regulators: config?.regulators,
+        activists: config?.activists,
+        media_outlets: config?.media_outlets,
+        investors: config?.investors,
+        analysts: config?.analysts,
+        monitoring_topics: config?.monitoring_topics
       });
       console.log('📡 Discovery Request being sent:', {
         url: `${this.supabaseUrl}/functions/v1/intelligence-discovery-v3`,

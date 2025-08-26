@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalDesk - Real Data Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        .test-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .status {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.pending { background: #ffd93d; color: #333; }
+        .status.testing { background: #6bcf7f; color: white; }
+        .status.success { background: #4caf50; color: white; }
+        .status.error { background: #f44336; color: white; }
+        .results {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 6px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        .org-selector {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f0f0f0;
+            border-radius: 8px;
+        }
+        .org-selector select {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 6px;
+            border: 2px solid #667eea;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .progress {
+            margin: 20px 0;
+            height: 30px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        .tab-container {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        .tab {
+            padding: 10px 20px;
+            background: #f0f0f0;
+            border: none;
+            cursor: pointer;
+            border-radius: 8px 8px 0 0;
+        }
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+        .intel-display {
+            display: none;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .intel-display.active {
+            display: block;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 SignalDesk Real Data Test</h1>
+        
+        <div class="org-selector">
+            <label><strong>Select Test Organization:</strong></label>
+            <select id="orgSelect">
+                <option value="openai">OpenAI (AI Industry)</option>
+                <option value="tesla">Tesla (Automotive)</option>
+                <option value="apple">Apple (Technology)</option>
+                <option value="custom">Custom Organization...</option>
+            </select>
+            <input type="text" id="customOrg" placeholder="Enter organization name" style="width: 100%; padding: 10px; margin-top: 10px; display: none;">
+        </div>
+
+        <div style="text-align: center;">
+            <button onclick="runFullPipeline()">🎯 Run Full Intelligence Pipeline</button>
+            <button onclick="runQuickTest()">⚡ Quick Test (News Only)</button>
+            <button onclick="clearResults()">🗑️ Clear Results</button>
+        </div>
+
+        <div class="progress">
+            <div class="progress-bar" id="progressBar">0%</div>
+        </div>
+
+        <div class="stats" id="stats" style="display: none;">
+            <div class="stat-card">
+                <div class="stat-value" id="statArticles">0</div>
+                <div class="stat-label">News Articles</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statCompetitors">0</div>
+                <div class="stat-label">Competitors Analyzed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statOpportunities">0</div>
+                <div class="stat-label">Opportunities Found</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statTime">0s</div>
+                <div class="stat-label">Processing Time</div>
+            </div>
+        </div>
+
+        <div class="tab-container" id="tabContainer" style="display: none;">
+            <button class="tab active" onclick="showTab('executive')">Executive Summary</button>
+            <button class="tab" onclick="showTab('news')">News & Media</button>
+            <button class="tab" onclick="showTab('competitive')">Competitive</button>
+            <button class="tab" onclick="showTab('raw')">Raw Data</button>
+        </div>
+
+        <div id="intelligenceResults">
+            <div class="intel-display active" id="executive">
+                <h3>Executive Summary</h3>
+                <div id="executiveContent"></div>
+            </div>
+            <div class="intel-display" id="news">
+                <h3>News & Media Intelligence</h3>
+                <div id="newsContent"></div>
+            </div>
+            <div class="intel-display" id="competitive">
+                <h3>Competitive Analysis</h3>
+                <div id="competitiveContent"></div>
+            </div>
+            <div class="intel-display" id="raw">
+                <h3>Raw Data</h3>
+                <div id="rawContent"></div>
+            </div>
+        </div>
+
+        <div id="testSections"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+
+        const organizations = {
+            openai: {
+                id: 'openai',
+                name: 'OpenAI',
+                industry: 'Artificial Intelligence',
+                keywords: ['ChatGPT', 'GPT-4', 'artificial intelligence', 'Sam Altman'],
+                competitors: ['Anthropic', 'Google DeepMind', 'Microsoft', 'Meta AI'],
+                stakeholders: {
+                    media: ['TechCrunch', 'The Verge', 'Wired', 'Ars Technica'],
+                    regulators: ['FTC', 'EU Commission', 'UK CMA'],
+                    analysts: ['Gartner', 'Forrester', 'IDC']
+                }
+            },
+            tesla: {
+                id: 'tesla',
+                name: 'Tesla',
+                industry: 'Automotive',
+                keywords: ['electric vehicles', 'Elon Musk', 'Model 3', 'Cybertruck'],
+                competitors: ['Rivian', 'Lucid Motors', 'Ford', 'GM'],
+                stakeholders: {
+                    media: ['Electrek', 'InsideEVs', 'Reuters', 'Bloomberg'],
+                    regulators: ['NHTSA', 'EPA', 'SEC'],
+                    analysts: ['Morgan Stanley', 'Goldman Sachs']
+                }
+            },
+            apple: {
+                id: 'apple',
+                name: 'Apple',
+                industry: 'Technology',
+                keywords: ['iPhone', 'Tim Cook', 'Vision Pro', 'Apple Silicon'],
+                competitors: ['Samsung', 'Google', 'Microsoft', 'Meta'],
+                stakeholders: {
+                    media: ['MacRumors', '9to5Mac', 'The Verge', 'Bloomberg'],
+                    regulators: ['DOJ', 'EU Commission', 'FTC'],
+                    analysts: ['Ming-Chi Kuo', 'Mark Gurman']
+                }
+            }
+        };
+
+        let startTime;
+        let currentResults = {};
+
+        document.getElementById('orgSelect').addEventListener('change', (e) => {
+            const customInput = document.getElementById('customOrg');
+            if (e.target.value === 'custom') {
+                customInput.style.display = 'block';
+            } else {
+                customInput.style.display = 'none';
+            }
+        });
+
+        function getSelectedOrganization() {
+            const select = document.getElementById('orgSelect');
+            if (select.value === 'custom') {
+                const customName = document.getElementById('customOrg').value || 'Unknown Company';
+                return {
+                    id: customName.toLowerCase().replace(/\s+/g, '-'),
+                    name: customName,
+                    industry: 'General',
+                    keywords: [customName],
+                    competitors: [],
+                    stakeholders: { media: [], regulators: [], analysts: [] }
+                };
+            }
+            return organizations[select.value];
+        }
+
+        function updateProgress(percent, text) {
+            const bar = document.getElementById('progressBar');
+            bar.style.width = percent + '%';
+            bar.textContent = text || percent + '%';
+        }
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.intel-display').forEach(display => display.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        async function callEdgeFunction(name, endpoint, payload) {
+            const section = document.createElement('div');
+            section.className = 'test-section';
+            section.innerHTML = `
+                <div class="test-header">
+                    <h3>${name}</h3>
+                    <span class="status testing">Testing...</span>
+                </div>
+                <div class="results">Calling ${endpoint}...</div>
+            `;
+            document.getElementById('testSections').appendChild(section);
+
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                
+                if (response.ok && data.success !== false) {
+                    section.querySelector('.status').className = 'status success';
+                    section.querySelector('.status').textContent = 'Success';
+                    section.querySelector('.results').textContent = JSON.stringify(data, null, 2);
+                    return data;
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+            } catch (error) {
+                section.querySelector('.status').className = 'status error';
+                section.querySelector('.status').textContent = 'Error';
+                section.querySelector('.results').textContent = `Error: ${error.message}`;
+                return null;
+            }
+        }
+
+        async function runQuickTest() {
+            clearResults();
+            startTime = Date.now();
+            const org = getSelectedOrganization();
+            
+            updateProgress(10, 'Starting quick test...');
+            
+            // Test news intelligence only
+            updateProgress(30, 'Fetching news...');
+            const news = await callEdgeFunction(
+                '📰 News Intelligence',
+                'news-intelligence',
+                { method: 'gather', params: { organization: org } }
+            );
+            
+            updateProgress(100, 'Complete!');
+            
+            if (news && news.data) {
+                displayResults(news.data, 'news');
+                updateStats(news.data);
+            }
+        }
+
+        async function runFullPipeline() {
+            clearResults();
+            startTime = Date.now();
+            const org = getSelectedOrganization();
+            
+            console.log('Testing organization:', org);
+            updateProgress(5, 'Initializing...');
+            
+            // Stage 1: Collection
+            updateProgress(15, 'Stage 1: Collecting intelligence...');
+            const collection = await callEdgeFunction(
+                '🔍 Stage 1: Intelligence Collection',
+                'intelligence-collection-v1',
+                { 
+                    organization: org, 
+                    entities: {
+                        competitors: org.competitors || [],
+                        regulators: [],
+                        activists: [],
+                        media_outlets: [],
+                        investors: [],
+                        analysts: []
+                    }
+                }
+            );
+            
+            // Stage 2: News
+            updateProgress(30, 'Stage 2: Gathering news...');
+            const news = await callEdgeFunction(
+                '📰 Stage 2: News Intelligence',
+                'news-intelligence',
+                { method: 'gather', params: { organization: org } }
+            );
+            
+            // Stage 3: Competitors
+            updateProgress(45, 'Stage 3: Analyzing competitors...');
+            const competitors = await callEdgeFunction(
+                '⚔️ Stage 3: Competitor Analysis',
+                'intelligence-stage-1-competitors',
+                { 
+                    organization: org, 
+                    previousResults: {
+                        collection: collection?.intelligence
+                    }
+                }
+            );
+            
+            // Stage 4: Media
+            updateProgress(60, 'Stage 4: Media landscape...');
+            const media = await callEdgeFunction(
+                '📡 Stage 4: Media Intelligence',
+                'intelligence-stage-2-media',
+                { 
+                    organization: org, 
+                    previousResults: {
+                        competitors: competitors?.data
+                    }
+                }
+            );
+            
+            // Stage 5: Synthesis - Transform data from previous stages
+            updateProgress(80, 'Stage 5: Synthesizing intelligence...');
+            
+            // Transform competitor data into entity actions format
+            const entityActions = [];
+            
+            // Add competitor actions from Stage 3
+            if (competitors?.data?.competitors?.direct) {
+                competitors.data.competitors.direct.forEach(comp => {
+                    entityActions.push({
+                        entity: comp.name || 'Competitor',
+                        action: comp.recent_actions?.[0] || 'Active in market',
+                        type: 'competitor',
+                        impact: comp.threat_level || 'medium',
+                        relevance: 0.8,
+                        source: 'Competitor Analysis'
+                    });
+                });
+            }
+            
+            // Add media actions from Stage 4
+            if (media?.data?.journalists) {
+                media.data.journalists.slice(0, 3).forEach(journalist => {
+                    if (journalist.recent_articles?.[0]) {
+                        entityActions.push({
+                            entity: journalist.name,
+                            action: journalist.recent_articles[0].title,
+                            type: 'media',
+                            impact: journalist.contact_priority === 'high' ? 'high' : 'medium',
+                            relevance: 0.7,
+                            source: journalist.outlet
+                        });
+                    }
+                });
+            }
+            
+            // Transform news/collection data into topic trends
+            const topicTrends = [];
+            const topicMap = new Map();
+            
+            // Process collection data
+            if (collection?.intelligence?.raw_signals) {
+                collection.intelligence.raw_signals.forEach(signal => {
+                    const topic = signal.type || 'Industry News';
+                    if (!topicMap.has(topic)) {
+                        topicMap.set(topic, { topic, mentions: 0, sources: [] });
+                    }
+                    const trend = topicMap.get(topic);
+                    trend.mentions++;
+                    trend.sources.push(signal.source);
+                });
+            }
+            
+            // Process news data
+            if (news?.data?.articles) {
+                news.data.articles.forEach(article => {
+                    const topic = 'Industry News';
+                    if (!topicMap.has(topic)) {
+                        topicMap.set(topic, { topic, mentions: 0, sources: [] });
+                    }
+                    const trend = topicMap.get(topic);
+                    trend.mentions++;
+                    trend.sources.push(article.source);
+                });
+            }
+            
+            // Convert map to array
+            topicMap.forEach(trend => topicTrends.push(trend));
+            
+            const synthesis = await callEdgeFunction(
+                '🧠 Stage 5: Intelligence Synthesis',
+                'intelligence-synthesis-v4',
+                {
+                    organization: org,
+                    intelligence: {
+                        entity_actions: { 
+                            all: entityActions
+                        },
+                        topic_trends: { 
+                            all: topicTrends
+                        }
+                    }
+                }
+            );
+            
+            updateProgress(100, 'Complete!');
+            
+            // Display results
+            currentResults = {
+                collection,
+                news: news?.data,
+                competitors: competitors?.data,
+                media: media?.data,
+                synthesis: synthesis?.data
+            };
+            
+            displayAllResults();
+            updateStats(currentResults);
+        }
+
+        function displayAllResults() {
+            document.getElementById('tabContainer').style.display = 'flex';
+            document.getElementById('stats').style.display = 'grid';
+            
+            // Executive Summary
+            const execContent = document.getElementById('executiveContent');
+            if (currentResults.synthesis) {
+                execContent.innerHTML = `
+                    <h4>Key Insights</h4>
+                    <pre>${JSON.stringify(currentResults.synthesis, null, 2)}</pre>
+                `;
+            } else {
+                execContent.innerHTML = '<p>No synthesis data available</p>';
+            }
+            
+            // News Content
+            const newsContent = document.getElementById('newsContent');
+            if (currentResults.news) {
+                const articles = currentResults.news.industryNews || [];
+                newsContent.innerHTML = `
+                    <h4>Latest News (${articles.length} articles)</h4>
+                    ${articles.slice(0, 10).map(article => `
+                        <div style="margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 6px;">
+                            <strong>${article.title}</strong><br>
+                            <small>Source: ${article.source} | ${new Date(article.publishedAt).toLocaleDateString()}</small><br>
+                            <a href="${article.url}" target="_blank" style="color: #667eea;">Read more →</a>
+                        </div>
+                    `).join('')}
+                `;
+            }
+            
+            // Competitive Content
+            const compContent = document.getElementById('competitiveContent');
+            if (currentResults.competitors) {
+                compContent.innerHTML = `
+                    <h4>Competitor Activity</h4>
+                    <pre>${JSON.stringify(currentResults.competitors, null, 2)}</pre>
+                `;
+            }
+            
+            // Raw Data
+            document.getElementById('rawContent').innerHTML = `
+                <pre>${JSON.stringify(currentResults, null, 2)}</pre>
+            `;
+        }
+
+        function displayResults(data, type) {
+            document.getElementById('tabContainer').style.display = 'flex';
+            document.getElementById('stats').style.display = 'grid';
+            
+            if (type === 'news' && data.industryNews) {
+                const newsContent = document.getElementById('newsContent');
+                const articles = data.industryNews || [];
+                newsContent.innerHTML = `
+                    <h4>Latest News (${articles.length} articles)</h4>
+                    ${articles.slice(0, 10).map(article => `
+                        <div style="margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 6px;">
+                            <strong>${article.title}</strong><br>
+                            <small>Source: ${article.source}</small><br>
+                            <a href="${article.url}" target="_blank" style="color: #667eea;">Read more →</a>
+                        </div>
+                    `).join('')}
+                `;
+                showTab('news');
+            }
+        }
+
+        function updateStats(data) {
+            const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+            document.getElementById('statTime').textContent = elapsed + 's';
+            
+            if (data.industryNews) {
+                document.getElementById('statArticles').textContent = data.industryNews.length || 0;
+            }
+            if (data.competitorActivity) {
+                document.getElementById('statCompetitors').textContent = data.competitorActivity.length || 0;
+            }
+            if (data.opportunities || data.breakingNews) {
+                document.getElementById('statOpportunities').textContent = 
+                    (data.opportunities?.length || 0) + (data.breakingNews?.length || 0);
+            }
+        }
+
+        function clearResults() {
+            document.getElementById('testSections').innerHTML = '';
+            document.getElementById('tabContainer').style.display = 'none';
+            document.getElementById('stats').style.display = 'none';
+            document.querySelectorAll('.intel-display').forEach(display => {
+                if (display.id !== 'raw') {
+                    display.querySelector('div').innerHTML = '';
+                }
+            });
+            currentResults = {};
+            updateProgress(0, '');
+        }
+    </script>
+</body>
+</html>

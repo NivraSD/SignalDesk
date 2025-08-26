@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Cache Test</title>
+    <style>
+        body { font-family: monospace; background: #000; color: #0f0; padding: 20px; }
+        button { background: #0f0; color: #000; border: none; padding: 10px 20px; cursor: pointer; margin: 5px; }
+        pre { background: #111; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Simple Cache Test</h1>
+    
+    <button onclick="testWrite()">Write Test Data</button>
+    <button onclick="testRead()">Read Cache</button>
+    <button onclick="testClear()">Clear Cache</button>
+    <button onclick="showAll()">Show All Keys</button>
+    
+    <pre id="output"></pre>
+
+    <script>
+        function log(msg) {
+            document.getElementById('output').textContent += new Date().toLocaleTimeString() + ': ' + msg + '\n';
+        }
+        
+        function testWrite() {
+            log('Writing test data to localStorage...');
+            const testOrg = {
+                id: 'test-org',
+                name: 'Test Organization',
+                industry: 'Technology',
+                competitors: ['Competitor 1', 'Competitor 2'],
+                stakeholders: {
+                    media: ['TechCrunch', 'Reuters'],
+                    regulators: ['FTC', 'SEC']
+                }
+            };
+            
+            localStorage.setItem('organization', JSON.stringify(testOrg));
+            localStorage.setItem('organizationName', testOrg.name);
+            log('✅ Test data written');
+        }
+        
+        function testRead() {
+            log('Reading from localStorage...');
+            const org = localStorage.getItem('organization');
+            log('Raw result: ' + (org ? 'FOUND' : 'NULL'));
+            if (org) {
+                try {
+                    const parsed = JSON.parse(org);
+                    log('✅ Parsed successfully');
+                    log('Name: ' + parsed.name);
+                    log('Industry: ' + parsed.industry);
+                    log('Competitors: ' + (parsed.competitors?.length || 0));
+                    log('Full data: ' + JSON.stringify(parsed, null, 2));
+                } catch (e) {
+                    log('❌ Parse error: ' + e.message);
+                }
+            } else {
+                log('❌ No organization found');
+            }
+        }
+        
+        function testClear() {
+            localStorage.removeItem('organization');
+            localStorage.removeItem('organizationName');
+            log('✅ Cache cleared');
+        }
+        
+        function showAll() {
+            log('All localStorage keys:');
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                const value = localStorage.getItem(key);
+                log(`  ${key}: ${value?.substring(0, 50)}${value?.length > 50 ? '...' : ''}`);
+            }
+        }
+    </script>
+</body>
+</html>

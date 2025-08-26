@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cache Debug Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #000;
+            color: #0f0;
+            padding: 20px;
+        }
+        button {
+            background: #0f0;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        pre {
+            background: #111;
+            padding: 10px;
+            overflow-x: auto;
+        }
+        .error {
+            color: #f00;
+        }
+        .success {
+            color: #0f0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Cache Debug Test</h1>
+    
+    <div>
+        <h2>Test Cache Persistence</h2>
+        <button onclick="testDiscoveryAndCache()">1. Run Discovery + Cache</button>
+        <button onclick="testCacheRead(); console.log('Read Cache button clicked')">2. Read Cache</button>
+        <button onclick="clearCache()">3. Clear Cache</button>
+        <button onclick="showAllLocalStorage()">4. Show All localStorage</button>
+    </div>
+
+    <pre id="result"></pre>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+
+        function log(message) {
+            const result = document.getElementById('result');
+            result.textContent += new Date().toLocaleTimeString() + ': ' + message + '\n';
+            console.log(message);
+        }
+
+        async function testDiscoveryAndCache() {
+            log('🚀 Testing discovery and cache...');
+            
+            try {
+                // Step 1: Call discovery
+                log('📡 Calling Claude discovery...');
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/claude-discovery`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organizationName: 'OpenAI'
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Discovery failed: ${response.status}`);
+                }
+
+                const data = await response.json();
+                log('✅ Discovery successful');
+                log('📊 Organization data received: ' + JSON.stringify(data.organization, null, 2));
+                
+                // Step 2: Save to cache
+                log('💾 Saving to localStorage...');
+                localStorage.setItem('organization', JSON.stringify(data.organization));
+                localStorage.setItem('organizationName', data.organization.name);
+                localStorage.setItem('hasCompletedOnboarding', 'true');
+                
+                // Step 3: Immediately verify save
+                log('🔍 Verifying save...');
+                const saved = localStorage.getItem('organization');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    log('✅ Cache verified: ' + parsed.name + ' with ' + (parsed.competitors?.length || 0) + ' competitors');
+                    log('📋 Full cached data: ' + JSON.stringify(parsed, null, 2));
+                } else {
+                    log('❌ Cache verification FAILED - no data saved');
+                }
+                
+                // Step 4: Wait and check again (simulate navigation delay)
+                log('⏳ Waiting 2 seconds to simulate navigation...');
+                setTimeout(() => {
+                    const stillThere = localStorage.getItem('organization');
+                    if (stillThere) {
+                        log('✅ Discovery complete: Cache still exists after 2 seconds');
+                        log('🎯 Now you can click "2. Read Cache" to test reading');
+                    } else {
+                        log('❌ Discovery issue: Cache DISAPPEARED after 2 seconds');
+                    }
+                }, 2000);
+                
+            } catch (error) {
+                log('❌ Error: ' + error.message);
+            }
+        }
+
+        function testCacheRead() {
+            console.log('testCacheRead function started');
+            try {
+                console.log('About to call log function');
+                log('');
+                log('=== CACHE READ TEST STARTING ===');
+                log('🔍 Reading cache...');
+                console.log('First log called successfully');
+                
+                log('📊 localStorage.length: ' + localStorage.length);
+                console.log('localStorage length logged');
+            
+                // Check all possible keys
+                console.log('About to check possible keys');
+                const possibleKeys = ['organization', 'organizationName', 'hasCompletedOnboarding'];
+                possibleKeys.forEach(key => {
+                    console.log('Checking key:', key);
+                    const value = localStorage.getItem(key);
+                    log('🔍 ' + key + ': ' + (value ? 'EXISTS (' + value.substring(0, 50) + '...)' : 'NULL'));
+                });
+                console.log('Finished checking keys');
+                
+                const org = localStorage.getItem('organization');
+                console.log('Got organization from localStorage:', org ? 'FOUND' : 'NULL');
+                
+                if (org) {
+                    try {
+                        const parsed = JSON.parse(org);
+                        log('✅ Found organization: ' + parsed.name);
+                        log('📊 Competitors: ' + (parsed.competitors?.length || 0));
+                        log('📰 Media: ' + (parsed.stakeholders?.media?.length || 0));
+                        log('🏢 Headquarters: ' + parsed.headquarters);
+                        log('🏭 Industry: ' + parsed.industry);
+                        log('📋 Full data: ' + JSON.stringify(parsed, null, 2));
+                    } catch (e) {
+                        log('❌ Failed to parse cached data: ' + e.message);
+                        log('🗃️ Raw data: ' + org);
+                    }
+                } else {
+                    log('❌ No organization found in cache');
+                    log('🔍 But localStorage has ' + localStorage.length + ' total items');
+                }
+                console.log('testCacheRead function completed successfully');
+            } catch (error) {
+                console.error('testCacheRead error caught:', error);
+                log('❌ testCacheRead error: ' + error.message);
+            }
+        }
+
+        function clearCache() {
+            log('🧹 Clearing cache...');
+            const keys = ['organization', 'organizationName', 'hasCompletedOnboarding'];
+            keys.forEach(key => {
+                localStorage.removeItem(key);
+                log('❌ Removed: ' + key);
+            });
+        }
+
+        function showAllLocalStorage() {
+            log('📋 All localStorage keys:');
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                const value = localStorage.getItem(key);
+                log(`  ${key}: ${value.length > 100 ? value.substring(0, 100) + '...' : value}`);
+            }
+        }
+    </script>
+</body>
+</html>

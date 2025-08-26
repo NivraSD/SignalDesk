@@ -39,13 +39,12 @@ import NivDatabase from "./pages/NivDatabase"; // Database-driven Niv (no realti
 import NivDirect from "./pages/NivDirect"; // Direct API integration - most reliable
 
 // New Railway V2 with Neon Effects
-import RailwayV2Enhanced from "./components/RailwayV2Enhanced";
+import RailwayV2 from "./components/RailwayV2";
 import SystemInitializer from "./components/SystemInitializer";
 import SmartOnboarding from "./components/SmartOnboarding";
+import OnboardingV2 from "./components/OnboardingV2";
+import OnboardingV3 from "./components/OnboardingV3";
 
-// DEPLOYMENT MARKER - V3.2 CACHE FIX
-console.log("🚨 DEPLOYMENT: 2025-08-25 16:35:00 | COMMIT: 8b0cf6e20 | CACHE MANAGEMENT FIXED");
-console.log("🔄 NEW SEARCH BUTTON ADDED | CACHE CLEARING FIXED | DATA ACCUMULATION RESOLVED");
 
 // Log Supabase initialization for debugging
 console.log('🚀 SignalDesk initialized with Supabase:', supabase ? 'Connected' : 'Not connected');
@@ -103,15 +102,19 @@ function App() {
             {/* RailwayV2 - Modern Neon Interface */}
             <Routes>
               <Route path="/login" element={<Login />} />
-              <Route path="/initialize" element={<SmartOnboarding />} />
-              <Route path="/onboarding" element={<SmartOnboarding />} />
+              <Route path="/initialize" element={<OnboardingV3 />} />
+              <Route path="/onboarding" element={<OnboardingV3 />} />
               <Route
-                path="/*"
+                path="/railway"
                 element={
                   <PrivateRoute>
-                    <RailwayV2Enhanced />
+                    <RailwayV2 />
                   </PrivateRoute>
                 }
+              />
+              <Route
+                path="/"
+                element={<OnboardingV3 />}
               />
             </Routes>
           </IntelligenceProvider>
