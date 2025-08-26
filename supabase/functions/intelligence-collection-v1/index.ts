@@ -212,7 +212,69 @@ serve(async (req) => {
       throw new Error('Organization required')
     }
     
+    // First, save the organization profile and entities
+    try {
+      const persistResponse = await fetch(
+        'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/intelligence-persistence',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': req.headers.get('Authorization') || ''
+          },
+          body: JSON.stringify({
+            action: 'saveProfile',
+            organization_name: organization.name,
+            industry: organization.industry,
+            ...entities
+          })
+        }
+      )
+      if (persistResponse.ok) {
+        console.log('✅ Organization profile saved')
+      }
+    } catch (e) {
+      console.log('Could not save organization profile:', e)
+    }
+    
     const intelligence = await collectIntelligence(entities, organization)
+    
+    // Save collected intelligence to database
+    if (intelligence.raw_signals.length > 0) {
+      for (const signal of intelligence.raw_signals) {
+        try {
+          const persistResponse = await fetch(
+            'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/intelligence-persistence',
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': req.headers.get('Authorization') || ''
+              },
+              body: JSON.stringify({
+                action: 'save',
+                organization_id: organization.id || organization.name,
+                organization_name: organization.name,
+                stage: 'collection',
+                data_type: signal.type,
+                content: signal,
+                metadata: {
+                  source: signal.source,
+                  entity: signal.entity,
+                  confidence: signal.confidence || 0.75
+                }
+              })
+            }
+          )
+          if (!persistResponse.ok) {
+            console.log('Failed to persist signal')
+          }
+        } catch (e) {
+          console.log('Persist error:', e)
+        }
+      }
+      console.log(`💾 Saved ${intelligence.raw_signals.length} signals to database`)
+    }
     
     return new Response(
       JSON.stringify({
@@ -221,7 +283,8 @@ serve(async (req) => {
         statistics: {
           total_signals: intelligence.raw_signals.length,
           sources: intelligence.metadata.sources.length,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          persisted: true
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

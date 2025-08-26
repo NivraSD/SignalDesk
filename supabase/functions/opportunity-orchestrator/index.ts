@@ -2,7 +2,7 @@
 // NO FALLBACKS, NO TEMPLATES, NO HARDCODED MICROSOFT/GOOGLE
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { corsHeaders } from "../_shared/cors.ts"
+import { withCors, jsonResponse, errorResponse } from "../_shared/cors.ts"
 
 const FIRECRAWL_API_KEY = 'fc-3048810124b640eb99293880a4ab25d0'
 
@@ -321,15 +321,40 @@ async function searchWithFirecrawl(query: string, options: any = {}) {
 }
 
 // Main handler
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
-  }
-
+serve(withCors(async (req) => {
   try {
     const { organization, config } = await req.json()
     
     console.log(`🎯 Opportunity Orchestrator for ${organization.name} - NO FALLBACKS`)
+    
+    // Retrieve existing intelligence from database
+    let savedIntelligence = null
+    try {
+      const persistResponse = await fetch(
+        'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/intelligence-persistence',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': req.headers.get('Authorization') || ''
+          },
+          body: JSON.stringify({
+            action: 'retrieve',
+            organization_name: organization.name,
+            limit: 100,
+            since: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() // Last 24 hours
+          })
+        }
+      )
+      
+      if (persistResponse.ok) {
+        const result = await persistResponse.json()
+        savedIntelligence = result.data
+        console.log(`📊 Retrieved ${result.count} existing intelligence items from database`)
+      }
+    } catch (e) {
+      console.log('Could not retrieve saved intelligence:', e)
+    }
     
     // PHASE 1: Discover opportunity landscape
     console.log('🔍 Phase 1: Discovering opportunity landscape...')
@@ -350,43 +375,66 @@ serve(async (req) => {
     
     console.log(`✅ Created ${opportunities.length} REAL opportunities (no templates!)`)
     
-    return new Response(
-      JSON.stringify({
-        success: true,
-        organization: organization.name,
-        timestamp: new Date().toISOString(),
-        phases_completed: {
-          discovery: true,
-          gathering: true,
-          synthesis: true
-        },
-        signal_summary: {
-          competitor_signals: signals.competitor_signals.length,
-          cascade_indicators: signals.cascade_indicators.length,
-          narrative_gaps: signals.narrative_gaps.length
-        },
-        opportunities,
-        message: opportunities.length > 0 
-          ? `Found ${opportunities.length} real opportunities from actual signals`
-          : 'No opportunities detected from current signals (this is normal if no events are happening)'
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
+    // Save opportunities to database
+    if (opportunities.length > 0) {
+      for (const opp of opportunities) {
+        try {
+          await fetch(
+            'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/intelligence-persistence',
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': req.headers.get('Authorization') || ''
+              },
+              body: JSON.stringify({
+                action: 'save',
+                organization_id: organization.name,
+                organization_name: organization.name,
+                stage: 'opportunities',
+                data_type: opp.opportunity_type,
+                content: opp,
+                metadata: {
+                  urgency: opp.urgency,
+                  confidence: opp.confidence,
+                  window: opp.window
+                }
+              })
+            }
+          )
+        } catch (e) {
+          console.log('Could not save opportunity:', e)
+        }
       }
-    )
+      console.log(`💾 Saved ${opportunities.length} opportunities to database`)
+    }
+    
+    return jsonResponse({
+      success: true,
+      organization: organization.name,
+      timestamp: new Date().toISOString(),
+      phases_completed: {
+        discovery: true,
+        gathering: true,
+        synthesis: true
+      },
+      signal_summary: {
+        competitor_signals: signals.competitor_signals.length,
+        cascade_indicators: signals.cascade_indicators.length,
+        narrative_gaps: signals.narrative_gaps.length,
+        from_database: savedIntelligence?.length || 0
+      },
+      opportunities,
+      message: opportunities.length > 0 
+        ? `Found ${opportunities.length} real opportunities from actual signals`
+        : 'No opportunities detected from current signals (this is normal if no events are happening)'
+    })
   } catch (error) {
     console.error('Orchestration error:', error)
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message,
-        opportunities: [] // Empty array, NO FALLBACKS
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
-      }
+    return errorResponse(
+      error.message || 'Orchestration failed',
+      500,
+      { opportunities: [] } // Empty array, NO FALLBACKS
     )
   }
-})
+}))

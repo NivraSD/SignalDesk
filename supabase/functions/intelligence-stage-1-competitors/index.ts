@@ -16,18 +16,55 @@ serve(async (req) => {
   try {
     const { organization, competitors = [] } = await req.json();
     console.log(`🎯 Stage 1: Real Competitor Analysis for ${organization.name}`);
-    console.log(`📊 Analyzing ${competitors.length} competitors with live data...`);
+    
+    // First, retrieve any existing intelligence from the database
+    let enhancedCompetitors = [...competitors];
+    try {
+      const persistResponse = await fetch(
+        'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/intelligence-persistence',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': req.headers.get('Authorization') || ''
+          },
+          body: JSON.stringify({
+            action: 'getTargets',
+            organization_name: organization.name
+          })
+        }
+      );
+      
+      if (persistResponse.ok) {
+        const { targets } = await persistResponse.json();
+        if (targets?.competitors) {
+          console.log(`📊 Found ${targets.competitors.length} competitors in database`);
+          // Merge database competitors with provided ones
+          const dbCompetitorNames = targets.competitors.map((c: any) => c.name);
+          for (const dbComp of targets.competitors) {
+            if (!competitors.some((c: any) => (c.name || c) === dbComp.name)) {
+              enhancedCompetitors.push(dbComp);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.log('Could not retrieve targets:', e);
+    }
+    
+    console.log(`📊 Total competitors to analyze: ${enhancedCompetitors.length}`);
 
     const startTime = Date.now();
     const results = {
       organization: await analyzeOrganization(organization),
-      competitors: await analyzeAllCompetitorsWithRealData(competitors, organization),
+      competitors: await analyzeAllCompetitorsWithRealData(enhancedCompetitors, organization),
       competitive_landscape: null,
       metadata: {
         stage: 1,
         duration: 0,
-        competitors_analyzed: competitors.length,
-        data_source: 'firecrawl_api'
+        competitors_analyzed: enhancedCompetitors.length,
+        data_source: 'firecrawl_api',
+        competitors_from_db: enhancedCompetitors.length - competitors.length
       }
     };
 
@@ -39,6 +76,36 @@ serve(async (req) => {
 
     results.metadata.duration = Date.now() - startTime;
     console.log(`✅ Stage 1 complete in ${results.metadata.duration}ms`);
+
+    // Save competitor analysis results to database
+    try {
+      await fetch(
+        'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/intelligence-persistence',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': req.headers.get('Authorization') || ''
+          },
+          body: JSON.stringify({
+            action: 'save',
+            organization_id: organization.name,
+            organization_name: organization.name,
+            stage: 'competitor_analysis',
+            data_type: 'competitor_insights',
+            content: results,
+            metadata: {
+              stage: 1,
+              competitors_analyzed: enhancedCompetitors.length,
+              timestamp: new Date().toISOString()
+            }
+          })
+        }
+      );
+      console.log('💾 Competitor analysis saved to database');
+    } catch (e) {
+      console.log('Could not save competitor analysis:', e);
+    }
 
     return new Response(JSON.stringify({
       success: true,
