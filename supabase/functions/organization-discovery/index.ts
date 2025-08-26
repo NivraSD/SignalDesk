@@ -151,9 +151,61 @@ For ${organizationName}, be as specific and accurate as possible. If it's a well
       media: organization.stakeholders.media.length
     });
 
+    // SAVE TO DATABASE - This is critical!
+    try {
+      const persistResponse = await fetch(
+        'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/intelligence-persistence',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': req.headers.get('Authorization') || ''
+          },
+          body: JSON.stringify({
+            action: 'saveProfile',
+            organization_name: organization.name,
+            industry: organization.industry,
+            competitors: organization.competitors,
+            regulators: organization.stakeholders.regulators,
+            media: organization.stakeholders.media,
+            investors: organization.stakeholders.investors,
+            analysts: organization.stakeholders.analysts,
+            activists: organization.stakeholders.activists,
+            keywords: organization.keywords,
+            metadata: {
+              description: organization.description,
+              url: organization.url,
+              business_model: organization.business_model,
+              market_position: organization.market_position,
+              headquarters: organization.headquarters,
+              founded: organization.founded,
+              employee_range: organization.employee_range,
+              revenue_range: organization.revenue_range,
+              executives: organization.executives,
+              products: organization.products,
+              target_customers: organization.target_customers,
+              recent_topics: organization.recent_topics,
+              key_narratives: organization.key_narratives,
+              vulnerabilities: organization.vulnerabilities,
+              opportunities: organization.opportunities
+            }
+          })
+        }
+      );
+      
+      if (persistResponse.ok) {
+        console.log('💾 Organization profile saved to database');
+      } else {
+        console.error('Failed to save to database:', await persistResponse.text());
+      }
+    } catch (saveError) {
+      console.error('Database save error:', saveError);
+    }
+
     return new Response(JSON.stringify({
       success: true,
-      organization
+      organization,
+      persisted: true
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });

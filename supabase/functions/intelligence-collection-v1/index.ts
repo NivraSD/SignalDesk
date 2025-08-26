@@ -6,11 +6,26 @@ import { corsHeaders } from "../_shared/cors.ts"
 
 const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY') || 'fc-3048810124b640eb99293880a4ab25d0'
 
-async function collectIntelligence(entities: any, organization: any) {
+async function collectIntelligence(entities: any, organization: any, savedProfile: any) {
   console.log('🚀 Fast Intelligence Collection starting...')
+  console.log('📊 Using saved profile:', {
+    competitors: savedProfile?.competitors?.length || 0,
+    media: savedProfile?.media?.length || 0,
+    keywords: savedProfile?.keywords?.length || 0
+  })
   
   const startTime = Date.now()
   const timeout = 25000 // 25 seconds max (leaving buffer for response)
+  
+  // Merge saved profile with provided entities
+  const enhancedEntities = {
+    competitors: savedProfile?.competitors || entities?.competitors || [],
+    regulators: savedProfile?.regulators || entities?.regulators || [],
+    media: savedProfile?.media || entities?.media || [],
+    investors: savedProfile?.investors || entities?.investors || [],
+    analysts: savedProfile?.analysts || entities?.analysts || [],
+    activists: savedProfile?.activists || entities?.activists || []
+  }
   
   const intelligence = {
     raw_signals: [],
@@ -28,8 +43,8 @@ async function collectIntelligence(entities: any, organization: any) {
   collectors.push(collectRSS(organization, timeout))
   
   // 2. Firecrawl for top 3 competitors only (rate limited)
-  if (entities.competitors?.length > 0) {
-    const topCompetitors = entities.competitors.slice(0, 3)
+  if (enhancedEntities.competitors?.length > 0) {
+    const topCompetitors = enhancedEntities.competitors.slice(0, 3)
     collectors.push(collectFirecrawl(topCompetitors, timeout))
   }
   
@@ -212,9 +227,10 @@ serve(async (req) => {
       throw new Error('Organization required')
     }
     
-    // First, save the organization profile and entities
+    // First, RETRIEVE the saved organization profile from database
+    let savedProfile = null
     try {
-      const persistResponse = await fetch(
+      const getTargetsResponse = await fetch(
         'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/intelligence-persistence',
         {
           method: 'POST',
@@ -223,21 +239,21 @@ serve(async (req) => {
             'Authorization': req.headers.get('Authorization') || ''
           },
           body: JSON.stringify({
-            action: 'saveProfile',
-            organization_name: organization.name,
-            industry: organization.industry,
-            ...entities
+            action: 'getTargets',
+            organization_name: organization.name
           })
         }
       )
-      if (persistResponse.ok) {
-        console.log('✅ Organization profile saved')
+      if (getTargetsResponse.ok) {
+        const result = await getTargetsResponse.json()
+        savedProfile = result.targets
+        console.log('✅ Retrieved saved profile from database')
       }
     } catch (e) {
-      console.log('Could not save organization profile:', e)
+      console.log('Could not retrieve saved profile:', e)
     }
     
-    const intelligence = await collectIntelligence(entities, organization)
+    const intelligence = await collectIntelligence(entities, organization, savedProfile)
     
     // Save collected intelligence to database
     if (intelligence.raw_signals.length > 0) {
