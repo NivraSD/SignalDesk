@@ -98,7 +98,7 @@ const OnboardingV3 = () => {
       };
       addDebugLog('📤 Request payload', requestPayload);
       
-      const response = await fetch(`${supabaseUrl}/functions/v1/claude-discovery`, {
+      const response = await fetch(`${supabaseUrl}/functions/v1/organization-discovery`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

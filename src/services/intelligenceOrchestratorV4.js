@@ -89,9 +89,48 @@ class IntelligenceOrchestratorV4 {
    * Stage 1: Organization Data Extraction
    */
   async runOrganizationExtraction(organization, config) {
-    console.log('🏢 Stage 1: Organization Data Extraction');
+    console.log('🏢 Stage 1: Organization Data Extraction & Discovery');
     
-    // First collect comprehensive data about the organization
+    // STEP 1: Discovery - Extract and save comprehensive organization data
+    console.log('🔍 Step 1: Discovering organization profile...');
+    const discoveryResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-discovery-v3`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.supabaseKey}`
+      },
+      body: JSON.stringify({
+        organization,
+        stakeholders: {
+          competitors: config.competitors || [],
+          regulators: config.regulators || [],
+          activists: config.activists || [],
+          media_outlets: config.media_outlets || [],
+          investors: config.investors || [],
+          analysts: config.analysts || []
+        },
+        monitoring_topics: config.monitoring_topics || []
+      })
+    });
+
+    if (!discoveryResponse.ok) {
+      console.error('Discovery failed:', discoveryResponse.status);
+    } else {
+      const discoveryData = await discoveryResponse.json();
+      console.log('✅ Discovery complete:', {
+        entities: Object.keys(discoveryData.entities || {}),
+        saved: discoveryData.statistics?.saved
+      });
+      
+      // Update config with discovered entities
+      if (discoveryData.entities) {
+        config = { ...config, ...discoveryData.entities };
+        organization = discoveryData.organization || organization;
+      }
+    }
+    
+    // STEP 2: Collection - Gather signals using discovered entities
+    console.log('📡 Step 2: Collecting intelligence signals...');
     const collectionResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-collection-v1`, {
       method: 'POST',
       headers: {
@@ -150,6 +189,36 @@ class IntelligenceOrchestratorV4 {
   async runCompetitiveStage(organization, config) {
     console.log('🎯 Stage 2: Competitive Intelligence Analysis');
     
+    // FIRST: Retrieve saved organization profile from database
+    console.log('📊 Retrieving saved organization profile...');
+    let savedProfile = null;
+    try {
+      const persistResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-persistence`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.supabaseKey}`
+        },
+        body: JSON.stringify({
+          action: 'getProfile',
+          organization_name: organization.name
+        })
+      });
+      
+      if (persistResponse.ok) {
+        const result = await persistResponse.json();
+        savedProfile = result.profile;
+        console.log('✅ Retrieved saved profile with competitors:', savedProfile?.competitors?.length || 0);
+        
+        // Use saved competitors if not provided
+        if (savedProfile?.competitors && (!config.competitors || config.competitors.length === 0)) {
+          config.competitors = savedProfile.competitors;
+        }
+      }
+    } catch (e) {
+      console.error('Could not retrieve saved profile:', e);
+    }
+    
     const competitorResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-stage-1-competitors`, {
       method: 'POST',
       headers: {
@@ -158,7 +227,7 @@ class IntelligenceOrchestratorV4 {
       },
       body: JSON.stringify({
         organization,
-        competitors: config.competitors || []
+        competitors: config.competitors || savedProfile?.competitors || []
       })
     });
 
@@ -197,6 +266,36 @@ class IntelligenceOrchestratorV4 {
   async runMediaStage(organization, config) {
     console.log('📰 Stage 3: Media Landscape Mapping');
     
+    // FIRST: Retrieve saved organization profile and previous stage data
+    console.log('📊 Retrieving saved media outlets from database...');
+    let savedProfile = null;
+    try {
+      const persistResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-persistence`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.supabaseKey}`
+        },
+        body: JSON.stringify({
+          action: 'getProfile',
+          organization_name: organization.name
+        })
+      });
+      
+      if (persistResponse.ok) {
+        const result = await persistResponse.json();
+        savedProfile = result.profile;
+        console.log('✅ Retrieved saved profile with media outlets:', savedProfile?.media?.length || 0);
+        
+        // Use saved media outlets if not provided
+        if (savedProfile?.media && (!config.media_outlets || config.media_outlets.length === 0)) {
+          config.media_outlets = savedProfile.media;
+        }
+      }
+    } catch (e) {
+      console.error('Could not retrieve saved profile:', e);
+    }
+    
     const mediaResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-stage-2-media`, {
       method: 'POST',
       headers: {
@@ -205,7 +304,7 @@ class IntelligenceOrchestratorV4 {
       },
       body: JSON.stringify({
         organization,
-        media_outlets: config.media_outlets || []
+        media_outlets: config.media_outlets || savedProfile?.media || []
       })
     });
 
@@ -233,6 +332,46 @@ class IntelligenceOrchestratorV4 {
   async runRegulatoryStage(organization, config) {
     console.log('⚖️ Stage 4: Regulatory & Stakeholder Analysis');
     
+    // FIRST: Retrieve saved organization profile with regulators, analysts, investors
+    console.log('📊 Retrieving saved stakeholders from database...');
+    let savedProfile = null;
+    try {
+      const persistResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-persistence`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.supabaseKey}`
+        },
+        body: JSON.stringify({
+          action: 'getProfile',
+          organization_name: organization.name
+        })
+      });
+      
+      if (persistResponse.ok) {
+        const result = await persistResponse.json();
+        savedProfile = result.profile;
+        console.log('✅ Retrieved saved profile with stakeholders:', {
+          regulators: savedProfile?.regulators?.length || 0,
+          analysts: savedProfile?.analysts?.length || 0,
+          investors: savedProfile?.investors?.length || 0
+        });
+        
+        // Use saved stakeholders if not provided
+        if (!config.regulators || config.regulators.length === 0) {
+          config.regulators = savedProfile?.regulators || [];
+        }
+        if (!config.analysts || config.analysts.length === 0) {
+          config.analysts = savedProfile?.analysts || [];
+        }
+        if (!config.investors || config.investors.length === 0) {
+          config.investors = savedProfile?.investors || [];
+        }
+      }
+    } catch (e) {
+      console.error('Could not retrieve saved profile:', e);
+    }
+    
     const regulatoryResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-stage-3-regulatory`, {
       method: 'POST',
       headers: {
@@ -241,9 +380,9 @@ class IntelligenceOrchestratorV4 {
       },
       body: JSON.stringify({
         organization,
-        regulators: config.regulators || [],
-        analysts: config.analysts || [],
-        investors: config.investors || []
+        regulators: config.regulators || savedProfile?.regulators || [],
+        analysts: config.analysts || savedProfile?.analysts || [],
+        investors: config.investors || savedProfile?.investors || []
       })
     });
 
@@ -271,6 +410,60 @@ class IntelligenceOrchestratorV4 {
   async runTrendsStage(organization, config) {
     console.log('📈 Stage 5: Market Trends & Topic Analysis');
     
+    // FIRST: Retrieve saved topics and keywords from database
+    console.log('📊 Retrieving saved topics and previous intelligence...');
+    let savedProfile = null;
+    let savedIntelligence = [];
+    
+    try {
+      // Get organization profile
+      const profileResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-persistence`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.supabaseKey}`
+        },
+        body: JSON.stringify({
+          action: 'getProfile',
+          organization_name: organization.name
+        })
+      });
+      
+      if (profileResponse.ok) {
+        const result = await profileResponse.json();
+        savedProfile = result.profile;
+        console.log('✅ Retrieved saved profile with keywords:', savedProfile?.keywords?.length || 0);
+        
+        // Use saved keywords/topics if not provided
+        if (!config.monitoring_topics || config.monitoring_topics.length === 0) {
+          config.monitoring_topics = savedProfile?.keywords || savedProfile?.topics || [];
+        }
+      }
+      
+      // Also retrieve recent intelligence to extract trending topics
+      const intelligenceResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-persistence`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.supabaseKey}`
+        },
+        body: JSON.stringify({
+          action: 'retrieve',
+          organization_name: organization.name,
+          limit: 50,
+          since: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+        })
+      });
+      
+      if (intelligenceResponse.ok) {
+        const result = await intelligenceResponse.json();
+        savedIntelligence = result.data || [];
+        console.log(`✅ Retrieved ${savedIntelligence.length} recent intelligence items for trend analysis`);
+      }
+    } catch (e) {
+      console.error('Could not retrieve saved data:', e);
+    }
+    
     const trendsResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-stage-4-trends`, {
       method: 'POST',
       headers: {
@@ -279,7 +472,8 @@ class IntelligenceOrchestratorV4 {
       },
       body: JSON.stringify({
         organization,
-        monitoring_topics: config.monitoring_topics || []
+        monitoring_topics: config.monitoring_topics || savedProfile?.keywords || [],
+        recent_intelligence: savedIntelligence
       })
     });
 
@@ -313,6 +507,33 @@ class IntelligenceOrchestratorV4 {
       stages: Object.keys(previousStageResults || {}),
       sampleStage: previousStageResults ? Object.keys(previousStageResults)[0] : null
     });
+    
+    // IMPORTANT: Retrieve saved intelligence from database
+    console.log('📊 Retrieving saved intelligence from database...');
+    let savedIntelligence = null;
+    try {
+      const persistResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-persistence`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.supabaseKey}`
+        },
+        body: JSON.stringify({
+          action: 'retrieve',
+          organization_name: organization.name,
+          limit: 200,
+          since: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+        })
+      });
+      
+      if (persistResponse.ok) {
+        const result = await persistResponse.json();
+        savedIntelligence = result.data;
+        console.log(`✅ Retrieved ${result.count} saved intelligence items`);
+      }
+    } catch (e) {
+      console.error('Could not retrieve saved intelligence:', e);
+    }
     
     // Transform stage results to the format expected by synthesis Edge Function
     const transformedResults = {};

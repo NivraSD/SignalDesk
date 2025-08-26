@@ -1,9 +1,11 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { corsHeaders } from '../_shared/cors.ts';
 
+const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
+
 /**
  * Stage 4: Market Trends & Topic Analysis
- * Takes 30 seconds to identify trending narratives and opportunities
+ * Uses Claude API and saved intelligence for trend analysis
  */
 
 serve(async (req) => {
@@ -12,28 +14,61 @@ serve(async (req) => {
   }
 
   try {
-    const { organization, previousResults } = await req.json();
+    const { organization, monitoring_topics = [], recent_intelligence } = await req.json();
     console.log(`📈 Stage 4: Market Trends & Topics Analysis for ${organization.name}`);
     
     const startTime = Date.now();
     
-    // Extract context from previous stages
-    const competitiveContext = previousResults?.competitors || {};
-    const mediaContext = previousResults?.media || {};
-    const regulatoryContext = previousResults?.regulatory || {};
+    // Retrieve saved intelligence from database
+    let savedIntelligence = recent_intelligence || [];
+    if (!savedIntelligence.length) {
+      try {
+        const response = await fetch(
+          'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/intelligence-persistence',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': req.headers.get('Authorization') || ''
+            },
+            body: JSON.stringify({
+              action: 'retrieve',
+              organization_name: organization.name,
+              limit: 100,
+              since: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+            })
+          }
+        );
+        
+        if (response.ok) {
+          const result = await response.json();
+          savedIntelligence = result.data || [];
+          console.log(`✅ Retrieved ${savedIntelligence.length} intelligence items for trend analysis`);
+        }
+      } catch (e) {
+        console.error('Could not retrieve intelligence:', e);
+      }
+    }
+    
+    // Use Claude API if available
+    let trendsInsights = null;
+    if (ANTHROPIC_API_KEY && savedIntelligence.length > 0) {
+      trendsInsights = await analyzeWithClaude(organization, savedIntelligence, monitoring_topics);
+    }
     
     const results = {
-      trending_topics: await identifyTrendingTopics(organization, mediaContext),
-      narrative_analysis: await analyzeNarratives(organization, competitiveContext),
-      conversation_gaps: await findConversationGaps(organization, mediaContext),
-      emerging_themes: await identifyEmergingThemes(organization),
-      declining_topics: await identifyDecliningTopics(organization),
-      pr_opportunities: await mapPROpportunities(organization, previousResults),
+      trending_topics: trendsInsights?.trends || await identifyTrendingTopics(organization, savedIntelligence),
+      narrative_analysis: trendsInsights?.narratives || await analyzeNarratives(organization, savedIntelligence),
+      conversation_gaps: trendsInsights?.gaps || await findConversationGaps(organization, savedIntelligence),
+      emerging_themes: trendsInsights?.emerging || await identifyEmergingThemes(organization),
+      declining_topics: trendsInsights?.declining || await identifyDecliningTopics(organization),
+      pr_opportunities: trendsInsights?.opportunities || await mapPROpportunities(organization, savedIntelligence),
       metadata: {
         stage: 4,
         duration: 0,
         topics_analyzed: 0,
-        gaps_identified: 0
+        gaps_identified: 0,
+        data_source: trendsInsights ? 'claude_api' : 'pattern_analysis'
       }
     };
 
@@ -46,6 +81,32 @@ serve(async (req) => {
     
     console.log(`✅ Stage 4 complete in ${results.metadata.duration}ms`);
     console.log(`📊 Analyzed ${results.metadata.topics_analyzed} topics, found ${results.metadata.gaps_identified} gaps`);
+
+    // Save results to database
+    try {
+      await fetch(
+        'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/intelligence-persistence',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': req.headers.get('Authorization') || ''
+          },
+          body: JSON.stringify({
+            action: 'save',
+            organization_id: organization.name,
+            organization_name: organization.name,
+            stage: 'trends_analysis',
+            data_type: 'trend_insights',
+            content: results,
+            metadata: results.metadata
+          })
+        }
+      );
+      console.log('💾 Trends analysis results saved to database');
+    } catch (saveError) {
+      console.error('Failed to save trends results:', saveError);
+    }
 
     return new Response(JSON.stringify({
       success: true,
@@ -667,4 +728,71 @@ async function analyzeTopicDynamics(trendingTopics: any[]) {
       declining: trendingTopics.filter(t => t.momentum === 'declining').length
     }
   };
+}
+
+/**
+ * Use Claude API for intelligent trend analysis
+ */
+async function analyzeWithClaude(org: any, intelligence: any[], topics: string[]) {
+  if (!ANTHROPIC_API_KEY) return null;
+  
+  console.log("🤖 Using Claude API for trend analysis...");
+  
+  // Extract topics from recent intelligence
+  const recentTopics = intelligence.map(item => 
+    item.title || item.content || ""
+  ).join(" ");
+  
+  const prompt = `As a trend analyst, analyze market trends for ${org.name} in the ${org.industry} industry.
+
+Recent intelligence topics: ${recentTopics.substring(0, 500)}
+Monitoring topics: ${topics.join(", ") || "general industry trends"}
+
+Provide comprehensive trend analysis in JSON format:
+{
+  "trends": [{"topic": "trend name", "momentum": "accelerating/stable/declining", "velocity": "fast/medium/slow", "growth_rate": number, "opportunity": "description"}],
+  "narratives": [{"narrative": "description", "sentiment": "positive/neutral/negative", "momentum": "building/stable/fading"}],
+  "gaps": [{"type": "gap type", "description": "detail", "severity": "high/medium/low", "action_required": "response"}],
+  "emerging": ["emerging theme 1", "emerging theme 2"],
+  "declining": ["declining topic 1", "declining topic 2"],
+  "opportunities": [{"type": "opportunity type", "topic": "topic", "description": "detail", "urgency": "immediate/high/medium", "effort": "low/medium/high"}]
+}`;
+
+  try {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01"
+      },
+      body: JSON.stringify({
+        model: "claude-3-haiku-20240307",
+        max_tokens: 2000,
+        temperature: 0.3,
+        messages: [{
+          role: "user",
+          content: prompt
+        }]
+      })
+    });
+    
+    if (!response.ok) {
+      console.error("Claude API error:", response.status);
+      return null;
+    }
+    
+    const data = await response.json();
+    const content = data.content[0].text;
+    
+    // Parse JSON from Claude response
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
+    }
+  } catch (error) {
+    console.error("Claude analysis error:", error);
+  }
+  
+  return null;
 }

@@ -1,9 +1,11 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { corsHeaders } from '../_shared/cors.ts';
 
+const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
+
 /**
  * Stage 3: Deep Regulatory & Stakeholder Environment Analysis
- * Takes 30-45 seconds to thoroughly analyze regulatory landscape and stakeholders
+ * Uses Claude API for real regulatory intelligence
  */
 
 serve(async (req) => {
@@ -12,27 +14,87 @@ serve(async (req) => {
   }
 
   try {
-    const { organization, previousResults } = await req.json();
+    const { organization, regulators = [], analysts = [], investors = [] } = await req.json();
     console.log(`⚖️ Stage 3: Deep Regulatory & Stakeholder Analysis for ${organization.name}`);
     
     const startTime = Date.now();
     
-    // Extract context from previous stages
-    const competitiveContext = previousResults?.competitors || {};
-    const mediaContext = previousResults?.media || {};
+    // Retrieve saved profile and previous stage data from database
+    let savedProfile = null;
+    let previousIntelligence = [];
+    
+    try {
+      const profileResponse = await fetch(
+        'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/intelligence-persistence',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': req.headers.get('Authorization') || ''
+          },
+          body: JSON.stringify({
+            action: 'getProfile',
+            organization_name: organization.name
+          })
+        }
+      );
+      
+      if (profileResponse.ok) {
+        const result = await profileResponse.json();
+        savedProfile = result.profile;
+        console.log('✅ Retrieved saved profile with regulators:', savedProfile?.regulators?.length || 0);
+      }
+      
+      // Also retrieve previous stage results
+      const intelResponse = await fetch(
+        'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/intelligence-persistence',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': req.headers.get('Authorization') || ''
+          },
+          body: JSON.stringify({
+            action: 'retrieve',
+            organization_name: organization.name,
+            limit: 20,
+            stage: 'media_analysis'
+          })
+        }
+      );
+      
+      if (intelResponse.ok) {
+        const result = await intelResponse.json();
+        previousIntelligence = result.data || [];
+      }
+    } catch (e) {
+      console.error('Could not retrieve saved data:', e);
+    }
+    
+    // Use saved stakeholders if not provided
+    const finalRegulators = regulators.length > 0 ? regulators : savedProfile?.regulators || [];
+    const finalAnalysts = analysts.length > 0 ? analysts : savedProfile?.analysts || [];
+    const finalInvestors = investors.length > 0 ? investors : savedProfile?.investors || [];
+    
+    // Use Claude API for real regulatory analysis if available
+    let regulatoryInsights = null;
+    if (ANTHROPIC_API_KEY && finalRegulators.length > 0) {
+      regulatoryInsights = await analyzeWithClaude(organization, finalRegulators, finalAnalysts, finalInvestors);
+    }
     
     const results = {
-      regulatory: await analyzeRegulatoryEnvironment(organization),
-      stakeholders: await mapAllStakeholders(organization, competitiveContext),
-      compliance_requirements: await assessComplianceRequirements(organization),
+      regulatory: regulatoryInsights?.regulatory || await analyzeRegulatoryEnvironment(organization),
+      stakeholders: await mapAllStakeholders(organization, finalRegulators, finalAnalysts, finalInvestors),
+      compliance_requirements: regulatoryInsights?.compliance || await assessComplianceRequirements(organization),
       regulatory_calendar: await buildRegulatoryCalendar(organization),
-      stakeholder_sentiment: await analyzeStakeholderSentiment(organization, mediaContext),
-      risks_and_opportunities: await identifyRegulatoryRisksAndOpportunities(organization),
+      stakeholder_sentiment: regulatoryInsights?.sentiment || await analyzeStakeholderSentiment(organization, previousIntelligence),
+      risks_and_opportunities: regulatoryInsights?.risks_opportunities || await identifyRegulatoryRisksAndOpportunities(organization),
       metadata: {
         stage: 3,
         duration: 0,
         regulators_tracked: 0,
-        stakeholder_groups: 0
+        stakeholder_groups: 0,
+        data_source: regulatoryInsights ? 'claude_api' : 'simulated'
       }
     };
 
@@ -42,6 +104,32 @@ serve(async (req) => {
     
     console.log(`✅ Stage 3 complete in ${results.metadata.duration}ms`);
     console.log(`📊 Tracked ${results.metadata.regulators_tracked} regulators, ${results.metadata.stakeholder_groups} stakeholder groups`);
+
+    // Save results to database
+    try {
+      await fetch(
+        'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/intelligence-persistence',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': req.headers.get('Authorization') || ''
+          },
+          body: JSON.stringify({
+            action: 'save',
+            organization_id: organization.name,
+            organization_name: organization.name,
+            stage: 'regulatory_analysis',
+            data_type: 'regulatory_insights',
+            content: results,
+            metadata: results.metadata
+          })
+        }
+      );
+      console.log('💾 Regulatory analysis results saved to database');
+    } catch (saveError) {
+      console.error('Failed to save regulatory results:', saveError);
+    }
 
     return new Response(JSON.stringify({
       success: true,
@@ -296,7 +384,7 @@ async function analyzeRegulatoryEnvironment(org: any) {
   return regulatory;
 }
 
-async function mapAllStakeholders(org: any, competitiveContext: any) {
+async function mapAllStakeholders(org: any, regulators: any[], analysts: any[], investors: any[]) {
   console.log(`👥 Mapping all stakeholder groups...`);
   
   const stakeholders: Record<string, any> = {};
@@ -726,7 +814,7 @@ async function buildRegulatoryCalendar(org: any) {
   };
 }
 
-async function analyzeStakeholderSentiment(org: any, mediaContext: any) {
+async function analyzeStakeholderSentiment(org: any, previousIntelligence: any) {
   console.log(`💭 Analyzing stakeholder sentiment...`);
   
   return {
@@ -843,4 +931,85 @@ async function identifyRegulatoryRisksAndOpportunities(org: any) {
       }
     ]
   };
+}
+
+/**
+ * Use Claude API for intelligent regulatory analysis
+ */
+async function analyzeWithClaude(org: any, regulators: string[], analysts: string[], investors: string[]) {
+  if (!ANTHROPIC_API_KEY) return null;
+  
+  console.log('🤖 Using Claude API for regulatory analysis...');
+  
+  const prompt = `As a regulatory intelligence analyst, analyze the regulatory and stakeholder environment for ${org.name} in the ${org.industry} industry.
+
+Consider these stakeholders:
+- Regulators: ${regulators.join(', ') || 'FTC, SEC, EU Commission'}
+- Analysts: ${analysts.join(', ') || 'Gartner, Forrester'}  
+- Investors: ${investors.join(', ') || 'General market'}
+
+Provide a comprehensive analysis in JSON format:
+{
+  "regulatory": {
+    "bodies": [{"name": "regulator", "focus": "area", "recent_actions": "activity", "stance": "position"}],
+    "recent_developments": [{"development": "what", "impact": "high/medium/low", "required_action": "response"}],
+    "upcoming_considerations": ["consideration"],
+    "compliance_status": "status",
+    "regulatory_intensity": "high/medium/low"
+  },
+  "compliance": {
+    "current_requirements": ["requirement"],
+    "upcoming_requirements": ["requirement"],
+    "compliance_gaps": ["gap"],
+    "compliance_strengths": ["strength"]
+  },
+  "sentiment": {
+    "regulators": "positive/neutral/negative",
+    "analysts": "positive/neutral/negative", 
+    "investors": "positive/neutral/negative",
+    "overall": "assessment"
+  },
+  "risks_opportunities": {
+    "risks": [{"type": "risk", "description": "detail", "likelihood": "high/medium/low", "impact": "severity"}],
+    "opportunities": [{"type": "opportunity", "description": "detail", "potential_impact": "value"}]
+  }
+}`;
+  
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 2000,
+        temperature: 0.3,
+        messages: [{
+          role: 'user',
+          content: prompt
+        }]
+      })
+    });
+    
+    if (!response.ok) {
+      console.error('Claude API error:', response.status);
+      return null;
+    }
+    
+    const data = await response.json();
+    const content = data.content[0].text;
+    
+    // Parse JSON from Claude's response
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
+    }
+  } catch (error) {
+    console.error('Claude analysis error:', error);
+  }
+  
+  return null;
 }

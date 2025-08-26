@@ -49,6 +49,37 @@ serve(async (req) => {
     console.log(`✅ Stage 2 complete in ${results.metadata.duration}ms`);
     console.log(`📊 Analyzed ${results.metadata.outlets_analyzed} outlets, ${results.metadata.journalists_identified} journalists`);
 
+    // SAVE results to database for next stages
+    try {
+      await fetch(
+        'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/intelligence-persistence',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': req.headers.get('Authorization') || ''
+          },
+          body: JSON.stringify({
+            action: 'save',
+            organization_id: organization.name,
+            organization_name: organization.name,
+            stage: 'media_analysis',
+            data_type: 'media_insights',
+            content: results,
+            metadata: {
+              stage: 2,
+              outlets_analyzed: results.metadata.outlets_analyzed,
+              journalists_identified: results.metadata.journalists_identified,
+              timestamp: new Date().toISOString()
+            }
+          })
+        }
+      );
+      console.log('💾 Media analysis results saved to database');
+    } catch (saveError) {
+      console.error('Failed to save media results:', saveError);
+    }
+
     return new Response(JSON.stringify({
       success: true,
       stage: 'media_analysis',
