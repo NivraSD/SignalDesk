@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalDesk - Complete Intelligence Flow Test</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #fff;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        .controls {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+        .input-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        input, select {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.9);
+            color: #333;
+            font-size: 14px;
+            flex: 1;
+            min-width: 200px;
+        }
+        button {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .stage-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stage-card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .stage-card h3 {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .status-pending { background: #6b7280; }
+        .status-running { background: #3b82f6; animation: pulse 1.5s infinite; }
+        .status-success { background: #10b981; }
+        .status-error { background: #ef4444; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .stage-content {
+            max-height: 300px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .log-entry {
+            padding: 8px;
+            margin-bottom: 5px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 5px;
+            border-left: 3px solid #3b82f6;
+        }
+        .log-entry.error {
+            border-left-color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+        .log-entry.success {
+            border-left-color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+        }
+        .data-flow {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 30px;
+        }
+        .flow-diagram {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .flow-step {
+            text-align: center;
+            flex: 1;
+            min-width: 150px;
+        }
+        .flow-arrow {
+            font-size: 24px;
+        }
+        pre {
+            background: rgba(0,0,0,0.5);
+            padding: 15px;
+            border-radius: 10px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .monitoring-status {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .monitor-card {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .monitor-card h4 {
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        .monitor-status {
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 SignalDesk Complete Intelligence Flow Test</h1>
+        
+        <div class="controls">
+            <h2>Test Configuration</h2>
+            <div class="input-group">
+                <input type="text" id="orgName" placeholder="Organization Name" value="OpenAI">
+                <input type="text" id="orgIndustry" placeholder="Industry" value="AI">
+                <input type="text" id="orgUrl" placeholder="Website URL" value="https://openai.com">
+            </div>
+            <div class="input-group">
+                <input type="text" id="competitors" placeholder="Competitors (comma-separated)" value="Anthropic, Google DeepMind, Microsoft AI">
+                <input type="text" id="stakeholders" placeholder="Key Stakeholders" value="Sam Altman, Greg Brockman">
+            </div>
+            <div style="margin-top: 20px; display: flex; gap: 15px;">
+                <button onclick="runCompleteFlow()">🚀 Run Complete Intelligence Flow</button>
+                <button onclick="testMonitoring()">📡 Test Monitoring Tools</button>
+                <button onclick="checkDataPersistence()">💾 Check Data Persistence</button>
+                <button onclick="clearAll()">🗑️ Clear All</button>
+            </div>
+        </div>
+
+        <div class="monitoring-status" id="monitoringStatus">
+            <div class="monitor-card">
+                <h4>🔥 Firecrawl API</h4>
+                <div class="monitor-status" id="firecrawlStatus">⏳</div>
+            </div>
+            <div class="monitor-card">
+                <h4>📰 RSS Feeds</h4>
+                <div class="monitor-status" id="rssStatus">⏳</div>
+            </div>
+            <div class="monitor-card">
+                <h4>🗄️ Database</h4>
+                <div class="monitor-status" id="dbStatus">⏳</div>
+            </div>
+            <div class="monitor-card">
+                <h4>🧠 Claude API</h4>
+                <div class="monitor-status" id="claudeStatus">⏳</div>
+            </div>
+        </div>
+
+        <div class="stage-container" id="stageContainer">
+            <!-- Stages will be dynamically added here -->
+        </div>
+
+        <div class="data-flow">
+            <h2>📊 Data Flow Visualization</h2>
+            <div class="flow-diagram">
+                <div class="flow-step">
+                    <div>📝 Onboarding</div>
+                    <small id="flow1">No data</small>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">
+                    <div>🔍 Discovery</div>
+                    <small id="flow2">No data</small>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">
+                    <div>📡 Collection</div>
+                    <small id="flow3">No data</small>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">
+                    <div>🎯 Analysis</div>
+                    <small id="flow4">No data</small>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">
+                    <div>💡 Synthesis</div>
+                    <small id="flow5">No data</small>
+                </div>
+            </div>
+            <div id="dataFlowDetails" style="margin-top: 20px;"></div>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        const stages = [
+            { id: 'onboarding', name: '1. Onboarding', status: 'pending', data: null },
+            { id: 'discovery', name: '2. Discovery', status: 'pending', data: null },
+            { id: 'collection', name: '3. Collection', status: 'pending', data: null },
+            { id: 'competitors', name: '4. Competitors', status: 'pending', data: null },
+            { id: 'media', name: '5. Media', status: 'pending', data: null },
+            { id: 'synthesis', name: '6. Synthesis', status: 'pending', data: null }
+        ];
+        
+        function log(stageId, message, type = 'info') {
+            const stage = stages.find(s => s.id === stageId);
+            if (!stage.logs) stage.logs = [];
+            stage.logs.push({ message, type, timestamp: new Date().toISOString() });
+            updateStageUI(stageId);
+        }
+        
+        function updateStageUI(stageId) {
+            const stage = stages.find(s => s.id === stageId);
+            const element = document.getElementById(`stage-${stageId}`);
+            if (!element) {
+                createStageCard(stage);
+                return;
+            }
+            
+            const statusBadge = element.querySelector('.status-badge');
+            statusBadge.className = `status-badge status-${stage.status}`;
+            statusBadge.textContent = stage.status;
+            
+            const content = element.querySelector('.stage-content');
+            if (stage.logs) {
+                content.innerHTML = stage.logs.map(log => 
+                    `<div class="log-entry ${log.type}">${log.message}</div>`
+                ).join('');
+            }
+        }
+        
+        function createStageCard(stage) {
+            const container = document.getElementById('stageContainer');
+            const card = document.createElement('div');
+            card.className = 'stage-card';
+            card.id = `stage-${stage.id}`;
+            card.innerHTML = `
+                <h3>${stage.name} <span class="status-badge status-${stage.status}">${stage.status}</span></h3>
+                <div class="stage-content">Waiting to start...</div>
+            `;
+            container.appendChild(card);
+        }
+        
+        // Initialize stage cards
+        stages.forEach(createStageCard);
+        
+        async function runCompleteFlow() {
+            console.log('🚀 Starting complete intelligence flow...');
+            
+            // Reset all stages
+            stages.forEach(stage => {
+                stage.status = 'pending';
+                stage.logs = [];
+                stage.data = null;
+                updateStageUI(stage.id);
+            });
+            
+            // Get input values
+            const orgName = document.getElementById('orgName').value;
+            const orgIndustry = document.getElementById('orgIndustry').value;
+            const orgUrl = document.getElementById('orgUrl').value;
+            const competitors = document.getElementById('competitors').value.split(',').map(c => c.trim());
+            const stakeholders = document.getElementById('stakeholders').value.split(',').map(s => s.trim());
+            
+            // Stage 1: Onboarding
+            stages[0].status = 'running';
+            updateStageUI('onboarding');
+            log('onboarding', '📝 Creating organization profile...');
+            
+            const orgData = {
+                name: orgName,
+                industry: orgIndustry,
+                url: orgUrl,
+                competitors: competitors,
+                stakeholders: { executives: stakeholders }
+            };
+            
+            // Save to localStorage (simulate onboarding)
+            localStorage.setItem('organization', JSON.stringify(orgData));
+            localStorage.setItem('signaldesk_organization', JSON.stringify(orgData));
+            localStorage.setItem('signaldesk_complete_profile', JSON.stringify(orgData));
+            
+            log('onboarding', '✅ Organization profile created', 'success');
+            document.getElementById('flow1').textContent = `${orgName} saved`;
+            stages[0].status = 'success';
+            stages[0].data = orgData;
+            updateStageUI('onboarding');
+            
+            // Stage 2: Discovery
+            stages[1].status = 'running';
+            updateStageUI('discovery');
+            log('discovery', '🔍 Discovering organization details...');
+            
+            try {
+                const discoveryResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-discovery-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: orgData,
+                        stakeholders: {
+                            competitors: competitors,
+                            executives: stakeholders
+                        }
+                    })
+                });
+                
+                if (discoveryResponse.ok) {
+                    const discoveryData = await discoveryResponse.json();
+                    log('discovery', `✅ Discovered ${Object.keys(discoveryData.entities || {}).length} entity types`, 'success');
+                    document.getElementById('flow2').textContent = `${discoveryData.statistics?.saved || 0} entities`;
+                    stages[1].status = 'success';
+                    stages[1].data = discoveryData;
+                } else {
+                    throw new Error(`Discovery failed: ${discoveryResponse.status}`);
+                }
+            } catch (error) {
+                log('discovery', `❌ ${error.message}`, 'error');
+                stages[1].status = 'error';
+            }
+            updateStageUI('discovery');
+            
+            // Stage 3: Collection
+            stages[2].status = 'running';
+            updateStageUI('collection');
+            log('collection', '📡 Collecting intelligence signals...');
+            
+            try {
+                const collectionResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-collection-v1`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: orgData,
+                        entities: {
+                            competitors: competitors
+                        }
+                    })
+                });
+                
+                if (collectionResponse.ok) {
+                    const collectionData = await collectionResponse.json();
+                    const signalCount = collectionData.intelligence?.raw_signals?.length || 0;
+                    log('collection', `✅ Collected ${signalCount} signals from ${collectionData.intelligence?.metadata?.sources?.length || 0} sources`, 'success');
+                    document.getElementById('flow3').textContent = `${signalCount} signals`;
+                    stages[2].status = 'success';
+                    stages[2].data = collectionData;
+                } else {
+                    throw new Error(`Collection failed: ${collectionResponse.status}`);
+                }
+            } catch (error) {
+                log('collection', `❌ ${error.message}`, 'error');
+                stages[2].status = 'error';
+            }
+            updateStageUI('collection');
+            
+            // Stage 4: Competitive Analysis
+            stages[3].status = 'running';
+            updateStageUI('competitors');
+            log('competitors', '🎯 Analyzing competitive landscape...');
+            
+            try {
+                const competitiveResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-1-competitors`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: orgData,
+                        competitors: competitors,
+                        dataVersion: '2.0',
+                        fullProfile: stages[1].data
+                    })
+                });
+                
+                if (competitiveResponse.ok) {
+                    const competitiveData = await competitiveResponse.json();
+                    log('competitors', `✅ Analyzed ${competitors.length} competitors`, 'success');
+                    document.getElementById('flow4').textContent = `${competitors.length} analyzed`;
+                    stages[3].status = 'success';
+                    stages[3].data = competitiveData;
+                } else {
+                    throw new Error(`Competitive analysis failed: ${competitiveResponse.status}`);
+                }
+            } catch (error) {
+                log('competitors', `❌ ${error.message}`, 'error');
+                stages[3].status = 'error';
+            }
+            updateStageUI('competitors');
+            
+            // Stage 5: Media Analysis
+            stages[4].status = 'running';
+            updateStageUI('media');
+            log('media', '📰 Analyzing media landscape...');
+            
+            try {
+                const mediaResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-2-media`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: orgData,
+                        previousStageData: stages[3].data
+                    })
+                });
+                
+                if (mediaResponse.ok) {
+                    const mediaData = await mediaResponse.json();
+                    log('media', `✅ Media analysis complete`, 'success');
+                    stages[4].status = 'success';
+                    stages[4].data = mediaData;
+                } else {
+                    throw new Error(`Media analysis failed: ${mediaResponse.status}`);
+                }
+            } catch (error) {
+                log('media', `❌ ${error.message}`, 'error');
+                stages[4].status = 'error';
+            }
+            updateStageUI('media');
+            
+            // Stage 6: Synthesis
+            stages[5].status = 'running';
+            updateStageUI('synthesis');
+            log('synthesis', '💡 Synthesizing intelligence...');
+            
+            try {
+                const synthesisResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-5-synthesis`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: orgData,
+                        stageData: {
+                            stage1: stages[3].data,
+                            stage2: stages[4].data,
+                            stage3: { analysis: 'Regulatory analysis placeholder' },
+                            stage4: { analysis: 'Trends analysis placeholder' }
+                        }
+                    })
+                });
+                
+                if (synthesisResponse.ok) {
+                    const synthesisData = await synthesisResponse.json();
+                    log('synthesis', `✅ Synthesis complete - ${synthesisData.dataCompleteness}% data completeness`, 'success');
+                    document.getElementById('flow5').textContent = `${synthesisData.dataCompleteness}% complete`;
+                    stages[5].status = 'success';
+                    stages[5].data = synthesisData;
+                    
+                    // Display final results
+                    displayResults(synthesisData);
+                } else {
+                    throw new Error(`Synthesis failed: ${synthesisResponse.status}`);
+                }
+            } catch (error) {
+                log('synthesis', `❌ ${error.message}`, 'error');
+                stages[5].status = 'error';
+            }
+            updateStageUI('synthesis');
+        }
+        
+        async function testMonitoring() {
+            console.log('📡 Testing monitoring tools...');
+            
+            // Test Firecrawl
+            document.getElementById('firecrawlStatus').textContent = '⏳';
+            try {
+                const response = await fetch('https://api.firecrawl.dev/v1/search', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer fc-3048810124b640eb99293880a4ab25d0',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        query: 'OpenAI latest news',
+                        limit: 1
+                    })
+                });
+                document.getElementById('firecrawlStatus').textContent = response.ok ? '✅' : '❌';
+            } catch (error) {
+                document.getElementById('firecrawlStatus').textContent = '❌';
+            }
+            
+            // Test RSS
+            document.getElementById('rssStatus').textContent = '⏳';
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/source-registry?industry=technology&limit=5`, {
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+                document.getElementById('rssStatus').textContent = response.ok ? '✅' : '❌';
+            } catch (error) {
+                document.getElementById('rssStatus').textContent = '❌';
+            }
+            
+            // Test Database
+            document.getElementById('dbStatus').textContent = '⏳';
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-persistence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        action: 'getProfile',
+                        organization_name: 'test'
+                    })
+                });
+                document.getElementById('dbStatus').textContent = response.ok ? '✅' : '❌';
+            } catch (error) {
+                document.getElementById('dbStatus').textContent = '❌';
+            }
+            
+            // Test Claude
+            document.getElementById('claudeStatus').textContent = '⏳';
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/claude-intelligence-synthesizer-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        test: true
+                    })
+                });
+                document.getElementById('claudeStatus').textContent = response.ok ? '✅' : '❌';
+            } catch (error) {
+                document.getElementById('claudeStatus').textContent = '❌';
+            }
+        }
+        
+        async function checkDataPersistence() {
+            console.log('💾 Checking data persistence...');
+            
+            const results = document.getElementById('dataFlowDetails');
+            results.innerHTML = '<h3>Data Persistence Check</h3>';
+            
+            // Check localStorage
+            const localData = {
+                organization: localStorage.getItem('organization'),
+                signaldesk_organization: localStorage.getItem('signaldesk_organization'),
+                signaldesk_complete_profile: localStorage.getItem('signaldesk_complete_profile')
+            };
+            
+            results.innerHTML += '<h4>LocalStorage:</h4><pre>' + JSON.stringify(localData, null, 2) + '</pre>';
+            
+            // Check database
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-persistence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        action: 'getProfile',
+                        organization_name: document.getElementById('orgName').value
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    results.innerHTML += '<h4>Database:</h4><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                } else {
+                    results.innerHTML += '<h4>Database:</h4><p style="color: #ef4444;">Error: ' + response.status + '</p>';
+                }
+            } catch (error) {
+                results.innerHTML += '<h4>Database:</h4><p style="color: #ef4444;">Error: ' + error.message + '</p>';
+            }
+        }
+        
+        function displayResults(data) {
+            const results = document.getElementById('results');
+            results.innerHTML = `
+                <div class="data-flow" style="margin-top: 30px;">
+                    <h2>✨ Final Intelligence Synthesis</h2>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                </div>
+            `;
+        }
+        
+        function clearAll() {
+            localStorage.clear();
+            stages.forEach(stage => {
+                stage.status = 'pending';
+                stage.logs = [];
+                stage.data = null;
+                updateStageUI(stage.id);
+            });
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('dataFlowDetails').innerHTML = '';
+            for (let i = 1; i <= 5; i++) {
+                document.getElementById(`flow${i}`).textContent = 'No data';
+            }
+            console.log('🗑️ All data cleared');
+        }
+        
+        // Run monitoring test on load
+        testMonitoring();
+    </script>
+</body>
+</html>
