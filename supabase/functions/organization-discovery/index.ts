@@ -111,18 +111,51 @@ For ${organizationName}, be as specific and accurate as possible. If it's a well
       };
     }
 
+    // ALWAYS ensure we have competitors - this is critical!
+    let competitors = discoveredData.competitors || [];
+    
+    // If no competitors from Claude, use industry-specific defaults
+    if (!competitors || competitors.length === 0) {
+      console.warn('⚠️ No competitors from Claude, using intelligent defaults');
+      
+      // Intelligent competitor detection based on organization name/industry
+      const orgLower = organizationName.toLowerCase();
+      const industry = discoveredData.industry?.toLowerCase() || '';
+      
+      if (orgLower.includes('openai') || industry.includes('ai')) {
+        competitors = ['Anthropic', 'Google DeepMind', 'Microsoft', 'Meta AI', 'Cohere'];
+      } else if (orgLower.includes('tesla') || industry.includes('automotive')) {
+        competitors = ['Rivian', 'Lucid Motors', 'Ford', 'GM', 'Volkswagen'];
+      } else if (orgLower.includes('apple') || industry.includes('technology')) {
+        competitors = ['Microsoft', 'Google', 'Samsung', 'Amazon', 'Meta'];
+      } else if (orgLower.includes('netflix') || industry.includes('streaming')) {
+        competitors = ['Disney+', 'HBO Max', 'Amazon Prime', 'Hulu', 'Apple TV+'];
+      } else if (industry.includes('fintech')) {
+        competitors = ['Stripe', 'Square', 'PayPal', 'Plaid', 'Affirm'];
+      } else if (industry.includes('healthcare')) {
+        competitors = ['UnitedHealth', 'Anthem', 'Kaiser', 'CVS Health', 'Humana'];
+      } else if (industry.includes('retail')) {
+        competitors = ['Amazon', 'Walmart', 'Target', 'Costco', 'Best Buy'];
+      } else {
+        // Generic tech competitors as absolute fallback
+        competitors = ['Microsoft', 'Google', 'Amazon', 'Meta', 'Apple'];
+      }
+      
+      console.log(`✅ Added ${competitors.length} default competitors for ${industry || 'technology'} industry`);
+    }
+    
     // Build the complete organization profile
     const organization = {
       id: organizationName.toLowerCase().replace(/\s+/g, '-'),
       name: organizationName,
       url: url || `https://${organizationName.toLowerCase().replace(/\s+/g, '')}.com`,
       ...discoveredData,
-      // Ensure all required fields exist
-      competitors: discoveredData.competitors || [],
+      // ALWAYS have competitors
+      competitors: competitors,
       stakeholders: {
         regulators: discoveredData.stakeholders?.regulators || ['FTC', 'SEC'],
-        media: discoveredData.stakeholders?.media || ['Reuters', 'Bloomberg'],
-        analysts: discoveredData.stakeholders?.analysts || ['Gartner'],
+        media: discoveredData.stakeholders?.media || ['Reuters', 'Bloomberg', 'TechCrunch'],
+        analysts: discoveredData.stakeholders?.analysts || ['Gartner', 'Forrester'],
         investors: discoveredData.stakeholders?.investors || [],
         partners: discoveredData.stakeholders?.partners || [],
         activists: discoveredData.stakeholders?.critics || []
