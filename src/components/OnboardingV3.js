@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import CacheManager from '../utils/cacheManager';
+import cacheManager from '../utils/cacheManager';
 import './OnboardingV2.css';
 
 /**
@@ -15,7 +15,7 @@ const OnboardingV3 = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [existingOrg, setExistingOrg] = useState(null);
   const [debugLog, setDebugLog] = useState([]);
-  const [cache] = useState(() => new CacheManager());
+  const cache = cacheManager; // Use the singleton instance
   
   const addDebugLog = (message, data = null) => {
     const logEntry = {
