@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import CacheManager from '../utils/cacheManager';
 import './OnboardingV2.css';
 
 /**
@@ -14,6 +15,7 @@ const OnboardingV3 = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [existingOrg, setExistingOrg] = useState(null);
   const [debugLog, setDebugLog] = useState([]);
+  const [cache] = useState(() => new CacheManager());
   
   const addDebugLog = (message, data = null) => {
     const logEntry = {
@@ -123,8 +125,8 @@ const OnboardingV3 = () => {
         throw new Error('Discovery returned invalid data');
       }
       
-      // STEP 3: Save to localStorage
-      addDebugLog('💾 Step 3: Saving to localStorage');
+      // STEP 3: Save to cache and localStorage
+      addDebugLog('💾 Step 3: Saving to cache and localStorage');
       const orgData = result.organization;
       
       // Ensure all required fields exist
@@ -137,6 +139,11 @@ const OnboardingV3 = () => {
       
       addDebugLog('💾 Complete organization data', completeOrg);
       
+      // Save using cache manager
+      cache.saveOrganization(completeOrg);
+      cache.saveCompleteProfile(completeOrg);
+      
+      // Also save to regular localStorage for compatibility
       localStorage.setItem('organization', JSON.stringify(completeOrg));
       localStorage.setItem('organizationName', orgName);
       localStorage.setItem('hasCompletedOnboarding', 'true');

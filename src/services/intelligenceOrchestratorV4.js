@@ -8,7 +8,15 @@ class IntelligenceOrchestratorV4 {
     this.supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co';
     this.supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
     
-    console.log('🎯 V4 Elite Orchestrator initialized');
+    // Import cache manager if available
+    try {
+      const CacheManager = require('../utils/cacheManager').default;
+      this.cache = new CacheManager();
+      console.log('🎯 V4 Elite Orchestrator initialized with CacheManager');
+    } catch (e) {
+      console.log('🎯 V4 Elite Orchestrator initialized without CacheManager');
+      this.cache = null;
+    }
   }
 
   /**
@@ -189,22 +197,23 @@ class IntelligenceOrchestratorV4 {
   async runCompetitiveStage(organization, config) {
     console.log('🎯 Stage 2: Competitive Intelligence Analysis');
     
-    // FIRST: Check localStorage for the organization data
-    console.log('📊 Checking localStorage for organization data...');
+    // Use cache manager if available
     let savedProfile = null;
     
-    // Try localStorage first (most reliable)
-    const localOrgData = localStorage.getItem('organization');
-    if (localOrgData) {
-      try {
-        const orgData = JSON.parse(localOrgData);
-        console.log('✅ Found organization in localStorage with:', {
+    if (this.cache) {
+      // Try cache manager first
+      console.log('📊 Using CacheManager to get organization profile...');
+      const cachedOrg = this.cache.getOrganization();
+      const completeProfile = this.cache.getCompleteProfile();
+      
+      const orgData = completeProfile || cachedOrg;
+      if (orgData) {
+        console.log('✅ Found cached organization with:', {
           competitors: orgData.competitors?.length || 0,
           regulators: orgData.stakeholders?.regulators?.length || 0,
           media: orgData.stakeholders?.media?.length || 0
         });
         
-        // Build profile from localStorage data
         savedProfile = {
           name: orgData.name,
           industry: orgData.industry,
@@ -224,48 +233,58 @@ class IntelligenceOrchestratorV4 {
           }
         };
         
-        // Use saved competitors if not provided
-        if (savedProfile.competitors && (!config.competitors || config.competitors.length === 0)) {
-          config.competitors = savedProfile.competitors;
+        console.log('📦 Cached profile has', savedProfile.competitors?.length || 0, 'competitors:', 
+          savedProfile.competitors?.map(c => typeof c === 'string' ? c : c.name).slice(0, 3));
+      }
+    } else {
+      // Fallback to direct localStorage
+      console.log('📊 Checking localStorage directly...');
+      const localOrgData = localStorage.getItem('organization') || 
+                           localStorage.getItem('signaldesk_organization') ||
+                           localStorage.getItem('signaldesk_complete_profile');
+      if (localOrgData) {
+        try {
+          const orgData = JSON.parse(localOrgData);
+          console.log('✅ Found organization in localStorage with:', {
+            competitors: orgData.competitors?.length || 0,
+            regulators: orgData.stakeholders?.regulators?.length || 0,
+            media: orgData.stakeholders?.media?.length || 0
+          });
+          
+          savedProfile = {
+            name: orgData.name,
+            industry: orgData.industry,
+            competitors: orgData.competitors || [],
+            regulators: orgData.stakeholders?.regulators || [],
+            media: orgData.stakeholders?.media || [],
+            investors: orgData.stakeholders?.investors || [],
+            analysts: orgData.stakeholders?.analysts || [],
+            activists: orgData.stakeholders?.activists || [],
+            keywords: orgData.keywords || [],
+            metadata: {
+              description: orgData.description,
+              headquarters: orgData.headquarters,
+              founded: orgData.founded,
+              products: orgData.products,
+              executives: orgData.executives
+            }
+          };
+          
+          console.log('📦 localStorage profile has', savedProfile.competitors?.length || 0, 'competitors:', 
+            savedProfile.competitors?.map(c => typeof c === 'string' ? c : c.name).slice(0, 3));
+        } catch (e) {
+          console.error('Error parsing localStorage data:', e);
         }
-        
-        console.log('📦 localStorage profile has', savedProfile.competitors?.length || 0, 'competitors:', 
-          savedProfile.competitors?.map(c => typeof c === 'string' ? c : c.name).slice(0, 3))
-      } catch (e) {
-        console.error('Error parsing localStorage data:', e);
       }
     }
     
-    // If no localStorage data, try backend
-    if (!savedProfile) {
-      console.log('📊 No localStorage data, trying backend...');
-      try {
-        const persistResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-persistence`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.supabaseKey}`
-          },
-          body: JSON.stringify({
-            action: 'getProfile',
-            organization_name: organization.name
-          })
-        });
-        
-        if (persistResponse.ok) {
-          const result = await persistResponse.json();
-          savedProfile = result.profile;
-          console.log('✅ Retrieved saved profile from backend with competitors:', savedProfile?.competitors?.length || 0);
-          
-          // Use saved competitors if not provided
-          if (savedProfile?.competitors && (!config.competitors || config.competitors.length === 0)) {
-            config.competitors = savedProfile.competitors;
-          }
-        }
-      } catch (e) {
-        console.error('Could not retrieve saved profile from backend:', e);
-      }
+    // Use saved competitors if not provided
+    if (savedProfile?.competitors && (!config.competitors || config.competitors.length === 0)) {
+      config.competitors = savedProfile.competitors;
     }
+    
+    // Skip backend persistence calls that cause 500 errors
+    console.log('📊 Skipping backend persistence calls to avoid 500 errors');
     
     // Pass the full saved profile to the stage
     const requestBody = {
