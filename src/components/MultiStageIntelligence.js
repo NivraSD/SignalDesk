@@ -201,25 +201,27 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     console.log(`🎉 ELABORATE PIPELINE COMPLETE in ${totalTime} seconds`);
     console.log('📊 Final stage results:', Object.keys(stageResults));
     
+    // Mark as complete first to prevent re-triggering
+    setIsComplete(true);
+    
     // Validate all stages completed
     const requiredStages = INTELLIGENCE_STAGES.map(s => s.id);
     const completedStages = Object.keys(stageResults);
     const hasAllStages = requiredStages.every(stage => completedStages.includes(stage));
     
     if (!hasAllStages) {
-      console.error('❌ Not all stages completed:', {
+      console.warn('⚠️ Some stages incomplete, using available data:', {
         required: requiredStages,
         completed: completedStages,
         missing: requiredStages.filter(s => !completedStages.includes(s))
       });
-      return;
+      // Continue anyway with partial results instead of returning
     }
 
-    // Synthesize elaborate intelligence from all stages
+    // Synthesize elaborate intelligence from all stages (even if partial)
     const elaborateIntelligence = synthesizeElaborateResults(stageResults, organizationProfile || organization, totalTime);
     
     setFinalIntelligence(elaborateIntelligence);
-    setIsComplete(true);
 
     if (onComplete) {
       onComplete(elaborateIntelligence);
@@ -770,17 +772,24 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
       hasOrganization: !!organization,
       currentStage,
       totalStages: INTELLIGENCE_STAGES.length,
-      hasError: !!error
+      hasError: !!error,
+      isComplete
     });
+    
+    // Don't run if already complete
+    if (isComplete) {
+      console.log('✅ Pipeline already complete, skipping stage trigger');
+      return;
+    }
     
     if (organization && currentStage < INTELLIGENCE_STAGES.length && !error) {
       console.log(`🚀 STARTING ELABORATE STAGE ${currentStage + 1}: ${INTELLIGENCE_STAGES[currentStage].name}`);
       runStage(currentStage);
-    } else if (currentStage === INTELLIGENCE_STAGES.length && !error) {
+    } else if (currentStage === INTELLIGENCE_STAGES.length && !error && !isComplete) {
       console.log('🎉 All elaborate stages complete, synthesizing final intelligence...');
       handleComplete();
     }
-  }, [currentStage, organization, error, runStage, handleComplete]);
+  }, [currentStage, organization, error, isComplete, runStage, handleComplete]);
 
   // Show initialization message
   if (!organization) {

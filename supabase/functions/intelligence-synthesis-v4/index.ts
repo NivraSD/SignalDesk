@@ -251,17 +251,96 @@ serve(async (req) => {
   try {
     const { organization, intelligence } = await req.json()
     
+    // If no intelligence provided or it's empty, retrieve from database
+    let actualIntelligence = intelligence
     if (!intelligence || (!intelligence.entity_actions?.all?.length && !intelligence.topic_trends?.all?.length)) {
+      console.log('📊 No intelligence provided, retrieving from database...')
+      
+      try {
+        const persistResponse = await fetch(
+          'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/intelligence-persistence',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': req.headers.get('Authorization') || ''
+            },
+            body: JSON.stringify({
+              action: 'retrieve',
+              organization_name: organization.name,
+              limit: 100,
+              since: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+            })
+          }
+        )
+        
+        if (persistResponse.ok) {
+          const result = await persistResponse.json()
+          console.log(`✅ Retrieved ${result.count} intelligence items from database`)
+          
+          if (result.data && result.data.length > 0) {
+            // Transform saved data into expected format
+            actualIntelligence = {
+              entity_actions: {
+                all: result.data.map(item => ({
+                  entity: item.entity,
+                  type: item.type,
+                  action: item.title,
+                  description: item.description,
+                  source: item.source,
+                  url: item.url,
+                  timestamp: item.created_at,
+                  impact: item.severity,
+                  relevance: item.confidence_score
+                }))
+              },
+              topic_trends: {
+                all: []
+              }
+            }
+            
+            // Extract topic trends from the data
+            const topics = {}
+            result.data.forEach(item => {
+              if (item.raw_data?.keywords || item.metadata?.keywords) {
+                const keywords = item.raw_data?.keywords || item.metadata?.keywords || []
+                keywords.forEach(keyword => {
+                  if (!topics[keyword]) {
+                    topics[keyword] = { topic: keyword, mentions: 0, sources: [] }
+                  }
+                  topics[keyword].mentions++
+                  if (!topics[keyword].sources.includes(item.source)) {
+                    topics[keyword].sources.push(item.source)
+                  }
+                })
+              }
+            })
+            
+            actualIntelligence.topic_trends.all = Object.values(topics).map(t => ({
+              ...t,
+              trend: t.mentions > 5 ? 'increasing' : 'stable'
+            }))
+          }
+        }
+      } catch (e) {
+        console.error('Could not retrieve intelligence from database:', e)
+      }
+    }
+    
+    // Check again after retrieval attempt
+    if (!actualIntelligence || (!actualIntelligence.entity_actions?.all?.length && !actualIntelligence.topic_trends?.all?.length)) {
+      console.log('⚠️ No intelligence data available even after database retrieval')
       return new Response(
         JSON.stringify({
           success: false,
-          error: 'No intelligence data available for synthesis'
+          error: 'No intelligence data available for synthesis',
+          message: 'Please ensure data collection has completed first'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
     
-    const result = await synthesizeCleanIntelligence(intelligence, organization)
+    const result = await synthesizeCleanIntelligence(actualIntelligence, organization)
     
     return new Response(
       JSON.stringify({
