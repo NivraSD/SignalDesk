@@ -228,6 +228,9 @@ class IntelligenceOrchestratorV4 {
         if (savedProfile.competitors && (!config.competitors || config.competitors.length === 0)) {
           config.competitors = savedProfile.competitors;
         }
+        
+        console.log('📦 localStorage profile has', savedProfile.competitors?.length || 0, 'competitors:', 
+          savedProfile.competitors?.map(c => typeof c === 'string' ? c : c.name).slice(0, 3))
       } catch (e) {
         console.error('Error parsing localStorage data:', e);
       }
@@ -265,17 +268,25 @@ class IntelligenceOrchestratorV4 {
     }
     
     // Pass the full saved profile to the stage
+    const requestBody = {
+      organization: savedProfile || organization,
+      competitors: savedProfile?.competitors || config.competitors || [],
+      savedProfile: savedProfile // Include full profile for reference
+    };
+    
+    console.log('📤 Sending to competitor stage:', {
+      hasProfile: !!savedProfile,
+      competitorCount: requestBody.competitors?.length || 0,
+      competitors: requestBody.competitors?.slice(0, 3)
+    });
+    
     const competitorResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-stage-1-competitors`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${this.supabaseKey}`
       },
-      body: JSON.stringify({
-        organization: savedProfile || organization,
-        competitors: savedProfile?.competitors || config.competitors || [],
-        savedProfile: savedProfile // Include full profile for reference
-      })
+      body: JSON.stringify(requestBody)
     });
 
     if (!competitorResponse.ok) {
