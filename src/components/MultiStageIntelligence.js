@@ -75,6 +75,7 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
   const [finalIntelligence, setFinalIntelligence] = useState(null);
   const [stageProgress, setStageProgress] = useState(0);
   const [activeTab, setActiveTab] = useState('executive');
+  const [hasStarted, setHasStarted] = useState(false);
   
   // Initialize organization state
   const [organization] = useState(() => {
@@ -101,9 +102,23 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
   const runStage = useCallback(async (stageIndex) => {
     const stage = INTELLIGENCE_STAGES[stageIndex];
     
+    // Check if this stage is already running or complete
+    if (stageResults[stage.id] && (stageResults[stage.id].inProgress || stageResults[stage.id].completed)) {
+      console.log(`⚠️ Stage ${stageIndex + 1} already processed, skipping`);
+      setCurrentStage(stageIndex + 1);
+      return;
+    }
+    
+    console.log(`🔄 Starting stage ${stageIndex + 1}: ${stage.name}`);
     setStageProgress(0);
     
     try {
+      // Mark stage as in-progress immediately
+      setStageResults(prev => ({
+        ...prev,
+        [stage.id]: { inProgress: true }
+      }));
+      
       // Create stage-specific configuration
       const stageConfig = createStageConfig(stageIndex, organizationProfile || organization);
       
@@ -127,11 +142,13 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
           localStorage.setItem('comprehensive_organization_profile', JSON.stringify(result.organization));
         }
         
-        // Store stage-specific results
+        // Store stage-specific results (replace inProgress marker)
         setStageResults(prev => ({
           ...prev,
           [stage.id]: {
             ...result,
+            inProgress: false,
+            completed: true,
             stageMetadata: {
               stageName: stage.name,
               focus: stage.focus,
@@ -157,7 +174,10 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
       setStageResults(prev => ({
         ...prev,
         [stage.id]: { 
-          error: err.message, 
+          error: err.message,
+          inProgress: false,
+          completed: true,
+          failed: true,
           stageMetadata: { stageName: stage.name, focus: stage.focus }
         }
       }));
@@ -766,30 +786,44 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     );
   };
 
-  // Run stages sequentially
+  // Run stages sequentially - ONLY ONCE per organization
   useEffect(() => {
     console.log('🎯 ELABORATE PIPELINE - Stage trigger check:', {
       hasOrganization: !!organization,
+      hasStarted,
       currentStage,
       totalStages: INTELLIGENCE_STAGES.length,
       hasError: !!error,
       isComplete
     });
     
-    // Don't run if already complete
-    if (isComplete) {
-      console.log('✅ Pipeline already complete, skipping stage trigger');
+    // Don't run if already complete or hasn't started yet
+    if (isComplete || !organization) {
+      console.log('✅ Pipeline complete or no organization');
       return;
     }
     
-    if (organization && currentStage < INTELLIGENCE_STAGES.length && !error) {
-      console.log(`🚀 STARTING ELABORATE STAGE ${currentStage + 1}: ${INTELLIGENCE_STAGES[currentStage].name}`);
+    // Mark as started for the first stage
+    if (currentStage === 0 && !hasStarted) {
+      console.log('🚀 Starting pipeline for the first time');
+      setHasStarted(true);
+    }
+    
+    // Don't run stages if there's an error or we're already running
+    if (error) {
+      console.log('❌ Pipeline has error, not running stage');
+      return;
+    }
+    
+    // Run the current stage
+    if (currentStage < INTELLIGENCE_STAGES.length) {
+      console.log(`🚀 RUNNING STAGE ${currentStage + 1}: ${INTELLIGENCE_STAGES[currentStage].name}`);
       runStage(currentStage);
-    } else if (currentStage === INTELLIGENCE_STAGES.length && !error && !isComplete) {
-      console.log('🎉 All elaborate stages complete, synthesizing final intelligence...');
+    } else if (currentStage === INTELLIGENCE_STAGES.length && !isComplete) {
+      console.log('🎉 All stages done, completing pipeline...');
       handleComplete();
     }
-  }, [currentStage, organization, error, isComplete, runStage, handleComplete]);
+  }, [currentStage]); // Only depend on currentStage to avoid re-triggers
 
   // Show initialization message
   if (!organization) {
