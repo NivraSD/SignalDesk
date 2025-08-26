@@ -225,34 +225,54 @@ async function saveOrganizationProfile(profile: any) {
       updated_at: new Date().toISOString()
     }
 
-    // Store in localStorage-like table
-    const { data, error } = await supabase
-      .from('organization_profiles')
+    // First try to save to organizations table (which definitely exists)
+    console.log(`Saving profile for ${organization_name} with ${competitors?.length || 0} competitors`)
+    
+    const { data: orgData, error: orgError } = await supabase
+      .from('organizations')
       .upsert({
-        organization_name: organization_name,
-        profile_data: profileData,
+        name: organization_name,
+        description: metadata?.description || '',
+        settings: profileData,
         updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'organization_name'
       })
       .select()
       .single()
 
-    if (error) {
-      console.error('Error saving profile:', error)
-      // Try alternative storage
-      const { error: altError } = await supabase
-        .from('organizations')
-        .upsert({
-          name: organization_name,
-          settings: profileData
-        }, {
-          onConflict: 'name'  
-        })
+    if (orgError && orgError.code !== '23505') { // 23505 is unique violation
+      console.error('Error saving to organizations:', orgError)
       
-      if (altError) {
-        console.error('Alternative save also failed:', altError)
+      // If insert failed, try update
+      const { error: updateError } = await supabase
+        .from('organizations')
+        .update({
+          settings: profileData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('name', organization_name)
+      
+      if (updateError) {
+        console.error('Update also failed:', updateError)
+      } else {
+        console.log('Successfully updated existing organization')
       }
+    } else if (orgData) {
+      console.log('Successfully saved organization profile')
+    }
+
+    // Also try to save to organization_profiles if it exists
+    try {
+      await supabase
+        .from('organization_profiles')
+        .upsert({
+          organization_name: organization_name,
+          profile_data: profileData,
+          updated_at: new Date().toISOString()
+        })
+      console.log('Also saved to organization_profiles table')
+    } catch (e) {
+      // Table might not exist, that's ok
+      console.log('organization_profiles table not available')
     }
 
     // Save competitors as intelligence targets
@@ -373,43 +393,64 @@ serve(withCors(async (req) => {
         // Get saved organization profile
         console.log('Getting profile for:', params.organization_name)
         
-        // Try to get from organization_profiles first
-        const { data: profileData, error: profileError } = await supabase
-          .from('organization_profiles')
-          .select('*')
-          .eq('organization_name', params.organization_name)
-          .single()
-
-        if (profileData?.profile_data) {
-          console.log('Found profile in organization_profiles')
-          return jsonResponse({
-            success: true,
-            profile: profileData.profile_data,
-            source: 'organization_profiles'
-          })
-        }
-
-        // Try organizations table with settings
+        // Try organizations table with settings FIRST (since we know it exists)
         const { data: orgData, error: orgError } = await supabase
           .from('organizations')
           .select('*')
           .eq('name', params.organization_name)
           .single()
 
+        console.log('Organizations query result:', { 
+          found: !!orgData, 
+          hasSettings: !!orgData?.settings,
+          error: orgError?.message 
+        })
+
         if (orgData?.settings) {
-          console.log('Found profile in organizations.settings')
+          const profile = orgData.settings
+          console.log(`Found profile with ${profile.competitors?.length || 0} competitors`)
           return jsonResponse({
             success: true,
-            profile: orgData.settings,
+            profile: profile,
             source: 'organizations'
           })
         }
 
-        console.log('No saved profile found for:', params.organization_name)
+        // Try organization_profiles as fallback
+        try {
+          const { data: profileData, error: profileError } = await supabase
+            .from('organization_profiles')
+            .select('*')
+            .eq('organization_name', params.organization_name)
+            .single()
+
+          if (profileData?.profile_data) {
+            console.log('Found profile in organization_profiles')
+            return jsonResponse({
+              success: true,
+              profile: profileData.profile_data,
+              source: 'organization_profiles'
+            })
+          }
+        } catch (e) {
+          console.log('organization_profiles table not available')
+        }
+
+        // If nothing found, return empty profile structure
+        console.log('No saved profile found, returning empty structure')
         return jsonResponse({
           success: true,
-          profile: null,
-          message: 'No saved profile found'
+          profile: {
+            name: params.organization_name,
+            competitors: [],
+            regulators: [],
+            media: [],
+            investors: [],
+            analysts: [],
+            activists: [],
+            keywords: []
+          },
+          message: 'No saved profile found - using empty structure'
         })
 
       case 'getTargets':
