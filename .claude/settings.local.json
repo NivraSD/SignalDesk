@@ -255,7 +255,9 @@
       "WebFetch(domain:signaldesk-fiy59i1k2-nivra-sd.vercel.app)",
       "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/verify-deployment-cache.sh)",
       "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/test-v3-deployment.sh)",
-      "Bash(osascript:*)"
+      "Bash(osascript:*)",
+      "Bash(supabase db dump:*)",
+      "Bash(supabase db reset:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

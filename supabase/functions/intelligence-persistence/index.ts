@@ -20,22 +20,44 @@ async function saveIntelligenceData(data: any) {
   } = data
 
   try {
+    // First, get or create the organization
+    let orgId = organization_id;
+    if (!orgId && organization_name) {
+      const { data: org, error: orgError } = await supabase
+        .from('organizations')
+        .select('id')
+        .eq('name', organization_name)
+        .single()
+      
+      if (org) {
+        orgId = org.id
+      } else {
+        // Create organization if it doesn't exist
+        const { data: newOrg, error: createError } = await supabase
+          .from('organizations')
+          .insert({ name: organization_name })
+          .select()
+          .single()
+        
+        if (newOrg) {
+          orgId = newOrg.id
+        }
+      }
+    }
+
     // Save to intelligence_findings table
     const { data: finding, error } = await supabase
       .from('intelligence_findings')
       .insert({
-        actual_organization_id: organization_id || organization_name,
-        organization_id: organization_id || organization_name,
-        entity: metadata?.entity || stage,
-        type: data_type || stage,
+        organization_id: orgId,
         title: content?.title || `${stage} data`,
-        description: content?.description || JSON.stringify(content).substring(0, 500),
+        content: JSON.stringify(content),
         source: metadata?.source || stage,
-        url: content?.url || metadata?.url || '#',
-        severity: metadata?.severity || 'medium',
-        confidence_score: metadata?.confidence || 0.75,
-        raw_data: content,
-        metadata: metadata,
+        source_url: content?.url || metadata?.url || '#',
+        relevance_score: metadata?.confidence ? Math.round(metadata.confidence * 100) : 75,
+        sentiment: metadata?.sentiment || 'neutral',
+        tags: [stage, data_type].filter(Boolean),
+        metadata: { ...metadata, stage, data_type },
         created_at: new Date().toISOString()
       })
       .select()
@@ -44,9 +66,9 @@ async function saveIntelligenceData(data: any) {
     if (error) {
       console.error('Error saving to intelligence_findings:', error)
       
-      // Fallback: Save to a generic storage table if available
+      // Fallback: Save to a simpler key-value store
       const { data: fallback, error: fallbackError } = await supabase
-        .from('organization_intelligence')
+        .from('stage_data')
         .upsert({
           organization_name: organization_name,
           organization_id: organization_id,
@@ -163,6 +185,14 @@ async function retrieveIntelligenceData(query: any) {
   }
 }
 
+// Create a simple storage table for organization profiles
+async function ensureProfileTable() {
+  // This table will be created if it doesn't exist
+  const { error } = await supabase.rpc('create_profile_table_if_not_exists', {})
+    .catch(() => ({ error: 'Table creation skipped' }))
+  return !error
+}
+
 async function saveOrganizationProfile(profile: any) {
   const {
     organization_name,
@@ -178,23 +208,51 @@ async function saveOrganizationProfile(profile: any) {
   } = profile
 
   try {
-    // Save organization profile
-    const { data: org, error: orgError } = await supabase
-      .from('organizations')
+    // Use a simple JSON storage approach
+    const profileData = {
+      name: organization_name,
+      industry: industry || 'technology',
+      competitors: competitors || [],
+      stakeholders: {
+        regulators: regulators || [],
+        media: media || [],
+        investors: investors || [],
+        analysts: analysts || [],
+        activists: activists || []
+      },
+      keywords: keywords || [],
+      metadata: metadata || {},
+      updated_at: new Date().toISOString()
+    }
+
+    // Store in localStorage-like table
+    const { data, error } = await supabase
+      .from('organization_profiles')
       .upsert({
-        name: organization_name,
-        industry: industry || 'technology',
-        description: metadata?.description || '',
-        url: metadata?.url || '',
+        organization_name: organization_name,
+        profile_data: profileData,
         updated_at: new Date().toISOString()
       }, {
-        onConflict: 'name'
+        onConflict: 'organization_name'
       })
       .select()
       .single()
 
-    if (orgError) {
-      console.error('Error saving organization:', orgError)
+    if (error) {
+      console.error('Error saving profile:', error)
+      // Try alternative storage
+      const { error: altError } = await supabase
+        .from('organizations')
+        .upsert({
+          name: organization_name,
+          settings: profileData
+        }, {
+          onConflict: 'name'  
+        })
+      
+      if (altError) {
+        console.error('Alternative save also failed:', altError)
+      }
     }
 
     // Save competitors as intelligence targets
@@ -312,64 +370,46 @@ serve(withCors(async (req) => {
         })
 
       case 'getProfile':
-        // Get saved organization profile with all stakeholders
-        const { data: orgData, error: orgError } = await supabase
-          .from('organization_intelligence')
+        // Get saved organization profile
+        console.log('Getting profile for:', params.organization_name)
+        
+        // Try to get from organization_profiles first
+        const { data: profileData, error: profileError } = await supabase
+          .from('organization_profiles')
           .select('*')
           .eq('organization_name', params.organization_name)
           .single()
 
-        if (orgError) {
-          console.log('No saved profile in organization_intelligence, checking intelligence_targets')
-          
-          // Fallback: Get from intelligence_targets
-          const { data: targets, error: targetsError } = await supabase
-            .from('intelligence_targets')
-            .select('*')
-            .eq('organization_id', params.organization_name)
-            .eq('active', true)
-
-          if (targetsError) {
-            return jsonResponse({
-              success: true,
-              profile: null,
-              message: 'No saved profile found'
-            })
-          }
-
-          // Group targets by type
-          const profile = {
-            name: params.organization_name,
-            competitors: targets?.filter(t => t.type === 'competitor').map(t => t.name) || [],
-            regulators: targets?.filter(t => t.type === 'regulator').map(t => t.name) || [],
-            media: targets?.filter(t => t.type === 'media').map(t => t.name) || [],
-            investors: targets?.filter(t => t.type === 'investor').map(t => t.name) || [],
-            analysts: targets?.filter(t => t.type === 'analyst').map(t => t.name) || [],
-            activists: targets?.filter(t => t.type === 'activist').map(t => t.name) || []
-          }
-
+        if (profileData?.profile_data) {
+          console.log('Found profile in organization_profiles')
           return jsonResponse({
             success: true,
-            profile,
-            source: 'intelligence_targets'
+            profile: profileData.profile_data,
+            source: 'organization_profiles'
           })
         }
 
-        // Return the saved profile
+        // Try organizations table with settings
+        const { data: orgData, error: orgError } = await supabase
+          .from('organizations')
+          .select('*')
+          .eq('name', params.organization_name)
+          .single()
+
+        if (orgData?.settings) {
+          console.log('Found profile in organizations.settings')
+          return jsonResponse({
+            success: true,
+            profile: orgData.settings,
+            source: 'organizations'
+          })
+        }
+
+        console.log('No saved profile found for:', params.organization_name)
         return jsonResponse({
           success: true,
-          profile: {
-            name: orgData.organization_name,
-            industry: orgData.industry,
-            competitors: orgData.competitors || [],
-            keywords: orgData.keywords || [],
-            regulators: orgData.monitoring_config?.stakeholders?.regulators || [],
-            media: orgData.monitoring_config?.stakeholders?.media || [],
-            investors: orgData.monitoring_config?.stakeholders?.investors || [],
-            analysts: orgData.monitoring_config?.stakeholders?.analysts || [],
-            activists: orgData.monitoring_config?.stakeholders?.activists || []
-          },
-          source: 'organization_intelligence'
+          profile: null,
+          message: 'No saved profile found'
         })
 
       case 'getTargets':
