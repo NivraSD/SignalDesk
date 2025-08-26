@@ -311,6 +311,67 @@ serve(withCors(async (req) => {
           ...profileResult
         })
 
+      case 'getProfile':
+        // Get saved organization profile with all stakeholders
+        const { data: orgData, error: orgError } = await supabase
+          .from('organization_intelligence')
+          .select('*')
+          .eq('organization_name', params.organization_name)
+          .single()
+
+        if (orgError) {
+          console.log('No saved profile in organization_intelligence, checking intelligence_targets')
+          
+          // Fallback: Get from intelligence_targets
+          const { data: targets, error: targetsError } = await supabase
+            .from('intelligence_targets')
+            .select('*')
+            .eq('organization_id', params.organization_name)
+            .eq('active', true)
+
+          if (targetsError) {
+            return jsonResponse({
+              success: true,
+              profile: null,
+              message: 'No saved profile found'
+            })
+          }
+
+          // Group targets by type
+          const profile = {
+            name: params.organization_name,
+            competitors: targets?.filter(t => t.type === 'competitor').map(t => t.name) || [],
+            regulators: targets?.filter(t => t.type === 'regulator').map(t => t.name) || [],
+            media: targets?.filter(t => t.type === 'media').map(t => t.name) || [],
+            investors: targets?.filter(t => t.type === 'investor').map(t => t.name) || [],
+            analysts: targets?.filter(t => t.type === 'analyst').map(t => t.name) || [],
+            activists: targets?.filter(t => t.type === 'activist').map(t => t.name) || []
+          }
+
+          return jsonResponse({
+            success: true,
+            profile,
+            source: 'intelligence_targets'
+          })
+        }
+
+        // Return the saved profile
+        return jsonResponse({
+          success: true,
+          profile: {
+            name: orgData.organization_name,
+            industry: orgData.industry,
+            competitors: orgData.competitors || [],
+            keywords: orgData.keywords || [],
+            regulators: orgData.monitoring_config?.stakeholders?.regulators || [],
+            media: orgData.monitoring_config?.stakeholders?.media || [],
+            investors: orgData.monitoring_config?.stakeholders?.investors || [],
+            analysts: orgData.monitoring_config?.stakeholders?.analysts || [],
+            activists: orgData.monitoring_config?.stakeholders?.activists || []
+          },
+          source: 'organization_intelligence'
+        })
+
       case 'getTargets':
         // Get all intelligence targets for an organization
         const { data: targets, error } = await supabase
