@@ -189,36 +189,82 @@ class IntelligenceOrchestratorV4 {
   async runCompetitiveStage(organization, config) {
     console.log('🎯 Stage 2: Competitive Intelligence Analysis');
     
-    // FIRST: Retrieve saved organization profile from database
-    console.log('📊 Retrieving saved organization profile...');
+    // FIRST: Check localStorage for the organization data
+    console.log('📊 Checking localStorage for organization data...');
     let savedProfile = null;
-    try {
-      const persistResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-persistence`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.supabaseKey}`
-        },
-        body: JSON.stringify({
-          action: 'getProfile',
-          organization_name: organization.name
-        })
-      });
-      
-      if (persistResponse.ok) {
-        const result = await persistResponse.json();
-        savedProfile = result.profile;
-        console.log('✅ Retrieved saved profile with competitors:', savedProfile?.competitors?.length || 0);
+    
+    // Try localStorage first (most reliable)
+    const localOrgData = localStorage.getItem('organization');
+    if (localOrgData) {
+      try {
+        const orgData = JSON.parse(localOrgData);
+        console.log('✅ Found organization in localStorage with:', {
+          competitors: orgData.competitors?.length || 0,
+          regulators: orgData.stakeholders?.regulators?.length || 0,
+          media: orgData.stakeholders?.media?.length || 0
+        });
+        
+        // Build profile from localStorage data
+        savedProfile = {
+          name: orgData.name,
+          industry: orgData.industry,
+          competitors: orgData.competitors || [],
+          regulators: orgData.stakeholders?.regulators || [],
+          media: orgData.stakeholders?.media || [],
+          investors: orgData.stakeholders?.investors || [],
+          analysts: orgData.stakeholders?.analysts || [],
+          activists: orgData.stakeholders?.activists || [],
+          keywords: orgData.keywords || [],
+          metadata: {
+            description: orgData.description,
+            headquarters: orgData.headquarters,
+            founded: orgData.founded,
+            products: orgData.products,
+            executives: orgData.executives
+          }
+        };
         
         // Use saved competitors if not provided
-        if (savedProfile?.competitors && (!config.competitors || config.competitors.length === 0)) {
+        if (savedProfile.competitors && (!config.competitors || config.competitors.length === 0)) {
           config.competitors = savedProfile.competitors;
         }
+      } catch (e) {
+        console.error('Error parsing localStorage data:', e);
       }
-    } catch (e) {
-      console.error('Could not retrieve saved profile:', e);
     }
     
+    // If no localStorage data, try backend
+    if (!savedProfile) {
+      console.log('📊 No localStorage data, trying backend...');
+      try {
+        const persistResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-persistence`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.supabaseKey}`
+          },
+          body: JSON.stringify({
+            action: 'getProfile',
+            organization_name: organization.name
+          })
+        });
+        
+        if (persistResponse.ok) {
+          const result = await persistResponse.json();
+          savedProfile = result.profile;
+          console.log('✅ Retrieved saved profile from backend with competitors:', savedProfile?.competitors?.length || 0);
+          
+          // Use saved competitors if not provided
+          if (savedProfile?.competitors && (!config.competitors || config.competitors.length === 0)) {
+            config.competitors = savedProfile.competitors;
+          }
+        }
+      } catch (e) {
+        console.error('Could not retrieve saved profile from backend:', e);
+      }
+    }
+    
+    // Pass the full saved profile to the stage
     const competitorResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-stage-1-competitors`, {
       method: 'POST',
       headers: {
@@ -226,8 +272,9 @@ class IntelligenceOrchestratorV4 {
         'Authorization': `Bearer ${this.supabaseKey}`
       },
       body: JSON.stringify({
-        organization,
-        competitors: config.competitors || savedProfile?.competitors || []
+        organization: savedProfile || organization,
+        competitors: savedProfile?.competitors || config.competitors || [],
+        savedProfile: savedProfile // Include full profile for reference
       })
     });
 
@@ -266,34 +313,60 @@ class IntelligenceOrchestratorV4 {
   async runMediaStage(organization, config) {
     console.log('📰 Stage 3: Media Landscape Mapping');
     
-    // FIRST: Retrieve saved organization profile and previous stage data
-    console.log('📊 Retrieving saved media outlets from database...');
+    // FIRST: Check localStorage for the organization data
+    console.log('📊 Checking localStorage for media outlets...');
     let savedProfile = null;
-    try {
-      const persistResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-persistence`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.supabaseKey}`
-        },
-        body: JSON.stringify({
-          action: 'getProfile',
-          organization_name: organization.name
-        })
-      });
-      
-      if (persistResponse.ok) {
-        const result = await persistResponse.json();
-        savedProfile = result.profile;
-        console.log('✅ Retrieved saved profile with media outlets:', savedProfile?.media?.length || 0);
+    
+    // Try localStorage first (most reliable)
+    const localOrgData = localStorage.getItem('organization');
+    if (localOrgData) {
+      try {
+        const orgData = JSON.parse(localOrgData);
+        console.log('✅ Found organization in localStorage with media:', orgData.stakeholders?.media?.length || 0);
+        
+        savedProfile = {
+          name: orgData.name,
+          media: orgData.stakeholders?.media || [],
+          keywords: orgData.keywords || []
+        };
         
         // Use saved media outlets if not provided
-        if (savedProfile?.media && (!config.media_outlets || config.media_outlets.length === 0)) {
+        if (savedProfile.media && (!config.media_outlets || config.media_outlets.length === 0)) {
           config.media_outlets = savedProfile.media;
         }
+      } catch (e) {
+        console.error('Error parsing localStorage data:', e);
       }
-    } catch (e) {
-      console.error('Could not retrieve saved profile:', e);
+    }
+    
+    // If no localStorage data, try backend
+    if (!savedProfile) {
+      try {
+        const persistResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-persistence`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.supabaseKey}`
+          },
+          body: JSON.stringify({
+            action: 'getProfile',
+            organization_name: organization.name
+          })
+        });
+        
+        if (persistResponse.ok) {
+          const result = await persistResponse.json();
+          savedProfile = result.profile;
+          console.log('✅ Retrieved saved profile from backend with media outlets:', savedProfile?.media?.length || 0);
+          
+          // Use saved media outlets if not provided
+          if (savedProfile?.media && (!config.media_outlets || config.media_outlets.length === 0)) {
+            config.media_outlets = savedProfile.media;
+          }
+        }
+      } catch (e) {
+        console.error('Could not retrieve saved profile from backend:', e);
+      }
     }
     
     const mediaResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-stage-2-media`, {
@@ -303,8 +376,9 @@ class IntelligenceOrchestratorV4 {
         'Authorization': `Bearer ${this.supabaseKey}`
       },
       body: JSON.stringify({
-        organization,
-        media_outlets: config.media_outlets || savedProfile?.media || []
+        organization: savedProfile || organization,
+        media_outlets: savedProfile?.media || config.media_outlets || [],
+        savedProfile: savedProfile // Include full profile for reference
       })
     });
 
