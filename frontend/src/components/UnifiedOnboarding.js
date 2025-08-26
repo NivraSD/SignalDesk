@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import intelligentDiscoveryService from '../services/intelligentDiscoveryService';
+import { saveOnboardingData } from '../utils/onboardingAdapter';
 import './UnifiedOnboarding.css';
 
 const UnifiedOnboarding = ({ onComplete }) => {
@@ -189,10 +190,8 @@ const UnifiedOnboarding = ({ onComplete }) => {
       version: '2.0'
     };
     
-    // Save to localStorage
+    // Save to localStorage (keep existing format for backward compatibility)
     localStorage.setItem('signaldesk_unified_profile', JSON.stringify(unifiedProfile));
-    
-    // Also save specific parts for backward compatibility
     localStorage.setItem('signaldesk_organization', JSON.stringify(profile.organization));
     localStorage.setItem('opportunity_profile', JSON.stringify({
       ...profile.brand,
@@ -211,6 +210,15 @@ const UnifiedOnboarding = ({ onComplete }) => {
       competitors: profile.competitors,
       monitoring_topics: profile.monitoring_topics
     }));
+    
+    // NEW: Save to intelligence pipeline format
+    try {
+      const intelligenceProfile = await saveOnboardingData(unifiedProfile);
+      console.log('✅ Intelligence profile created:', intelligenceProfile.organization.name);
+    } catch (error) {
+      console.error('Error saving intelligence profile:', error);
+      // Continue anyway - old format is still saved
+    }
     
     // Handle completion
     if (onComplete) {

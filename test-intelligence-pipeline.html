@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalDesk Intelligence Pipeline Test</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .test-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .test-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background: #667eea;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background: #5a67d8;
+        }
+        
+        button:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        .status.success {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        .status.error {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+        
+        .status.warning {
+            background: #feebc8;
+            color: #7c2d12;
+        }
+        
+        .status.info {
+            background: #bee3f8;
+            color: #2c5282;
+        }
+        
+        .results {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        pre {
+            background: #2d3748;
+            color: #48bb78;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        
+        .stage-indicator {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .stage {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            border-radius: 5px;
+            background: #e2e8f0;
+            font-size: 12px;
+        }
+        
+        .stage.active {
+            background: #fbbf24;
+            color: #78350f;
+        }
+        
+        .stage.completed {
+            background: #34d399;
+            color: #064e3b;
+        }
+        
+        .stage.failed {
+            background: #f87171;
+            color: #7f1d1d;
+        }
+        
+        .data-flow-debug {
+            background: #1a202c;
+            color: #63b3ed;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 11px;
+        }
+        
+        .competitor-list {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .competitor-card {
+            background: #f7fafc;
+            padding: 10px;
+            border-radius: 5px;
+            border-left: 3px solid #667eea;
+        }
+        
+        .validation-results {
+            margin-top: 10px;
+        }
+        
+        .validation-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 5px;
+        }
+        
+        .validation-item .icon {
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🧠 SignalDesk Intelligence Pipeline Test</h1>
+        <p>Complete test suite for data flow validation</p>
+    </div>
+
+    <!-- Test Controls -->
+    <div class="test-section">
+        <h2>🎮 Test Controls</h2>
+        <div class="test-controls">
+            <input type="text" id="orgName" placeholder="Organization Name" value="Tesla">
+            <button onclick="testConnection()">Test Connection</button>
+            <button onclick="testDiscovery()">1. Test Discovery</button>
+            <button onclick="testStage1()">2. Test Stage 1 (Competitors)</button>
+            <button onclick="testStage5()">3. Test Stage 5 (Synthesis)</button>
+            <button onclick="testCompletePipeline()">4. Run Complete Pipeline</button>
+            <button onclick="clearAll()">Clear All</button>
+        </div>
+        
+        <div class="stage-indicator" id="stageIndicator">
+            <div class="stage" id="stage-discovery">Discovery</div>
+            <div class="stage" id="stage-1">Stage 1</div>
+            <div class="stage" id="stage-2">Stage 2</div>
+            <div class="stage" id="stage-3">Stage 3</div>
+            <div class="stage" id="stage-4">Stage 4</div>
+            <div class="stage" id="stage-5">Synthesis</div>
+        </div>
+    </div>
+
+    <!-- Data Validation -->
+    <div class="test-section">
+        <h2>✅ Data Validation</h2>
+        <div id="validationResults" class="validation-results"></div>
+    </div>
+
+    <!-- Current Profile -->
+    <div class="test-section">
+        <h2>📊 Current Profile</h2>
+        <div id="profileInfo" class="results"></div>
+    </div>
+
+    <!-- Test Results -->
+    <div class="test-section">
+        <h2>📋 Test Results</h2>
+        <div id="testResults"></div>
+    </div>
+
+    <!-- Debug Console -->
+    <div class="test-section">
+        <h2>🔍 Debug Console</h2>
+        <pre id="debugConsole"></pre>
+    </div>
+
+    <script>
+        // Configuration
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        // Get the auth token (use anon key as Bearer token for Edge Functions)
+        function getAuthHeaders() {
+            return {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_ANON_KEY,
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+            };
+        }
+        
+        // Utility functions
+        function log(message, type = 'info') {
+            const results = document.getElementById('testResults');
+            const status = document.createElement('div');
+            status.className = `status ${type}`;
+            status.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            results.appendChild(status);
+            results.scrollTop = results.scrollHeight;
+        }
+        
+        function debug(data) {
+            const console = document.getElementById('debugConsole');
+            console.textContent = JSON.stringify(data, null, 2);
+        }
+        
+        function updateStage(stageName, status) {
+            const element = document.getElementById(`stage-${stageName}`);
+            if (element) {
+                element.className = `stage ${status}`;
+            }
+        }
+        
+        function clearAll() {
+            document.getElementById('testResults').innerHTML = '';
+            document.getElementById('debugConsole').textContent = '';
+            document.getElementById('profileInfo').innerHTML = '';
+            document.getElementById('validationResults').innerHTML = '';
+            document.querySelectorAll('.stage').forEach(el => el.className = 'stage');
+            localStorage.clear();
+            log('Cleared all data and cache', 'info');
+        }
+        
+        // Create standard profile structure
+        function createStandardProfile(data = {}) {
+            return {
+                organization: {
+                    id: data.organization?.id || `org_${Date.now()}`,
+                    name: data.organization?.name || data.name || '',
+                    industry: data.organization?.industry || 'Technology',
+                    description: data.organization?.description || ''
+                },
+                competitors: {
+                    direct: data.competitors?.direct || [
+                        { name: 'Rivian', type: 'direct' },
+                        { name: 'Lucid Motors', type: 'direct' }
+                    ],
+                    indirect: data.competitors?.indirect || [
+                        { name: 'Ford', type: 'indirect' }
+                    ],
+                    emerging: data.competitors?.emerging || [
+                        { name: 'Canoo', type: 'emerging' }
+                    ]
+                },
+                stakeholders: {
+                    regulators: ['NHTSA', 'EPA'],
+                    media: ['TechCrunch', 'The Verge'],
+                    investors: ['ARK Invest'],
+                    analysts: ['Morgan Stanley'],
+                    activists: ['Climate Action Network']
+                },
+                keywords: ['electric vehicles', 'autonomous driving', 'sustainable transport'],
+                products: ['Model S', 'Model 3', 'Model X', 'Model Y', 'Cybertruck'],
+                executives: ['Elon Musk'],
+                metadata: {
+                    discoveredAt: new Date().toISOString(),
+                    lastUpdated: new Date().toISOString(),
+                    source: 'test',
+                    version: '2.0'
+                }
+            };
+        }
+        
+        // Prepare stage payload
+        function prepareStagePayload(profile) {
+            const flatCompetitors = [
+                ...profile.competitors.direct.map(c => ({...c, type: 'direct'})),
+                ...profile.competitors.indirect.map(c => ({...c, type: 'indirect'})),
+                ...profile.competitors.emerging.map(c => ({...c, type: 'emerging'}))
+            ];
+            
+            return {
+                organization: profile.organization,
+                competitors: flatCompetitors,
+                competitorsNested: profile.competitors,
+                stakeholders: profile.stakeholders,
+                keywords: profile.keywords,
+                products: profile.products,
+                executives: profile.executives,
+                metadata: profile.metadata,
+                fullProfile: profile,
+                dataVersion: '2.0'
+            };
+        }
+        
+        // Display profile info
+        function displayProfile(profile) {
+            const info = document.getElementById('profileInfo');
+            const competitorCount = 
+                (profile.competitors?.direct?.length || 0) +
+                (profile.competitors?.indirect?.length || 0) +
+                (profile.competitors?.emerging?.length || 0);
+            
+            info.innerHTML = `
+                <h3>${profile.organization?.name || 'Unknown'}</h3>
+                <p>Industry: ${profile.organization?.industry || 'N/A'}</p>
+                <p>Competitors: ${competitorCount} total</p>
+                <ul>
+                    <li>Direct: ${profile.competitors?.direct?.length || 0}</li>
+                    <li>Indirect: ${profile.competitors?.indirect?.length || 0}</li>
+                    <li>Emerging: ${profile.competitors?.emerging?.length || 0}</li>
+                </ul>
+                <p>Stakeholders: ${Object.values(profile.stakeholders || {}).flat().length} total</p>
+                <p>Data Version: ${profile.metadata?.version || 'unknown'}</p>
+            `;
+        }
+        
+        // Validate data structure
+        function validateDataStructure(data) {
+            const results = document.getElementById('validationResults');
+            const checks = [
+                { 
+                    name: 'Has Organization', 
+                    valid: !!data?.organization?.name,
+                    value: data?.organization?.name || 'Missing'
+                },
+                {
+                    name: 'Has Competitors',
+                    valid: !!data?.competitors,
+                    value: `${(data?.competitors?.direct?.length || 0) + 
+                            (data?.competitors?.indirect?.length || 0) + 
+                            (data?.competitors?.emerging?.length || 0)} total`
+                },
+                {
+                    name: 'Has Stakeholders',
+                    valid: !!data?.stakeholders,
+                    value: `${Object.values(data?.stakeholders || {}).flat().length} total`
+                },
+                {
+                    name: 'Has Metadata',
+                    valid: !!data?.metadata,
+                    value: data?.metadata?.version || 'Missing'
+                }
+            ];
+            
+            results.innerHTML = checks.map(check => `
+                <div class="validation-item">
+                    <span class="icon">${check.valid ? '✅' : '❌'}</span>
+                    <span>${check.name}: ${check.value}</span>
+                </div>
+            `).join('');
+            
+            return checks.every(c => c.valid);
+        }
+        
+        // Test connection
+        async function testConnection() {
+            log('Testing Supabase connection...', 'info');
+            
+            try {
+                // Test basic connection
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY
+                    }
+                });
+                
+                if (response.ok) {
+                    log('✅ Connected to Supabase', 'success');
+                } else {
+                    log(`⚠️ Connection returned status: ${response.status}`, 'warning');
+                }
+                
+                // Test Edge Function with health check
+                const edgeResponse = await fetch(`${SUPABASE_URL}/functions/v1/health-check`, {
+                    method: 'GET',
+                    headers: getAuthHeaders()
+                });
+                
+                if (edgeResponse.ok || edgeResponse.status === 404) {
+                    log('✅ Edge Functions accessible', 'success');
+                } else if (edgeResponse.status === 401) {
+                    log('❌ Authentication failed - check API key', 'error');
+                    log(`Using key: ${SUPABASE_ANON_KEY.substring(0, 20)}...`, 'warning');
+                } else {
+                    log(`⚠️ Edge Function test returned: ${edgeResponse.status}`, 'warning');
+                }
+                
+            } catch (error) {
+                log(`❌ Connection error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test functions
+        async function testDiscovery() {
+            const orgName = document.getElementById('orgName').value;
+            log(`Starting discovery for: ${orgName}`, 'info');
+            updateStage('discovery', 'active');
+            
+            try {
+                // Create and save test profile
+                const profile = createStandardProfile({ 
+                    organization: { name: orgName }
+                });
+                
+                // Save to localStorage
+                localStorage.setItem('organizationProfile', JSON.stringify(profile));
+                localStorage.setItem(`profile_${orgName}`, JSON.stringify(profile));
+                
+                // Save to database
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-persistence`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        action: 'saveProfile',
+                        organization_name: orgName,
+                        profile: profile
+                    })
+                });
+                
+                if (response.status === 401) {
+                    throw new Error('Authentication failed - check Supabase API key configuration');
+                } else if (response.ok) {
+                    log('✅ Discovery complete - Profile saved', 'success');
+                    displayProfile(profile);
+                    validateDataStructure(profile);
+                    updateStage('discovery', 'completed');
+                    debug(profile);
+                } else {
+                    const errorText = await response.text();
+                    throw new Error(`Failed to save profile: ${response.status} - ${errorText}`);
+                }
+                
+            } catch (error) {
+                log(`❌ Discovery failed: ${error.message}`, 'error');
+                updateStage('discovery', 'failed');
+            }
+        }
+        
+        async function testStage1() {
+            const orgName = document.getElementById('orgName').value;
+            log('Testing Stage 1 - Competitor Analysis', 'info');
+            updateStage('1', 'active');
+            
+            try {
+                // Load profile
+                const profileStr = localStorage.getItem(`profile_${orgName}`);
+                if (!profileStr) {
+                    throw new Error('No profile found. Run discovery first.');
+                }
+                
+                const profile = JSON.parse(profileStr);
+                const payload = prepareStagePayload(profile);
+                
+                log(`Sending ${payload.competitors.length} competitors to Stage 1`, 'info');
+                debug(payload);
+                
+                // Call Stage 1
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-1-competitors`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    log(`✅ Stage 1 complete - Analyzed ${result.data?.metadata?.competitors_analyzed || 0} competitors`, 'success');
+                    
+                    // Check if we got actual competitor data
+                    const competitorCount = 
+                        (result.data?.competitors?.direct?.length || 0) +
+                        (result.data?.competitors?.indirect?.length || 0) +
+                        (result.data?.competitors?.emerging?.length || 0);
+                    
+                    if (competitorCount > 0) {
+                        log(`✅ Received ${competitorCount} analyzed competitors`, 'success');
+                    } else {
+                        log('⚠️ No competitors in result', 'warning');
+                    }
+                    
+                    updateStage('1', 'completed');
+                    debug(result);
+                } else {
+                    throw new Error(result.error || 'Stage 1 failed');
+                }
+                
+            } catch (error) {
+                log(`❌ Stage 1 failed: ${error.message}`, 'error');
+                updateStage('1', 'failed');
+            }
+        }
+        
+        async function testStage5() {
+            const orgName = document.getElementById('orgName').value;
+            log('Testing Stage 5 - Synthesis', 'info');
+            updateStage('5', 'active');
+            
+            try {
+                // Load profile
+                const profileStr = localStorage.getItem(`profile_${orgName}`);
+                if (!profileStr) {
+                    throw new Error('No profile found. Run discovery first.');
+                }
+                
+                const profile = JSON.parse(profileStr);
+                const payload = prepareStagePayload(profile);
+                
+                // Add mock previous results
+                payload.previousResults = {
+                    competitors: {
+                        competitors: profile.competitors
+                    }
+                };
+                
+                log('Sending data to Stage 5 synthesis', 'info');
+                
+                // Call Stage 5
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-5-synthesis`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    log(`✅ Stage 5 complete - Generated ${result.data?.metadata?.insights_generated || 0} insights`, 'success');
+                    log(`📊 Data completeness: ${result.data?.metadata?.data_completeness || 0}%`, 'info');
+                    updateStage('5', 'completed');
+                    debug(result);
+                } else {
+                    throw new Error(result.error || 'Stage 5 failed');
+                }
+                
+            } catch (error) {
+                log(`❌ Stage 5 failed: ${error.message}`, 'error');
+                updateStage('5', 'failed');
+            }
+        }
+        
+        async function testCompletePipeline() {
+            const orgName = document.getElementById('orgName').value;
+            log('🚀 Starting complete pipeline test', 'info');
+            
+            // Reset stages
+            document.querySelectorAll('.stage').forEach(el => el.className = 'stage');
+            
+            try {
+                // Step 1: Discovery
+                await testDiscovery();
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Step 2: Stage 1
+                await testStage1();
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Step 3: Stage 5
+                await testStage5();
+                
+                log('✅ Complete pipeline test finished!', 'success');
+                
+            } catch (error) {
+                log(`❌ Pipeline test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Initialize
+        window.onload = () => {
+            log('Test interface ready. Enter an organization name and click Test Discovery to start.', 'info');
+            log(`Supabase URL: ${SUPABASE_URL}`, 'info');
+            log(`API Key (first 30 chars): ${SUPABASE_ANON_KEY.substring(0, 30)}...`, 'info');
+            
+            // Auto-run connection test
+            testConnection();
+        };
+    </script>
+</body>
+</html>
