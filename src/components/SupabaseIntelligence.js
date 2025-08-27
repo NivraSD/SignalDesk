@@ -26,6 +26,15 @@ const SupabaseIntelligence = ({ organization, onComplete }) => {
   
   const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co';
   const SUPABASE_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+  
+  // Debug logging for production
+  console.log('🔍 SupabaseIntelligence Environment Check:', {
+    hasEnvUrl: !!process.env.REACT_APP_SUPABASE_URL,
+    hasEnvKey: !!process.env.REACT_APP_SUPABASE_ANON_KEY,
+    actualUrl: SUPABASE_URL,
+    keyLength: SUPABASE_KEY?.length,
+    environment: process.env.NODE_ENV
+  });
 
   /**
    * Check what stages are already complete in Supabase
@@ -157,6 +166,9 @@ const SupabaseIntelligence = ({ organization, onComplete }) => {
       // Call the appropriate edge function for this stage
       const functionName = `intelligence-stage-${stageIndex + 1}-${stage.id}`;
       
+      console.log(`📡 Calling edge function: ${functionName}`);
+      console.log(`URL: ${SUPABASE_URL}/functions/v1/${functionName}`);
+      
       const response = await fetch(
         `${SUPABASE_URL}/functions/v1/${functionName}`,
         {
@@ -171,6 +183,14 @@ const SupabaseIntelligence = ({ organization, onComplete }) => {
           })
         }
       );
+
+      console.log(`Response status: ${response.status}`);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Edge function error: ${errorText}`);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
 
       const result = await response.json();
       
