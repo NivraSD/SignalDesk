@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Production Exact Payload</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        button { background: #0066cc; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px; }
+        .log { margin: 10px 0; padding: 10px; background: #f9f9f9; border-left: 3px solid #0066cc; font-family: monospace; font-size: 12px; }
+        .error { border-left-color: #cc0000; background: #fff5f5; }
+        .success { border-left-color: #00cc00; background: #f5fff5; }
+        pre { white-space: pre-wrap; word-wrap: break-word; }
+        textarea { width: 100%; height: 200px; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test Production Exact Payload</h1>
+        <p>Paste the exact request body from your browser's Network tab here:</p>
+        
+        <textarea id="requestBody" placeholder='Paste the JSON request body here...
+Example:
+{
+  "organization": {...},
+  "competitors": [...]
+}'></textarea>
+        
+        <br><br>
+        <button onclick="testExactPayload()">Test This Exact Payload</button>
+        <button onclick="interceptAndLog()">Setup Request Interceptor</button>
+        
+        <div id="logs"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+        
+        function log(message, data, type = 'log') {
+            const logs = document.getElementById('logs');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log ${type}`;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            let content = `[${timestamp}] ${message}`;
+            if (data) {
+                content += `\n${typeof data === 'string' ? data : JSON.stringify(data, null, 2)}`;
+            }
+            
+            logEntry.innerHTML = `<pre>${content}</pre>`;
+            logs.insertBefore(logEntry, logs.firstChild);
+        }
+        
+        async function testExactPayload() {
+            const requestBodyText = document.getElementById('requestBody').value;
+            
+            if (!requestBodyText) {
+                log('Please paste the request body first', null, 'error');
+                return;
+            }
+            
+            let requestBody;
+            try {
+                requestBody = JSON.parse(requestBodyText);
+                log('Parsed request body:', requestBody);
+            } catch (e) {
+                log('Invalid JSON:', e.message, 'error');
+                return;
+            }
+            
+            // Analyze the request body
+            log('Analysis:', {
+                hasOrganization: !!requestBody.organization,
+                organizationType: typeof requestBody.organization,
+                organizationName: requestBody.organization?.name,
+                organizationKeys: requestBody.organization ? Object.keys(requestBody.organization) : null,
+                competitorsCount: requestBody.competitors?.length || 0,
+                hasSavedProfile: !!requestBody.savedProfile
+            }, 'success');
+            
+            // Test the exact payload
+            try {
+                log('Sending to edge function...', null);
+                
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-1-competitors`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                const responseText = await response.text();
+                
+                if (!response.ok) {
+                    log(`❌ Edge function returned ${response.status}:`, responseText, 'error');
+                    
+                    // Try to understand why
+                    if (responseText.includes('Organization name is required')) {
+                        log('ISSUE: Organization name is missing!', {
+                            providedOrg: requestBody.organization,
+                            suggestion: 'The organization object needs a "name" field'
+                        }, 'error');
+                    }
+                } else {
+                    const data = JSON.parse(responseText);
+                    log('✅ Success!', data, 'success');
+                }
+            } catch (error) {
+                log('❌ Request failed:', error.message, 'error');
+            }
+        }
+        
+        function interceptAndLog() {
+            // This creates a fetch interceptor you can paste into your browser console
+            const interceptorCode = `
+// Paste this into your browser console on the SignalDesk page:
+(function() {
+    const originalFetch = window.fetch;
+    window.fetch = function(...args) {
+        const [url, options] = args;
+        
+        if (url.includes('intelligence-stage-1-competitors')) {
+            console.log('🎯 INTERCEPTED REQUEST TO COMPETITOR STAGE:');
+            console.log('URL:', url);
+            console.log('Headers:', options?.headers);
+            console.log('Body (raw):', options?.body);
+            
+            if (options?.body) {
+                try {
+                    const parsed = JSON.parse(options.body);
+                    console.log('Body (parsed):', parsed);
+                    console.log('Organization:', parsed.organization);
+                    console.log('Organization name:', parsed.organization?.name);
+                    
+                    // Copy to clipboard for testing
+                    navigator.clipboard.writeText(options.body).then(() => {
+                        console.log('✅ Request body copied to clipboard!');
+                    });
+                } catch (e) {
+                    console.error('Could not parse body:', e);
+                }
+            }
+        }
+        
+        return originalFetch.apply(this, args).then(response => {
+            if (url.includes('intelligence-stage-1-competitors')) {
+                const clonedResponse = response.clone();
+                clonedResponse.text().then(text => {
+                    console.log('📥 RESPONSE:', response.status, text.substring(0, 500));
+                });
+            }
+            return response;
+        });
+    };
+    console.log('✅ Fetch interceptor installed! Now trigger the intelligence pipeline.');
+})();`;
+            
+            log('Copy and paste this code into your browser console:', interceptorCode, 'success');
+            
+            // Also copy to clipboard
+            navigator.clipboard.writeText(interceptorCode).then(() => {
+                log('✅ Interceptor code copied to clipboard!', null, 'success');
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Pipeline Error</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #00ff00;
+        }
+        .test {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #00ff00;
+        }
+        .error {
+            color: #ff0000;
+        }
+        .success {
+            color: #00ff00;
+        }
+        pre {
+            background: #0a0a0a;
+            padding: 10px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Pipeline Error Test</h1>
+    
+    <div class="test">
+        <h2>Test 1: Check what organization object is sent</h2>
+        <button onclick="testOrganizationStructure()">Test Organization Structure</button>
+        <pre id="test1-result"></pre>
+    </div>
+    
+    <div class="test">
+        <h2>Test 2: Direct Stage 1 Call (as sent by pipeline)</h2>
+        <button onclick="testStage1Direct()">Test Stage 1 Direct</button>
+        <pre id="test2-result"></pre>
+    </div>
+    
+    <div class="test">
+        <h2>Test 3: Test with undefined organization name</h2>
+        <button onclick="testUndefinedOrgName()">Test Undefined Name</button>
+        <pre id="test3-result"></pre>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+        
+        async function testOrganizationStructure() {
+            const result = document.getElementById('test1-result');
+            result.textContent = 'Testing organization structure...';
+            
+            // This mimics what the pipeline sends
+            const baseOrganization = {
+                // Missing 'name' property!
+                competitors: [],
+                stakeholders: {}
+            };
+            
+            const stageConfig = {
+                organization: baseOrganization,
+                competitors: baseOrganization?.competitors || [],
+                stageConfig: {
+                    stageId: 'competitive',
+                    stageName: 'Competitive Intelligence',
+                    focus: 'competitor analysis'
+                }
+            };
+            
+            result.textContent = 'Organization structure sent by pipeline:\n' + 
+                JSON.stringify(stageConfig, null, 2) + 
+                '\n\n❌ PROBLEM: organization.name is undefined!';
+        }
+        
+        async function testStage1Direct() {
+            const result = document.getElementById('test2-result');
+            result.textContent = 'Testing Stage 1 with pipeline structure...';
+            
+            try {
+                // First try to get profile (this will fail if org name is undefined)
+                const profileResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-persistence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        action: 'getProfile',
+                        organization_name: undefined // This is the problem!
+                    })
+                });
+                
+                result.textContent = `Profile fetch status: ${profileResponse.status}\n`;
+                
+                if (!profileResponse.ok) {
+                    const error = await profileResponse.text();
+                    result.textContent += `Profile error: ${error}\n\n`;
+                }
+                
+                // Now try the stage 1 call
+                const requestBody = {
+                    organization: { /* no name! */ },
+                    competitors: [],
+                    savedProfile: null
+                };
+                
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-1-competitors`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                result.textContent += `\nStage 1 status: ${response.status}\n`;
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    result.textContent += `Stage 1 error: ${errorText}`;
+                } else {
+                    const data = await response.json();
+                    result.textContent += `Stage 1 success: ${JSON.stringify(data, null, 2)}`;
+                }
+                
+            } catch (error) {
+                result.textContent = `Error: ${error.message}`;
+                result.className = 'error';
+            }
+        }
+        
+        async function testUndefinedOrgName() {
+            const result = document.getElementById('test3-result');
+            result.textContent = 'Testing with undefined organization name...';
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-1-competitors`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: {
+                            // name is missing!
+                            industry: 'Technology'
+                        },
+                        competitors: [],
+                        monitoring_data: [],
+                        fullProfile: {}
+                    })
+                });
+                
+                result.textContent = `Response status: ${response.status}\n\n`;
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    result.textContent += `❌ ERROR REPRODUCED!\n\n${errorText}`;
+                    result.className = 'error';
+                } else {
+                    const data = await response.json();
+                    result.textContent += `Unexpected success: ${JSON.stringify(data, null, 2)}`;
+                }
+                
+            } catch (error) {
+                result.textContent = `Error: ${error.message}`;
+                result.className = 'error';
+            }
+        }
+    </script>
+</body>
+</html>

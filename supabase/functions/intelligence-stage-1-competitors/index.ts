@@ -16,7 +16,21 @@ serve(async (req) => {
 
   try {
     // Extract ALL data from request
-    const requestData = await req.json();
+    let requestData;
+    try {
+      requestData = await req.json();
+    } catch (parseError) {
+      console.error('❌ Failed to parse request body:', parseError);
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Invalid JSON in request body',
+        details: parseError.message
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
     const { 
       organization,
       competitors = [],
@@ -30,7 +44,9 @@ serve(async (req) => {
     console.log(`🎯 Stage 1: Starting Competitor Analysis`);
     console.log(`📊 Data received:`, {
       hasOrganization: !!organization,
+      organizationType: typeof organization,
       organizationName: organization?.name,
+      organizationKeys: organization ? Object.keys(organization).join(', ') : 'none',
       flatCompetitors: competitors.length,
       hasNestedCompetitors: !!competitorsNested,
       hasFullProfile: !!fullProfile,
@@ -38,9 +54,34 @@ serve(async (req) => {
       hasPreviousResults: Object.keys(previousResults).length > 0
     });
 
+    // Debug: Log the actual organization object
+    console.log('📋 Full organization object:', JSON.stringify(organization, null, 2));
+
     // Validate we have an organization
-    if (!organization?.name) {
-      throw new Error('Organization name is required');
+    if (!organization) {
+      console.error('❌ No organization object provided');
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Organization object is required',
+        received: requestData
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    if (!organization.name) {
+      console.error('❌ Organization missing name field');
+      console.error('Organization object:', organization);
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Organization name is required',
+        organizationProvided: organization,
+        organizationKeys: Object.keys(organization)
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     // Step 1: Get existing data AND monitoring data from database

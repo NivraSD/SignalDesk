@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Competitive Stage</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+            padding: 20px; 
+            background: #f5f5f5; 
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+        }
+        button { 
+            background: #0066cc; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            margin: 5px;
+        }
+        button:hover { background: #0052cc; }
+        .status { 
+            margin: 20px 0; 
+            padding: 10px; 
+            background: #f0f0f0; 
+            border-radius: 4px; 
+        }
+        .error { background: #fee; color: #c00; }
+        .success { background: #efe; color: #060; }
+        pre { 
+            background: #f5f5f5; 
+            padding: 10px; 
+            border-radius: 4px; 
+            overflow-x: auto; 
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test Competitive Stage Edge Function</h1>
+        
+        <button onclick="testDirectCall()">Test Direct Edge Function Call</button>
+        <button onclick="testWithEmptyOrg()">Test with Empty Organization</button>
+        <button onclick="testWithFullOrg()">Test with Full Organization</button>
+        <button onclick="testLikeOrchestrator()">Test Like Orchestrator Does</button>
+        
+        <div id="status" class="status"></div>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+        
+        function updateStatus(message, isError = false) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${isError ? 'error' : 'success'}`;
+        }
+        
+        function showResults(data) {
+            document.getElementById('results').innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+        }
+        
+        async function testDirectCall() {
+            updateStatus('Testing direct edge function call...');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-1-competitors`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: { name: 'Test Company Direct' },
+                        competitors: []
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                const data = await response.json();
+                updateStatus('✅ Direct call succeeded!');
+                showResults(data);
+            } catch (error) {
+                updateStatus(`❌ Error: ${error.message}`, true);
+                showResults({ error: error.message });
+            }
+        }
+        
+        async function testWithEmptyOrg() {
+            updateStatus('Testing with empty organization...');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-1-competitors`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: {},
+                        competitors: []
+                    })
+                });
+                
+                const responseText = await response.text();
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${responseText}`);
+                }
+                
+                const data = JSON.parse(responseText);
+                updateStatus('✅ Empty org test succeeded (should have failed!)');
+                showResults(data);
+            } catch (error) {
+                updateStatus(`Expected error: ${error.message}`, false);
+                showResults({ expectedError: error.message });
+            }
+        }
+        
+        async function testWithFullOrg() {
+            updateStatus('Testing with full organization data...');
+            
+            try {
+                const requestBody = {
+                    organization: {
+                        name: 'SignalDesk',
+                        industry: 'Enterprise Software',
+                        metadata: {
+                            description: 'Intelligence monitoring platform',
+                            url: 'https://signaldesk.com'
+                        }
+                    },
+                    competitors: [
+                        { name: 'Competitor 1', type: 'direct' },
+                        { name: 'Competitor 2', type: 'indirect' }
+                    ],
+                    savedProfile: null
+                };
+                
+                console.log('Sending request body:', requestBody);
+                
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-1-competitors`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                const data = await response.json();
+                updateStatus('✅ Full org test succeeded!');
+                showResults(data);
+            } catch (error) {
+                updateStatus(`❌ Error: ${error.message}`, true);
+                showResults({ error: error.message });
+            }
+        }
+        
+        async function testLikeOrchestrator() {
+            updateStatus('Testing exactly like orchestrator does...');
+            
+            // Simulate what the orchestrator does
+            const orgName = 'Test Organization';
+            const safeOrganization = {
+                name: orgName,
+                industry: 'Technology'
+            };
+            
+            // First, try to get profile
+            let savedProfile = null;
+            
+            try {
+                const persistResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-persistence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        action: 'getProfile',
+                        organization_name: orgName
+                    })
+                });
+                
+                if (persistResponse.ok) {
+                    const result = await persistResponse.json();
+                    if (result.success && result.profile) {
+                        savedProfile = result.profile;
+                        console.log('Got saved profile:', savedProfile);
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading profile:', e);
+            }
+            
+            // Build request body like orchestrator
+            const requestBody = {
+                organization: {
+                    ...(savedProfile || safeOrganization),
+                    name: orgName // Always ensure name is present
+                },
+                competitors: savedProfile?.competitors || [],
+                savedProfile: savedProfile
+            };
+            
+            console.log('Request body built by orchestrator logic:', requestBody);
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-1-competitors`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                const data = await response.json();
+                updateStatus('✅ Orchestrator-style test succeeded!');
+                showResults(data);
+            } catch (error) {
+                updateStatus(`❌ Error: ${error.message}`, true);
+                showResults({ error: error.message, requestBody });
+            }
+        }
+    </script>
+</body>
+</html>

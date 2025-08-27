@@ -233,14 +233,42 @@ async function handleSaveStageData(data: any) {
   
   console.log(`💾 Saving stage data: ${stage} for ${organization_name}`)
   
-  // Create stage data record
+  // Different TTL for different stages
+  let ttlHours = 24 // Default 24 hours for intermediate stages
+  
+  // Synthesis gets longer retention for MemoryVault training
+  if (stage === 'synthesis' || stage === 'final_synthesis') {
+    ttlHours = 7 * 24 // 7 days for final synthesis
+    console.log('📚 Synthesis stage - extending TTL to 7 days for MemoryVault')
+  }
+  
+  // CLEANUP: Delete old stage data based on TTL
+  const expirationTime = new Date(Date.now() - ttlHours * 60 * 60 * 1000).toISOString()
+  
+  const { error: deleteError } = await supabase
+    .from('intelligence_stage_data')
+    .delete()
+    .eq('organization_name', organization_name)
+    .eq('stage_name', stage)
+    .lt('created_at', expirationTime)
+  
+  if (deleteError) {
+    console.warn('Could not delete old stage data:', deleteError)
+  } else {
+    console.log(`🗑️ Cleaned up stage data older than ${ttlHours} hours`)
+  }
+  
+  // Create stage data record with TTL metadata
   const stageRecord = {
     organization_name,
     stage_name: stage,
     stage_data: stage_data || data.content || data.data,
     metadata: {
       ...metadata,
-      savedAt: new Date().toISOString()
+      savedAt: new Date().toISOString(),
+      ttlHours,
+      expiresAt: new Date(Date.now() + ttlHours * 60 * 60 * 1000).toISOString(),
+      forMemoryVault: stage === 'synthesis' || stage === 'final_synthesis'
     },
     created_at: new Date().toISOString()
   }

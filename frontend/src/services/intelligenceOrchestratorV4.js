@@ -649,6 +649,13 @@ class IntelligenceOrchestratorV4 {
   async runTrendsStage(organization, config) {
     console.log('📈 Stage 5: Market Trends & Topic Analysis');
     
+    // Ensure organization has a name
+    const orgName = organization?.name || config?.organization?.name || 'Default Organization';
+    const safeOrganization = {
+      ...organization,
+      name: orgName
+    };
+    
     // FIRST: Retrieve saved topics and keywords from database
     console.log('📊 Retrieving saved topics and previous intelligence...');
     let savedProfile = null;
@@ -664,7 +671,7 @@ class IntelligenceOrchestratorV4 {
         },
         body: JSON.stringify({
           action: 'getProfile',
-          organization_name: organization.name
+          organization_name: orgName
         })
       });
       
@@ -768,6 +775,13 @@ class IntelligenceOrchestratorV4 {
       stages: Object.keys(previousStageResults || {}),
       sampleStage: previousStageResults ? Object.keys(previousStageResults)[0] : null
     });
+    
+    // Ensure organization has a name
+    const orgName = organization?.name || config?.organization?.name || 'Default Organization';
+    const safeOrganization = {
+      ...organization,
+      name: orgName
+    };
     
     // IMPORTANT: Retrieve saved intelligence from database
     console.log('📊 Retrieving saved intelligence from database...');
