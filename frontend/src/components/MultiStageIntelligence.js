@@ -99,34 +99,75 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         console.log('🔍 Loading organization from edge function (single source of truth)...');
         
         try {
-          // Get current user's organization from edge function
-          const response = await fetch(
-            `${supabaseDataService.supabaseUrl}/functions/v1/intelligence-persistence`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${supabaseDataService.supabaseKey}`
-              },
-              body: JSON.stringify({
-                action: 'getProfile',
-                // Will get the most recent organization profile
-                limit: 1
-              })
-            }
-          );
-          
-          if (response.ok) {
-            const data = await response.json();
-            if (data.success && data.profile) {
-              console.log('✅ Loaded organization from edge function:', data.profile.organization);
-              setOrganization(data.profile.organization || data.profile);
+          // If we have organization from prop, try to load that specific organization
+          const orgName = organizationProp?.name || 'Default Organization';
+          if (orgName) {
+            console.log(`📊 Loading organization profile for: ${orgName}`);
+            const response = await fetch(
+              `${supabaseDataService.supabaseUrl}/functions/v1/intelligence-persistence`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${supabaseDataService.supabaseKey}`
+                },
+                body: JSON.stringify({
+                  action: 'getProfile',
+                  organization_name: orgName  // Pass the specific org name
+                })
+              }
+            );
+            
+            if (response.ok) {
+              const data = await response.json();
+              if (data.success && data.profile) {
+                console.log('✅ Loaded organization from edge function:', data.profile);
+                // Ensure the organization has a name
+                const org = data.profile.organization || data.profile;
+                if (!org.name && orgName) {
+                  org.name = orgName;
+                }
+                setOrganization(org);
+              } else {
+                console.log('⚠️ No organization profile found, creating basic structure');
+                // Create a basic organization structure with the name
+                setOrganization({
+                  name: orgName,
+                  industry: 'Technology',
+                  competitors: [],
+                  stakeholders: {}
+                });
+              }
             } else {
-              console.log('⚠️ No organization profile in edge function');
+              console.log('⚠️ Failed to load profile, creating basic structure');
+              // Create a basic organization structure with the name
+              setOrganization({
+                name: orgName,
+                  industry: 'Technology',
+                  competitors: [],
+                  stakeholders: {}
+              });
             }
+          } else {
+            console.log('⚠️ No organization name provided, creating default');
+            // If no orgName, create a default organization
+            setOrganization({
+              name: 'Default Organization',
+              industry: 'Technology',
+              competitors: [],
+              stakeholders: {}
+            });
           }
         } catch (error) {
           console.error('❌ Failed to load from edge function:', error);
+          // On error, ensure we have a valid organization structure
+          const orgName = organizationProp?.name || 'Default Organization';
+          setOrganization({
+            name: orgName,
+            industry: 'Technology',
+            competitors: [],
+            stakeholders: {}
+          });
         } finally {
           setLoadingOrg(false);
         }
@@ -247,8 +288,27 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
 
   // Create specialized configuration for each stage
   const createStageConfig = (stageIndex, baseOrganization) => {
+    // CRITICAL FIX: Always ensure we have a proper organization name
+    // The baseOrganization might be just a profile object without a name field
+    const orgName = baseOrganization?.name || 
+                    baseOrganization?.organization?.name || 
+                    organizationProp?.name || 
+                    organization?.name || 
+                    'Default Organization';
+    
+    // Ensure organization always has a name
+    const safeOrganization = {
+      ...baseOrganization,
+      name: orgName  // Force the name to always be present
+    };
+    
+    // If the name is still "Default Organization", log a warning
+    if (orgName === 'Default Organization') {
+      console.warn('⚠️ Using default organization name - no real name found');
+    }
+    
     const baseConfig = {
-      organization: baseOrganization,
+      organization: safeOrganization,
       competitors: baseOrganization?.competitors || baseOrganization?.stakeholders?.competitors || [],
       regulators: baseOrganization?.regulators || baseOrganization?.stakeholders?.regulators || [],
       activists: baseOrganization?.activists || baseOrganization?.stakeholders?.activists || [],
