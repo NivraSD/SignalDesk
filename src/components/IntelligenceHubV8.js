@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import intelligenceOrchestratorV4 from '../services/intelligenceOrchestratorV4';
-import cacheManager from '../utils/cacheManager';
 import './IntelligenceHubV8.css';
 
 /**
@@ -34,27 +33,26 @@ const IntelligenceHubV8 = ({ organization, onIntelligenceUpdate }) => {
     setError(null);
     
     try {
-      const completeProfile = cacheManager.getCompleteProfile() || organization;
+      // Use the organization data directly - no cacheManager
+      const completeProfile = organization;
       
-      // Ensure we have ALL stakeholders
+      // Ensure we have ALL stakeholders from the organization data
       if (!completeProfile.stakeholders) {
         completeProfile.stakeholders = {
-          competitors: completeProfile.competitors || organization.competitors || [],
-          regulators: completeProfile.regulators || organization.regulators || [],
-          media_outlets: completeProfile.media_outlets || organization.media_outlets || [],
-          investors: completeProfile.investors || organization.investors || [],
-          analysts: completeProfile.analysts || organization.analysts || [],
-          activists: completeProfile.activists || organization.activists || []
+          competitors: completeProfile.competitors || [],
+          regulators: completeProfile.regulators || [],
+          media_outlets: completeProfile.media_outlets || [],
+          investors: completeProfile.investors || [],
+          analysts: completeProfile.analysts || [],
+          activists: completeProfile.activists || [],
+          critics: completeProfile.critics || []
         };
       }
 
-      console.log('🎯 Running intelligence analysis with stakeholders:', {
-        competitors: completeProfile.stakeholders.competitors?.length || 0,
-        regulators: completeProfile.stakeholders.regulators?.length || 0,
-        media: completeProfile.stakeholders.media_outlets?.length || 0,
-        investors: completeProfile.stakeholders.investors?.length || 0,
-        analysts: completeProfile.stakeholders.analysts?.length || 0,
-        activists: completeProfile.stakeholders.activists?.length || 0
+      console.log('🎯 Running intelligence analysis with organization:', {
+        name: completeProfile.name,
+        competitors: completeProfile.competitors?.length || 0,
+        stakeholders: completeProfile.stakeholders ? Object.keys(completeProfile.stakeholders) : []
       });
 
       const result = await intelligenceOrchestratorV4.orchestrate(completeProfile);
@@ -68,9 +66,6 @@ const IntelligenceHubV8 = ({ organization, onIntelligenceUpdate }) => {
         if (onIntelligenceUpdate) {
           onIntelligenceUpdate(result);
         }
-        
-        // Cache the result
-        cacheManager.saveSynthesis(result);
       } else {
         setError(result.error || 'Analysis failed');
       }
