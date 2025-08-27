@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './RailwayV2.css';
 import IntelligenceHubV8 from './IntelligenceHubV8';
-import MultiStageIntelligence from './MultiStageIntelligence';
+import SupabaseIntelligence from './SupabaseIntelligence'; // Clean Supabase-only version
 import OpportunityModulePR from './Modules/OpportunityModulePR';
 import ExecutionModule from './Modules/ExecutionModule';
 import MemoryVaultModule from './Modules/MemoryVaultModule';
@@ -11,25 +11,12 @@ import OrganizationSettings from './OrganizationSettings';
 import IntelligenceSettings from './IntelligenceSettings';
 import DiagnosticPanel from './DiagnosticPanel';
 import { IntelligenceIcon, OpportunityIcon, ExecutionIcon, MemoryIcon, RefreshIcon, SettingsIcon } from './Icons/NeonIcons';
-import { getUnifiedOrganization } from '../utils/unifiedDataLoader';
-import cacheManager from '../utils/cacheManager';
 
 const RailwayV2 = () => {
   const navigate = useNavigate();
   const [activeModule, setActiveModule] = useState('intelligence');
-  // Initialize with data from localStorage immediately
-  const [organizationData, setOrganizationData] = useState(() => {
-    const saved = localStorage.getItem('organization');
-    if (saved) {
-      try {
-        const org = JSON.parse(saved);
-        return org;
-      } catch (e) {
-        console.error('Failed to parse initial organization:', e);
-      }
-    }
-    return null;
-  });
+  // Initialize organization as null - will load from Supabase
+  const [organizationData, setOrganizationData] = useState(null);
   const [nivMinimized, setNivMinimized] = useState(false);
   const [showOrgSettings, setShowOrgSettings] = useState(false);
   const [showIntelSettings, setShowIntelSettings] = useState(false);
@@ -38,76 +25,57 @@ const RailwayV2 = () => {
   const [sharedIntelligence, setSharedIntelligence] = useState(null);
 
   useEffect(() => {
-    // Skip if we already have organization data from initial state
+    // Skip if we already have organization data
     if (organizationData && organizationData.name) {
       return;
     }
     
-    
-    // Load organization data from localStorage
-    const loadOrganization = () => {
-      let orgData = null;
+    // Load organization data from Supabase
+    const loadOrganizationFromSupabase = async () => {
+      console.log('🔍 Loading organization from Supabase...');
       
-      // SOURCE 1: Direct localStorage check
-      const savedOrg = localStorage.getItem('organization');
-      if (savedOrg) {
-        try {
-          const discoveredOrg = JSON.parse(savedOrg);
+      const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co';
+      const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+      
+      try {
+        // Try to load the most recent organization profile
+        const response = await fetch(`${supabaseUrl}/functions/v1/intelligence-persistence`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseKey}`
+          },
+          body: JSON.stringify({
+            action: 'getLatestProfile'
+          })
+        });
         
-        // Validate the data has the minimum required fields
-        if (discoveredOrg.name && (discoveredOrg.competitors || discoveredOrg.stakeholders)) {
-          orgData = discoveredOrg;
+        if (response.ok) {
+          const result = await response.json();
+          console.log('✅ Loaded organization from Supabase:', result);
+          
+          if (result.profile?.organization) {
+            const orgData = result.profile.organization;
+            // Ensure required fields exist
+            if (!orgData.id) {
+              orgData.id = orgData.name.toLowerCase().replace(/\s+/g, '-');
+            }
+            setOrganizationData(orgData);
+            return;
+          }
         } else {
+          console.warn('⚠️ Failed to load from Supabase:', response.status);
         }
-      } catch (e) {
-      }
-    } else {
-    }
-    
-    // SOURCE 2: Check other localStorage keys
-    if (!orgData) {
-      const orgName = localStorage.getItem('organizationName');
-      if (orgName) {
-        // Try to reconstruct basic data
-        orgData = {
-          id: orgName.toLowerCase().replace(/\s+/g, '-'),
-          name: orgName,
-          industry: 'Unknown',
-          competitors: [],
-          stakeholders: { media: [], regulators: [], analysts: [] }
-        };
-      }
-    }
-    
-    // SOURCE 3: Unified data loader (last resort)
-    if (!orgData) {
-      const unifiedData = getUnifiedOrganization();
-      if (unifiedData && unifiedData.name) {
-        orgData = unifiedData;
-      }
-    }
-    
-      // DECISION POINT
-      if (orgData && orgData.name) {
-        // Ensure required fields exist
-        if (!orgData.id) {
-          orgData.id = orgData.name.toLowerCase().replace(/\s+/g, '-');
-        }
-        
-        
-        return orgData;
+      } catch (error) {
+        console.error('❌ Error loading from Supabase:', error);
       }
       
-      return null;
+      // If we couldn't load from Supabase, navigate to onboarding
+      console.log('➡️ No organization found, redirecting to onboarding...');
+      navigate('/onboarding');
     };
     
-    const orgData = loadOrganization();
-    
-    if (orgData) {
-      setOrganizationData(orgData);
-    } else {
-      navigate('/onboarding');
-    }
+    loadOrganizationFromSupabase();
   }, [navigate, refreshKey]);
   
   
@@ -125,31 +93,29 @@ const RailwayV2 = () => {
   //   return () => window.removeEventListener('focus', handleFocus);
   // }, [organizationData]);
   
-  const handleNewSearch = () => {
+  const handleNewSearch = async () => {
+    console.log('🔄 Starting new search...');
     
-    // Nuclear option - clear EVERYTHING
-    const keysToRemove = [
-      'organization',
-      'organizationName', 
-      'intelligenceCache',
-      'opportunityCache',
-      'analysisCache',
-      'stageResults',
-      'currentIntelligence',
-      'cachedResults',
-      'intelligence_data',
-      'opportunity_data',
-      'stakeholders',
-      'competitors',
-      'media_data',
-      'regulatory_data',
-      'synthesis_data',
-      'hasCompletedOnboarding'
-    ];
+    // Clear Supabase data for current organization
+    const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co';
+    const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
     
-    keysToRemove.forEach(key => {
-      localStorage.removeItem(key);
-    });
+    try {
+      // Clear the current profile in Supabase
+      await fetch(`${supabaseUrl}/functions/v1/intelligence-persistence`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseKey}`
+        },
+        body: JSON.stringify({
+          action: 'clearProfile'
+        })
+      });
+      console.log('✅ Cleared Supabase profile');
+    } catch (error) {
+      console.error('⚠️ Error clearing Supabase:', error);
+    }
     
     // Clear sessionStorage
     sessionStorage.clear();
@@ -160,10 +126,6 @@ const RailwayV2 = () => {
       window.__SIGNALDESK_CACHE__ = null;
       window.__ORGANIZATION_DATA__ = null;
     }
-    
-    // Clear cache manager
-    cacheManager.clearAll();
-    
     
     // Redirect to fresh onboarding
     navigate('/onboarding');
@@ -182,7 +144,7 @@ const RailwayV2 = () => {
       case 'intelligence':
         // Multi-Stage Intelligence Pipeline - Deep Analysis
         
-        // Don't render MultiStageIntelligence until we have organization data
+        // Don't render SupabaseIntelligence until we have organization data
         if (!organizationData || !organizationData.name) {
           return (
             <div style={{ padding: '40px', textAlign: 'center', color: '#00ffcc' }}>
@@ -194,7 +156,7 @@ const RailwayV2 = () => {
           );
         }
         
-        return <MultiStageIntelligence 
+        return <SupabaseIntelligence 
           organization={organizationData}
           onComplete={setSharedIntelligence}
         />;

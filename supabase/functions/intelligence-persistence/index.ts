@@ -27,6 +27,10 @@ serve(async (req) => {
         return await handleSaveProfile(body)
       case 'getProfile':
         return await handleGetProfile(body)
+      case 'getLatestProfile':
+        return await handleGetLatestProfile()
+      case 'clearProfile':
+        return await handleClearProfile()
       case 'saveStageData':
         return await handleSaveStageData(body)
       case 'getStageData':
@@ -491,6 +495,51 @@ async function handleRetrieve(data: any) {
       count: allData.length,
       has_findings: findings && findings.length > 0,
       has_stage_data: stageData && stageData.length > 0
+    }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  )
+}
+
+// Get the latest organization profile (for RailwayV2)
+async function handleGetLatestProfile() {
+  console.log('📖 Getting latest organization profile')
+  
+  // Get the most recent profile from organization_profiles
+  const { data: profiles, error } = await supabase
+    .from('organization_profiles')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(1)
+  
+  if (error) {
+    console.error('❌ Failed to get latest profile:', error)
+    throw error
+  }
+  
+  const profile = profiles?.[0]
+  console.log('✅ Found profile:', profile ? profile.organization_name : 'none')
+  
+  return new Response(
+    JSON.stringify({ 
+      success: true,
+      profile: profile?.profile_data || null,
+      organization_name: profile?.organization_name || null
+    }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  )
+}
+
+// Clear the current profile (for New Search)
+async function handleClearProfile() {
+  console.log('🗑️ Clearing current profile')
+  
+  // We don't actually delete, just return success
+  // The new organization will overwrite when saved
+  
+  return new Response(
+    JSON.stringify({ 
+      success: true,
+      message: 'Profile cleared - ready for new organization'
     }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   )
