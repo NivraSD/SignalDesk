@@ -37,6 +37,7 @@ serve(async (req) => {
       competitorsNested,
       stakeholders,
       fullProfile,
+      savedProfile,
       dataVersion,
       previousResults = {}
     } = requestData;
@@ -50,6 +51,7 @@ serve(async (req) => {
       flatCompetitors: competitors.length,
       hasNestedCompetitors: !!competitorsNested,
       hasFullProfile: !!fullProfile,
+      hasSavedProfile: !!savedProfile,
       dataVersion: dataVersion || 'unknown',
       hasPreviousResults: Object.keys(previousResults).length > 0
     });
@@ -57,32 +59,53 @@ serve(async (req) => {
     // Debug: Log the actual organization object
     console.log('📋 Full organization object:', JSON.stringify(organization, null, 2));
 
-    // Validate we have an organization
-    if (!organization) {
-      console.error('❌ No organization object provided');
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'Organization object is required',
-        received: requestData
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+    // CRITICAL FIX: Try to extract organization name from multiple sources
+    let organizationName = null;
+    
+    // Try multiple sources for the organization name
+    organizationName = organization?.name || 
+                      organization?.organization?.name ||
+                      savedProfile?.name ||
+                      savedProfile?.organization?.name ||
+                      fullProfile?.organization?.name ||
+                      fullProfile?.name ||
+                      requestData?.organization_name ||
+                      requestData?.name;
+    
+    // If still no name, check if organization has nested structure
+    if (!organizationName && organization) {
+      // Check if the organization object has any property that might contain the name
+      const possibleNameKeys = ['companyName', 'company_name', 'orgName', 'org_name', 'title', 'entity'];
+      for (const key of possibleNameKeys) {
+        if (organization[key]) {
+          organizationName = organization[key];
+          break;
+        }
+      }
     }
     
-    if (!organization.name) {
-      console.error('❌ Organization missing name field');
-      console.error('Organization object:', organization);
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'Organization name is required',
-        organizationProvided: organization,
-        organizationKeys: Object.keys(organization)
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    // Final fallback
+    if (!organizationName) {
+      console.error('❌ Could not find organization name in any field');
+      console.error('Searched in:', {
+        'organizationName': organization?.name,
+        'savedProfile.name': savedProfile?.name,
+        'fullProfile.name': fullProfile?.name,
+        'requestData keys': Object.keys(requestData)
       });
+      
+      // Use a default but log warning
+      organizationName = 'Unknown Organization';
+      console.warn('⚠️ Using default organization name:', organizationName);
     }
+    
+    // Create a proper organization object with the extracted name
+    const safeOrganization = {
+      ...organization,
+      name: organizationName
+    };
+    
+    console.log(`✅ Extracted organization name: ${organizationName}`);
 
     // Step 1: Get existing data AND monitoring data from database
     let dbCompetitors = { direct: [], indirect: [], emerging: [] };
@@ -101,7 +124,7 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             action: 'getProfile',
-            organization_name: organization.name
+            organization_name: organizationName
           })
         }
       );
@@ -126,7 +149,7 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             action: 'retrieve',
-            organization_name: organization.name,
+            organization_name: organizationName,
             limit: 100
           })
         }
@@ -155,7 +178,7 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             action: 'getTargets',
-            organization_name: organization.name
+            organization_name: organizationName
           })
         }
       );
@@ -219,7 +242,7 @@ serve(async (req) => {
       identified_competitors: competitorsToAnalyze,
       previous_analysis: previousResults,
       organization_context: {
-        name: organization.name,
+        name: organizationName,
         industry: organization.industry,
         profile: dbProfile
       }
@@ -227,7 +250,7 @@ serve(async (req) => {
     
     // Use Claude to analyze the REAL monitoring data
     const results = await analyzeWithClaudeCompetitive(
-      organization,
+      safeOrganization,
       dataForClaude,
       {
         // Basic structure as fallback if Claude fails
@@ -260,7 +283,7 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             action: 'saveStageData',
-            organization_name: organization.name,
+            organization_name: organizationName,
             stage: 'competitor_analysis',
             stage_data: results,
             metadata: results.metadata
@@ -280,7 +303,7 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             action: 'saveTargets',
-            organization_name: organization.name,
+            organization_name: organizationName,
             competitors: results.competitors,
             stakeholders: stakeholders || fullProfile?.stakeholders || {}
           })

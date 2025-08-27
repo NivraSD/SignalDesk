@@ -231,6 +231,13 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
       
       if (result.success) {
         // Stage complete
+        console.log(`✅ Stage ${stageIndex + 1} (${stage.id}) completed with:`, {
+          hasData: !!result.data,
+          hasTabs: !!result.tabs,
+          hasAnalysis: !!result.analysis,
+          dataKeys: result.data ? Object.keys(result.data).slice(0, 5) : [],
+          tabCount: result.tabs ? Object.keys(result.tabs).length : 0
+        });
         
         // STAGE 1: Extract and save organization profile
         if (stageIndex === 0 && result.organization) {
@@ -428,8 +435,17 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
   const generateDefaultTabs = (extractedData) => {
     const tabs = {};
     
-    // Create competitive tab
-    if (extractedData.competitive?.competitors) {
+    // Create extraction tab (Stage 1)
+    if (extractedData.extraction) {
+      tabs.extraction = {
+        title: 'Organization Profile',
+        content: extractedData.extraction,
+        hasData: true
+      };
+    }
+    
+    // Create competitive tab (Stage 2)
+    if (extractedData.competitive) {
       tabs.competitive = {
         title: 'Competitive Analysis',
         content: extractedData.competitive,
@@ -437,8 +453,8 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
       };
     }
     
-    // Create media tab
-    if (extractedData.media?.media_landscape || extractedData.media?.media_coverage) {
+    // Create media tab (Stage 3)
+    if (extractedData.media) {
       tabs.media = {
         title: 'Media Landscape',
         content: extractedData.media,
@@ -446,8 +462,8 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
       };
     }
     
-    // Create regulatory tab
-    if (extractedData.regulatory?.regulatory) {
+    // Create regulatory tab (Stage 4)
+    if (extractedData.regulatory) {
       tabs.regulatory = {
         title: 'Regulatory Analysis',
         content: extractedData.regulatory,

@@ -267,7 +267,8 @@
       "WebFetch(domain:signaldesk-3j50njbpk-nivra-sd.vercel.app)",
       "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/REMOVE_ALL_LOCALSTORAGE.sh:*)",
       "Bash(if [ -f \"$file\" ])",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/force-fresh-deployment.sh)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",
