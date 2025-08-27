@@ -50,9 +50,9 @@ class IntelligencePipelineService {
       // Standardize the profile
       const standardProfile = createStandardProfile(discoveryData.profile || discoveryData);
       
-      // Save to localStorage
-      saveToLocalStorage('organizationProfile', standardProfile);
-      saveToLocalStorage(`profile_${organizationName}`, standardProfile);
+      // DISABLED: No localStorage - Supabase is single source of truth
+      // saveToLocalStorage('organizationProfile', standardProfile);
+      // saveToLocalStorage(`profile_${organizationName}`, standardProfile);
       
       // Save to database
       await this.saveProfileToDatabase(organizationName, standardProfile);
@@ -98,15 +98,16 @@ class IntelligencePipelineService {
   async loadProfile(organizationName) {
     console.log(`📖 Loading profile for: ${organizationName}`);
     
-    // Try localStorage first
-    let profile = loadFromLocalStorage(`profile_${organizationName}`);
-    
-    if (profile) {
-      console.log('✅ Profile loaded from localStorage');
-      return profile;
-    }
+    // DISABLED: No localStorage - Supabase is single source of truth
+    // let profile = loadFromLocalStorage(`profile_${organizationName}`);
+    // 
+    // if (profile) {
+    //   console.log('✅ Profile loaded from localStorage');
+    //   return profile;
+    // }
     
     // Try database
+    let profile = null;
     try {
       const response = await fetch(`${this.baseUrl}/intelligence-persistence`, {
         method: 'POST',
@@ -123,7 +124,8 @@ class IntelligencePipelineService {
           profile = createStandardProfile(data.profile);
           
           // Cache in localStorage
-          saveToLocalStorage(`profile_${organizationName}`, profile);
+          // DISABLED: No localStorage - Supabase is single source of truth
+          // saveToLocalStorage(`profile_${organizationName}`, profile);
           
           console.log('✅ Profile loaded from database');
           return profile;
@@ -307,7 +309,8 @@ class IntelligencePipelineService {
     console.log(`❌ Errors: ${results.errors.length}`);
     
     // Save complete results to localStorage
-    saveToLocalStorage(`pipeline_${organizationName}`, results);
+    // DISABLED: No localStorage - Supabase is single source of truth
+    // saveToLocalStorage(`pipeline_${organizationName}`, results);
     
     return results;
   }
@@ -316,7 +319,9 @@ class IntelligencePipelineService {
    * Get pipeline results from cache
    */
   getPipelineResults(organizationName) {
-    return loadFromLocalStorage(`pipeline_${organizationName}`);
+    // DISABLED: No localStorage - Supabase is single source of truth
+    // return loadFromLocalStorage(`pipeline_${organizationName}`);
+    return null;
   }
 
   /**

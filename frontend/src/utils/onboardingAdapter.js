@@ -118,9 +118,9 @@ export const saveOnboardingData = async (onboardingData) => {
     // Save using both key formats for compatibility
     const orgName = profile.organization.name;
     
-    // Save in intelligence pipeline format
-    saveToLocalStorage('organizationProfile', profile);
-    saveToLocalStorage(`profile_${orgName}`, profile);
+    // DISABLED: No localStorage - using Supabase as single source of truth
+    // saveToLocalStorage('organizationProfile', profile);
+    // saveToLocalStorage(`profile_${orgName}`, profile);
     
     // DISABLED: No localStorage - using Supabase as single source of truth
     // if (onboardingData) {

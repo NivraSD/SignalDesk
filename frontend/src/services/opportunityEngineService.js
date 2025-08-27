@@ -68,8 +68,8 @@ class OpportunityEngineService {
 
       console.log(`✅ Total opportunities extracted: ${opportunities.consolidated.length}`);
       
-      // Cache the opportunities
-      saveToLocalStorage('pipeline_opportunities', opportunities);
+      // DISABLED: No localStorage - Supabase is single source of truth
+      // saveToLocalStorage('pipeline_opportunities', opportunities);
       
     } catch (error) {
       console.error('Error extracting opportunities:', error);
@@ -171,8 +171,8 @@ class OpportunityEngineService {
       const result = await response.json();
       console.log(`✅ Opportunities enhanced successfully`);
       
-      // Cache enhanced opportunities
-      saveToLocalStorage('enhanced_opportunities', result.opportunities);
+      // DISABLED: No localStorage - Supabase is single source of truth
+      // saveToLocalStorage('enhanced_opportunities', result.opportunities);
       
       return result.opportunities;
       
@@ -215,8 +215,11 @@ class OpportunityEngineService {
    * Get cached opportunities
    */
   getCachedOpportunities() {
-    const pipelineOpps = loadFromLocalStorage('pipeline_opportunities');
-    const enhancedOpps = loadFromLocalStorage('enhanced_opportunities');
+    // DISABLED: No localStorage - Supabase is single source of truth
+    // const pipelineOpps = loadFromLocalStorage('pipeline_opportunities');
+    // const enhancedOpps = loadFromLocalStorage('enhanced_opportunities');
+    const pipelineOpps = null;
+    const enhancedOpps = null;
     
     return {
       pipeline: pipelineOpps,
