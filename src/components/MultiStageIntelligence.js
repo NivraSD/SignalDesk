@@ -87,15 +87,16 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
       return organizationProp;
     }
     
-    const saved = localStorage.getItem('organization');
-    if (saved) {
-      try {
-        const org = JSON.parse(saved);
-        return org;
-      } catch (e) {
-        console.error('Failed to parse organization:', e);
-      }
-    }
+    // DISABLED: No localStorage - load from Edge Functions/Supabase only
+    // const saved = localStorage.getItem('organization');
+    // if (saved) {
+    //   try {
+    //     const org = JSON.parse(saved);
+    //     return org;
+    //   } catch (e) {
+    //     console.error('Failed to parse organization:', e);
+    //   }
+    // }
     
     return null;
   });
