@@ -122,11 +122,11 @@ export const saveOnboardingData = async (onboardingData) => {
     saveToLocalStorage('organizationProfile', profile);
     saveToLocalStorage(`profile_${orgName}`, profile);
     
-    // Also save original onboarding data for backward compatibility
-    if (onboardingData) {
-      localStorage.setItem('signaldesk_onboarding', JSON.stringify(onboardingData));
-      localStorage.setItem('signaldesk_organization', JSON.stringify(profile.organization));
-    }
+    // DISABLED: No localStorage - using Supabase as single source of truth
+    // if (onboardingData) {
+    //   localStorage.setItem('signaldesk_onboarding', JSON.stringify(onboardingData));
+    //   localStorage.setItem('signaldesk_organization', JSON.stringify(profile.organization));
+    // }
     
     // Save to database via intelligence pipeline service
     await intelligencePipelineService.saveProfileToDatabase(orgName, profile);
@@ -145,8 +145,8 @@ export const saveOnboardingData = async (onboardingData) => {
  */
 export const loadOnboardingProfile = async () => {
   try {
-    // Try to load from intelligence pipeline first
-    const orgData = localStorage.getItem('signaldesk_organization');
+    // DISABLED: No localStorage - load from Supabase only
+    const orgData = null; // localStorage.getItem('signaldesk_organization');
     if (orgData) {
       const org = JSON.parse(orgData);
       const profile = await intelligencePipelineService.loadProfile(org.name);
@@ -155,8 +155,8 @@ export const loadOnboardingProfile = async () => {
       }
     }
     
-    // Fallback to onboarding data
-    const onboardingData = localStorage.getItem('signaldesk_onboarding');
+    // DISABLED: No localStorage - load from Supabase only
+    const onboardingData = null; // localStorage.getItem('signaldesk_onboarding');
     if (onboardingData) {
       const parsed = JSON.parse(onboardingData);
       return convertOnboardingToProfile(parsed);
@@ -173,9 +173,11 @@ export const loadOnboardingProfile = async () => {
  * Check if onboarding is complete and data is ready for pipeline
  */
 export const isOnboardingComplete = () => {
-  const completed = localStorage.getItem('signaldesk_completed') === 'true';
-  const hasOrganization = localStorage.getItem('signaldesk_organization') !== null;
-  return completed && hasOrganization;
+  // DISABLED: No localStorage check - always return false to force Supabase check
+  // const completed = localStorage.getItem('signaldesk_completed') === 'true';
+  // const hasOrganization = localStorage.getItem('signaldesk_organization') !== null;
+  // return completed && hasOrganization;
+  return false; // Force pipeline to check Supabase instead
 };
 
 /**
@@ -226,24 +228,27 @@ export const startIntelligencePipeline = async () => {
  * Clear all onboarding and intelligence data
  */
 export const clearAllData = () => {
-  // Clear onboarding keys
-  localStorage.removeItem('signaldesk_onboarding');
-  localStorage.removeItem('signaldesk_organization');
-  localStorage.removeItem('signaldesk_completed');
-  localStorage.removeItem('signaldesk_just_onboarded');
-  localStorage.removeItem('signaldesk_mcp_results');
+  // DISABLED: No localStorage clearing needed - Supabase is single source of truth
+  console.log('clearAllData called - localStorage operations disabled, data managed in Supabase');
   
-  // Clear intelligence pipeline keys
-  localStorage.removeItem('organizationProfile');
+  // // Clear onboarding keys
+  // localStorage.removeItem('signaldesk_onboarding');
+  // localStorage.removeItem('signaldesk_organization');
+  // localStorage.removeItem('signaldesk_completed');
+  // localStorage.removeItem('signaldesk_just_onboarded');
+  // localStorage.removeItem('signaldesk_mcp_results');
   
-  // Clear any profile keys
-  Object.keys(localStorage).forEach(key => {
-    if (key.startsWith('profile_') || key.startsWith('pipeline_')) {
-      localStorage.removeItem(key);
-    }
-  });
+  // // Clear intelligence pipeline keys
+  // localStorage.removeItem('organizationProfile');
   
-  console.log('🧹 All onboarding and intelligence data cleared');
+  // // Clear any profile keys
+  // Object.keys(localStorage).forEach(key => {
+  //   if (key.startsWith('profile_') || key.startsWith('pipeline_')) {
+  //     localStorage.removeItem(key);
+  //   }
+  // });
+  
+  console.log('🧹 clearAllData called - using Supabase only');
 };
 
 export default {
