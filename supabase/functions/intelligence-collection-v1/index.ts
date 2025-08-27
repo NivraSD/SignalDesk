@@ -177,7 +177,7 @@ async function collectMonitoring(organization: any, timeout: number) {
     const timeoutId = setTimeout(() => controller.abort(), Math.min(timeout, 5000))
     
     const response = await fetch(
-      'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/monitoring-intelligence-v3',
+      'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/monitor-intelligence',
       {
         method: 'POST',
         signal: controller.signal,
