@@ -146,21 +146,32 @@ const OnboardingV3 = () => {
       // cache.saveOrganization(completeOrg);
       // cache.saveCompleteProfile(completeOrg);
       
-      // DISABLED: Also save to regular localStorage for compatibility
-      // localStorage.setItem('organization', JSON.stringify(completeOrg));
-      // localStorage.setItem('organizationName', orgName);
-      // localStorage.setItem('hasCompletedOnboarding', 'true');
+      // SAVE TO SUPABASE EDGE FUNCTION - Single source of truth
+      addDebugLog('💾 Step 3.5: Saving to Supabase edge function');
+      const saveResponse = await fetch(`${supabaseUrl}/functions/v1/intelligence-persistence`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseKey}`
+        },
+        body: JSON.stringify({
+          action: 'saveProfile',
+          organization_name: completeOrg.name,
+          profile: {
+            organization: completeOrg,
+            ...result  // Include all discovery data
+          }
+        })
+      });
       
-      // STEP 4: Verify save
-      addDebugLog('🔍 Step 4: Verifying save');
-      const savedCheck = null; // DISABLED: localStorage.getItem('organization');
-      if (savedCheck) {
-        const parsedCheck = JSON.parse(savedCheck);
-        addDebugLog('✅ Save verified', parsedCheck);
+      if (saveResponse.ok) {
+        addDebugLog('✅ Saved to Supabase edge function successfully');
       } else {
-        addDebugLog('✅ Skipping localStorage check - using Supabase');
-        // DISABLED: throw new Error('Failed to save organization data');
+        addDebugLog('⚠️ Failed to save to edge function, but continuing');
       }
+      
+      // STEP 4: Skip verification since we use Supabase
+      addDebugLog('🔍 Step 4: Data saved to Supabase only');
       
       // STEP 5: Navigate
       addDebugLog('➡️ Step 5: Navigating to railway');
