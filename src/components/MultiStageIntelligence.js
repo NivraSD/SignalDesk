@@ -184,7 +184,7 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         // STAGE 1: Extract and save organization profile
         if (stageIndex === 0 && result.organization) {
           setOrganizationProfile(result.organization);
-          localStorage.setItem('comprehensive_organization_profile', JSON.stringify(result.organization));
+          // Don't save to localStorage - let the edge functions handle persistence
         }
         
         // Store stage-specific results (replace inProgress marker)
@@ -1056,7 +1056,7 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     }
     
     // Run the current stage if within bounds
-    if (currentStage > 0 && currentStage < INTELLIGENCE_STAGES.length) {
+    if (currentStage >= 0 && currentStage < INTELLIGENCE_STAGES.length) {
       console.log(`🚀 RUNNING STAGE ${currentStage + 1}: ${INTELLIGENCE_STAGES[currentStage].name}`);
       runStage(currentStage);
     } else if (currentStage === INTELLIGENCE_STAGES.length && !isComplete) {
