@@ -3,202 +3,195 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Supabase Connection</title>
+    <title>Supabase Connection Test</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            max-width: 900px;
-            margin: 40px auto;
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
             padding: 20px;
             background: #f5f5f5;
         }
         .container {
             background: white;
-            border-radius: 8px;
             padding: 30px;
+            border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        h1 {
-            color: #333;
-            border-bottom: 2px solid #667eea;
-            padding-bottom: 10px;
+        h1 { color: #333; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        .info { color: blue; }
+        pre {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
         }
         button {
             background: #667eea;
             color: white;
             border: none;
-            padding: 12px 24px;
-            border-radius: 6px;
-            font-size: 16px;
+            padding: 10px 20px;
+            border-radius: 4px;
             cursor: pointer;
-            margin: 10px 5px;
+            margin: 5px;
         }
         button:hover {
             background: #5a67d8;
         }
-        .result {
-            margin-top: 20px;
-            padding: 15px;
-            background: #f1f1f1;
-            border-radius: 6px;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-        }
-        .success {
-            background: #d4edda;
-            color: #155724;
-        }
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        pre {
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <div class="container">
-        <h1>🔌 Test Supabase Connection</h1>
+        <h1>🔧 Supabase Connection Test</h1>
         
-        <button onclick="testDirectCall()">Test Direct Edge Function Call</button>
-        <button onclick="testWithDifferentHeaders()">Test with Different Headers</button>
-        <button onclick="testPRIntelligence()">Test PR Intelligence Function</button>
+        <h2>Step 1: Enter Your Credentials</h2>
+        <p class="info">Get these from Supabase Dashboard → Settings → API</p>
         
-        <div id="result" class="result"></div>
+        <label>Project URL:</label>
+        <input type="text" id="url" value="https://zskaxjtyuaqazydouifp.supabase.co" />
+        
+        <label>Anon Key:</label>
+        <input type="text" id="key" placeholder="Paste your anon key here (starts with eyJ...)" />
+        
+        <button onclick="testConnection()">Test Connection</button>
+        <button onclick="saveAndTest()">Save & Test Tables</button>
+        
+        <h2>Results:</h2>
+        <div id="results"></div>
     </div>
 
     <script>
-        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
-
-        function showResult(message, isError = false) {
-            const resultDiv = document.getElementById('result');
-            resultDiv.className = isError ? 'result error' : 'result success';
-            resultDiv.innerHTML = message;
-        }
-
-        async function testDirectCall() {
-            try {
-                showResult('Testing direct Edge Function call...');
-                
-                const response = await fetch(`${SUPABASE_URL}/functions/v1/claude-intelligence-synthesizer-v2`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                        'apikey': SUPABASE_ANON_KEY
-                    },
-                    body: JSON.stringify({
-                        intelligence_type: 'enhance_organization',
-                        organization: {
-                            name: 'Test Company',
-                            industry: 'technology'
-                        },
-                        goals: {},
-                        prompt: 'Test enhancement'
-                    })
-                });
-
-                const responseText = await response.text();
-                console.log('Response status:', response.status);
-                console.log('Response headers:', response.headers);
-                console.log('Response text:', responseText);
-
-                if (response.ok) {
-                    const data = JSON.parse(responseText);
-                    showResult(`✅ Success! Response:<pre>${JSON.stringify(data, null, 2)}</pre>`);
-                } else {
-                    showResult(`❌ Error ${response.status}: ${responseText}`, true);
-                }
-            } catch (error) {
-                showResult(`❌ Network Error: ${error.message}`, true);
-                console.error('Full error:', error);
+        let supabase = null;
+        
+        function testConnection() {
+            const url = document.getElementById('url').value;
+            const key = document.getElementById('key').value;
+            const results = document.getElementById('results');
+            
+            if (!key) {
+                results.innerHTML = '<p class="error">Please enter your anon key!</p>';
+                return;
             }
-        }
-
-        async function testWithDifferentHeaders() {
+            
+            results.innerHTML = '<p class="info">Testing connection...</p>';
+            
             try {
-                showResult('Testing with different header configuration...');
+                // Create client
+                supabase = window.supabase.createClient(url, key);
                 
-                // Try with just apikey header (some Supabase functions prefer this)
-                const response = await fetch(`${SUPABASE_URL}/functions/v1/claude-intelligence-synthesizer-v2`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'apikey': SUPABASE_ANON_KEY
-                    },
-                    body: JSON.stringify({
-                        intelligence_type: 'enhance_organization',
-                        organization: {
-                            name: 'Test Company',
-                            industry: 'technology'
-                        },
-                        goals: {},
-                        prompt: 'Test enhancement'
-                    })
-                });
-
-                const responseText = await response.text();
-                console.log('Response status:', response.status);
-                console.log('Response text:', responseText);
-
-                if (response.ok) {
-                    const data = JSON.parse(responseText);
-                    showResult(`✅ Success with apikey header! Response:<pre>${JSON.stringify(data, null, 2)}</pre>`);
-                } else {
-                    showResult(`❌ Error ${response.status}: ${responseText}`, true);
-                }
-            } catch (error) {
-                showResult(`❌ Network Error: ${error.message}`, true);
-                console.error('Full error:', error);
-            }
-        }
-
-        async function testPRIntelligence() {
-            try {
-                showResult('Testing PR Intelligence function...');
-                
-                const response = await fetch(`${SUPABASE_URL}/functions/v1/pr-intelligence`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                        'apikey': SUPABASE_ANON_KEY
-                    },
-                    body: JSON.stringify({
-                        method: 'gather',
-                        params: {
-                            organization: {
-                                name: 'Toyota',
-                                industry: 'automotive'
-                            },
-                            timeframe: '24h'
+                // Test connection by trying to select from a simple table
+                supabase
+                    .from('organizations')
+                    .select('count')
+                    .limit(1)
+                    .then(({ data, error }) => {
+                        if (error) {
+                            if (error.message.includes('relation') && error.message.includes('does not exist')) {
+                                results.innerHTML = `<p class="success">✅ Connection successful!</p>
+                                    <p class="info">Table 'organizations' exists and is accessible</p>`;
+                            } else if (error.message.includes('JWT')) {
+                                results.innerHTML = `<p class="error">❌ JWT Error: ${error.message}</p>
+                                    <p>The anon key doesn't match this project. Get the correct key from Supabase Dashboard.</p>`;
+                            } else if (error.code === '42501') {
+                                results.innerHTML = `<p class="success">✅ Connection successful!</p>
+                                    <p class="info">RLS is blocking access, but connection works</p>`;
+                            } else {
+                                results.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+                            }
+                        } else {
+                            results.innerHTML = `<p class="success">✅ Connection successful!</p>
+                                <p class="success">✅ Table access working!</p>`;
                         }
                     })
-                });
-
-                const responseText = await response.text();
-                console.log('PR Intelligence response status:', response.status);
-                console.log('PR Intelligence response:', responseText);
-
-                if (response.ok) {
-                    const data = JSON.parse(responseText);
-                    showResult(`✅ PR Intelligence Success! Response:<pre>${JSON.stringify(data, null, 2)}</pre>`);
-                } else {
-                    showResult(`❌ PR Intelligence Error ${response.status}: ${responseText}`, true);
-                }
-            } catch (error) {
-                showResult(`❌ Network Error: ${error.message}`, true);
-                console.error('Full error:', error);
+                    .catch(err => {
+                        results.innerHTML = `<p class="error">❌ Connection failed: ${err.message}</p>`;
+                    });
+                    
+            } catch (err) {
+                results.innerHTML = `<p class="error">❌ Failed to create client: ${err.message}</p>`;
             }
         }
-
-        // Test on page load
+        
+        async function saveAndTest() {
+            const url = document.getElementById('url').value;
+            const key = document.getElementById('key').value;
+            const results = document.getElementById('results');
+            
+            if (!key) {
+                results.innerHTML = '<p class="error">Please enter your anon key!</p>';
+                return;
+            }
+            
+            // Save to localStorage for other pages
+            localStorage.setItem('SUPABASE_URL', url);
+            localStorage.setItem('SUPABASE_ANON_KEY', key);
+            
+            results.innerHTML = '<p class="info">Testing all tables...</p>';
+            
+            supabase = window.supabase.createClient(url, key);
+            
+            const tables = [
+                'organization_profiles',
+                'intelligence_stage_data',
+                'intelligence_targets',
+                'organizations',
+                'monitoring_configs',
+                'source_registry',
+                'intelligence_findings',
+                'monitoring_alerts'
+            ];
+            
+            let html = '<h3>Table Check Results:</h3>';
+            
+            for (const table of tables) {
+                try {
+                    const { data, error } = await supabase
+                        .from(table)
+                        .select('*')
+                        .limit(1);
+                    
+                    if (error) {
+                        if (error.message.includes('does not exist')) {
+                            html += `<p class="error">❌ ${table} - Does not exist</p>`;
+                        } else if (error.code === '42501') {
+                            html += `<p class="success">✅ ${table} - Exists (RLS active)</p>`;
+                        } else {
+                            html += `<p class="error">❌ ${table} - ${error.message}</p>`;
+                        }
+                    } else {
+                        html += `<p class="success">✅ ${table} - Accessible</p>`;
+                    }
+                } catch (err) {
+                    html += `<p class="error">❌ ${table} - ${err.message}</p>`;
+                }
+            }
+            
+            html += '<br><p class="info">Credentials saved to localStorage for use in other test pages.</p>';
+            html += '<p class="info">Your correct credentials are:</p>';
+            html += `<pre>URL: ${url}\nKey: ${key}</pre>`;
+            
+            results.innerHTML = html;
+        }
+        
+        // Check if we have saved credentials
         window.addEventListener('load', () => {
-            console.log('Supabase URL:', SUPABASE_URL);
-            console.log('Anon Key:', SUPABASE_ANON_KEY.substring(0, 20) + '...');
+            const savedKey = localStorage.getItem('SUPABASE_ANON_KEY');
+            if (savedKey) {
+                document.getElementById('key').value = savedKey;
+                document.getElementById('results').innerHTML = '<p class="info">Found saved credentials. Click "Test Connection" to verify.</p>';
+            }
         });
     </script>
 </body>

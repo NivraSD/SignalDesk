@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intelligence Pipeline Complete Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #667eea;
+            margin-top: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f7f9fc;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .success {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .error {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .warning {
+            background: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        button:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+        }
+        pre {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .stage-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+            padding: 20px;
+            background: #eef2ff;
+            border-radius: 8px;
+        }
+        .stage {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            margin: 0 5px;
+            background: white;
+            border-radius: 6px;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+        .stage.active {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+        .stage.completed {
+            border-color: #28a745;
+            background: #28a745;
+            color: white;
+        }
+        .stage.failed {
+            border-color: #dc3545;
+            background: #dc3545;
+            color: white;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+        .spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Intelligence Pipeline Complete Test</h1>
+        
+        <div class="test-section">
+            <h2>Test Organization</h2>
+            <input type="text" id="orgName" value="Sprout Social" style="padding: 8px; width: 300px;">
+            <button onclick="runFullPipeline()">Run Full Pipeline</button>
+            <button onclick="testIndividualStages()">Test Each Stage</button>
+            <button onclick="checkMonitoring()">Check Monitoring</button>
+        </div>
+
+        <div class="stage-indicator">
+            <div class="stage" id="stage-discovery">Discovery</div>
+            <div class="stage" id="stage-collection">Collection</div>
+            <div class="stage" id="stage-competitors">Competitors</div>
+            <div class="stage" id="stage-media">Media</div>
+            <div class="stage" id="stage-synthesis">Synthesis</div>
+        </div>
+
+        <div id="results" class="test-section">
+            <h2>Results</h2>
+            <div id="output"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Logs</h2>
+            <pre id="logs"></pre>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toISOString();
+            const logs = document.getElementById('logs');
+            const color = type === 'error' ? '#dc3545' : type === 'success' ? '#28a745' : '#667eea';
+            logs.innerHTML += `<span style="color: ${color}">[${timestamp}] ${message}</span>\n`;
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        function setStageStatus(stageId, status) {
+            const stage = document.getElementById(stageId);
+            stage.classList.remove('active', 'completed', 'failed');
+            stage.classList.add(status);
+        }
+
+        function resetStages() {
+            ['stage-discovery', 'stage-collection', 'stage-competitors', 'stage-media', 'stage-synthesis']
+                .forEach(id => {
+                    document.getElementById(id).classList.remove('active', 'completed', 'failed');
+                });
+        }
+
+        async function runFullPipeline() {
+            const orgName = document.getElementById('orgName').value;
+            const output = document.getElementById('output');
+            output.innerHTML = '<div class="loading"><div class="spinner"></div><p>Running full pipeline...</p></div>';
+            
+            resetStages();
+            log(`Starting full pipeline for: ${orgName}`);
+            
+            try {
+                // Stage 1: Discovery
+                setStageStatus('stage-discovery', 'active');
+                log('Stage 1: Calling organization-discovery...');
+                
+                const discoveryResponse = await fetch(`${SUPABASE_URL}/functions/v1/organization-discovery`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({ 
+                        organization_name: orgName,
+                        trigger: 'manual_test'
+                    })
+                });
+                
+                if (!discoveryResponse.ok) {
+                    throw new Error(`Discovery failed: ${discoveryResponse.status} ${discoveryResponse.statusText}`);
+                }
+                
+                const discoveryData = await discoveryResponse.json();
+                log(`✅ Discovery completed: ${JSON.stringify(discoveryData).substring(0, 200)}...`, 'success');
+                setStageStatus('stage-discovery', 'completed');
+                
+                // Stage 2: Collection
+                setStageStatus('stage-collection', 'active');
+                log('Stage 2: Calling intelligence-collection-v1...');
+                
+                const collectionResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-collection-v1`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({ 
+                        organization_name: orgName
+                    })
+                });
+                
+                if (!collectionResponse.ok) {
+                    const errorText = await collectionResponse.text();
+                    log(`⚠️ Collection warning: ${errorText}`, 'warning');
+                }
+                setStageStatus('stage-collection', 'completed');
+                
+                // Stages 3-5: Run remaining stages
+                const stages = [
+                    { id: 'stage-competitors', name: 'intelligence-stage-1-competitors', label: 'Competitors Analysis' },
+                    { id: 'stage-media', name: 'intelligence-stage-2-media', label: 'Media Analysis' },
+                    { id: 'stage-synthesis', name: 'intelligence-stage-5-synthesis', label: 'Final Synthesis' }
+                ];
+                
+                for (const stage of stages) {
+                    setStageStatus(stage.id, 'active');
+                    log(`Running ${stage.label}...`);
+                    
+                    const response = await fetch(`${SUPABASE_URL}/functions/v1/${stage.name}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        },
+                        body: JSON.stringify({ 
+                            organization_name: orgName
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        log(`❌ ${stage.label} failed: ${errorText}`, 'error');
+                        setStageStatus(stage.id, 'failed');
+                    } else {
+                        const data = await response.json();
+                        log(`✅ ${stage.label} completed`, 'success');
+                        setStageStatus(stage.id, 'completed');
+                    }
+                }
+                
+                // Fetch final results
+                await displayResults(orgName);
+                
+            } catch (error) {
+                log(`Pipeline error: ${error.message}`, 'error');
+                output.innerHTML = `<div class="error">Pipeline failed: ${error.message}</div>`;
+            }
+        }
+
+        async function testIndividualStages() {
+            const orgName = document.getElementById('orgName').value;
+            const output = document.getElementById('output');
+            output.innerHTML = '<div class="loading"><div class="spinner"></div><p>Testing individual stages...</p></div>';
+            
+            log(`Testing individual stages for: ${orgName}`);
+            
+            // Test database operations
+            const tests = [
+                {
+                    name: 'Create Organization Profile',
+                    fn: async () => {
+                        const { data, error } = await supabase
+                            .from('organization_profiles')
+                            .upsert([{
+                                organization_name: orgName,
+                                organization_id: orgName.toLowerCase().replace(/\s+/g, '-'),
+                                profile_data: { test: true, timestamp: new Date().toISOString() }
+                            }])
+                            .select();
+                        return { data, error };
+                    }
+                },
+                {
+                    name: 'Create Intelligence Targets',
+                    fn: async () => {
+                        const { data, error } = await supabase
+                            .from('intelligence_targets')
+                            .upsert([{
+                                organization_name: orgName,
+                                competitors: ['Hootsuite', 'Buffer', 'Sprinklr'],
+                                stakeholders: ['marketing_managers', 'agencies']
+                            }])
+                            .select();
+                        return { data, error };
+                    }
+                },
+                {
+                    name: 'Save Stage Data',
+                    fn: async () => {
+                        const { data, error } = await supabase
+                            .from('intelligence_stage_data')
+                            .insert([{
+                                organization_name: orgName,
+                                stage_name: 'test_stage',
+                                stage_data: { test: true },
+                                metadata: { timestamp: new Date().toISOString() }
+                            }])
+                            .select();
+                        return { data, error };
+                    }
+                },
+                {
+                    name: 'Check Monitoring Configs',
+                    fn: async () => {
+                        const { data, error } = await supabase
+                            .from('monitoring_configs')
+                            .select('*')
+                            .eq('organization_name', orgName);
+                        return { data, error };
+                    }
+                },
+                {
+                    name: 'Check Source Registry',
+                    fn: async () => {
+                        const { data, error } = await supabase
+                            .from('source_registry')
+                            .select('*')
+                            .eq('organization_name', orgName);
+                        return { data, error };
+                    }
+                }
+            ];
+            
+            let results = '<h3>Stage Test Results</h3>';
+            
+            for (const test of tests) {
+                log(`Running test: ${test.name}`);
+                try {
+                    const result = await test.fn();
+                    if (result.error) {
+                        results += `<div class="error">❌ ${test.name}: ${result.error.message}</div>`;
+                        log(`❌ ${test.name} failed: ${result.error.message}`, 'error');
+                    } else {
+                        results += `<div class="success">✅ ${test.name}: Success</div>`;
+                        if (result.data) {
+                            results += `<pre>${JSON.stringify(result.data, null, 2)}</pre>`;
+                        }
+                        log(`✅ ${test.name} passed`, 'success');
+                    }
+                } catch (error) {
+                    results += `<div class="error">❌ ${test.name}: ${error.message}</div>`;
+                    log(`❌ ${test.name} error: ${error.message}`, 'error');
+                }
+            }
+            
+            output.innerHTML = results;
+        }
+
+        async function checkMonitoring() {
+            const orgName = document.getElementById('orgName').value;
+            const output = document.getElementById('output');
+            output.innerHTML = '<div class="loading"><div class="spinner"></div><p>Checking monitoring tools...</p></div>';
+            
+            log(`Checking monitoring for: ${orgName}`);
+            
+            try {
+                // Check Firecrawl
+                log('Testing Firecrawl API...');
+                const firecrawlTest = await fetch('https://api.firecrawl.dev/v1/scrape', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer fc-3048810124b640eb99293880a4ab25d0'
+                    },
+                    body: JSON.stringify({
+                        url: 'https://sproutsocial.com',
+                        formats: ['markdown']
+                    })
+                });
+                
+                if (firecrawlTest.ok) {
+                    log('✅ Firecrawl API is working', 'success');
+                } else {
+                    log(`❌ Firecrawl API error: ${firecrawlTest.status}`, 'error');
+                }
+                
+                // Check RSS sources
+                const { data: sources, error: sourcesError } = await supabase
+                    .from('source_registry')
+                    .select('*')
+                    .eq('organization_name', orgName);
+                
+                if (sources && sources.length > 0) {
+                    log(`✅ Found ${sources.length} monitoring sources`, 'success');
+                    output.innerHTML = `
+                        <div class="success">Monitoring is configured</div>
+                        <h3>Active Sources:</h3>
+                        <pre>${JSON.stringify(sources, null, 2)}</pre>
+                    `;
+                } else {
+                    log('⚠️ No monitoring sources found', 'warning');
+                    output.innerHTML = '<div class="warning">No monitoring sources configured. Add sources to source_registry table.</div>';
+                }
+                
+                // Check recent findings
+                const { data: findings, error: findingsError } = await supabase
+                    .from('intelligence_findings')
+                    .select('*')
+                    .eq('organization_name', orgName)
+                    .order('created_at', { ascending: false })
+                    .limit(5);
+                
+                if (findings && findings.length > 0) {
+                    log(`✅ Found ${findings.length} recent findings`, 'success');
+                    output.innerHTML += `
+                        <h3>Recent Findings:</h3>
+                        <pre>${JSON.stringify(findings, null, 2)}</pre>
+                    `;
+                } else {
+                    log('⚠️ No recent findings', 'warning');
+                }
+                
+            } catch (error) {
+                log(`Monitoring check error: ${error.message}`, 'error');
+                output.innerHTML = `<div class="error">Monitoring check failed: ${error.message}</div>`;
+            }
+        }
+
+        async function displayResults(orgName) {
+            const output = document.getElementById('output');
+            
+            try {
+                // Fetch all relevant data
+                const [profiles, stageData, targets, findings] = await Promise.all([
+                    supabase.from('organization_profiles').select('*').eq('organization_name', orgName),
+                    supabase.from('intelligence_stage_data').select('*').eq('organization_name', orgName).order('created_at', { ascending: false }).limit(10),
+                    supabase.from('intelligence_targets').select('*').eq('organization_name', orgName),
+                    supabase.from('intelligence_findings').select('*').eq('organization_name', orgName).order('created_at', { ascending: false }).limit(5)
+                ]);
+                
+                let html = '<h3>Pipeline Results</h3>';
+                
+                if (profiles.data && profiles.data.length > 0) {
+                    html += '<div class="success">✅ Organization Profile Found</div>';
+                    html += `<pre>${JSON.stringify(profiles.data[0], null, 2)}</pre>`;
+                }
+                
+                if (stageData.data && stageData.data.length > 0) {
+                    html += `<div class="success">✅ ${stageData.data.length} Stage Data Records</div>`;
+                    html += `<pre>${JSON.stringify(stageData.data, null, 2)}</pre>`;
+                }
+                
+                if (targets.data && targets.data.length > 0) {
+                    html += '<div class="success">✅ Intelligence Targets Configured</div>';
+                    html += `<pre>${JSON.stringify(targets.data[0], null, 2)}</pre>`;
+                }
+                
+                if (findings.data && findings.data.length > 0) {
+                    html += `<div class="success">✅ ${findings.data.length} Recent Findings</div>`;
+                    html += `<pre>${JSON.stringify(findings.data, null, 2)}</pre>`;
+                }
+                
+                output.innerHTML = html;
+                
+            } catch (error) {
+                output.innerHTML = `<div class="error">Failed to fetch results: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

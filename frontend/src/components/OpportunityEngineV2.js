@@ -1,19 +1,118 @@
 import React, { useState, useEffect } from 'react';
+import opportunityEngineService from '../services/opportunityEngineService';
 import './OpportunityEngineV2.css';
 
-const OpportunityEngineV2 = ({ organization, intelligence }) => {
+const OpportunityEngineV2 = ({ organization, intelligence, pipelineResults }) => {
   const [opportunities, setOpportunities] = useState([]);
+  const [enhancedOpportunities, setEnhancedOpportunities] = useState(null);
   const [selectedOpportunity, setSelectedOpportunity] = useState(null);
   const [executionPackage, setExecutionPackage] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [enhancing, setEnhancing] = useState(false);
   const [activeTab, setActiveTab] = useState('opportunities');
 
   useEffect(() => {
-    if (intelligence) {
+    // Use pipeline results if available, otherwise fall back to intelligence prop
+    if (pipelineResults) {
+      loadOpportunitiesFromPipeline();
+    } else if (intelligence) {
+      // Fallback to old method if no pipeline results
       detectOpportunities();
     }
-  }, [intelligence]);
+  }, [pipelineResults, intelligence]);
 
+  const loadOpportunitiesFromPipeline = async () => {
+    setLoading(true);
+    try {
+      // Extract opportunities from pipeline results
+      const extractedOpps = opportunityEngineService.extractOpportunitiesFromPipeline(pipelineResults);
+      
+      // Set initial opportunities from pipeline (fast)
+      setOpportunities(extractedOpps.consolidated);
+      setLoading(false);
+      
+      // Async enhance opportunities with Claude (slow but comprehensive)
+      setEnhancing(true);
+      const enhanced = await opportunityEngineService.enhanceOpportunities(
+        extractedOpps,
+        organization,
+        pipelineResults?.stages?.synthesis?.data
+      );
+      
+      if (enhanced) {
+        setEnhancedOpportunities(enhanced);
+        // Merge enhanced opportunities into display
+        mergeEnhancedOpportunities(extractedOpps.consolidated, enhanced);
+      }
+      setEnhancing(false);
+      
+    } catch (error) {
+      console.error('Error loading opportunities from pipeline:', error);
+      setLoading(false);
+      setEnhancing(false);
+    }
+  };
+
+  const mergeEnhancedOpportunities = (basic, enhanced) => {
+    // Combine basic and enhanced opportunities intelligently
+    const merged = [];
+    
+    // Add immediate opportunities from enhanced
+    if (enhanced.immediate_opportunities) {
+      enhanced.immediate_opportunities.forEach(opp => {
+        merged.push({
+          ...opp,
+          enhanced: true,
+          category: 'immediate'
+        });
+      });
+    }
+    
+    // Add cascade opportunities
+    if (enhanced.cascade_opportunities) {
+      enhanced.cascade_opportunities.forEach(opp => {
+        merged.push({
+          opportunity: opp.trigger_event,
+          type: 'cascade_effect',
+          urgency: 'HIGH',
+          confidence: opp.confidence,
+          enhanced: true,
+          category: 'cascade',
+          details: opp
+        });
+      });
+    }
+    
+    // Add narrative vacuums
+    if (enhanced.narrative_vacuums) {
+      enhanced.narrative_vacuums.forEach(opp => {
+        merged.push({
+          opportunity: `Narrative Vacuum: ${opp.topic}`,
+          type: 'narrative_vacuum',
+          urgency: 'MEDIUM',
+          confidence: 80,
+          enhanced: true,
+          category: 'narrative',
+          details: opp
+        });
+      });
+    }
+    
+    // Include original opportunities not covered by enhanced
+    basic.forEach(opp => {
+      if (!merged.some(m => m.opportunity === opp.opportunity)) {
+        merged.push({
+          ...opp,
+          enhanced: false,
+          category: 'basic'
+        });
+      }
+    });
+    
+    setOpportunities(merged);
+  };
+
+  // Fallback method for old intelligence prop
   const detectOpportunities = async () => {
     setLoading(true);
     try {
@@ -91,7 +190,7 @@ const OpportunityEngineV2 = ({ organization, intelligence }) => {
   const renderOpportunityCard = (opp, index) => (
     <div 
       key={index} 
-      className="opportunity-card"
+      className={`opportunity-card ${opp.enhanced ? 'enhanced' : ''}`}
       onClick={() => loadExecutionPackage(opp)}
       style={{ borderLeft: `4px solid ${getUrgencyColor(opp.urgency)}` }}
     >
@@ -99,6 +198,7 @@ const OpportunityEngineV2 = ({ organization, intelligence }) => {
         <span className="opp-urgency" style={{ color: getUrgencyColor(opp.urgency) }}>
           {opp.urgency}
         </span>
+        {opp.enhanced && <span className="enhanced-badge">✨ Enhanced</span>}
         <span className="opp-window">{opp.window}</span>
       </div>
       
@@ -374,6 +474,11 @@ const OpportunityEngineV2 = ({ organization, intelligence }) => {
     <div className="opportunity-engine-v2">
       <div className="engine-header">
         <h1>Opportunity Engine</h1>
+        {enhancing && (
+          <div className="enhancing-indicator">
+            🔄 Enhancing opportunities with AI...
+          </div>
+        )}
         <div className="engine-stats">
           <span className="stat">
             <strong>{opportunities.filter(o => o.urgency === 'URGENT').length}</strong> Urgent

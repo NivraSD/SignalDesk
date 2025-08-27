@@ -1,9 +1,10 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { corsHeaders } from '../_shared/cors.ts';
+import { analyzeWithClaudeSynthesis } from './claude-analyst.ts';
 
 /**
- * Stage 5: Pattern Recognition & Strategic Synthesis - FIXED VERSION
- * Now properly handles all data structures and creates meaningful synthesis
+ * Stage 5: Intelligence Synthesis & PR Implications
+ * Analyzes what everything means (NOT strategic recommendations)
  */
 
 serve(async (req) => {

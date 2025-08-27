@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intelligence Pipeline Scheduler</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: #2d3748;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .status-bar {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #f7fafc;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-indicator.active {
+            background: #48bb78;
+        }
+        
+        .status-indicator.inactive {
+            background: #cbd5e0;
+        }
+        
+        .status-indicator.error {
+            background: #f56565;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        h2 {
+            color: #2d3748;
+            font-size: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .schedule-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .control-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: #f7fafc;
+            border-radius: 8px;
+        }
+        
+        .control-group label {
+            font-weight: 500;
+            color: #4a5568;
+        }
+        
+        select, input {
+            padding: 8px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+        }
+        
+        button {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        button.danger {
+            background: #f56565;
+        }
+        
+        button.danger:hover {
+            background: #e53e3e;
+        }
+        
+        .pipeline-stages {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .stage {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: #f7fafc;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .stage.running {
+            background: #bee3f8;
+            border: 1px solid #667eea;
+        }
+        
+        .stage.completed {
+            background: #c6f6d5;
+            border: 1px solid #48bb78;
+        }
+        
+        .stage.error {
+            background: #fed7d7;
+            border: 1px solid #f56565;
+        }
+        
+        .stage-name {
+            font-weight: 500;
+            color: #2d3748;
+        }
+        
+        .stage-status {
+            font-size: 12px;
+            color: #718096;
+        }
+        
+        .log-container {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            height: 300px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            margin-bottom: 8px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .log-time {
+            color: #a0aec0;
+            min-width: 80px;
+        }
+        
+        .log-level {
+            min-width: 60px;
+            font-weight: bold;
+        }
+        
+        .log-level.info { color: #63b3ed; }
+        .log-level.success { color: #48bb78; }
+        .log-level.warning { color: #f6e05e; }
+        .log-level.error { color: #f56565; }
+        
+        .queue-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .queue-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: #f7fafc;
+            border-radius: 8px;
+        }
+        
+        .queue-item.processing {
+            background: #bee3f8;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 8px;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #718096;
+            margin-top: 5px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #667eea;
+            transition: width 0.3s ease;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Intelligence Pipeline Scheduler</h1>
+            <p style="color: #718096; margin-top: 10px;">Automated data collection and intelligence processing</p>
+            
+            <div class="status-bar">
+                <div class="status-item">
+                    <span class="status-indicator active" id="scheduler-status"></span>
+                    <span>Scheduler: <strong id="scheduler-state">Active</strong></span>
+                </div>
+                <div class="status-item">
+                    <span class="status-indicator inactive" id="pipeline-status"></span>
+                    <span>Pipeline: <strong id="pipeline-state">Idle</strong></span>
+                </div>
+                <div class="status-item">
+                    <span>Next Run: <strong id="next-run">--:--</strong></span>
+                </div>
+                <div class="status-item">
+                    <span>Last Run: <strong id="last-run">Never</strong></span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="grid">
+            <!-- Schedule Configuration -->
+            <div class="card">
+                <h2>⏰ Schedule Configuration</h2>
+                <div class="schedule-controls">
+                    <div class="control-group">
+                        <label>Organization</label>
+                        <select id="org-select">
+                            <option value="all">All Organizations</option>
+                            <option value="Sprout Social">Sprout Social</option>
+                            <option value="Hootsuite">Hootsuite</option>
+                            <option value="Buffer">Buffer</option>
+                        </select>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Frequency</label>
+                        <select id="frequency-select">
+                            <option value="manual">Manual Only</option>
+                            <option value="5min">Every 5 Minutes</option>
+                            <option value="15min">Every 15 Minutes</option>
+                            <option value="30min">Every 30 Minutes</option>
+                            <option value="hourly" selected>Every Hour</option>
+                            <option value="daily">Daily</option>
+                        </select>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Data Sources</label>
+                        <select id="source-select">
+                            <option value="all">All Sources</option>
+                            <option value="rss">RSS Feeds Only</option>
+                            <option value="firecrawl">Firecrawl Only</option>
+                            <option value="apis">APIs Only</option>
+                        </select>
+                    </div>
+                    
+                    <button onclick="updateSchedule()" style="width: 100%;">💾 Update Schedule</button>
+                    <button onclick="runNow()" style="width: 100%; background: #48bb78;">▶️ Run Now</button>
+                    <button onclick="stopScheduler()" class="danger" style="width: 100%;">⏹ Stop Scheduler</button>
+                </div>
+            </div>
+            
+            <!-- Pipeline Progress -->
+            <div class="card">
+                <h2>📊 Pipeline Progress</h2>
+                <div class="pipeline-stages">
+                    <div class="stage" id="stage-discovery">
+                        <span class="stage-name">🔍 Discovery</span>
+                        <span class="stage-status">Waiting</span>
+                    </div>
+                    <div class="stage" id="stage-collection">
+                        <span class="stage-name">📥 Collection</span>
+                        <span class="stage-status">Waiting</span>
+                    </div>
+                    <div class="stage" id="stage-competitors">
+                        <span class="stage-name">🎯 Competitors Analysis</span>
+                        <span class="stage-status">Waiting</span>
+                    </div>
+                    <div class="stage" id="stage-media">
+                        <span class="stage-name">📰 Media Analysis</span>
+                        <span class="stage-status">Waiting</span>
+                    </div>
+                    <div class="stage" id="stage-synthesis">
+                        <span class="stage-name">🧠 Synthesis</span>
+                        <span class="stage-status">Waiting</span>
+                    </div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="grid">
+            <!-- Processing Queue -->
+            <div class="card">
+                <h2>📋 Processing Queue</h2>
+                <div class="queue-list" id="queue">
+                    <div class="queue-item">
+                        <span>No items in queue</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Statistics -->
+            <div class="card">
+                <h2>📈 Statistics</h2>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="sources-count">0</div>
+                        <div class="stat-label">Active Sources</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="findings-count">0</div>
+                        <div class="stat-label">Findings Today</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="runs-count">0</div>
+                        <div class="stat-label">Pipeline Runs</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="success-rate">0%</div>
+                        <div class="stat-label">Success Rate</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Activity Log -->
+        <div class="card">
+            <h2>📜 Activity Log</h2>
+            <div class="log-container" id="logs"></div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Supabase
+        const SUPABASE_URL = localStorage.getItem('SUPABASE_URL') || 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = localStorage.getItem('SUPABASE_ANON_KEY') || '';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // Scheduler state
+        let schedulerInterval = null;
+        let isRunning = false;
+        let currentOrg = 'all';
+        let currentFrequency = 'hourly';
+        let currentSources = 'all';
+        let lastRunTime = null;
+        let runCount = 0;
+        let successCount = 0;
+        
+        // Pipeline stages
+        const stages = [
+            { id: 'discovery', name: 'Discovery', endpoint: 'organization-discovery' },
+            { id: 'collection', name: 'Collection', endpoint: 'intelligence-collection-v1' },
+            { id: 'competitors', name: 'Competitors', endpoint: 'intelligence-stage-1-competitors' },
+            { id: 'media', name: 'Media Analysis', endpoint: 'intelligence-stage-2-media' },
+            { id: 'synthesis', name: 'Synthesis', endpoint: 'intelligence-stage-5-synthesis' }
+        ];
+        
+        // Logging
+        function log(message, level = 'info') {
+            const time = new Date().toLocaleTimeString();
+            const logsDiv = document.getElementById('logs');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `
+                <span class="log-time">${time}</span>
+                <span class="log-level ${level}">[${level.toUpperCase()}]</span>
+                <span>${message}</span>
+            `;
+            logsDiv.appendChild(entry);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+        
+        // Update stage status
+        function updateStage(stageId, status, message = null) {
+            const stageEl = document.getElementById(`stage-${stageId}`);
+            if (!stageEl) return;
+            
+            // Remove all status classes
+            stageEl.classList.remove('running', 'completed', 'error');
+            
+            // Add new status class
+            if (status === 'running') stageEl.classList.add('running');
+            else if (status === 'completed') stageEl.classList.add('completed');
+            else if (status === 'error') stageEl.classList.add('error');
+            
+            // Update status text
+            const statusEl = stageEl.querySelector('.stage-status');
+            statusEl.textContent = message || status.charAt(0).toUpperCase() + status.slice(1);
+        }
+        
+        // Update progress bar
+        function updateProgress(percent) {
+            document.getElementById('progress').style.width = `${percent}%`;
+        }
+        
+        // Load statistics
+        async function loadStatistics() {
+            try {
+                // Count active sources
+                const { count: sourcesCount } = await supabase
+                    .from('source_registry')
+                    .select('*', { count: 'exact' })
+                    .eq('is_active', true);
+                
+                document.getElementById('sources-count').textContent = sourcesCount || 0;
+                
+                // Count today's findings
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                const { count: findingsCount } = await supabase
+                    .from('intelligence_findings')
+                    .select('*', { count: 'exact' })
+                    .gte('created_at', today.toISOString());
+                
+                document.getElementById('findings-count').textContent = findingsCount || 0;
+                
+                // Update run statistics
+                document.getElementById('runs-count').textContent = runCount;
+                const successRate = runCount > 0 ? Math.round((successCount / runCount) * 100) : 0;
+                document.getElementById('success-rate').textContent = `${successRate}%`;
+                
+            } catch (error) {
+                log(`Failed to load statistics: ${error.message}`, 'error');
+            }
+        }
+        
+        // Load queue
+        async function loadQueue() {
+            const queueDiv = document.getElementById('queue');
+            
+            if (currentOrg === 'all') {
+                const { data: orgs } = await supabase
+                    .from('organizations')
+                    .select('name')
+                    .order('name');
+                
+                if (orgs && orgs.length > 0) {
+                    queueDiv.innerHTML = orgs.map(org => `
+                        <div class="queue-item">
+                            <span>${org.name}</span>
+                            <span style="color: #718096; font-size: 12px;">Pending</span>
+                        </div>
+                    `).join('');
+                }
+            } else {
+                queueDiv.innerHTML = `
+                    <div class="queue-item">
+                        <span>${currentOrg}</span>
+                        <span style="color: #718096; font-size: 12px;">Selected</span>
+                    </div>
+                `;
+            }
+        }
+        
+        // Run pipeline for an organization
+        async function runPipeline(orgName) {
+            log(`Starting pipeline for: ${orgName}`, 'info');
+            updateProgress(0);
+            
+            let completedStages = 0;
+            
+            for (const [index, stage] of stages.entries()) {
+                updateStage(stage.id, 'running');
+                log(`Running ${stage.name} stage...`, 'info');
+                
+                try {
+                    const response = await fetch(`${SUPABASE_URL}/functions/v1/${stage.endpoint}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${SUPABASE_KEY}`
+                        },
+                        body: JSON.stringify({
+                            organization_name: orgName,
+                            trigger: 'scheduled',
+                            sources: currentSources
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        updateStage(stage.id, 'completed', '✅');
+                        log(`${stage.name} completed successfully`, 'success');
+                        completedStages++;
+                    } else {
+                        const error = await response.text();
+                        updateStage(stage.id, 'error', '❌');
+                        log(`${stage.name} failed: ${error}`, 'error');
+                    }
+                    
+                } catch (error) {
+                    updateStage(stage.id, 'error', '❌');
+                    log(`${stage.name} error: ${error.message}`, 'error');
+                }
+                
+                // Update progress
+                updateProgress(((index + 1) / stages.length) * 100);
+                
+                // Small delay between stages
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            
+            return completedStages === stages.length;
+        }
+        
+        // Run data collection for sources
+        async function collectData(orgName) {
+            log(`Collecting data for: ${orgName}`, 'info');
+            
+            try {
+                // Get active sources
+                let query = supabase
+                    .from('source_registry')
+                    .select('*')
+                    .eq('is_active', true);
+                
+                if (orgName !== 'all') {
+                    query = query.eq('organization_name', orgName);
+                }
+                
+                if (currentSources !== 'all') {
+                    if (currentSources === 'rss') query = query.eq('source_type', 'rss');
+                    else if (currentSources === 'firecrawl') query = query.eq('source_type', 'website');
+                    else if (currentSources === 'apis') query = query.eq('source_type', 'api');
+                }
+                
+                const { data: sources } = await query;
+                
+                if (sources && sources.length > 0) {
+                    log(`Found ${sources.length} active sources`, 'info');
+                    
+                    // Process each source
+                    for (const source of sources) {
+                        log(`Processing ${source.source_type}: ${source.source_url}`, 'info');
+                        
+                        // Call collection endpoint
+                        const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-collection-v1`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${SUPABASE_KEY}`
+                            },
+                            body: JSON.stringify({
+                                source_id: source.id,
+                                organization_name: source.organization_name,
+                                source_type: source.source_type,
+                                source_url: source.source_url,
+                                config: source.source_config
+                            })
+                        });
+                        
+                        if (!response.ok) {
+                            log(`Failed to collect from ${source.source_url}`, 'warning');
+                        }
+                    }
+                }
+                
+            } catch (error) {
+                log(`Collection error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Main run function
+        async function runNow() {
+            if (isRunning) {
+                log('Pipeline already running', 'warning');
+                return;
+            }
+            
+            isRunning = true;
+            runCount++;
+            
+            document.getElementById('pipeline-status').className = 'status-indicator active';
+            document.getElementById('pipeline-state').textContent = 'Running';
+            
+            try {
+                // Reset stages
+                stages.forEach(stage => updateStage(stage.id, 'waiting', 'Waiting'));
+                
+                if (currentOrg === 'all') {
+                    // Run for all organizations
+                    const { data: orgs } = await supabase
+                        .from('organizations')
+                        .select('name');
+                    
+                    for (const org of orgs || []) {
+                        // First collect data
+                        await collectData(org.name);
+                        
+                        // Then run pipeline
+                        const success = await runPipeline(org.name);
+                        if (success) successCount++;
+                    }
+                } else {
+                    // Run for specific organization
+                    await collectData(currentOrg);
+                    const success = await runPipeline(currentOrg);
+                    if (success) successCount++;
+                }
+                
+                lastRunTime = new Date();
+                document.getElementById('last-run').textContent = lastRunTime.toLocaleTimeString();
+                
+                log('Pipeline run completed', 'success');
+                
+            } catch (error) {
+                log(`Pipeline error: ${error.message}`, 'error');
+            } finally {
+                isRunning = false;
+                document.getElementById('pipeline-status').className = 'status-indicator inactive';
+                document.getElementById('pipeline-state').textContent = 'Idle';
+                
+                // Reload statistics
+                await loadStatistics();
+            }
+        }
+        
+        // Update schedule
+        function updateSchedule() {
+            currentOrg = document.getElementById('org-select').value;
+            currentFrequency = document.getElementById('frequency-select').value;
+            currentSources = document.getElementById('source-select').value;
+            
+            // Clear existing interval
+            if (schedulerInterval) {
+                clearInterval(schedulerInterval);
+                schedulerInterval = null;
+            }
+            
+            // Set new interval based on frequency
+            let intervalMs = 0;
+            switch (currentFrequency) {
+                case '5min': intervalMs = 5 * 60 * 1000; break;
+                case '15min': intervalMs = 15 * 60 * 1000; break;
+                case '30min': intervalMs = 30 * 60 * 1000; break;
+                case 'hourly': intervalMs = 60 * 60 * 1000; break;
+                case 'daily': intervalMs = 24 * 60 * 60 * 1000; break;
+            }
+            
+            if (intervalMs > 0) {
+                schedulerInterval = setInterval(runNow, intervalMs);
+                
+                // Calculate next run time
+                const nextRun = new Date(Date.now() + intervalMs);
+                document.getElementById('next-run').textContent = nextRun.toLocaleTimeString();
+                
+                log(`Schedule updated: ${currentFrequency} for ${currentOrg}`, 'success');
+            } else {
+                document.getElementById('next-run').textContent = 'Manual';
+                log('Schedule set to manual mode', 'info');
+            }
+            
+            // Reload queue
+            loadQueue();
+        }
+        
+        // Stop scheduler
+        function stopScheduler() {
+            if (schedulerInterval) {
+                clearInterval(schedulerInterval);
+                schedulerInterval = null;
+            }
+            
+            document.getElementById('scheduler-status').className = 'status-indicator inactive';
+            document.getElementById('scheduler-state').textContent = 'Stopped';
+            document.getElementById('next-run').textContent = '--:--';
+            
+            log('Scheduler stopped', 'warning');
+        }
+        
+        // Initialize on load
+        window.addEventListener('load', async () => {
+            log('Intelligence Pipeline Scheduler initialized', 'info');
+            
+            // Check Supabase connection
+            if (!SUPABASE_KEY) {
+                log('No Supabase key found. Please configure connection first.', 'error');
+                return;
+            }
+            
+            // Load initial data
+            await loadStatistics();
+            await loadQueue();
+            
+            // Set default schedule
+            updateSchedule();
+            
+            log('Ready to process intelligence data', 'success');
+        });
+    </script>
+</body>
+</html>

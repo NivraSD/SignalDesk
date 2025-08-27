@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Intelligence Persistence with Auth</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .auth-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #5a67d8;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .success {
+            color: green;
+            padding: 10px;
+            background: #d4edda;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .error {
+            color: red;
+            padding: 10px;
+            background: #f8d7da;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .warning {
+            color: #856404;
+            padding: 10px;
+            background: #fff3cd;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        pre {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        .test-buttons {
+            display: none;
+            margin-top: 20px;
+        }
+        .test-buttons.active {
+            display: block;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Test Intelligence Persistence with Auth</h1>
+        
+        <div class="auth-section">
+            <h3>Step 1: Configure Supabase Connection</h3>
+            <p>Enter your Supabase URL and Anon Key (these will be saved locally):</p>
+            
+            <input type="text" id="supabaseUrl" placeholder="Supabase URL (e.g., https://xxxx.supabase.co)" />
+            <input type="text" id="supabaseKey" placeholder="Supabase Anon Key (eyJ...)" />
+            
+            <button onclick="testConnection()">Test Connection & Save</button>
+            <button onclick="loadSaved()">Load Saved Credentials</button>
+        </div>
+        
+        <div id="connectionStatus"></div>
+        
+        <div class="test-buttons" id="testButtons">
+            <h3>Step 2: Test Persistence Functions</h3>
+            <button onclick="testSaveProfileOldFormat()">Test Save Profile (Organization-Discovery Format)</button>
+            <button onclick="testSaveProfileNewFormat()">Test Save Profile (Frontend Format)</button>
+            <button onclick="testGetProfile()">Test Get Profile</button>
+            <button onclick="testSaveStageData()">Test Save Stage Data (Synthesis)</button>
+            <button onclick="clearResults()">Clear Results</button>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        let SUPABASE_URL = '';
+        let SUPABASE_ANON_KEY = '';
+        let supabase = null;
+        
+        const results = document.getElementById('results');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const testButtons = document.getElementById('testButtons');
+        
+        // Load saved credentials on page load
+        window.onload = () => {
+            loadSaved();
+        };
+        
+        function loadSaved() {
+            const savedUrl = localStorage.getItem('SUPABASE_URL');
+            const savedKey = localStorage.getItem('SUPABASE_ANON_KEY');
+            
+            if (savedUrl && savedKey) {
+                document.getElementById('supabaseUrl').value = savedUrl;
+                document.getElementById('supabaseKey').value = savedKey;
+                showResult('Loaded saved credentials', false, connectionStatus);
+                
+                SUPABASE_URL = savedUrl;
+                SUPABASE_ANON_KEY = savedKey;
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                testButtons.classList.add('active');
+            } else {
+                showResult('No saved credentials found', true, connectionStatus);
+            }
+        }
+        
+        async function testConnection() {
+            const url = document.getElementById('supabaseUrl').value;
+            const key = document.getElementById('supabaseKey').value;
+            
+            if (!url || !key) {
+                showResult('Please enter both URL and Key', true, connectionStatus);
+                return;
+            }
+            
+            connectionStatus.innerHTML = '';
+            showResult('Testing connection...', false, connectionStatus);
+            
+            try {
+                // Test with a simple query
+                const testClient = window.supabase.createClient(url, key);
+                const { data, error } = await testClient
+                    .from('organization_profiles')
+                    .select('*')
+                    .limit(1);
+                
+                if (error && error.code !== 'PGRST116') {
+                    showResult(`❌ Connection failed: ${error.message}`, true, connectionStatus);
+                } else {
+                    // Save credentials
+                    localStorage.setItem('SUPABASE_URL', url);
+                    localStorage.setItem('SUPABASE_ANON_KEY', key);
+                    
+                    SUPABASE_URL = url;
+                    SUPABASE_ANON_KEY = key;
+                    supabase = testClient;
+                    
+                    showResult('✅ Connection successful! Credentials saved.', false, connectionStatus);
+                    testButtons.classList.add('active');
+                }
+            } catch (error) {
+                showResult(`❌ Connection error: ${error.message}`, true, connectionStatus);
+            }
+        }
+        
+        function showResult(message, isError = false, container = results) {
+            const div = document.createElement('div');
+            div.className = isError ? 'error' : 'success';
+            div.innerHTML = message;
+            container.appendChild(div);
+        }
+        
+        function clearResults() {
+            results.innerHTML = '';
+        }
+        
+        async function testSaveProfileOldFormat() {
+            if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+                showResult('Please configure connection first', true);
+                return;
+            }
+            
+            showResult('Testing save profile with organization-discovery format...');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-persistence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        action: 'saveProfile',
+                        organization_name: 'Sprout Social',
+                        industry: 'Social Media Management',
+                        competitors: ['Hootsuite', 'Buffer', 'Sprinklr', 'Agorapulse', 'Later'],
+                        regulators: ['FTC', 'SEC'],
+                        media: ['TechCrunch', 'Social Media Today', 'Marketing Land'],
+                        investors: ['Goldman Sachs', 'NEA', 'Lightbank'],
+                        analysts: ['Gartner', 'Forrester', 'G2'],
+                        activists: [],
+                        keywords: ['social media management', 'social listening', 'social analytics'],
+                        metadata: {
+                            description: 'Enterprise social media management platform',
+                            url: 'https://sproutsocial.com',
+                            business_model: 'SaaS B2B',
+                            market_position: 'Leader',
+                            headquarters: 'Chicago, IL',
+                            founded: '2010',
+                            employee_range: '500-1000',
+                            revenue_range: '$100M-$500M',
+                            executives: [
+                                { name: 'Justyn Howard', role: 'CEO' },
+                                { name: 'Ryan Barretto', role: 'President' }
+                            ],
+                            products: ['Publishing', 'Analytics', 'Listening', 'Engagement'],
+                            target_customers: ['Enterprises', 'Agencies', 'Small Business'],
+                            recent_topics: ['AI features', 'Influencer marketing', 'Social commerce'],
+                            key_narratives: ['Social media ROI', 'Customer care'],
+                            vulnerabilities: ['Competition from platform-native tools'],
+                            opportunities: ['AI integration', 'Social commerce expansion']
+                        }
+                    })
+                });
+                
+                const responseText = await response.text();
+                
+                if (response.ok) {
+                    const data = JSON.parse(responseText);
+                    showResult('✅ Save successful (Old Format)!');
+                    showResult(`<pre>${JSON.stringify(data, null, 2)}</pre>`);
+                } else {
+                    showResult(`❌ Error ${response.status}: ${responseText}`, true);
+                }
+            } catch (error) {
+                showResult(`❌ Error: ${error.message}`, true);
+            }
+        }
+        
+        async function testSaveProfileNewFormat() {
+            if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+                showResult('Please configure connection first', true);
+                return;
+            }
+            
+            showResult('Testing save profile with frontend format...');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-persistence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        action: 'saveProfile',
+                        organization_name: 'Hootsuite',
+                        profile: {
+                            organization: {
+                                name: 'Hootsuite',
+                                industry: 'Social Media Management',
+                                description: 'Pioneer in social media management tools'
+                            },
+                            competitors: {
+                                direct: ['Sprout Social', 'Buffer'],
+                                indirect: ['HubSpot', 'Salesforce Social Studio'],
+                                emerging: ['Later', 'Planoly']
+                            },
+                            stakeholders: {
+                                regulators: ['FTC'],
+                                media: ['TechCrunch', 'VentureBeat'],
+                                investors: ['Accel', 'Insight Partners'],
+                                analysts: ['Gartner', 'Forrester'],
+                                activists: []
+                            },
+                            keywords: ['social media scheduling', 'social ROI', 'team collaboration'],
+                            products: ['Scheduler', 'Analytics', 'Ads', 'Insights'],
+                            executives: [
+                                { name: 'Irina Novoselsky', role: 'CEO' }
+                            ]
+                        }
+                    })
+                });
+                
+                const responseText = await response.text();
+                
+                if (response.ok) {
+                    const data = JSON.parse(responseText);
+                    showResult('✅ Save successful (New Format)!');
+                    showResult(`<pre>${JSON.stringify(data, null, 2)}</pre>`);
+                } else {
+                    showResult(`❌ Error ${response.status}: ${responseText}`, true);
+                }
+            } catch (error) {
+                showResult(`❌ Error: ${error.message}`, true);
+            }
+        }
+        
+        async function testGetProfile() {
+            if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+                showResult('Please configure connection first', true);
+                return;
+            }
+            
+            showResult('Testing get profile for Sprout Social...');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-persistence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        action: 'getProfile',
+                        organization_name: 'Sprout Social'
+                    })
+                });
+                
+                const responseText = await response.text();
+                
+                if (response.ok) {
+                    const data = JSON.parse(responseText);
+                    showResult('✅ Get profile successful!');
+                    showResult(`<pre>${JSON.stringify(data, null, 2)}</pre>`);
+                } else {
+                    showResult(`❌ Error ${response.status}: ${responseText}`, true);
+                }
+            } catch (error) {
+                showResult(`❌ Error: ${error.message}`, true);
+            }
+        }
+        
+        async function testSaveStageData() {
+            if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+                showResult('Please configure connection first', true);
+                return;
+            }
+            
+            showResult('Testing save stage data (synthesis)...');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-persistence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        action: 'saveStageData',
+                        organization_name: 'Sprout Social',
+                        stage: 'synthesis',
+                        stage_data: {
+                            summary: 'Comprehensive analysis of Sprout Social competitive position',
+                            insights: [
+                                'Strong position in enterprise segment',
+                                'Opportunity in AI-powered features',
+                                'Threat from platform-native tools'
+                            ],
+                            recommendations: [
+                                'Accelerate AI feature development',
+                                'Strengthen enterprise partnerships',
+                                'Expand into emerging markets'
+                            ]
+                        },
+                        metadata: {
+                            timestamp: new Date().toISOString(),
+                            source: 'intelligence-stage-5-synthesis'
+                        }
+                    })
+                });
+                
+                const responseText = await response.text();
+                
+                if (response.ok) {
+                    const data = JSON.parse(responseText);
+                    showResult('✅ Stage data saved successfully!');
+                    showResult(`<pre>${JSON.stringify(data, null, 2)}</pre>`);
+                } else {
+                    showResult(`❌ Error ${response.status}: ${responseText}`, true);
+                }
+            } catch (error) {
+                showResult(`❌ Error: ${error.message}`, true);
+            }
+        }
+    </script>
+</body>
+</html>

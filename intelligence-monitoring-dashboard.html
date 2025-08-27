@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalDesk Intelligence Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f7fafc;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+        }
+        
+        .refresh-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .refresh-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .filters-bar {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .filter-group label {
+            font-size: 12px;
+            color: #718096;
+            font-weight: 500;
+        }
+        
+        select, input {
+            padding: 8px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            min-width: 150px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        
+        .stat-icon.blue { background: #ebf8ff; }
+        .stat-icon.green { background: #f0fff4; }
+        .stat-icon.purple { background: #faf5ff; }
+        .stat-icon.orange { background: #fffaf0; }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #2d3748;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #718096;
+        }
+        
+        .stat-change {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        
+        .stat-change.positive {
+            background: #f0fff4;
+            color: #22543d;
+        }
+        
+        .stat-change.negative {
+            background: #fff5f5;
+            color: #742a2a;
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .findings-section {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        h2 {
+            font-size: 20px;
+            color: #2d3748;
+        }
+        
+        .findings-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        .finding-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .finding-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+        }
+        
+        .finding-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 10px;
+        }
+        
+        .finding-title {
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 15px;
+        }
+        
+        .finding-meta {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .meta-tag {
+            font-size: 12px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            background: #f7fafc;
+            color: #4a5568;
+        }
+        
+        .meta-tag.source {
+            background: #ebf8ff;
+            color: #2c5282;
+        }
+        
+        .meta-tag.type {
+            background: #faf5ff;
+            color: #553c9a;
+        }
+        
+        .finding-content {
+            color: #4a5568;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .relevance-score {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            color: #718096;
+        }
+        
+        .score-bar {
+            width: 60px;
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .score-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #48bb78, #38a169);
+        }
+        
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .sidebar-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .source-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .source-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #f7fafc;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .source-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #48bb78;
+        }
+        
+        .source-status.inactive {
+            background: #cbd5e0;
+        }
+        
+        .source-status.error {
+            background: #f56565;
+        }
+        
+        .competitor-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #f7fafc;
+            border-radius: 6px;
+        }
+        
+        .competitor-name {
+            font-weight: 500;
+            color: #2d3748;
+        }
+        
+        .competitor-score {
+            font-size: 12px;
+            color: #718096;
+        }
+        
+        .timeline-section {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .timeline-chart {
+            height: 200px;
+            background: #f7fafc;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #718096;
+        }
+        
+        .alert-banner {
+            background: linear-gradient(135deg, #f6e05e, #ecc94b);
+            color: #744210;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .alert-icon {
+            font-size: 24px;
+        }
+        
+        .alert-content {
+            flex: 1;
+        }
+        
+        .alert-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .alert-description {
+            font-size: 14px;
+        }
+        
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: #718096;
+        }
+        
+        .spinner {
+            border: 3px solid #e2e8f0;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-right: 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>🎯 SignalDesk Intelligence Dashboard</h1>
+            <button class="refresh-btn" onclick="refreshData()">🔄 Refresh</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <!-- Filters -->
+        <div class="filters-bar">
+            <div class="filter-group">
+                <label>Organization</label>
+                <select id="org-filter" onchange="filterData()">
+                    <option value="all">All Organizations</option>
+                    <option value="Sprout Social">Sprout Social</option>
+                    <option value="Hootsuite">Hootsuite</option>
+                    <option value="Buffer">Buffer</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label>Time Range</label>
+                <select id="time-filter" onchange="filterData()">
+                    <option value="today">Today</option>
+                    <option value="week">Last 7 Days</option>
+                    <option value="month">Last 30 Days</option>
+                    <option value="all">All Time</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label>Source Type</label>
+                <select id="source-filter" onchange="filterData()">
+                    <option value="all">All Sources</option>
+                    <option value="rss">RSS Feeds</option>
+                    <option value="website">Websites</option>
+                    <option value="api">APIs</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label>Relevance</label>
+                <select id="relevance-filter" onchange="filterData()">
+                    <option value="all">All</option>
+                    <option value="high">High (>0.7)</option>
+                    <option value="medium">Medium (0.4-0.7)</option>
+                    <option value="low">Low (<0.4)</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Alert Banner (if needed) -->
+        <div id="alert-container"></div>
+        
+        <!-- Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon blue">📊</div>
+                </div>
+                <div class="stat-value" id="total-findings">0</div>
+                <div class="stat-label">Total Findings</div>
+                <span class="stat-change positive" id="findings-change">+0% today</span>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon green">🎯</div>
+                </div>
+                <div class="stat-value" id="active-sources">0</div>
+                <div class="stat-label">Active Sources</div>
+                <span class="stat-change positive">Monitoring</span>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon purple">🏢</div>
+                </div>
+                <div class="stat-value" id="competitors-tracked">0</div>
+                <div class="stat-label">Competitors Tracked</div>
+                <span class="stat-change positive">Active</span>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon orange">⚡</div>
+                </div>
+                <div class="stat-value" id="avg-relevance">0%</div>
+                <div class="stat-label">Avg Relevance Score</div>
+                <span class="stat-change positive" id="relevance-trend">Improving</span>
+            </div>
+        </div>
+        
+        <!-- Main Content Grid -->
+        <div class="main-grid">
+            <!-- Findings -->
+            <div class="findings-section">
+                <div class="section-header">
+                    <h2>🔍 Latest Intelligence Findings</h2>
+                    <span style="color: #718096; font-size: 14px;" id="findings-count">0 findings</span>
+                </div>
+                <div class="findings-list" id="findings-list">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <span>Loading findings...</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <!-- Active Sources -->
+                <div class="sidebar-card">
+                    <h3 style="font-size: 16px; margin-bottom: 15px;">📡 Active Sources</h3>
+                    <div class="source-list" id="sources-list">
+                        <div class="loading">Loading sources...</div>
+                    </div>
+                </div>
+                
+                <!-- Top Competitors -->
+                <div class="sidebar-card">
+                    <h3 style="font-size: 16px; margin-bottom: 15px;">🏆 Top Competitors</h3>
+                    <div class="source-list" id="competitors-list">
+                        <div class="loading">Loading competitors...</div>
+                    </div>
+                </div>
+                
+                <!-- Recent Alerts -->
+                <div class="sidebar-card">
+                    <h3 style="font-size: 16px; margin-bottom: 15px;">⚠️ Recent Alerts</h3>
+                    <div class="source-list" id="alerts-list">
+                        <div class="loading">Loading alerts...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Timeline Chart -->
+        <div class="timeline-section">
+            <h2 style="margin-bottom: 20px;">📈 Intelligence Activity Timeline</h2>
+            <div class="timeline-chart" id="timeline-chart">
+                Chart visualization would go here (integrate with Chart.js or similar)
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Supabase
+        const SUPABASE_URL = localStorage.getItem('SUPABASE_URL') || 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = localStorage.getItem('SUPABASE_ANON_KEY') || '';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // Current filters
+        let currentFilters = {
+            organization: 'all',
+            timeRange: 'today',
+            sourceType: 'all',
+            relevance: 'all'
+        };
+        
+        // Load all data
+        async function loadDashboard() {
+            await Promise.all([
+                loadStatistics(),
+                loadFindings(),
+                loadSources(),
+                loadCompetitors(),
+                loadAlerts()
+            ]);
+        }
+        
+        // Load statistics
+        async function loadStatistics() {
+            try {
+                // Total findings
+                const { count: totalCount } = await supabase
+                    .from('intelligence_findings')
+                    .select('*', { count: 'exact' });
+                
+                document.getElementById('total-findings').textContent = totalCount || 0;
+                
+                // Today's findings
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                const { count: todayCount } = await supabase
+                    .from('intelligence_findings')
+                    .select('*', { count: 'exact' })
+                    .gte('created_at', today.toISOString());
+                
+                const change = totalCount > 0 ? Math.round((todayCount / totalCount) * 100) : 0;
+                document.getElementById('findings-change').textContent = `+${change}% today`;
+                
+                // Active sources
+                const { count: sourcesCount } = await supabase
+                    .from('source_registry')
+                    .select('*', { count: 'exact' })
+                    .eq('is_active', true);
+                
+                document.getElementById('active-sources').textContent = sourcesCount || 0;
+                
+                // Competitors tracked
+                const { data: targets } = await supabase
+                    .from('intelligence_targets')
+                    .select('competitors');
+                
+                let competitorCount = 0;
+                targets?.forEach(target => {
+                    if (target.competitors) {
+                        if (Array.isArray(target.competitors)) {
+                            competitorCount += target.competitors.length;
+                        } else if (target.competitors.direct) {
+                            competitorCount += target.competitors.direct.length;
+                        }
+                    }
+                });
+                
+                document.getElementById('competitors-tracked').textContent = competitorCount;
+                
+                // Average relevance score
+                const { data: findings } = await supabase
+                    .from('intelligence_findings')
+                    .select('relevance_score')
+                    .not('relevance_score', 'is', null);
+                
+                if (findings && findings.length > 0) {
+                    const avgScore = findings.reduce((acc, f) => acc + parseFloat(f.relevance_score), 0) / findings.length;
+                    document.getElementById('avg-relevance').textContent = `${Math.round(avgScore * 100)}%`;
+                }
+                
+            } catch (error) {
+                console.error('Error loading statistics:', error);
+            }
+        }
+        
+        // Load findings
+        async function loadFindings() {
+            const listEl = document.getElementById('findings-list');
+            listEl.innerHTML = '<div class="loading"><div class="spinner"></div><span>Loading findings...</span></div>';
+            
+            try {
+                let query = supabase
+                    .from('intelligence_findings')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(50);
+                
+                // Apply filters
+                if (currentFilters.organization !== 'all') {
+                    query = query.eq('organization_name', currentFilters.organization);
+                }
+                
+                if (currentFilters.sourceType !== 'all') {
+                    query = query.eq('source', currentFilters.sourceType);
+                }
+                
+                // Time filter
+                const now = new Date();
+                switch (currentFilters.timeRange) {
+                    case 'today':
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        query = query.gte('created_at', today.toISOString());
+                        break;
+                    case 'week':
+                        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                        query = query.gte('created_at', weekAgo.toISOString());
+                        break;
+                    case 'month':
+                        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                        query = query.gte('created_at', monthAgo.toISOString());
+                        break;
+                }
+                
+                const { data: findings, error } = await query;
+                
+                if (error) throw error;
+                
+                if (!findings || findings.length === 0) {
+                    listEl.innerHTML = '<div style="text-align: center; color: #718096; padding: 40px;">No findings yet. Run the intelligence pipeline to collect data.</div>';
+                    document.getElementById('findings-count').textContent = '0 findings';
+                    return;
+                }
+                
+                document.getElementById('findings-count').textContent = `${findings.length} findings`;
+                
+                // Filter by relevance
+                let filteredFindings = findings;
+                if (currentFilters.relevance !== 'all') {
+                    filteredFindings = findings.filter(f => {
+                        const score = parseFloat(f.relevance_score) || 0;
+                        switch (currentFilters.relevance) {
+                            case 'high': return score > 0.7;
+                            case 'medium': return score >= 0.4 && score <= 0.7;
+                            case 'low': return score < 0.4;
+                            default: return true;
+                        }
+                    });
+                }
+                
+                // Render findings
+                listEl.innerHTML = filteredFindings.map(finding => {
+                    const content = finding.content || {};
+                    const title = content.title || content.headline || 'Intelligence Finding';
+                    const description = content.description || content.summary || content.text || 'No description available';
+                    const score = finding.relevance_score || 0;
+                    const scorePercent = Math.round(score * 100);
+                    
+                    return `
+                        <div class="finding-card" onclick="viewFinding('${finding.id}')">
+                            <div class="finding-header">
+                                <div class="finding-title">${title}</div>
+                                <div class="relevance-score">
+                                    <span>${scorePercent}%</span>
+                                    <div class="score-bar">
+                                        <div class="score-fill" style="width: ${scorePercent}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="finding-meta">
+                                <span class="meta-tag source">${finding.source}</span>
+                                <span class="meta-tag type">${finding.finding_type}</span>
+                                <span class="meta-tag">${finding.organization_name}</span>
+                                <span class="meta-tag">${new Date(finding.created_at).toLocaleDateString()}</span>
+                            </div>
+                            <div class="finding-content">
+                                ${description.substring(0, 200)}${description.length > 200 ? '...' : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+            } catch (error) {
+                console.error('Error loading findings:', error);
+                listEl.innerHTML = '<div style="color: #f56565; padding: 20px;">Error loading findings. Check console for details.</div>';
+            }
+        }
+        
+        // Load sources
+        async function loadSources() {
+            const listEl = document.getElementById('sources-list');
+            
+            try {
+                const { data: sources } = await supabase
+                    .from('source_registry')
+                    .select('*')
+                    .eq('is_active', true)
+                    .limit(10);
+                
+                if (!sources || sources.length === 0) {
+                    listEl.innerHTML = '<div style="color: #718096; font-size: 14px;">No active sources</div>';
+                    return;
+                }
+                
+                listEl.innerHTML = sources.map(source => `
+                    <div class="source-item">
+                        <span>${source.source_url.replace('https://', '').substring(0, 30)}...</span>
+                        <span class="source-status"></span>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Error loading sources:', error);
+            }
+        }
+        
+        // Load competitors
+        async function loadCompetitors() {
+            const listEl = document.getElementById('competitors-list');
+            
+            try {
+                const { data: targets } = await supabase
+                    .from('intelligence_targets')
+                    .select('*');
+                
+                let allCompetitors = [];
+                
+                targets?.forEach(target => {
+                    if (target.competitors) {
+                        if (Array.isArray(target.competitors)) {
+                            allCompetitors = [...allCompetitors, ...target.competitors];
+                        } else if (target.competitors.direct) {
+                            allCompetitors = [...allCompetitors, ...target.competitors.direct];
+                        }
+                    }
+                });
+                
+                // Count occurrences
+                const competitorCounts = {};
+                allCompetitors.forEach(comp => {
+                    competitorCounts[comp] = (competitorCounts[comp] || 0) + 1;
+                });
+                
+                // Sort by count and take top 5
+                const topCompetitors = Object.entries(competitorCounts)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 5);
+                
+                if (topCompetitors.length === 0) {
+                    listEl.innerHTML = '<div style="color: #718096; font-size: 14px;">No competitors tracked</div>';
+                    return;
+                }
+                
+                listEl.innerHTML = topCompetitors.map(([name, count]) => `
+                    <div class="competitor-item">
+                        <span class="competitor-name">${name}</span>
+                        <span class="competitor-score">${count} mentions</span>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Error loading competitors:', error);
+            }
+        }
+        
+        // Load alerts
+        async function loadAlerts() {
+            const listEl = document.getElementById('alerts-list');
+            const alertContainer = document.getElementById('alert-container');
+            
+            try {
+                const { data: alerts } = await supabase
+                    .from('monitoring_alerts')
+                    .select('*')
+                    .eq('is_read', false)
+                    .order('created_at', { ascending: false })
+                    .limit(5);
+                
+                if (!alerts || alerts.length === 0) {
+                    listEl.innerHTML = '<div style="color: #718096; font-size: 14px;">No new alerts</div>';
+                    return;
+                }
+                
+                // Show top alert as banner if critical
+                const criticalAlert = alerts.find(a => a.severity === 'critical');
+                if (criticalAlert) {
+                    alertContainer.innerHTML = `
+                        <div class="alert-banner">
+                            <div class="alert-icon">⚠️</div>
+                            <div class="alert-content">
+                                <div class="alert-title">${criticalAlert.title}</div>
+                                <div class="alert-description">${criticalAlert.description || ''}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                listEl.innerHTML = alerts.map(alert => `
+                    <div class="source-item">
+                        <span>${alert.title}</span>
+                        <span class="source-status ${alert.severity === 'critical' ? 'error' : ''}"></span>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Error loading alerts:', error);
+            }
+        }
+        
+        // Filter data
+        function filterData() {
+            currentFilters.organization = document.getElementById('org-filter').value;
+            currentFilters.timeRange = document.getElementById('time-filter').value;
+            currentFilters.sourceType = document.getElementById('source-filter').value;
+            currentFilters.relevance = document.getElementById('relevance-filter').value;
+            
+            loadFindings();
+        }
+        
+        // Refresh all data
+        async function refreshData() {
+            await loadDashboard();
+        }
+        
+        // View finding details
+        function viewFinding(findingId) {
+            console.log('View finding:', findingId);
+            // You could open a modal or navigate to a detail page
+        }
+        
+        // Initialize on load
+        window.addEventListener('load', async () => {
+            if (!SUPABASE_KEY) {
+                document.getElementById('findings-list').innerHTML = 
+                    '<div style="color: #f56565; padding: 40px; text-align: center;">No Supabase connection. Please run test-supabase-connection.html first.</div>';
+                return;
+            }
+            
+            await loadDashboard();
+            
+            // Auto-refresh every 60 seconds
+            setInterval(refreshData, 60000);
+        });
+    </script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 {
   "name": "frontend",
-  "version": "0.3.2-cache-fix",
+  "version": "0.3.3-intelligence-pipeline",
   "private": true,
   "dependencies": {
     "@headlessui/react": "^2.2.4",

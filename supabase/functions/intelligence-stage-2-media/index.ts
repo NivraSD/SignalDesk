@@ -1,9 +1,10 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { corsHeaders } from '../_shared/cors.ts';
+import { analyzeWithClaudeMedia } from './claude-analyst.ts';
 
 /**
- * Stage 2: Deep Media Landscape Analysis with Real Data
- * Uses NewsAPI, Google News RSS, and web scraping for real media intelligence
+ * Stage 2: Deep Media Landscape Analysis with Claude AI
+ * Uses Claude Media Analyst for comprehensive PR intelligence
  */
 
 // API Keys (set these as environment variables in Supabase)
@@ -24,27 +25,66 @@ serve(async (req) => {
     // Extract competitive context from Stage 1
     const competitiveContext = previousResults?.competitors || {};
     
-    // Perform real media analysis
-    const results = {
-      media_landscape: await analyzeRealMediaLandscape(organization),
-      journalists: await identifyRealKeyJournalists(organization, competitiveContext),
-      coverage_analysis: await analyzeRealCoveragePatterns(organization, competitiveContext),
-      sentiment_analysis: await analyzeRealSentiment(organization),
-      opportunities: await identifyRealMediaOpportunities(organization, competitiveContext),
-      risks: await identifyRealMediaRisks(organization, competitiveContext),
-      metadata: {
-        stage: 2,
-        duration: 0,
-        outlets_analyzed: 0,
-        journalists_identified: 0,
-        articles_analyzed: 0,
-        data_source: 'real'
+    // Fetch monitoring data from database
+    let monitoringData = {};
+    try {
+      const findingsResponse = await fetch(
+        'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/intelligence-persistence',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': req.headers.get('Authorization') || ''
+          },
+          body: JSON.stringify({
+            action: 'retrieve',
+            organization_name: organization.name,
+            limit: 100
+          })
+        }
+      );
+      
+      if (findingsResponse.ok) {
+        const findingsData = await findingsResponse.json();
+        if (findingsData.success && findingsData.data) {
+          monitoringData = {
+            findings: findingsData.data.findings || [],
+            stage_data: findingsData.data.stage_data || [],
+            raw_count: findingsData.data.findings?.length || 0,
+            competitive_context: competitiveContext,
+            previous_results: previousResults
+          };
+          console.log(`✅ Retrieved ${monitoringData.raw_count} monitoring findings for media analysis`);
+        }
       }
-    };
+    } catch (e) {
+      console.log('Could not retrieve monitoring data:', e);
+    }
+    
+    // Use Claude Media Analyst for comprehensive analysis
+    const results = await analyzeWithClaudeMedia(
+      organization,
+      monitoringData,
+      {
+        // Basic structure as fallback if Claude fails
+        media_landscape: { outlets: [], priority_targets: [] },
+        journalists: [],
+        coverage_analysis: {},
+        sentiment_analysis: {},
+        opportunities: [],
+        risks: [],
+        metadata: {
+          stage: 2,
+          duration: 0,
+          data_source: 'claude_media_analyst',
+          analysis_timestamp: new Date().toISOString()
+        }
+      }
+    );
 
     results.metadata.duration = Date.now() - startTime;
-    results.metadata.outlets_analyzed = results.media_landscape.outlets.length;
-    results.metadata.journalists_identified = results.journalists.length;
+    results.metadata.outlets_analyzed = results.media_landscape?.outlets?.length || 0;
+    results.metadata.journalists_identified = results.journalists?.length || 0;
     
     console.log(`✅ Stage 2 complete in ${results.metadata.duration}ms`);
     console.log(`📊 Analyzed ${results.metadata.outlets_analyzed} outlets, ${results.metadata.journalists_identified} journalists`);

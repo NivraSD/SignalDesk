@@ -5,11 +5,13 @@
 ### ABSOLUTE REQUIREMENTS FOR VERCEL DEPLOYMENT:
 
 1. **SignalDesk deploys from the ROOT directory (`/`), NOT from `/frontend`**
+
    - The frontend files (package.json, src/, public/, etc.) MUST be in the repository root
    - Vercel project name: `signaldesk` (NOT "frontend")
    - Root Directory setting in Vercel: Leave EMPTY or set to `.`
 
 2. **NEVER put API keys or secrets in vercel.json**
+
    - ALL environment variables go in Vercel Dashboard → Settings → Environment Variables
    - Required variables:
      - `REACT_APP_SUPABASE_URL`
@@ -17,22 +19,23 @@
    - These should NEVER be in vercel.json, package.json, or any committed file
 
 3. **Correct vercel.json configuration:**
+
    ```json
    {
      "buildCommand": "npm run build",
      "outputDirectory": "build",
      "framework": "create-react-app",
      "installCommand": "npm install --legacy-peer-deps",
-     "rewrites": [
-       {"source": "/(.*)", "destination": "/index.html"}
-     ]
+     "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
    }
    ```
+
    - NO "env" section
    - NO "rootDirectory" setting
    - NO hardcoded values
 
 4. **Repository Structure:**
+
    ```
    /SignalDesk (root)
    ├── package.json         ← Frontend package.json at ROOT
@@ -46,6 +49,7 @@
    ```
 
 5. **If deployment shows old/cached code:**
+
    - DO NOT restructure the entire repository
    - DO NOT move 164,000 files around
    - Simply: Vercel Dashboard → Settings → Functions → Clear Cache
@@ -57,6 +61,7 @@
    - Apply to: Production, Preview, Development
 
 ### WHAT NOT TO DO:
+
 - ❌ NEVER run `vercel remove signaldesk`
 - ❌ NEVER put secrets in vercel.json
 - ❌ NEVER deploy from /frontend subdirectory

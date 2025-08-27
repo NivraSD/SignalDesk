@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Intelligence Persistence Fix</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #5a67d8;
+        }
+        .success {
+            color: green;
+            padding: 10px;
+            background: #d4edda;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .error {
+            color: red;
+            padding: 10px;
+            background: #f8d7da;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test Intelligence Persistence Fix</h1>
+        
+        <button onclick="testSaveProfile()">Test Save Profile (Old Format)</button>
+        <button onclick="testSaveProfileNew()">Test Save Profile (New Format)</button>
+        <button onclick="testGetProfile()">Test Get Profile</button>
+        <button onclick="testSaveStageData()">Test Save Stage Data</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+        
+        const results = document.getElementById('results');
+        
+        function showResult(message, isError = false) {
+            const div = document.createElement('div');
+            div.className = isError ? 'error' : 'success';
+            div.innerHTML = message;
+            results.appendChild(div);
+        }
+        
+        async function testSaveProfile() {
+            results.innerHTML = '';
+            showResult('Testing save profile with old format (like organization-discovery sends)...');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-persistence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        action: 'saveProfile',
+                        organization_name: 'Test Company',
+                        industry: 'Technology',
+                        competitors: ['Competitor1', 'Competitor2'],
+                        regulators: ['SEC', 'FTC'],
+                        media: ['TechCrunch', 'WSJ'],
+                        investors: ['Sequoia', 'a16z'],
+                        analysts: ['Gartner', 'Forrester'],
+                        activists: [],
+                        keywords: ['AI', 'Machine Learning'],
+                        metadata: {
+                            description: 'Test company description',
+                            url: 'https://test.com',
+                            business_model: 'SaaS',
+                            market_position: 'Leader',
+                            headquarters: 'San Francisco',
+                            founded: '2020',
+                            employee_range: '100-500',
+                            revenue_range: '$10M-$50M',
+                            executives: [{ name: 'John Doe', role: 'CEO' }],
+                            products: ['Product A', 'Product B'],
+                            target_customers: ['Enterprises'],
+                            recent_topics: ['New funding'],
+                            key_narratives: ['Innovation leader'],
+                            vulnerabilities: ['Competition'],
+                            opportunities: ['Market expansion']
+                        }
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult('✅ Save successful!');
+                    showResult(`<pre>${JSON.stringify(data, null, 2)}</pre>`);
+                } else {
+                    const error = await response.text();
+                    showResult(`❌ Error: ${error}`, true);
+                }
+            } catch (error) {
+                showResult(`❌ Error: ${error.message}`, true);
+            }
+        }
+        
+        async function testSaveProfileNew() {
+            results.innerHTML = '';
+            showResult('Testing save profile with new format (profile object)...');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-persistence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        action: 'saveProfile',
+                        organization_name: 'Test Company 2',
+                        profile: {
+                            organization: {
+                                name: 'Test Company 2',
+                                industry: 'Healthcare'
+                            },
+                            competitors: {
+                                direct: ['DirectComp1'],
+                                indirect: ['IndirectComp1'],
+                                emerging: ['EmergingComp1']
+                            },
+                            stakeholders: {
+                                regulators: ['FDA'],
+                                media: ['HealthNews'],
+                                investors: ['HealthVC'],
+                                analysts: ['HealthAnalyst'],
+                                activists: []
+                            },
+                            keywords: ['Healthcare', 'Medical'],
+                            products: ['Medical Device A'],
+                            executives: [{ name: 'Jane Smith', role: 'CEO' }]
+                        }
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult('✅ Save successful!');
+                    showResult(`<pre>${JSON.stringify(data, null, 2)}</pre>`);
+                } else {
+                    const error = await response.text();
+                    showResult(`❌ Error: ${error}`, true);
+                }
+            } catch (error) {
+                showResult(`❌ Error: ${error.message}`, true);
+            }
+        }
+        
+        async function testGetProfile() {
+            results.innerHTML = '';
+            showResult('Testing get profile...');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-persistence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        action: 'getProfile',
+                        organization_name: 'Test Company'
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult('✅ Get successful!');
+                    showResult(`<pre>${JSON.stringify(data, null, 2)}</pre>`);
+                } else {
+                    const error = await response.text();
+                    showResult(`❌ Error: ${error}`, true);
+                }
+            } catch (error) {
+                showResult(`❌ Error: ${error.message}`, true);
+            }
+        }
+        
+        async function testSaveStageData() {
+            results.innerHTML = '';
+            showResult('Testing save stage data...');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-persistence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        action: 'saveStageData',
+                        organization_name: 'Test Company',
+                        stage: 'synthesis',
+                        stage_data: {
+                            summary: 'Test synthesis data',
+                            insights: ['Insight 1', 'Insight 2']
+                        },
+                        metadata: {
+                            timestamp: new Date().toISOString()
+                        }
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult('✅ Stage data saved!');
+                    showResult(`<pre>${JSON.stringify(data, null, 2)}</pre>`);
+                } else {
+                    const error = await response.text();
+                    showResult(`❌ Error: ${error}`, true);
+                }
+            } catch (error) {
+                showResult(`❌ Error: ${error.message}`, true);
+            }
+        }
+    </script>
+</body>
+</html>

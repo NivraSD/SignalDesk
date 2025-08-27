@@ -35,6 +35,8 @@ serve(async (req) => {
         return await handleSaveTargets(body)
       case 'getTargets':
         return await handleGetTargets(body)
+      case 'retrieve':
+        return await handleRetrieve(body)
       default:
         // Legacy support
         if (body.stage || body.data_type) {
@@ -59,13 +61,50 @@ serve(async (req) => {
 
 // Save complete organization profile
 async function handleSaveProfile(data: any) {
-  const { organization_name, profile } = data
+  const { organization_name } = data
   
-  if (!organization_name || !profile) {
-    throw new Error('Missing organization_name or profile')
+  if (!organization_name) {
+    throw new Error('Missing organization_name')
   }
   
   console.log(`💾 Saving profile for: ${organization_name}`)
+  
+  // Handle both formats: direct fields or nested profile object
+  let profile = data.profile
+  
+  // If no profile object, construct it from direct fields
+  if (!profile) {
+    profile = {
+      organization: {
+        name: organization_name,
+        industry: data.industry,
+        description: data.metadata?.description,
+        url: data.metadata?.url,
+        business_model: data.metadata?.business_model,
+        market_position: data.metadata?.market_position,
+        headquarters: data.metadata?.headquarters,
+        founded: data.metadata?.founded,
+        employee_range: data.metadata?.employee_range,
+        revenue_range: data.metadata?.revenue_range
+      },
+      competitors: data.competitors || [],
+      stakeholders: {
+        regulators: data.regulators || [],
+        media: data.media || [],
+        investors: data.investors || [],
+        analysts: data.analysts || [],
+        activists: data.activists || []
+      },
+      keywords: data.keywords || [],
+      products: data.metadata?.products || [],
+      executives: data.metadata?.executives || [],
+      target_customers: data.metadata?.target_customers || [],
+      recent_topics: data.metadata?.recent_topics || [],
+      key_narratives: data.metadata?.key_narratives || [],
+      vulnerabilities: data.metadata?.vulnerabilities || [],
+      opportunities: data.metadata?.opportunities || []
+    }
+  }
   
   // Ensure profile has standard structure
   const standardProfile = {
@@ -77,6 +116,7 @@ async function handleSaveProfile(data: any) {
     executives: profile.executives || [],
     metadata: {
       ...profile.metadata,
+      ...data.metadata,
       savedAt: new Date().toISOString()
     }
   }
@@ -98,6 +138,41 @@ async function handleSaveProfile(data: any) {
   if (error) {
     console.error('Failed to save profile:', error)
     throw error
+  }
+  
+  // Also save to intelligence_targets table
+  try {
+    const competitorsArray = Array.isArray(standardProfile.competitors) 
+      ? standardProfile.competitors 
+      : [
+          ...(standardProfile.competitors.direct || []),
+          ...(standardProfile.competitors.indirect || []),
+          ...(standardProfile.competitors.emerging || [])
+        ]
+    
+    const stakeholdersArray = [
+      ...(standardProfile.stakeholders.regulators || []),
+      ...(standardProfile.stakeholders.media || []),
+      ...(standardProfile.stakeholders.investors || []),
+      ...(standardProfile.stakeholders.analysts || []),
+      ...(standardProfile.stakeholders.activists || [])
+    ]
+    
+    await supabase
+      .from('intelligence_targets')
+      .upsert({
+        organization_name,
+        competitors: competitorsArray,
+        stakeholders: stakeholdersArray,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'organization_name'
+      })
+    
+    console.log('✅ Saved to intelligence_targets')
+  } catch (targetsError) {
+    console.error('Warning: Could not save to intelligence_targets:', targetsError)
+    // Don't throw - this is a secondary operation
   }
   
   return new Response(
@@ -334,4 +409,61 @@ async function createTargetsTableIfNeeded() {
   // Tables should be created via Supabase Dashboard SQL Editor
   // This function is kept for compatibility but doesn't create tables
   console.log('Note: Tables should be created via Supabase Dashboard if they do not exist')
+}
+
+// Handle retrieve action - get recent intelligence data
+async function handleRetrieve(data: any) {
+  const { 
+    organization_name,
+    limit = 100,
+    since
+  } = data
+  
+  console.log(`📖 Retrieving intelligence for: ${organization_name}`)
+  
+  // Retrieve from intelligence_findings table
+  let query = supabase
+    .from('intelligence_findings')
+    .select('*')
+    .eq('organization_name', organization_name)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  
+  if (since) {
+    query = query.gte('created_at', since)
+  }
+  
+  const { data: findings, error: findingsError } = await query
+  
+  // Also get stage data
+  let stageQuery = supabase
+    .from('intelligence_stage_data')
+    .select('*')
+    .eq('organization_name', organization_name)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  
+  if (since) {
+    stageQuery = stageQuery.gte('created_at', since)
+  }
+  
+  const { data: stageData, error: stageError } = await stageQuery
+  
+  // Combine results
+  const allData = [
+    ...(findings || []).map(f => ({ ...f, type: 'finding' })),
+    ...(stageData || []).map(s => ({ ...s, type: 'stage_data' }))
+  ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, limit)
+  
+  return new Response(
+    JSON.stringify({ 
+      success: true,
+      data: allData,
+      count: allData.length,
+      has_findings: findings && findings.length > 0,
+      has_stage_data: stageData && stageData.length > 0
+    }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  )
 }

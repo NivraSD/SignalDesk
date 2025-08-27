@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intelligence Pipeline Tables Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f7f9fc;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .test-title {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            margin: 5px 0;
+        }
+        .success {
+            background: #10b981;
+            color: white;
+        }
+        .error {
+            background: #ef4444;
+            color: white;
+        }
+        .warning {
+            background: #f59e0b;
+            color: white;
+        }
+        .pending {
+            background: #6b7280;
+            color: white;
+        }
+        pre {
+            background: #1f2937;
+            color: #10b981;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 0.9em;
+        }
+        .button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+        .button:hover {
+            background: #5a67d8;
+            transform: translateY(-1px);
+        }
+        .button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        .config-section {
+            background: #fef3c7;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #fbbf24;
+        }
+        .config-input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .result-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+        }
+        .result-card h3 {
+            margin-top: 0;
+            color: #667eea;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            background: #f3f4f6;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 Intelligence Pipeline Tables Test Suite</h1>
+        
+        <div class="config-section">
+            <h2>⚙️ Supabase Configuration</h2>
+            <label>Supabase URL:</label>
+            <input type="text" id="supabaseUrl" class="config-input" 
+                   value="https://zskaxjtyuaqazydouifp.supabase.co" />
+            
+            <label>Supabase Anon Key:</label>
+            <input type="password" id="supabaseKey" class="config-input" 
+                   placeholder="Enter your Supabase anon key" />
+            
+            <button class="button" onclick="saveConfig()">Save Configuration</button>
+            <button class="button" onclick="loadConfig()">Load Saved Config</button>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">🏃 Test Operations</div>
+            <button class="button" onclick="runAllTests()">Run All Tests</button>
+            <button class="button" onclick="testConnection()">Test Connection</button>
+            <button class="button" onclick="checkTables()">Check Tables</button>
+            <button class="button" onclick="testCRUD()">Test CRUD Operations</button>
+            <button class="button" onclick="testEdgeFunction()">Test Edge Function</button>
+            <button class="button" onclick="clearLogs()">Clear Logs</button>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">📊 Test Results</div>
+            <div id="testResults" class="results-grid"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">📝 Logs</div>
+            <div id="logs"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import Supabase client
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+        
+        let supabase = null;
+
+        // Make functions globally available
+        window.saveConfig = saveConfig;
+        window.loadConfig = loadConfig;
+        window.runAllTests = runAllTests;
+        window.testConnection = testConnection;
+        window.checkTables = checkTables;
+        window.testCRUD = testCRUD;
+        window.testEdgeFunction = testEdgeFunction;
+        window.clearLogs = clearLogs;
+
+        function log(message, type = 'info') {
+            const logsDiv = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            const typeColors = {
+                'success': '#10b981',
+                'error': '#ef4444',
+                'warning': '#f59e0b',
+                'info': '#3b82f6'
+            };
+            
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `<span style="color: ${typeColors[type]};">[${timestamp}]</span> ${message}`;
+            logsDiv.appendChild(entry);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+
+        function saveConfig() {
+            const url = document.getElementById('supabaseUrl').value;
+            const key = document.getElementById('supabaseKey').value;
+            
+            localStorage.setItem('supabaseUrl', url);
+            localStorage.setItem('supabaseKey', key);
+            
+            initSupabase();
+            log('✅ Configuration saved', 'success');
+        }
+
+        function loadConfig() {
+            const url = localStorage.getItem('supabaseUrl');
+            const key = localStorage.getItem('supabaseKey');
+            
+            if (url) document.getElementById('supabaseUrl').value = url;
+            if (key) document.getElementById('supabaseKey').value = key;
+            
+            initSupabase();
+            log('✅ Configuration loaded', 'success');
+        }
+
+        function initSupabase() {
+            const url = document.getElementById('supabaseUrl').value;
+            const key = document.getElementById('supabaseKey').value;
+            
+            if (!url || !key) {
+                log('⚠️ Please enter Supabase URL and Key', 'warning');
+                return false;
+            }
+            
+            supabase = createClient(url, key);
+            log('🔗 Supabase client initialized', 'info');
+            return true;
+        }
+
+        function displayResult(title, data, status = 'success') {
+            const resultsDiv = document.getElementById('testResults');
+            const card = document.createElement('div');
+            card.className = 'result-card';
+            
+            const statusClass = status === 'error' ? 'error' : status === 'warning' ? 'warning' : 'success';
+            
+            card.innerHTML = `
+                <h3>${title}</h3>
+                <span class="status ${statusClass}">${status.toUpperCase()}</span>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+            
+            resultsDiv.appendChild(card);
+        }
+
+        async function testConnection() {
+            log('🔌 Testing Supabase connection...', 'info');
+            
+            if (!initSupabase()) return;
+            
+            try {
+                // Try a simple query
+                const { data, error } = await supabase
+                    .from('organization_profiles')
+                    .select('count')
+                    .single();
+                
+                if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows found" which is ok
+                    throw error;
+                }
+                
+                log('✅ Connection successful!', 'success');
+                displayResult('Connection Test', { status: 'Connected', timestamp: new Date() });
+            } catch (error) {
+                log(`❌ Connection failed: ${error.message}`, 'error');
+                displayResult('Connection Test', { error: error.message }, 'error');
+            }
+        }
+
+        async function checkTables() {
+            log('📋 Checking tables...', 'info');
+            
+            if (!initSupabase()) return;
+            
+            const tables = [
+                'organization_profiles',
+                'intelligence_stage_data',
+                'intelligence_targets',
+                'source_registry',
+                'monitoring_results'
+            ];
+            
+            const results = {};
+            
+            for (const table of tables) {
+                try {
+                    const { count, error } = await supabase
+                        .from(table)
+                        .select('*', { count: 'exact', head: true });
+                    
+                    results[table] = {
+                        exists: !error || error.code === 'PGRST116',
+                        rowCount: count || 0,
+                        error: error?.message
+                    };
+                    
+                    if (results[table].exists) {
+                        log(`✅ Table ${table}: ${count || 0} rows`, 'success');
+                    } else {
+                        log(`❌ Table ${table}: ${error.message}`, 'error');
+                    }
+                } catch (err) {
+                    results[table] = { exists: false, error: err.message };
+                    log(`❌ Table ${table}: ${err.message}`, 'error');
+                }
+            }
+            
+            displayResult('Tables Check', results);
+        }
+
+        async function testCRUD() {
+            log('🔄 Testing CRUD operations...', 'info');
+            
+            if (!initSupabase()) return;
+            
+            const testOrg = `test-${Date.now()}`;
+            const results = {};
+            
+            try {
+                // 1. CREATE - Insert test organization profile
+                log('Creating test organization profile...', 'info');
+                const { data: createData, error: createError } = await supabase
+                    .from('organization_profiles')
+                    .insert({
+                        organization_name: testOrg,
+                        organization_id: testOrg,
+                        profile_data: {
+                            test: true,
+                            timestamp: new Date().toISOString(),
+                            description: 'Test organization for CRUD operations',
+                            industry: 'Technology',
+                            focus_topics: ['AI', 'Testing']
+                        }
+                    })
+                    .select()
+                    .single();
+                
+                if (createError) throw createError;
+                results.create = { success: true, data: createData };
+                log('✅ Create successful', 'success');
+                
+                // 1b. CREATE - Insert intelligence targets (competitors/stakeholders)
+                log('Creating intelligence targets...', 'info');
+                const { data: targetsData, error: targetsError } = await supabase
+                    .from('intelligence_targets')
+                    .insert({
+                        organization_name: testOrg,
+                        competitors: ['TestComp1', 'TestComp2'],
+                        stakeholders: ['investors', 'customers']
+                    })
+                    .select()
+                    .single();
+                
+                if (targetsError) throw targetsError;
+                results.createTargets = { success: true, data: targetsData };
+                log('✅ Intelligence targets created', 'success');
+                
+                // 2. READ - Fetch the created organization
+                log('Reading test organization...', 'info');
+                const { data: readData, error: readError } = await supabase
+                    .from('organization_profiles')
+                    .select('*')
+                    .eq('organization_name', testOrg)
+                    .single();
+                
+                if (readError) throw readError;
+                results.read = { success: true, data: readData };
+                log('✅ Read successful', 'success');
+                
+                // 3. UPDATE - Update the organization
+                log('Updating test organization...', 'info');
+                const { data: updateData, error: updateError } = await supabase
+                    .from('organization_profiles')
+                    .update({
+                        profile_data: {
+                            ...readData.profile_data,
+                            updated: true,
+                            updatedAt: new Date().toISOString()
+                        }
+                    })
+                    .eq('organization_name', testOrg)
+                    .select()
+                    .single();
+                
+                if (updateError) throw updateError;
+                results.update = { success: true, data: updateData };
+                log('✅ Update successful', 'success');
+                
+                // 4. Test intelligence_stage_data
+                log('Testing intelligence_stage_data...', 'info');
+                const { data: stageData, error: stageError } = await supabase
+                    .from('intelligence_stage_data')
+                    .upsert({
+                        organization_name: testOrg,
+                        stage_name: 'test-stage',
+                        stage_data: {
+                            test: true,
+                            results: ['item1', 'item2']
+                        },
+                        metadata: { source: 'crud-test' },
+                        status: 'completed'
+                    }, {
+                        onConflict: 'organization_name,stage_name'
+                    })
+                    .select()
+                    .single();
+                
+                if (stageError) throw stageError;
+                results.stageData = { success: true, data: stageData };
+                log('✅ Stage data test successful', 'success');
+                
+                // 5. DELETE - Clean up test data
+                log('Cleaning up test data...', 'info');
+                await supabase
+                    .from('intelligence_stage_data')
+                    .delete()
+                    .eq('organization_name', testOrg);
+                
+                await supabase
+                    .from('intelligence_targets')
+                    .delete()
+                    .eq('organization_name', testOrg);
+                
+                const { error: deleteError } = await supabase
+                    .from('organization_profiles')
+                    .delete()
+                    .eq('organization_name', testOrg);
+                
+                if (deleteError) throw deleteError;
+                results.delete = { success: true };
+                log('✅ Delete successful', 'success');
+                
+                displayResult('CRUD Operations Test', results);
+                
+            } catch (error) {
+                log(`❌ CRUD test failed: ${error.message}`, 'error');
+                displayResult('CRUD Operations Test', { 
+                    error: error.message,
+                    results: results 
+                }, 'error');
+            }
+        }
+
+        async function testEdgeFunction() {
+            log('🚀 Testing Edge Function compatibility...', 'info');
+            
+            if (!initSupabase()) return;
+            
+            try {
+                // Test data structure expected by Edge Functions
+                const testOrgName = 'edge-function-test';
+                const profileData = {
+                    organization_name: testOrgName,
+                    organization_id: testOrgName,
+                    profile_data: {
+                        industry: 'Technology',
+                        description: 'Test for Edge Function'
+                    }
+                };
+                
+                // Insert profile data (without competitors/stakeholders)
+                const { data: insertData, error: insertError } = await supabase
+                    .from('organization_profiles')
+                    .upsert(profileData, {
+                        onConflict: 'organization_name'
+                    })
+                    .select()
+                    .single();
+                
+                if (insertError) throw insertError;
+                
+                // Verify columns exist
+                const columnChecks = {
+                    hasOrganizationName: !!insertData.organization_name,
+                    hasProfileData: !!insertData.profile_data,
+                    profileDataIsJSON: typeof insertData.profile_data === 'object'
+                };
+                
+                // Test intelligence_targets (competitors and stakeholders go here)
+                const { error: targetError } = await supabase
+                    .from('intelligence_targets')
+                    .upsert({
+                        organization_name: testOrgName,
+                        competitors: ['Comp1', 'Comp2'],
+                        stakeholders: ['investors', 'customers']
+                    }, {
+                        onConflict: 'organization_name'
+                    })
+                    .select();
+                
+                // Clean up
+                await supabase
+                    .from('intelligence_targets')
+                    .delete()
+                    .eq('organization_name', 'edge-function-test');
+                    
+                await supabase
+                    .from('organization_profiles')
+                    .delete()
+                    .eq('organization_name', 'edge-function-test');
+                
+                const result = {
+                    organizationProfile: {
+                        success: !insertError,
+                        columnChecks
+                    },
+                    intelligenceTargets: {
+                        success: !targetError
+                    },
+                    edgeFunctionReady: !insertError && !targetError
+                };
+                
+                if (result.edgeFunctionReady) {
+                    log('✅ Tables are compatible with Edge Functions!', 'success');
+                } else {
+                    log('⚠️ Some issues detected with Edge Function compatibility', 'warning');
+                }
+                
+                displayResult('Edge Function Compatibility', result);
+                
+            } catch (error) {
+                log(`❌ Edge Function test failed: ${error.message}`, 'error');
+                displayResult('Edge Function Compatibility', { error: error.message }, 'error');
+            }
+        }
+
+        async function runAllTests() {
+            log('🎯 Running all tests...', 'info');
+            document.getElementById('testResults').innerHTML = '';
+            
+            await testConnection();
+            await new Promise(r => setTimeout(r, 500));
+            
+            await checkTables();
+            await new Promise(r => setTimeout(r, 500));
+            
+            await testCRUD();
+            await new Promise(r => setTimeout(r, 500));
+            
+            await testEdgeFunction();
+            
+            log('✨ All tests complete!', 'success');
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+            document.getElementById('testResults').innerHTML = '';
+            log('Logs cleared', 'info');
+        }
+
+        // Auto-load config on page load
+        window.addEventListener('load', () => {
+            loadConfig();
+            log('🚀 Intelligence Pipeline Tables Test Suite Ready', 'info');
+            log('ℹ️ Enter your Supabase credentials and click "Run All Tests"', 'info');
+        });
+    </script>
+</body>
+</html>
