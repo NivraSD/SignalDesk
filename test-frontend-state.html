@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Frontend State</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #0f0; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #0f0; }
+        h2 { color: #0ff; }
+        pre { white-space: pre-wrap; }
+        button { background: #0f0; color: #000; padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>SignalDesk Frontend State Debugger</h1>
+    
+    <div class="section">
+        <h2>1. Check LocalStorage</h2>
+        <button onclick="checkStorage()">Check Storage</button>
+        <pre id="storage-output"></pre>
+    </div>
+    
+    <div class="section">
+        <h2>2. Test Multi-Stage Pipeline</h2>
+        <button onclick="testPipeline()">Run Pipeline Test</button>
+        <pre id="pipeline-output"></pre>
+    </div>
+    
+    <div class="section">
+        <h2>3. Clear Cache and Reset</h2>
+        <button onclick="clearAll()">Clear All Data</button>
+        <button onclick="window.location.reload()">Reload Page</button>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+
+        function checkStorage() {
+            const output = document.getElementById('storage-output');
+            const keys = [
+                'signaldesk_organization',
+                'signaldesk_complete_profile', 
+                'signaldesk_synthesis',
+                'organization',
+                'isComplete'
+            ];
+            
+            let result = 'LocalStorage Contents:\n\n';
+            keys.forEach(key => {
+                const value = localStorage.getItem(key);
+                if (value) {
+                    try {
+                        const parsed = JSON.parse(value);
+                        result += `✅ ${key}:\n`;
+                        result += `  - Type: ${typeof parsed}\n`;
+                        if (parsed.name) result += `  - Name: ${parsed.name}\n`;
+                        if (parsed.tabs) result += `  - Has Tabs: ${Object.keys(parsed.tabs).join(', ')}\n`;
+                        if (parsed.analysis) result += `  - Has Analysis: true\n`;
+                        if (parsed.metadata) result += `  - Pipeline: ${parsed.metadata.pipeline}\n`;
+                    } catch (e) {
+                        result += `⚠️ ${key}: ${value.substring(0, 50)}...\n`;
+                    }
+                } else {
+                    result += `❌ ${key}: Not found\n`;
+                }
+            });
+            
+            output.textContent = result;
+        }
+        
+        async function testPipeline() {
+            const output = document.getElementById('pipeline-output');
+            output.textContent = 'Testing pipeline stages...\n\n';
+            
+            // Test Stage 1
+            output.textContent += '🎯 Testing Stage 1 (Competitors)...\n';
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-1-competitors`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: {
+                            name: 'TestOrg',
+                            industry: 'technology'
+                        },
+                        competitors: ['Comp1', 'Comp2']
+                    })
+                });
+                
+                const data = await response.json();
+                output.textContent += `  Result: ${data.success ? '✅ Success' : '❌ Failed'}\n`;
+                if (data.data) {
+                    output.textContent += `  Data Keys: ${Object.keys(data.data).join(', ')}\n`;
+                }
+            } catch (e) {
+                output.textContent += `  Error: ${e.message}\n`;
+            }
+            
+            // Check persistence
+            output.textContent += '\n💾 Checking data persistence...\n';
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-persistence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        action: 'getStageData',
+                        organization_name: 'TestOrg',
+                        limit: 5
+                    })
+                });
+                
+                const data = await response.json();
+                output.textContent += `  Records found: ${data.count || 0}\n`;
+                if (data.data && data.data.length > 0) {
+                    output.textContent += `  Latest stage: ${data.data[0].stage_name}\n`;
+                }
+            } catch (e) {
+                output.textContent += `  Error: ${e.message}\n`;
+            }
+            
+            output.textContent += '\n✅ Pipeline test complete\n';
+        }
+        
+        function clearAll() {
+            const keys = Object.keys(localStorage);
+            keys.forEach(key => {
+                if (key.includes('signaldesk') || key === 'organization') {
+                    localStorage.removeItem(key);
+                }
+            });
+            alert('Cleared all SignalDesk data from localStorage');
+            checkStorage();
+        }
+        
+        // Auto-check on load
+        window.onload = () => {
+            checkStorage();
+        };
+    </script>
+</body>
+</html>

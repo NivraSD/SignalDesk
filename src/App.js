@@ -44,6 +44,8 @@ import SystemInitializer from "./components/SystemInitializer";
 import SmartOnboarding from "./components/SmartOnboarding";
 import OnboardingV2 from "./components/OnboardingV2";
 import OnboardingV3 from "./components/OnboardingV3";
+import SimpleIntelligenceTest from "./components/SimpleIntelligenceTest";
+import SupabaseIntelligence from "./components/SupabaseIntelligence"; // Clean Supabase-only implementation
 
 
 // Log Supabase initialization for debugging
@@ -115,6 +117,14 @@ function App() {
               <Route
                 path="/"
                 element={<OnboardingV3 />}
+              />
+              <Route
+                path="/supabase-intel"
+                element={
+                  <PrivateRoute>
+                    <SupabaseIntelligence organization={{ name: 'Nike', industry: 'sportswear' }} />
+                  </PrivateRoute>
+                }
               />
             </Routes>
           </IntelligenceProvider>

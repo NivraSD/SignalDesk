@@ -1,34 +1,60 @@
--- Check why synthesis stage isn't completing
-
--- 1. Check synthesis stage attempts
-SELECT 
-  organization_name,
-  stage_name,
-  created_at,
-  LENGTH(stage_data::text) as data_size,
-  metadata
-FROM intelligence_stage_data
-WHERE stage_name = 'synthesis'
-ORDER BY created_at DESC
-LIMIT 10;
-
--- 2. Check if all stages before synthesis completed for Dropbox
-SELECT 
-  stage_name,
-  COUNT(*) as attempts,
-  MAX(created_at) as most_recent
-FROM intelligence_stage_data
-WHERE organization_name = 'Dropbox'
-  AND created_at > NOW() - INTERVAL '2 hours'
-GROUP BY stage_name
-ORDER BY most_recent ASC;
-
--- 3. Check the order of stages in recent run
-SELECT 
-  stage_name,
-  created_at,
-  EXTRACT(EPOCH FROM (created_at - LAG(created_at) OVER (ORDER BY created_at))) as seconds_since_previous
-FROM intelligence_stage_data
-WHERE organization_name = 'Dropbox'
-  AND created_at > NOW() - INTERVAL '2 hours'
-ORDER BY created_at ASC;
+| stage_name          | created_at                 | seconds_since_previous |
+| ------------------- | -------------------------- | ---------------------- |
+| collection          | 2025-08-27 03:57:26.259+00 | null                   |
+| collection          | 2025-08-27 03:57:26.496+00 | 0.237000               |
+| collection          | 2025-08-27 03:57:26.717+00 | 0.221000               |
+| collection          | 2025-08-27 03:57:26.956+00 | 0.239000               |
+| collection          | 2025-08-27 03:57:27.281+00 | 0.325000               |
+| collection          | 2025-08-27 03:57:27.581+00 | 0.300000               |
+| collection          | 2025-08-27 03:57:27.819+00 | 0.238000               |
+| collection          | 2025-08-27 03:57:28.056+00 | 0.237000               |
+| collection          | 2025-08-27 03:57:28.288+00 | 0.232000               |
+| collection          | 2025-08-27 03:57:28.535+00 | 0.247000               |
+| collection          | 2025-08-27 03:57:28.762+00 | 0.227000               |
+| collection          | 2025-08-27 03:57:28.963+00 | 0.201000               |
+| collection          | 2025-08-27 03:57:29.138+00 | 0.175000               |
+| collection          | 2025-08-27 03:57:29.353+00 | 0.215000               |
+| collection          | 2025-08-27 03:57:29.573+00 | 0.220000               |
+| collection          | 2025-08-27 03:57:29.766+00 | 0.193000               |
+| collection          | 2025-08-27 03:57:30.038+00 | 0.272000               |
+| collection          | 2025-08-27 03:57:30.236+00 | 0.198000               |
+| collection          | 2025-08-27 03:57:30.393+00 | 0.157000               |
+| collection          | 2025-08-27 03:57:30.558+00 | 0.165000               |
+| opportunities       | 2025-08-27 03:57:40.748+00 | 10.190000              |
+| opportunities       | 2025-08-27 03:57:40.879+00 | 0.131000               |
+| opportunities       | 2025-08-27 03:57:41.034+00 | 0.155000               |
+| competitor_analysis | 2025-08-27 03:57:55.803+00 | 14.769000              |
+| opportunities       | 2025-08-27 03:58:33.199+00 | 37.396000              |
+| opportunities       | 2025-08-27 03:58:33.662+00 | 0.463000               |
+| opportunities       | 2025-08-27 03:58:33.842+00 | 0.180000               |
+| media_analysis      | 2025-08-27 03:58:50.544+00 | 16.702000              |
+| competitor_analysis | 2025-08-27 03:58:54.554+00 | 4.010000               |
+| opportunities       | 2025-08-27 03:59:00.953+00 | 6.399000               |
+| opportunities       | 2025-08-27 03:59:01.357+00 | 0.404000               |
+| opportunities       | 2025-08-27 03:59:01.493+00 | 0.136000               |
+| opportunities       | 2025-08-27 03:59:05.571+00 | 4.078000               |
+| opportunities       | 2025-08-27 03:59:05.687+00 | 0.116000               |
+| opportunities       | 2025-08-27 03:59:05.929+00 | 0.242000               |
+| regulatory_analysis | 2025-08-27 03:59:12.179+00 | 6.250000               |
+| media_analysis      | 2025-08-27 03:59:18.347+00 | 6.168000               |
+| opportunities       | 2025-08-27 03:59:23.083+00 | 4.736000               |
+| opportunities       | 2025-08-27 03:59:23.255+00 | 0.172000               |
+| opportunities       | 2025-08-27 03:59:23.438+00 | 0.183000               |
+| opportunities       | 2025-08-27 03:59:28.19+00  | 4.752000               |
+| opportunities       | 2025-08-27 03:59:28.338+00 | 0.148000               |
+| opportunities       | 2025-08-27 03:59:28.492+00 | 0.154000               |
+| trends_analysis     | 2025-08-27 03:59:35.499+00 | 7.007000               |
+| regulatory_analysis | 2025-08-27 03:59:39.4+00   | 3.901000               |
+| opportunities       | 2025-08-27 03:59:46.593+00 | 7.193000               |
+| opportunities       | 2025-08-27 03:59:46.771+00 | 0.178000               |
+| opportunities       | 2025-08-27 03:59:46.909+00 | 0.138000               |
+| opportunities       | 2025-08-27 03:59:49.573+00 | 2.664000               |
+| opportunities       | 2025-08-27 03:59:49.667+00 | 0.094000               |
+| opportunities       | 2025-08-27 03:59:49.8+00   | 0.133000               |
+| opportunities       | 2025-08-27 03:59:59.576+00 | 9.776000               |
+| opportunities       | 2025-08-27 03:59:59.719+00 | 0.143000               |
+| opportunities       | 2025-08-27 03:59:59.848+00 | 0.129000               |
+| trends_analysis     | 2025-08-27 04:00:04.4+00   | 4.552000               |
+| opportunities       | 2025-08-27 04:00:14.519+00 | 10.119000              |
+| opportunities       | 2025-08-27 04:00:14.652+00 | 0.133000               |
+| opportunities       | 2025-08-27 04:00:14.833+00 | 0.181000               |

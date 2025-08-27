@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './MultiStageIntelligence.css';
 import intelligenceOrchestratorV4 from '../services/intelligenceOrchestratorV4';
+import supabaseDataService from '../services/supabaseDataService';
 
 /**
  * Multi-Stage Intelligence Analysis - ELABORATE PIPELINE
@@ -76,6 +77,7 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
   const [stageProgress, setStageProgress] = useState(0);
   const [activeTab, setActiveTab] = useState('executive');
   const [hasStarted, setHasStarted] = useState(false);
+  const completionRef = useRef(false);
   
   // Initialize organization state
   const [organization] = useState(() => {
@@ -97,6 +99,49 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     
     return null;
   });
+
+  // Load existing data from Supabase on mount - ONLY ONCE
+  useEffect(() => {
+    // Add guard to prevent re-running
+    if (hasStarted) {
+      console.log('⚠️ Already started, skipping data load');
+      return;
+    }
+    
+    const loadExistingData = async () => {
+      if (!organization?.name) return;
+      
+      console.log(`🔍 Checking Supabase for existing data for ${organization.name}...`);
+      
+      // Try to load existing analysis from Supabase
+      const existingAnalysis = await supabaseDataService.loadCompleteAnalysis(organization.name);
+      
+      if (existingAnalysis && existingAnalysis.stageData) {
+        console.log('✅ Found existing analysis in Supabase!');
+        
+        // Set the stage results from Supabase
+        setStageResults(existingAnalysis.stageData);
+        
+        // Set final intelligence if synthesis exists
+        if (existingAnalysis.tabs) {
+          const finalIntel = {
+            success: true,
+            analysis: existingAnalysis.analysis,
+            tabs: existingAnalysis.tabs,
+            metadata: existingAnalysis.metadata
+          };
+          setFinalIntelligence(finalIntel);
+          setIsComplete(true);
+          completionRef.current = true;
+        }
+      } else {
+        console.log('📝 No existing data in Supabase, ready to run new analysis');
+      }
+    };
+    
+    loadExistingData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array - run ONLY on mount
 
   // Run individual stage with specialized analysis
   const runStage = useCallback(async (stageIndex) => {
@@ -217,11 +262,20 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
 
   // Complete analysis and synthesize all stage results
   const handleComplete = useCallback(() => {
+    // Prevent multiple calls using ref
+    if (completionRef.current || isComplete) {
+      console.log('⚠️ Pipeline already complete or completing, skipping');
+      return;
+    }
+    
+    // Set ref immediately to prevent any re-entry
+    completionRef.current = true;
+    
     const totalTime = Math.floor((Date.now() - startTime) / 1000);
     console.log(`🎉 ELABORATE PIPELINE COMPLETE in ${totalTime} seconds`);
     console.log('📊 Final stage results:', Object.keys(stageResults));
     
-    // Mark as complete first to prevent re-triggering
+    // Mark as complete to update UI
     setIsComplete(true);
     
     // Validate all stages completed
@@ -355,6 +409,33 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
   const generateTabsFromStageData = (results) => {
     const tabs = {};
     
+    // Create executive summary from all stages
+    const immediateActions = [];
+    
+    // Extract immediate actions from each stage
+    if (results.competitive?.data?.recommendations?.immediate_actions) {
+      immediateActions.push(...results.competitive.data.recommendations.immediate_actions);
+    }
+    if (results.synthesis?.data?.action_matrix?.immediate) {
+      immediateActions.push(...results.synthesis.data.action_matrix.immediate);
+    }
+    
+    tabs.executive = {
+      headline: 'Multi-Stage Intelligence Analysis Complete',
+      overview: `Analysis completed across ${Object.keys(results).length} intelligence dimensions`,
+      competitive_highlight: results.competitive?.data?.competitors?.direct?.[0]?.name || 'No major competitors identified',
+      market_highlight: results.trends?.data?.current_trends?.[0]?.trend || 'Market conditions stable',
+      immediate_actions: immediateActions.slice(0, 5),
+      statistics: {
+        stages_completed: Object.keys(results).length,
+        data_points_analyzed: Object.values(results).reduce((acc, r) => acc + (r.data ? 1 : 0), 0),
+        entities_tracked: results.extraction?.data?.stakeholder_mapping ? 
+          Object.values(results.extraction.data.stakeholder_mapping).flat().length : 0,
+        actions_captured: immediateActions.length,
+        topics_monitored: results.trends?.data?.current_trends?.length || 0
+      }
+    };
+    
     // Process each stage result
     Object.entries(results).forEach(([stageId, stageResult]) => {
       if (stageResult?.data && !stageResult.error) {
@@ -363,42 +444,67 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         
         if (stageId === 'competitive' && stageData?.competitors) {
           tabs.competitive = {
-            title: 'Competitive Intelligence',
-            content: {
-              competitors: stageData.competitors,
-              battle_cards: stageData.battle_cards,
-              competitive_dynamics: stageData.competitive_dynamics,
-              recommendations: stageData.recommendations
-            },
-            hasData: true
+            competitors: stageData.competitors,
+            battle_cards: stageData.battle_cards,
+            competitive_dynamics: stageData.competitive_dynamics,
+            recommendations: stageData.recommendations,
+            summary: `Analyzed ${stageData.competitors?.direct?.length || 0} direct competitors`
           };
         }
         
         if (stageId === 'media' && (stageData?.media_landscape || stageData?.journalists)) {
           tabs.media = {
-            title: 'Media Analysis',
-            content: stageData,
-            hasData: true
+            media_landscape: stageData.media_landscape,
+            journalists: stageData.journalists,
+            media_coverage: stageData.media_coverage,
+            recommendations: stageData.recommendations,
+            summary: stageData.media_landscape?.summary || 'Media landscape analyzed'
           };
         }
         
         if (stageId === 'regulatory' && stageData?.regulatory) {
           tabs.regulatory = {
-            title: 'Regulatory Landscape',
-            content: stageData,
-            hasData: true
+            regulatory: stageData.regulatory,
+            compliance_requirements: stageData.compliance_requirements,
+            upcoming_changes: stageData.upcoming_changes,
+            summary: 'Regulatory environment assessed'
           };
         }
         
         if (stageId === 'trends' && (stageData?.current_trends || stageData?.emerging_opportunities)) {
-          tabs.trends = {
-            title: 'Market Trends',
-            content: stageData,
-            hasData: true
+          tabs.market = {
+            current_trends: stageData.current_trends,
+            emerging_opportunities: stageData.emerging_opportunities,
+            market_dynamics: stageData.market_dynamics,
+            summary: `${stageData.current_trends?.length || 0} trends identified`
+          };
+        }
+        
+        // Add forward-looking tab
+        if (stageId === 'synthesis' && stageData) {
+          tabs.forward = {
+            predictions: stageData.cascade_predictions,
+            opportunities: stageData.strategic_recommendations,
+            timeline: stageData.action_matrix,
+            summary: 'Strategic forecast generated'
           };
         }
       }
     });
+    
+    // Ensure all tabs have some content
+    if (!tabs.market) {
+      tabs.market = { summary: 'Market analysis pending', current_trends: [] };
+    }
+    if (!tabs.regulatory) {
+      tabs.regulatory = { summary: 'Regulatory analysis pending', regulatory: {} };
+    }
+    if (!tabs.media) {
+      tabs.media = { summary: 'Media analysis pending', media_landscape: {} };
+    }
+    if (!tabs.forward) {
+      tabs.forward = { summary: 'Strategic synthesis pending', predictions: [] };
+    }
     
     console.log('📑 Generated tabs from stage data:', Object.keys(tabs));
     return tabs;
@@ -957,7 +1063,7 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
       console.log('🎉 All stages done, completing pipeline...');
       handleComplete();
     }
-  }, [currentStage, organization, error, isComplete, hasStarted, stageResults, runStage, handleComplete]);
+  }, [currentStage, organization, error, isComplete, hasStarted, runStage, handleComplete, stageResults]);
 
   // Show initialization message
   if (!organization) {

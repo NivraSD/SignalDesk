@@ -260,7 +260,10 @@
       "Bash(supabase db reset:*)",
       "Bash(PGPASSWORD=MUmjKBxTiecMPpYVgwGsZEKyFfyFbxqV psql -h crossover.proxy.rlwy.net -p 56706 -U postgres -d railway -c \"\\d intelligence_findings\")",
       "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/test-stage-4-direct.sh:*)",
-      "Bash(supabase functions invoke:*)"
+      "Bash(supabase functions invoke:*)",
+      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/test-intelligence-storage.sh)",
+      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/test-complete-pipeline.sh)",
+      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/test-edge-functions-direct.sh:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

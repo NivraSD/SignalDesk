@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Supabase Intelligence - No Re-triggering</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #0a0a0a;
+            color: #00ff88;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #00ff88;
+            text-shadow: 0 0 10px #00ff8850;
+            margin-bottom: 10px;
+        }
+        .info-box {
+            background: #1a1a1a;
+            border: 1px solid #00ff88;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        .success { background: #00ff8820; border-left: 4px solid #00ff88; }
+        .error { background: #ff004420; border-left: 4px solid #ff0044; }
+        .info { background: #0088ff20; border-left: 4px solid #0088ff; }
+        .warning { background: #ffaa0020; border-left: 4px solid #ffaa00; }
+        button {
+            background: #00ff88;
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            box-shadow: 0 0 20px #00ff8850;
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            background: #444;
+            cursor: not-allowed;
+        }
+        pre {
+            background: #0a0a0a;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            border: 1px solid #333;
+        }
+        .log-entry {
+            padding: 5px;
+            margin: 2px 0;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #00ff88;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Supabase Intelligence Test</h1>
+        <p>Testing the new Supabase-only intelligence pipeline with NO localStorage conflicts</p>
+        
+        <div class="info-box">
+            <h2>Test Controls</h2>
+            <button onclick="clearAllData()">🗑️ Clear All Data</button>
+            <button onclick="checkSupabase()">🔍 Check Supabase Status</button>
+            <button onclick="runPipeline()">🚀 Run Pipeline</button>
+            <button onclick="loadFromSupabase()">📥 Load from Supabase</button>
+        </div>
+
+        <div class="info-box">
+            <h2>Live Component Test</h2>
+            <iframe id="testFrame" src="http://localhost:3000/supabase-intel"></iframe>
+        </div>
+
+        <div class="info-box">
+            <h2>Status Log</h2>
+            <div id="statusLog"></div>
+        </div>
+
+        <div class="info-box">
+            <h2>Supabase Data</h2>
+            <pre id="supabaseData">No data loaded yet</pre>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+        const ORG_NAME = 'Nike';
+
+        function addLog(message, type = 'info') {
+            const log = document.getElementById('statusLog');
+            const entry = document.createElement('div');
+            entry.className = `status ${type}`;
+            entry.innerHTML = `[${new Date().toISOString()}] ${message}`;
+            log.insertBefore(entry, log.firstChild);
+        }
+
+        async function clearAllData() {
+            addLog('Clearing all localStorage...', 'warning');
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Also clear IndexedDB if it exists
+            if (window.indexedDB) {
+                const databases = await indexedDB.databases();
+                databases.forEach(db => {
+                    indexedDB.deleteDatabase(db.name);
+                });
+            }
+            
+            addLog('All client-side storage cleared!', 'success');
+            
+            // Reload the iframe
+            document.getElementById('testFrame').src = document.getElementById('testFrame').src;
+        }
+
+        async function checkSupabase() {
+            addLog('Checking Supabase for existing data...', 'info');
+            
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/functions/v1/intelligence-persistence`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${SUPABASE_KEY}`
+                        },
+                        body: JSON.stringify({
+                            action: 'getStageData',
+                            organization_name: ORG_NAME,
+                            limit: 50
+                        })
+                    }
+                );
+
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    addLog(`Found ${result.data.length} records in Supabase`, 'success');
+                    
+                    // Group by stage
+                    const stages = {};
+                    result.data.forEach(record => {
+                        if (!stages[record.stage_name]) {
+                            stages[record.stage_name] = [];
+                        }
+                        stages[record.stage_name].push({
+                            created: record.created_at,
+                            hasData: !!record.stage_data
+                        });
+                    });
+                    
+                    document.getElementById('supabaseData').textContent = JSON.stringify(stages, null, 2);
+                    
+                    // Check for synthesis
+                    if (stages['synthesis']) {
+                        addLog('✅ Complete synthesis found in Supabase!', 'success');
+                    } else {
+                        addLog(`Partial data: ${Object.keys(stages).join(', ')}`, 'warning');
+                    }
+                } else {
+                    addLog('No data found in Supabase', 'warning');
+                    document.getElementById('supabaseData').textContent = 'No data in Supabase';
+                }
+            } catch (error) {
+                addLog(`Error checking Supabase: ${error.message}`, 'error');
+            }
+        }
+
+        async function runPipeline() {
+            addLog('Starting fresh pipeline run...', 'info');
+            
+            // Clear localStorage first to ensure fresh start
+            localStorage.removeItem('organization');
+            localStorage.removeItem('signaldesk_synthesis');
+            
+            // Set the organization
+            localStorage.setItem('organization', JSON.stringify({
+                name: ORG_NAME,
+                industry: 'sportswear',
+                description: 'Global athletic apparel and footwear company'
+            }));
+            
+            // Reload iframe to trigger pipeline
+            document.getElementById('testFrame').src = 'http://localhost:3000/supabase-intel';
+            
+            addLog('Pipeline triggered - watch the iframe for progress', 'success');
+        }
+
+        async function loadFromSupabase() {
+            addLog('Loading complete analysis from Supabase...', 'info');
+            
+            try {
+                // First get all stage data
+                const response = await fetch(
+                    `${SUPABASE_URL}/functions/v1/intelligence-persistence`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${SUPABASE_KEY}`
+                        },
+                        body: JSON.stringify({
+                            action: 'getStageData',
+                            organization_name: ORG_NAME,
+                            stage: 'synthesis',
+                            limit: 1
+                        })
+                    }
+                );
+
+                const result = await response.json();
+                
+                if (result.success && result.data && result.data.length > 0) {
+                    const synthesis = result.data[0];
+                    addLog('Synthesis loaded successfully!', 'success');
+                    document.getElementById('supabaseData').textContent = JSON.stringify(synthesis.stage_data, null, 2);
+                } else {
+                    addLog('No synthesis found - run the pipeline first', 'warning');
+                }
+            } catch (error) {
+                addLog(`Error loading from Supabase: ${error.message}`, 'error');
+            }
+        }
+
+        // Initial check on load
+        window.addEventListener('load', () => {
+            addLog('Page loaded - ready for testing', 'success');
+            checkSupabase();
+        });
+
+        // Listen for console messages from iframe
+        window.addEventListener('message', (event) => {
+            if (event.origin === 'http://localhost:3000') {
+                addLog(`Component: ${event.data}`, 'info');
+            }
+        });
+    </script>
+</body>
+</html>
