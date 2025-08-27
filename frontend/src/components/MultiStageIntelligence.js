@@ -399,8 +399,15 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     // Extract the actual data from Edge Function responses
     const extractedData = {};
     Object.entries(results).forEach(([stageId, stageResult]) => {
+      // Different stages return data in different formats
       if (stageResult?.data) {
         extractedData[stageId] = stageResult.data;
+      } else if (stageResult?.analysis) {
+        // Most stages return analysis instead of data
+        extractedData[stageId] = stageResult.analysis;
+      } else if (stageResult?.intelligence) {
+        // Extraction stage returns intelligence
+        extractedData[stageId] = stageResult.intelligence;
       }
     });
     
@@ -500,12 +507,15 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     // Create executive summary from all stages
     const immediateActions = [];
     
-    // Extract immediate actions from each stage
-    if (results.competitive?.data?.recommendations?.immediate_actions) {
-      immediateActions.push(...results.competitive.data.recommendations.immediate_actions);
+    // Extract immediate actions from each stage - check both data and analysis fields
+    const competitiveData = results.competitive?.data || results.competitive?.analysis;
+    const synthesisData = results.synthesis?.data || results.synthesis?.analysis;
+    
+    if (competitiveData?.recommendations?.immediate_actions) {
+      immediateActions.push(...competitiveData.recommendations.immediate_actions);
     }
-    if (results.synthesis?.data?.action_matrix?.immediate) {
-      immediateActions.push(...results.synthesis.data.action_matrix.immediate);
+    if (synthesisData?.action_matrix?.immediate) {
+      immediateActions.push(...synthesisData.action_matrix.immediate);
     }
     
     tabs.executive = {
@@ -526,10 +536,17 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     
     // Process each stage result
     Object.entries(results).forEach(([stageId, stageResult]) => {
-      if (stageResult?.data && !stageResult.error) {
-        // Extract the actual stage data
-        const stageData = stageResult.data;
+      // Check both data and analysis fields, also check tabs field
+      const stageData = stageResult?.data || stageResult?.analysis || stageResult?.intelligence;
+      const stageTabs = stageResult?.tabs;
+      
+      if ((stageData || stageTabs) && !stageResult.error) {
+        // Use existing tabs if available
+        if (stageTabs) {
+          Object.assign(tabs, stageTabs);
+        }
         
+        // Also create tabs from data
         if (stageId === 'competitive' && stageData?.competitors) {
           tabs.competitive = {
             competitors: stageData.competitors,
@@ -1107,7 +1124,12 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
   // Run stages sequentially - ONLY ONCE per organization
   useEffect(() => {
     // Prevent re-runs if pipeline is complete or running
-    if (isComplete || runningRef.current) {
+    if (isComplete) {
+      console.log('✅ Pipeline complete or no organization');
+      return;
+    }
+    
+    if (runningRef.current) {
       return;
     }
     
