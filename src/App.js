@@ -116,7 +116,11 @@ function App() {
               />
               <Route
                 path="/"
-                element={<OnboardingV3 />}
+                element={
+                  <PrivateRoute>
+                    <RailwayV2 />
+                  </PrivateRoute>
+                }
               />
               <Route
                 path="/supabase-intel"
