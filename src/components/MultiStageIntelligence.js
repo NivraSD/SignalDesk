@@ -276,8 +276,8 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     // Create comprehensive intelligence combining all stages
     const elaborateIntelligence = {
       success: true,
-      analysis: primaryResult?.data || primaryResult?.analysis || extractedData.synthesis || {},
-      tabs: primaryResult?.tabs || generateDefaultTabs(extractedData),
+      analysis: primaryResult?.data || primaryResult?.analysis || extractedData.synthesis || extractedData.competitive || {},
+      tabs: primaryResult?.tabs || generateDefaultTabs(extractedData) || generateTabsFromStageData(results),
       opportunities: extractOpportunitiesFromAllStages(results),
       stageInsights: generateStageInsights(results),
       patterns: identifyPatternsAcrossStages(results),
@@ -348,6 +348,59 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     }
     
     console.log('📁 Generated tabs:', Object.keys(tabs));
+    return tabs;
+  };
+
+  // Generate tabs directly from stage data if default tabs fail
+  const generateTabsFromStageData = (results) => {
+    const tabs = {};
+    
+    // Process each stage result
+    Object.entries(results).forEach(([stageId, stageResult]) => {
+      if (stageResult?.data && !stageResult.error) {
+        // Extract the actual stage data
+        const stageData = stageResult.data;
+        
+        if (stageId === 'competitive' && stageData?.competitors) {
+          tabs.competitive = {
+            title: 'Competitive Intelligence',
+            content: {
+              competitors: stageData.competitors,
+              battle_cards: stageData.battle_cards,
+              competitive_dynamics: stageData.competitive_dynamics,
+              recommendations: stageData.recommendations
+            },
+            hasData: true
+          };
+        }
+        
+        if (stageId === 'media' && (stageData?.media_landscape || stageData?.journalists)) {
+          tabs.media = {
+            title: 'Media Analysis',
+            content: stageData,
+            hasData: true
+          };
+        }
+        
+        if (stageId === 'regulatory' && stageData?.regulatory) {
+          tabs.regulatory = {
+            title: 'Regulatory Landscape',
+            content: stageData,
+            hasData: true
+          };
+        }
+        
+        if (stageId === 'trends' && (stageData?.current_trends || stageData?.emerging_opportunities)) {
+          tabs.trends = {
+            title: 'Market Trends',
+            content: stageData,
+            hasData: true
+          };
+        }
+      }
+    });
+    
+    console.log('📑 Generated tabs from stage data:', Object.keys(tabs));
     return tabs;
   };
 
