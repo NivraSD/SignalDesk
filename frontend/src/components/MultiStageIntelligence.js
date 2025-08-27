@@ -78,6 +78,7 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
   const [activeTab, setActiveTab] = useState('executive');
   const [hasStarted, setHasStarted] = useState(false);
   const completionRef = useRef(false);
+  const runningRef = useRef(false); // Prevent multiple simultaneous runs
   
   // Initialize organization state - ALWAYS from prop or will be loaded from edge function
   const [organization, setOrganization] = useState(organizationProp || null);
@@ -217,6 +218,7 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         
         // Progress to next stage
         setTimeout(() => {
+          runningRef.current = false; // Clear running flag before next stage
           setCurrentStage(stageIndex + 1);
         }, 1000);
         
@@ -240,6 +242,7 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
       }));
       
       setTimeout(() => {
+        runningRef.current = false; // Clear running flag even on error
         setCurrentStage(stageIndex + 1);
       }, 2000);
     }
@@ -1030,6 +1033,11 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
 
   // Run stages sequentially - ONLY ONCE per organization
   useEffect(() => {
+    // Prevent re-runs if pipeline is complete or running
+    if (isComplete || runningRef.current) {
+      return;
+    }
+    
     console.log('🎯 ELABORATE PIPELINE - Stage trigger check:', {
       hasOrganization: !!organization,
       hasStarted,
@@ -1039,9 +1047,9 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
       isComplete
     });
     
-    // Don't run if already complete or no organization
-    if (isComplete || !organization) {
-      console.log('✅ Pipeline complete or no organization');
+    // Don't run if no organization
+    if (!organization) {
+      console.log('⏳ No organization yet');
       return;
     }
     
@@ -1049,6 +1057,7 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     if (currentStage === 0 && !hasStarted) {
       console.log('🚀 Starting pipeline for the first time');
       setHasStarted(true);
+      runningRef.current = true;
       // Immediately trigger the first stage
       runStage(0);
       return;
@@ -1057,25 +1066,23 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     // Don't run stages if there's an error
     if (error) {
       console.log('❌ Pipeline has error, not running stage');
+      runningRef.current = false;
       return;
     }
     
-    // Check if current stage is already running
-    const currentStageId = INTELLIGENCE_STAGES[currentStage]?.id;
-    if (currentStageId && stageResults[currentStageId]?.inProgress) {
-      console.log(`⏳ Stage ${currentStage + 1} is already running`);
-      return;
-    }
+    // Don't check stageResults here - it causes re-renders
+    // The runStage function handles checking if already running
     
-    // Run the current stage if within bounds
-    if (currentStage >= 0 && currentStage < INTELLIGENCE_STAGES.length) {
+    // Run the current stage if within bounds and started
+    if (hasStarted && currentStage >= 0 && currentStage < INTELLIGENCE_STAGES.length) {
       console.log(`🚀 RUNNING STAGE ${currentStage + 1}: ${INTELLIGENCE_STAGES[currentStage].name}`);
+      runningRef.current = true;
       runStage(currentStage);
     } else if (currentStage === INTELLIGENCE_STAGES.length && !isComplete) {
       console.log('🎉 All stages done, completing pipeline...');
       handleComplete();
     }
-  }, [currentStage, organization, error, isComplete, hasStarted, runStage, handleComplete, stageResults]);
+  }, [currentStage, organization, error, isComplete, hasStarted]); // Removed runStage, handleComplete, stageResults from deps
 
   // Show initialization message
   if (!organization) {
