@@ -128,8 +128,8 @@ const OnboardingV3 = () => {
         throw new Error('Discovery returned invalid data');
       }
       
-      // STEP 3: DISABLED - No localStorage or cache
-      addDebugLog('💾 Step 3: Skipping localStorage/cache - Supabase only');
+      // STEP 3: Save to both Supabase AND localStorage for reliability
+      addDebugLog('💾 Step 3: Saving organization data');
       const orgData = result.organization;
       
       // Ensure all required fields exist
@@ -141,6 +141,11 @@ const OnboardingV3 = () => {
       };
       
       addDebugLog('💾 Complete organization data', completeOrg);
+      
+      // TEMPORARY: Save to localStorage as backup while Supabase issue is debugged
+      localStorage.setItem('organization', JSON.stringify(completeOrg));
+      localStorage.setItem('organizationName', completeOrg.name);
+      addDebugLog('💾 Saved to localStorage as backup');
       
       // DISABLED: Save using cache manager
       // cache.saveOrganization(completeOrg);

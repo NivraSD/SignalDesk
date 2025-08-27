@@ -29,15 +29,28 @@ const RailwayV2 = () => {
       return;
     }
     
-    // Load organization data from Supabase
-    const loadOrganizationFromSupabase = async () => {
-      console.log('🔍 Loading organization from Supabase...');
+    // Load organization data - try localStorage first, then Supabase
+    const loadOrganization = async () => {
+      // QUICK FIX: Try localStorage first
+      const savedOrg = localStorage.getItem('organization');
+      if (savedOrg) {
+        try {
+          const orgData = JSON.parse(savedOrg);
+          console.log('✅ Loaded organization from localStorage:', orgData.name);
+          setOrganizationData(orgData);
+          return;
+        } catch (e) {
+          console.error('Failed to parse localStorage org:', e);
+        }
+      }
+      
+      // Fallback to Supabase if no localStorage
+      console.log('🔍 No localStorage, trying Supabase...');
       
       const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co';
       const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
       
       try {
-        // Try to load the most recent organization profile
         const response = await fetch(`${supabaseUrl}/functions/v1/intelligence-persistence`, {
           method: 'POST',
           headers: {
@@ -51,11 +64,10 @@ const RailwayV2 = () => {
         
         if (response.ok) {
           const result = await response.json();
-          console.log('✅ Loaded organization from Supabase:', result);
+          console.log('✅ Supabase response:', result);
           
           if (result.profile?.organization) {
             const orgData = result.profile.organization;
-            // Ensure required fields exist
             if (!orgData.id) {
               orgData.id = orgData.name.toLowerCase().replace(/\s+/g, '-');
             }
@@ -69,12 +81,12 @@ const RailwayV2 = () => {
         console.error('❌ Error loading from Supabase:', error);
       }
       
-      // If we couldn't load from Supabase, navigate to onboarding
+      // If we couldn't load from anywhere, go to onboarding
       console.log('➡️ No organization found, redirecting to onboarding...');
       navigate('/onboarding');
     };
     
-    loadOrganizationFromSupabase();
+    loadOrganization();
   }, [navigate, refreshKey]);
   
   
@@ -94,6 +106,11 @@ const RailwayV2 = () => {
   
   const handleNewSearch = async () => {
     console.log('🔄 Starting new search...');
+    
+    // Clear localStorage
+    localStorage.removeItem('organization');
+    localStorage.removeItem('organizationName');
+    localStorage.removeItem('hasCompletedOnboarding');
     
     // Clear Supabase data for current organization
     const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co';
