@@ -1,8 +1,9 @@
-// Centralized Cache Manager - Single source of truth for all caching
-// Handles clearing, saving, and loading consistently
+// DISABLED: Centralized Cache Manager - Using Supabase as single source of truth
+// ALL caching operations are now no-ops to prevent localStorage interference
 
 class CacheManager {
   constructor() {
+    console.log('⚠️ Cache Manager DISABLED - Using Supabase only');
     this.CACHE_PREFIX = 'signaldesk_';
     this.CACHE_KEYS = {
       ORGANIZATION: 'signaldesk_organization',
@@ -21,19 +22,20 @@ class CacheManager {
       SYNTHESIS: 30 * 60 * 1000          // 30 minutes
     };
     
-    // Initialize on construction
-    this.init();
+    // DISABLED: Initialize on construction
+    // this.init();
   }
   
   init() {
-    console.log('🔧 Cache Manager initialized');
-    // Check if we should clear stale data on app start
-    this.clearStaleData();
+    console.log('🔧 Cache Manager init DISABLED');
+    // DISABLED: Check if we should clear stale data on app start
+    // this.clearStaleData();
   }
   
   // Clear ALL SignalDesk data - for fresh start
   clearAll() {
-    console.log('🗑️ Clearing ALL SignalDesk cache data...');
+    console.log('⚠️ ClearAll DISABLED - no localStorage to clear, using Supabase');
+    return 0; // Return immediately without clearing
     const keys = Object.keys(localStorage);
     let cleared = 0;
     
@@ -147,31 +149,16 @@ class CacheManager {
   
   // Save data with timestamp
   save(key, data, addTimestamp = true) {
-    try {
-      const dataToSave = addTimestamp ? {
-        ...data,
-        _cachedAt: new Date().toISOString()
-      } : data;
-      
-      localStorage.setItem(key, JSON.stringify(dataToSave));
-      console.log(`💾 Saved to cache: ${key}`);
-      return true;
-    } catch (error) {
-      console.error(`Failed to save ${key}:`, error);
-      return false;
-    }
+    // DISABLED: No localStorage saving
+    console.log(`⚠️ Cache save DISABLED for: ${key} - using Supabase`);
+    return true; // Return success to avoid breaking flows
   }
   
   // Get data from cache
   get(key) {
-    try {
-      const data = localStorage.getItem(key);
-      if (!data) return null;
-      return JSON.parse(data);
-    } catch (error) {
-      console.error(`Failed to get ${key}:`, error);
-      return null;
-    }
+    // DISABLED: No localStorage reading
+    console.log(`⚠️ Cache get DISABLED for: ${key} - use Supabase`);
+    return null; // Always return null to force Supabase load
   }
   
   // Remove specific key

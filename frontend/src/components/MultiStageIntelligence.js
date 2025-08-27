@@ -138,23 +138,13 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         const existingAnalysis = await supabaseDataService.loadCompleteAnalysis(organization.name);
         
         if (existingAnalysis && existingAnalysis.stageData) {
-          console.log('✅ Found existing analysis in edge function!');
-          setStageResults(existingAnalysis.stageData);
-          
-          if (existingAnalysis.tabs) {
-            const finalIntel = {
-              success: true,
-              analysis: existingAnalysis.analysis,
-              tabs: existingAnalysis.tabs,
-              metadata: existingAnalysis.metadata
-            };
-            setFinalIntelligence(finalIntel);
-            setIsComplete(true);
-            completionRef.current = true;
-          }
-        } else {
-          console.log('📝 No existing analysis in edge function, ready to run new analysis');
+          console.log('⚠️ Found existing analysis in edge function - but will run fresh pipeline');
+          // Don't set complete - always run fresh pipeline
+          // setStageResults(existingAnalysis.stageData);
+          // setIsComplete(true);
+          // completionRef.current = true;
         }
+        console.log('📝 Ready to run fresh analysis pipeline');
       }
     };
     

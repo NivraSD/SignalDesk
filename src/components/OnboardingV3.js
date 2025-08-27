@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import cacheManager from '../utils/cacheManager';
+// DISABLED: import cacheManager from '../utils/cacheManager';
 import './OnboardingV2.css';
 
 /**
@@ -15,7 +15,7 @@ const OnboardingV3 = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [existingOrg, setExistingOrg] = useState(null);
   const [debugLog, setDebugLog] = useState([]);
-  const cache = cacheManager; // Use the singleton instance
+  // DISABLED: const cache = cacheManager; // Use the singleton instance
   
   const addDebugLog = (message, data = null) => {
     const logEntry = {
@@ -30,7 +30,7 @@ const OnboardingV3 = () => {
   // Check for existing organization on mount
   useEffect(() => {
     addDebugLog('🚀 OnboardingV3 mounted');
-    const savedOrg = localStorage.getItem('organization');
+    const savedOrg = null; // DISABLED: localStorage.getItem('organization');
     if (savedOrg) {
       try {
         const org = JSON.parse(savedOrg);
@@ -39,8 +39,8 @@ const OnboardingV3 = () => {
           setExistingOrg(org);
         }
       } catch (e) {
-        addDebugLog('❌ Invalid org data in localStorage, clearing it', e.message);
-        localStorage.removeItem('organization');
+        addDebugLog('❌ Invalid org data - skipping', e.message);
+        // DISABLED: localStorage.removeItem('organization');
       }
     } else {
       addDebugLog('📝 No existing organization found');
@@ -63,10 +63,12 @@ const OnboardingV3 = () => {
       'media_data', 'regulatory_data', 'synthesis_data', 'hasCompletedOnboarding'
     ];
     
-    keysToRemove.forEach(key => {
-      localStorage.removeItem(key);
-      addDebugLog(`❌ Removed: ${key}`);
-    });
+    // DISABLED: localStorage clearing
+    // keysToRemove.forEach(key => {
+    //   localStorage.removeItem(key);
+    //   addDebugLog(`❌ Removed: ${key}`);
+    // });
+    addDebugLog('✅ Skipping localStorage clear - using Supabase');
     
     sessionStorage.clear();
     setExistingOrg(null);
@@ -87,7 +89,8 @@ const OnboardingV3 = () => {
         'organization', 'organizationName', 'intelligenceCache', 'opportunityCache',
         'analysisCache', 'stageResults', 'currentIntelligence', 'cachedResults'
       ];
-      keysToRemove.forEach(key => localStorage.removeItem(key));
+      // DISABLED: keysToRemove.forEach(key => localStorage.removeItem(key));
+      addDebugLog('✅ Skipping localStorage clear');
       
       // STEP 2: Call discovery
       addDebugLog('🔍 Step 2: Calling Claude discovery');
@@ -125,8 +128,8 @@ const OnboardingV3 = () => {
         throw new Error('Discovery returned invalid data');
       }
       
-      // STEP 3: Save to cache and localStorage
-      addDebugLog('💾 Step 3: Saving to cache and localStorage');
+      // STEP 3: DISABLED - No localStorage or cache
+      addDebugLog('💾 Step 3: Skipping localStorage/cache - Supabase only');
       const orgData = result.organization;
       
       // Ensure all required fields exist
@@ -139,24 +142,24 @@ const OnboardingV3 = () => {
       
       addDebugLog('💾 Complete organization data', completeOrg);
       
-      // Save using cache manager
-      cache.saveOrganization(completeOrg);
-      cache.saveCompleteProfile(completeOrg);
+      // DISABLED: Save using cache manager
+      // cache.saveOrganization(completeOrg);
+      // cache.saveCompleteProfile(completeOrg);
       
-      // Also save to regular localStorage for compatibility
-      localStorage.setItem('organization', JSON.stringify(completeOrg));
-      localStorage.setItem('organizationName', orgName);
-      localStorage.setItem('hasCompletedOnboarding', 'true');
+      // DISABLED: Also save to regular localStorage for compatibility
+      // localStorage.setItem('organization', JSON.stringify(completeOrg));
+      // localStorage.setItem('organizationName', orgName);
+      // localStorage.setItem('hasCompletedOnboarding', 'true');
       
       // STEP 4: Verify save
       addDebugLog('🔍 Step 4: Verifying save');
-      const savedCheck = localStorage.getItem('organization');
+      const savedCheck = null; // DISABLED: localStorage.getItem('organization');
       if (savedCheck) {
         const parsedCheck = JSON.parse(savedCheck);
         addDebugLog('✅ Save verified', parsedCheck);
       } else {
-        addDebugLog('❌ Save failed - no data in localStorage');
-        throw new Error('Failed to save organization data');
+        addDebugLog('✅ Skipping localStorage check - using Supabase');
+        // DISABLED: throw new Error('Failed to save organization data');
       }
       
       // STEP 5: Navigate
