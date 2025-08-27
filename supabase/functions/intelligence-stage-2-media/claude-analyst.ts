@@ -14,15 +14,24 @@ export async function analyzeWithClaudeMedia(
     return existingAnalysis;
   }
 
+  console.log('🤖 Claude Media Analyst starting...', {
+    hasMonitoringData: !!monitoringData,
+    findingsCount: monitoringData?.findings?.length || 0
+  })
+
+  const hasRealData = monitoringData?.findings?.length > 0 || monitoringData?.raw_count > 0;
+  
   const prompt = `You are an elite media analyst and PR strategist specializing in ${organization.industry || 'business'} media coverage.
 
 Organization: ${organization.name}
 Industry: ${organization.industry || 'Unknown'}
 
-IMPORTANT: Analyze the following REAL monitoring data collected from our intelligence aggregators:
+${hasRealData ? 
+  `IMPORTANT: Analyze the following REAL monitoring data collected from our intelligence aggregators:
 
 Monitoring Data:
-${JSON.stringify(monitoringData, null, 2)}
+${JSON.stringify(monitoringData, null, 2)}` :
+  `NOTE: No fresh monitoring data available. Provide strategic media analysis based on the organization's industry context and typical media dynamics.`}
 
 Provide comprehensive media analysis in this exact JSON structure:
 
@@ -121,6 +130,7 @@ Provide comprehensive media analysis in this exact JSON structure:
 Provide actionable media intelligence and specific PR recommendations.`;
 
   try {
+    console.log('📡 Calling Claude API for media analysis...');
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -140,33 +150,48 @@ Provide actionable media intelligence and specific PR recommendations.`;
     });
 
     if (!response.ok) {
-      console.error('Claude API error:', response.status);
+      const errorText = await response.text();
+      console.error('❌ Claude API error:', response.status, errorText);
       return existingAnalysis;
     }
 
+    console.log('✅ Claude Media response received');
     const claudeData = await response.json();
     const content = claudeData.content[0].text;
     
     // Extract JSON from Claude's response
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-      const claudeAnalysis = JSON.parse(jsonMatch[0]);
-      
-      // Merge Claude's analysis with existing data
-      return {
-        ...existingAnalysis,
-        ...claudeAnalysis,
-        metadata: {
-          ...existingAnalysis.metadata,
-          claude_enhanced: true,
-          analyst_personality: 'media_pr_strategist',
-          analysis_timestamp: new Date().toISOString()
-        }
-      };
+      try {
+        const claudeAnalysis = JSON.parse(jsonMatch[0]);
+        console.log('✅ Claude media analysis parsed', {
+          hasMediaLandscape: !!claudeAnalysis.media_landscape,
+          hasOpportunities: !!claudeAnalysis.opportunities,
+          opportunityCount: claudeAnalysis.opportunities?.length || 0
+        });
+        
+        // Merge Claude's analysis with existing data
+        return {
+          ...existingAnalysis,
+          ...claudeAnalysis,
+          metadata: {
+            ...existingAnalysis.metadata,
+            claude_enhanced: true,
+            analyst_personality: 'media_pr_strategist',
+            analysis_timestamp: new Date().toISOString(),
+            had_monitoring_data: hasRealData
+          }
+        };
+      } catch (parseError) {
+        console.error('❌ Failed to parse Claude JSON:', parseError);
+      }
+    } else {
+      console.error('❌ No JSON found in Claude media response');
     }
   } catch (error) {
-    console.error('Claude analysis error:', error);
+    console.error('❌ Claude media analysis error:', error);
   }
 
+  console.log('⚠️ Returning existing analysis as fallback');
   return existingAnalysis;
 }

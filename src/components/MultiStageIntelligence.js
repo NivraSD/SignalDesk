@@ -251,15 +251,33 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
   // Advanced synthesis of all stage results
   const synthesizeElaborateResults = (results, orgProfile, duration) => {
     console.log('🔄 ELABORATE SYNTHESIS: Combining insights from all stages...');
+    console.log('📊 Stage results structure:', Object.keys(results).map(key => ({
+      stage: key,
+      hasData: !!results[key]?.data,
+      hasAnalysis: !!results[key]?.analysis,
+      hasTabs: !!results[key]?.tabs,
+      dataKeys: results[key]?.data ? Object.keys(results[key].data).slice(0, 5) : [],
+      isError: !!results[key]?.error
+    })));
     
     // Get the most comprehensive result (usually synthesis stage)
     const primaryResult = results.synthesis || results.trends || results.regulatory || results.media || results.competitive || results.extraction;
     
+    // Extract the actual data from Edge Function responses
+    const extractedData = {};
+    Object.entries(results).forEach(([stageId, stageResult]) => {
+      if (stageResult?.data) {
+        extractedData[stageId] = stageResult.data;
+      }
+    });
+    
+    console.log('📈 Extracted data from stages:', Object.keys(extractedData));
+    
     // Create comprehensive intelligence combining all stages
     const elaborateIntelligence = {
       success: true,
-      analysis: primaryResult?.analysis || {},
-      tabs: primaryResult?.tabs || {},
+      analysis: primaryResult?.data || primaryResult?.analysis || extractedData.synthesis || {},
+      tabs: primaryResult?.tabs || generateDefaultTabs(extractedData),
       opportunities: extractOpportunitiesFromAllStages(results),
       stageInsights: generateStageInsights(results),
       patterns: identifyPatternsAcrossStages(results),
@@ -278,6 +296,59 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     
     
     return elaborateIntelligence;
+  };
+
+  // Generate default tabs for display
+  const generateDefaultTabs = (extractedData) => {
+    const tabs = {};
+    
+    // Create competitive tab
+    if (extractedData.competitive?.competitors) {
+      tabs.competitive = {
+        title: 'Competitive Analysis',
+        content: extractedData.competitive,
+        hasData: true
+      };
+    }
+    
+    // Create media tab
+    if (extractedData.media?.media_landscape || extractedData.media?.media_coverage) {
+      tabs.media = {
+        title: 'Media Landscape',
+        content: extractedData.media,
+        hasData: true
+      };
+    }
+    
+    // Create regulatory tab
+    if (extractedData.regulatory?.regulatory) {
+      tabs.regulatory = {
+        title: 'Regulatory Analysis',
+        content: extractedData.regulatory,
+        hasData: true
+      };
+    }
+    
+    // Create trends tab
+    if (extractedData.trends?.current_trends || extractedData.trends) {
+      tabs.trends = {
+        title: 'Market Trends',
+        content: extractedData.trends,
+        hasData: true
+      };
+    }
+    
+    // Create synthesis tab
+    if (extractedData.synthesis) {
+      tabs.synthesis = {
+        title: 'Executive Summary',
+        content: extractedData.synthesis,
+        hasData: true
+      };
+    }
+    
+    console.log('📁 Generated tabs:', Object.keys(tabs));
+    return tabs;
   };
 
   // Extract opportunities from all completed stages

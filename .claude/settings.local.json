@@ -258,7 +258,9 @@
       "Bash(osascript:*)",
       "Bash(supabase db dump:*)",
       "Bash(supabase db reset:*)",
-      "Bash(PGPASSWORD=MUmjKBxTiecMPpYVgwGsZEKyFfyFbxqV psql -h crossover.proxy.rlwy.net -p 56706 -U postgres -d railway -c \"\\d intelligence_findings\")"
+      "Bash(PGPASSWORD=MUmjKBxTiecMPpYVgwGsZEKyFfyFbxqV psql -h crossover.proxy.rlwy.net -p 56706 -U postgres -d railway -c \"\\d intelligence_findings\")",
+      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/test-stage-4-direct.sh:*)",
+      "Bash(supabase functions invoke:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

@@ -14,15 +14,24 @@ export async function analyzeWithClaudeRegulatory(
     return existingAnalysis;
   }
 
+  console.log('🤖 Claude Regulatory Analyst starting...', {
+    hasMonitoringData: !!monitoringData,
+    findingsCount: monitoringData?.findings?.length || 0
+  })
+
+  const hasRealData = monitoringData?.findings?.length > 0 || monitoringData?.raw_count > 0;
+  
   const prompt = `You are an elite regulatory compliance expert specializing in ${organization.industry || 'business'} regulations.
 
 Organization: ${organization.name}
 Industry: ${organization.industry || 'Unknown'}
 
-IMPORTANT: Analyze the following REAL monitoring data collected from our intelligence aggregators:
+${hasRealData ? 
+  `IMPORTANT: Analyze the following REAL monitoring data collected from our intelligence aggregators:
 
 Monitoring Data:
-${JSON.stringify(monitoringData, null, 2)}
+${JSON.stringify(monitoringData, null, 2)}` :
+  `NOTE: No fresh monitoring data available. Provide strategic regulatory analysis based on the organization's industry context and typical compliance landscape.`}
 
 Extract regulatory and stakeholder intelligence and provide analysis in this exact JSON structure:
 
@@ -158,19 +167,31 @@ Focus on actionable regulatory intelligence from the monitoring data.`;
     // Extract JSON from Claude's response
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-      const claudeAnalysis = JSON.parse(jsonMatch[0]);
-      
-      // Merge Claude's analysis with existing data
-      return {
-        ...existingAnalysis,
-        ...claudeAnalysis,
-        metadata: {
-          ...existingAnalysis.metadata,
-          claude_enhanced: true,
-          analyst_personality: 'regulatory_compliance_expert',
-          analysis_timestamp: new Date().toISOString()
-        }
-      };
+      try {
+        const claudeAnalysis = JSON.parse(jsonMatch[0]);
+        console.log('✅ Claude regulatory analysis parsed', {
+          hasRegulatory: !!claudeAnalysis.regulatory,
+          hasStakeholders: !!claudeAnalysis.stakeholders,
+          opportunityCount: claudeAnalysis.regulatory?.opportunities?.length || 0
+        });
+        
+        // Merge Claude's analysis with existing data
+        return {
+          ...existingAnalysis,
+          ...claudeAnalysis,
+          metadata: {
+            ...existingAnalysis.metadata,
+            claude_enhanced: true,
+            analyst_personality: 'regulatory_compliance_expert',
+            analysis_timestamp: new Date().toISOString(),
+            had_monitoring_data: hasRealData
+          }
+        };
+      } catch (parseError) {
+        console.error('❌ Failed to parse Claude JSON:', parseError);
+      }
+    } else {
+      console.error('❌ No JSON found in Claude regulatory response');
     }
   } catch (error) {
     console.error('Claude analysis error:', error);

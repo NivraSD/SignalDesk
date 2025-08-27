@@ -15,6 +15,12 @@ export async function analyzeWithClaudeSynthesis(
     return existingAnalysis;
   }
 
+  console.log('🤖 Claude Synthesis Analyst starting...', {
+    hasAllStageData: !!allStageData,
+    stageCount: Object.keys(allStageData || {}).length,
+    hasMonitoringData: !!monitoringData
+  })
+
   const prompt = `You are an elite intelligence analyst specializing in ${organization.industry || 'business'} intelligence synthesis and PR implications.
 
 Organization: ${organization.name}

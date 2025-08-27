@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Stage 4 Trends - No Timeout</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            margin: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 40px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        .subtitle {
+            text-align: center;
+            margin-bottom: 40px;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        .test-controls {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        button {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            flex: 1;
+        }
+        button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .timer {
+            text-align: center;
+            font-size: 2em;
+            margin: 20px 0;
+            font-weight: bold;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .status {
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            min-height: 60px;
+        }
+        .error {
+            background: rgba(255, 0, 0, 0.2);
+            border: 2px solid rgba(255, 100, 100, 0.5);
+        }
+        .success {
+            background: rgba(0, 255, 0, 0.2);
+            border: 2px solid rgba(100, 255, 100, 0.5);
+        }
+        .results {
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            font-family: 'Monaco', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .stage-info {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        .loading {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Stage 4: Trend Analysis Test</h1>
+        <div class="subtitle">Testing simplified Claude-only implementation (no fallback)</div>
+        
+        <div class="stage-info">
+            <strong>What's Changed:</strong>
+            <ul>
+                <li>✅ Removed all fallback functions (generateMarketTrends, generateTechTrends, etc.)</li>
+                <li>✅ Using only Claude for trend analysis</li>
+                <li>✅ Minimal code = Faster execution</li>
+                <li>✅ Should complete in under 10 seconds</li>
+            </ul>
+        </div>
+        
+        <div class="test-controls">
+            <button onclick="testStage4()">Test Stage 4 Trends</button>
+            <button onclick="clearResults()">Clear Results</button>
+        </div>
+        
+        <div class="timer" id="timer">Ready to test</div>
+        
+        <div class="status" id="status">
+            Click "Test Stage 4 Trends" to verify the simplified implementation works without timeouts
+        </div>
+        
+        <div class="results" id="results"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+        
+        let startTime;
+        let timerInterval;
+        
+        function updateTimer() {
+            const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+            document.getElementById('timer').textContent = `⏱️ ${elapsed}s`;
+        }
+        
+        async function testStage4() {
+            const statusEl = document.getElementById('status');
+            const resultsEl = document.getElementById('results');
+            const timerEl = document.getElementById('timer');
+            
+            // Start timer
+            startTime = Date.now();
+            timerInterval = setInterval(updateTimer, 100);
+            
+            statusEl.className = 'status loading';
+            statusEl.textContent = '🔄 Testing Stage 4 (Trend Analysis) with minimal Claude-only implementation...';
+            resultsEl.textContent = '';
+            
+            try {
+                // Test organization data
+                const testOrg = {
+                    name: 'test-org',
+                    industry: 'Technology',
+                    market_position: 'Emerging leader',
+                    competitors: ['Competitor1', 'Competitor2'],
+                    differentiators: ['AI-powered', 'Real-time analytics']
+                };
+                
+                // Include some previous results to simulate real pipeline
+                const previousResults = {
+                    stage1: {
+                        competitive_landscape: {
+                            main_competitors: ['Competitor1', 'Competitor2'],
+                            market_share: { 'test-org': 15, 'Competitor1': 35, 'Competitor2': 25 }
+                        }
+                    },
+                    stage2: {
+                        media_coverage: {
+                            sentiment: 'positive',
+                            trending_topics: ['AI innovation', 'Market expansion']
+                        }
+                    },
+                    stage3: {
+                        regulatory_landscape: {
+                            compliance_status: 'compliant',
+                            upcoming_regulations: ['Data Privacy Act 2025']
+                        }
+                    }
+                };
+                
+                console.log('Calling Stage 4 with test data...');
+                
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-4-trends`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: testOrg,
+                        previousResults: previousResults
+                    })
+                });
+                
+                const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+                clearInterval(timerInterval);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    statusEl.className = 'status success';
+                    statusEl.innerHTML = `✅ Stage 4 completed successfully in ${elapsed}s!<br>
+                        <small>No timeout! The simplified Claude-only implementation works perfectly.</small>`;
+                    
+                    resultsEl.textContent = JSON.stringify(data.data, null, 2);
+                    
+                    // Highlight key findings
+                    if (data.data) {
+                        const highlights = [];
+                        
+                        if (data.data.current_trends?.market_trends?.length > 0) {
+                            highlights.push(`📊 ${data.data.current_trends.market_trends.length} market trends identified`);
+                        }
+                        
+                        if (data.data.emerging_opportunities?.length > 0) {
+                            highlights.push(`🚀 ${data.data.emerging_opportunities.length} emerging opportunities found`);
+                        }
+                        
+                        if (data.data.disruption_signals?.length > 0) {
+                            highlights.push(`⚠️ ${data.data.disruption_signals.length} disruption signals detected`);
+                        }
+                        
+                        if (highlights.length > 0) {
+                            statusEl.innerHTML += '<br><br><strong>Key Results:</strong><br>' + highlights.join('<br>');
+                        }
+                    }
+                } else {
+                    throw new Error(data.error || 'Stage 4 failed');
+                }
+                
+            } catch (error) {
+                clearInterval(timerInterval);
+                const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+                
+                statusEl.className = 'status error';
+                statusEl.innerHTML = `❌ Error after ${elapsed}s: ${error.message}<br>
+                    <small>Check console for details</small>`;
+                
+                console.error('Stage 4 test error:', error);
+                resultsEl.textContent = `Error Details:\n${error.message}\n\nStack:\n${error.stack}`;
+            }
+        }
+        
+        function clearResults() {
+            document.getElementById('status').className = 'status';
+            document.getElementById('status').textContent = 'Ready to test Stage 4';
+            document.getElementById('results').textContent = '';
+            document.getElementById('timer').textContent = 'Ready to test';
+            clearInterval(timerInterval);
+        }
+    </script>
+</body>
+</html>

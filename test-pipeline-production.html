@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Intelligence Pipeline - Production</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 40px;
+            backdrop-filter: blur(10px);
+        }
+        button {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        .stage {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+        .success { background: rgba(0, 255, 0, 0.2); }
+        .error { background: rgba(255, 0, 0, 0.2); }
+        .loading { background: rgba(255, 255, 0, 0.2); }
+        pre {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .timer {
+            font-size: 1.5em;
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Test Complete Intelligence Pipeline</h1>
+        <p>This tests all 5 stages + synthesis with the simplified Stage 4</p>
+        
+        <div class="timer" id="timer">Ready</div>
+        
+        <button onclick="runPipeline()">Run Complete Pipeline</button>
+        <button onclick="testStage4Only()">Test Stage 4 Only</button>
+        
+        <div id="stages"></div>
+    </div>
+
+    <script>
+        // Note: This page needs to be served from the actual deployed site
+        // OR you need to manually add auth headers
+        
+        const stages = [
+            { name: 'Stage 1: Competitors', endpoint: 'intelligence-stage-1-competitors' },
+            { name: 'Stage 2: Media', endpoint: 'intelligence-stage-2-media' },
+            { name: 'Stage 3: Regulatory', endpoint: 'intelligence-stage-3-regulatory' },
+            { name: 'Stage 4: Trends', endpoint: 'intelligence-stage-4-trends' },
+            { name: 'Stage 5: Synthesis', endpoint: 'intelligence-stage-5-synthesis' }
+        ];
+        
+        let startTime;
+        
+        async function runStage(stage, previousResults = {}) {
+            const stageEl = document.createElement('div');
+            stageEl.className = 'stage loading';
+            stageEl.innerHTML = `<h3>${stage.name}</h3><div class="status">🔄 Running...</div>`;
+            document.getElementById('stages').appendChild(stageEl);
+            
+            const stageStart = Date.now();
+            
+            try {
+                // You'll need to add proper auth here
+                const response = await fetch(`https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/${stage.endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        // Add your auth token here
+                        'Authorization': 'Bearer YOUR_TOKEN_HERE'
+                    },
+                    body: JSON.stringify({
+                        organization: {
+                            name: 'test-org',
+                            industry: 'Technology'
+                        },
+                        previousResults
+                    })
+                });
+                
+                const elapsed = ((Date.now() - stageStart) / 1000).toFixed(1);
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    stageEl.className = 'stage success';
+                    stageEl.querySelector('.status').innerHTML = `✅ Completed in ${elapsed}s`;
+                    
+                    // Show key results
+                    const details = document.createElement('pre');
+                    details.textContent = JSON.stringify(data.data, null, 2).substring(0, 500) + '...';
+                    stageEl.appendChild(details);
+                    
+                    return data.data;
+                } else {
+                    throw new Error(data.error || `HTTP ${response.status}`);
+                }
+            } catch (error) {
+                const elapsed = ((Date.now() - stageStart) / 1000).toFixed(1);
+                stageEl.className = 'stage error';
+                stageEl.querySelector('.status').innerHTML = `❌ Failed after ${elapsed}s: ${error.message}`;
+                throw error;
+            }
+        }
+        
+        async function runPipeline() {
+            document.getElementById('stages').innerHTML = '';
+            startTime = Date.now();
+            
+            const timerInterval = setInterval(() => {
+                const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+                document.getElementById('timer').textContent = `⏱️ Total time: ${elapsed}s`;
+            }, 100);
+            
+            try {
+                let results = {};
+                
+                for (const stage of stages) {
+                    const stageData = await runStage(stage, results);
+                    results[stage.endpoint] = stageData;
+                }
+                
+                clearInterval(timerInterval);
+                const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
+                document.getElementById('timer').textContent = `✅ Pipeline completed in ${totalTime}s`;
+                
+            } catch (error) {
+                clearInterval(timerInterval);
+                const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
+                document.getElementById('timer').textContent = `❌ Pipeline failed after ${totalTime}s`;
+                console.error('Pipeline error:', error);
+            }
+        }
+        
+        async function testStage4Only() {
+            document.getElementById('stages').innerHTML = '';
+            startTime = Date.now();
+            
+            const timerInterval = setInterval(() => {
+                const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+                document.getElementById('timer').textContent = `⏱️ Time: ${elapsed}s`;
+            }, 100);
+            
+            try {
+                await runStage(stages[3], {}); // Stage 4 is index 3
+                clearInterval(timerInterval);
+                const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
+                document.getElementById('timer').textContent = `✅ Stage 4 completed in ${totalTime}s (No timeout!)`;
+            } catch (error) {
+                clearInterval(timerInterval);
+                const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
+                document.getElementById('timer').textContent = `❌ Stage 4 failed after ${totalTime}s`;
+            }
+        }
+        
+        // Show auth instruction
+        const authNote = document.createElement('div');
+        authNote.style.cssText = 'background: rgba(255,255,0,0.2); padding: 20px; border-radius: 10px; margin: 20px 0;';
+        authNote.innerHTML = `
+            <h3>⚠️ Authentication Required</h3>
+            <p>To test the pipeline, you need to:</p>
+            <ol>
+                <li>Open the browser console</li>
+                <li>Go to the deployed SignalDesk site</li>
+                <li>Login and run the Intelligence Hub</li>
+                <li>Check the network tab for the Authorization header</li>
+                <li>Update the AUTH_TOKEN in this page's code</li>
+            </ol>
+            <p>OR just test from the actual deployed site's Intelligence Hub!</p>
+        `;
+        document.querySelector('.container').insertBefore(authNote, document.getElementById('stages'));
+    </script>
+</body>
+</html>

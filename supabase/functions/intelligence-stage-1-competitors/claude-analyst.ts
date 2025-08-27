@@ -14,17 +14,31 @@ export async function analyzeWithClaudeCompetitive(
     return existingAnalysis;
   }
 
+  console.log('🤖 Claude Competitive Analyst starting...', {
+    hasMonitoringData: !!monitoringData,
+    findingsCount: monitoringData?.findings?.length || 0,
+    hasExistingAnalysis: !!existingAnalysis
+  })
+
+  // Determine if we have real monitoring data
+  const hasRealData = monitoringData?.findings?.length > 0 || monitoringData?.raw_count > 0;
+  
   const prompt = `You are an elite competitive intelligence analyst specializing in ${organization.industry || 'business'} strategy.
 
 Organization: ${organization.name}
 Industry: ${organization.industry || 'Unknown'}
+Known Competitors: ${existingAnalysis?.competitors?.direct?.map(c => c.name).join(', ') || 'Unknown'}
 
-IMPORTANT: Analyze the following REAL monitoring data collected from our intelligence aggregators:
+${hasRealData ? 
+  `IMPORTANT: Analyze the following REAL monitoring data collected from our intelligence aggregators:
 
 Monitoring Data:
-${JSON.stringify(monitoringData, null, 2)}
+${JSON.stringify(monitoringData, null, 2)}` : 
+  `NOTE: No fresh monitoring data available. Provide strategic competitive analysis based on the organization's industry context and known market dynamics.`}
 
-Based on the actual monitoring data provided, extract competitor-related intelligence and provide deep competitive analysis in this exact JSON structure:
+${hasRealData ? 
+  'Based on the actual monitoring data provided, extract competitor-related intelligence and provide deep competitive analysis' : 
+  'Based on industry knowledge and strategic analysis, provide competitive intelligence'} in this exact JSON structure:
 
 {
   "competitors": {
@@ -81,6 +95,7 @@ Based on the actual monitoring data provided, extract competitor-related intelli
 Focus on actionable intelligence and specific competitive insights.`;
 
   try {
+    console.log('📡 Calling Claude API...');
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -100,33 +115,51 @@ Focus on actionable intelligence and specific competitive insights.`;
     });
 
     if (!response.ok) {
-      console.error('Claude API error:', response.status);
+      const errorText = await response.text();
+      console.error('❌ Claude API error:', response.status, errorText);
       return existingAnalysis;
     }
 
     const claudeData = await response.json();
+    console.log('✅ Claude response received');
     const content = claudeData.content[0].text;
     
     // Extract JSON from Claude's response
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-      const claudeAnalysis = JSON.parse(jsonMatch[0]);
-      
-      // Merge Claude's analysis with existing data
-      return {
-        ...existingAnalysis,
-        ...claudeAnalysis,
-        metadata: {
-          ...existingAnalysis.metadata,
-          claude_enhanced: true,
-          analyst_personality: 'competitive_intelligence',
-          analysis_timestamp: new Date().toISOString()
-        }
-      };
+      try {
+        const claudeAnalysis = JSON.parse(jsonMatch[0]);
+        console.log('✅ Claude analysis parsed successfully', {
+          hasCompetitors: !!claudeAnalysis.competitors,
+          directCount: claudeAnalysis.competitors?.direct?.length || 0,
+          hasOpportunities: !!claudeAnalysis.competitive_opportunities
+        });
+        
+        // Merge Claude's analysis with existing data
+        return {
+          ...existingAnalysis,
+          ...claudeAnalysis,
+          metadata: {
+            ...existingAnalysis.metadata,
+            claude_enhanced: true,
+            analyst_personality: 'competitive_intelligence',
+            analysis_timestamp: new Date().toISOString(),
+            had_monitoring_data: hasRealData
+          }
+        };
+      } catch (parseError) {
+        console.error('❌ Failed to parse Claude JSON:', parseError);
+        console.log('Raw content:', jsonMatch[0].substring(0, 500));
+      }
+    } else {
+      console.error('❌ No JSON found in Claude response');
+      console.log('Raw response:', content.substring(0, 500));
     }
   } catch (error) {
-    console.error('Claude analysis error:', error);
+    console.error('❌ Claude analysis error:', error);
+    console.error('Error details:', error.message);
   }
 
+  console.log('⚠️ Returning existing analysis as fallback');
   return existingAnalysis;
 }
