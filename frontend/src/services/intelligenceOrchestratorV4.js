@@ -39,6 +39,16 @@ class IntelligenceOrchestratorV4 {
   async runElaborateStage(stageConfig, organization, config) {
     console.log(`🎯 Running Elaborate Stage: ${stageConfig.stageName}`);
     
+    // Debug logging
+    console.log('🔍 DEBUG runElaborateStage params:', {
+      stageConfig,
+      organization,
+      organizationType: typeof organization,
+      hasOrgName: !!organization?.name,
+      config,
+      configHasOrg: !!config?.organization
+    });
+    
     try {
       let stageResult;
       
@@ -93,8 +103,15 @@ class IntelligenceOrchestratorV4 {
   async runOrganizationExtraction(organization, config) {
     console.log('🏢 Stage 1: Organization Data Extraction & Discovery');
     
+    // Ensure organization has a name
+    const orgName = organization?.name || config?.organization?.name || 'Default Organization';
+    const safeOrganization = {
+      ...organization,
+      name: orgName
+    };
+    
     // STEP 1: Discovery - Extract and save comprehensive organization data
-    console.log('🔍 Step 1: Discovering organization profile...');
+    console.log(`🔍 Step 1: Discovering organization profile for: ${orgName}`);
     
     // Add timeout wrapper
     const fetchWithTimeout = async (url, options, timeout = 30000) => {
@@ -123,7 +140,7 @@ class IntelligenceOrchestratorV4 {
         'Authorization': `Bearer ${this.supabaseKey}`
       },
       body: JSON.stringify({
-        organization,
+        organization: safeOrganization,
         stakeholders: {
           competitors: config.competitors || [],
           regulators: config.regulators || [],
@@ -190,9 +207,9 @@ class IntelligenceOrchestratorV4 {
       signalCount: collectionData.intelligence?.raw_signals?.length || 0
     });
     
-    // Transform into enriched organization profile
+    // Transform into enriched organization profile with guaranteed name
     const enrichedOrganization = {
-      ...organization,
+      ...safeOrganization,  // Use safeOrganization to ensure name is present
       signals_collected: collectionData.intelligence?.raw_signals?.length || 0,
       data_sources: collectionData.intelligence?.metadata?.sources || [],
       extraction_timestamp: new Date().toISOString(),
@@ -250,10 +267,29 @@ class IntelligenceOrchestratorV4 {
   async runCompetitiveStage(organization, config) {
     console.log('🎯 Stage 2: Competitive Intelligence Analysis');
     
+    // Debug logging to understand what's being passed
+    console.log('🔍 DEBUG runCompetitiveStage inputs:', {
+      organizationParam: organization,
+      organizationType: typeof organization,
+      organizationKeys: organization ? Object.keys(organization) : null,
+      configParam: config,
+      configType: typeof config,
+      configKeys: config ? Object.keys(config) : null,
+      hasOrgName: !!organization?.name,
+      hasConfigOrgName: !!config?.organization?.name
+    });
+    
+    // Ensure organization has a name
+    const orgName = organization?.name || config?.organization?.name || 'Default Organization';
+    const safeOrganization = {
+      ...organization,
+      name: orgName
+    };
+    
     // Load profile from Supabase edge function - SINGLE SOURCE OF TRUTH
     let savedProfile = null;
     
-    console.log('📊 Loading organization profile from edge function...');
+    console.log(`📊 Loading organization profile from edge function for: ${orgName}`);
     try {
       const persistResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-persistence`, {
         method: 'POST',
@@ -263,7 +299,7 @@ class IntelligenceOrchestratorV4 {
         },
         body: JSON.stringify({
           action: 'getProfile',
-          organization_name: organization.name
+          organization_name: orgName
         })
       });
       
@@ -304,17 +340,37 @@ class IntelligenceOrchestratorV4 {
     // Skip backend persistence calls that cause 500 errors
     console.log('📊 Skipping backend persistence calls to avoid 500 errors');
     
-    // Pass the full saved profile to the stage
+    // Pass the full saved profile to the stage with guaranteed name
+    // CRITICAL: Ensure organization object is properly structured
+    const organizationData = savedProfile || safeOrganization || {};
+    
+    // Validate and ensure organization has required fields
+    if (!organizationData.name) {
+      console.warn('⚠️ Organization missing name, using fallback');
+      organizationData.name = orgName || 'Default Organization';
+    }
+    
     const requestBody = {
-      organization: savedProfile || organization,
-      competitors: savedProfile?.competitors || config.competitors || [],
+      organization: {
+        ...organizationData,
+        name: orgName || organizationData.name || 'Default Organization' // Triple fallback
+      },
+      competitors: savedProfile?.competitors || config?.competitors || [],
       savedProfile: savedProfile // Include full profile for reference
     };
+    
+    // Final validation before sending
+    if (!requestBody.organization?.name) {
+      console.error('❌ CRITICAL: Organization name still missing after all fallbacks');
+      requestBody.organization.name = 'Fallback Organization';
+    }
     
     console.log('📤 Sending to competitor stage:', {
       hasProfile: !!savedProfile,
       competitorCount: requestBody.competitors?.length || 0,
-      competitors: requestBody.competitors?.slice(0, 3)
+      competitors: requestBody.competitors?.slice(0, 3),
+      organizationName: requestBody.organization?.name,
+      fullRequestBody: requestBody
     });
     
     const competitorResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-stage-1-competitors`, {
@@ -327,6 +383,8 @@ class IntelligenceOrchestratorV4 {
     });
 
     if (!competitorResponse.ok) {
+      const errorText = await competitorResponse.text();
+      console.error('❌ Competitor stage failed:', competitorResponse.status, errorText);
       throw new Error(`Competitive analysis failed: ${competitorResponse.status}`);
     }
 
@@ -355,7 +413,7 @@ class IntelligenceOrchestratorV4 {
         },
         body: JSON.stringify({
           action: 'saveStageData',
-          organization_name: organization.name,
+          organization_name: orgName,
           stage: 'competitive',
           stage_data: returnData.data
         })
@@ -381,8 +439,15 @@ class IntelligenceOrchestratorV4 {
   async runMediaStage(organization, config) {
     console.log('📰 Stage 3: Media Landscape Mapping');
     
+    // Ensure organization has a name
+    const orgName = organization?.name || config?.organization?.name || 'Default Organization';
+    const safeOrganization = {
+      ...organization,
+      name: orgName
+    };
+    
     // Load profile from Supabase edge function - SINGLE SOURCE OF TRUTH
-    console.log('📊 Loading media profile from edge function...');
+    console.log(`📊 Loading media profile from edge function for: ${orgName}`);
     let savedProfile = null;
     
     try {
@@ -394,7 +459,7 @@ class IntelligenceOrchestratorV4 {
         },
         body: JSON.stringify({
           action: 'getProfile',
-          organization_name: organization.name
+          organization_name: orgName
         })
       });
       
@@ -425,7 +490,7 @@ class IntelligenceOrchestratorV4 {
         'Authorization': `Bearer ${this.supabaseKey}`
       },
       body: JSON.stringify({
-        organization: savedProfile || organization,
+        organization: savedProfile || safeOrganization,
         media_outlets: savedProfile?.media || config.media_outlets || [],
         savedProfile: savedProfile // Include full profile for reference
       })
@@ -458,7 +523,7 @@ class IntelligenceOrchestratorV4 {
         },
         body: JSON.stringify({
           action: 'saveStageData',
-          organization_name: organization.name,
+          organization_name: orgName,
           stage: 'media',
           stage_data: returnData.data
         })
@@ -477,8 +542,15 @@ class IntelligenceOrchestratorV4 {
   async runRegulatoryStage(organization, config) {
     console.log('⚖️ Stage 4: Regulatory & Stakeholder Analysis');
     
+    // Ensure organization has a name
+    const orgName = organization?.name || config?.organization?.name || 'Default Organization';
+    const safeOrganization = {
+      ...organization,
+      name: orgName
+    };
+    
     // FIRST: Retrieve saved organization profile with regulators, analysts, investors
-    console.log('📊 Retrieving saved stakeholders from database...');
+    console.log(`📊 Retrieving saved stakeholders from database for: ${orgName}`);
     let savedProfile = null;
     try {
       const persistResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-persistence`, {
@@ -489,7 +561,7 @@ class IntelligenceOrchestratorV4 {
         },
         body: JSON.stringify({
           action: 'getProfile',
-          organization_name: organization.name
+          organization_name: orgName
         })
       });
       
@@ -524,7 +596,7 @@ class IntelligenceOrchestratorV4 {
         'Authorization': `Bearer ${this.supabaseKey}`
       },
       body: JSON.stringify({
-        organization,
+        organization: safeOrganization,
         regulators: config.regulators || savedProfile?.regulators || [],
         analysts: config.analysts || savedProfile?.analysts || [],
         investors: config.investors || savedProfile?.investors || []
@@ -558,7 +630,7 @@ class IntelligenceOrchestratorV4 {
         },
         body: JSON.stringify({
           action: 'saveStageData',
-          organization_name: organization.name,
+          organization_name: orgName,
           stage: 'regulatory',
           stage_data: returnData.data
         })
@@ -616,7 +688,7 @@ class IntelligenceOrchestratorV4 {
         },
         body: JSON.stringify({
           action: 'retrieve',
-          organization_name: organization.name,
+          organization_name: orgName,
           limit: 50,
           since: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
         })
@@ -638,7 +710,7 @@ class IntelligenceOrchestratorV4 {
         'Authorization': `Bearer ${this.supabaseKey}`
       },
       body: JSON.stringify({
-        organization,
+        organization: safeOrganization,
         monitoring_topics: config.monitoring_topics || savedProfile?.keywords || [],
         recent_intelligence: savedIntelligence
       })
@@ -672,7 +744,7 @@ class IntelligenceOrchestratorV4 {
         },
         body: JSON.stringify({
           action: 'saveStageData',
-          organization_name: organization.name,
+          organization_name: orgName,
           stage: 'trends',
           stage_data: returnData.data
         })
@@ -795,7 +867,7 @@ class IntelligenceOrchestratorV4 {
         'Authorization': `Bearer ${this.supabaseKey}`
       },
       body: JSON.stringify({
-        organization,
+        organization: safeOrganization,
         intelligence: {
           entity_actions: { all: entityActions },
           topic_trends: { all: topicTrends }
@@ -811,7 +883,7 @@ class IntelligenceOrchestratorV4 {
         url: synthesisResponse.url,
         error: errorText,
         requestBody: {
-          organizationName: organization?.name,
+          organizationName: orgName,
           entityActionsCount: entityActions.length,
           topicTrendsCount: topicTrends.length
         }
@@ -844,7 +916,7 @@ class IntelligenceOrchestratorV4 {
         },
         body: JSON.stringify({
           action: 'saveStageData',
-          organization_name: organization.name,
+          organization_name: orgName,
           stage: 'synthesis',
           stage_data: returnData.data
         })
