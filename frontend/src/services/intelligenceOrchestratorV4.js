@@ -95,7 +95,28 @@ class IntelligenceOrchestratorV4 {
     
     // STEP 1: Discovery - Extract and save comprehensive organization data
     console.log('🔍 Step 1: Discovering organization profile...');
-    const discoveryResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-discovery-v3`, {
+    
+    // Add timeout wrapper
+    const fetchWithTimeout = async (url, options, timeout = 30000) => {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeout);
+      try {
+        const response = await fetch(url, {
+          ...options,
+          signal: controller.signal
+        });
+        clearTimeout(id);
+        return response;
+      } catch (error) {
+        clearTimeout(id);
+        if (error.name === 'AbortError') {
+          throw new Error(`Request timed out after ${timeout/1000} seconds`);
+        }
+        throw error;
+      }
+    };
+    
+    const discoveryResponse = await fetchWithTimeout(`${this.supabaseUrl}/functions/v1/intelligence-discovery-v3`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -116,10 +137,14 @@ class IntelligenceOrchestratorV4 {
     });
 
     if (!discoveryResponse.ok) {
-      console.error('Discovery failed:', discoveryResponse.status);
+      const errorText = await discoveryResponse.text();
+      console.error('❌ Discovery failed:', discoveryResponse.status, errorText);
+      // Don't throw - continue with what we have
     } else {
+      console.log('📥 Discovery response received, parsing...');
       const discoveryData = await discoveryResponse.json();
       console.log('✅ Discovery complete:', {
+        hasEntities: !!discoveryData.entities,
         entities: Object.keys(discoveryData.entities || {}),
         saved: discoveryData.statistics?.saved
       });
@@ -133,7 +158,7 @@ class IntelligenceOrchestratorV4 {
     
     // STEP 2: Collection - Gather signals using discovered entities
     console.log('📡 Step 2: Collecting intelligence signals...');
-    const collectionResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-collection-v1`, {
+    const collectionResponse = await fetchWithTimeout(`${this.supabaseUrl}/functions/v1/intelligence-collection-v1`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -153,10 +178,17 @@ class IntelligenceOrchestratorV4 {
     });
 
     if (!collectionResponse.ok) {
-      throw new Error(`Organization extraction failed: ${collectionResponse.status}`);
+      const errorText = await collectionResponse.text();
+      console.error('❌ Collection failed:', collectionResponse.status, errorText);
+      throw new Error(`Organization extraction failed: ${collectionResponse.status} - ${errorText}`);
     }
 
+    console.log('📥 Collection response received, parsing...');
     const collectionData = await collectionResponse.json();
+    console.log('✅ Collection data parsed:', {
+      hasIntelligence: !!collectionData.intelligence,
+      signalCount: collectionData.intelligence?.raw_signals?.length || 0
+    });
     
     // Transform into enriched organization profile
     const enrichedOrganization = {
