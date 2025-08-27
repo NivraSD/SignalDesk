@@ -138,13 +138,16 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         const existingAnalysis = await supabaseDataService.loadCompleteAnalysis(organization.name);
         
         if (existingAnalysis && existingAnalysis.stageData) {
-          console.log('⚠️ Found existing analysis in edge function - but will run fresh pipeline');
-          // Don't set complete - always run fresh pipeline
-          // setStageResults(existingAnalysis.stageData);
-          // setIsComplete(true);
-          // completionRef.current = true;
+          console.log('⚠️ Found existing analysis in edge function - CLEARING and running fresh');
+          // Clear existing analysis to force fresh run
+          setStageResults({});
+          setIsComplete(false);
+          completionRef.current = false;
+          
+          // Clear from Supabase too (optional - uncomment if you want to clear DB)
+          // await supabaseDataService.clearAnalysis(organization.name);
         }
-        console.log('📝 Ready to run fresh analysis pipeline');
+        console.log('📝 Ready to run COMPLETE fresh analysis pipeline');
       }
     };
     
