@@ -1,25 +1,9 @@
 {
-  "root": "frontend",
-  "buildCommand": "npm run build", 
+  "buildCommand": "npm run build",
   "outputDirectory": "build",
   "framework": "create-react-app",
   "installCommand": "npm install --legacy-peer-deps",
   "rewrites": [
     {"source": "/(.*)", "destination": "/index.html"}
-  ],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-cache, no-store, must-revalidate"
-        },
-        {
-          "key": "X-Build-Version",
-          "value": "v4.1-supabase-single-source-2025-08-27"
-        }
-      ]
-    }
   ]
 }
