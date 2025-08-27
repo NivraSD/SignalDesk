@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test V4 Intelligence Pipeline</title>
+    <style>
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0e1a;
+            color: #e0e0e0;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #00ffcc;
+            text-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
+        }
+        .test-section {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 204, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        button {
+            background: linear-gradient(135deg, #00ffcc, #00cc99);
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 204, 0.3);
+        }
+        .result {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 6px;
+            padding: 15px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            font-family: 'SF Mono', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            border-left: 4px solid #00ff88;
+        }
+        .error {
+            border-left: 4px solid #ff0066;
+        }
+        .info {
+            border-left: 4px solid #00ccff;
+        }
+        .stage-progress {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .stage {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            position: relative;
+        }
+        .stage.active {
+            background: rgba(0, 255, 204, 0.1);
+            border: 1px solid rgba(0, 255, 204, 0.5);
+        }
+        .stage.complete {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 V4 Intelligence Pipeline Test</h1>
+    
+    <div class="test-section">
+        <h2>Test Configuration</h2>
+        <p>This test directly calls the V4 multi-stage intelligence pipeline:</p>
+        <ul>
+            <li>Stage 1: Competitors (intelligence-stage-1-competitors)</li>
+            <li>Stage 2: Media (intelligence-stage-2-media)</li>
+            <li>Stage 3: Regulatory (intelligence-stage-3-regulatory)</li>
+            <li>Stage 4: Trends (intelligence-stage-4-trends)</li>
+            <li>Stage 5: Synthesis (intelligence-stage-5-synthesis)</li>
+        </ul>
+        <button onclick="runV4Pipeline()">Run Complete V4 Pipeline</button>
+        <button onclick="checkDatabase()">Check Database Storage</button>
+        <button onclick="clearCache()">Clear Cache</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Pipeline Progress</h2>
+        <div class="stage-progress" id="progress">
+            <div class="stage" id="stage-1">Stage 1<br>Competitors</div>
+            <div class="stage" id="stage-2">Stage 2<br>Media</div>
+            <div class="stage" id="stage-3">Stage 3<br>Regulatory</div>
+            <div class="stage" id="stage-4">Stage 4<br>Trends</div>
+            <div class="stage" id="stage-5">Stage 5<br>Synthesis</div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Results</h2>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const entry = document.createElement('div');
+            entry.className = `result ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            results.appendChild(entry);
+            console.log(message);
+        }
+
+        function updateStageProgress(stageNum, status) {
+            const stage = document.getElementById(`stage-${stageNum}`);
+            if (stage) {
+                stage.className = `stage ${status}`;
+            }
+        }
+
+        async function runV4Pipeline() {
+            log('🚀 Starting V4 Intelligence Pipeline...', 'info');
+            
+            // Reset progress
+            for (let i = 1; i <= 5; i++) {
+                updateStageProgress(i, '');
+            }
+            
+            // Get organization from localStorage
+            const orgData = localStorage.getItem('signaldesk_organization');
+            if (!orgData) {
+                log('❌ No organization found. Please complete onboarding first.', 'error');
+                return;
+            }
+            
+            const organization = JSON.parse(orgData);
+            log(`📊 Organization: ${organization.name}`, 'info');
+            
+            const stages = [
+                { num: 1, name: 'competitors', endpoint: 'intelligence-stage-1-competitors' },
+                { num: 2, name: 'media', endpoint: 'intelligence-stage-2-media' },
+                { num: 3, name: 'regulatory', endpoint: 'intelligence-stage-3-regulatory' },
+                { num: 4, name: 'trends', endpoint: 'intelligence-stage-4-trends' },
+                { num: 5, name: 'synthesis', endpoint: 'intelligence-stage-5-synthesis' }
+            ];
+            
+            let previousResults = {};
+            
+            for (const stage of stages) {
+                updateStageProgress(stage.num, 'active');
+                log(`\n🎯 Running Stage ${stage.num}: ${stage.name.toUpperCase()}`, 'info');
+                
+                try {
+                    const response = await fetch(`${SUPABASE_URL}/functions/v1/${stage.endpoint}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        },
+                        body: JSON.stringify({
+                            organization: organization,
+                            previousResults: previousResults,
+                            fullProfile: organization
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Stage ${stage.num} failed: ${response.statusText}`);
+                    }
+                    
+                    const data = await response.json();
+                    previousResults[`stage${stage.num}`] = data;
+                    
+                    updateStageProgress(stage.num, 'complete');
+                    log(`✅ Stage ${stage.num} complete. Metadata:`, 'success');
+                    log(JSON.stringify(data.metadata || {}, null, 2), 'success');
+                    
+                    // Check if data was saved
+                    if (stage.num === 5) {
+                        log('\n📊 FINAL SYNTHESIS:', 'info');
+                        log(JSON.stringify(data.patterns || [], null, 2), 'info');
+                        log(JSON.stringify(data.executive_summary || {}, null, 2), 'info');
+                    }
+                    
+                } catch (error) {
+                    updateStageProgress(stage.num, 'error');
+                    log(`❌ Stage ${stage.num} error: ${error.message}`, 'error');
+                    break;
+                }
+            }
+            
+            log('\n🎉 V4 Pipeline Complete!', 'success');
+        }
+
+        async function checkDatabase() {
+            log('🔍 Checking database for stored intelligence...', 'info');
+            
+            const orgData = localStorage.getItem('signaldesk_organization');
+            if (!orgData) {
+                log('❌ No organization found', 'error');
+                return;
+            }
+            
+            const organization = JSON.parse(orgData);
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-persistence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        action: 'getStageData',
+                        organization_name: organization.name
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Database check failed: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                log('📊 Database contains:', 'success');
+                log(JSON.stringify(data, null, 2), 'success');
+                
+            } catch (error) {
+                log(`❌ Database check error: ${error.message}`, 'error');
+            }
+        }
+
+        function clearCache() {
+            localStorage.removeItem('signaldesk_intelligence_cache');
+            localStorage.removeItem('signaldesk_intelligence_stage_data');
+            log('🧹 Cache cleared', 'success');
+        }
+    </script>
+</body>
+</html>

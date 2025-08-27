@@ -263,7 +263,10 @@
       "Bash(supabase functions invoke:*)",
       "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/test-intelligence-storage.sh)",
       "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/test-complete-pipeline.sh)",
-      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/test-edge-functions-direct.sh:*)"
+      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/test-edge-functions-direct.sh:*)",
+      "WebFetch(domain:signaldesk-3j50njbpk-nivra-sd.vercel.app)",
+      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/REMOVE_ALL_LOCALSTORAGE.sh:*)",
+      "Bash(if [ -f \"$file\" ])"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

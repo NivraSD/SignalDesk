@@ -1,5 +1,6 @@
 {
-  "buildCommand": "npm run build",
+  "root": "frontend",
+  "buildCommand": "npm run build", 
   "outputDirectory": "build",
   "framework": "create-react-app",
   "installCommand": "npm install --legacy-peer-deps",
@@ -16,7 +17,7 @@
         },
         {
           "key": "X-Build-Version",
-          "value": "v3.3-intelligence-pipeline-2025-08-27"
+          "value": "v4.1-supabase-single-source-2025-08-27"
         }
       ]
     }

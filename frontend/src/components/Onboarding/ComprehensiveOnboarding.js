@@ -203,9 +203,8 @@ const ComprehensiveOnboarding = ({ onComplete }) => {
 
         if (intError) throw intError;
 
-        // Save to localStorage as backup
-        localStorage.setItem('signaldesk_organization', JSON.stringify(orgData));
-        localStorage.setItem('signaldesk_onboarding', JSON.stringify(formData));
+        // NO localStorage - edge function is the SINGLE SOURCE OF TRUTH
+        console.log('✅ Data saved to Supabase edge function:', orgData);
 
         // Call parent callback
         onComplete(orgData);
@@ -217,8 +216,8 @@ const ComprehensiveOnboarding = ({ onComplete }) => {
         id: `local_${Date.now()}`,
         ...formData.organization
       };
-      localStorage.setItem('signaldesk_organization', JSON.stringify(localOrgData));
-      localStorage.setItem('signaldesk_onboarding', JSON.stringify(formData));
+      // NO localStorage - fallback to edge function sync later
+      console.log('⚠️ Using local fallback data:', localOrgData);
       onComplete(localOrgData);
     } finally {
       setLoading(false);

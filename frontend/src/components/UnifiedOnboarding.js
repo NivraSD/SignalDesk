@@ -11,19 +11,9 @@ const UnifiedOnboarding = ({ onComplete }) => {
   const [analysisComplete, setAnalysisComplete] = useState(false);
   
   // Clear all SignalDesk data when onboarding starts
+  // NO localStorage clearing - edge function is the SINGLE SOURCE OF TRUTH
   useEffect(() => {
-    console.log('🧹 Clearing all previous organization data for fresh onboarding...');
-    const keysToClean = [
-      'signaldesk_unified_profile',
-      'signaldesk_organization', 
-      'opportunity_profile',
-      'signaldesk_onboarding'
-    ];
-    
-    keysToClean.forEach(key => {
-      localStorage.removeItem(key);
-      console.log(`  ✅ Cleared ${key}`);
-    });
+    console.log('🎉 Starting onboarding - will save to edge function only');
   }, []); // Only run once on mount
   
   const [profile, setProfile] = useState({
@@ -190,34 +180,72 @@ const UnifiedOnboarding = ({ onComplete }) => {
       version: '2.0'
     };
     
-    // Save to localStorage (keep existing format for backward compatibility)
-    localStorage.setItem('signaldesk_unified_profile', JSON.stringify(unifiedProfile));
-    localStorage.setItem('signaldesk_organization', JSON.stringify(profile.organization));
-    localStorage.setItem('opportunity_profile', JSON.stringify({
-      ...profile.brand,
-      ...profile.messaging,
-      ...profile.media,
-      spokespeople: profile.spokespeople,
-      opportunity_types: profile.opportunities.types,
-      minimum_confidence: profile.opportunities.minimum_confidence,
-      auto_execute_threshold: profile.opportunities.auto_execute_threshold,
-      competitors: profile.competitors
-    }));
-    
-    // Keep old onboarding for backward compatibility but with new structure
-    localStorage.setItem('signaldesk_onboarding', JSON.stringify({
-      organization: profile.organization,
-      competitors: profile.competitors,
-      monitoring_topics: profile.monitoring_topics
-    }));
-    
-    // NEW: Save to intelligence pipeline format
+    // CRITICAL: Save DIRECTLY to edge function - SINGLE SOURCE OF TRUTH
+    // NO localStorage - edge function persistence ONLY
     try {
-      const intelligenceProfile = await saveOnboardingData(unifiedProfile);
-      console.log('✅ Intelligence profile created:', intelligenceProfile.organization.name);
+      // Import supabase service for edge function calls
+      const supabaseDataService = await import('../services/supabaseDataService').then(m => m.default);
+      
+      // Save profile directly to intelligence-persistence edge function
+      const response = await fetch(
+        `${supabaseDataService.supabaseUrl}/functions/v1/intelligence-persistence`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseDataService.supabaseKey}`
+          },
+          body: JSON.stringify({
+            action: 'saveProfile',
+            organization_name: profile.organization.name,
+            profile: unifiedProfile
+          })
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error(`Failed to save to edge function: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      console.log('✅ Profile saved to edge function (single source of truth):', result);
+      
+      // Also save opportunity profile to edge function
+      const opportunityProfile = {
+        ...profile.brand,
+        ...profile.messaging,
+        ...profile.media,
+        spokespeople: profile.spokespeople,
+        opportunity_types: profile.opportunities.types,
+        minimum_confidence: profile.opportunities.minimum_confidence,
+        auto_execute_threshold: profile.opportunities.auto_execute_threshold,
+        competitors: profile.competitors
+      };
+      
+      // Save opportunity profile to edge function
+      await fetch(
+        `${supabaseDataService.supabaseUrl}/functions/v1/intelligence-persistence`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseDataService.supabaseKey}`
+          },
+          body: JSON.stringify({
+            action: 'saveStageData',
+            organization_name: profile.organization.name,
+            stage: 'opportunity_profile',
+            data: opportunityProfile
+          })
+        }
+      );
+      
+      console.log('✅ All data saved to edge functions - NO localStorage used!');
+      
     } catch (error) {
-      console.error('Error saving intelligence profile:', error);
-      // Continue anyway - old format is still saved
+      console.error('❌ Error saving to edge function:', error);
+      // CRITICAL: Do NOT fall back to localStorage - edge function is the ONLY source
+      throw error; // Fail if edge function save fails
     }
     
     // Handle completion
@@ -674,24 +702,9 @@ const UnifiedOnboarding = ({ onComplete }) => {
     </div>
   );
 
-  // Check if profile already exists
+  // NO localStorage - edge function is SINGLE SOURCE OF TRUTH
   useEffect(() => {
-    const existingProfile = localStorage.getItem('signaldesk_unified_profile');
-    if (existingProfile) {
-      const parsed = JSON.parse(existingProfile);
-      setProfile(parsed);
-    } else {
-      // Check for legacy onboarding data
-      const legacyOnboarding = localStorage.getItem('signaldesk_onboarding');
-      if (legacyOnboarding) {
-        const legacy = JSON.parse(legacyOnboarding);
-        setProfile(prev => ({
-          ...prev,
-          organization: legacy.organization || prev.organization,
-          competitors: legacy.competitors || prev.competitors
-        }));
-      }
-    }
+    console.log('\ud83c\udf86 Onboarding will save to edge function only');
   }, []);
 
   return (

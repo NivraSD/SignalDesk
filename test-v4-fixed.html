@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>V4 Intelligence Pipeline - Fixed Test</title>
+    <style>
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0e1a;
+            color: #e0e0e0;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 { color: #00ffcc; text-shadow: 0 0 10px rgba(0, 255, 204, 0.5); }
+        .critical { background: rgba(255, 50, 50, 0.1); border: 2px solid rgba(255, 50, 50, 0.5); }
+        .setup-section { background: rgba(255, 100, 0, 0.05); border: 2px solid rgba(255, 100, 0, 0.3); border-radius: 8px; padding: 20px; margin: 20px 0; }
+        .test-section { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 255, 204, 0.3); border-radius: 8px; padding: 20px; margin: 20px 0; }
+        input, select { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(0, 255, 204, 0.3); color: #fff; padding: 10px; border-radius: 4px; width: 100%; margin: 5px 0; font-family: 'SF Mono', monospace; font-size: 12px; }
+        button { background: linear-gradient(135deg, #00ffcc, #00cc99); color: #000; border: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; cursor: pointer; margin: 10px 5px; transition: all 0.3s; }
+        button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 255, 204, 0.3); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .result { background: rgba(0, 0, 0, 0.5); border-radius: 6px; padding: 15px; margin: 10px 0; white-space: pre-wrap; font-family: 'SF Mono', monospace; font-size: 12px; max-height: 400px; overflow-y: auto; }
+        .success { border-left: 4px solid #00ff88; }
+        .error { border-left: 4px solid #ff0066; }
+        .info { border-left: 4px solid #00ccff; }
+        .warning { border-left: 4px solid #ffcc00; }
+        .stage-progress { display: flex; gap: 10px; margin: 20px 0; }
+        .stage { flex: 1; background: rgba(255, 255, 255, 0.05); padding: 15px 10px; border-radius: 4px; text-align: center; position: relative; font-size: 12px; }
+        .stage.active { background: rgba(0, 255, 204, 0.1); border: 1px solid rgba(0, 255, 204, 0.5); animation: pulse 1s infinite; }
+        .stage.complete { background: rgba(0, 255, 136, 0.1); border: 1px solid rgba(0, 255, 136, 0.5); }
+        .stage.error { background: rgba(255, 0, 100, 0.1); border: 1px solid rgba(255, 0, 100, 0.5); }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .storage-status { background: rgba(0, 255, 204, 0.05); padding: 10px; border-radius: 4px; margin: 10px 0; font-family: 'SF Mono', monospace; font-size: 11px; }
+        .key-present { color: #00ff88; }
+        .key-missing { color: #ff6666; }
+    </style>
+</head>
+<body>
+    <h1>🚀 V4 Intelligence Pipeline - FIXED</h1>
+    
+    <div class="setup-section critical">
+        <h2>⚠️ CRITICAL: Organization Setup</h2>
+        <p><strong>The app looks for organization data in multiple localStorage keys.</strong></p>
+        <p>SmartOnboarding saves to: <code>signaldesk_organization</code>, <code>signaldesk_unified_profile</code>, <code>organization</code></p>
+        
+        <div class="storage-status" id="storageStatus">
+            Checking localStorage keys...
+        </div>
+        
+        <div class="grid">
+            <div>
+                <label>Organization Name:</label>
+                <input type="text" id="orgName" placeholder="Your Company Name" value="Acme Corp">
+                
+                <label>Industry:</label>
+                <select id="industry">
+                    <option value="Technology">Technology</option>
+                    <option value="Healthcare">Healthcare</option>
+                    <option value="Finance">Finance</option>
+                    <option value="E-commerce">E-commerce</option>
+                </select>
+            </div>
+            <div>
+                <label>Website:</label>
+                <input type="text" id="website" placeholder="https://example.com" value="https://acmecorp.com">
+                
+                <label>Description:</label>
+                <input type="text" id="description" placeholder="Company description" value="Leading technology innovator">
+            </div>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <button onclick="simulateFullOnboarding()" style="background: linear-gradient(135deg, #ff6600, #ff3300);">
+                🎯 Simulate Full Onboarding (Recommended)
+            </button>
+            <button onclick="loadExistingOrganization()">📥 Load Existing Data</button>
+            <button onclick="clearAllData()">🧹 Clear All Data</button>
+        </div>
+    </div>
+
+    <div class="setup-section">
+        <h2>⚙️ Supabase Configuration</h2>
+        <div class="grid">
+            <div>
+                <label>Supabase URL:</label>
+                <input type="text" id="supabaseUrl" value="https://zskaxjtyuaqazydouifp.supabase.co">
+            </div>
+            <div>
+                <label>Supabase Anon Key:</label>
+                <input type="password" id="supabaseKey" 
+                       value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8">
+            </div>
+        </div>
+        <button onclick="testConnection()">🔌 Test Connection</button>
+    </div>
+
+    <div class="test-section">
+        <h2>🧪 Pipeline Tests</h2>
+        <button onclick="runV4Pipeline()" id="runPipelineBtn">▶️ Run V4 Pipeline (5 Stages)</button>
+        <button onclick="checkDatabase()">📊 Check Database</button>
+        <button onclick="runSingleStage(1)">Test Stage 1 Only</button>
+        <button onclick="testMinimalPipeline()">🧪 Test Minimal Pipeline</button>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 Pipeline Progress</h2>
+        <div class="stage-progress" id="progress">
+            <div class="stage" id="stage-1">
+                <strong>Stage 1</strong><br>
+                Competitors<br>
+                <span id="stage-1-time">--</span>
+            </div>
+            <div class="stage" id="stage-2">
+                <strong>Stage 2</strong><br>
+                Media<br>
+                <span id="stage-2-time">--</span>
+            </div>
+            <div class="stage" id="stage-3">
+                <strong>Stage 3</strong><br>
+                Regulatory<br>
+                <span id="stage-3-time">--</span>
+            </div>
+            <div class="stage" id="stage-4">
+                <strong>Stage 4</strong><br>
+                Trends<br>
+                <span id="stage-4-time">--</span>
+            </div>
+            <div class="stage" id="stage-5">
+                <strong>Stage 5</strong><br>
+                Synthesis<br>
+                <span id="stage-5-time">--</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>📝 Results</h2>
+        <button onclick="clearResults()">Clear</button>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        let SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        let SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        let currentOrganization = null;
+        let stageTimers = {};
+
+        window.onload = function() {
+            checkStorageStatus();
+            loadExistingOrganization();
+        };
+
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const entry = document.createElement('div');
+            entry.className = `result ${type}`;
+            const timestamp = new Date().toLocaleTimeString('en-US', { 
+                hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' 
+            });
+            entry.textContent = `[${timestamp}] ${message}`;
+            results.appendChild(entry);
+            results.scrollTop = results.scrollHeight;
+            console.log(`[${type.toUpperCase()}]`, message);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        function checkStorageStatus() {
+            const keys = [
+                'signaldesk_organization',
+                'signaldesk_unified_profile',
+                'organization',
+                'signaldesk_onboarding',
+                'signaldesk_just_onboarded',
+                'opportunity_profile'
+            ];
+            
+            let statusHTML = '<strong>localStorage Status:</strong><br>';
+            keys.forEach(key => {
+                const exists = localStorage.getItem(key) !== null;
+                const className = exists ? 'key-present' : 'key-missing';
+                const icon = exists ? '✅' : '❌';
+                statusHTML += `<span class="${className}">${icon} ${key}</span><br>`;
+            });
+            
+            document.getElementById('storageStatus').innerHTML = statusHTML;
+        }
+
+        function simulateFullOnboarding() {
+            const orgName = document.getElementById('orgName').value || 'Test Company';
+            const industry = document.getElementById('industry').value;
+            const website = document.getElementById('website').value || '';
+            const description = document.getElementById('description').value || '';
+            
+            log('🎯 Simulating full onboarding process...', 'info');
+            
+            // Create the full organization structure that SmartOnboarding creates
+            const organization = {
+                id: orgName.toLowerCase().replace(/\s+/g, '-'),
+                name: orgName,
+                industry: industry,
+                website: website,
+                description: description,
+                business_model: `${industry} business model`,
+                market_position: 'Market leader',
+                key_products: ['Product A', 'Product B'],
+                target_customers: ['Enterprise', 'SMB']
+            };
+            
+            const unifiedProfile = {
+                organization: organization,
+                competitors: [
+                    { name: 'Competitor A', type: 'direct' },
+                    { name: 'Competitor B', type: 'direct' },
+                    { name: 'Competitor C', type: 'indirect' }
+                ],
+                monitoring_topics: ['AI safety', 'data privacy', 'market trends', industry.toLowerCase()],
+                brand: {
+                    voice: 'professional',
+                    risk_tolerance: 'moderate',
+                    response_speed: 'considered'
+                },
+                messaging: {
+                    core_value_props: ['Innovation', 'Reliability', 'Security'],
+                    proof_points: ['100K+ customers', '99.99% uptime'],
+                    competitive_advantages: ['Best-in-class technology'],
+                    key_narratives: ['Digital transformation leader']
+                },
+                media: {
+                    preferred_tiers: ['tier1_business', 'tier1_tech'],
+                    journalist_relationships: [],
+                    no_comment_topics: [],
+                    exclusive_partners: []
+                },
+                spokespeople: [],
+                opportunities: {
+                    types: {
+                        competitor_weakness: true,
+                        narrative_vacuum: true,
+                        cascade_effect: true,
+                        crisis_prevention: true,
+                        alliance_opening: false
+                    },
+                    minimum_confidence: 70,
+                    auto_execute_threshold: 95
+                },
+                timestamp: new Date().toISOString(),
+                version: '2.0'
+            };
+            
+            // Save to ALL the keys that the app might look for
+            localStorage.setItem('signaldesk_unified_profile', JSON.stringify(unifiedProfile));
+            localStorage.setItem('signaldesk_organization', JSON.stringify(organization));
+            localStorage.setItem('organization', JSON.stringify(organization)); // V3/V4 compatibility
+            localStorage.setItem('signaldesk_just_onboarded', 'true');
+            
+            localStorage.setItem('opportunity_profile', JSON.stringify({
+                ...unifiedProfile.brand,
+                ...unifiedProfile.messaging,
+                ...unifiedProfile.media,
+                spokespeople: unifiedProfile.spokespeople,
+                opportunity_types: unifiedProfile.opportunities.types,
+                minimum_confidence: unifiedProfile.opportunities.minimum_confidence,
+                auto_execute_threshold: unifiedProfile.opportunities.auto_execute_threshold,
+                competitors: unifiedProfile.competitors
+            }));
+            
+            localStorage.setItem('signaldesk_onboarding', JSON.stringify({
+                organization: organization,
+                competitors: unifiedProfile.competitors,
+                monitoring_topics: unifiedProfile.monitoring_topics
+            }));
+            
+            currentOrganization = organization;
+            
+            log(`✅ Organization "${orgName}" created and saved to all localStorage keys`, 'success');
+            log('Keys saved: signaldesk_organization, organization, signaldesk_unified_profile, etc.', 'info');
+            
+            checkStorageStatus();
+        }
+
+        function loadExistingOrganization() {
+            // Try all possible storage keys
+            const keys = ['signaldesk_organization', 'organization', 'signaldesk_unified_profile'];
+            
+            for (const key of keys) {
+                const data = localStorage.getItem(key);
+                if (data) {
+                    try {
+                        const parsed = JSON.parse(data);
+                        const org = parsed.organization || parsed;
+                        if (org && org.name) {
+                            currentOrganization = org;
+                            document.getElementById('orgName').value = org.name;
+                            document.getElementById('industry').value = org.industry || 'Technology';
+                            document.getElementById('website').value = org.website || '';
+                            document.getElementById('description').value = org.description || '';
+                            log(`📊 Loaded organization from ${key}: ${org.name}`, 'success');
+                            return;
+                        }
+                    } catch (e) {
+                        log(`Failed to parse ${key}: ${e.message}`, 'warning');
+                    }
+                }
+            }
+            
+            log('⚠️ No existing organization found. Please simulate onboarding first.', 'warning');
+        }
+
+        function clearAllData() {
+            const keys = [
+                'signaldesk_organization',
+                'signaldesk_unified_profile',
+                'organization',
+                'signaldesk_onboarding',
+                'signaldesk_just_onboarded',
+                'opportunity_profile',
+                'signaldesk_intelligence_cache',
+                'signaldesk_intelligence_stage_data'
+            ];
+            
+            keys.forEach(key => {
+                localStorage.removeItem(key);
+                log(`Removed: ${key}`, 'info');
+            });
+            
+            currentOrganization = null;
+            log('🧹 All data cleared', 'success');
+            checkStorageStatus();
+        }
+
+        async function testConnection() {
+            SUPABASE_URL = document.getElementById('supabaseUrl').value;
+            SUPABASE_ANON_KEY = document.getElementById('supabaseKey').value;
+            
+            log('🔌 Testing Supabase connection...', 'info');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-persistence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({ action: 'test' })
+                });
+                
+                if (response.ok || response.status === 500) {
+                    log('✅ Supabase connection successful', 'success');
+                } else {
+                    log(`⚠️ Connection returned status ${response.status}`, 'warning');
+                }
+            } catch (error) {
+                log(`❌ Connection failed: ${error.message}`, 'error');
+            }
+        }
+
+        function updateStageProgress(stageNum, status) {
+            const stage = document.getElementById(`stage-${stageNum}`);
+            if (stage) {
+                stage.className = `stage ${status}`;
+                
+                if (status === 'active') {
+                    stageTimers[stageNum] = Date.now();
+                } else if (status === 'complete' && stageTimers[stageNum]) {
+                    const duration = ((Date.now() - stageTimers[stageNum]) / 1000).toFixed(1);
+                    document.getElementById(`stage-${stageNum}-time`).textContent = `${duration}s`;
+                }
+            }
+        }
+
+        async function runV4Pipeline() {
+            if (!currentOrganization) {
+                log('❌ No organization found. Click "Simulate Full Onboarding" first!', 'error');
+                return;
+            }
+            
+            SUPABASE_URL = document.getElementById('supabaseUrl').value;
+            SUPABASE_ANON_KEY = document.getElementById('supabaseKey').value;
+            
+            log('🚀 Starting V4 Intelligence Pipeline...', 'info');
+            log(`📊 Organization: ${currentOrganization.name}`, 'info');
+            
+            document.getElementById('runPipelineBtn').disabled = true;
+            
+            // Reset progress
+            for (let i = 1; i <= 5; i++) {
+                updateStageProgress(i, '');
+                document.getElementById(`stage-${i}-time`).textContent = '--';
+            }
+            stageTimers = {};
+            
+            const stages = [
+                { num: 1, name: 'competitors', endpoint: 'intelligence-stage-1-competitors' },
+                { num: 2, name: 'media', endpoint: 'intelligence-stage-2-media' },
+                { num: 3, name: 'regulatory', endpoint: 'intelligence-stage-3-regulatory' },
+                { num: 4, name: 'trends', endpoint: 'intelligence-stage-4-trends' },
+                { num: 5, name: 'synthesis', endpoint: 'intelligence-stage-5-synthesis' }
+            ];
+            
+            let previousResults = {};
+            let allSuccessful = true;
+            
+            for (const stage of stages) {
+                updateStageProgress(stage.num, 'active');
+                log(`\n🎯 Stage ${stage.num}: ${stage.name.toUpperCase()}`, 'info');
+                
+                try {
+                    const startTime = Date.now();
+                    const response = await fetch(`${SUPABASE_URL}/functions/v1/${stage.endpoint}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        },
+                        body: JSON.stringify({
+                            organization: currentOrganization,
+                            previousResults: previousResults,
+                            fullProfile: currentOrganization,
+                            dataVersion: '2.0'
+                        })
+                    });
+                    
+                    const responseTime = Date.now() - startTime;
+                    
+                    if (!response.ok) {
+                        // Try to get error details
+                        let errorDetails = '';
+                        try {
+                            const errorText = await response.text();
+                            errorDetails = ` - ${errorText}`;
+                        } catch (e) {
+                            errorDetails = '';
+                        }
+                        throw new Error(`Stage ${stage.num} failed: ${response.status} ${response.statusText}${errorDetails}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    // Store stage results both ways for compatibility
+                    previousResults[`stage${stage.num}`] = data;
+                    
+                    // Also merge key data into previousResults for next stages
+                    if (stage.num === 1 && data.competitors) {
+                        previousResults.competitors = data.competitors;
+                        previousResults.competitive_dynamics = data.competitive_dynamics;
+                    } else if (stage.num === 2 && data.media_landscape) {
+                        previousResults.media_landscape = data.media_landscape;
+                        previousResults.journalists = data.journalists;
+                    } else if (stage.num === 3 && data.regulatory_environment) {
+                        previousResults.regulatory_environment = data.regulatory_environment;
+                    } else if (stage.num === 4 && data.trends) {
+                        previousResults.trends = data.trends;
+                        previousResults.topics = data.topics;
+                    }
+                    
+                    updateStageProgress(stage.num, 'complete');
+                    log(`✅ Stage ${stage.num} complete (${responseTime}ms)`, 'success');
+                    
+                    if (data.metadata) {
+                        log(`Metadata: ${JSON.stringify(data.metadata)}`, 'info');
+                    }
+                    
+                } catch (error) {
+                    updateStageProgress(stage.num, 'error');
+                    log(`❌ Stage ${stage.num} error: ${error.message}`, 'error');
+                    allSuccessful = false;
+                    break;
+                }
+            }
+            
+            document.getElementById('runPipelineBtn').disabled = false;
+            
+            if (allSuccessful) {
+                log('\n🎉 V4 Pipeline Complete!', 'success');
+                log('Data saved to intelligence_stage_data table', 'info');
+                
+                // Save to cache
+                if (previousResults.stage5) {
+                    localStorage.setItem('signaldesk_intelligence_cache', JSON.stringify({
+                        data: previousResults.stage5,
+                        timestamp: Date.now(),
+                        organizationName: currentOrganization.name
+                    }));
+                    log('💾 Saved to intelligence cache', 'info');
+                }
+            }
+        }
+
+        async function runSingleStage(stageNum) {
+            if (!currentOrganization) {
+                log('❌ No organization found. Simulate onboarding first!', 'error');
+                return;
+            }
+            
+            const endpoints = {
+                1: 'intelligence-stage-1-competitors',
+                2: 'intelligence-stage-2-media',
+                3: 'intelligence-stage-3-regulatory',
+                4: 'intelligence-stage-4-trends',
+                5: 'intelligence-stage-5-synthesis'
+            };
+            
+            log(`🎯 Running Stage ${stageNum} only...`, 'info');
+            updateStageProgress(stageNum, 'active');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/${endpoints[stageNum]}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: currentOrganization,
+                        previousResults: {},
+                        fullProfile: currentOrganization
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                updateStageProgress(stageNum, 'complete');
+                log(`✅ Stage ${stageNum} complete`, 'success');
+                log(`Result: ${JSON.stringify(data).substring(0, 200)}...`, 'info');
+                
+            } catch (error) {
+                updateStageProgress(stageNum, 'error');
+                log(`❌ Stage ${stageNum} error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testMinimalPipeline() {
+            if (!currentOrganization) {
+                log('❌ No organization found. Simulate onboarding first!', 'error');
+                return;
+            }
+            
+            log('🧪 Testing minimal pipeline with basic data...', 'info');
+            
+            // Test just Stage 1 and Stage 5 (synthesis)
+            try {
+                // Stage 1: Competitors
+                log('Testing Stage 1: Competitors...', 'info');
+                const stage1Response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-1-competitors`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: currentOrganization,
+                        previousResults: {},
+                        fullProfile: currentOrganization
+                    })
+                });
+                
+                if (!stage1Response.ok) {
+                    const errorText = await stage1Response.text();
+                    throw new Error(`Stage 1 failed: ${errorText}`);
+                }
+                
+                const stage1Data = await stage1Response.json();
+                log('✅ Stage 1 complete', 'success');
+                
+                // Stage 5: Synthesis (with minimal data)
+                log('Testing Stage 5: Synthesis with Stage 1 data only...', 'info');
+                const stage5Response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-5-synthesis`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: currentOrganization,
+                        previousResults: {
+                            stage1: stage1Data,
+                            competitors: stage1Data.competitors || {}
+                        },
+                        fullProfile: currentOrganization
+                    })
+                });
+                
+                if (!stage5Response.ok) {
+                    const errorText = await stage5Response.text();
+                    throw new Error(`Stage 5 failed: ${errorText}`);
+                }
+                
+                const stage5Data = await stage5Response.json();
+                log('✅ Stage 5 complete', 'success');
+                log('Synthesis output:', 'info');
+                log(JSON.stringify(stage5Data.executive_summary || stage5Data.patterns || {}, null, 2).substring(0, 500), 'info');
+                
+            } catch (error) {
+                log(`❌ Minimal pipeline test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkDatabase() {
+            if (!currentOrganization) {
+                log('⚠️ No organization selected', 'warning');
+                return;
+            }
+            
+            log('🔍 Checking database...', 'info');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-persistence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        action: 'getStageData',
+                        organization_name: currentOrganization.name
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log('📊 Database data:', 'success');
+                    log(JSON.stringify(data, null, 2).substring(0, 500) + '...', 'info');
+                } else {
+                    log(`❌ Database check failed: ${response.statusText}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

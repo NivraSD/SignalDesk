@@ -1,0 +1,1204 @@
+// Claude Intelligence Service V2
+// Enhanced with specialized personas, organizational context, and memory integration
+
+import { getIndustryCompetitors, detectIndustryFromOrganization } from '../utils/industryCompetitors';
+import aiIndustryExpansionService from './aiIndustryExpansionService';
+import organizationProfileService from './organizationProfileService';
+import tabIntelligenceService from './tabIntelligenceService';
+import intelligentDiscoveryService from './intelligentDiscoveryService';
+import intelligenceOrchestratorService from './intelligenceOrchestratorService';
+import dataFormatterService from './dataFormatter';
+
+class ClaudeIntelligenceServiceV2 {
+  constructor() {
+    this.supabaseUrl = (process.env.REACT_APP_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co').trim().replace(/\n/g, '');
+    this.supabaseKey = (process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8').trim().replace(/\n/g, '');
+    
+    // Track which personas are being used
+    this.activePersonas = {
+      competitive_strategist: false,
+      stakeholder_psychologist: false,
+      narrative_architect: false,
+      risk_prophet: false,
+      opportunity_hunter: false,
+      executive_synthesizer: false
+    };
+    
+    // Cache for recent analyses to avoid redundant calls
+    this.analysisCache = new Map();
+    this.cacheTimeout = 2 * 60 * 1000; // 2 minutes - shorter cache for real-time experience
+    this.pendingRequests = new Map(); // Track pending requests to prevent duplicates
+  }
+
+  /**
+   * Helper function to extract stakeholders as an array from either array or object format
+   */
+  extractStakeholdersArray(stakeholders) {
+    if (!stakeholders) return [];
+    
+    // If it's already an array, return it
+    if (Array.isArray(stakeholders)) {
+      return stakeholders;
+    }
+    
+    // If it's an object with stakeholder groups, flatten all values
+    if (typeof stakeholders === 'object') {
+      const allStakeholders = [];
+      for (const [category, items] of Object.entries(stakeholders)) {
+        if (Array.isArray(items)) {
+          allStakeholders.push(...items);
+        } else if (typeof items === 'string') {
+          allStakeholders.push(items);
+        }
+      }
+      return allStakeholders;
+    }
+    
+    return [];
+  }
+
+  async gatherAndAnalyze(config, timeframe = '24h', options = {}) {
+    console.log('🔍 Starting intelligent analysis');
+    
+    // Check if this is minimal onboarding (new approach)
+    const isMinimalOnboarding = localStorage.getItem('signaldesk_minimal') === 'true';
+    
+    // Extract basic info
+    const orgName = config.organization?.name || config.organizationName || '';
+    const website = config.organization?.website || config.website || '';
+    const description = config.organization?.description || '';
+    const goals = config.goals || {};
+    const industry = config.organization?.industry || config.industry || '';
+    
+    console.log(`🏢 Analyzing ${orgName}`);
+    console.log('🎯 Goals:', Object.keys(goals).filter(k => goals[k]));
+    
+    // Try using the Intelligence Orchestrator for optimal 4-phase flow
+    // Check if orchestrator is enabled (default: enabled unless explicitly disabled)
+    const orchestratorSetting = localStorage.getItem('signaldesk_use_orchestrator');
+    const useOrchestrator = options.useOrchestrator !== false && 
+                           orchestratorSetting !== 'false';
+    
+    console.log('🔧 Orchestrator settings:', {
+      fromOptions: options.useOrchestrator,
+      fromLocalStorage: orchestratorSetting,
+      willUseOrchestrator: useOrchestrator
+    });
+    
+    if (orgName && useOrchestrator) {
+      console.log('🚀 Using Intelligence Orchestrator for optimal 4-phase flow');
+      try {
+        // Force refresh for orchestrator to avoid stale cache
+        const orchestratedResult = await intelligenceOrchestratorService.orchestrateIntelligence(
+          { name: orgName, industry: industry },
+          'full'
+        );
+        
+        if (orchestratedResult.success) {
+          console.log('✅ Orchestrator succeeded, using optimized intelligence');
+          console.log('📊 Raw orchestrator result:', orchestratedResult);
+          console.log('🔍 Intelligence keys:', Object.keys(orchestratedResult.intelligence || {}));
+          console.log('🔍 Insights keys:', Object.keys(orchestratedResult.insights || {}));
+          console.log('🔍 Phases completed:', orchestratedResult.phases_completed);
+          
+          // Debug: Log the actual data structure
+          if (orchestratedResult.intelligence) {
+            console.log('📋 Sample intelligence data:', {
+              hasCompetitors: !!orchestratedResult.intelligence.competitors,
+              competitorCount: orchestratedResult.intelligence.competitors?.length,
+              hasKeyInsights: !!orchestratedResult.intelligence.key_insights,
+              keyInsightCount: orchestratedResult.intelligence.key_insights?.length,
+              hasSynthesized: !!orchestratedResult.intelligence.synthesized,
+              hasExecutiveSummary: !!orchestratedResult.intelligence.executive_summary
+            });
+          }
+          
+          // Check if orchestrator returned raw data with intelligence
+          console.log('🔍 Checking orchestrator result structure:', {
+            hasIntelligence: !!orchestratedResult.intelligence,
+            intelligenceKeys: Object.keys(orchestratedResult.intelligence || {}),
+            hasSynthesized: !!orchestratedResult.intelligence?.synthesized,
+            synthesizedKeys: Object.keys(orchestratedResult.intelligence?.synthesized || {}),
+            topLevelKeys: Object.keys(orchestratedResult)
+          });
+          
+          // Now orchestrator returns RAW data, we need to format it
+          const formattedData = dataFormatterService.formatForDisplay(orchestratedResult);
+          
+          console.log('✅ Formatted orchestrator data');
+          console.log('📊 Formatted data check:', {
+            hasTabs: !!formattedData.tabs,
+            tabCount: Object.keys(formattedData.tabs || {}).length,
+            hasV5Tabs: !!formattedData.tabs?.market_activity,
+            insightsStored: formattedData.stats?.insights_stored || 0
+          });
+          
+          // Build organization object for storage
+          const orgForStorage = {
+            name: orgName,
+            industry: industry,
+            ...config.organization
+          };
+          
+          const profile = await organizationProfileService.getOrBuildProfile(orgForStorage);
+          
+          // Store insights from the formatted data
+          await this.storeKeyInsights(formattedData, orgForStorage);
+          
+          console.log('🎯 RETURNING FORMATTED ORCHESTRATOR DATA');
+          return {
+            ...formattedData,
+            profile: {
+              confidence_level: profile.confidence_level,
+              last_updated: profile.last_updated,
+              established_facts: profile.established_facts
+            },
+            guidance: organizationProfileService.getIntelligenceGuidance(profile)
+          };
+        }
+      } catch (error) {
+        console.log('⚠️ Orchestrator failed, falling back to original flow:', error);
+      }
+    } else if (!useOrchestrator) {
+      console.log('🔧 Orchestrator disabled, using original multi-step flow');
+    }
+    
+    // Step 1: Intelligent Discovery (replaces broken onboarding)
+    let discoveredIntelligence;
+    if (isMinimalOnboarding || !config.intelligence?.stakeholders || 
+        typeof config.intelligence?.stakeholders === 'string') {
+      console.log('🤖 Using intelligent discovery to find real data...');
+      discoveredIntelligence = await intelligentDiscoveryService.discoverCompanyIntelligence(
+        orgName, website, description
+      );
+    } else {
+      // Fallback to old config if somehow it has real data
+      discoveredIntelligence = {
+        company: config.organization,
+        competitors: config.organization?.competitors || [],
+        stakeholders: config.intelligence?.stakeholders || {},
+        topics: config.intelligence?.topics || [],
+        keywords: config.intelligence?.keywords || []
+      };
+    }
+    
+    // Build profile from discovered intelligence
+    const enhancedOrganization = {
+      ...discoveredIntelligence.company,
+      name: orgName,
+      competitors: discoveredIntelligence.competitors,
+      stakeholders: discoveredIntelligence.stakeholders,
+      topics: discoveredIntelligence.topics,
+      keywords: discoveredIntelligence.keywords
+    };
+    
+    const profile = await organizationProfileService.getOrBuildProfile(enhancedOrganization);
+    console.log('📋 Organization Profile loaded:', profile.identity.name, 
+                `(${profile.confidence_level})`);
+    
+    // Use profile to guide intelligence gathering
+    const intelligenceGuidance = organizationProfileService.getIntelligenceGuidance(profile);
+    
+    // Use the discovered/enhanced organization as the full context
+    const fullOrganization = enhancedOrganization;
+    const detectedIndustry = fullOrganization.industry || industry || 'technology';
+    
+    console.log('🏭 Using industry:', detectedIndustry);
+    console.log('🏢 Real Competitors:', fullOrganization.competitors);
+    console.log('👥 Real Stakeholders:', fullOrganization.stakeholders);
+    console.log('📝 Real Topics:', fullOrganization.topics);
+    console.log('🔑 Smart Keywords:', fullOrganization.keywords);
+    console.log('🎯 Full organization context:', fullOrganization);
+    
+    // Check cache first with full context
+    const cacheKey = `${fullOrganization.name}_${detectedIndustry}_${timeframe}_${JSON.stringify(goals)}`;
+    const cached = this.getCachedAnalysis(cacheKey);
+    if (cached && !options.forceRefresh) {
+      console.log('📦 Using cached analysis');
+      return cached;
+    }
+
+    // Check if request is already pending to prevent duplicates
+    if (this.pendingRequests.has(cacheKey)) {
+      console.log('⏳ Request already pending, waiting for result...');
+      return await this.pendingRequests.get(cacheKey);
+    }
+    
+    // Create a promise for this request to prevent duplicates
+    const analysisPromise = this.performAnalysis(fullOrganization, goals, timeframe, options, profile, intelligenceGuidance);
+    this.pendingRequests.set(cacheKey, analysisPromise);
+    
+    try {
+      const result = await analysisPromise;
+      // Cache the result
+      this.cacheAnalysis(cacheKey, result);
+      return result;
+    } finally {
+      // Clean up pending request
+      this.pendingRequests.delete(cacheKey);
+    }
+  }
+
+  async performAnalysis(organization, goals, timeframe, options, profile, intelligenceGuidance) {
+    console.log('🎯 Performing intelligence analysis');
+    console.log('📊 Organization:', organization.name, '| Industry:', organization.industry);
+    console.log('🎯 Active goals:', Object.entries(goals).filter(([k,v]) => v).map(([k]) => k));
+    
+    // Try orchestrator first, but quickly fallback to local if it fails
+    const USE_ORCHESTRATOR = true; // Re-enabled with V2 entity-focused intelligence
+    
+    if (USE_ORCHESTRATOR) {
+      try {
+        // Call the orchestrator Edge Function that handles the complete flow
+        const response = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-orchestrator`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.supabaseKey}`
+          },
+          body: JSON.stringify({
+            organization: {
+              name: organization.name,
+              industry: organization.industry,
+              competitors: organization.competitors || [],
+              stakeholders: organization.stakeholders || ['investors', 'customers', 'employees', 'media', 'regulators'],
+              topics: organization.topics || [],
+              keywords: organization.keywords || []
+            },
+            goals: goals || {},
+            timeframe: timeframe || '7d'
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Orchestrator failed with status ${response.status}`);
+        }
+
+        const orchestratorResult = await response.json();
+        
+        if (!orchestratorResult.success) {
+          throw new Error(orchestratorResult.error || 'Orchestration failed');
+        }
+
+        console.log('✅ Orchestrator response received');
+
+        // Use dataFormatter to format the orchestrator response
+        const formattedData = dataFormatterService.formatForDisplay(orchestratorResult);
+        
+        // Store key insights from the formatted data
+        await this.storeKeyInsights(formattedData, organization);
+        
+        // Update profile with new intelligence
+        await organizationProfileService.updateProfile(organization, formattedData);
+        
+        return formattedData;
+      } catch (error) {
+        console.error('❌ Orchestrator call failed:', error);
+        console.log('⚠️ Falling back to local synthesis...');
+      }
+    }
+    
+    // Use local synthesis (the working approach)
+    return await this.performLocalAnalysis(organization, goals, timeframe, options, profile, intelligenceGuidance);
+  }
+
+  async performLocalAnalysis(organization, goals, timeframe, options, profile, intelligenceGuidance) {
+    console.log('🎯 Performing local orchestration with V6 synthesis');
+    
+    try {
+      // Call the intelligence-synthesis Edge Function directly for V6 PR impact analysis
+      const response = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-synthesis`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.supabaseKey}`
+        },
+        body: JSON.stringify({
+          gathering_data: {
+            raw_intelligence: {
+              'news-intelligence': { totalArticles: 10, breakingNews: [], opportunities: [] },
+              'pr-intelligence': { pressReleases: [] },
+              'reddit-intelligence': { discussions: [] }
+            },
+            discovered_context: {
+              name: organization.name,
+              industry: organization.industry,
+              competitors: organization.competitors || [],
+              stakeholders: organization.stakeholders || ['investors', 'customers', 'employees', 'media', 'regulators'],
+              topics: organization.topics || [],
+              keywords: organization.keywords || [],
+              search_keywords: organization.keywords || [],
+              intelligence_focus: ['PR impact', 'competitive dynamics', 'media momentum']
+            }
+          },
+          organization: {
+            name: organization.name,
+            industry: organization.industry,
+            competitors: organization.competitors || [],
+            stakeholders: organization.stakeholders || ['investors', 'customers', 'employees', 'media', 'regulators']
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Synthesis failed with status ${response.status}`);
+      }
+
+      const synthesisResult = await response.json();
+      
+      if (!synthesisResult.success) {
+        throw new Error(synthesisResult.error || 'Synthesis failed');
+      }
+
+      console.log('✅ V6 Synthesis response received:', {
+        hasIntelligence: !!synthesisResult.intelligence,
+        hasSynthesized: !!synthesisResult.intelligence?.synthesized,
+        synthesizedKeys: Object.keys(synthesisResult.intelligence?.synthesized || {}),
+        hasTabs: !!synthesisResult.intelligence?.tabs
+      });
+
+      // Format the synthesis result for display
+      const formattedData = {
+        success: true,
+        ...synthesisResult.intelligence,
+        stats: synthesisResult.statistics || {}
+      };
+      
+      // Store key insights
+      await this.storeKeyInsights(formattedData, organization);
+      
+      // Update profile
+      await organizationProfileService.updateProfile(organization, formattedData);
+      
+      return formattedData;
+      
+    } catch (error) {
+      console.error('❌ V6 Synthesis failed:', error);
+      
+      // Final fallback to basic structure
+      return {
+        success: true,
+        tabs: {
+          narrative_landscape: {
+            current_position: "Analyzing your organization's position in the current narrative landscape",
+            narrative_control: 'contested',
+            attention_flow: 'neutral',
+            key_developments: []
+          },
+          competitive_dynamics: {
+            pr_positioning: "Assessing competitive PR positioning",
+            narrative_threats: [],
+            narrative_opportunities: []
+          },
+          stakeholder_sentiment: {
+            overall_trajectory: 'stable',
+            pr_implications: "Monitoring stakeholder sentiment",
+            sentiment_drivers: []
+          },
+          media_momentum: {
+            coverage_trajectory: 'stable',
+            narrative_alignment: 'mixed',
+            pr_leverage_points: []
+          },
+          strategic_signals: {
+            regulatory_implications: "Monitoring regulatory environment",
+            industry_narrative_shifts: [],
+            pr_action_triggers: []
+          }
+        },
+        stats: {
+          competitors: organization.competitors?.length || 0,
+          articles: 0,
+          websites: 0,
+          sources: 0
+        }
+      };
+    }
+  }
+
+  async enhanceOrganizationWithClaude(organization, goals) {
+    console.log('🔮 Enhancing organization data with AI Industry Expansion');
+    
+    try {
+      // Use AI to EXPAND industry data, not necessarily to override the industry
+      const fullAnalysis = await aiIndustryExpansionService.analyzeAndExpandIndustry({
+        name: organization.name,
+        website: organization.website,
+        description: organization.description,
+        industry: organization.industry // Pass user's industry selection
+      });
+      
+      console.log('🎯 AI analysis complete for industry:', organization.industry || fullAnalysis.primary_industry);
+      
+      // Respect user's industry choice if provided
+      const finalIndustry = organization.industry || fullAnalysis.primary_industry;
+      
+      return {
+        ...organization,
+        // Keep user's industry or use AI's if none provided
+        industry: finalIndustry,
+        subcategories: fullAnalysis.subcategories,
+        
+        // Use AI-discovered competitors instead of generic tech defaults
+        competitors: [...new Set([
+          ...(organization.competitors || []), 
+          ...fullAnalysis.direct_competitors.slice(0, 8)
+        ])],
+        
+        // Rich stakeholder data from AI
+        stakeholders: [...new Set([
+          ...this.extractStakeholdersArray(organization.stakeholders), 
+          ...fullAnalysis.stakeholder_groups.slice(0, 6)
+        ])],
+        
+        // Industry-specific topics and keywords
+        topics: [...new Set([
+          ...(organization.topics || []), 
+          ...fullAnalysis.trending_topics.slice(0, 5)
+        ])],
+        keywords: [...new Set([
+          ...(organization.keywords || []), 
+          ...fullAnalysis.monitoring_keywords.slice(0, 10)
+        ])],
+        
+        // Additional AI insights
+        industryInsights: {
+          media_outlets: fullAnalysis.media_outlets,
+          industry_events: fullAnalysis.industry_events,
+          regulatory_bodies: fullAnalysis.regulatory_bodies,
+          ecosystem_players: fullAnalysis.ecosystem_players
+        },
+        
+        enhancedAt: new Date().toISOString(),
+        enhancementSource: 'ai_expansion'
+      };
+      
+    } catch (error) {
+      console.error('Failed to enhance organization with AI:', error);
+      return await this.fallbackClaudeEnhancement(organization, goals);
+    }
+  }
+
+  async fallbackClaudeEnhancement(organization, goals) {
+    console.log('🔄 Using fallback Claude enhancement');
+    
+    try {
+      const enhancementPrompt = `
+        Organization: ${organization.name}
+        Industry: ${organization.industry}
+        Website: ${organization.website || 'Not provided'}
+        
+        This is NOT a technology company. Analyze the actual business and industry.
+        Provide relevant competitors, stakeholders, and keywords specific to their industry.
+        
+        DO NOT default to tech companies like Google, Apple, Microsoft unless this is actually a tech company.
+      `;
+      
+      const response = await fetch(`${this.supabaseUrl}/functions/v1/claude-intelligence-synthesizer-v2`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.supabaseKey}`
+        },
+        body: JSON.stringify({
+          intelligence_type: 'enhance_organization',
+          organization,
+          goals,
+          prompt: enhancementPrompt
+        })
+      });
+      
+      if (response.ok) {
+        const enhanced = await response.json();
+        console.log('✨ Organization enhanced with fallback Claude insights');
+        
+        return {
+          ...organization,
+          competitors: [...new Set([...(organization.competitors || []), ...(enhanced.competitors || [])])],
+          stakeholders: [...new Set([...this.extractStakeholdersArray(organization.stakeholders), ...this.extractStakeholdersArray(enhanced.stakeholders)])],
+          topics: [...new Set([...(organization.topics || []), ...(enhanced.topics || [])])],
+          keywords: [...new Set([...(organization.keywords || []), ...(enhanced.keywords || [])])],
+          industryInsights: enhanced.industryInsights || {},
+          enhancedAt: new Date().toISOString(),
+          enhancementSource: 'claude_fallback'
+        };
+      }
+    } catch (error) {
+      console.error('Fallback enhancement also failed:', error);
+    }
+    
+    // Return original if both enhancements fail
+    return organization;
+  }
+
+  identifyCriticalAnalyses(mcpData, goals) {
+    const critical = [];
+    
+    // Competitor movements are always critical
+    if (mcpData.competitive && Object.keys(mcpData.competitive).length > 0) {
+      critical.push('competitor');
+    }
+    
+    // Risk assessments need second opinions
+    if (mcpData.monitoring?.alerts?.some(a => a.severity === 'critical')) {
+      critical.push('predictive');
+    }
+    
+    // Executive summaries for important goals
+    if (goals.investor_relations || goals.crisis_preparedness) {
+      critical.push('executive_summary');
+    }
+    
+    return critical;
+  }
+
+  async orchestrateMCPs(organization, timeframe) {
+    console.log('📊 Orchestrating MCPs for', organization.name);
+    
+    // Parallel MCP calls with enhanced parameters
+    const mcpCalls = [
+      this.callMCP('pr', 'gather', { 
+        organization, 
+        timeframe,
+        focus: 'competitive_intelligence' 
+      }),
+      this.callMCP('news', 'gather', { 
+        organization, 
+        timeframe,
+        focus: 'market_trends' 
+      }),
+      this.callMCP('media', 'discover', { 
+        organization, 
+        timeframe,
+        focus: 'media_coverage' 
+      }),
+      this.callMCP('opportunities', 'discover', { 
+        organization, 
+        timeframe,
+        focus: 'strategic_opportunities' 
+      }),
+      this.callMCP('analytics', 'analyze', { 
+        organization, 
+        timeframe,
+        metrics: ['sentiment', 'reach', 'engagement'] 
+      }),
+      this.callMCP('relationships', 'assess', { 
+        organization, 
+        timeframe,
+        stakeholders: 'all' 
+      }),
+      this.callMCP('monitor', 'check', { 
+        organization, 
+        timeframe,
+        alert_level: 'all' 
+      }),
+    ];
+
+    const results = await Promise.allSettled(mcpCalls);
+    
+    // Organize results by type with enhanced error handling
+    const mcpData = {
+      competitive: results[0].status === 'fulfilled' ? results[0].value : null,
+      news: results[1].status === 'fulfilled' ? results[1].value : null,
+      media: results[2].status === 'fulfilled' ? results[2].value : null,
+      opportunities: results[3].status === 'fulfilled' ? results[3].value : null,
+      analytics: results[4].status === 'fulfilled' ? results[4].value : null,
+      stakeholder: results[5].status === 'fulfilled' ? results[5].value : null,
+      monitoring: results[6].status === 'fulfilled' ? results[6].value : null,
+    };
+
+    // Log successful data gathering
+    const successfulMCPs = Object.keys(mcpData).filter(k => mcpData[k]);
+    console.log('✅ MCP data gathered from:', successfulMCPs.join(', '));
+    
+    // Warn about failed MCPs
+    const failedMCPs = Object.keys(mcpData).filter(k => !mcpData[k]);
+    if (failedMCPs.length > 0) {
+      console.warn('⚠️ Failed to gather from:', failedMCPs.join(', '));
+    }
+    
+    return mcpData;
+  }
+
+  async callMCP(server, method, params) {
+    try {
+      const response = await fetch(`${this.supabaseUrl}/functions/v1/${server}-intelligence`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.supabaseKey}`
+        },
+        body: JSON.stringify({
+          method,
+          params
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data) {
+          return data.data;
+        }
+      }
+      return null;
+    } catch (error) {
+      console.log(`MCP ${server}.${method} failed:`, error.message);
+      return null;
+    }
+  }
+
+  async synthesizeWithClaudeV2(mcpData, organization, goals, timeframe, criticalAnalyses, profile, intelligenceGuidance) {
+    console.log('🧠 Synthesizing with Claude V2 specialized personas');
+    console.log('📋 Profile context:', profile?.identity?.name, profile?.confidence_level);
+    
+    try {
+      // Call different synthesis types in parallel with V2 endpoint, including profile context
+      const synthesisPromises = [
+        this.callClaudeV2Synthesizer('competitor', mcpData.competitive, organization, goals, timeframe, 
+          criticalAnalyses.includes('competitor'), profile, intelligenceGuidance),
+        this.callClaudeV2Synthesizer('stakeholder', {
+          relationships: mcpData.stakeholder,
+          media: mcpData.media
+        }, organization, goals, timeframe, 
+          criticalAnalyses.includes('stakeholder'), profile, intelligenceGuidance),
+        this.callClaudeV2Synthesizer('narrative', {
+          news: mcpData.news,
+          media: mcpData.media,
+          analytics: mcpData.analytics
+        }, organization, goals, timeframe,
+          criticalAnalyses.includes('narrative'), profile, intelligenceGuidance),
+        this.callClaudeV2Synthesizer('predictive', mcpData, organization, goals, timeframe,
+          criticalAnalyses.includes('predictive'), profile, intelligenceGuidance),
+      ];
+
+      const results = await Promise.allSettled(synthesisPromises);
+      
+      // Get executive summary based on all analyses
+      const allAnalyses = {
+        competitor: results[0].status === 'fulfilled' ? results[0].value : null,
+        stakeholder: results[1].status === 'fulfilled' ? results[1].value : null,
+        narrative: results[2].status === 'fulfilled' ? results[2].value : null,
+        predictive: results[3].status === 'fulfilled' ? results[3].value : null,
+      };
+
+      // Executive summary with second opinion and profile context
+      const executiveSummary = await this.callClaudeV2Synthesizer(
+        'executive_summary', 
+        allAnalyses, 
+        organization, 
+        goals, 
+        timeframe,
+        criticalAnalyses.includes('executive_summary'),
+        profile,
+        intelligenceGuidance
+      );
+
+      // Track which personas were activated
+      this.updateActivePersonas(allAnalyses);
+
+      return {
+        ...allAnalyses,
+        executive_summary: executiveSummary,
+        raw_mcp_data: mcpData,
+        analysis_metadata: {
+          timestamp: new Date().toISOString(),
+          timeframe,
+          personas_used: this.getActivePersonas(),
+          critical_analyses: criticalAnalyses,
+          confidence_scores: this.extractConfidenceScores(allAnalyses)
+        }
+      };
+
+    } catch (error) {
+      console.error('Claude V2 synthesis failed:', error);
+      
+      // Fallback to structured MCP data if Claude fails
+      return this.getFallbackAnalysis(mcpData);
+    }
+  }
+
+  async callClaudeV2Synthesizer(intelligenceType, mcpData, organization, goals, timeframe, requiresSecondOpinion = false, profile = null, intelligenceGuidance = null) {
+    // Log what we're sending to Claude
+    console.log(`🚀 Sending to Claude ${intelligenceType}:`, {
+      hasOrganization: !!organization,
+      orgName: organization?.name,
+      industry: organization?.industry,
+      competitors: organization?.competitors,
+      stakeholders: organization?.stakeholders,
+      topics: organization?.topics,
+      goalsCount: Object.keys(goals || {}).filter(k => goals[k]).length,
+      hasMcpData: !!mcpData,
+      hasProfile: !!profile,
+      profileConfidence: profile?.confidence_level
+    });
+    
+    try {
+      const response = await fetch(`${this.supabaseUrl}/functions/v1/claude-intelligence-synthesizer-v2`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.supabaseKey}`
+        },
+        body: JSON.stringify({
+          intelligence_type: intelligenceType,
+          mcp_data: mcpData,
+          organization,
+          goals,
+          timeframe,
+          requires_second_opinion: requiresSecondOpinion,
+          profile: profile ? {
+            established_facts: profile.established_facts,
+            monitoring_targets: profile.monitoring_targets,
+            objectives: profile.objectives,
+            context_flags: profile.context
+          } : null,
+          guidance: intelligenceGuidance
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.analysis) {
+          // Log persona usage
+          if (data.personas_used) {
+            console.log(`📝 ${intelligenceType} analyzed by:`, data.personas_used.join(', '));
+          }
+          return data.analysis;
+        } else {
+          console.log(`⚠️ Claude V2 returned success=false for ${intelligenceType}:`, data.error);
+        }
+      } else {
+        const errorText = await response.text();
+        console.error(`❌ Claude V2 HTTP error for ${intelligenceType} (${response.status}):`, errorText);
+      }
+      return null;
+    } catch (error) {
+      console.error(`Claude V2 synthesis for ${intelligenceType} failed:`, error);
+      return null;
+    }
+  }
+
+  async storeKeyInsights(intelligence, organization) {
+    // Store critical insights in memory for future reference
+    const keyInsights = [];
+    
+    // Check if we have V5 analytical structure
+    const hasV5Structure = intelligence.tabs && (
+      intelligence.tabs.market_activity ||
+      intelligence.tabs.competitor_intelligence ||
+      intelligence.tabs.social_pulse ||
+      intelligence.tabs.industry_signals ||
+      intelligence.tabs.media_coverage
+    );
+    
+    console.log('💾 Insight extraction - V5 structure detected:', hasV5Structure);
+    
+    if (hasV5Structure) {
+      // Extract insights from V5 analytical structure
+      
+      // Market Activity insights
+      if (intelligence.tabs.market_activity?.key_findings) {
+        intelligence.tabs.market_activity.key_findings.forEach(finding => {
+          keyInsights.push({
+            type: 'market_finding',
+            content: finding.finding || finding,
+            confidence: 0.85,
+            source: finding.source || 'market_analysis',
+            category: finding.category || 'market_event'
+          });
+        });
+        console.log(`💾 Extracted ${intelligence.tabs.market_activity.key_findings.length} market findings`);
+      }
+      
+      // Competitor Intelligence insights
+      if (intelligence.tabs.competitor_intelligence?.movements) {
+        intelligence.tabs.competitor_intelligence.movements.forEach(movement => {
+          keyInsights.push({
+            type: 'competitor_movement',
+            content: `${movement.competitor}: ${movement.action}`,
+            confidence: 0.9,
+            source: movement.source || 'competitor_analysis',
+            competitor: movement.competitor
+          });
+        });
+        console.log(`💾 Extracted ${intelligence.tabs.competitor_intelligence.movements.length} competitor movements`);
+      }
+      
+      // Social Pulse insights
+      if (intelligence.tabs.social_pulse?.key_discussions) {
+        intelligence.tabs.social_pulse.key_discussions.forEach(discussion => {
+          keyInsights.push({
+            type: 'social_discussion',
+            content: `${discussion.platform}: ${discussion.topic} (${discussion.sentiment})`,
+            confidence: 0.7,
+            source: discussion.platform || 'social_analysis',
+            sentiment: discussion.sentiment
+          });
+        });
+        console.log(`💾 Extracted ${intelligence.tabs.social_pulse.key_discussions.length} social discussions`);
+      }
+      
+      // Industry Signals insights
+      if (intelligence.tabs.industry_signals?.indicators) {
+        intelligence.tabs.industry_signals.indicators.forEach(indicator => {
+          keyInsights.push({
+            type: 'industry_signal',
+            content: `${indicator.signal}: ${indicator.metric} (${indicator.trend})`,
+            confidence: 0.8,
+            source: indicator.source || 'industry_analysis',
+            trend: indicator.trend
+          });
+        });
+        console.log(`💾 Extracted ${intelligence.tabs.industry_signals.indicators.length} industry signals`);
+      }
+      
+      // Media Coverage insights
+      if (intelligence.tabs.media_coverage?.top_narratives) {
+        intelligence.tabs.media_coverage.top_narratives.forEach(narrative => {
+          keyInsights.push({
+            type: 'media_narrative',
+            content: `${narrative.narrative} (${narrative.frequency} mentions)`,
+            confidence: 0.75,
+            source: 'media_analysis',
+            frequency: narrative.frequency
+          });
+        });
+        console.log(`💾 Extracted ${intelligence.tabs.media_coverage.top_narratives.length} media narratives`);
+      }
+      
+    } else {
+      // Fallback to legacy structure
+      console.log('💾 Using legacy insight extraction');
+      
+      // Extract from properly formatted tabs
+      if (intelligence.tabs?.overview?.key_insights) {
+        intelligence.tabs.overview.key_insights.forEach(insight => {
+          keyInsights.push({
+            type: 'key_insight',
+            content: typeof insight === 'string' ? insight : insight.insight || insight.content,
+            confidence: 0.8
+          });
+        });
+      }
+      
+      // Extract critical alerts
+      if (intelligence.tabs?.overview?.critical_alerts) {
+        intelligence.tabs.overview.critical_alerts.forEach(alert => {
+          keyInsights.push({
+            type: 'critical_alert',
+            content: typeof alert === 'string' ? alert : alert.message || alert.alert,
+            confidence: 0.9
+          });
+        });
+      }
+      
+      // Extract competitive threats
+      if (intelligence.tabs?.competition?.competitive_landscape?.competitor_profiles) {
+        Object.entries(intelligence.tabs.competition.competitive_landscape.competitor_profiles).forEach(([name, profile]) => {
+          if (profile.threat_level === 'high') {
+            keyInsights.push({
+              type: 'competitive_threat',
+              content: `High threat competitor: ${name}`,
+              confidence: 0.85
+            });
+          }
+        });
+      }
+      
+      // Extract recommended actions
+      if (intelligence.tabs?.overview?.recommended_actions) {
+        intelligence.tabs.overview.recommended_actions.slice(0, 3).forEach(action => {
+          keyInsights.push({
+            type: 'recommended_action',
+            content: typeof action === 'string' ? action : action.action || action.recommendation,
+            confidence: 0.8
+          });
+        });
+      }
+    }
+    
+    // Store in localStorage for now (would be database in production)
+    // Use organization name as fallback if no ID exists
+    const memoryId = organization.id || organization.name?.toLowerCase().replace(/\s+/g, '_');
+    const memoryKey = `signaldesk_memory_${memoryId}`;
+    const existingMemory = JSON.parse(localStorage.getItem(memoryKey) || '[]');
+    
+    keyInsights.forEach(insight => {
+      existingMemory.push({
+        ...insight,
+        timestamp: new Date().toISOString(),
+        organization_id: organization.id
+      });
+    });
+    
+    // Keep only last 100 insights
+    const trimmedMemory = existingMemory.slice(-100);
+    localStorage.setItem(memoryKey, JSON.stringify(trimmedMemory));
+    
+    console.log('💾 Stored', keyInsights.length, 'key insights in memory');
+  }
+
+  updateActivePersonas(analyses) {
+    // Track which personas provided valuable input
+    this.activePersonas = {
+      competitive_strategist: !!analyses.competitor,
+      stakeholder_psychologist: !!analyses.stakeholder,
+      narrative_architect: !!analyses.narrative,
+      risk_prophet: !!analyses.predictive,
+      opportunity_hunter: !!analyses.predictive,
+      executive_synthesizer: !!analyses.executive_summary
+    };
+  }
+
+  getActivePersonas() {
+    return Object.entries(this.activePersonas)
+      .filter(([_, active]) => active)
+      .map(([persona]) => persona);
+  }
+
+  extractConfidenceScores(analyses) {
+    const scores = {};
+    
+    // Extract confidence from second opinions if available
+    Object.entries(analyses).forEach(([key, value]) => {
+      if (value?.consensus_level) {
+        scores[key] = value.consensus_level;
+      } else if (value?.overall_confidence) {
+        scores[key] = value.overall_confidence;
+      } else {
+        scores[key] = 70; // Default confidence
+      }
+    });
+    
+    return scores;
+  }
+
+  getCachedAnalysis(key) {
+    const cached = this.analysisCache.get(key);
+    if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
+      return cached.data;
+    }
+    this.analysisCache.delete(key);
+    return null;
+  }
+
+  cacheAnalysis(key, data) {
+    this.analysisCache.set(key, {
+      data,
+      timestamp: Date.now()
+    });
+    
+    // Clean old cache entries
+    if (this.analysisCache.size > 10) {
+      const oldestKey = this.analysisCache.keys().next().value;
+      this.analysisCache.delete(oldestKey);
+    }
+  }
+
+  getFallbackAnalysis(mcpData) {
+    // Structured fallback when Claude is unavailable
+    return {
+      competitor: {
+        key_movements: [],
+        strategic_patterns: ["Analysis temporarily unavailable"],
+        recommended_actions: ["Continue monitoring"],
+        competitive_advantage: "Under analysis",
+        priority_focus: "Maintain current strategy"
+      },
+      stakeholder: {
+        stakeholder_map: [],
+        coalition_opportunities: [],
+        risk_stakeholders: [],
+        engagement_strategies: [],
+        immediate_actions: ["Review stakeholder positions"]
+      },
+      narrative: {
+        goal_narrative_alignment: {},
+        whitespace_opportunities: [],
+        messaging_recommendations: [],
+        emerging_narratives: [],
+        narrative_strategy: "Maintain consistent messaging"
+      },
+      predictive: {
+        goal_impact_forecast: {},
+        predicted_competitor_moves: [],
+        cascade_risks: [],
+        goal_vulnerabilities: [],
+        proactive_recommendations: ["Continue monitoring"]
+      },
+      executive_summary: {
+        key_insight: "Intelligence system processing",
+        immediate_priorities: ["Gather more data", "Monitor developments"],
+        biggest_opportunity: "Under analysis",
+        biggest_risk: "Limited visibility",
+        resource_allocation: {},
+        thirty_day_strategy: "Maintain current operations while gathering intelligence"
+      },
+      raw_mcp_data: mcpData,
+      analysis_metadata: {
+        timestamp: new Date().toISOString(),
+        fallback_mode: true,
+        personas_used: [],
+        confidence_scores: {}
+      }
+    };
+  }
+
+  /**
+   * Transform orchestrated result to match the expected format
+   */
+  transformOrchestratedResult(orchestratedResult, config) {
+    // Use the properly processed insights and tabIntelligence from orchestratorService
+    const insights = orchestratedResult.insights || {};
+    const tabIntelligence = orchestratedResult.tabIntelligence || {};
+    const intelligence = orchestratedResult.intelligence || {};
+    const stats = orchestratedResult.stats || orchestratedResult.statistics || {};
+    const synthesized = intelligence.synthesized || {};
+    
+    console.log('🔄 Transforming orchestrator result:', {
+      hasInsights: Object.keys(insights).length,
+      hasTabIntelligence: Object.keys(tabIntelligence).length,
+      hasIntelligence: Object.keys(intelligence).length,
+      hasSynthesized: Object.keys(synthesized).length,
+      insightKeys: Object.keys(insights),
+      tabKeys: Object.keys(tabIntelligence)
+    });
+    
+    // Build the response in the expected format for ALL tabs
+    const transformed = {
+      // OVERVIEW TAB - Use the overview insights
+      overview: tabIntelligence.overview || insights.overview || {
+        executive_summary: intelligence.executive_summary,
+        key_insights: intelligence.key_insights || [],
+        critical_alerts: intelligence.alerts || [],
+        recommended_actions: intelligence.executive_summary?.recommendations || []
+      },
+      
+      // COMPETITION TAB - Use the processed competitive insights
+      competition: tabIntelligence.competition || insights.competitive || {},
+      competitor: tabIntelligence.competition || insights.competitive || {},
+      
+      // STAKEHOLDER TAB - Use the processed stakeholder insights
+      stakeholders: tabIntelligence.stakeholders || insights.stakeholder || {},
+      stakeholder: tabIntelligence.stakeholders || insights.stakeholder || {},
+      
+      // TOPICS TAB - Use the processed topics insights
+      topics: tabIntelligence.topics || insights.topics || {},
+      narrative: tabIntelligence.topics || insights.topics || {},
+      
+      // PREDICTIONS TAB - Use the processed predictive insights
+      predictions: tabIntelligence.predictions || insights.predictive || {},
+      predictive: tabIntelligence.predictions || insights.predictive || {},
+      
+      // EXECUTIVE SUMMARY - Pass through the properly formatted overview
+      executive_summary: tabIntelligence.overview || insights.overview || {
+        executive_summary: intelligence.executive_summary,
+        key_insights: intelligence.key_insights || [],
+        critical_alerts: intelligence.alerts || [],
+        recommended_actions: intelligence.recommendations || []
+      },
+      
+      // Tab-specific intelligence (for the tab components)
+      tabIntelligence: {
+        competition: {
+          competitors: intelligence.competitors || insights.competitive?.competitors || [],
+          positioning: intelligence.competitive_positioning || insights.competitive?.positioning || {},
+          advantages: insights.competitive?.advantages || [],
+          threats: insights.competitive?.threats || [],
+          recommendations: insights.competitive?.recommendations || []
+        },
+        stakeholders: {
+          groups: insights.stakeholder?.groups || ['investors', 'customers', 'employees', 'media'],
+          sentiment: insights.stakeholder?.sentiment || {},
+          concerns: insights.stakeholder?.concerns || [],
+          communications: insights.stakeholder?.communications || []
+        },
+        topics: {
+          trends: intelligence.industry_trends || [],
+          emerging: intelligence.emerging_topics || [],
+          discussions: intelligence.discussions || []
+        },
+        predictions: insights.predictive || {
+          trends: intelligence.industry_trends || [],
+          scenarios: [],
+          timeline: []
+        }
+      },
+      
+      // Executive overview
+      executiveOverview: intelligence.executive_summary || {
+        key_insights: intelligence.key_insights || [],
+        critical_actions: intelligence.critical_actions || [],
+        opportunities: intelligence.immediate_opportunities || insights.opportunity?.immediate || [],
+        risks: intelligence.immediate_risks || insights.risk?.immediate || []
+      },
+      
+      // MCP data (from orchestrator)
+      raw_mcp_data: {
+        competitors_identified: stats.competitors || intelligence.competitors?.length || 0,
+        websites_scraped: stats.websites || 0,
+        articles_processed: stats.articles || 0,
+        sources_used: stats.sources || 0,
+        // Include raw data for debugging
+        raw_intelligence: intelligence,
+        raw_insights: insights
+      },
+      
+      // Analysis metadata
+      analysis_metadata: {
+        timestamp: orchestratedResult.timestamp || new Date().toISOString(),
+        orchestrator_used: true,
+        phases_completed: orchestratedResult.phases || orchestratedResult.phases_completed || {},
+        organization: orchestratedResult.organization,
+        industry: orchestratedResult.industry,
+        confidence_scores: synthesized.overall_confidence ? { overall: synthesized.overall_confidence } : {}
+      },
+      
+      // Profile data
+      profile: {
+        organization: config.organization || {},
+        goals: config.goals || {},
+        stakeholders: insights.stakeholder?.groups || ['investors', 'customers', 'employees', 'media'],
+        topics: intelligence.topics || [],
+        keywords: intelligence.keywords || []
+      }
+    };
+    
+    // Extract and store key insights
+    const keyInsights = [];
+    if (intelligence.key_insights?.length > 0) {
+      intelligence.key_insights.forEach(insight => {
+        keyInsights.push({
+          type: 'key_insight',
+          content: insight,
+          confidence: 85
+        });
+      });
+    }
+    if (intelligence.immediate_opportunities?.length > 0) {
+      keyInsights.push({
+        type: 'opportunity',
+        content: `${intelligence.immediate_opportunities.length} opportunities identified`,
+        confidence: 80
+      });
+    }
+    if (intelligence.immediate_risks?.length > 0) {
+      keyInsights.push({
+        type: 'risk',
+        content: `${intelligence.immediate_risks.length} risks detected`,
+        confidence: 80
+      });
+    }
+    
+    // Store insights properly
+    if (keyInsights.length > 0) {
+      this.storeKeyInsights({ key_insights: keyInsights }, config.organization || {});
+    }
+    
+    console.log('✅ Transformed data with', keyInsights.length, 'key insights');
+    
+    return transformed;
+  }
+}
+
+export default new ClaudeIntelligenceServiceV2();

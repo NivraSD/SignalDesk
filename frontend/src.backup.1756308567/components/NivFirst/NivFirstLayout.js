@@ -1,0 +1,268 @@
+import React, { useState, useCallback } from 'react';
+import { Bot, FileText, Users, TrendingUp, AlertTriangle, Zap, BarChart3, ChevronRight } from 'lucide-react';
+import NivStrategicOrchestrator from '../NivStrategicOrchestrator';
+import WorkspaceContainer from './WorkspaceContainer';
+
+const NivFirstLayout = ({ user, organization }) => {
+  const [messages, setMessages] = useState([]);
+  const [generatedItems, setGeneratedItems] = useState([]);
+  const [activeWorkspace, setActiveWorkspace] = useState(null);
+
+  // Handle when Niv creates something
+  const handleWorkCardCreate = useCallback((workCard) => {
+    console.log('🎯 NivFirstLayout: handleWorkCardCreate called with:', workCard);
+    
+    // FIXED: Use unified structure - workCard now has flat structure
+    const newItem = {
+      id: Date.now().toString(),
+      type: workCard.type,
+      title: workCard.title || 'Generated Content',
+      description: workCard.description || '',
+      // Store everything at root level to match workspace expectations
+      generatedContent: workCard.generatedContent,
+      details: workCard.details,
+      timestamp: new Date().toISOString(),
+      status: 'ready'
+    };
+    console.log('🎯 NivFirstLayout: Adding new item to sidebar:', newItem);
+    console.log('🎯 NivFirstLayout: GeneratedContent structure:', newItem.generatedContent);
+    setGeneratedItems(prev => {
+      console.log('🎯 NivFirstLayout: Previous items:', prev);
+      const updated = [...prev, newItem];
+      console.log('🎯 NivFirstLayout: Updated items:', updated);
+      return updated;
+    });
+  }, []);
+
+  // Get icon for item type
+  const getItemIcon = (type) => {
+    const icons = {
+      'media-list': Users,
+      'content-draft': FileText,
+      'strategy-plan': TrendingUp,
+      'crisis-response': AlertTriangle,
+      'opportunity': Zap,
+      'analytics': BarChart3,
+      'key-messaging': FileText,
+      'faq-document': FileText,
+      'social-content': FileText
+    };
+    return icons[type] || FileText;
+  };
+
+  // Get workspace type from item type
+  const getWorkspaceFromType = (type) => {
+    const mapping = {
+      'media-list': 'media-intelligence',
+      'content-draft': 'content-generator',
+      'strategy-plan': 'strategic-planning',
+      'crisis-response': 'crisis-command',
+      'opportunity': 'opportunity-engine',
+      'analytics': 'analytics',
+      'key-messaging': 'content-generator',
+      'faq-document': 'content-generator',
+      'social-content': 'content-generator'
+    };
+    return mapping[type] || 'content-generator';
+  };
+
+  // Handle opening workspace from sidebar
+  const handleOpenWorkspace = useCallback((item) => {
+    console.log('🎯 Opening workspace with item:', item);
+    
+    // FIXED: Pass unified structure - everything is at root level now
+    const workspaceContext = {
+      title: item.title,
+      description: item.description,
+      generatedContent: item.generatedContent,
+      details: item.details
+    };
+    
+    console.log('🎯 Workspace context being passed:', workspaceContext);
+    console.log('🎯 GeneratedContent in context:', workspaceContext.generatedContent);
+    
+    setActiveWorkspace({
+      type: getWorkspaceFromType(item.type),
+      context: workspaceContext,
+      nivAssistance: true
+    });
+  }, []);
+
+  return (
+    <div style={{
+      display: 'flex',
+      height: '100vh',
+      background: '#0a0a0f',
+      color: '#e0e0e0',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      overflow: 'hidden'
+    }}>
+      {activeWorkspace ? (
+        // Workspace View
+        <WorkspaceContainer
+          workspace={activeWorkspace}
+          nivContext={{}}
+          onClose={() => setActiveWorkspace(null)}
+          onNivRequest={(request) => {
+            console.log('Niv assistance requested:', request);
+          }}
+        />
+      ) : (
+        <>
+          {/* Niv Strategic Orchestrator - Main Interface */}
+          <NivStrategicOrchestrator
+            messages={messages}
+            setMessages={setMessages}
+            onWorkCardCreate={handleWorkCardCreate}
+            onFeatureOpen={() => {}}
+            onContentGenerate={() => {}}
+            onStrategicPlanGenerate={() => {}}
+          />
+
+          {/* Right Sidebar - Generated Items - 30% width */}
+          <div style={{
+            width: '30%',
+            background: 'rgba(15, 15, 30, 0.95)',
+            borderLeft: '1px solid rgba(139, 92, 246, 0.1)',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            {/* Sidebar Header */}
+            <div style={{
+              padding: '20px',
+              borderBottom: '1px solid rgba(139, 92, 246, 0.1)'
+            }}>
+              <h3 style={{
+                margin: 0,
+                fontSize: '16px',
+                fontWeight: '600',
+                color: '#fff'
+              }}>
+                Generated by Niv
+              </h3>
+              <div style={{
+                fontSize: '12px',
+                color: '#9ca3af',
+                marginTop: '4px'
+              }}>
+                {generatedItems.length} items ready to work on
+              </div>
+            </div>
+
+            {/* Generated Items List */}
+            <div style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: '12px'
+            }}>
+              {generatedItems.length === 0 ? (
+                <div style={{
+                  textAlign: 'center',
+                  color: '#6b7280',
+                  fontSize: '14px',
+                  marginTop: '40px'
+                }}>
+                  Ask Niv to create materials and they'll appear here
+                </div>
+              ) : (
+                generatedItems.map(item => {
+                const Icon = getItemIcon(item.type);
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => handleOpenWorkspace(item)}
+                    style={{
+                      background: 'rgba(30, 30, 45, 0.4)',
+                      border: '1px solid rgba(139, 92, 246, 0.2)',
+                      borderRadius: '10px',
+                      padding: '14px',
+                      marginBottom: '10px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(139, 92, 246, 0.1)';
+                      e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.4)';
+                      e.currentTarget.style.transform = 'translateX(-4px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(30, 30, 45, 0.4)';
+                      e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.2)';
+                      e.currentTarget.style.transform = 'translateX(0)';
+                    }}
+                  >
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px'
+                    }}>
+                      <div style={{
+                        width: '36px',
+                        height: '36px',
+                        background: `linear-gradient(135deg, #6366f1, #8b5cf6)`,
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                      }}>
+                        <Icon size={18} color="white" />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{
+                          fontSize: '13px',
+                          fontWeight: '600',
+                          color: '#fff',
+                          marginBottom: '4px'
+                        }}>
+                          {item.title}
+                        </div>
+                        <div style={{
+                          fontSize: '11px',
+                          color: '#9ca3af'
+                        }}>
+                          {new Date(item.timestamp).toLocaleTimeString()}
+                        </div>
+                      </div>
+                      <ChevronRight size={16} color="#8b5cf6" />
+                    </div>
+                    {item.status === 'ready' && (
+                      <div style={{
+                        marginTop: '8px',
+                        padding: '4px 8px',
+                        background: 'rgba(16, 185, 129, 0.1)',
+                        color: '#10b981',
+                        borderRadius: '4px',
+                        fontSize: '10px',
+                        display: 'inline-block'
+                      }}>
+                        Ready to edit
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* CSS Animation */}
+      <style>{`
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default NivFirstLayout;
