@@ -154,6 +154,9 @@ const SupabaseIntelligence = ({ organization, onComplete }) => {
       return;
     }
     
+    // Set the ref AFTER the check
+    runningRef.current = true;
+    
     const stage = INTELLIGENCE_STAGES[stageIndex];
     console.log(`🚀 Running stage ${stageIndex + 1}: ${stage.name}`);
     
@@ -221,8 +224,11 @@ const SupabaseIntelligence = ({ organization, onComplete }) => {
           if (onComplete) {
             onComplete(finalData);
           }
+          // Reset ref since pipeline is complete
+          runningRef.current = false;
         } else {
           // Move to next stage
+          runningRef.current = false; // Reset before moving to next stage
           setCurrentStageIndex(stageIndex + 1);
         }
       } else {
@@ -236,10 +242,16 @@ const SupabaseIntelligence = ({ organization, onComplete }) => {
         [stage.id]: { failed: true, error: err.message }
       }));
       
+      // IMPORTANT: Reset the running ref
+      runningRef.current = false;
+      
       // Continue to next stage anyway
       if (stageIndex < INTELLIGENCE_STAGES.length - 1) {
         setTimeout(() => setCurrentStageIndex(stageIndex + 1), 2000);
       }
+    } finally {
+      // Always reset the ref
+      runningRef.current = false;
     }
   };
 
@@ -296,13 +308,10 @@ const SupabaseIntelligence = ({ organization, onComplete }) => {
   useEffect(() => {
     if (currentStageIndex >= 0 && 
         currentStageIndex < INTELLIGENCE_STAGES.length && 
-        pipelineStatus === 'running' &&
-        !runningRef.current) {
+        pipelineStatus === 'running') {
       
-      runningRef.current = true;
-      runStage(currentStageIndex).finally(() => {
-        runningRef.current = false;
-      });
+      // Don't set runningRef here - let runStage handle it
+      runStage(currentStageIndex);
     }
     // eslint-disable-next-line
   }, [currentStageIndex]); // Only depend on stage index

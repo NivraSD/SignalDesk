@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './RailwayV2.css';
 import IntelligenceHubV8 from './IntelligenceHubV8';
-import SupabaseIntelligence from './SupabaseIntelligence'; // Clean Supabase-only version
+import MultiStageIntelligence from './MultiStageIntelligence';
 import OpportunityModulePR from './Modules/OpportunityModulePR';
 import ExecutionModule from './Modules/ExecutionModule';
 import MemoryVaultModule from './Modules/MemoryVaultModule';
@@ -182,7 +182,7 @@ const RailwayV2 = () => {
       case 'intelligence':
         // Multi-Stage Intelligence Pipeline - Deep Analysis
         
-        // Don't render SupabaseIntelligence until we have organization data
+        // Don't render MultiStageIntelligence until we have organization data
         if (!organizationData || !organizationData.name) {
           return (
             <div style={{ padding: '40px', textAlign: 'center', color: '#00ffcc' }}>
@@ -194,7 +194,7 @@ const RailwayV2 = () => {
           );
         }
         
-        return <SupabaseIntelligence 
+        return <MultiStageIntelligence 
           organization={organizationData}
           onComplete={setSharedIntelligence}
         />;
