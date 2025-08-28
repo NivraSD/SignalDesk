@@ -18,7 +18,7 @@ apiUrl.js:9 🚀 SUPABASE-ONLY MODE ACTIVE
 apiUrl.js:10 ✅ Using Supabase URL: https://zskaxjtyuaqazydouifp.supabase.co
 apiUrl.js:11 🔒 No backend server required
 apiUrl.js:12 ⚡ All APIs handled by Supabase Edge Functions
-apiUrl.js:13 📅 Build time: 2025-08-28T22:36:25.598Z
+apiUrl.js:13 📅 Build time: 2025-08-28T22:56:39.878Z
 apiService.js:9 ✅ API Service initialized with FORCE URL:
 apiService.js:16 API Service using URL:
 intelligenceOrchestratorV4.js:11 🎯 V4 Elite Orchestrator initialized
@@ -28,7 +28,7 @@ cacheManager.js:361 - window.debugCache() - Show cache state
 cacheManager.js:362 - window.clearAllCache() - Clear all caches
 cacheManager.js:363 - window.checkCacheContamination() - Check for issues
 App.js:52 🚀 SignalDesk initialized with Supabase: Connected
-App.js:92 ⚡⚡⚡ RAILWAY V2 NEON INTERFACE v3.1.0 - DEPLOYED: 2025-08-28T22:36:25.604Z
+App.js:92 ⚡⚡⚡ RAILWAY V2 NEON INTERFACE v3.1.0 - DEPLOYED: 2025-08-28T22:56:39.882Z
 App.js:93 🎯 Modern Railway design with neon buttons
 App.js:94 💎 Intelligence Hub with practical insights
 App.js:95 📍 Deployed from ROOT directory - Fixed Aug 24, 2024
@@ -42,9 +42,9 @@ OnboardingV3.js:27 🔍 ✅ Skipping localStorage clear null
 OnboardingV3.js:27 🔍 🔍 Step 2: Calling Claude discovery null
 OnboardingV3.js:27 🔍 📤 Request payload Object
 OnboardingV3.js:27 🔍 📥 Discovery response status: 200 null
-OnboardingV3.js:27 🔍 ✅ Discovery response received {success: true, organization: {…}, persisted: true}
+OnboardingV3.js:27 🔍 ✅ Discovery response received Object
 OnboardingV3.js:27 🔍 💾 Step 3: Saving organization data null
-OnboardingV3.js:27 🔍 💾 Complete organization data {id: 'meta', name: 'Meta', url: 'https://meta.com', industry: 'Technology, Social Media', description: 'Meta, formerly known as Facebook, is a multination…gest and most influential social media platforms.', …}
+OnboardingV3.js:27 🔍 💾 Complete organization data Object
 OnboardingV3.js:27 🔍 💾 Saved to localStorage as backup null
 OnboardingV3.js:27 🔍 💾 Step 3.5: Saving to Supabase edge function null
 OnboardingV3.js:27 🔍 ✅ Saved to Supabase edge function successfully null
@@ -65,12 +65,12 @@ supabaseDataService.js:41 ✅ Loaded 0 stage records from Supabase
 supabaseDataService.js:41 ✅ Loaded 0 stage records from Supabase
 supabaseDataService.js:41 ✅ Loaded 0 stage records from Supabase
 supabaseDataService.js:41 ✅ Loaded 0 stage records from Supabase
-supabaseDataService.js:41 ✅ Loaded 1 stage records from Supabase
+supabaseDataService.js:41 ✅ Loaded 2 stage records from Supabase
 supabaseDataService.js:130 ✅ Loaded synthesis stage data
 supabaseDataService.js:135 ✅ Loaded 1 stages from Supabase
 MultiStageIntelligence.js:144 ✅ Found existing analysis in Supabase!
 MultiStageIntelligence.js:169 🔄 Existing analysis is stale (> 5 minutes old), running fresh pipeline...
-MultiStageIntelligence.js:229 📊 Stage 1 (Organization Data Extraction) result: {success: true, hasData: true, hasIntelligence: false, dataKeys: Array(5), resultKeys: Array(5)}
+MultiStageIntelligence.js:229 📊 Stage 1 (Organization Data Extraction) result: {success: true, hasData: true, hasIntelligence: true, dataKeys: Array(5), resultKeys: Array(5)}
 MultiStageIntelligence.js:1199 🎯 ELABORATE PIPELINE - Stage trigger check: {hasOrganization: true, hasStarted: true, currentStage: 1, totalStages: 7, hasError: false, …}
 MultiStageIntelligence.js:1242 🚀 RUNNING STAGE 2: Competitive Intelligence Analysis
 MultiStageIntelligence.js:199 🔄 Starting stage 2: Competitive Intelligence Analysis
@@ -114,6 +114,6 @@ intelligenceOrchestratorV4.js:24 🚀 V4 Elite Analysis starting for Meta, Stage
 intelligenceOrchestratorV4.js:98 🎯 Executing stage: synthesis
 intelligenceOrchestratorV4.js:118 📊 Synthesis stage - passing all previous results: (6) ['extraction', 'competitive', 'stakeholders', 'media', 'regulatory', 'trends']
 MultiStageIntelligence.js:229 📊 Stage 7 (Strategic Synthesis & Pattern Recognition) result: {success: true, hasData: true, hasIntelligence: false, dataKeys: Array(5), resultKeys: Array(6)}
-🎯 ELABORATE PIPELINE - Stage trigger check: {hasOrganization: true, hasStarted: true, currentStage: 7, totalStages: 7, hasError: false, …}
-🎉 All stages done, completing pipeline...
-⚠️ Pipeline already complete or completing, skipping
+MultiStageIntelligence.js:1199 🎯 ELABORATE PIPELINE - Stage trigger check: {hasOrganization: true, hasStarted: true, currentStage: 7, totalStages: 7, hasError: false, …}
+MultiStageIntelligence.js:1249 🎉 All stages done, completing pipeline...
+MultiStageIntelligence.js:349 ⚠️ Pipeline already complete or completing, skipping

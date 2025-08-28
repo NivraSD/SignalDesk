@@ -117,6 +117,14 @@ class IntelligenceOrchestratorV4 {
     if (stageId === 'synthesis') {
       console.log('📊 Synthesis stage - passing all previous results:', Object.keys(previousStageResults || {}));
       
+      // Debug: Check what intelligence data we have
+      console.log('🔍 Synthesis - Intelligence data check:', {
+        hasExtraction: !!previousStageResults?.extraction,
+        hasIntelligence: !!previousStageResults?.extraction?.intelligence,
+        intelligenceSignals: previousStageResults?.extraction?.intelligence?.raw_signals?.length || 0,
+        extractionKeys: previousStageResults?.extraction ? Object.keys(previousStageResults.extraction).slice(0, 10) : []
+      });
+      
       const response = await fetch(`${this.supabaseUrl}/functions/v1/${endpoint}`, {
         method: 'POST',
         headers: {
@@ -165,8 +173,18 @@ class IntelligenceOrchestratorV4 {
     };
     
     // Pass monitoring data from extraction stage to analysis stages
+    console.log(`🔍 Stage ${stageId} - Checking for monitoring data:`, {
+      hasExtractionStage: !!previousStageResults?.extraction,
+      hasIntelligence: !!previousStageResults?.extraction?.intelligence,
+      intelligenceSignals: previousStageResults?.extraction?.intelligence?.raw_signals?.length || 0
+    });
+    
     if (previousStageResults?.extraction?.intelligence) {
       requestBody.monitoringData = previousStageResults.extraction.intelligence;
+      console.log(`✅ Adding ${previousStageResults.extraction.intelligence.raw_signals?.length || 0} signals to stage ${stageId}`);
+    } else if (previousStageResults?.extraction) {
+      // Check other possible locations for intelligence data
+      console.log('🔍 Extraction stage data structure:', Object.keys(previousStageResults.extraction).slice(0, 10));
     }
     
     const response = await fetch(`${this.supabaseUrl}/functions/v1/${endpoint}`, {
