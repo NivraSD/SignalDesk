@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Intelligence Collection</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .container {
+            background: #2a2a2a;
+            border-radius: 12px;
+            padding: 30px;
+        }
+        h1 { color: #00ffcc; }
+        button {
+            background: linear-gradient(135deg, #00ff88, #00ffcc);
+            color: #000;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px #00ffcc50;
+        }
+        .status {
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            background: #333;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .success { border: 2px solid #00ffcc; }
+        .error { border: 2px solid #ff3333; }
+        .pending { border: 2px solid #ffcc00; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test Intelligence Collection Fix</h1>
+        
+        <button onclick="testDiscovery()">🔍 Test Discovery (Stage 1)</button>
+        <button onclick="testFullPipeline()">🚀 Test Full Pipeline</button>
+        
+        <div id="status" class="status pending">
+            Ready to test...
+        </div>
+    </div>
+    
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        const statusDiv = document.getElementById('status');
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : '📊';
+            statusDiv.innerHTML += `\n[${timestamp}] ${prefix} ${message}`;
+            statusDiv.scrollTop = statusDiv.scrollHeight;
+        }
+        
+        async function testDiscovery() {
+            statusDiv.innerHTML = 'Testing Discovery Stage (with intelligence collection)...';
+            statusDiv.className = 'status pending';
+            
+            try {
+                log('Starting discovery test for Meta...');
+                
+                const response = await fetch(
+                    `${SUPABASE_URL}/functions/v1/intelligence-discovery-v3`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${SUPABASE_KEY}`
+                        },
+                        body: JSON.stringify({
+                            organization: 'Meta',
+                            monitoring_topics: ['AI', 'social media', 'metaverse']
+                        })
+                    }
+                );
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    statusDiv.className = 'status success';
+                    log('Discovery successful!', 'success');
+                    log(`Organization: ${data.organization?.name}`);
+                    log(`Industry: ${data.organization?.industry}`);
+                    log(`Competitors found: ${data.competitors?.length || 0}`);
+                    log(`Total entities: ${data.statistics?.total_entities || 0}`);
+                    
+                    // CRITICAL: Check if intelligence was collected
+                    if (data.intelligence) {
+                        log('', 'success');
+                        log('🎉 INTELLIGENCE DATA COLLECTED! 🎉', 'success');
+                        log(`Signals collected: ${data.intelligence.raw_signals?.length || 0}`, 'success');
+                        log(`Sources used: ${data.intelligence.metadata?.sources?.join(', ') || 'none'}`, 'success');
+                        
+                        // Show sample signals
+                        if (data.intelligence.raw_signals?.length > 0) {
+                            log('\nSample signals:');
+                            data.intelligence.raw_signals.slice(0, 3).forEach((signal, i) => {
+                                log(`  ${i+1}. ${signal.title || signal.content?.substring(0, 100)}`);
+                            });
+                        }
+                    } else {
+                        log('', 'error');
+                        log('⚠️ NO INTELLIGENCE DATA COLLECTED!', 'error');
+                        log('This is the problem - discovery is not calling collection!', 'error');
+                    }
+                    
+                    log('\nFull response:');
+                    log(JSON.stringify(data, null, 2));
+                } else {
+                    statusDiv.className = 'status error';
+                    log(`Discovery failed: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                statusDiv.className = 'status error';
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testFullPipeline() {
+            statusDiv.innerHTML = 'Testing full pipeline (7 stages)...';
+            statusDiv.className = 'status pending';
+            
+            const stages = [
+                { id: 'extraction', name: 'Organization Data Extraction', endpoint: 'intelligence-discovery-v3' },
+                { id: 'competitive', name: 'Competitive Intelligence', endpoint: 'intelligence-stage-1-competitors' },
+                { id: 'stakeholders', name: 'Stakeholder Analysis', endpoint: 'intelligence-stage-2-media' },
+                { id: 'media', name: 'Media Landscape', endpoint: 'intelligence-stage-2-media' },
+                { id: 'regulatory', name: 'Regulatory Environment', endpoint: 'intelligence-stage-3-regulatory' },
+                { id: 'trends', name: 'Market Trends', endpoint: 'intelligence-stage-4-trends' },
+                { id: 'synthesis', name: 'Strategic Synthesis', endpoint: 'intelligence-stage-5-synthesis' }
+            ];
+            
+            let accumulatedResults = {};
+            let organizationData = null;
+            let monitoringData = null;
+            
+            try {
+                // Stage 1: Discovery + Collection
+                log('🚀 Stage 1: Organization Discovery + Intelligence Collection');
+                const stage1Response = await fetch(
+                    `${SUPABASE_URL}/functions/v1/${stages[0].endpoint}`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${SUPABASE_KEY}`
+                        },
+                        body: JSON.stringify({
+                            organization: 'Meta',
+                            monitoring_topics: ['AI', 'social media', 'metaverse']
+                        })
+                    }
+                );
+                
+                const stage1Data = await stage1Response.json();
+                
+                if (stage1Data.success) {
+                    organizationData = stage1Data.organization;
+                    monitoringData = stage1Data.intelligence;
+                    accumulatedResults.extraction = stage1Data;
+                    
+                    log(`✅ Stage 1 complete: ${stage1Data.intelligence?.raw_signals?.length || 0} signals collected`, 'success');
+                    log(`   Competitors: ${stage1Data.competitors?.length || 0}`);
+                    log(`   Sources: ${stage1Data.intelligence?.metadata?.sources?.join(', ') || 'none'}`);
+                } else {
+                    throw new Error(`Stage 1 failed: ${stage1Data.error}`);
+                }
+                
+                // Stages 2-6: Analysis stages
+                for (let i = 1; i < stages.length - 1; i++) {
+                    const stage = stages[i];
+                    log('');
+                    log(`📊 Stage ${i + 1}: ${stage.name}`);
+                    
+                    await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay between stages
+                    
+                    const response = await fetch(
+                        `${SUPABASE_URL}/functions/v1/${stage.endpoint}`,
+                        {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${SUPABASE_KEY}`
+                            },
+                            body: JSON.stringify({
+                                organization: organizationData,
+                                entities: stage1Data.entities,
+                                monitoringData: monitoringData // Pass monitoring data to analysis stages
+                            })
+                        }
+                    );
+                    
+                    const stageData = await response.json();
+                    
+                    if (stageData.success || stageData.data) {
+                        accumulatedResults[stage.id] = stageData;
+                        log(`✅ Stage ${i + 1} complete`, 'success');
+                        
+                        // Show sample data
+                        if (stageData.data) {
+                            const keys = Object.keys(stageData.data).slice(0, 3);
+                            log(`   Data keys: ${keys.join(', ')}`);
+                        }
+                    } else {
+                        log(`⚠️ Stage ${i + 1} warning: ${stageData.error || 'No data'}`, 'error');
+                    }
+                }
+                
+                // Stage 7: Synthesis
+                log('');
+                log('🧠 Stage 7: Strategic Synthesis & Opportunity Generation');
+                
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                const synthesisResponse = await fetch(
+                    `${SUPABASE_URL}/functions/v1/${stages[6].endpoint}`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${SUPABASE_KEY}`
+                        },
+                        body: JSON.stringify({
+                            organization: organizationData,
+                            previousResults: accumulatedResults,
+                            monitoring: monitoringData
+                        })
+                    }
+                );
+                
+                const synthesisData = await synthesisResponse.json();
+                
+                if (synthesisData.success || synthesisData.data) {
+                    log(`✅ Synthesis complete!`, 'success');
+                    
+                    // Check for opportunities
+                    const opportunities = synthesisData.data?.consolidated_opportunities?.prioritized_list || 
+                                        synthesisData.consolidated_opportunities?.prioritized_list || 
+                                        synthesisData.opportunities || [];
+                    
+                    if (opportunities.length > 0) {
+                        log('');
+                        log(`🎯 OPPORTUNITIES GENERATED: ${opportunities.length}`, 'success');
+                        opportunities.slice(0, 3).forEach((opp, i) => {
+                            log(`  ${i + 1}. ${opp.opportunity || opp.title || opp}`);
+                        });
+                    } else {
+                        log(`⚠️ No opportunities generated`, 'error');
+                    }
+                    
+                    statusDiv.className = 'status success';
+                    log('');
+                    log('🎉 FULL PIPELINE COMPLETE! 🎉', 'success');
+                } else {
+                    throw new Error(`Synthesis failed: ${synthesisData.error}`);
+                }
+                
+            } catch (error) {
+                statusDiv.className = 'status error';
+                log(`Pipeline error: ${error.message}`, 'error');
+                console.error('Full error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

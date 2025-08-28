@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real Synthesis Debug</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .container {
+            background: #2a2a2a;
+            border-radius: 12px;
+            padding: 30px;
+        }
+        h1 { color: #00ffcc; }
+        button {
+            background: #00ffcc;
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 10px 5px;
+        }
+        button:hover { background: #00ff99; }
+        .result {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 600px;
+            overflow-y: auto;
+            background: #333;
+            font-size: 12px;
+        }
+        .success { color: #4caf50; }
+        .error { color: #ef5350; }
+        .info { color: #64b5f6; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Real Synthesis Debug - Data Structure Analysis</h1>
+        <p>Let's see exactly what data structures are being passed</p>
+        
+        <button onclick="runRealStagesAndAnalyze()">Run Real Stages & Analyze</button>
+        <button onclick="testDirectSynthesis()">Test Direct Synthesis Call</button>
+        <button onclick="clearResults()">Clear</button>
+        
+        <div id="result" class="result" style="display:none;"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        function log(message, data = null, className = '') {
+            const result = document.getElementById('result');
+            result.style.display = 'block';
+            const timestamp = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.className = className;
+            div.innerHTML = `[${timestamp}] ${message}`;
+            result.appendChild(div);
+            
+            if (data) {
+                const pre = document.createElement('pre');
+                pre.innerHTML = JSON.stringify(data, null, 2);
+                result.appendChild(pre);
+            }
+            console.log(message, data);
+        }
+        
+        function clearResults() {
+            document.getElementById('result').innerHTML = '';
+            document.getElementById('result').style.display = 'none';
+        }
+        
+        async function runRealStagesAndAnalyze() {
+            clearResults();
+            log('🚀 Running real stages and analyzing data structures...', null, 'info');
+            
+            const stages = [
+                { id: 'extraction', endpoint: 'intelligence-discovery-v3' },
+                { id: 'competitive', endpoint: 'intelligence-stage-1-competitors' },
+                { id: 'media', endpoint: 'intelligence-stage-2-media' },
+                { id: 'regulatory', endpoint: 'intelligence-stage-3-regulatory' },
+                { id: 'trends', endpoint: 'intelligence-stage-4-trends' }
+            ];
+            
+            const organization = { name: 'OpenAI' };
+            const stageResults = {};
+            
+            // Run each stage and collect results
+            for (const stage of stages) {
+                log(`\n📡 Running ${stage.id}...`, null, 'info');
+                
+                try {
+                    const response = await fetch(`${SUPABASE_URL}/functions/v1/${stage.endpoint}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${SUPABASE_KEY}`
+                        },
+                        body: JSON.stringify({ organization })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        stageResults[stage.id] = data;
+                        
+                        // Analyze the data structure
+                        log(`✅ ${stage.id} returned:`, {
+                            topLevelKeys: Object.keys(data),
+                            hasData: !!data.data,
+                            dataKeys: data.data ? Object.keys(data.data).slice(0, 10) : 'N/A',
+                            hasIntelligence: !!data.intelligence,
+                            intelligenceKeys: data.intelligence ? Object.keys(data.intelligence).slice(0, 10) : 'N/A',
+                            sampleStructure: JSON.stringify(data, null, 2).substring(0, 500) + '...'
+                        }, 'success');
+                    } else {
+                        log(`❌ ${stage.id} failed:`, data, 'error');
+                        return;
+                    }
+                } catch (error) {
+                    log(`❌ ${stage.id} error:`, error.message, 'error');
+                    return;
+                }
+            }
+            
+            // Now prepare data for synthesis EXACTLY as the orchestrator does
+            log('\n🔧 Preparing data for synthesis...', null, 'info');
+            
+            const synthesisPayload = {
+                organization,
+                previousResults: stageResults,
+                stage1: stageResults.competitive?.data,
+                stage2: stageResults.media?.data,
+                stage3: stageResults.regulatory?.data,
+                stage4: stageResults.trends?.data,
+                monitoring: stageResults.extraction?.intelligence
+            };
+            
+            log('📦 Synthesis payload structure:', {
+                hasPreviousResults: !!synthesisPayload.previousResults,
+                previousResultsKeys: Object.keys(synthesisPayload.previousResults),
+                stage1: synthesisPayload.stage1 ? 'Present' : 'Missing',
+                stage2: synthesisPayload.stage2 ? 'Present' : 'Missing',
+                stage3: synthesisPayload.stage3 ? 'Present' : 'Missing',
+                stage4: synthesisPayload.stage4 ? 'Present' : 'Missing',
+                monitoring: synthesisPayload.monitoring ? 'Present' : 'Missing'
+            }, 'info');
+            
+            // Test synthesis with this exact payload
+            log('\n🧪 Testing synthesis with collected data...', null, 'info');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-5-synthesis`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify(synthesisPayload)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log('✅ SYNTHESIS SUCCEEDED!', {
+                        hasOpportunities: !!data.opportunities,
+                        opportunityCount: data.opportunities?.length || 0,
+                        hasTabs: !!data.tabs,
+                        tabKeys: data.tabs ? Object.keys(data.tabs) : [],
+                        topLevelKeys: Object.keys(data)
+                    }, 'success');
+                } else {
+                    log('❌ SYNTHESIS FAILED:', data, 'error');
+                    
+                    // Log the exact error for debugging
+                    if (data.error) {
+                        log('Error details:', {
+                            message: data.error,
+                            stage: data.stage,
+                            fullError: data
+                        }, 'error');
+                    }
+                }
+            } catch (error) {
+                log('❌ Synthesis request error:', error, 'error');
+            }
+        }
+        
+        async function testDirectSynthesis() {
+            clearResults();
+            log('🧪 Testing direct synthesis call with minimal data...', null, 'info');
+            
+            const testPayload = {
+                organization: { name: 'OpenAI' },
+                previousResults: {},
+                stage1: null,
+                stage2: null,
+                stage3: null,
+                stage4: null,
+                monitoring: null
+            };
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-5-synthesis`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify(testPayload)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log('✅ Direct synthesis succeeded', data, 'success');
+                } else {
+                    log('❌ Direct synthesis failed:', data, 'error');
+                }
+            } catch (error) {
+                log('❌ Error:', error, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

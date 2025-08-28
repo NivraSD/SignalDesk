@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test All Monitoring Systems</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1a1a1a;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+        .monitor-test {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+        .monitor-test.testing {
+            background: #fff3cd;
+            border-color: #ffc107;
+        }
+        .monitor-test.success {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+        .monitor-test.error {
+            background: #f8d7da;
+            border-color: #dc3545;
+        }
+        .status {
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .result {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10honeyfont px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .summary {
+            margin-top: 30px;
+            padding: 20px;
+            background: #e9ecef;
+            border-radius: 4px;
+        }
+        .signal-count {
+            font-size: 24px;
+            font-weight: bold;
+            color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 SignalDesk Monitoring Systems Test</h1>
+        
+        <div>
+            <input type="text" id="orgName" placeholder="Enter organization name (e.g., OpenAI)" value="OpenAI" style="width: 300px; padding: 8px;">
+            <button onclick="testAllMonitors()">Test All Monitors</button>
+            <button onclick="testCollection()">Test Full Collection</button>
+        </div>
+
+        <div id="monitors">
+            <!-- Monitor tests will be added here -->
+        </div>
+
+        <div class="summary" id="summary" style="display: none;">
+            <h2>Summary</h2>
+            <div>Total Signals Collected: <span class="signal-count" id="totalSignals">0</span></div>
+            <div id="summaryDetails"></div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+
+        const monitors = [
+            { name: 'RSS Feeds', endpoint: 'source-registry', params: '?industry=technology&limit=50' },
+            { name: 'Firecrawl', endpoint: 'intelligence-discovery-v3', params: '' },
+            { name: 'Yahoo Finance', endpoint: 'yahoo-finance-monitor', params: '?symbol=AAPL' },
+            { name: 'Google News', endpoint: 'google-news-monitor', params: '?query=OpenAI' },
+            { name: 'Reddit', endpoint: 'reddit-monitor', params: '?query=OpenAI' },
+            { name: 'Twitter/X', endpoint: 'twitter-monitor', params: '?query=OpenAI' },
+            { name: 'Monitoring System', endpoint: 'monitoring-intelligence', params: '' }
+        ];
+
+        async function testMonitor(monitor, organization) {
+            const div = document.getElementById(`monitor-${monitor.name.replace(/\s+/g, '-')}`);
+            div.className = 'monitor-test testing';
+            div.querySelector('.status').textContent = '⏳ Testing...';
+
+            try {
+                const params = monitor.params || '';
+                const url = `${SUPABASE_URL}/functions/v1/${monitor.endpoint}${params}`;
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({ organization })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok && data) {
+                    div.className = 'monitor-test success';
+                    
+                    // Count signals based on monitor type
+                    let signalCount = 0;
+                    if (data.articles) signalCount = data.articles.length;
+                    else if (data.competitors) signalCount = data.competitors.length;
+                    else if (data.news) signalCount = data.news.length;
+                    else if (data.posts) signalCount = data.posts.length;
+                    else if (data.tweets) signalCount = data.tweets.length;
+                    else if (data.findings) signalCount = data.findings.length;
+                    else if (data.data) signalCount = Array.isArray(data.data) ? data.data.length : 1;
+                    else if (data.results) signalCount = data.results.length;
+                    else if (data.count) signalCount = data.count;
+                    
+                    div.querySelector('.status').textContent = `✅ Success - ${signalCount} signals`;
+                    div.querySelector('.result').textContent = JSON.stringify(data, null, 2);
+                    return signalCount;
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+            } catch (error) {
+                div.className = 'monitor-test error';
+                div.querySelector('.status').textContent = `❌ Error: ${error.message}`;
+                div.querySelector('.result').textContent = error.stack || error.message;
+                return 0;
+            }
+        }
+
+        async function testAllMonitors() {
+            const organization = document.getElementById('orgName').value;
+            if (!organization) {
+                alert('Please enter an organization name');
+                return;
+            }
+
+            // Clear and setup monitor divs
+            const monitorsDiv = document.getElementById('monitors');
+            monitorsDiv.innerHTML = '<h2>Individual Monitor Tests</h2>';
+            
+            monitors.forEach(monitor => {
+                const div = document.createElement('div');
+                div.id = `monitor-${monitor.name.replace(/\s+/g, '-')}`;
+                div.className = 'monitor-test';
+                div.innerHTML = `
+                    <h3>${monitor.name}</h3>
+                    <div class="status">⏳ Waiting...</div>
+                    <div class="result"></div>
+                `;
+                monitorsDiv.appendChild(div);
+            });
+
+            // Test each monitor
+            let totalSignals = 0;
+            const results = [];
+            
+            for (const monitor of monitors) {
+                const count = await testMonitor(monitor, organization);
+                totalSignals += count;
+                results.push({ name: monitor.name, count });
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Delay between tests
+            }
+
+            // Show summary
+            document.getElementById('summary').style.display = 'block';
+            document.getElementById('totalSignals').textContent = totalSignals;
+            document.getElementById('summaryDetails').innerHTML = results
+                .map(r => `<div>${r.name}: ${r.count} signals</div>`)
+                .join('');
+        }
+
+        async function testCollection() {
+            const organization = document.getElementById('orgName').value;
+            if (!organization) {
+                alert('Please enter an organization name');
+                return;
+            }
+
+            const monitorsDiv = document.getElementById('monitors');
+            monitorsDiv.innerHTML = '<h2>Full Collection Test</h2>';
+            
+            const div = document.createElement('div');
+            div.className = 'monitor-test testing';
+            div.innerHTML = `
+                <h3>Intelligence Collection V1</h3>
+                <div class="status">⏳ Running full collection (this may take 40+ seconds)...</div>
+                <div class="result"></div>
+            `;
+            monitorsDiv.appendChild(div);
+
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-collection-v1`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({ 
+                        organization,
+                        includeAll: true 
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    div.className = 'monitor-test success';
+                    const signalCount = data.signals?.length || 0;
+                    div.querySelector('.status').textContent = `✅ Success - ${signalCount} total signals collected in ${data.elapsed_ms}ms`;
+                    
+                    // Show breakdown
+                    const breakdown = data.monitoring_results || {};
+                    const details = Object.entries(breakdown)
+                        .map(([source, result]) => `${source}: ${result.count || 0} signals`)
+                        .join('\n');
+                    
+                    div.querySelector('.result').textContent = `Signal Breakdown:\n${details}\n\nFull Response:\n${JSON.stringify(data, null, 2)}`;
+                    
+                    // Update summary
+                    document.getElementById('summary').style.display = 'block';
+                    document.getElementById('totalSignals').textContent = signalCount;
+                } else {
+                    throw new Error(data.error || 'Collection failed');
+                }
+            } catch (error) {
+                div.className = 'monitor-test error';
+                div.querySelector('.status').textContent = `❌ Error: ${error.message}`;
+                div.querySelector('.result').textContent = error.stack || error.message;
+            }
+        }
+    </script>
+</body>
+</html>

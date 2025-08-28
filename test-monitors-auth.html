@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Monitoring Systems with Auth</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1a1a1a;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+        .auth-section {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .monitor-test {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+        .monitor-test.testing {
+            background: #fff3cd;
+            border-color: #ffc107;
+        }
+        .monitor-test.success {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+        .monitor-test.error {
+            background: #f8d7da;
+            border-color: #dc3545;
+        }
+        .status {
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .result {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .summary {
+            margin-top: 30px;
+            padding: 20px;
+            background: #e9ecef;
+            border-radius: 4px;
+        }
+        .signal-count {
+            font-size: 24px;
+            font-weight: bold;
+            color: #28a745;
+        }
+        input {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .auth-status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .auth-status.authenticated {
+            background: #d4edda;
+            color: #155724;
+        }
+        .auth-status.unauthenticated {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 SignalDesk Monitoring Systems Test (Authenticated)</h1>
+        
+        <div class="auth-section">
+            <h2>Authentication</h2>
+            <div>
+                <input type="email" id="email" placeholder="Email" value="test@signaldesk.ai">
+                <input type="password" id="password" placeholder="Password" value="SignalDesk2025!">
+                <button onclick="authenticate()">Login to Supabase</button>
+            </div>
+            <div id="authStatus" class="auth-status unauthenticated">
+                Not authenticated - please login first
+            </div>
+        </div>
+
+        <div>
+            <input type="text" id="orgName" placeholder="Enter organization name (e.g., OpenAI)" value="OpenAI" style="width: 300px;">
+            <button onclick="testFullCollection()" id="testBtn" disabled>Test Full Intelligence Collection</button>
+        </div>
+
+        <div id="monitors">
+            <!-- Monitor tests will be added here -->
+        </div>
+
+        <div class="summary" id="summary" style="display: none;">
+            <h2>Collection Summary</h2>
+            <div>Total Signals Collected: <span class="signal-count" id="totalSignals">0</span></div>
+            <div id="summaryDetails"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import Supabase client
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+        
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+        
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let currentSession = null;
+
+        // Make functions global
+        window.authenticate = async function() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const { data: authData, error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
+                });
+                
+                if (error) throw error;
+                
+                currentSession = authData.session;
+                document.getElementById('authStatus').className = 'auth-status authenticated';
+                document.getElementById('authStatus').textContent = `✅ Authenticated as: ${authData.user.email}`;
+                document.getElementById('testBtn').disabled = false;
+                
+                console.log('Authentication successful:', authData);
+            } catch (error) {
+                document.getElementById('authStatus').className = 'auth-status unauthenticated';
+                document.getElementById('authStatus').textContent = `❌ Authentication failed: ${error.message}`;
+                console.error('Auth error:', error);
+            }
+        }
+
+        window.testFullCollection = async function() {
+            if (!currentSession) {
+                alert('Please authenticate first');
+                return;
+            }
+
+            const organization = document.getElementById('orgName').value;
+            if (!organization) {
+                alert('Please enter an organization name');
+                return;
+            }
+
+            const monitorsDiv = document.getElementById('monitors');
+            monitorsDiv.innerHTML = '<h2>Intelligence Collection Test</h2>';
+            
+            // Create main test div
+            const mainDiv = document.createElement('div');
+            mainDiv.className = 'monitor-test testing';
+            mainDiv.innerHTML = `
+                <h3>Full Intelligence Collection (Stage 1)</h3>
+                <div class="status">⏳ Discovering organization and collecting signals (this may take 40+ seconds)...</div>
+                <div class="result"></div>
+            `;
+            monitorsDiv.appendChild(mainDiv);
+
+            // First, run discovery to get organization profile
+            let organizationProfile = null;
+            try {
+                console.log('Starting discovery...');
+                const discoveryResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-discovery-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentSession.access_token}`
+                    },
+                    body: JSON.stringify({ 
+                        organization: organization,
+                        includeCompetitors: true
+                    })
+                });
+
+                const discoveryData = await discoveryResponse.json();
+                console.log('Discovery response:', discoveryData);
+                
+                if (discoveryResponse.ok && discoveryData.success) {
+                    organizationProfile = discoveryData.organization;
+                    mainDiv.querySelector('.status').textContent = `✅ Discovery complete - found ${discoveryData.competitors?.length || 0} competitors. Now collecting signals...`;
+                    
+                    // Show discovery results
+                    const discoveryResult = `Discovery Results:
+- Organization: ${organizationProfile?.name || organization}
+- Industry: ${organizationProfile?.industry || 'N/A'}
+- Competitors: ${discoveryData.competitors?.map(c => c.name).join(', ') || 'None found'}
+- Website: ${organizationProfile?.website || 'N/A'}
+
+Now collecting intelligence from all sources...`;
+                    mainDiv.querySelector('.result').textContent = discoveryResult;
+                }
+            } catch (error) {
+                console.error('Discovery error:', error);
+                mainDiv.querySelector('.status').textContent = `⚠️ Discovery failed, continuing with basic profile...`;
+            }
+
+            // Now run the collection with organization profile
+            try {
+                console.log('Starting collection with profile:', organizationProfile);
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-collection-v1`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentSession.access_token}`
+                    },
+                    body: JSON.stringify({ 
+                        organization: organizationProfile || { name: organization },
+                        entities: organizationProfile?.entities || [],
+                        includeAll: true
+                    })
+                });
+
+                const data = await response.json();
+                console.log('Collection response:', data);
+                
+                if (response.ok && data.success) {
+                    mainDiv.className = 'monitor-test success';
+                    
+                    const intelligence = data.intelligence;
+                    const signalCount = intelligence?.raw_signals?.length || 0;
+                    const sources = intelligence?.metadata?.sources || [];
+                    
+                    mainDiv.querySelector('.status').textContent = `✅ Success - Collected ${signalCount} signals from ${sources.length} sources`;
+                    
+                    // Show detailed breakdown
+                    const sourceBreakdown = {};
+                    if (intelligence?.raw_signals) {
+                        intelligence.raw_signals.forEach(signal => {
+                            const source = signal.source || 'Unknown';
+                            sourceBreakdown[source] = (sourceBreakdown[source] || 0) + 1;
+                        });
+                    }
+                    
+                    const breakdownText = Object.entries(sourceBreakdown)
+                        .map(([source, count]) => `${source}: ${count} signals`)
+                        .join('\n');
+                    
+                    const resultText = `Collection Complete!
+
+Signal Breakdown by Source:
+${breakdownText}
+
+Total Signals: ${signalCount}
+Sources Used: ${sources.join(', ')}
+
+Sample Signals:
+${intelligence?.raw_signals?.slice(0, 5).map((s, i) => 
+    `${i+1}. [${s.source}] ${s.title || s.text || 'No title'}`
+).join('\n') || 'No signals found'}
+
+Full Response:
+${JSON.stringify(data, null, 2)}`;
+                    
+                    mainDiv.querySelector('.result').textContent = resultText;
+                    
+                    // Update summary
+                    document.getElementById('summary').style.display = 'block';
+                    document.getElementById('totalSignals').textContent = signalCount;
+                    document.getElementById('summaryDetails').innerHTML = breakdownText.replace(/\n/g, '<br>');
+                } else {
+                    throw new Error(data.error || 'Collection failed');
+                }
+            } catch (error) {
+                mainDiv.className = 'monitor-test error';
+                mainDiv.querySelector('.status').textContent = `❌ Error: ${error.message}`;
+                mainDiv.querySelector('.result').textContent = error.stack || error.message;
+                console.error('Collection error:', error);
+            }
+        }
+
+        // Check for existing session on load
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session) {
+                currentSession = session;
+                document.getElementById('authStatus').className = 'auth-status authenticated';
+                document.getElementById('authStatus').textContent = `✅ Authenticated as: ${session.user.email}`;
+                document.getElementById('testBtn').disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

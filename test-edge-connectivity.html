@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edge Function Connectivity Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .container {
+            background: #2a2a2a;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #4CAF50;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #333;
+            border-radius: 8px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .success { background: #1b5e20; color: #4caf50; }
+        .error { background: #b71c1c; color: #ef5350; }
+        .info { background: #1565c0; color: #64b5f6; }
+        .warning { background: #e65100; color: #ffb74d; }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #333;
+            border-top: 3px solid #4CAF50;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .test-card {
+            background: #404040;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
+        }
+        .test-card.fail {
+            border-left-color: #f44336;
+        }
+        .test-card.pass {
+            border-left-color: #4CAF50;
+        }
+        pre {
+            margin: 0;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔌 Edge Function Connectivity Test</h1>
+        
+        <div class="test-section">
+            <h2>Quick Connectivity Tests</h2>
+            <button onclick="testAllConnectivity()">Run All Tests</button>
+            <button onclick="clearResults()">Clear Results</button>
+            
+            <div class="test-grid" id="quickTests"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Individual Stage Tests</h2>
+            <button onclick="testDiscovery()">Test Discovery (Stage 1)</button>
+            <button onclick="testCompetitive()">Test Competitive (Stage 2)</button>
+            <button onclick="testMedia()">Test Media/Stakeholders (Stage 3)</button>
+            <button onclick="testSynthesis()">Test Synthesis (Stage 6)</button>
+            
+            <div id="stageResults"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>API Key Verification</h2>
+            <button onclick="checkAPIKeys()">Check API Keys</button>
+            <div id="apiResults"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Full Pipeline Test</h2>
+            <input type="text" id="orgName" placeholder="Organization name" value="OpenAI" style="padding: 10px; margin-right: 10px;">
+            <button onclick="testFullPipeline()">Test Full Pipeline</button>
+            <div id="pipelineResults"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Raw Response Log</h2>
+            <div id="rawLog" class="result info" style="display:none;"></div>
+        </div>
+    </div>
+
+    <script>
+        // Use the correct JWT token
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+
+        function log(message, type = 'info') {
+            const rawLog = document.getElementById('rawLog');
+            rawLog.style.display = 'block';
+            const timestamp = new Date().toLocaleTimeString();
+            rawLog.innerHTML += `[${timestamp}] ${message}\n`;
+            console.log(message);
+        }
+
+        function clearResults() {
+            document.getElementById('quickTests').innerHTML = '';
+            document.getElementById('stageResults').innerHTML = '';
+            document.getElementById('apiResults').innerHTML = '';
+            document.getElementById('pipelineResults').innerHTML = '';
+            document.getElementById('rawLog').innerHTML = '';
+            document.getElementById('rawLog').style.display = 'none';
+        }
+
+        async function testEndpoint(name, endpoint, body = {}) {
+            const startTime = Date.now();
+            const card = document.createElement('div');
+            card.className = 'test-card';
+            card.innerHTML = `<h4>${name}</h4><div class="loading"></div>`;
+            document.getElementById('quickTests').appendChild(card);
+
+            try {
+                log(`Testing ${name} at ${endpoint}...`);
+                
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                const duration = Date.now() - startTime;
+                const data = await response.json();
+                
+                if (response.ok && data.success !== false) {
+                    card.className = 'test-card pass';
+                    card.innerHTML = `
+                        <h4>✅ ${name}</h4>
+                        <p>Status: ${response.status}</p>
+                        <p>Time: ${duration}ms</p>
+                        <p>Success: ${data.success || 'true'}</p>
+                        ${data.data ? `<p>Has Data: Yes</p>` : ''}
+                    `;
+                    log(`✅ ${name} passed in ${duration}ms`);
+                } else {
+                    card.className = 'test-card fail';
+                    card.innerHTML = `
+                        <h4>❌ ${name}</h4>
+                        <p>Status: ${response.status}</p>
+                        <p>Error: ${data.error || 'Unknown'}</p>
+                    `;
+                    log(`❌ ${name} failed: ${data.error || response.statusText}`, 'error');
+                }
+                
+                return { success: response.ok, data, duration };
+            } catch (error) {
+                card.className = 'test-card fail';
+                card.innerHTML = `
+                    <h4>❌ ${name}</h4>
+                    <p>Connection Failed</p>
+                    <p>Error: ${error.message}</p>
+                `;
+                log(`❌ ${name} connection failed: ${error.message}`, 'error');
+                return { success: false, error: error.message };
+            }
+        }
+
+        async function testAllConnectivity() {
+            clearResults();
+            log('Starting connectivity tests...', 'info');
+            
+            const tests = [
+                { name: 'Discovery', endpoint: 'intelligence-discovery-v3', body: { organization: 'Test' } },
+                { name: 'Organization Discovery', endpoint: 'organization-discovery', body: { organizationName: 'Test' } },
+                { name: 'Competitive', endpoint: 'intelligence-stage-1-competitors', body: { organization: { name: 'Test' } } },
+                { name: 'Media', endpoint: 'intelligence-stage-2-media', body: { organization: { name: 'Test' } } },
+                { name: 'Regulatory', endpoint: 'intelligence-stage-3-regulatory', body: { organization: { name: 'Test' } } },
+                { name: 'Trends', endpoint: 'intelligence-stage-4-trends', body: { organization: { name: 'Test' } } },
+                { name: 'Synthesis', endpoint: 'intelligence-stage-5-synthesis', body: { organization: { name: 'Test' } } },
+                { name: 'Persistence', endpoint: 'intelligence-persistence', body: { action: 'test' } }
+            ];
+
+            for (const test of tests) {
+                await testEndpoint(test.name, test.endpoint, test.body);
+                await new Promise(resolve => setTimeout(resolve, 500)); // Small delay between tests
+            }
+            
+            log('All connectivity tests complete', 'info');
+        }
+
+        async function testDiscovery() {
+            const results = document.getElementById('stageResults');
+            results.innerHTML = '<h3>Testing Discovery Stage...</h3>';
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-discovery-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: 'OpenAI',
+                        stakeholders: {},
+                        monitoring_topics: []
+                    })
+                });
+
+                const data = await response.json();
+                results.innerHTML += `<pre class="${response.ok ? 'success' : 'error'}">${JSON.stringify(data, null, 2)}</pre>`;
+                
+                if (data.success) {
+                    log('✅ Discovery stage working - Found competitors: ' + (data.competitors?.length || 0));
+                } else {
+                    log('❌ Discovery stage failed: ' + (data.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                results.innerHTML += `<pre class="error">Connection Error: ${error.message}</pre>`;
+                log('❌ Discovery connection failed: ' + error.message, 'error');
+            }
+        }
+
+        async function checkAPIKeys() {
+            const results = document.getElementById('apiResults');
+            results.innerHTML = '<h3>Checking API Keys Configuration...</h3>';
+            
+            // Test if Claude/Anthropic is working
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/organization-discovery`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organizationName: 'TestCompany'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok && data.organization) {
+                    results.innerHTML += '<div class="result success">✅ Claude API (ANTHROPIC_API_KEY) is configured and working</div>';
+                } else {
+                    results.innerHTML += '<div class="result error">❌ Claude API may not be configured properly</div>';
+                    results.innerHTML += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                }
+            } catch (error) {
+                results.innerHTML += `<div class="result error">❌ Cannot reach Supabase Edge Functions: ${error.message}</div>`;
+            }
+        }
+
+        async function testFullPipeline() {
+            const orgName = document.getElementById('orgName').value || 'OpenAI';
+            const results = document.getElementById('pipelineResults');
+            results.innerHTML = `<h3>Testing Full Pipeline for ${orgName}...</h3>`;
+            
+            const stages = [
+                'intelligence-discovery-v3',
+                'intelligence-stage-1-competitors',
+                'intelligence-stage-2-media',
+                'intelligence-stage-3-regulatory',
+                'intelligence-stage-4-trends',
+                'intelligence-stage-5-synthesis'
+            ];
+            
+            let previousResults = {};
+            
+            for (let i = 0; i < stages.length; i++) {
+                const stage = stages[i];
+                const stageName = stage.replace('intelligence-', '').replace(/-/g, ' ');
+                
+                results.innerHTML += `<div>Testing ${stageName}... <span class="loading"></span></div>`;
+                
+                try {
+                    const body = {
+                        organization: { name: orgName },
+                        previousResults: i > 0 ? previousResults : undefined
+                    };
+                    
+                    const response = await fetch(`${SUPABASE_URL}/functions/v1/${stage}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${SUPABASE_KEY}`
+                        },
+                        body: JSON.stringify(body)
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        results.innerHTML += `<div class="result success">✅ ${stageName}: SUCCESS</div>`;
+                        previousResults[stage] = data;
+                    } else {
+                        results.innerHTML += `<div class="result error">❌ ${stageName}: ${data.error || 'Failed'}</div>`;
+                        break;
+                    }
+                } catch (error) {
+                    results.innerHTML += `<div class="result error">❌ ${stageName}: Connection failed - ${error.message}</div>`;
+                    break;
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
+
+        async function testCompetitive() {
+            const results = document.getElementById('stageResults');
+            results.innerHTML = '<h3>Testing Competitive Stage...</h3>';
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-1-competitors`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: { name: 'OpenAI', industry: 'AI' }
+                    })
+                });
+
+                const data = await response.json();
+                results.innerHTML += `<pre class="${response.ok ? 'success' : 'error'}">${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                results.innerHTML += `<pre class="error">Connection Error: ${error.message}</pre>`;
+            }
+        }
+
+        async function testMedia() {
+            const results = document.getElementById('stageResults');
+            results.innerHTML = '<h3>Testing Media/Stakeholders Stage...</h3>';
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-2-media`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: { name: 'OpenAI', industry: 'AI' }
+                    })
+                });
+
+                const data = await response.json();
+                results.innerHTML += `<pre class="${response.ok ? 'success' : 'error'}">${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                results.innerHTML += `<pre class="error">Connection Error: ${error.message}</pre>`;
+            }
+        }
+
+        async function testSynthesis() {
+            const results = document.getElementById('stageResults');
+            results.innerHTML = '<h3>Testing Synthesis Stage...</h3>';
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-5-synthesis`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: { name: 'OpenAI', industry: 'AI' },
+                        previousResults: {}
+                    })
+                });
+
+                const data = await response.json();
+                results.innerHTML += `<pre class="${response.ok ? 'success' : 'error'}">${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                results.innerHTML += `<pre class="error">Connection Error: ${error.message}</pre>`;
+            }
+        }
+    </script>
+</body>
+</html>

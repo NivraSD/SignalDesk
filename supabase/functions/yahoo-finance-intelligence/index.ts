@@ -135,29 +135,9 @@ async function gatherYahooFinanceIntelligence(params: any) {
     }))
   )
   
-  // Filter articles relevant to organization and competitors
-  const relevantArticles = allArticles.filter(article => {
-    const content = (article.title + ' ' + article.description).toLowerCase()
-    const orgName = organizationName.toLowerCase()
-    
-    // Check if article mentions organization
-    if (content.includes(orgName)) return true
-    
-    // Check if article mentions competitors
-    if (organization.competitors) {
-      for (const competitor of organization.competitors) {
-        if (content.includes(competitor.toLowerCase())) return true
-      }
-    }
-    
-    // Include general market/industry news
-    if (organization.industry) {
-      const industry = organization.industry.toLowerCase()
-      if (content.includes(industry)) return true
-    }
-    
-    return false
-  })
+  // Return ALL articles for now - let the pipeline decide relevance
+  // The strict filtering was removing everything
+  const relevantArticles = allArticles
   
   // Get stock symbols if available
   const stockSymbols = []

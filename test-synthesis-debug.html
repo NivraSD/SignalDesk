@@ -1,155 +1,101 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Debug V5 Synthesis</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synthesis Debug Test</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
-        .success { background-color: #d4edda; }
-        .error { background-color: #f8d7da; }
-        pre { background: #f8f9fa; padding: 10px; overflow-x: auto; white-space: pre-wrap; }
-        button { padding: 10px 20px; margin: 5px; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .container {
+            background: #2a2a2a;
+            border-radius: 12px;
+            padding: 30px;
+        }
+        button {
+            background: #00ffcc;
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 10px 5px;
+        }
+        .result {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 600px;
+            overflow-y: auto;
+            background: #333;
+        }
     </style>
 </head>
 <body>
-    <h1>🔍 Debug V5 Synthesis Structure</h1>
-    
-    <div class="test-section">
-        <h2>Test Complete Flow</h2>
-        <button onclick="testCompleteFlow()">Run Complete Intelligence Flow</button>
-        <div id="complete-results"></div>
+    <div class="container">
+        <h1>🔍 Synthesis Stage Debug</h1>
+        
+        <button onclick="testSynthesisSimple()">Test Synthesis (Simple)</button>
+        <button onclick="clearResults()">Clear</button>
+        
+        <div id="result" class="result" style="display:none;"></div>
     </div>
 
     <script>
         const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
-        const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
-
-        async function testCompleteFlow() {
-            const resultsDiv = document.getElementById('complete-results');
-            resultsDiv.innerHTML = '<p>🔍 Running complete intelligence flow...</p>';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        function log(message, data = null) {
+            const result = document.getElementById('result');
+            result.style.display = 'block';
+            result.innerHTML += message + '\n';
+            if (data) {
+                result.innerHTML += JSON.stringify(data, null, 2) + '\n\n';
+            }
+        }
+        
+        function clearResults() {
+            document.getElementById('result').innerHTML = '';
+            document.getElementById('result').style.display = 'none';
+        }
+        
+        async function testSynthesisSimple() {
+            clearResults();
+            log('Testing synthesis with minimal data...');
             
             try {
-                // Step 1: Gathering
-                console.log('Step 1: Gathering...');
-                const gatheringResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-gathering`, {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-5-synthesis`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${ANON_KEY}`
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
                     },
                     body: JSON.stringify({
-                        organization: {
-                            name: 'Tesla',
-                            industry: 'automotive'
-                        }
+                        organization: { name: 'OpenAI' },
+                        previousResults: {}
                     })
                 });
-
-                const gatheringData = await gatheringResponse.json();
-                console.log('Gathering result:', gatheringData);
                 
-                // Step 2: Synthesis
-                console.log('Step 2: Synthesis...');
-                const synthesisResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-synthesis`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${ANON_KEY}`
-                    },
-                    body: JSON.stringify({
-                        gathering_data: gatheringData,
-                        organization: {
-                            name: 'Tesla',
-                            industry: 'automotive'
-                        }
-                    })
-                });
-
-                const synthesisData = await synthesisResponse.json();
-                console.log('Synthesis result:', synthesisData);
+                const data = await response.json();
                 
-                // Analyze the structure
-                const analysis = {
-                    success: synthesisData.success,
-                    hasIntelligence: !!synthesisData.intelligence,
-                    intelligenceKeys: Object.keys(synthesisData.intelligence || {}),
-                    synthesizedKeys: Object.keys(synthesisData.intelligence?.synthesized || {}),
-                    tabsKeys: Object.keys(synthesisData.intelligence?.tabs || {}),
-                    
-                    // Check V5 structure
-                    hasMarketActivity: !!synthesisData.intelligence?.synthesized?.market_activity,
-                    hasCompetitorIntel: !!synthesisData.intelligence?.synthesized?.competitor_intelligence,
-                    hasSocialPulse: !!synthesisData.intelligence?.synthesized?.social_pulse,
-                    hasIndustrySignals: !!synthesisData.intelligence?.synthesized?.industry_signals,
-                    hasMediaCoverage: !!synthesisData.intelligence?.synthesized?.media_coverage,
-                    
-                    // Check what's actually in synthesized
-                    synthesizedType: typeof synthesisData.intelligence?.synthesized,
-                    synthesizedIsArray: Array.isArray(synthesisData.intelligence?.synthesized),
-                    
-                    // Sample data
-                    synthesizedSample: synthesisData.intelligence?.synthesized ? 
-                        JSON.stringify(synthesisData.intelligence.synthesized).substring(0, 200) : 'null'
-                };
-                
-                resultsDiv.innerHTML = `
-                    <div class="test-section ${synthesisData.success ? 'success' : 'error'}">
-                        <h3>📊 Complete Flow Results</h3>
-                        
-                        <h4>Gathering Phase:</h4>
-                        <ul>
-                            <li>Success: ${gatheringData.success}</li>
-                            <li>Sources Succeeded: ${gatheringData.statistics?.sources_succeeded || 0}</li>
-                            <li>Total Articles: ${gatheringData.statistics?.total_articles || 0}</li>
-                            <li>Competitors Found: ${gatheringData.statistics?.competitors_identified || 0}</li>
-                        </ul>
-                        
-                        <h4>Synthesis Phase:</h4>
-                        <ul>
-                            <li>Success: ${analysis.success}</li>
-                            <li>Has Intelligence: ${analysis.hasIntelligence}</li>
-                            <li>Intelligence Keys: ${analysis.intelligenceKeys.join(', ')}</li>
-                            <li>Synthesized Keys: ${analysis.synthesizedKeys.join(', ')}</li>
-                            <li>Tabs Keys: ${analysis.tabsKeys.join(', ')}</li>
-                        </ul>
-                        
-                        <h4>V5 Structure Check:</h4>
-                        <ul>
-                            <li>Market Activity: ${analysis.hasMarketActivity}</li>
-                            <li>Competitor Intel: ${analysis.hasCompetitorIntel}</li>
-                            <li>Social Pulse: ${analysis.hasSocialPulse}</li>
-                            <li>Industry Signals: ${analysis.hasIndustrySignals}</li>
-                            <li>Media Coverage: ${analysis.hasMediaCoverage}</li>
-                        </ul>
-                        
-                        <h4>Synthesized Data Type:</h4>
-                        <ul>
-                            <li>Type: ${analysis.synthesizedType}</li>
-                            <li>Is Array: ${analysis.synthesizedIsArray}</li>
-                            <li>Sample: <code>${analysis.synthesizedSample}</code></li>
-                        </ul>
-                        
-                        <details>
-                            <summary>Raw Gathering Data</summary>
-                            <pre>${JSON.stringify(gatheringData, null, 2)}</pre>
-                        </details>
-                        
-                        <details>
-                            <summary>Raw Synthesis Data</summary>
-                            <pre>${JSON.stringify(synthesisData, null, 2)}</pre>
-                        </details>
-                    </div>
-                `;
-                
+                if (response.ok) {
+                    log('✅ Success!', data);
+                } else {
+                    log('❌ Failed:', data);
+                }
             } catch (error) {
-                console.error('Error:', error);
-                resultsDiv.innerHTML = `
-                    <div class="test-section error">
-                        <h3>❌ Error</h3>
-                        <p>${error.message}</p>
-                        <pre>${error.stack}</pre>
-                    </div>
-                `;
+                log('❌ Error:', error.message);
             }
         }
     </script>

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Direct Monitoring Test - No Login Required</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1a1a1a;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .monitor-test {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+        .monitor-test.testing {
+            background: #fff3cd;
+            border-color: #ffc107;
+        }
+        .monitor-test.success {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+        .monitor-test.error {
+            background: #f8d7da;
+            border-color: #dc3545;
+        }
+        .status {
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .result {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .summary {
+            margin-top: 30px;
+            padding: 20px;
+            background: #e9ecef;
+            border-radius: 4px;
+        }
+        .signal-count {
+            font-size: 24px;
+            font-weight: bold;
+            color: #28a745;
+        }
+        input {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 300px;
+        }
+        .breakdown-item {
+            padding: 5px;
+            margin: 5px 0;
+            background: #f0f0f0;
+            border-left: 3px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 SignalDesk Direct Monitoring Test</h1>
+        
+        <div class="info">
+            <h3>No Login Required - Direct API Access</h3>
+            <p>This test uses the Supabase anon key directly to test monitoring systems.</p>
+        </div>
+
+        <div>
+            <input type="text" id="orgName" placeholder="Enter organization name (e.g., OpenAI)" value="OpenAI">
+            <button onclick="testFullCollection()">Test Full Intelligence Collection</button>
+            <button onclick="testRSSOnly()">Test RSS Only</button>
+            <button onclick="testDiscovery()">Test Discovery Only</button>
+        </div>
+
+        <div id="monitors">
+            <!-- Test results will appear here -->
+        </div>
+
+        <div class="summary" id="summary" style="display: none;">
+            <h2>Collection Summary</h2>
+            <div>Total Signals Collected: <span class="signal-count" id="totalSignals">0</span></div>
+            <div id="summaryDetails"></div>
+        </div>
+    </div>
+
+    <script>
+        // Direct Supabase configuration with correct JWT
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+
+        async function testRSSOnly() {
+            const organization = document.getElementById('orgName').value;
+            if (!organization) {
+                alert('Please enter an organization name');
+                return;
+            }
+
+            const monitorsDiv = document.getElementById('monitors');
+            monitorsDiv.innerHTML = '<h2>RSS Feed Test</h2>';
+            
+            const div = document.createElement('div');
+            div.className = 'monitor-test testing';
+            div.innerHTML = `
+                <h3>RSS Feeds (source-registry)</h3>
+                <div class="status">⏳ Fetching RSS feeds...</div>
+                <div class="result"></div>
+            `;
+            monitorsDiv.appendChild(div);
+
+            try {
+                console.log('Testing RSS with direct call to source-registry...');
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/source-registry?industry=technology&query=${organization}&limit=50`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                console.log('RSS Response:', data);
+                
+                if (response.ok && data.success) {
+                    div.className = 'monitor-test success';
+                    div.querySelector('.status').textContent = `✅ Success - ${data.count || 0} articles from RSS feeds`;
+                    div.querySelector('.result').textContent = JSON.stringify(data, null, 2);
+                } else {
+                    throw new Error(data.error || 'RSS fetch failed');
+                }
+            } catch (error) {
+                div.className = 'monitor-test error';
+                div.querySelector('.status').textContent = `❌ Error: ${error.message}`;
+                div.querySelector('.result').textContent = error.stack || error.message;
+                console.error('RSS error:', error);
+            }
+        }
+
+        async function testDiscovery() {
+            const organization = document.getElementById('orgName').value;
+            if (!organization) {
+                alert('Please enter an organization name');
+                return;
+            }
+
+            const monitorsDiv = document.getElementById('monitors');
+            monitorsDiv.innerHTML = '<h2>Discovery Test</h2>';
+            
+            const div = document.createElement('div');
+            div.className = 'monitor-test testing';
+            div.innerHTML = `
+                <h3>Organization Discovery</h3>
+                <div class="status">⏳ Discovering organization profile...</div>
+                <div class="result"></div>
+            `;
+            monitorsDiv.appendChild(div);
+
+            try {
+                console.log('Testing discovery...');
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-discovery-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({ 
+                        organization: organization,
+                        includeCompetitors: true
+                    })
+                });
+
+                const data = await response.json();
+                console.log('Discovery Response:', data);
+                
+                if (response.ok && data.success) {
+                    div.className = 'monitor-test success';
+                    const competitorCount = data.competitors?.length || 0;
+                    div.querySelector('.status').textContent = `✅ Success - Found ${competitorCount} competitors`;
+                    div.querySelector('.result').textContent = JSON.stringify(data, null, 2);
+                } else {
+                    throw new Error(data.error || 'Discovery failed');
+                }
+            } catch (error) {
+                div.className = 'monitor-test error';
+                div.querySelector('.status').textContent = `❌ Error: ${error.message}`;
+                div.querySelector('.result').textContent = error.stack || error.message;
+                console.error('Discovery error:', error);
+            }
+        }
+
+        async function testFullCollection() {
+            const organization = document.getElementById('orgName').value;
+            if (!organization) {
+                alert('Please enter an organization name');
+                return;
+            }
+
+            const monitorsDiv = document.getElementById('monitors');
+            monitorsDiv.innerHTML = '<h2>Full Intelligence Collection Test</h2>';
+            
+            // First do discovery
+            let organizationProfile = null;
+            const discoveryDiv = document.createElement('div');
+            discoveryDiv.className = 'monitor-test testing';
+            discoveryDiv.innerHTML = `
+                <h3>Step 1: Organization Discovery</h3>
+                <div class="status">⏳ Discovering organization and competitors...</div>
+                <div class="result"></div>
+            `;
+            monitorsDiv.appendChild(discoveryDiv);
+
+            try {
+                console.log('Starting discovery for:', organization);
+                const discoveryResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-discovery-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({ 
+                        organization: organization,
+                        includeCompetitors: true
+                    })
+                });
+
+                const discoveryData = await discoveryResponse.json();
+                console.log('Discovery response:', discoveryData);
+                
+                if (discoveryResponse.ok && discoveryData.success) {
+                    organizationProfile = discoveryData.organization;
+                    discoveryDiv.className = 'monitor-test success';
+                    discoveryDiv.querySelector('.status').textContent = `✅ Discovery complete - ${discoveryData.competitors?.length || 0} competitors found`;
+                    
+                    const discoveryInfo = `Organization: ${organizationProfile?.name || organization}
+Industry: ${organizationProfile?.industry || 'N/A'}
+Competitors: ${discoveryData.competitors?.map(c => c.name).join(', ') || 'None'}`;
+                    discoveryDiv.querySelector('.result').textContent = discoveryInfo;
+                } else {
+                    throw new Error(discoveryData.error || 'Discovery failed');
+                }
+            } catch (error) {
+                discoveryDiv.className = 'monitor-test error';
+                discoveryDiv.querySelector('.status').textContent = `❌ Discovery failed: ${error.message}`;
+                discoveryDiv.querySelector('.result').textContent = error.stack || error.message;
+                console.error('Discovery error:', error);
+                // Continue with basic profile
+                organizationProfile = { name: organization };
+            }
+
+            // Now run collection
+            const collectionDiv = document.createElement('div');
+            collectionDiv.className = 'monitor-test testing';
+            collectionDiv.innerHTML = `
+                <h3>Step 2: Intelligence Collection</h3>
+                <div class="status">⏳ Collecting signals from all monitoring systems (40+ seconds)...</div>
+                <div class="result"></div>
+            `;
+            monitorsDiv.appendChild(collectionDiv);
+
+            try {
+                console.log('Starting collection with profile:', organizationProfile);
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-collection-v1`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({ 
+                        organization: organizationProfile || { name: organization },
+                        entities: organizationProfile?.entities || [],
+                        includeAll: true
+                    })
+                });
+
+                const data = await response.json();
+                console.log('Collection response:', data);
+                
+                if (response.ok && data.success) {
+                    collectionDiv.className = 'monitor-test success';
+                    
+                    const intelligence = data.intelligence;
+                    const signalCount = intelligence?.raw_signals?.length || 0;
+                    const sources = intelligence?.metadata?.sources || [];
+                    
+                    collectionDiv.querySelector('.status').textContent = `✅ Success - ${signalCount} signals from ${sources.length} sources`;
+                    
+                    // Count signals by source
+                    const sourceBreakdown = {};
+                    if (intelligence?.raw_signals) {
+                        intelligence.raw_signals.forEach(signal => {
+                            const source = signal.source || 'Unknown';
+                            sourceBreakdown[source] = (sourceBreakdown[source] || 0) + 1;
+                        });
+                    }
+                    
+                    // Show breakdown
+                    let breakdownHTML = '<h4>Signal Breakdown:</h4>';
+                    Object.entries(sourceBreakdown).forEach(([source, count]) => {
+                        breakdownHTML += `<div class="breakdown-item">${source}: ${count} signals</div>`;
+                    });
+                    
+                    collectionDiv.querySelector('.result').innerHTML = breakdownHTML;
+                    
+                    // Update summary
+                    document.getElementById('summary').style.display = 'block';
+                    document.getElementById('totalSignals').textContent = signalCount;
+                    document.getElementById('summaryDetails').innerHTML = Object.entries(sourceBreakdown)
+                        .map(([source, count]) => `<div>${source}: ${count}</div>`)
+                        .join('');
+                    
+                    // Show sample signals
+                    if (intelligence?.raw_signals?.length > 0) {
+                        const samplesDiv = document.createElement('div');
+                        samplesDiv.className = 'monitor-test success';
+                        samplesDiv.innerHTML = `
+                            <h3>Sample Signals (first 10)</h3>
+                            <div class="result">${intelligence.raw_signals.slice(0, 10).map((s, i) => 
+                                `${i+1}. [${s.source}] ${s.title || s.text || s.content || 'No title'}`
+                            ).join('\n')}</div>
+                        `;
+                        monitorsDiv.appendChild(samplesDiv);
+                    }
+                } else {
+                    throw new Error(data.error || 'Collection failed');
+                }
+            } catch (error) {
+                collectionDiv.className = 'monitor-test error';
+                collectionDiv.querySelector('.status').textContent = `❌ Error: ${error.message}`;
+                collectionDiv.querySelector('.result').textContent = error.stack || error.message;
+                console.error('Collection error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

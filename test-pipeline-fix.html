@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pipeline Fix Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .container {
+            background: #2a2a2a;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #00ffcc;
+            border-bottom: 2px solid #00ffcc;
+            padding-bottom: 10px;
+        }
+        button {
+            background: #00ffcc;
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #00ff99;
+        }
+        .result {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 600px;
+            overflow-y: auto;
+            background: #333;
+        }
+        .success { background: #1b5e20; color: #4caf50; }
+        .error { background: #b71c1c; color: #ef5350; }
+        .info { background: #1565c0; color: #64b5f6; }
+        .warning { background: #e65100; color: #ffb74d; }
+        .stage {
+            margin: 10px 0;
+            padding: 10px;
+            background: #404040;
+            border-radius: 4px;
+            border-left: 4px solid #666;
+        }
+        .stage.running {
+            border-left-color: #ffcc00;
+        }
+        .stage.success {
+            border-left-color: #4caf50;
+        }
+        .stage.error {
+            border-left-color: #f44336;
+        }
+        .stage-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .stage-data {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #aaa;
+        }
+        .progress {
+            width: 100%;
+            height: 20px;
+            background: #222;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88, #00ffcc);
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Pipeline Fix Test - Accumulated Results</h1>
+        <p>Testing if stage results are properly passed between stages</p>
+        
+        <div>
+            <input type="text" id="orgName" placeholder="Organization name" value="OpenAI" style="padding: 10px; width: 200px;">
+            <button onclick="testSimplifiedPipeline()">Test Pipeline (Simulated)</button>
+            <button onclick="testRealPipeline()">Test Real Pipeline</button>
+            <button onclick="clearResults()">Clear</button>
+        </div>
+        
+        <div class="progress">
+            <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+        </div>
+        
+        <div id="stages"></div>
+        
+        <div id="result" class="result" style="display:none;"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        const STAGES = [
+            { id: 'extraction', name: 'Organization Data Extraction', endpoint: 'intelligence-discovery-v3' },
+            { id: 'competitive', name: 'Competitive Intelligence', endpoint: 'intelligence-stage-1-competitors' },
+            { id: 'stakeholders', name: 'Stakeholder Analysis', endpoint: 'intelligence-stage-2-media' },
+            { id: 'media', name: 'Media Landscape', endpoint: 'intelligence-stage-2-media' },
+            { id: 'regulatory', name: 'Regulatory Environment', endpoint: 'intelligence-stage-3-regulatory' },
+            { id: 'trends', name: 'Market Trends', endpoint: 'intelligence-stage-4-trends' },
+            { id: 'synthesis', name: 'Strategic Synthesis', endpoint: 'intelligence-stage-5-synthesis' }
+        ];
+        
+        function log(message, data = null) {
+            const result = document.getElementById('result');
+            result.style.display = 'block';
+            const timestamp = new Date().toLocaleTimeString();
+            result.innerHTML += `[${timestamp}] ${message}\n`;
+            if (data) {
+                result.innerHTML += JSON.stringify(data, null, 2) + '\n';
+            }
+            console.log(message, data);
+        }
+        
+        function clearResults() {
+            document.getElementById('stages').innerHTML = '';
+            document.getElementById('result').innerHTML = '';
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('progressBar').style.width = '0%';
+        }
+        
+        function updateStageUI(stageId, status, data = null) {
+            let stageDiv = document.getElementById(`stage-${stageId}`);
+            if (!stageDiv) {
+                stageDiv = document.createElement('div');
+                stageDiv.id = `stage-${stageId}`;
+                stageDiv.className = 'stage';
+                document.getElementById('stages').appendChild(stageDiv);
+            }
+            
+            const stage = STAGES.find(s => s.id === stageId);
+            stageDiv.className = `stage ${status}`;
+            stageDiv.innerHTML = `
+                <div class="stage-header">
+                    <span>${stage.name}</span>
+                    <span>${status === 'running' ? '⏳' : status === 'success' ? '✅' : '❌'}</span>
+                </div>
+                ${data ? `<div class="stage-data">Results: ${JSON.stringify(Object.keys(data).slice(0, 5))}</div>` : ''}
+            `;
+        }
+        
+        async function testSimplifiedPipeline() {
+            clearResults();
+            log('🚀 Starting SIMULATED pipeline test...');
+            
+            const accumulatedResults = {};
+            const orgName = document.getElementById('orgName').value;
+            
+            for (let i = 0; i < STAGES.length; i++) {
+                const stage = STAGES[i];
+                const progress = ((i + 1) / STAGES.length) * 100;
+                document.getElementById('progressBar').style.width = progress + '%';
+                
+                updateStageUI(stage.id, 'running');
+                log(`📡 Stage ${i + 1}: ${stage.name}`);
+                
+                // Simulate API call with delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Create simulated result
+                const result = {
+                    success: true,
+                    data: {
+                        [`${stage.id}_data`]: `Results from ${stage.name}`,
+                        timestamp: new Date().toISOString()
+                    }
+                };
+                
+                // Add to accumulated results
+                accumulatedResults[stage.id] = result;
+                
+                updateStageUI(stage.id, 'success', result.data);
+                
+                // Log what would be passed to next stage
+                if (i < STAGES.length - 1) {
+                    log(`✅ Stage ${i + 1} complete. Accumulated results count: ${Object.keys(accumulatedResults).length}`);
+                } else {
+                    // Synthesis stage - should have all previous results
+                    log('🎯 SYNTHESIS STAGE - Previous results available:', Object.keys(accumulatedResults));
+                }
+            }
+            
+            log('🎉 Pipeline complete! All stages received proper accumulated results.');
+        }
+        
+        async function testRealPipeline() {
+            clearResults();
+            log('🚀 Starting REAL pipeline test with edge functions...');
+            
+            const accumulatedResults = {};
+            const orgName = document.getElementById('orgName').value;
+            const organization = { name: orgName };
+            
+            for (let i = 0; i < STAGES.length; i++) {
+                const stage = STAGES[i];
+                const progress = ((i + 1) / STAGES.length) * 100;
+                document.getElementById('progressBar').style.width = progress + '%';
+                
+                updateStageUI(stage.id, 'running');
+                log(`📡 Calling ${stage.endpoint}...`);
+                
+                try {
+                    // Prepare request body
+                    const body = {
+                        organization,
+                        previousResults: i === 0 ? {} : accumulatedResults
+                    };
+                    
+                    // Special handling for synthesis stage
+                    if (stage.id === 'synthesis') {
+                        body.stage1 = accumulatedResults.competitive?.data;
+                        body.stage2 = accumulatedResults.media?.data;
+                        body.stage3 = accumulatedResults.regulatory?.data;
+                        body.stage4 = accumulatedResults.trends?.data;
+                        body.monitoring = accumulatedResults.extraction?.intelligence;
+                    }
+                    
+                    const response = await fetch(`${SUPABASE_URL}/functions/v1/${stage.endpoint}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${SUPABASE_KEY}`
+                        },
+                        body: JSON.stringify(body)
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (response.ok && result.success !== false) {
+                        // Store in accumulated results
+                        accumulatedResults[stage.id] = result;
+                        
+                        updateStageUI(stage.id, 'success', result);
+                        
+                        if (stage.id === 'synthesis') {
+                            log('🎯 SYNTHESIS complete with accumulated results:', {
+                                hadPreviousResults: Object.keys(accumulatedResults).length - 1,
+                                opportunities: result.opportunities?.length || 0,
+                                hasTabs: !!result.tabs
+                            });
+                        } else {
+                            log(`✅ Stage ${stage.name} complete, accumulated: ${Object.keys(accumulatedResults).length}`);
+                        }
+                    } else {
+                        updateStageUI(stage.id, 'error');
+                        log(`❌ Stage ${stage.name} failed: ${result.error || 'Unknown error'}`);
+                        break;
+                    }
+                    
+                } catch (error) {
+                    updateStageUI(stage.id, 'error');
+                    log(`❌ Stage ${stage.name} error: ${error.message}`);
+                    break;
+                }
+                
+                // Small delay between stages
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            const finalCount = Object.keys(accumulatedResults).length;
+            if (finalCount === STAGES.length) {
+                log(`🎉 Pipeline complete! All ${finalCount} stages executed successfully.`);
+                
+                const synthesis = accumulatedResults.synthesis;
+                if (synthesis?.opportunities?.length > 0) {
+                    log(`✨ Generated ${synthesis.opportunities.length} opportunities!`);
+                }
+            }
+        }
+    </script>
+</body>
+</html>

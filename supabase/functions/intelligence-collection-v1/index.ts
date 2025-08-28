@@ -6,7 +6,7 @@ import { corsHeaders } from "../_shared/cors.ts"
 
 const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY') || 'fc-3048810124b640eb99293880a4ab25d0'
 
-async function collectIntelligence(entities: any, organization: any, savedProfile: any) {
+async function collectIntelligence(entities: any, organization: any, savedProfile: any, authHeader: string = '') {
   console.log('🚀 Fast Intelligence Collection starting...')
   console.log('📊 Using saved profile:', {
     competitors: savedProfile?.competitors?.length || 0,
@@ -36,32 +36,40 @@ async function collectIntelligence(entities: any, organization: any, savedProfil
     }
   }
   
+  // Create enriched organization object with competitors for monitoring functions
+  const enrichedOrg = {
+    ...organization,
+    competitors: enhancedEntities.competitors,
+    keywords: savedProfile?.keywords || [organization.name],
+    industry: savedProfile?.industry || organization.industry || 'technology'
+  }
+  
   // Parallel collection from multiple sources
   const collectors = []
   
   // 1. RSS Collection (fast)
-  collectors.push(collectRSS(organization, timeout))
+  collectors.push(collectRSS(enrichedOrg, timeout, authHeader))
   
   // 2. Firecrawl for top competitors (rate limited)
   if (enhancedEntities.competitors?.length > 0) {
     const topCompetitors = enhancedEntities.competitors.slice(0, 5)
-    collectors.push(collectFirecrawl(topCompetitors, timeout))
+    collectors.push(collectFirecrawl(topCompetitors, timeout, authHeader))
   }
   
   // 3. Yahoo Finance Intelligence
-  collectors.push(collectYahooFinance(organization, timeout))
+  collectors.push(collectYahooFinance(enrichedOrg, timeout, authHeader))
   
   // 4. Google News Intelligence
-  collectors.push(collectGoogleNews(organization, timeout))
+  collectors.push(collectGoogleNews(enrichedOrg, timeout, authHeader))
   
   // 5. Reddit Intelligence
-  collectors.push(collectReddit(organization, timeout))
+  collectors.push(collectReddit(enrichedOrg, timeout, authHeader))
   
   // 6. Twitter/X Intelligence
-  collectors.push(collectTwitter(organization, timeout))
+  collectors.push(collectTwitter(enrichedOrg, timeout, authHeader))
   
   // 7. General monitoring check
-  collectors.push(collectMonitoring(organization, timeout))
+  collectors.push(collectMonitoring(enrichedOrg, timeout, authHeader))
   
   // Wait for all collectors to complete or timeout individually
   const results = await Promise.allSettled(
@@ -92,7 +100,7 @@ async function collectIntelligence(entities: any, organization: any, savedProfil
   return intelligence
 }
 
-async function collectRSS(organization: any, timeout: number) {
+async function collectRSS(organization: any, timeout: number, authHeader: string = '') {
   try {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), Math.min(timeout, 5000))
@@ -131,7 +139,7 @@ async function collectRSS(organization: any, timeout: number) {
   return { signals: [], source: 'RSS feeds (failed)' }
 }
 
-async function collectFirecrawl(competitors: any[], timeout: number) {
+async function collectFirecrawl(competitors: any[], timeout: number, authHeader: string = '') {
   const signals = []
   const startTime = Date.now()
   
@@ -188,7 +196,7 @@ async function collectFirecrawl(competitors: any[], timeout: number) {
   return { signals, source: `Firecrawl (${competitors.length} competitors)` }
 }
 
-async function collectMonitoring(organization: any, timeout: number) {
+async function collectMonitoring(organization: any, timeout: number, authHeader: string = '') {
   try {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), Math.min(timeout, 5000))
@@ -200,7 +208,7 @@ async function collectMonitoring(organization: any, timeout: number) {
         signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8'
+          'Authorization': authHeader || `Bearer ${Deno.env.get('SUPABASE_ANON_KEY') || ''}`
         },
         body: JSON.stringify({ 
           organization_id: organization.id || organization.name,
@@ -232,7 +240,7 @@ async function collectMonitoring(organization: any, timeout: number) {
   return { signals: [], source: 'Monitoring (failed)' }
 }
 
-async function collectYahooFinance(organization: any, timeout: number) {
+async function collectYahooFinance(organization: any, timeout: number, authHeader: string = '') {
   try {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), Math.min(timeout, 8000))
@@ -244,11 +252,13 @@ async function collectYahooFinance(organization: any, timeout: number) {
         signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8'
+          'Authorization': authHeader || `Bearer ${Deno.env.get('SUPABASE_ANON_KEY') || ''}`
         },
         body: JSON.stringify({ 
-          query: organization.name,
-          industry: organization.industry
+          method: 'gather',
+          params: {
+            organization: organization
+          }
         })
       }
     )
@@ -257,7 +267,9 @@ async function collectYahooFinance(organization: any, timeout: number) {
     
     if (response.ok) {
       const data = await response.json()
-      const signals = data.articles?.map(article => ({
+      // Yahoo Finance returns nested data.data.articles
+      const articles = data.data?.articles || data.articles || []
+      const signals = articles.map(article => ({
         type: 'finance',
         title: article.title,
         content: article.description || article.summary,
@@ -276,7 +288,7 @@ async function collectYahooFinance(organization: any, timeout: number) {
   return { signals: [], source: 'Yahoo Finance (failed)' }
 }
 
-async function collectGoogleNews(organization: any, timeout: number) {
+async function collectGoogleNews(organization: any, timeout: number, authHeader: string = '') {
   try {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), Math.min(timeout, 8000))
@@ -288,7 +300,7 @@ async function collectGoogleNews(organization: any, timeout: number) {
         signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8'
+          'Authorization': authHeader || `Bearer ${Deno.env.get('SUPABASE_ANON_KEY') || ''}`
         },
         body: JSON.stringify({ 
           query: organization.name,
@@ -301,7 +313,9 @@ async function collectGoogleNews(organization: any, timeout: number) {
     
     if (response.ok) {
       const data = await response.json()
-      const signals = data.results?.map(result => ({
+      // Google returns nested data.data.results
+      const results = data.data?.results || data.results || []
+      const signals = results.map(result => ({
         type: 'news',
         title: result.title,
         content: result.snippet || result.description,
@@ -320,7 +334,7 @@ async function collectGoogleNews(organization: any, timeout: number) {
   return { signals: [], source: 'Google News (failed)' }
 }
 
-async function collectReddit(organization: any, timeout: number) {
+async function collectReddit(organization: any, timeout: number, authHeader: string = '') {
   try {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), Math.min(timeout, 8000))
@@ -332,11 +346,15 @@ async function collectReddit(organization: any, timeout: number) {
         signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8'
+          'Authorization': authHeader || `Bearer ${Deno.env.get('SUPABASE_ANON_KEY') || ''}`
         },
         body: JSON.stringify({ 
-          query: organization.name,
-          subreddits: ['business', 'technology', 'stocks']
+          method: 'gather',
+          params: {
+            organization: organization,
+            subreddits: ['business', 'technology', 'stocks'],
+            limit: 30
+          }
         })
       }
     )
@@ -345,13 +363,15 @@ async function collectReddit(organization: any, timeout: number) {
     
     if (response.ok) {
       const data = await response.json()
-      const signals = data.posts?.map(post => ({
+      // Reddit returns nested data.data.discussions
+      const posts = data.data?.discussions || data.discussions || data.posts || []
+      const signals = posts.map(post => ({
         type: 'social',
         title: post.title,
-        content: post.selftext || post.body,
+        content: post.text || post.selftext || post.body || '',
         source: `Reddit r/${post.subreddit}`,
         url: post.url,
-        engagement: post.score,
+        engagement: post.score || 0,
         raw: post
       })) || []
       
@@ -364,7 +384,7 @@ async function collectReddit(organization: any, timeout: number) {
   return { signals: [], source: 'Reddit (failed)' }
 }
 
-async function collectTwitter(organization: any, timeout: number) {
+async function collectTwitter(organization: any, timeout: number, authHeader: string = '') {
   try {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), Math.min(timeout, 8000))
@@ -376,11 +396,14 @@ async function collectTwitter(organization: any, timeout: number) {
         signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8'
+          'Authorization': authHeader || `Bearer ${Deno.env.get('SUPABASE_ANON_KEY') || ''}`
         },
         body: JSON.stringify({ 
-          query: organization.name,
-          limit: 30
+          method: 'gather',
+          params: {
+            organization: organization,
+            limit: 30
+          }
         })
       }
     )
@@ -389,7 +412,9 @@ async function collectTwitter(organization: any, timeout: number) {
     
     if (response.ok) {
       const data = await response.json()
-      const signals = data.tweets?.map(tweet => ({
+      // Twitter returns nested data.data.tweets  
+      const tweets = data.data?.tweets || data.tweets || []
+      const signals = tweets.map(tweet => ({
         type: 'social',
         title: `@${tweet.author}: ${tweet.text.substring(0, 100)}`,
         content: tweet.text,
@@ -446,7 +471,8 @@ serve(async (req) => {
       console.log('Could not retrieve saved profile:', e)
     }
     
-    const intelligence = await collectIntelligence(entities, organization, savedProfile)
+    const authHeader = req.headers.get('Authorization') || ''
+    const intelligence = await collectIntelligence(entities, organization, savedProfile, authHeader)
     
     // Save collected intelligence to database
     if (intelligence.raw_signals.length > 0) {
