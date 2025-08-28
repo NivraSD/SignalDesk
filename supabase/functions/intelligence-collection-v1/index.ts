@@ -15,7 +15,7 @@ async function collectIntelligence(entities: any, organization: any, savedProfil
   })
   
   const startTime = Date.now()
-  const timeout = 25000 // 25 seconds max (leaving buffer for response)
+  const timeout = 40000 // 40 seconds max (leaving buffer for response)
   
   // Merge saved profile with provided entities
   const enhancedEntities = {
@@ -44,7 +44,7 @@ async function collectIntelligence(entities: any, organization: any, savedProfil
   
   // 2. Firecrawl for top 3 competitors only (rate limited)
   if (enhancedEntities.competitors?.length > 0) {
-    const topCompetitors = enhancedEntities.competitors.slice(0, 3)
+    const topCompetitors = enhancedEntities.competitors.slice(0, 5)
     collectors.push(collectFirecrawl(topCompetitors, timeout))
   }
   
@@ -56,7 +56,7 @@ async function collectIntelligence(entities: any, organization: any, savedProfil
     collectors.map(collector => 
       Promise.race([
         collector,
-        new Promise((resolve) => setTimeout(() => resolve({ signals: [], source: 'timeout' }), timeout))
+        new Promise((resolve) => setTimeout(() => resolve({ signals: [], source: 'timeout' }), Math.min(timeout, 15000)))
       ])
     )
   )
@@ -86,7 +86,7 @@ async function collectRSS(organization: any, timeout: number) {
     const timeoutId = setTimeout(() => controller.abort(), Math.min(timeout, 5000))
     
     const response = await fetch(
-      `https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/source-registry?industry=${organization.industry || 'technology'}&limit=20`,
+      `https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/source-registry?industry=${organization.industry || 'technology'}&limit=50`,
       { 
         signal: controller.signal,
         headers: { 
