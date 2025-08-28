@@ -19,10 +19,17 @@ class IntelligenceOrchestratorV4 {
    */
   async orchestrate(config) {
     const organization = config.organization || config;
-    console.log(`🚀 V4 Elite Analysis starting for ${organization.name}`);
+    const stageConfig = config.stageConfig || {};
+    
+    console.log(`🚀 V4 Elite Analysis starting for ${organization.name}, Stage: ${stageConfig.stageName || 'collection'}`);
     
     try {
-      // PHASE 1: FAST COLLECTION (30s limit)
+      // Check if this is a specific stage request
+      if (stageConfig.stageId) {
+        return await this.executeStage(stageConfig.stageId, organization, config, stageConfig.previousStageResults);
+      }
+      
+      // Default: Run collection and synthesis
       console.log('📡 Phase 1: Fast Intelligence Collection');
       
       const collectionResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-collection-v1`, {
@@ -84,6 +91,108 @@ class IntelligenceOrchestratorV4 {
         analysis: this.getEmptyAnalysis()
       };
     }
+  }
+
+  // Execute specific stage based on stage ID
+  async executeStage(stageId, organization, config, previousStageResults) {
+    console.log(`🎯 Executing stage: ${stageId}`);
+    
+    // Map stage IDs to endpoints
+    const stageEndpoints = {
+      extraction: 'intelligence-discovery-v3',
+      competitive: 'intelligence-stage-1-competitors',
+      media: 'intelligence-stage-2-media',
+      regulatory: 'intelligence-stage-3-regulatory',
+      trends: 'intelligence-stage-4-trends',
+      synthesis: 'intelligence-stage-5-synthesis'
+    };
+    
+    const endpoint = stageEndpoints[stageId];
+    if (!endpoint) {
+      throw new Error(`Unknown stage: ${stageId}`);
+    }
+    
+    // For synthesis stage, pass ALL previous stage results
+    if (stageId === 'synthesis') {
+      console.log('📊 Synthesis stage - passing all previous results:', Object.keys(previousStageResults || {}));
+      
+      const response = await fetch(`${this.supabaseUrl}/functions/v1/${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.supabaseKey}`
+        },
+        body: JSON.stringify({
+          organization,
+          // Pass all previous stage data for synthesis
+          previousResults: previousStageResults,
+          // Also pass structured stage data
+          stage1: previousStageResults?.competitive?.data,
+          stage2: previousStageResults?.media?.data,
+          stage3: previousStageResults?.regulatory?.data,
+          stage4: previousStageResults?.trends?.data,
+          monitoring: previousStageResults?.extraction?.intelligence
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Synthesis failed: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return {
+        success: true,
+        data: data,
+        analysis: data,
+        tabs: data.tabs,
+        opportunities: data.opportunities || data.consolidated_opportunities?.prioritized_list || [],
+        raw_count: data.raw_count
+      };
+    }
+    
+    // For other stages, pass config and any monitoring data
+    const requestBody = {
+      organization,
+      entities: {
+        competitors: config.competitors || organization.competitors || [],
+        regulators: config.regulators || organization.regulators || [],
+        activists: config.activists || organization.activists || [],
+        media_outlets: config.media_outlets || organization.media_outlets || [],
+        investors: config.investors || organization.investors || [],
+        analysts: config.analysts || organization.analysts || []
+      }
+    };
+    
+    // Pass monitoring data from extraction stage to analysis stages
+    if (previousStageResults?.extraction?.intelligence) {
+      requestBody.monitoringData = previousStageResults.extraction.intelligence;
+    }
+    
+    const response = await fetch(`${this.supabaseUrl}/functions/v1/${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.supabaseKey}`
+      },
+      body: JSON.stringify(requestBody)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Stage ${stageId} failed: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    return {
+      success: true,
+      data: data,
+      intelligence: data.intelligence,
+      organization: data.organization,
+      metadata: {
+        stage: stageId,
+        timestamp: new Date().toISOString()
+      }
+    };
   }
 
   // MCP analysis removed - using Edge Functions only for Vercel deployment
