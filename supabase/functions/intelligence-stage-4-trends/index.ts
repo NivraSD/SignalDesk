@@ -96,7 +96,8 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       success: true,
       stage: 'trends_analysis',
-      data: results
+      data: results,
+      intelligence: monitoringData // Pass through monitoring data
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });

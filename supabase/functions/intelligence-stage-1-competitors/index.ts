@@ -318,11 +318,13 @@ serve(async (req) => {
       success: true,
       stage: 'competitor_analysis',
       data: results,
+      intelligence: monitoringData, // CRITICAL: Pass through monitoring data
       debug: {
         inputCompetitorCount: competitors.length,
         analyzedCompetitorCount: totalCompetitors,
         hadFullProfile: !!fullProfile,
-        hadDatabaseData: !!dbProfile
+        hadDatabaseData: !!dbProfile,
+        monitoringSignals: monitoringData?.raw_signals?.length || 0
       }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
