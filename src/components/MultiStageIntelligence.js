@@ -127,20 +127,35 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
       if (existingAnalysis && existingAnalysis.stageData) {
         console.log('✅ Found existing analysis in Supabase!');
         
-        // Set the stage results from Supabase
-        setStageResults(existingAnalysis.stageData);
+        // Check if this analysis is recent (less than 5 minutes old)
+        const synthesisData = existingAnalysis.stageData?.synthesis;
+        const timestamp = synthesisData?.timestamp || synthesisData?.data?.timestamp;
+        const isRecent = timestamp && (Date.now() - new Date(timestamp).getTime()) < 5 * 60 * 1000;
         
-        // Set final intelligence if synthesis exists
-        if (existingAnalysis.tabs) {
-          const finalIntel = {
-            success: true,
-            analysis: existingAnalysis.analysis,
-            tabs: existingAnalysis.tabs,
-            metadata: existingAnalysis.metadata
-          };
-          setFinalIntelligence(finalIntel);
-          setIsComplete(true);
-          completionRef.current = true;
+        if (isRecent) {
+          console.log('📊 Using recent cached analysis (< 5 minutes old)');
+          // Set the stage results from Supabase
+          setStageResults(existingAnalysis.stageData);
+          
+          // Set final intelligence if synthesis exists
+          if (existingAnalysis.tabs) {
+            const finalIntel = {
+              success: true,
+              analysis: existingAnalysis.analysis,
+              tabs: existingAnalysis.tabs,
+              metadata: existingAnalysis.metadata
+            };
+            setFinalIntelligence(finalIntel);
+            setIsComplete(true);
+            completionRef.current = true;
+          }
+        } else {
+          console.log('🔄 Existing analysis is stale (> 5 minutes old), running fresh pipeline...');
+          // Don't set isComplete to true - let the pipeline run
+          setStageResults({});
+          setFinalIntelligence(null);
+          setIsComplete(false);
+          completionRef.current = false;
         }
       } else {
         console.log('📝 No existing data in Supabase, ready to run new analysis');
