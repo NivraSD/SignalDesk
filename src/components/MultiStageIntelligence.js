@@ -85,6 +85,7 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
   const [activeTab, setActiveTab] = useState('executive');
   const [hasStarted, setHasStarted] = useState(false);
   const completionRef = useRef(false);
+  const runningRef = useRef(false); // Prevent multiple simultaneous runs
   
   // Initialize organization state
   const [organization] = useState(() => {
@@ -226,10 +227,10 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
           }
         }));
         
-        // Progress to next stage
+        // Progress to next stage with proper delay for Claude processing
         setTimeout(() => {
           setCurrentStage(stageIndex + 1);
-        }, 1000);
+        }, 3000); // 3 seconds between stages
         
       } else {
         throw new Error(`Stage ${stageIndex + 1} failed: ${result.error}`);
@@ -1067,6 +1068,11 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
 
   // Run stages sequentially - ONLY ONCE per organization
   useEffect(() => {
+    // Guard against running when already running
+    if (runningRef.current) {
+      return;
+    }
+    
     console.log('🎯 ELABORATE PIPELINE - Stage trigger check:', {
       hasOrganization: !!organization,
       hasStarted,
@@ -1087,7 +1093,8 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
       console.log('🚀 Starting pipeline for the first time');
       setHasStarted(true);
       // Immediately trigger the first stage
-      runStage(0);
+      runningRef.current = true;
+      runStage(0).finally(() => { runningRef.current = false; });
       return;
     }
     
@@ -1105,14 +1112,15 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     }
     
     // Run the current stage if within bounds
-    if (currentStage >= 0 && currentStage < INTELLIGENCE_STAGES.length) {
+    if (currentStage >= 0 && currentStage < INTELLIGENCE_STAGES.length && hasStarted) {
       console.log(`🚀 RUNNING STAGE ${currentStage + 1}: ${INTELLIGENCE_STAGES[currentStage].name}`);
-      runStage(currentStage);
+      runningRef.current = true;
+      runStage(currentStage).finally(() => { runningRef.current = false; });
     } else if (currentStage === INTELLIGENCE_STAGES.length && !isComplete) {
       console.log('🎉 All stages done, completing pipeline...');
       handleComplete();
     }
-  }, [currentStage, organization, error, isComplete, hasStarted, runStage, handleComplete, stageResults]);
+  }, [currentStage, organization?.name, hasStarted, isComplete]); // Reduced dependencies
 
   // Show initialization message
   if (!organization) {

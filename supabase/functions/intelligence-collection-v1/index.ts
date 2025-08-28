@@ -51,23 +51,28 @@ async function collectIntelligence(entities: any, organization: any, savedProfil
   // 3. Quick monitoring check
   collectors.push(collectMonitoring(organization, timeout))
   
-  // Wait for all with timeout
-  const results = await Promise.race([
-    Promise.all(collectors),
-    new Promise((resolve) => setTimeout(() => resolve([]), timeout))
-  ])
+  // Wait for all collectors to complete or timeout individually
+  const results = await Promise.allSettled(
+    collectors.map(collector => 
+      Promise.race([
+        collector,
+        new Promise((resolve) => setTimeout(() => resolve({ signals: [], source: 'timeout' }), timeout))
+      ])
+    )
+  )
   
-  // Merge results
-  if (Array.isArray(results)) {
-    results.forEach(result => {
-      if (result?.signals) {
-        intelligence.raw_signals.push(...result.signals)
+  // Merge results from Promise.allSettled
+  results.forEach(result => {
+    if (result.status === 'fulfilled' && result.value) {
+      const data = result.value
+      if (data.signals && Array.isArray(data.signals)) {
+        intelligence.raw_signals.push(...data.signals)
       }
-      if (result?.source) {
-        intelligence.metadata.sources.push(result.source)
+      if (data.source) {
+        intelligence.metadata.sources.push(data.source)
       }
-    })
-  }
+    }
+  })
   
   const elapsed = Date.now() - startTime
   console.log(`✅ Collection completed in ${elapsed}ms with ${intelligence.raw_signals.length} signals`)
