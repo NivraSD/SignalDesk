@@ -86,6 +86,7 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
   const [hasStarted, setHasStarted] = useState(false);
   const completionRef = useRef(false);
   const runningRef = useRef(false); // Prevent multiple simultaneous runs
+  const accumulatedResultsRef = useRef({}); // Track accumulated results across stages
   
   // Initialize organization state
   const [organization] = useState(() => {
@@ -119,6 +120,7 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     setError(null);
     completionRef.current = false;
     runningRef.current = false;
+    accumulatedResultsRef.current = {}; // Reset accumulated results
     console.log(`🔄 Reset pipeline for new organization: ${organization?.name}`);
   }, [organization?.name]);
   
@@ -181,14 +183,17 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
   }, []); // Empty dependency array - run ONLY on mount
 
   // Run individual stage with specialized analysis
-  const runStage = useCallback(async (stageIndex) => {
+  const runStage = useCallback(async (stageIndex, accumulatedResults = null) => {
     const stage = INTELLIGENCE_STAGES[stageIndex];
     
+    // Use accumulated results or current state
+    const currentResults = accumulatedResults || stageResults;
+    
     // Check if this stage is already running or complete
-    if (stageResults[stage.id] && (stageResults[stage.id].inProgress || stageResults[stage.id].completed)) {
+    if (currentResults[stage.id] && (currentResults[stage.id].inProgress || currentResults[stage.id].completed)) {
       console.log(`⚠️ Stage ${stageIndex + 1} already processed, skipping`);
       setCurrentStage(stageIndex + 1);
-      return;
+      return currentResults;
     }
     
     console.log(`🔄 Starting stage ${stageIndex + 1}: ${stage.name}`);
@@ -201,8 +206,8 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         [stage.id]: { inProgress: true }
       }));
       
-      // Create stage-specific configuration
-      const stageConfig = createStageConfig(stageIndex, organizationProfile || organization);
+      // Create stage-specific configuration with accumulated results
+      const stageConfig = createStageConfig(stageIndex, organizationProfile || organization, currentResults);
       
       // Linear progress over ~25 seconds per stage (2.5 mins / 6 stages)
       const progressTimer = setInterval(() => {
@@ -210,10 +215,30 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
       }, 1000);
       
       // Run specialized analysis through orchestrator
+      console.log(`📡 Calling orchestrator for stage ${stageIndex + 1} with config:`, {
+        stageId: stageConfig.stageConfig?.stageId,
+        hasPreviousResults: !!stageConfig.stageConfig?.previousStageResults,
+        previousStageCount: Object.keys(stageConfig.stageConfig?.previousStageResults || {}).length
+      });
+      
       const result = await intelligenceOrchestratorV4.orchestrate(stageConfig);
       
       clearInterval(progressTimer);
       setStageProgress(100);
+      
+      console.log(`📊 Stage ${stageIndex + 1} (${stage.name}) result:`, {
+        success: result?.success,
+        hasData: !!result?.data,
+        hasIntelligence: !!result?.intelligence,
+        dataKeys: result?.data ? Object.keys(result.data).slice(0, 5) : [],
+        resultKeys: result ? Object.keys(result).slice(0, 10) : []
+      });
+      
+      // Check if we actually got data
+      if (!result) {
+        console.error(`❌ Stage ${stageIndex + 1} returned null/undefined`);
+        throw new Error(`Stage ${stageIndex + 1} returned no result`);
+      }
       
       if (result.success) {
         // Stage complete
@@ -224,9 +249,9 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
           // Don't save to localStorage - let the edge functions handle persistence
         }
         
-        // Store stage-specific results (replace inProgress marker)
-        setStageResults(prev => ({
-          ...prev,
+        // Create the updated results object with this stage's data
+        const updatedResults = {
+          ...currentResults,
           [stage.id]: {
             ...result,
             inProgress: false,
@@ -238,12 +263,21 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
               timestamp: new Date().toISOString()
             }
           }
-        }));
+        };
+        
+        // Store stage-specific results (replace inProgress marker)
+        setStageResults(updatedResults);
+        
+        // Update accumulated results ref for next stage
+        accumulatedResultsRef.current = updatedResults;
         
         // Progress to next stage with proper delay for Claude processing
         setTimeout(() => {
           setCurrentStage(stageIndex + 1);
         }, 3000); // 3 seconds between stages
+        
+        // Return the updated results for the next stage to use
+        return updatedResults;
         
       } else {
         throw new Error(`Stage ${stageIndex + 1} failed: ${result.error}`);
@@ -252,9 +286,9 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
       console.error(`Stage ${stageIndex + 1} error:`, err.message);
       setError(`Stage ${stageIndex + 1} (${stage.name}) failed: ${err.message}`);
       
-      // Store error but continue to next stage after delay
-      setStageResults(prev => ({
-        ...prev,
+      // Create updated results with error
+      const updatedResults = {
+        ...currentResults,
         [stage.id]: { 
           error: err.message,
           inProgress: false,
@@ -262,16 +296,25 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
           failed: true,
           stageMetadata: { stageName: stage.name, focus: stage.focus }
         }
-      }));
+      };
+      
+      // Store error but continue to next stage after delay
+      setStageResults(updatedResults);
+      
+      // Update accumulated results ref even on error
+      accumulatedResultsRef.current = updatedResults;
       
       setTimeout(() => {
         setCurrentStage(stageIndex + 1);
       }, 2000);
+      
+      // Return the updated results even on error
+      return updatedResults;
     }
   }, [organization, organizationProfile, startTime]);
 
   // Create specialized configuration for each stage
-  const createStageConfig = (stageIndex, baseOrganization) => {
+  const createStageConfig = (stageIndex, baseOrganization, accumulatedResults = null) => {
     const baseConfig = {
       organization: baseOrganization,
       competitors: baseOrganization?.competitors || baseOrganization?.stakeholders?.competitors || [],
@@ -285,6 +328,8 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
 
     // Add stage-specific focus parameters
     const stage = INTELLIGENCE_STAGES[stageIndex];
+    // Use accumulated results if provided, otherwise use current state
+    const resultsToUse = accumulatedResults || stageResults;
     return {
       ...baseConfig,
       stageConfig: {
@@ -292,7 +337,7 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         stageName: stage.name,
         focus: stage.focus,
         isElaboratePipeline: true,
-        previousStageResults: Object.keys(stageResults).length > 0 ? stageResults : null
+        previousStageResults: Object.keys(resultsToUse).length > 0 ? resultsToUse : null
       }
     };
   };
@@ -1079,6 +1124,71 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     );
   };
 
+  const renderOpportunities = (intelligence) => {
+    const { opportunities = [], tabs = {} } = intelligence;
+    
+    console.log('🎯 Rendering opportunities:', opportunities.length);
+    
+    return (
+      <div className="opportunities-content">
+        <div className="opportunities-section">
+          <h3>Strategic PR Opportunities</h3>
+          {opportunities && opportunities.length > 0 ? (
+            <div className="opportunities-grid">
+              {opportunities.map((opp, idx) => (
+                <div key={idx} className="opportunity-card">
+                  <div className="opportunity-header">
+                    <span className="opportunity-type">{opp.type || 'Strategic'}</span>
+                    <span className="opportunity-urgency urgency-{opp.urgency || 'medium'}">
+                      {opp.urgency || 'Medium'} Priority
+                    </span>
+                  </div>
+                  <h4 className="opportunity-title">{opp.opportunity || opp.title || opp.description}</h4>
+                  {opp.pr_angle && (
+                    <div className="opportunity-angle">
+                      <strong>PR Angle:</strong> {opp.pr_angle}
+                    </div>
+                  )}
+                  {opp.quick_summary && (
+                    <div className="opportunity-summary">{opp.quick_summary}</div>
+                  )}
+                  <div className="opportunity-meta">
+                    <span className="opportunity-source">Source: {opp.source || opp.source_stage || 'Synthesis'}</span>
+                    {opp.confidence && (
+                      <span className="opportunity-confidence">Confidence: {opp.confidence}%</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="no-opportunities">
+              <p>No PR opportunities identified in this analysis cycle.</p>
+              <p className="help-text">
+                Opportunities are generated from the synthesis of all intelligence stages. 
+                They should appear here once the pipeline completes successfully.
+              </p>
+            </div>
+          )}
+        </div>
+        
+        {tabs.synthesis?.consolidated_opportunities?.prioritized_list && (
+          <div className="opportunities-section">
+            <h3>Consolidated Strategic Recommendations</h3>
+            <div className="recommendations-list">
+              {tabs.synthesis.consolidated_opportunities.prioritized_list.map((rec, idx) => (
+                <div key={idx} className="recommendation-item">
+                  <span className="rec-number">{idx + 1}.</span>
+                  <span className="rec-text">{rec.opportunity || rec}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // Run stages sequentially - ONLY ONCE per organization
   useEffect(() => {
     // Guard against running when already running or complete
@@ -1106,9 +1216,11 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     if (currentStage === 0 && !hasStarted) {
       console.log('🚀 Starting pipeline for the first time');
       setHasStarted(true);
-      // Immediately trigger the first stage
+      // Immediately trigger the first stage with empty accumulated results
       runningRef.current = true;
-      runStage(0).finally(() => { runningRef.current = false; });
+      runStage(0, {}).then(results => {
+        accumulatedResultsRef.current = results || {};
+      }).finally(() => { runningRef.current = false; });
       return;
     }
     
@@ -1129,7 +1241,10 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     if (currentStage >= 0 && currentStage < INTELLIGENCE_STAGES.length && hasStarted) {
       console.log(`🚀 RUNNING STAGE ${currentStage + 1}: ${INTELLIGENCE_STAGES[currentStage].name}`);
       runningRef.current = true;
-      runStage(currentStage).finally(() => { runningRef.current = false; });
+      // Pass accumulated results to each stage
+      runStage(currentStage, accumulatedResultsRef.current).then(results => {
+        accumulatedResultsRef.current = results || accumulatedResultsRef.current;
+      }).finally(() => { runningRef.current = false; });
     } else if (currentStage === INTELLIGENCE_STAGES.length && !isComplete && !completionRef.current) {
       console.log('🎉 All stages done, completing pipeline...');
       completionRef.current = true; // Set immediately to prevent re-entry
@@ -1179,6 +1294,11 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         label: 'Early Signals',
         icon: '🔮',
         content: renderEarlySignals(finalIntelligence)
+      },
+      opportunities: {
+        label: 'PR Opportunities',
+        icon: '🎯',
+        content: renderOpportunities(finalIntelligence)
       }
     };
     

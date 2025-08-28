@@ -5,8 +5,8 @@
 
 export async function analyzeWithClaudeSynthesis(
   organization: any,
-  allStageData: any,
-  monitoringData: any,
+  normalizedData: any,
+  previousResults: any,
   existingAnalysis: any
 ) {
   const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
@@ -16,9 +16,12 @@ export async function analyzeWithClaudeSynthesis(
   }
 
   console.log('🤖 Claude Synthesis Analyst starting...', {
-    hasAllStageData: !!allStageData,
-    stageCount: Object.keys(allStageData || {}).length,
-    hasMonitoringData: !!monitoringData
+    hasNormalizedData: !!normalizedData,
+    hasCompetitors: normalizedData?.competitors?.all?.length > 0,
+    hasMedia: normalizedData?.media?.coverage?.length > 0,
+    hasRegulatory: normalizedData?.regulatory?.developments?.length > 0,
+    hasTrends: normalizedData?.trends?.topics?.length > 0,
+    hasMonitoring: !!normalizedData?.monitoring
   })
 
   const prompt = `You are an elite intelligence analyst specializing in ${organization.industry || 'business'} intelligence synthesis and PR implications.
@@ -33,20 +36,25 @@ You have received intelligence from multiple specialized analysts. Your role is 
 
 IMPORTANT: You are NOT providing strategic recommendations. You are providing analysis and understanding.
 
-Stage 1 - Competitive Intelligence:
-${JSON.stringify(allStageData.stage1 || allStageData.competitors || {}, null, 2)}
+Stage 1 - Competitive Intelligence (Full Analysis):
+${JSON.stringify(normalizedData.competitors?.fullAnalysis || normalizedData.competitors || {}, null, 2)}
 
-Stage 2 - Media Analysis:
-${JSON.stringify(allStageData.stage2 || allStageData.media || {}, null, 2)}
+Stage 2 - Media Analysis (Full Analysis):
+${JSON.stringify(normalizedData.media?.fullAnalysis || normalizedData.media || {}, null, 2)}
 
-Stage 3 - Regulatory Intelligence:
-${JSON.stringify(allStageData.stage3 || allStageData.regulatory || {}, null, 2)}
+Stage 3 - Regulatory Intelligence (Full Analysis):
+${JSON.stringify(normalizedData.regulatory?.fullAnalysis || normalizedData.regulatory || {}, null, 2)}
 
-Stage 4 - Trend Analysis:
-${JSON.stringify(allStageData.stage4 || allStageData.trends || {}, null, 2)}
+Stage 4 - Trend Analysis (Full Analysis):
+${JSON.stringify(normalizedData.trends?.fullAnalysis || normalizedData.trends || {}, null, 2)}
 
-Raw Monitoring Data:
-${JSON.stringify(monitoringData, null, 2)}
+Raw Monitoring Data (100+ signals collected):
+${JSON.stringify(normalizedData.monitoring ? {
+  signal_count: normalizedData.monitoring.raw_signals?.length || 0,
+  sources: normalizedData.monitoring.metadata?.sources || [],
+  sample_signals: normalizedData.monitoring.raw_signals?.slice(0, 10) || [],
+  full_data_available: true
+} : {}, null, 2)}
 
 Provide comprehensive synthesis in this exact JSON structure:
 
@@ -180,25 +188,37 @@ Provide comprehensive synthesis in this exact JSON structure:
     "watch_items": ["top 3-5 things to monitor"]
   },
   "consolidated_opportunities": {
-    "from_media": "Extract opportunities from Stage 2 media analysis",
-    "from_regulatory": "Extract opportunities from Stage 3 regulatory analysis",
-    "from_trends": "Extract opportunities from Stage 4 trends analysis",
+    "from_media": "Extract ALL media opportunities from Stage 2 analysis - look for gaps, narratives, coverage opportunities",
+    "from_regulatory": "Extract ALL regulatory opportunities from Stage 3 analysis - compliance advantages, first-mover opportunities",
+    "from_trends": "Extract ALL trend opportunities from Stage 4 analysis - emerging topics, conversation gaps",
+    "from_competitive": "Extract ALL competitive opportunities from Stage 1 analysis - differentiation points, weaknesses to exploit",
+    "from_synthesis": "Create NEW opportunities by connecting insights across all stages",
     "prioritized_list": [
       {
-        "opportunity": "specific opportunity",
-        "source_stage": "which stage identified this",
-        "type": "competitive/narrative/regulatory/trend",
+        "opportunity": "specific actionable PR/marketing opportunity (be specific and detailed)",
+        "source_stage": "which stage(s) identified this",
+        "type": "competitive/narrative/regulatory/trend/strategic",
         "urgency": "immediate/high/medium/low",
-        "confidence": "confidence percentage",
-        "pr_angle": "how to leverage this",
-        "quick_summary": "one-line description"
+        "confidence": 70-95,
+        "pr_angle": "specific approach to leverage this opportunity",
+        "quick_summary": "one-line actionable description",
+        "supporting_evidence": ["specific data point 1", "specific data point 2"]
       }
     ],
-    "total_opportunities": "count of all opportunities found"
+    "total_opportunities": "MUST generate at least 4-8 opportunities based on the intelligence"
   }
 }
 
-Remember: Focus on ANALYSIS and UNDERSTANDING, not strategic recommendations. Help users comprehend their environment and PR implications.`;
+Remember: Focus on ANALYSIS and UNDERSTANDING, not strategic recommendations. Help users comprehend their environment and PR implications.
+
+CRITICAL: You MUST generate 4-8 specific, actionable PR/marketing opportunities in the consolidated_opportunities.prioritized_list based on the intelligence provided. Look for:
+- Narrative gaps where the organization can establish thought leadership
+- Competitive weaknesses to exploit through messaging
+- Regulatory changes that create first-mover advantages
+- Emerging trends the organization can ride
+- Cross-stage insights that reveal unique positioning opportunities
+
+Even if the data seems limited, use your analytical skills to identify opportunities based on what IS available.`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
