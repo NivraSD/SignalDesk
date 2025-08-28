@@ -109,6 +109,19 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     return null;
   });
 
+  // Reset pipeline when organization changes
+  useEffect(() => {
+    // Reset all state when organization changes
+    setCurrentStage(0);
+    setStageResults({});
+    setHasStarted(false);
+    setIsComplete(false);
+    setError(null);
+    completionRef.current = false;
+    runningRef.current = false;
+    console.log(`🔄 Reset pipeline for new organization: ${organization?.name}`);
+  }, [organization?.name]);
+  
   // Load existing data from Supabase on mount - ONLY ONCE
   useEffect(() => {
     // Add guard to prevent re-running
@@ -1068,8 +1081,8 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
 
   // Run stages sequentially - ONLY ONCE per organization
   useEffect(() => {
-    // Guard against running when already running
-    if (runningRef.current) {
+    // Guard against running when already running or complete
+    if (runningRef.current || completionRef.current) {
       return;
     }
     
@@ -1079,11 +1092,12 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
       currentStage,
       totalStages: INTELLIGENCE_STAGES.length,
       hasError: !!error,
-      isComplete
+      isComplete,
+      completionRef: completionRef.current
     });
     
     // Don't run if already complete or no organization
-    if (isComplete || !organization) {
+    if (isComplete || completionRef.current || !organization) {
       console.log('✅ Pipeline complete or no organization');
       return;
     }
@@ -1116,8 +1130,9 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
       console.log(`🚀 RUNNING STAGE ${currentStage + 1}: ${INTELLIGENCE_STAGES[currentStage].name}`);
       runningRef.current = true;
       runStage(currentStage).finally(() => { runningRef.current = false; });
-    } else if (currentStage === INTELLIGENCE_STAGES.length && !isComplete) {
+    } else if (currentStage === INTELLIGENCE_STAGES.length && !isComplete && !completionRef.current) {
       console.log('🎉 All stages done, completing pipeline...');
+      completionRef.current = true; // Set immediately to prevent re-entry
       handleComplete();
     }
   }, [currentStage, organization?.name, hasStarted, isComplete]); // Reduced dependencies
