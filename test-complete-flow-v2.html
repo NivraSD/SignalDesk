@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Pipeline Flow Test</title>
+    <style>
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #fff;
+            padding: 40px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+        .subtitle {
+            text-align: center;
+            opacity: 0.8;
+            margin-bottom: 40px;
+            font-size: 16px;
+        }
+        .flow-section {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 25px;
+            margin-bottom: 25px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .flow-section h2 {
+            margin-top: 0;
+            color: #4fc3f7;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            display: block;
+            margin: 30px auto;
+            transition: transform 0.2s;
+        }
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .status.success {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+        }
+        .status.error {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid rgba(244, 67, 54, 0.5);
+        }
+        .status.info {
+            background: rgba(79, 195, 247, 0.2);
+            border: 1px solid rgba(79, 195, 247, 0.5);
+        }
+        .log-area {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-family: 'Monaco', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        pre {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 SignalDesk Complete Flow Verification</h1>
+        <p class="subtitle">Verifying the entire data pipeline from onboarding to opportunity generation</p>
+        
+        <div class="flow-section">
+            <h2>📋 Flow Overview</h2>
+            <p>This test verifies the complete SignalDesk intelligence pipeline:</p>
+            <ol>
+                <li><strong>Onboarding</strong> → Discovers organization profile via Claude AI</li>
+                <li><strong>Persistence</strong> → Saves to Supabase edge function</li>
+                <li><strong>Pipeline</strong> → Runs 7-stage intelligence analysis</li>
+                <li><strong>Synthesis</strong> → Generates comprehensive intelligence tabs</li>
+                <li><strong>Opportunities</strong> → Extracts PR opportunities from synthesis</li>
+            </ol>
+        </div>
+        
+        <button onclick="verifyCompleteFlow()" id="testBtn">🔍 Verify Complete Flow</button>
+        
+        <div id="statusArea"></div>
+        
+        <div class="flow-section" id="resultsSection" style="display: none;">
+            <h2>📊 Verification Results</h2>
+            <div id="results"></div>
+        </div>
+        
+        <div class="flow-section">
+            <h2>📝 Log</h2>
+            <div class="log-area" id="logArea"></div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        function addLog(message) {
+            const logArea = document.getElementById('logArea');
+            const time = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `<strong>${time}</strong> - ${message}`;
+            logArea.appendChild(entry);
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+        
+        function setStatus(message, type = 'info') {
+            const statusArea = document.getElementById('statusArea');
+            statusArea.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        async function verifyCompleteFlow() {
+            const btn = document.getElementById('testBtn');
+            btn.disabled = true;
+            document.getElementById('resultsSection').style.display = 'block';
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('logArea').innerHTML = '';
+            
+            setStatus('🔄 Running verification...', 'info');
+            addLog('Starting complete flow verification');
+            
+            const results = {
+                localStorage: false,
+                supabase: false,
+                pipeline: false,
+                synthesis: false,
+                opportunities: false
+            };
+            
+            try {
+                // 1. Check localStorage
+                addLog('Checking localStorage...');
+                const orgData = localStorage.getItem('organization');
+                if (orgData) {
+                    const org = JSON.parse(orgData);
+                    results.localStorage = true;
+                    addLog(`✅ Found organization in localStorage: ${org.name}`);
+                } else {
+                    addLog('⚠️ No organization in localStorage');
+                }
+                
+                // 2. Check Supabase persistence
+                addLog('Checking Supabase persistence...');
+                const supabaseResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-persistence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        action: 'getLatestProfile'
+                    })
+                });
+                
+                if (supabaseResponse.ok) {
+                    const supabaseData = await supabaseResponse.json();
+                    if (supabaseData.profile) {
+                        results.supabase = true;
+                        addLog(`✅ Found profile in Supabase: ${supabaseData.profile.organization?.name || supabaseData.profile.name}`);
+                    } else {
+                        addLog('⚠️ No profile in Supabase');
+                    }
+                } else {
+                    addLog('❌ Failed to check Supabase');
+                }
+                
+                // 3. Check if pipeline stages are accessible
+                addLog('Checking pipeline stages...');
+                const stages = [
+                    'intelligence-discovery-v3',
+                    'intelligence-stage-1-competitors', 
+                    'intelligence-stage-2-media',
+                    'intelligence-stage-3-regulatory',
+                    'intelligence-stage-4-trends',
+                    'intelligence-stage-5-synthesis'
+                ];
+                
+                let stageCount = 0;
+                for (const stage of stages) {
+                    try {
+                        // Just check if the endpoint responds (OPTIONS request)
+                        const response = await fetch(`${SUPABASE_URL}/functions/v1/${stage}`, {
+                            method: 'OPTIONS',
+                            headers: {
+                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                            }
+                        });
+                        if (response.ok) {
+                            stageCount++;
+                            addLog(`  ✅ ${stage} is accessible`);
+                        } else {
+                            addLog(`  ⚠️ ${stage} returned ${response.status}`);
+                        }
+                    } catch (e) {
+                        addLog(`  ❌ ${stage} failed: ${e.message}`);
+                    }
+                }
+                
+                results.pipeline = stageCount >= 4; // At least 4 stages working
+                addLog(`Pipeline status: ${stageCount}/6 stages accessible`);
+                
+                // 4. Check synthesis capability
+                if (results.supabase) {
+                    addLog('Checking synthesis capability...');
+                    // Check if we have stage data saved
+                    const stageDataResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-persistence`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        },
+                        body: JSON.stringify({
+                            action: 'retrieve',
+                            organization_name: 'OpenAI',
+                            limit: 10
+                        })
+                    });
+                    
+                    if (stageDataResponse.ok) {
+                        const stageData = await stageDataResponse.json();
+                        results.synthesis = stageData.count > 0;
+                        addLog(`✅ Found ${stageData.count || 0} saved intelligence items`);
+                    }
+                }
+                
+                // 5. Check opportunity extraction
+                const cachedOpp = localStorage.getItem('opportunityCache');
+                if (cachedOpp) {
+                    results.opportunities = true;
+                    addLog('✅ Found cached opportunities');
+                }
+                
+                // Display results
+                displayResults(results);
+                
+                // Overall status
+                const passCount = Object.values(results).filter(v => v).length;
+                if (passCount === 5) {
+                    setStatus('✅ All components verified successfully!', 'success');
+                } else if (passCount >= 3) {
+                    setStatus(`⚠️ Partial success: ${passCount}/5 components working`, 'info');
+                } else {
+                    setStatus(`❌ Flow issues detected: only ${passCount}/5 components working`, 'error');
+                }
+                
+            } catch (error) {
+                setStatus(`❌ Error: ${error.message}`, 'error');
+                addLog(`Error: ${error.message}`);
+            }
+            
+            btn.disabled = false;
+        }
+        
+        function displayResults(results) {
+            const resultsDiv = document.getElementById('results');
+            
+            const components = [
+                { key: 'localStorage', name: '1. LocalStorage', desc: 'Organization data saved locally' },
+                { key: 'supabase', name: '2. Supabase Persistence', desc: 'Profile saved to edge function' },
+                { key: 'pipeline', name: '3. Pipeline Stages', desc: '7-stage analysis accessible' },
+                { key: 'synthesis', name: '4. Synthesis', desc: 'Intelligence data available' },
+                { key: 'opportunities', name: '5. Opportunities', desc: 'PR opportunities extracted' }
+            ];
+            
+            let html = '<table style="width: 100%;">';
+            components.forEach(comp => {
+                const status = results[comp.key] ? '✅' : '❌';
+                const color = results[comp.key] ? '#4caf50' : '#f44336';
+                html += `
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <td style="padding: 10px; color: ${color};">${status}</td>
+                        <td style="padding: 10px;"><strong>${comp.name}</strong></td>
+                        <td style="padding: 10px; opacity: 0.8;">${comp.desc}</td>
+                    </tr>
+                `;
+            });
+            html += '</table>';
+            
+            // Add recommendations
+            html += '<h3 style="margin-top: 30px;">Recommendations:</h3>';
+            html += '<ul>';
+            
+            if (!results.localStorage && !results.supabase) {
+                html += '<li>Run onboarding first at <code>/onboarding</code> to create organization profile</li>';
+            }
+            if (!results.pipeline) {
+                html += '<li>Check edge function deployment - some stages may need redeployment</li>';
+            }
+            if (!results.synthesis) {
+                html += '<li>Run the complete pipeline to generate intelligence data</li>';
+            }
+            if (!results.opportunities) {
+                html += '<li>Navigate to Opportunities module after pipeline completes</li>';
+            }
+            
+            html += '</ul>';
+            
+            resultsDiv.innerHTML = html;
+        }
+    </script>
+</body>
+</html>

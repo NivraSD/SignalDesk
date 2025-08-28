@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Stage Data Flow</title>
+    <style>
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 40px;
+            margin: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .stage {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .stage h3 {
+            margin-top: 0;
+            color: #ffd700;
+        }
+        .stage-data {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-family: 'Monaco', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        button {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: block;
+            margin: 30px auto;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: scale(1.05);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .status {
+            text-align: center;
+            padding: 10px;
+            margin: 20px 0;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .error {
+            background: rgba(255, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .loading {
+            text-align: center;
+            font-style: italic;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Stage Data Flow Verification</h1>
+        <p style="text-align: center; opacity: 0.9;">Testing if each stage receives accumulated data from previous stages</p>
+        
+        <div class="status" id="status">Ready to test</div>
+        
+        <button onclick="testDataFlow()" id="testBtn">Run Stage Data Flow Test</button>
+        
+        <div id="stages"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+        
+        const stagesContainer = document.getElementById('stages');
+        const statusEl = document.getElementById('status');
+        const testBtn = document.getElementById('testBtn');
+        
+        async function testDataFlow() {
+            testBtn.disabled = true;
+            stagesContainer.innerHTML = '';
+            statusEl.textContent = 'Starting test...';
+            
+            const organization = {
+                name: 'OpenAI',
+                industry: 'Artificial Intelligence',
+                description: 'Leading AI research organization',
+                competitors: ['Anthropic', 'Google DeepMind'],
+                keywords: ['GPT', 'ChatGPT', 'AI safety']
+            };
+            
+            const stages = [
+                { id: 'extraction', name: 'Organization Extraction', endpoint: 'intelligence-discovery-v3' },
+                { id: 'competitive', name: 'Competitive Analysis', endpoint: 'intelligence-stage-1-competitors' },
+                { id: 'media', name: 'Media Analysis', endpoint: 'intelligence-stage-2-media' },
+                { id: 'regulatory', name: 'Regulatory Analysis', endpoint: 'intelligence-stage-3-regulatory' },
+                { id: 'trends', name: 'Trends Analysis', endpoint: 'intelligence-stage-4-trends' }
+            ];
+            
+            let previousResults = {};
+            let allStageData = {};
+            
+            for (const stage of stages) {
+                const stageDiv = document.createElement('div');
+                stageDiv.className = 'stage';
+                stageDiv.innerHTML = `
+                    <h3>Stage: ${stage.name}</h3>
+                    <div class="loading">Processing...</div>
+                `;
+                stagesContainer.appendChild(stageDiv);
+                
+                statusEl.textContent = `Running ${stage.name}...`;
+                
+                try {
+                    // Build request body with previousResults
+                    const requestBody = {
+                        organization: organization,
+                        previousResults: previousResults
+                    };
+                    
+                    // Add stage-specific data
+                    if (stage.id === 'competitive') {
+                        requestBody.competitors = organization.competitors;
+                    } else if (stage.id === 'media') {
+                        requestBody.media_outlets = ['TechCrunch', 'Wired', 'MIT Technology Review'];
+                    } else if (stage.id === 'regulatory') {
+                        requestBody.regulators = ['FTC', 'EU Commission'];
+                        requestBody.analysts = ['Gartner', 'Forrester'];
+                    } else if (stage.id === 'trends') {
+                        requestBody.monitoring_topics = ['AI safety', 'AGI', 'machine learning'];
+                    }
+                    
+                    // Log what we're sending
+                    console.log(`📤 Sending to ${stage.name}:`, {
+                        hasPreviousResults: Object.keys(previousResults).length > 0,
+                        previousStages: Object.keys(previousResults)
+                    });
+                    
+                    const response = await fetch(`${SUPABASE_URL}/functions/v1/${stage.endpoint}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${SUPABASE_KEY}`
+                        },
+                        body: JSON.stringify(requestBody)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Stage failed: ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    
+                    // Store results for next stage
+                    allStageData[stage.id] = result.data || result;
+                    previousResults[stage.id] = result.data || result;
+                    
+                    // Display stage results
+                    stageDiv.innerHTML = `
+                        <h3>✅ ${stage.name}</h3>
+                        <p><strong>Received previousResults:</strong> ${Object.keys(previousResults).length - 1} stages</p>
+                        <p><strong>Previous stages:</strong> ${Object.keys(previousResults).filter(k => k !== stage.id).join(', ') || 'None'}</p>
+                        <div class="stage-data">
+                            <strong>Stage Output Summary:</strong>
+                            ${JSON.stringify({
+                                success: result.success || true,
+                                dataKeys: result.data ? Object.keys(result.data).slice(0, 5) : Object.keys(result).slice(0, 5),
+                                hasCompetitiveContext: !!(result.data?.competitive_context || result.competitive_context),
+                                hasPreviousResults: !!(result.data?.previous_results || result.previous_results)
+                            }, null, 2)}
+                        </div>
+                    `;
+                    
+                } catch (error) {
+                    stageDiv.innerHTML = `
+                        <h3>❌ ${stage.name}</h3>
+                        <div class="error">Error: ${error.message}</div>
+                    `;
+                    console.error(`Stage ${stage.name} failed:`, error);
+                }
+                
+                // Small delay between stages
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            
+            statusEl.textContent = `Test complete! ${Object.keys(allStageData).length} stages processed.`;
+            testBtn.disabled = false;
+            
+            // Log final accumulated data
+            console.log('📊 Final accumulated stage data:', allStageData);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pipeline Debug Test - See What's Actually Happening</title>
+    <style>
+        body { 
+            font-family: 'SF Pro Display', -apple-system, sans-serif; 
+            background: #1a1a1a;
+            color: #fff;
+            padding: 20px;
+            margin: 0;
+        }
+        .container { 
+            max-width: 1600px; 
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #00ffcc, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle {
+            color: #888;
+            margin-bottom: 30px;
+        }
+        .test-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .control-panel {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #333;
+        }
+        .results-panel {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #333;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            background: #1a1a1a;
+            border: 1px solid #444;
+            color: #fff;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        button {
+            background: linear-gradient(135deg, #00ffcc, #00ff88);
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            width: 100%;
+            margin-bottom: 10px;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .stage-result {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 3px solid #00ffcc;
+        }
+        .stage-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .stage-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .stage-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .pending { background: #444; color: #aaa; }
+        .running { background: #ff9500; color: #000; }
+        .success { background: #00ff88; color: #000; }
+        .error { background: #ff3b30; color: #fff; }
+        .data-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #333;
+        }
+        .data-title {
+            color: #00ffcc;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .data-content {
+            background: #0a0a0a;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Monaco', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #333;
+        }
+        .metric-label {
+            color: #888;
+        }
+        .metric-value {
+            color: #00ffcc;
+            font-weight: 600;
+        }
+        .error-message {
+            background: rgba(255, 59, 48, 0.1);
+            border: 1px solid rgba(255, 59, 48, 0.3);
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            color: #ff6b6b;
+            font-size: 14px;
+        }
+        .info-message {
+            background: rgba(0, 255, 204, 0.1);
+            border: 1px solid rgba(0, 255, 204, 0.3);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            color: #00ffcc;
+            font-size: 14px;
+        }
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .summary-card {
+            background: linear-gradient(135deg, rgba(0, 255, 204, 0.1), rgba(0, 255, 136, 0.1));
+            border: 1px solid rgba(0, 255, 204, 0.3);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        .summary-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #00ffcc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 Pipeline Debug Test</h1>
+        <p class="subtitle">See exactly what data flows through each stage of your intelligence pipeline</p>
+        
+        <div class="test-grid">
+            <div class="control-panel">
+                <h3>Test Controls</h3>
+                
+                <input type="text" 
+                       id="orgName" 
+                       placeholder="Organization name"
+                       value="OpenAI">
+                
+                <select id="testMode">
+                    <option value="full">Full Pipeline (All Stages)</option>
+                    <option value="discovery">Just Discovery</option>
+                    <option value="collection">Discovery + Collection</option>
+                    <option value="single">Single Stage Test</option>
+                </select>
+                
+                <select id="singleStage" style="display:none;">
+                    <option value="1">Stage 1: Competitors</option>
+                    <option value="2">Stage 2: Media</option>
+                    <option value="3">Stage 3: Regulatory</option>
+                    <option value="4">Stage 4: Trends</option>
+                    <option value="5">Stage 5: Synthesis</option>
+                </select>
+                
+                <button onclick="runTest()">🚀 Run Test</button>
+                <button onclick="clearResults()">🗑️ Clear Results</button>
+                
+                <div class="info-message" style="margin-top: 20px;">
+                    <strong>What to Look For:</strong><br>
+                    • Discovery: Should return competitors, stakeholders<br>
+                    • Collection: Should find RSS feeds, websites<br>
+                    • Stages 1-5: Should analyze and find opportunities<br>
+                    • Synthesis: Should consolidate everything
+                </div>
+            </div>
+            
+            <div class="results-panel" id="results">
+                <div class="info-message">
+                    👈 Select test options and click "Run Test" to begin
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        let organizationData = null;
+        let collectionData = null;
+        let stageResults = {};
+        
+        document.getElementById('testMode').addEventListener('change', (e) => {
+            document.getElementById('singleStage').style.display = 
+                e.target.value === 'single' ? 'block' : 'none';
+        });
+        
+        async function runTest() {
+            const orgName = document.getElementById('orgName').value;
+            const testMode = document.getElementById('testMode').value;
+            
+            if (!orgName) {
+                alert('Please enter an organization name');
+                return;
+            }
+            
+            clearResults();
+            const resultsDiv = document.getElementById('results');
+            
+            try {
+                // Always start with discovery
+                if (testMode !== 'single') {
+                    await runDiscovery(orgName, resultsDiv);
+                    
+                    if (testMode === 'full' || testMode === 'collection') {
+                        await runCollection(resultsDiv);
+                    }
+                    
+                    if (testMode === 'full') {
+                        await runAllStages(resultsDiv);
+                    }
+                } else {
+                    // Single stage test - use mock data
+                    organizationData = {
+                        name: orgName,
+                        industry: 'Technology',
+                        competitors: ['Microsoft', 'Google', 'Anthropic'],
+                        stakeholders: {
+                            regulators: ['FTC', 'EU Commission'],
+                            media: ['TechCrunch', 'The Verge'],
+                            analysts: ['Gartner', 'Forrester']
+                        }
+                    };
+                    
+                    const stageNum = document.getElementById('singleStage').value;
+                    await runSingleStage(stageNum, resultsDiv);
+                }
+                
+                // Show summary
+                showSummary(resultsDiv);
+                
+            } catch (error) {
+                resultsDiv.innerHTML += `
+                    <div class="error-message">
+                        <strong>Pipeline Error:</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        async function runDiscovery(orgName, resultsDiv) {
+            const stageDiv = createStageDiv('Organization Discovery', resultsDiv);
+            updateStageStatus(stageDiv, 'running');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/organization-discovery`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({ organizationName: orgName })
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(`Discovery failed: ${JSON.stringify(result)}`);
+                }
+                
+                organizationData = result.organization;
+                updateStageStatus(stageDiv, 'success');
+                
+                // Show what was discovered
+                addDataSection(stageDiv, 'Organization Profile', {
+                    name: organizationData.name,
+                    industry: organizationData.industry,
+                    competitors: organizationData.competitors?.length || 0,
+                    'stakeholders.regulators': organizationData.stakeholders?.regulators?.length || 0,
+                    'stakeholders.media': organizationData.stakeholders?.media?.length || 0,
+                    'stakeholders.analysts': organizationData.stakeholders?.analysts?.length || 0
+                });
+                
+                addDataSection(stageDiv, 'Raw Response', result);
+                
+            } catch (error) {
+                updateStageStatus(stageDiv, 'error');
+                stageDiv.innerHTML += `<div class="error-message">${error.message}</div>`;
+                throw error;
+            }
+        }
+        
+        async function runCollection(resultsDiv) {
+            const stageDiv = createStageDiv('Data Collection', resultsDiv);
+            updateStageStatus(stageDiv, 'running');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-collection-v1`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: organizationData,
+                        entities: {
+                            competitors: organizationData.competitors || [],
+                            regulators: organizationData.stakeholders?.regulators || [],
+                            media: organizationData.stakeholders?.media || [],
+                            analysts: organizationData.stakeholders?.analysts || []
+                        }
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(`Collection failed: ${JSON.stringify(result)}`);
+                }
+                
+                collectionData = result.intelligence || result;
+                updateStageStatus(stageDiv, 'success');
+                
+                // Show what was collected
+                addDataSection(stageDiv, 'Collection Summary', {
+                    'Total Signals': collectionData.raw_signals?.length || 0,
+                    'Sources Used': collectionData.metadata?.sources?.join(', ') || 'None',
+                    'RSS Feeds': collectionData.raw_signals?.filter(s => s.type === 'rss').length || 0,
+                    'Firecrawl Results': collectionData.raw_signals?.filter(s => s.type === 'firecrawl').length || 0,
+                    'Monitoring Data': collectionData.raw_signals?.filter(s => s.type === 'monitoring').length || 0
+                });
+                
+                // Show sample signals
+                if (collectionData.raw_signals?.length > 0) {
+                    addDataSection(stageDiv, 'Sample Signals (First 3)', 
+                        collectionData.raw_signals.slice(0, 3));
+                }
+                
+                addDataSection(stageDiv, 'Full Response', result);
+                
+            } catch (error) {
+                updateStageStatus(stageDiv, 'error');
+                stageDiv.innerHTML += `<div class="error-message">${error.message}</div>`;
+                throw error;
+            }
+        }
+        
+        async function runAllStages(resultsDiv) {
+            const stages = [
+                { num: 1, name: 'competitors', label: 'Competitive Analysis' },
+                { num: 2, name: 'media', label: 'Media Analysis' },
+                { num: 3, name: 'regulatory', label: 'Regulatory Analysis' },
+                { num: 4, name: 'trends', label: 'Trend Analysis' },
+                { num: 5, name: 'synthesis', label: 'Intelligence Synthesis' }
+            ];
+            
+            for (const stage of stages) {
+                await runStage(stage, resultsDiv);
+            }
+        }
+        
+        async function runSingleStage(stageNum, resultsDiv) {
+            const stages = {
+                '1': { num: 1, name: 'competitors', label: 'Competitive Analysis' },
+                '2': { num: 2, name: 'media', label: 'Media Analysis' },
+                '3': { num: 3, name: 'regulatory', label: 'Regulatory Analysis' },
+                '4': { num: 4, name: 'trends', label: 'Trend Analysis' },
+                '5': { num: 5, name: 'synthesis', label: 'Intelligence Synthesis' }
+            };
+            
+            await runStage(stages[stageNum], resultsDiv);
+        }
+        
+        async function runStage(stage, resultsDiv) {
+            const stageDiv = createStageDiv(`Stage ${stage.num}: ${stage.label}`, resultsDiv);
+            updateStageStatus(stageDiv, 'running');
+            
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/functions/v1/intelligence-stage-${stage.num}-${stage.name}`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${SUPABASE_KEY}`
+                        },
+                        body: JSON.stringify({
+                            organization: organizationData,
+                            previousResults: stageResults,
+                            intelligence: collectionData
+                        })
+                    }
+                );
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(`Stage ${stage.num} failed: ${JSON.stringify(result)}`);
+                }
+                
+                stageResults[stage.name] = result;
+                updateStageStatus(stageDiv, 'success');
+                
+                // Extract key metrics based on stage
+                let metrics = {};
+                let opportunities = [];
+                
+                switch(stage.name) {
+                    case 'competitors':
+                        metrics = {
+                            'Direct Competitors': result.competitors?.direct?.length || 0,
+                            'Indirect Competitors': result.competitors?.indirect?.length || 0,
+                            'Emerging Threats': result.competitors?.emerging?.length || 0,
+                            'Battle Cards': Object.keys(result.battle_cards || {}).length
+                        };
+                        break;
+                    case 'media':
+                        metrics = {
+                            'Media Outlets': result.media_landscape?.outlets?.length || 0,
+                            'Journalists': result.journalists?.length || 0,
+                            'Coverage Score': result.sentiment_analysis?.overall_score || 'N/A',
+                            'Opportunities': result.opportunities?.length || 0
+                        };
+                        opportunities = result.opportunities || [];
+                        break;
+                    case 'regulatory':
+                        metrics = {
+                            'Regulators': result.regulatory?.bodies?.length || 0,
+                            'Compliance Items': result.compliance_requirements?.length || 0,
+                            'Calendar Events': result.regulatory_calendar?.length || 0,
+                            'Opportunities': result.risks_and_opportunities?.opportunities?.length || 0
+                        };
+                        opportunities = result.risks_and_opportunities?.opportunities || [];
+                        break;
+                    case 'trends':
+                        metrics = {
+                            'Current Trends': result.current_trends?.length || 0,
+                            'Emerging Opportunities': result.emerging_opportunities?.length || 0,
+                            'Disruption Signals': result.disruption_signals?.length || 0,
+                            'PR Opportunities': result.pr_opportunities?.length || 0
+                        };
+                        opportunities = result.emerging_opportunities || [];
+                        break;
+                    case 'synthesis':
+                        metrics = {
+                            'Key Developments': result.executive_summary?.key_developments?.length || 0,
+                            'Cross-Insights': result.cross_dimensional_insights?.length || 0,
+                            'Early Signals': result.early_signals?.length || 0,
+                            'Total Opportunities': result.consolidated_opportunities?.prioritized_list?.length || 0
+                        };
+                        opportunities = result.consolidated_opportunities?.prioritized_list || [];
+                        break;
+                }
+                
+                addDataSection(stageDiv, 'Stage Metrics', metrics);
+                
+                if (opportunities.length > 0) {
+                    addDataSection(stageDiv, `Opportunities Found (${opportunities.length})`, 
+                        opportunities.slice(0, 3));
+                }
+                
+                addDataSection(stageDiv, 'Full Response', result);
+                
+            } catch (error) {
+                updateStageStatus(stageDiv, 'error');
+                stageDiv.innerHTML += `<div class="error-message">${error.message}</div>`;
+            }
+        }
+        
+        function createStageDiv(title, container) {
+            const div = document.createElement('div');
+            div.className = 'stage-result';
+            div.innerHTML = `
+                <div class="stage-header">
+                    <div class="stage-title">${title}</div>
+                    <div class="stage-status pending">Pending</div>
+                </div>
+            `;
+            container.appendChild(div);
+            return div;
+        }
+        
+        function updateStageStatus(stageDiv, status) {
+            const statusDiv = stageDiv.querySelector('.stage-status');
+            statusDiv.className = `stage-status ${status}`;
+            statusDiv.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+        }
+        
+        function addDataSection(stageDiv, title, data) {
+            const section = document.createElement('div');
+            section.className = 'data-section';
+            
+            if (typeof data === 'object' && !Array.isArray(data)) {
+                // Display as metrics
+                section.innerHTML = `<div class="data-title">${title}</div>`;
+                for (const [key, value] of Object.entries(data)) {
+                    if (key === 'Full Response') continue;
+                    section.innerHTML += `
+                        <div class="metric">
+                            <span class="metric-label">${key}:</span>
+                            <span class="metric-value">${value}</span>
+                        </div>
+                    `;
+                }
+            } else {
+                // Display as JSON
+                section.innerHTML = `
+                    <div class="data-title">${title}</div>
+                    <div class="data-content">
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            }
+            
+            stageDiv.appendChild(section);
+        }
+        
+        function showSummary(resultsDiv) {
+            const summaryDiv = document.createElement('div');
+            summaryDiv.className = 'summary-card';
+            summaryDiv.innerHTML = `
+                <div class="summary-title">📊 Pipeline Summary</div>
+                <div class="metric">
+                    <span class="metric-label">Organization:</span>
+                    <span class="metric-value">${organizationData?.name || 'N/A'}</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Signals Collected:</span>
+                    <span class="metric-value">${collectionData?.raw_signals?.length || 0}</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Stages Completed:</span>
+                    <span class="metric-value">${Object.keys(stageResults).length}</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Total Opportunities:</span>
+                    <span class="metric-value">${countAllOpportunities()}</span>
+                </div>
+            `;
+            resultsDiv.appendChild(summaryDiv);
+        }
+        
+        function countAllOpportunities() {
+            let total = 0;
+            if (stageResults.media?.opportunities) total += stageResults.media.opportunities.length;
+            if (stageResults.regulatory?.risks_and_opportunities?.opportunities) 
+                total += stageResults.regulatory.risks_and_opportunities.opportunities.length;
+            if (stageResults.trends?.emerging_opportunities) 
+                total += stageResults.trends.emerging_opportunities.length;
+            if (stageResults.synthesis?.consolidated_opportunities?.prioritized_list)
+                total += stageResults.synthesis.consolidated_opportunities.prioritized_list.length;
+            return total;
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            organizationData = null;
+            collectionData = null;
+            stageResults = {};
+        }
+    </script>
+</body>
+</html>

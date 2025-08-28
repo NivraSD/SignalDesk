@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './RailwayV2.css';
 import IntelligenceHubV8 from './IntelligenceHubV8';
+import MultiStageIntelligence from './MultiStageIntelligence';
 import OpportunityModulePR from './Modules/OpportunityModulePR';
 import ExecutionModule from './Modules/ExecutionModule';
 import MemoryVaultModule from './Modules/MemoryVaultModule';
@@ -172,9 +173,11 @@ const RailwayV2 = () => {
           );
         }
         
-        return <IntelligenceHubV8 
+        return <MultiStageIntelligence 
           organization={organizationData}
-          onIntelligenceUpdate={setSharedIntelligence}
+          onComplete={(intelligence) => {
+            setSharedIntelligence(intelligence);
+          }}
         />;
       case 'opportunities':
         return <OpportunityModulePR 
@@ -187,9 +190,11 @@ const RailwayV2 = () => {
       case 'memory':
         return <MemoryVaultModule organizationId={organizationData?.id} />;
       default:
-        return <IntelligenceHubV8 
+        return <MultiStageIntelligence 
           organization={organizationData}
-          onIntelligenceUpdate={setSharedIntelligence}
+          onComplete={(intelligence) => {
+            setSharedIntelligence(intelligence);
+          }}
         />;
     }
   };

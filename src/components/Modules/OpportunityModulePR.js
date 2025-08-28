@@ -21,7 +21,24 @@ const OpportunityModulePR = ({ organizationId, sharedIntelligence, onIntelligenc
     // Check for opportunities directly from synthesis
     if (sharedIntelligence && sharedIntelligence.opportunities && sharedIntelligence.opportunities.length > 0) {
       console.log('🎯 Using opportunities from synthesis:', sharedIntelligence.opportunities.length);
-      setOpportunities(sharedIntelligence.opportunities);
+      // Transform opportunities to ensure they have the right structure
+      const formattedOpps = sharedIntelligence.opportunities.map((opp, index) => ({
+        id: opp.id || `synth-opp-${Date.now()}-${index}`,
+        type: opp.type || 'Strategic Opportunity',
+        urgency: opp.urgency || 'medium',
+        title: opp.title || opp.opportunity || 'Untitled Opportunity',
+        description: opp.description || opp.quick_summary || opp.pr_angle || '',
+        action_plan: opp.action_plan || [
+          'Analyze the opportunity context',
+          'Develop PR angle and messaging',
+          'Identify target media outlets',
+          'Execute outreach campaign'
+        ],
+        source: opp.source || 'Intelligence Pipeline',
+        rationale: opp.rationale || `Confidence: ${opp.confidence || 'N/A'}%`
+      }));
+      console.log('✅ Formatted opportunities for display:', formattedOpps);
+      setOpportunities(formattedOpps);
       setTimeout(() => setLoading(false), 500);
     }
     // Fallback to old structure for backward compatibility

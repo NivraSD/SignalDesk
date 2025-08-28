@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Direct Stage Data Flow Test</title>
+    <style>
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 40px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .config {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            font-family: 'Monaco', monospace;
+            font-size: 12px;
+        }
+        .stage {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .stage h3 {
+            margin-top: 0;
+            color: #ffd700;
+        }
+        .stage-data {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-family: 'Monaco', monospace;
+            font-size: 11px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+        button {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: block;
+            margin: 30px auto;
+            transition: transform 0.2s;
+        }
+        button:hover:not(:disabled) {
+            transform: scale(1.05);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .status {
+            text-align: center;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            font-size: 16px;
+        }
+        .status.success {
+            background: rgba(0, 255, 0, 0.2);
+        }
+        .status.error {
+            background: rgba(255, 0, 0, 0.2);
+        }
+        .status.warning {
+            background: rgba(255, 165, 0, 0.2);
+        }
+        .error {
+            background: rgba(255, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .loading {
+            text-align: center;
+            font-style: italic;
+            opacity: 0.8;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%);
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        .summary {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+        }
+        .summary h2 {
+            color: #ffd700;
+            margin-top: 0;
+        }
+        .flow-arrow {
+            text-align: center;
+            font-size: 24px;
+            margin: 10px 0;
+            opacity: 0.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Direct Pipeline Data Flow Test</h1>
+        <p style="text-align: center; opacity: 0.9;">Testing 7-stage pipeline with direct ANON key authentication</p>
+        
+        <div class="config">
+            <strong>Configuration:</strong><br>
+            URL: https://zskaxjtyuaqazydouifp.supabase.co<br>
+            Auth: Using ANON key directly as Bearer token<br>
+            Pipeline: 7 stages with accumulated data passing
+        </div>
+        
+        <div class="status" id="status">Ready to test pipeline data flow</div>
+        
+        <div class="progress-bar" id="progressBar" style="display: none;">
+            <div class="progress-fill" id="progressFill" style="width: 0%">0%</div>
+        </div>
+        
+        <button onclick="testDataFlow()" id="testBtn">🚀 Run 7-Stage Pipeline Test</button>
+        
+        <div id="stages"></div>
+        
+        <div class="summary" id="summary" style="display: none;">
+            <h2>📊 Test Summary</h2>
+            <div id="summaryContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration from .env file
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        const stagesContainer = document.getElementById('stages');
+        const statusEl = document.getElementById('status');
+        const testBtn = document.getElementById('testBtn');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const summaryDiv = document.getElementById('summary');
+        const summaryContent = document.getElementById('summaryContent');
+        
+        async function testDataFlow() {
+            testBtn.disabled = true;
+            stagesContainer.innerHTML = '';
+            statusEl.textContent = '🔄 Starting 7-stage intelligence pipeline...';
+            statusEl.className = 'status';
+            progressBar.style.display = 'block';
+            summaryDiv.style.display = 'none';
+            
+            const organization = {
+                name: 'OpenAI',
+                industry: 'Artificial Intelligence',
+                description: 'Leading AI research organization developing AGI',
+                headquarters: 'San Francisco, CA',
+                founded: '2015',
+                competitors: ['Anthropic', 'Google DeepMind', 'Meta AI'],
+                keywords: ['GPT-4', 'ChatGPT', 'DALL-E', 'AI safety', 'AGI'],
+                products: ['ChatGPT', 'GPT-4', 'DALL-E 3', 'Whisper'],
+                executives: ['Sam Altman', 'Greg Brockman', 'Mira Murati']
+            };
+            
+            const stages = [
+                { 
+                    id: 'extraction', 
+                    name: 'Organization Data Extraction', 
+                    endpoint: 'intelligence-discovery-v3',
+                    description: 'Discovering organization profile and stakeholders'
+                },
+                { 
+                    id: 'competitive', 
+                    name: 'Competitive Intelligence', 
+                    endpoint: 'intelligence-stage-1-competitors',
+                    description: 'Analyzing competitive landscape and threats'
+                },
+                { 
+                    id: 'stakeholders', 
+                    name: 'Stakeholder Analysis', 
+                    endpoint: 'stakeholder-groups-intelligence',
+                    description: 'Mapping customers, influencers, thought leaders'
+                },
+                { 
+                    id: 'media', 
+                    name: 'Media Landscape', 
+                    endpoint: 'intelligence-stage-2-media',
+                    description: 'Analyzing media coverage and sentiment'
+                },
+                { 
+                    id: 'regulatory', 
+                    name: 'Regulatory Environment', 
+                    endpoint: 'intelligence-stage-3-regulatory',
+                    description: 'Tracking compliance and regulatory changes'
+                },
+                { 
+                    id: 'trends', 
+                    name: 'Market Trends', 
+                    endpoint: 'intelligence-stage-4-trends',
+                    description: 'Identifying emerging trends and opportunities'
+                },
+                { 
+                    id: 'synthesis', 
+                    name: 'Strategic Synthesis', 
+                    endpoint: 'intelligence-stage-5-synthesis',
+                    description: 'Synthesizing all insights into actionable intelligence'
+                }
+            ];
+            
+            let previousResults = {};
+            let allStageData = {};
+            let successCount = 0;
+            let failureReasons = [];
+            
+            for (const [index, stage] of stages.entries()) {
+                updateProgress(index, stages.length);
+                
+                const stageDiv = document.createElement('div');
+                stageDiv.className = 'stage';
+                stageDiv.innerHTML = `
+                    <h3>Stage ${index + 1} of 7: ${stage.name}</h3>
+                    <p style="opacity: 0.8; margin: 5px 0;">${stage.description}</p>
+                    <div class="loading">⏳ Processing...</div>
+                `;
+                stagesContainer.appendChild(stageDiv);
+                
+                if (index > 0) {
+                    const arrow = document.createElement('div');
+                    arrow.className = 'flow-arrow';
+                    arrow.textContent = '⬇️';
+                    stagesContainer.insertBefore(arrow, stageDiv);
+                }
+                
+                statusEl.textContent = `📡 Running Stage ${index + 1}: ${stage.name}...`;
+                
+                try {
+                    // Build request body with accumulated previousResults
+                    const requestBody = {
+                        organization: organization,
+                        previousResults: previousResults // Pass ALL previous stage results
+                    };
+                    
+                    // Add stage-specific configuration
+                    if (stage.id === 'extraction') {
+                        requestBody.stakeholders = {
+                            competitors: organization.competitors,
+                            media_outlets: ['TechCrunch', 'The Verge', 'Ars Technica'],
+                            regulators: ['FTC', 'EU AI Act', 'UK AI Safety Institute'],
+                            analysts: ['Gartner', 'Forrester'],
+                            investors: ['Microsoft', 'Reid Hoffman', 'Khosla Ventures']
+                        };
+                        requestBody.monitoring_topics = ['AGI development', 'AI safety', 'GPT-5'];
+                    } else if (stage.id === 'competitive') {
+                        requestBody.competitors = organization.competitors;
+                        if (previousResults.extraction) {
+                            requestBody.savedProfile = previousResults.extraction.organization;
+                        }
+                    } else if (stage.id === 'stakeholders') {
+                        requestBody.stakeholder_groups = {
+                            customers: ['Enterprises', 'Developers', 'Consumers'],
+                            thought_leaders: ['Yann LeCun', 'Andrew Ng', 'Geoffrey Hinton'],
+                            influencers: ['Tech influencers', 'AI researchers'],
+                            employees: ['AI researchers', 'Engineers'],
+                            partners: ['Microsoft', 'Azure']
+                        };
+                    } else if (stage.id === 'media') {
+                        requestBody.media_outlets = ['TechCrunch', 'Wired', 'MIT Tech Review'];
+                        if (previousResults.extraction) {
+                            requestBody.savedProfile = previousResults.extraction.organization;
+                        }
+                    } else if (stage.id === 'regulatory') {
+                        requestBody.regulators = ['FTC', 'EU Commission'];
+                        requestBody.analysts = ['Gartner', 'IDC'];
+                        requestBody.investors = ['Microsoft', 'Khosla Ventures'];
+                    } else if (stage.id === 'trends') {
+                        requestBody.monitoring_topics = ['AGI', 'AI safety', 'LLMs'];
+                        requestBody.recent_intelligence = [];
+                    } else if (stage.id === 'synthesis') {
+                        // Synthesis needs structured previous results
+                        requestBody.previousResults = {
+                            stage1: previousResults.competitive,
+                            stage2: previousResults.stakeholders,
+                            stage3: previousResults.media,
+                            stage4: previousResults.regulatory,
+                            stage5: previousResults.trends,
+                            extraction: previousResults.extraction
+                        };
+                        requestBody.allStageData = allStageData;
+                        requestBody.intelligence = {
+                            entity_actions: { all: [] },
+                            topic_trends: { all: [] }
+                        };
+                    }
+                    
+                    console.log(`📤 Stage ${index + 1} - ${stage.name}:`, {
+                        endpoint: stage.endpoint,
+                        hasPreviousResults: Object.keys(previousResults).length > 0,
+                        previousStages: Object.keys(previousResults)
+                    });
+                    
+                    const startTime = Date.now();
+                    
+                    // Make the edge function call with ANON key as Bearer token
+                    const response = await fetch(`${SUPABASE_URL}/functions/v1/${stage.endpoint}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}` // Direct ANON key auth
+                        },
+                        body: JSON.stringify(requestBody)
+                    });
+                    
+                    const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 150)}`);
+                    }
+                    
+                    const result = await response.json();
+                    
+                    // Store results for next stages
+                    allStageData[stage.id] = result.data || result;
+                    previousResults[stage.id] = result.data || result;
+                    successCount++;
+                    
+                    // Check if stage received previous results
+                    const receivedPrevious = !!(
+                        result.data?.previous_results || 
+                        result.previous_results ||
+                        result.data?.competitive_context ||
+                        result.competitive_context
+                    );
+                    
+                    // Display results
+                    stageDiv.innerHTML = `
+                        <h3>✅ Stage ${index + 1}: ${stage.name} (${duration}s)</h3>
+                        <p style="opacity: 0.8; margin: 5px 0;">${stage.description}</p>
+                        <p><strong>Data Flow Status:</strong></p>
+                        <ul style="margin: 5px 0; padding-left: 20px;">
+                            <li>Received data from: ${Object.keys(previousResults).filter(k => k !== stage.id).join(', ') || 'None (first stage)'}</li>
+                            <li>Stage acknowledged previous data: ${receivedPrevious ? '✅ Yes' : '⚠️ No'}</li>
+                            <li>Will pass to next: ${Object.keys(result.data || result).length > 0 ? '✅ Yes' : '❌ No'}</li>
+                        </ul>
+                        <div class="stage-data">
+                            <strong>Stage Output:</strong>
+${JSON.stringify({
+    success: result.success !== false,
+    hasData: !!(result.data),
+    dataStructure: result.data ? Object.keys(result.data).slice(0, 8) : Object.keys(result).slice(0, 8),
+    receivedFromPrevious: receivedPrevious,
+    outputSize: JSON.stringify(result).length
+}, null, 2)}
+                        </div>
+                    `;
+                    
+                } catch (error) {
+                    failureReasons.push(`${stage.name}: ${error.message}`);
+                    stageDiv.innerHTML = `
+                        <h3>❌ Stage ${index + 1}: ${stage.name}</h3>
+                        <p style="opacity: 0.8; margin: 5px 0;">${stage.description}</p>
+                        <div class="error">
+                            <strong>Error:</strong> ${error.message}
+                            <br><br>
+                            <strong>Previous stages completed:</strong> ${Object.keys(previousResults).join(', ') || 'None'}
+                        </div>
+                    `;
+                    console.error(`Stage ${stage.name} failed:`, error);
+                }
+                
+                // Small delay between stages
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            // Final summary
+            updateProgress(stages.length, stages.length);
+            
+            const allSuccess = successCount === stages.length;
+            statusEl.textContent = allSuccess ? 
+                `✅ Pipeline complete! All ${stages.length} stages passed data successfully.` :
+                `⚠️ Pipeline partially complete: ${successCount}/${stages.length} stages successful.`;
+            statusEl.className = allSuccess ? 'status success' : 'status warning';
+            
+            // Show summary
+            summaryDiv.style.display = 'block';
+            summaryContent.innerHTML = `
+                <p><strong>Stages Completed:</strong> ${successCount} of ${stages.length}</p>
+                <p><strong>Data Flow Verified:</strong> ${allSuccess ? '✅ Yes - All stages received and passed data' : '⚠️ Partial - Some stages failed'}</p>
+                <p><strong>Total Data Accumulated:</strong> ${Object.keys(allStageData).length} stages</p>
+                ${failureReasons.length > 0 ? `
+                    <p><strong>Failed Stages:</strong></p>
+                    <ul>${failureReasons.map(r => `<li>${r}</li>`).join('')}</ul>
+                ` : ''}
+                <p><strong>Final Intelligence Topics:</strong> ${
+                    allStageData.synthesis?.consolidated_opportunities?.prioritized_list?.length || 0
+                } opportunities identified</p>
+            `;
+            
+            testBtn.disabled = false;
+            
+            console.log('📊 Test Complete:', {
+                success: allSuccess,
+                stagesCompleted: successCount,
+                dataFlow: allStageData,
+                accumulatedKeys: Object.keys(allStageData)
+            });
+        }
+        
+        function updateProgress(current, total) {
+            const percent = Math.round((current / total) * 100);
+            progressFill.style.width = percent + '%';
+            progressFill.textContent = percent + '%';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pipeline Opportunity Flow Test</title>
+    <style>
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 40px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .stage-status {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stage-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .stage-card.running {
+            border-color: #2196F3;
+            background: rgba(33, 150, 243, 0.1);
+        }
+        .stage-card.complete {
+            border-color: #4CAF50;
+            background: rgba(76, 175, 80, 0.1);
+        }
+        .stage-card.error {
+            border-color: #f44336;
+            background: rgba(244, 67, 54, 0.1);
+        }
+        .opportunity-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #ffd700;
+        }
+        .opportunity-card h3 {
+            margin-top: 0;
+            color: #ffd700;
+        }
+        .urgency-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        .urgency-high, .urgency-immediate { background: #ff4444; }
+        .urgency-medium { background: #ff9800; }
+        .urgency-low { background: #4caf50; }
+        button {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+            transition: transform 0.2s;
+        }
+        button:hover:not(:disabled) {
+            transform: scale(1.05);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .status.success {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+        }
+        .status.error {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid rgba(244, 67, 54, 0.5);
+        }
+        .status.info {
+            background: rgba(33, 150, 243, 0.2);
+            border: 1px solid rgba(33, 150, 243, 0.5);
+        }
+        pre {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            padding: 5px;
+            margin: 2px 0;
+            border-radius: 3px;
+        }
+        .log-entry.opportunity {
+            background: rgba(255, 215, 0, 0.1);
+            border-left: 3px solid #ffd700;
+        }
+        .log-entry.synthesis {
+            background: rgba(147, 51, 234, 0.1);
+            border-left: 3px solid #9333ea;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Pipeline Opportunity Flow Debugger</h1>
+        <p style="text-align: center; opacity: 0.8;">Test and trace opportunity generation through the full 7-stage pipeline</p>
+        
+        <div class="test-section">
+            <h2>Test Controls</h2>
+            <button onclick="runMinimalPipeline()" id="minimalBtn">Run Minimal Pipeline (Stages 1 & 5 only)</button>
+            <button onclick="runFullPipeline()" id="fullBtn">Run Full 7-Stage Pipeline</button>
+            <button onclick="clearAll()" id="clearBtn">Clear All Data</button>
+        </div>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 0%">0%</div>
+        </div>
+        
+        <div class="status" id="status" style="display: none;"></div>
+        
+        <div class="test-section">
+            <h2>📊 Pipeline Stages</h2>
+            <div class="stage-status" id="stageStatus"></div>
+        </div>
+        
+        <div class="test-section" id="opportunitySection" style="display: none;">
+            <h2>🎯 Extracted Opportunities</h2>
+            <div id="opportunitiesCount"></div>
+            <div id="opportunitiesList"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>📝 Debug Log</h2>
+            <pre id="debugLog"></pre>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+        
+        const STAGES = [
+            { id: 'extraction', name: 'Organization Extraction', endpoint: 'intelligence-extraction' },
+            { id: 'competitive', name: 'Competitive Analysis', endpoint: 'intelligence-stage-1-competitive' },
+            { id: 'stakeholders', name: 'Stakeholder Mapping', endpoint: 'intelligence-stage-2-stakeholders' },
+            { id: 'media', name: 'Media Analysis', endpoint: 'intelligence-stage-3-media' },
+            { id: 'regulatory', name: 'Regulatory Intelligence', endpoint: 'intelligence-stage-4-regulatory' },
+            { id: 'trends', name: 'Trend Analysis', endpoint: 'intelligence-stage-6-trends' },
+            { id: 'synthesis', name: 'Strategic Synthesis', endpoint: 'intelligence-stage-5-synthesis' }
+        ];
+        
+        let debugLogs = [];
+        let stageResults = {};
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}`;
+            debugLogs.push({ message: logEntry, type });
+            
+            const logEl = document.getElementById('debugLog');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = logEntry;
+            logEl.appendChild(entry);
+            logEl.scrollTop = logEl.scrollHeight;
+            
+            console.log(message);
+        }
+        
+        function setStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            statusEl.style.display = 'block';
+            statusEl.className = `status ${type}`;
+            statusEl.textContent = message;
+        }
+        
+        function updateProgress(percent, label) {
+            const fill = document.getElementById('progressFill');
+            fill.style.width = percent + '%';
+            fill.textContent = label || percent + '%';
+        }
+        
+        function updateStageStatus(stageId, status) {
+            const container = document.getElementById('stageStatus');
+            let card = document.getElementById(`stage-${stageId}`);
+            
+            if (!card) {
+                card = document.createElement('div');
+                card.id = `stage-${stageId}`;
+                card.className = 'stage-card';
+                container.appendChild(card);
+            }
+            
+            const stage = STAGES.find(s => s.id === stageId);
+            card.className = `stage-card ${status}`;
+            card.innerHTML = `
+                <h4>${stage?.name || stageId}</h4>
+                <p>Status: <strong>${status.toUpperCase()}</strong></p>
+                ${stageResults[stageId] ? `
+                    <p>Opportunities: ${stageResults[stageId].opportunities?.length || 0}</p>
+                    <p>Has Data: ${stageResults[stageId].hasData ? '✅' : '❌'}</p>
+                ` : ''}
+            `;
+        }
+        
+        async function runStage(stage, previousResults = {}) {
+            log(`🚀 Starting ${stage.name}...`);
+            updateStageStatus(stage.id, 'running');
+            
+            const organization = {
+                name: 'OpenAI',
+                industry: 'Artificial Intelligence',
+                competitors: ['Anthropic', 'Google DeepMind', 'Microsoft AI'],
+                description: 'Leading AI research company developing advanced AI systems'
+            };
+            
+            try {
+                const requestBody = {
+                    organization,
+                    previousResults,
+                    allStageData: previousResults
+                };
+                
+                // Special handling for synthesis stage
+                if (stage.id === 'synthesis') {
+                    requestBody.intelligence = {
+                        entity_actions: { all: [] },
+                        topic_trends: { all: [] }
+                    };
+                }
+                
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/${stage.endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Stage failed: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                // Extract opportunities
+                let opportunities = [];
+                
+                // Check direct opportunities
+                if (result.opportunities) {
+                    opportunities = result.opportunities;
+                    log(`Found ${opportunities.length} direct opportunities in ${stage.id}`, 'opportunity');
+                }
+                
+                // Check consolidated_opportunities (synthesis stage)
+                if (result.data?.consolidated_opportunities?.prioritized_list) {
+                    opportunities = result.data.consolidated_opportunities.prioritized_list;
+                    log(`Found ${opportunities.length} consolidated opportunities in ${stage.id}`, 'synthesis');
+                }
+                
+                // Store result
+                stageResults[stage.id] = {
+                    success: true,
+                    hasData: !!result.data,
+                    opportunities,
+                    data: result.data,
+                    analysis: result.analysis
+                };
+                
+                // Special logging for synthesis
+                if (stage.id === 'synthesis') {
+                    log(`🎯 SYNTHESIS COMPLETE:`, 'synthesis');
+                    log(`- Has consolidated_opportunities: ${!!result.data?.consolidated_opportunities}`, 'synthesis');
+                    log(`- Prioritized list length: ${result.data?.consolidated_opportunities?.prioritized_list?.length || 0}`, 'synthesis');
+                    log(`- Direct opportunities: ${result.opportunities?.length || 0}`, 'synthesis');
+                    log(`- Data keys: ${result.data ? Object.keys(result.data).join(', ') : 'none'}`, 'synthesis');
+                }
+                
+                updateStageStatus(stage.id, 'complete');
+                log(`✅ ${stage.name} complete with ${opportunities.length} opportunities`);
+                
+                return result;
+                
+            } catch (error) {
+                log(`❌ ${stage.name} failed: ${error.message}`, 'error');
+                updateStageStatus(stage.id, 'error');
+                stageResults[stage.id] = { error: error.message };
+                return { error: error.message };
+            }
+        }
+        
+        async function runMinimalPipeline() {
+            document.getElementById('minimalBtn').disabled = true;
+            clearAll();
+            setStatus('🔄 Running minimal pipeline (Extraction + Synthesis only)...', 'info');
+            
+            // Run extraction
+            updateProgress(0, 'Starting...');
+            const extractionResult = await runStage(STAGES[0]);
+            
+            updateProgress(50, 'Extraction complete');
+            
+            // Run synthesis with minimal previous results
+            const synthesisResult = await runStage(STAGES[6], {
+                extraction: extractionResult.data || extractionResult.analysis || {},
+                stage1: { competitors: { direct: [] } },
+                stage2: { media_coverage: {} },
+                stage3: { regulatory_status: {} },
+                stage4: { trends: [] }
+            });
+            
+            updateProgress(100, 'Pipeline complete');
+            
+            displayAllOpportunities();
+            document.getElementById('minimalBtn').disabled = false;
+        }
+        
+        async function runFullPipeline() {
+            document.getElementById('fullBtn').disabled = true;
+            clearAll();
+            setStatus('🔄 Running full 7-stage pipeline...', 'info');
+            
+            let allResults = {};
+            
+            for (let i = 0; i < STAGES.length; i++) {
+                const stage = STAGES[i];
+                const progress = Math.round((i / STAGES.length) * 100);
+                updateProgress(progress, `Stage ${i + 1}/${STAGES.length}`);
+                
+                const result = await runStage(stage, allResults);
+                
+                // Store results for next stage
+                if (stage.id === 'extraction') {
+                    allResults.extraction = result.data || result.analysis || {};
+                } else if (stage.id === 'competitive') {
+                    allResults.stage1 = result.data || result.analysis || {};
+                } else if (stage.id === 'stakeholders') {
+                    allResults.stage2 = result.data || result.analysis || {};
+                } else if (stage.id === 'media') {
+                    allResults.stage3 = result.data || result.analysis || {};
+                } else if (stage.id === 'regulatory') {
+                    allResults.stage4 = result.data || result.analysis || {};
+                } else if (stage.id === 'trends') {
+                    allResults.stage6 = result.data || result.analysis || {};
+                }
+            }
+            
+            updateProgress(100, 'Complete!');
+            setStatus('✅ Pipeline complete!', 'success');
+            
+            displayAllOpportunities();
+            document.getElementById('fullBtn').disabled = false;
+        }
+        
+        function displayAllOpportunities() {
+            const section = document.getElementById('opportunitySection');
+            section.style.display = 'block';
+            
+            // Collect all opportunities
+            const allOpportunities = [];
+            
+            Object.entries(stageResults).forEach(([stageId, result]) => {
+                if (result.opportunities && result.opportunities.length > 0) {
+                    result.opportunities.forEach(opp => {
+                        allOpportunities.push({
+                            ...opp,
+                            source: stageId
+                        });
+                    });
+                }
+            });
+            
+            log(`📊 TOTAL OPPORTUNITIES FOUND: ${allOpportunities.length}`, 'opportunity');
+            
+            document.getElementById('opportunitiesCount').innerHTML = 
+                `<strong>Total Opportunities Found:</strong> ${allOpportunities.length}`;
+            
+            const listEl = document.getElementById('opportunitiesList');
+            
+            if (allOpportunities.length === 0) {
+                listEl.innerHTML = '<p>❌ No opportunities found in any stage!</p>';
+                setStatus('⚠️ No opportunities were generated!', 'error');
+                return;
+            }
+            
+            listEl.innerHTML = allOpportunities.map(opp => `
+                <div class="opportunity-card">
+                    <h3>
+                        ${opp.opportunity || opp.title || 'Untitled'}
+                        <span class="urgency-badge urgency-${opp.urgency || 'medium'}">${opp.urgency || 'medium'}</span>
+                    </h3>
+                    <p><strong>Source:</strong> ${opp.source || 'Unknown'}</p>
+                    <p><strong>Type:</strong> ${opp.type || 'Strategic'}</p>
+                    <p><strong>Description:</strong> ${opp.quick_summary || opp.pr_angle || opp.description || 'No description'}</p>
+                    ${opp.confidence ? `<p><strong>Confidence:</strong> ${opp.confidence}%</p>` : ''}
+                </div>
+            `).join('');
+            
+            setStatus(`✅ Found ${allOpportunities.length} opportunities!`, 'success');
+        }
+        
+        function clearAll() {
+            debugLogs = [];
+            stageResults = {};
+            document.getElementById('debugLog').innerHTML = '';
+            document.getElementById('stageStatus').innerHTML = '';
+            document.getElementById('opportunitySection').style.display = 'none';
+            document.getElementById('status').style.display = 'none';
+            updateProgress(0, '0%');
+            localStorage.removeItem('opportunityCache');
+            localStorage.removeItem('sharedIntelligence');
+            log('🧹 Cleared all data');
+        }
+    </script>
+</body>
+</html>

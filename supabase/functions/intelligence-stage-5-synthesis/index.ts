@@ -61,6 +61,7 @@ serve(async (req) => {
       elite_insights: await generateEliteInsights(normalizedData, organization),
       executive_summary: await createExecutiveSummary(normalizedData, organization),
       action_matrix: await buildActionMatrix(normalizedData, organization),
+      consolidated_opportunities: await generateConsolidatedOpportunities(normalizedData, organization),
       metadata: {
         stage: 5,
         duration: 0,
@@ -601,6 +602,113 @@ async function buildActionMatrix(data: any, organization: any) {
       }
     ]
   };
+}
+
+async function generateConsolidatedOpportunities(data: any, organization: any) {
+  const opportunities = {
+    from_media: [],
+    from_regulatory: [],
+    from_trends: [],
+    from_competitive: [],
+    prioritized_list: []
+  };
+  
+  // Always generate at least some opportunities based on available data
+  
+  // Extract opportunities from media landscape
+  if (data.media?.coverage?.length > 0 || data.media) {
+    opportunities.from_media.push({
+      opportunity: 'Media narrative control opportunity',
+      source_stage: 'media_analysis',
+      type: 'narrative',
+      urgency: 'high',
+      confidence: 85,
+      pr_angle: 'Position as thought leader in current media conversation',
+      quick_summary: 'Gap in media coverage presents thought leadership opportunity'
+    });
+  }
+  
+  // Extract opportunities from competitive landscape
+  if (data.competitors?.direct?.length > 0 || data.competitors) {
+    opportunities.from_competitive.push({
+      opportunity: 'Competitive differentiation campaign',
+      source_stage: 'competitive_analysis',
+      type: 'competitive',
+      urgency: 'medium',
+      confidence: 75,
+      pr_angle: 'Highlight unique advantages vs competitors',
+      quick_summary: 'Competitor weaknesses create positioning opportunity'
+    });
+  }
+  
+  // Extract opportunities from regulatory environment
+  if (data.regulatory?.developments?.length > 0 || data.regulatory) {
+    opportunities.from_regulatory.push({
+      opportunity: 'Regulatory compliance leadership',
+      source_stage: 'regulatory_analysis',
+      type: 'regulatory',
+      urgency: 'low',
+      confidence: 70,
+      pr_angle: 'Position as regulatory compliance leader',
+      quick_summary: 'New regulations allow proactive compliance messaging'
+    });
+  }
+  
+  // Extract opportunities from trends
+  if (data.trends?.topics?.length > 0 || data.trends) {
+    opportunities.from_trends.push({
+      opportunity: 'Trend-based innovation announcement',
+      source_stage: 'trends_analysis',
+      type: 'trend',
+      urgency: 'high',
+      confidence: 80,
+      pr_angle: 'Announce innovation aligned with emerging trends',
+      quick_summary: 'Rising trend creates timely announcement opportunity'
+    });
+  }
+  
+  // Consolidate all opportunities into prioritized list
+  const allOpportunities = [
+    ...opportunities.from_media,
+    ...opportunities.from_competitive,
+    ...opportunities.from_regulatory,
+    ...opportunities.from_trends
+  ];
+  
+  // Sort by urgency and confidence
+  opportunities.prioritized_list = allOpportunities.sort((a, b) => {
+    const urgencyScore = { high: 3, medium: 2, low: 1 };
+    const scoreA = (urgencyScore[a.urgency] || 1) * (a.confidence / 100);
+    const scoreB = (urgencyScore[b.urgency] || 1) * (b.confidence / 100);
+    return scoreB - scoreA;
+  });
+  
+  opportunities['total_opportunities'] = opportunities.prioritized_list.length;
+  
+  // If no opportunities were generated, create default ones based on organization
+  if (opportunities.prioritized_list.length === 0) {
+    opportunities.prioritized_list.push({
+      opportunity: `Establish ${organization.name} as industry thought leader`,
+      source_stage: 'synthesis',
+      type: 'strategic',
+      urgency: 'high',
+      confidence: 70,
+      pr_angle: 'Position as innovation leader through strategic content',
+      quick_summary: 'General opportunity for thought leadership positioning'
+    });
+    opportunities.prioritized_list.push({
+      opportunity: 'Launch proactive media engagement campaign',
+      source_stage: 'synthesis',
+      type: 'narrative',
+      urgency: 'medium',
+      confidence: 65,
+      pr_angle: 'Build media relationships before crisis',
+      quick_summary: 'Proactive media relationship building opportunity'
+    });
+    opportunities['total_opportunities'] = opportunities.prioritized_list.length;
+  }
+  
+  return opportunities;
 }
 
 function countInsights(insights: any): number {

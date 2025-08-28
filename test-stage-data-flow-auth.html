@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Stage Data Flow with Auth</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 40px;
+            margin: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .auth-section {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .auth-section input {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 20px;
+            margin: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            width: 250px;
+        }
+        .auth-section input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .stage {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .stage h3 {
+            margin-top: 0;
+            color: #ffd700;
+        }
+        .stage-data {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-family: 'Monaco', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        button {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            transition: transform 0.2s;
+        }
+        button:hover:not(:disabled) {
+            transform: scale(1.05);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .status {
+            text-align: center;
+            padding: 10px;
+            margin: 20px 0;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .status.success {
+            background: rgba(0, 255, 0, 0.2);
+        }
+        .status.error {
+            background: rgba(255, 0, 0, 0.2);
+        }
+        .error {
+            background: rgba(255, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .loading {
+            text-align: center;
+            font-style: italic;
+            opacity: 0.8;
+        }
+        .auth-info {
+            background: rgba(0, 255, 0, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .quick-login {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .quick-login h4 {
+            margin-top: 0;
+            color: #ffd700;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%);
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Stage Data Flow Test with Authentication</h1>
+        
+        <div class="auth-section" id="authSection">
+            <h3>Sign In to Test</h3>
+            <div>
+                <input type="email" id="email" placeholder="Email address" value="">
+                <input type="password" id="password" placeholder="Password" value="">
+            </div>
+            <div>
+                <button onclick="signIn()" id="signInBtn">Sign In</button>
+                <button onclick="signUp()" id="signUpBtn">Sign Up</button>
+            </div>
+            
+            <div class="quick-login">
+                <h4>Quick Test Login</h4>
+                <p style="font-size: 14px; opacity: 0.9;">Use these test credentials:</p>
+                <p style="font-family: monospace; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 5px;">
+                    Email: test@signaldesk.ai<br>
+                    Password: SignalDesk2024!
+                </p>
+                <button onclick="quickLogin()">Use Test Credentials</button>
+            </div>
+        </div>
+        
+        <div id="authenticatedSection" style="display: none;">
+            <div class="auth-info">
+                <strong>✅ Authenticated as:</strong> <span id="userEmail"></span>
+                <button onclick="signOut()" style="float: right; padding: 8px 15px; font-size: 13px;">Sign Out</button>
+            </div>
+            
+            <div class="status" id="status">Ready to test pipeline</div>
+            
+            <div class="progress-bar" id="progressBar" style="display: none;">
+                <div class="progress-fill" id="progressFill" style="width: 0%">0%</div>
+            </div>
+            
+            <button onclick="testDataFlow()" id="testBtn">Run 7-Stage Pipeline Test</button>
+            
+            <div id="stages"></div>
+        </div>
+    </div>
+
+    <script>
+        // Supabase configuration (from .env file)
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        // Initialize Supabase client
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // DOM elements
+        const authSection = document.getElementById('authSection');
+        const authenticatedSection = document.getElementById('authenticatedSection');
+        const stagesContainer = document.getElementById('stages');
+        const statusEl = document.getElementById('status');
+        const testBtn = document.getElementById('testBtn');
+        const userEmailEl = document.getElementById('userEmail');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        
+        // Check current session on load
+        checkAuth();
+        
+        async function checkAuth() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) {
+                showAuthenticated(session.user);
+            }
+        }
+        
+        async function signIn() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (!email || !password) {
+                alert('Please enter email and password');
+                return;
+            }
+            
+            document.getElementById('signInBtn').disabled = true;
+            statusEl.textContent = 'Signing in...';
+            
+            const { data, error } = await supabaseClient.auth.signInWithPassword({
+                email,
+                password
+            });
+            
+            document.getElementById('signInBtn').disabled = false;
+            
+            if (error) {
+                statusEl.textContent = 'Sign in failed: ' + error.message;
+                statusEl.className = 'status error';
+                alert('Sign in failed: ' + error.message);
+            } else {
+                showAuthenticated(data.user);
+            }
+        }
+        
+        async function signUp() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (!email || !password) {
+                alert('Please enter email and password');
+                return;
+            }
+            
+            document.getElementById('signUpBtn').disabled = true;
+            statusEl.textContent = 'Creating account...';
+            
+            const { data, error } = await supabaseClient.auth.signUp({
+                email,
+                password
+            });
+            
+            document.getElementById('signUpBtn').disabled = false;
+            
+            if (error) {
+                statusEl.textContent = 'Sign up failed: ' + error.message;
+                statusEl.className = 'status error';
+                alert('Sign up failed: ' + error.message);
+            } else if (data.user) {
+                alert('Account created! Please check your email to verify your account, then sign in.');
+                statusEl.textContent = 'Account created - check email for verification';
+                statusEl.className = 'status success';
+            }
+        }
+        
+        async function quickLogin() {
+            document.getElementById('email').value = 'test@signaldesk.ai';
+            document.getElementById('password').value = 'SignalDesk2024!';
+            await signIn();
+        }
+        
+        async function signOut() {
+            await supabaseClient.auth.signOut();
+            authSection.style.display = 'block';
+            authenticatedSection.style.display = 'none';
+            stagesContainer.innerHTML = '';
+            statusEl.textContent = 'Signed out';
+            statusEl.className = 'status';
+        }
+        
+        function showAuthenticated(user) {
+            authSection.style.display = 'none';
+            authenticatedSection.style.display = 'block';
+            userEmailEl.textContent = user.email;
+            statusEl.textContent = 'Ready to test pipeline';
+            statusEl.className = 'status success';
+        }
+        
+        async function testDataFlow() {
+            testBtn.disabled = true;
+            stagesContainer.innerHTML = '';
+            statusEl.textContent = 'Starting 7-stage intelligence pipeline...';
+            statusEl.className = 'status';
+            progressBar.style.display = 'block';
+            
+            // Get current session for auth token
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) {
+                alert('Please sign in first');
+                testBtn.disabled = false;
+                return;
+            }
+            
+            const organization = {
+                name: 'OpenAI',
+                industry: 'Artificial Intelligence',
+                description: 'Leading AI research organization creating AGI for the benefit of humanity',
+                headquarters: 'San Francisco, CA',
+                founded: '2015',
+                competitors: ['Anthropic', 'Google DeepMind', 'Meta AI'],
+                keywords: ['GPT', 'ChatGPT', 'DALL-E', 'AI safety', 'AGI'],
+                products: ['ChatGPT', 'GPT-4', 'DALL-E 3', 'Codex'],
+                executives: ['Sam Altman', 'Greg Brockman', 'Ilya Sutskever']
+            };
+            
+            const stages = [
+                { id: 'extraction', name: 'Organization Data Extraction', endpoint: 'intelligence-discovery-v3', duration: 25 },
+                { id: 'competitive', name: 'Competitive Intelligence', endpoint: 'intelligence-stage-1-competitors', duration: 35 },
+                { id: 'stakeholders', name: 'Stakeholder Analysis', endpoint: 'stakeholder-groups-intelligence', duration: 35 },
+                { id: 'media', name: 'Media Landscape Mapping', endpoint: 'intelligence-stage-2-media', duration: 30 },
+                { id: 'regulatory', name: 'Regulatory Environment', endpoint: 'intelligence-stage-3-regulatory', duration: 25 },
+                { id: 'trends', name: 'Market Trends Analysis', endpoint: 'intelligence-stage-4-trends', duration: 25 },
+                { id: 'synthesis', name: 'Strategic Synthesis', endpoint: 'intelligence-stage-5-synthesis', duration: 45 }
+            ];
+            
+            let previousResults = {};
+            let allStageData = {};
+            let completedStages = 0;
+            
+            for (const [index, stage] of stages.entries()) {
+                updateProgress(index, stages.length);
+                
+                const stageDiv = document.createElement('div');
+                stageDiv.className = 'stage';
+                stageDiv.innerHTML = `
+                    <h3>Stage ${index + 1}: ${stage.name}</h3>
+                    <div class="loading">⏳ Processing (est. ${stage.duration}s)...</div>
+                `;
+                stagesContainer.appendChild(stageDiv);
+                
+                statusEl.textContent = `Running Stage ${index + 1} of 7: ${stage.name}...`;
+                
+                try {
+                    // Build request body with previousResults
+                    const requestBody = {
+                        organization: organization,
+                        previousResults: previousResults
+                    };
+                    
+                    // Add stage-specific data
+                    if (stage.id === 'extraction') {
+                        requestBody.stakeholders = {
+                            competitors: organization.competitors,
+                            media_outlets: ['TechCrunch', 'The Verge', 'Wired'],
+                            regulators: ['FTC', 'EU Commission'],
+                            analysts: ['Gartner', 'Forrester'],
+                            investors: ['Microsoft', 'Reid Hoffman'],
+                            activists: ['AI Safety advocates']
+                        };
+                    } else if (stage.id === 'competitive') {
+                        requestBody.competitors = organization.competitors;
+                        requestBody.savedProfile = previousResults.extraction?.organization;
+                    } else if (stage.id === 'stakeholders') {
+                        requestBody.stakeholder_groups = {
+                            customers: ['Enterprise clients', 'Developers', 'Consumers'],
+                            thought_leaders: ['Yann LeCun', 'Andrew Ng', 'Geoffrey Hinton'],
+                            influencers: ['Tech YouTubers', 'AI researchers'],
+                            employees: ['AI researchers', 'Engineers'],
+                            partners: ['Microsoft', 'Azure']
+                        };
+                    } else if (stage.id === 'media') {
+                        requestBody.media_outlets = ['TechCrunch', 'Wired', 'MIT Technology Review'];
+                        requestBody.savedProfile = previousResults.extraction?.organization;
+                    } else if (stage.id === 'regulatory') {
+                        requestBody.regulators = ['FTC', 'EU Commission', 'UK AI Safety Institute'];
+                        requestBody.analysts = ['Gartner', 'Forrester', 'IDC'];
+                        requestBody.investors = ['Microsoft', 'Khosla Ventures'];
+                    } else if (stage.id === 'trends') {
+                        requestBody.monitoring_topics = ['AGI development', 'AI safety', 'LLM capabilities'];
+                        requestBody.recent_intelligence = [];
+                    } else if (stage.id === 'synthesis') {
+                        // Synthesis needs all previous results in specific format
+                        requestBody.previousResults = {
+                            stage1: previousResults.competitive,
+                            stage2: previousResults.stakeholders,
+                            stage3: previousResults.media,
+                            stage4: previousResults.regulatory,
+                            stage5: previousResults.trends,
+                            extraction: previousResults.extraction
+                        };
+                        requestBody.allStageData = allStageData;
+                        requestBody.intelligence = {
+                            entity_actions: { all: [] },
+                            topic_trends: { all: [] },
+                            raw_signals: []
+                        };
+                    }
+                    
+                    // Log what we're sending
+                    console.log(`📤 Stage ${index + 1} - ${stage.name}:`, {
+                        hasPreviousResults: Object.keys(previousResults).length > 0,
+                        previousStages: Object.keys(previousResults),
+                        endpoint: stage.endpoint
+                    });
+                    
+                    const startTime = Date.now();
+                    const response = await fetch(`${SUPABASE_URL}/functions/v1/${stage.endpoint}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${session.access_token}`
+                        },
+                        body: JSON.stringify(requestBody)
+                    });
+                    
+                    const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(`Stage failed (${response.status}): ${errorText.substring(0, 100)}`);
+                    }
+                    
+                    const result = await response.json();
+                    
+                    // Store results for next stage
+                    allStageData[stage.id] = result.data || result;
+                    previousResults[stage.id] = result.data || result;
+                    completedStages++;
+                    
+                    // Display stage results
+                    stageDiv.innerHTML = `
+                        <h3>✅ Stage ${index + 1}: ${stage.name} (${duration}s)</h3>
+                        <p><strong>Previous stages available:</strong> ${Object.keys(previousResults).filter(k => k !== stage.id).join(', ') || 'None (first stage)'}</p>
+                        <div class="stage-data">
+                            <strong>Output Summary:</strong>
+                            ${JSON.stringify({
+                                success: result.success !== false,
+                                dataKeys: result.data ? Object.keys(result.data).slice(0, 5) : Object.keys(result).slice(0, 5),
+                                receivedPreviousResults: !!(result.data?.previous_results || result.previous_results),
+                                usedCompetitiveContext: !!(result.data?.competitive_context || result.competitive_context),
+                                outputSize: JSON.stringify(result).length + ' bytes'
+                            }, null, 2)}
+                        </div>
+                    `;
+                    
+                } catch (error) {
+                    stageDiv.innerHTML = `
+                        <h3>❌ Stage ${index + 1}: ${stage.name}</h3>
+                        <div class="error">Error: ${error.message}</div>
+                    `;
+                    console.error(`Stage ${stage.name} failed:`, error);
+                }
+                
+                // Small delay between stages
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            updateProgress(stages.length, stages.length);
+            statusEl.textContent = `✅ Pipeline complete! ${completedStages} of ${stages.length} stages successful.`;
+            statusEl.className = 'status success';
+            testBtn.disabled = false;
+            
+            // Log final accumulated data
+            console.log('📊 Final accumulated stage data:', allStageData);
+            console.log('✅ Successfully passed data between stages:', {
+                totalStages: stages.length,
+                completedStages: completedStages,
+                dataFlowVerified: completedStages === stages.length
+            });
+        }
+        
+        function updateProgress(current, total) {
+            const percent = Math.round((current / total) * 100);
+            progressFill.style.width = percent + '%';
+            progressFill.textContent = percent + '%';
+        }
+    </script>
+</body>
+</html>

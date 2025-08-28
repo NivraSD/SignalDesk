@@ -15,7 +15,7 @@ serve(async (req) => {
   }
 
   try {
-    const { organization, regulators = [], analysts = [], investors = [] } = await req.json();
+    const { organization, regulators = [], analysts = [], investors = [], previousResults = {} } = await req.json();
     console.log(`⚖️ Stage 3: Deep Regulatory & Stakeholder Analysis for ${organization.name}`);
     
     const startTime = Date.now();

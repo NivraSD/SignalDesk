@@ -2,289 +2,473 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Complete Pipeline Debug Test</title>
+    <title>SignalDesk Complete Pipeline Test</title>
     <style>
-        body {
-            font-family: 'Courier New', monospace;
-            background: #0a0a0a;
-            color: #00ff88;
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             padding: 20px;
-            max-width: 1600px;
-            margin: 0 auto;
+            color: #333;
         }
-        .section {
-            background: rgba(0, 255, 136, 0.05);
-            border: 1px solid #00ff88;
+        .container { 
+            max-width: 1400px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 30px; 
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        h1 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #f0f0f0;
             border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
+            position: relative;
         }
-        h1, h2 {
-            color: #00ffcc;
-            text-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
+        .test-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
         }
-        .test-button {
-            background: linear-gradient(135deg, #00ff88, #00ffcc);
-            color: #0a0a0a;
+        .stage-number {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
             border: none;
             padding: 12px 24px;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 8px;
+            border-radius: 6px;
             cursor: pointer;
-            margin: 10px;
+            font-weight: 600;
+            margin: 5px;
+            transition: transform 0.2s;
         }
-        .result {
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid #00ff88;
-            border-radius: 4px;
+        button:hover {
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 8px 16px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+        .status.pending { background: #f0f0f0; color: #666; }
+        .status.running { background: #fff3cd; color: #856404; }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .log {
+            background: #f8f9fa;
             padding: 15px;
-            margin-top: 10px;
-            white-space: pre-wrap;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-family: 'Monaco', monospace;
             font-size: 12px;
-            max-height: 400px;
+            max-height: 300px;
             overflow-y: auto;
         }
-        .success { border-color: #00ff88; color: #00ff88; }
-        .error { border-color: #ff0088; color: #ff0088; }
-        .warning { border-color: #ffcc00; color: #ffcc00; }
-        .stage {
+        .results {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .result-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .result-card h4 {
+            margin-top: 0;
+            color: #667eea;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #f0f0f0;
+            border-radius: 15px;
+            overflow: hidden;
             margin: 20px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        .test-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .org-input {
             padding: 10px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 4px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 16px;
+            width: 300px;
         }
     </style>
 </head>
 <body>
-    <h1>🔍 Complete Intelligence Pipeline Debug Test</h1>
-    
-    <div class="section">
-        <h2>Test Configuration</h2>
-        <label>Organization Name:</label>
-        <input type="text" id="orgName" value="Target Corporation" style="width: 300px; background: #000; color: #00ff88; border: 1px solid #00ff88; padding: 5px; margin: 10px;">
-        <br>
-        <button class="test-button" onclick="runCompleteFlowTest()">Run Complete Flow Test</button>
-    </div>
+    <div class="container">
+        <h1>🚀 SignalDesk Complete Pipeline Test</h1>
+        <p>Test your entire intelligence pipeline from organization discovery through opportunity detection</p>
+        
+        <div class="test-controls">
+            <input type="text" 
+                   id="orgName" 
+                   class="org-input" 
+                   placeholder="Enter organization name (e.g., OpenAI)"
+                   value="OpenAI">
+            <button onclick="runCompletePipeline()">▶️ Run Complete Pipeline</button>
+            <button onclick="runQuickTest()">⚡ Quick Test (Skip Discovery)</button>
+            <button onclick="clearAll()">🗑️ Clear All</button>
+        </div>
 
-    <div class="section">
-        <h2>Stage 1: Onboarding Data Structure</h2>
-        <div id="stage1" class="stage"></div>
-    </div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressBar" style="width: 0%">0%</div>
+        </div>
 
-    <div class="section">
-        <h2>Stage 2: Discovery Request & Response</h2>
-        <div id="stage2" class="stage"></div>
-    </div>
+        <!-- Stage 0: Organization Discovery -->
+        <div class="test-section" id="stage-discovery">
+            <div class="test-header">
+                <h3>🔍 Organization Discovery</h3>
+                <span class="stage-number">Stage 0</span>
+            </div>
+            <div class="status pending" id="status-discovery">Pending</div>
+            <div class="log" id="log-discovery" style="display:none;"></div>
+        </div>
 
-    <div class="section">
-        <h2>Stage 3: Gathering Request & Response</h2>
-        <div id="stage3" class="stage"></div>
-    </div>
+        <!-- Stage 1: Data Collection -->
+        <div class="test-section" id="stage-collection">
+            <div class="test-header">
+                <h3>📡 Data Collection (RSS + Firecrawl + Monitoring)</h3>
+                <span class="stage-number">Stage 1</span>
+            </div>
+            <div class="status pending" id="status-collection">Pending</div>
+            <div class="log" id="log-collection" style="display:none;"></div>
+        </div>
 
-    <div class="section">
-        <h2>Stage 4: Synthesis Request & Response</h2>
-        <div id="stage4" class="stage"></div>
-    </div>
+        <!-- Stage 2-6: Intelligence Analysis -->
+        <div class="test-section" id="stage-analysis">
+            <div class="test-header">
+                <h3>🧠 5-Stage Intelligence Analysis</h3>
+                <span class="stage-number">Stages 2-6</span>
+            </div>
+            <div class="status pending" id="status-analysis">Pending</div>
+            <div class="results" id="analysis-stages"></div>
+            <div class="log" id="log-analysis" style="display:none;"></div>
+        </div>
 
-    <div class="section">
-        <h2>Stage 5: Frontend Tab Rendering</h2>
-        <div id="stage5" class="stage"></div>
+        <!-- Stage 7: Opportunity Detection -->
+        <div class="test-section" id="stage-opportunities">
+            <div class="test-header">
+                <h3>💡 Opportunity Detection</h3>
+                <span class="stage-number">Stage 7</span>
+            </div>
+            <div class="status pending" id="status-opportunities">Pending</div>
+            <div class="log" id="log-opportunities" style="display:none;"></div>
+        </div>
+
+        <!-- Final Results -->
+        <div class="test-section" id="final-results" style="display:none;">
+            <h3>📊 Pipeline Results</h3>
+            <div class="results" id="results-container"></div>
+        </div>
     </div>
 
     <script>
         const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
-
-        function logStage(stageId, message, data, type = 'info') {
-            const element = document.getElementById(stageId);
-            const className = type === 'error' ? 'error' : type === 'warning' ? 'warning' : 'success';
-            element.innerHTML += `<div class="result ${className}">${message}\n${data ? JSON.stringify(data, null, 2) : ''}</div>`;
-        }
-
-        async function runCompleteFlowTest() {
-            const orgName = document.getElementById('orgName').value;
+        
+        let organizationProfile = null;
+        let collectionData = null;
+        let stageResults = {};
+        
+        function updateStatus(stage, status, message) {
+            const statusEl = document.getElementById(`status-${stage}`);
+            statusEl.className = `status ${status}`;
+            statusEl.textContent = message;
             
-            // Clear previous results
-            for (let i = 1; i <= 5; i++) {
-                document.getElementById(`stage${i}`).innerHTML = '';
+            const logEl = document.getElementById(`log-${stage}`);
+            if (message && status !== 'pending') {
+                logEl.style.display = 'block';
+                logEl.innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${message}</div>`;
             }
-
-            // STAGE 1: Create onboarding data structure
-            logStage('stage1', '📦 Creating onboarding data structure...');
-            const onboardingData = {
-                organization: {
-                    name: orgName,
-                    industry: 'retail',
-                    website: 'https://target.com',
-                    description: 'Major retail corporation'
-                },
-                competitors: ['Walmart', 'Amazon', 'Costco', 'CVS', 'Kroger'],
-                monitoring_topics: [
-                    'E-commerce growth',
-                    'Supply chain optimization',
-                    'Customer experience',
-                    'Sustainability initiatives',
-                    'Digital transformation'
-                ],
+        }
+        
+        function updateProgress(percent) {
+            const bar = document.getElementById('progressBar');
+            bar.style.width = percent + '%';
+            bar.textContent = percent + '%';
+        }
+        
+        async function runCompletePipeline() {
+            const orgName = document.getElementById('orgName').value;
+            if (!orgName) {
+                alert('Please enter an organization name');
+                return;
+            }
+            
+            clearAll();
+            updateProgress(0);
+            
+            try {
+                // Stage 0: Organization Discovery
+                updateStatus('discovery', 'running', 'Discovering organization profile...');
+                organizationProfile = await discoverOrganization(orgName);
+                updateStatus('discovery', 'success', `✅ Discovered: ${organizationProfile.name} (${organizationProfile.industry})`);
+                updateProgress(15);
+                
+                // Stage 1: Data Collection
+                updateStatus('collection', 'running', 'Collecting intelligence data...');
+                collectionData = await collectIntelligence(organizationProfile);
+                updateStatus('collection', 'success', `✅ Collected ${collectionData.raw_signals?.length || 0} signals from ${collectionData.metadata?.sources?.length || 0} sources`);
+                updateProgress(30);
+                
+                // Stages 2-6: Intelligence Analysis
+                updateStatus('analysis', 'running', 'Running 5-stage analysis...');
+                await runIntelligenceAnalysis(organizationProfile, collectionData);
+                updateStatus('analysis', 'success', '✅ Completed 5-stage analysis');
+                updateProgress(80);
+                
+                // Stage 7: Opportunity Detection
+                updateStatus('opportunities', 'running', 'Detecting opportunities...');
+                const opportunities = await detectOpportunities(stageResults);
+                updateStatus('opportunities', 'success', `✅ Detected ${opportunities.length || 0} opportunities`);
+                updateProgress(100);
+                
+                // Show final results
+                showFinalResults();
+                
+            } catch (error) {
+                console.error('Pipeline error:', error);
+                alert(`Pipeline failed: ${error.message}`);
+            }
+        }
+        
+        async function runQuickTest() {
+            const orgName = document.getElementById('orgName').value;
+            if (!orgName) {
+                alert('Please enter an organization name');
+                return;
+            }
+            
+            clearAll();
+            
+            // Use a mock organization profile for quick testing
+            organizationProfile = {
+                name: orgName,
+                industry: 'Technology',
+                competitors: ['Microsoft', 'Google', 'Anthropic'],
                 stakeholders: {
-                    regulators: ['FTC', 'SEC', 'FDA'],
-                    activists: ['Greenpeace', 'Labor Rights Watch'],
-                    media: ['Reuters', 'Bloomberg', 'CNBC', 'Wall Street Journal'],
-                    investors: ['Vanguard', 'BlackRock', 'State Street'],
-                    analysts: ['Morgan Stanley', 'Goldman Sachs']
-                },
-                // Also include at root level as some code expects it
-                regulators: ['FTC', 'SEC', 'FDA'],
-                activists: ['Greenpeace', 'Labor Rights Watch'],
-                media_outlets: ['Reuters', 'Bloomberg', 'CNBC', 'Wall Street Journal'],
-                investors: ['Vanguard', 'BlackRock', 'State Street'],
-                analysts: ['Morgan Stanley', 'Goldman Sachs']
+                    regulators: ['FTC', 'EU Commission'],
+                    media: ['TechCrunch', 'The Verge'],
+                    analysts: ['Gartner', 'Forrester']
+                }
             };
             
-            logStage('stage1', 'Onboarding data structure:', onboardingData);
-
-            // STAGE 2: Test Discovery
-            logStage('stage2', '🔍 Testing Discovery Edge Function...');
-            try {
-                const discoveryRequest = {
-                    organization: onboardingData.organization,
-                    stakeholders: onboardingData.stakeholders,
-                    monitoring_topics: onboardingData.monitoring_topics
-                };
-                
-                logStage('stage2', 'Discovery Request:', discoveryRequest);
-                
-                const discoveryResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-discovery-v3`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${SUPABASE_KEY}`
-                    },
-                    body: JSON.stringify(discoveryRequest)
-                });
-
-                const discoveryData = await discoveryResponse.json();
-                logStage('stage2', 'Discovery Response:', discoveryData, discoveryData.success ? 'info' : 'error');
-                
-                if (!discoveryData.success) {
-                    logStage('stage2', '❌ Discovery failed', null, 'error');
-                    return;
-                }
-
-                // STAGE 3: Test Gathering
-                logStage('stage3', '📡 Testing Gathering Edge Function...');
-                const gatheringRequest = {
-                    entities: discoveryData.entities || {},
-                    organization: onboardingData.organization
-                };
-                
-                logStage('stage3', 'Gathering Request:', gatheringRequest);
-                
-                const gatheringResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-gathering-v3`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${SUPABASE_KEY}`
-                    },
-                    body: JSON.stringify(gatheringRequest)
-                });
-
-                const gatheringData = await gatheringResponse.json();
-                logStage('stage3', 'Gathering Response:', {
-                    success: gatheringData.success,
-                    entity_actions_count: gatheringData.entity_actions?.all?.length || 0,
-                    topic_trends_count: gatheringData.topic_trends?.all?.length || 0,
-                    sample_action: gatheringData.entity_actions?.all?.[0],
-                    sample_trend: gatheringData.topic_trends?.all?.[0]
-                }, gatheringData.success ? 'info' : 'error');
-
-                if (!gatheringData.success) {
-                    logStage('stage3', '❌ Gathering failed', null, 'error');
-                    return;
-                }
-
-                // STAGE 4: Test Synthesis
-                logStage('stage4', '🧠 Testing Synthesis Edge Function...');
-                const synthesisRequest = {
-                    intelligence: {
-                        entity_actions: gatheringData.entity_actions || { all: [] },
-                        topic_trends: gatheringData.topic_trends || { all: [] }
-                    },
-                    organization: onboardingData.organization
-                };
-                
-                logStage('stage4', 'Synthesis Request:', {
-                    entity_actions_count: synthesisRequest.intelligence.entity_actions.all.length,
-                    topic_trends_count: synthesisRequest.intelligence.topic_trends.all.length
-                });
-                
-                const synthesisResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-synthesis-v3`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${SUPABASE_KEY}`
-                    },
-                    body: JSON.stringify(synthesisRequest)
-                });
-
-                const synthesisData = await synthesisResponse.json();
-                logStage('stage4', 'Synthesis Response:', {
-                    success: synthesisData.success,
-                    tabs: synthesisData.tabs ? Object.keys(synthesisData.tabs) : [],
-                    alerts: synthesisData.alerts?.length || 0,
-                    statistics: synthesisData.statistics,
-                    executive_headline: synthesisData.tabs?.executive?.headline,
-                    positioning_data: synthesisData.tabs?.positioning ? 'Present' : 'Missing',
-                    between_data: synthesisData.tabs?.between ? 'Present' : 'Missing'
-                }, synthesisData.success ? 'info' : 'error');
-
-                // STAGE 5: Check what frontend expects
-                logStage('stage5', '🎨 Checking Frontend Tab Structure...');
-                
-                const expectedTabs = [
-                    'executive', 'positioning', 'between', 'thought', 
-                    'regulatory', 'forward', 'narrative', 'response',
-                    'messaging', 'stakeholders', 'tomorrow'
-                ];
-                
-                const tabAnalysis = {};
-                for (const tab of expectedTabs) {
-                    if (synthesisData.tabs && synthesisData.tabs[tab]) {
-                        const tabData = synthesisData.tabs[tab];
-                        tabAnalysis[tab] = {
-                            present: true,
-                            hasData: Object.keys(tabData).length > 0,
-                            fields: Object.keys(tabData)
-                        };
-                    } else {
-                        tabAnalysis[tab] = {
-                            present: false,
-                            hasData: false,
-                            fields: []
-                        };
-                    }
-                }
-                
-                logStage('stage5', 'Tab Analysis:', tabAnalysis);
-                
-                // Check specific field requirements
-                const fieldChecks = {
-                    'executive.overview': synthesisData.tabs?.executive?.overview ? '✅' : '❌',
-                    'executive.headline': synthesisData.tabs?.executive?.headline ? '✅' : '❌',
-                    'positioning.competitor_moves': synthesisData.tabs?.positioning?.competitor_moves ? '✅' : '❌',
-                    'positioning.your_position': synthesisData.tabs?.positioning?.your_position ? '✅' : '❌',
-                    'between.hidden_patterns': synthesisData.tabs?.between?.hidden_patterns ? '✅' : '❌',
-                    'competitive.competitor_actions': synthesisData.tabs?.competitive?.competitor_actions ? '✅' : '❌'
-                };
-                
-                logStage('stage5', 'Field Validation:', fieldChecks);
-
-            } catch (error) {
-                console.error('Test failed:', error);
-                logStage('stage1', `❌ Error: ${error.message}`, null, 'error');
+            updateStatus('discovery', 'success', '✅ Using mock profile for quick test');
+            updateProgress(15);
+            
+            // Continue with collection and analysis
+            await collectIntelligence(organizationProfile);
+            await runIntelligenceAnalysis(organizationProfile, collectionData);
+        }
+        
+        async function discoverOrganization(orgName) {
+            const response = await fetch(`${SUPABASE_URL}/functions/v1/organization-discovery`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                },
+                body: JSON.stringify({ organizationName: orgName })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Discovery failed: ${response.status}`);
             }
+            
+            const result = await response.json();
+            return result.organization;
+        }
+        
+        async function collectIntelligence(organization) {
+            const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-collection-v1`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                },
+                body: JSON.stringify({
+                    organization,
+                    entities: {
+                        competitors: organization.competitors || [],
+                        regulators: organization.stakeholders?.regulators || [],
+                        media: organization.stakeholders?.media || [],
+                        analysts: organization.stakeholders?.analysts || []
+                    }
+                })
+            });
+            
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(`Collection failed: ${text}`);
+            }
+            
+            const result = await response.json();
+            collectionData = result.intelligence || result;
+            return collectionData;
+        }
+        
+        async function runIntelligenceAnalysis(organization, intelligence) {
+            const stages = [
+                { num: 1, name: 'competitors', label: 'Competitive Analysis' },
+                { num: 2, name: 'media', label: 'Media Analysis' },
+                { num: 3, name: 'regulatory', label: 'Regulatory Analysis' },
+                { num: 4, name: 'trends', label: 'Trend Analysis' },
+                { num: 5, name: 'synthesis', label: 'Intelligence Synthesis' }
+            ];
+            
+            const stagesContainer = document.getElementById('analysis-stages');
+            stagesContainer.innerHTML = '';
+            
+            for (const stage of stages) {
+                const stageCard = document.createElement('div');
+                stageCard.className = 'result-card';
+                stageCard.innerHTML = `
+                    <h4>Stage ${stage.num}: ${stage.label}</h4>
+                    <div class="status running">Running...</div>
+                `;
+                stagesContainer.appendChild(stageCard);
+                
+                try {
+                    const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-${stage.num}-${stage.name}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${SUPABASE_KEY}`
+                        },
+                        body: JSON.stringify({
+                            organization,
+                            previousResults: stageResults,
+                            intelligence: collectionData
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        stageResults[stage.name] = result;
+                        stageCard.querySelector('.status').className = 'status success';
+                        stageCard.querySelector('.status').textContent = '✅ Complete';
+                    } else {
+                        stageCard.querySelector('.status').className = 'status error';
+                        stageCard.querySelector('.status').textContent = '❌ Failed';
+                    }
+                } catch (error) {
+                    stageCard.querySelector('.status').className = 'status error';
+                    stageCard.querySelector('.status').textContent = `❌ ${error.message}`;
+                }
+                
+                updateProgress(30 + (stage.num * 10));
+            }
+        }
+        
+        async function detectOpportunities(stageResults) {
+            // Extract opportunities from stage results
+            const opportunities = [];
+            
+            if (stageResults.media?.opportunities) {
+                opportunities.push(...stageResults.media.opportunities);
+            }
+            if (stageResults.regulatory?.risks_and_opportunities?.opportunities) {
+                opportunities.push(...stageResults.regulatory.risks_and_opportunities.opportunities);
+            }
+            if (stageResults.trends?.emerging_opportunities) {
+                opportunities.push(...stageResults.trends.emerging_opportunities);
+            }
+            if (stageResults.synthesis?.consolidated_opportunities?.prioritized_list) {
+                opportunities.push(...stageResults.synthesis.consolidated_opportunities.prioritized_list);
+            }
+            
+            return opportunities;
+        }
+        
+        function showFinalResults() {
+            const resultsSection = document.getElementById('final-results');
+            resultsSection.style.display = 'block';
+            
+            const container = document.getElementById('results-container');
+            container.innerHTML = '';
+            
+            // Summary card
+            const summaryCard = document.createElement('div');
+            summaryCard.className = 'result-card';
+            summaryCard.innerHTML = `
+                <h4>📊 Pipeline Summary</h4>
+                <p><strong>Organization:</strong> ${organizationProfile?.name}</p>
+                <p><strong>Industry:</strong> ${organizationProfile?.industry}</p>
+                <p><strong>Signals Collected:</strong> ${collectionData?.raw_signals?.length || 0}</p>
+                <p><strong>Stages Completed:</strong> ${Object.keys(stageResults).length}/5</p>
+            `;
+            container.appendChild(summaryCard);
+            
+            // Stage results
+            for (const [stage, data] of Object.entries(stageResults)) {
+                const card = document.createElement('div');
+                card.className = 'result-card';
+                card.innerHTML = `
+                    <h4>${stage.charAt(0).toUpperCase() + stage.slice(1)}</h4>
+                    <pre>${JSON.stringify(data, null, 2).substring(0, 500)}...</pre>
+                `;
+                container.appendChild(card);
+            }
+        }
+        
+        function clearAll() {
+            ['discovery', 'collection', 'analysis', 'opportunities'].forEach(stage => {
+                updateStatus(stage, 'pending', 'Pending');
+                const logEl = document.getElementById(`log-${stage}`);
+                if (logEl) {
+                    logEl.style.display = 'none';
+                    logEl.innerHTML = '';
+                }
+            });
+            
+            document.getElementById('analysis-stages').innerHTML = '';
+            document.getElementById('final-results').style.display = 'none';
+            updateProgress(0);
+            
+            organizationProfile = null;
+            collectionData = null;
+            stageResults = {};
         }
     </script>
 </body>

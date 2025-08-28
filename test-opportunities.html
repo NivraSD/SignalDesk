@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opportunity Extraction Test</title>
+    <style>
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 40px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .opportunity-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #ffd700;
+        }
+        .opportunity-card h3 {
+            margin-top: 0;
+            color: #ffd700;
+        }
+        .urgency-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        .urgency-high { background: #ff4444; }
+        .urgency-medium { background: #ff9800; }
+        .urgency-low { background: #4caf50; }
+        button {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+            transition: transform 0.2s;
+        }
+        button:hover:not(:disabled) {
+            transform: scale(1.05);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .status.success {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+        }
+        .status.error {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid rgba(244, 67, 54, 0.5);
+        }
+        .status.info {
+            background: rgba(33, 150, 243, 0.2);
+            border: 1px solid rgba(33, 150, 243, 0.5);
+        }
+        pre {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Opportunity Extraction Test</h1>
+        <p style="text-align: center; opacity: 0.8;">Testing synthesis stage opportunity generation</p>
+        
+        <div class="test-section">
+            <h2>Test Controls</h2>
+            <button onclick="testSynthesisDirectly()" id="directTest">Test Synthesis Edge Function Directly</button>
+            <button onclick="testFullPipeline()" id="pipelineTest">Test Through Full Pipeline</button>
+            <button onclick="checkStoredOpportunities()" id="checkTest">Check Stored Opportunities</button>
+        </div>
+        
+        <div class="status" id="status" style="display: none;"></div>
+        
+        <div class="test-section" id="resultsSection" style="display: none;">
+            <h2>📊 Extracted Opportunities</h2>
+            <div id="opportunitiesCount"></div>
+            <div id="opportunitiesList"></div>
+        </div>
+        
+        <div class="test-section" id="rawSection" style="display: none;">
+            <h2>🔍 Raw Response</h2>
+            <pre id="rawResponse"></pre>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        function setStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            statusEl.style.display = 'block';
+            statusEl.className = `status ${type}`;
+            statusEl.textContent = message;
+        }
+        
+        async function testSynthesisDirectly() {
+            document.getElementById('directTest').disabled = true;
+            setStatus('🔄 Testing synthesis edge function directly...', 'info');
+            
+            try {
+                // Create mock previous stage results
+                const mockPreviousResults = {
+                    stage1: {
+                        competitors: {
+                            direct: [
+                                { name: 'Anthropic', threat_level: 'high', recent_activity: 'Launched Claude 3' },
+                                { name: 'Google DeepMind', threat_level: 'high', recent_activity: 'Released Gemini' }
+                            ]
+                        }
+                    },
+                    stage2: {
+                        media_coverage: {
+                            sentiment: 'positive',
+                            recent_mentions: 15,
+                            key_narratives: ['AI safety leader', 'Innovation pioneer']
+                        }
+                    },
+                    stage3: {
+                        regulatory_status: {
+                            compliance: 'compliant',
+                            upcoming_regulations: ['EU AI Act', 'US AI Framework']
+                        }
+                    },
+                    stage4: {
+                        trends: [
+                            { topic: 'AGI Development', relevance: 'high' },
+                            { topic: 'Enterprise AI Adoption', relevance: 'high' }
+                        ]
+                    }
+                };
+                
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-5-synthesis`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: {
+                            name: 'OpenAI',
+                            industry: 'Artificial Intelligence',
+                            competitors: ['Anthropic', 'Google DeepMind']
+                        },
+                        previousResults: mockPreviousResults,
+                        allStageData: mockPreviousResults,
+                        intelligence: {
+                            entity_actions: { all: [] },
+                            topic_trends: { all: [] }
+                        }
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Synthesis failed: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                console.log('Synthesis response:', result);
+                
+                // Display raw response
+                document.getElementById('rawSection').style.display = 'block';
+                document.getElementById('rawResponse').textContent = JSON.stringify(result, null, 2);
+                
+                // Extract opportunities
+                let opportunities = [];
+                
+                // Check different possible locations
+                if (result.data?.consolidated_opportunities?.prioritized_list) {
+                    opportunities = result.data.consolidated_opportunities.prioritized_list;
+                    setStatus(`✅ Found ${opportunities.length} opportunities in consolidated_opportunities`, 'success');
+                } else if (result.consolidated_opportunities?.prioritized_list) {
+                    opportunities = result.consolidated_opportunities.prioritized_list;
+                    setStatus(`✅ Found ${opportunities.length} opportunities`, 'success');
+                } else {
+                    setStatus('⚠️ No opportunities found in response', 'error');
+                    console.log('Response structure:', Object.keys(result));
+                    if (result.data) {
+                        console.log('Data structure:', Object.keys(result.data));
+                    }
+                }
+                
+                displayOpportunities(opportunities);
+                
+            } catch (error) {
+                setStatus(`❌ Error: ${error.message}`, 'error');
+                console.error('Error:', error);
+            }
+            
+            document.getElementById('directTest').disabled = false;
+        }
+        
+        async function testFullPipeline() {
+            document.getElementById('pipelineTest').disabled = true;
+            setStatus('🔄 Running minimal pipeline to test opportunity extraction...', 'info');
+            
+            try {
+                // This would run the actual pipeline stages
+                // For now, just check if we have saved opportunities
+                await checkStoredOpportunities();
+                
+            } catch (error) {
+                setStatus(`❌ Error: ${error.message}`, 'error');
+            }
+            
+            document.getElementById('pipelineTest').disabled = false;
+        }
+        
+        async function checkStoredOpportunities() {
+            document.getElementById('checkTest').disabled = true;
+            setStatus('🔍 Checking for stored opportunities...', 'info');
+            
+            try {
+                // Check localStorage
+                const cachedOpp = localStorage.getItem('opportunityCache');
+                const sharedIntel = localStorage.getItem('sharedIntelligence');
+                
+                let opportunities = [];
+                
+                if (cachedOpp) {
+                    const parsed = JSON.parse(cachedOpp);
+                    if (parsed.opportunities) {
+                        opportunities = parsed.opportunities;
+                        setStatus(`✅ Found ${opportunities.length} cached opportunities`, 'success');
+                    }
+                } else if (sharedIntel) {
+                    const parsed = JSON.parse(sharedIntel);
+                    if (parsed.opportunities) {
+                        opportunities = parsed.opportunities;
+                        setStatus(`✅ Found ${opportunities.length} opportunities in shared intelligence`, 'success');
+                    }
+                } else {
+                    setStatus('⚠️ No stored opportunities found', 'error');
+                }
+                
+                displayOpportunities(opportunities);
+                
+            } catch (error) {
+                setStatus(`❌ Error: ${error.message}`, 'error');
+            }
+            
+            document.getElementById('checkTest').disabled = false;
+        }
+        
+        function displayOpportunities(opportunities) {
+            document.getElementById('resultsSection').style.display = 'block';
+            document.getElementById('opportunitiesCount').innerHTML = `<strong>Total Opportunities:</strong> ${opportunities.length}`;
+            
+            const listEl = document.getElementById('opportunitiesList');
+            
+            if (opportunities.length === 0) {
+                listEl.innerHTML = '<p>No opportunities to display</p>';
+                return;
+            }
+            
+            listEl.innerHTML = opportunities.map(opp => `
+                <div class="opportunity-card">
+                    <h3>
+                        ${opp.opportunity || opp.title || 'Untitled'}
+                        <span class="urgency-badge urgency-${opp.urgency || 'medium'}">${opp.urgency || 'medium'}</span>
+                    </h3>
+                    <p><strong>Type:</strong> ${opp.type || 'Strategic'}</p>
+                    <p><strong>Description:</strong> ${opp.quick_summary || opp.pr_angle || opp.description || 'No description'}</p>
+                    ${opp.confidence ? `<p><strong>Confidence:</strong> ${opp.confidence}%</p>` : ''}
+                    ${opp.source_stage ? `<p><strong>Source:</strong> ${opp.source_stage}</p>` : ''}
+                </div>
+            `).join('');
+        }
+    </script>
+</body>
+</html>

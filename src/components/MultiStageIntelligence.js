@@ -19,48 +19,55 @@ import supabaseDataService from '../services/supabaseDataService';
  * Quality over speed - designed for comprehensive strategic intelligence
  */
 
-// Define the elaborate 6-stage intelligence pipeline
+// Define the elaborate 7-stage intelligence pipeline
 const INTELLIGENCE_STAGES = [
   {
     id: 'extraction',
     name: 'Organization Data Extraction',
     description: 'Extracting comprehensive organization profile and stakeholder data...',
-    duration: 30,
+    duration: 25,
     focus: 'Data gathering and organization profiling'
   },
   {
     id: 'competitive',
     name: 'Competitive Intelligence Analysis',
     description: 'Conducting deep competitor analysis and threat assessment...',
-    duration: 45,
+    duration: 35,
     focus: 'Competitor actions, market positioning, competitive threats'
+  },
+  {
+    id: 'stakeholders',
+    name: 'Stakeholder Analysis',
+    description: 'Analyzing customers, thought leaders, influencers, and key stakeholders...',
+    duration: 35,
+    focus: 'Customer sentiment, thought leader opinions, influencer narratives, employee sentiment'
   },
   {
     id: 'media',
     name: 'Media Landscape Mapping',
     description: 'Mapping journalist networks and media coverage patterns...',
-    duration: 40,
+    duration: 30,
     focus: 'Media relations, coverage analysis, journalist identification'
   },
   {
     id: 'regulatory',
-    name: 'Regulatory & Stakeholder Environment',
-    description: 'Analyzing regulatory developments and stakeholder sentiment...',
-    duration: 35,
-    focus: 'Compliance requirements, analyst opinions, investor relations'
+    name: 'Regulatory Environment',
+    description: 'Analyzing regulatory developments and compliance landscape...',
+    duration: 25,
+    focus: 'Compliance requirements, regulatory changes, policy implications'
   },
   {
     id: 'trends',
     name: 'Market Trends & Topic Analysis',
     description: 'Identifying trending narratives and conversation opportunities...',
-    duration: 30,
+    duration: 25,
     focus: 'Market trends, topic analysis, narrative gaps'
   },
   {
     id: 'synthesis',
     name: 'Strategic Synthesis & Pattern Recognition',
     description: 'Connecting insights and identifying strategic opportunities...',
-    duration: 50,
+    duration: 45,
     focus: 'Pattern recognition, strategic implications, actionable recommendations'
   }
 ];

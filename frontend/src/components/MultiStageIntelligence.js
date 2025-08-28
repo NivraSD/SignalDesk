@@ -235,9 +235,24 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
           hasData: !!result.data,
           hasTabs: !!result.tabs,
           hasAnalysis: !!result.analysis,
+          hasOpportunities: !!result.opportunities,
+          opportunityCount: result.opportunities?.length || 0,
+          hasConsolidatedOps: !!result.data?.consolidated_opportunities,
+          consolidatedCount: result.data?.consolidated_opportunities?.prioritized_list?.length || 0,
           dataKeys: result.data ? Object.keys(result.data).slice(0, 5) : [],
           tabCount: result.tabs ? Object.keys(result.tabs).length : 0
         });
+        
+        // Special logging for synthesis stage
+        if (stage.id === 'synthesis') {
+          console.log('🎯 SYNTHESIS STAGE OPPORTUNITIES CHECK:', {
+            directOpportunities: result.opportunities,
+            consolidatedPath: result.data?.consolidated_opportunities?.prioritized_list,
+            analysisPath: result.analysis?.consolidated_opportunities?.prioritized_list,
+            totalFound: (result.opportunities?.length || 0) + 
+                       (result.data?.consolidated_opportunities?.prioritized_list?.length || 0)
+          });
+        }
         
         // STAGE 1: Extract and save organization profile
         if (stageIndex === 0 && result.organization) {
@@ -619,15 +634,64 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
   const extractOpportunitiesFromAllStages = (results) => {
     const allOpportunities = [];
     
-    Object.values(results).forEach(stageResult => {
+    console.log('🔍 EXTRACTING OPPORTUNITIES FROM STAGES:', {
+      stageCount: Object.keys(results).length,
+      stages: Object.keys(results)
+    });
+    
+    Object.entries(results).forEach(([stageId, stageResult]) => {
+      console.log(`📋 Checking stage '${stageId}' for opportunities:`, {
+        hasDirectOps: !!stageResult.opportunities,
+        directCount: stageResult.opportunities?.length || 0,
+        hasDataField: !!stageResult.data,
+        hasConsolidatedInData: !!stageResult.data?.consolidated_opportunities,
+        consolidatedInDataCount: stageResult.data?.consolidated_opportunities?.prioritized_list?.length || 0,
+        hasAnalysisField: !!stageResult.analysis,
+        hasConsolidatedInAnalysis: !!stageResult.analysis?.consolidated_opportunities,
+        consolidatedInAnalysisCount: stageResult.analysis?.consolidated_opportunities?.prioritized_list?.length || 0
+      });
+      // Check for opportunities in different possible locations
+      
+      // 1. Direct opportunities array
       if (stageResult.opportunities && Array.isArray(stageResult.opportunities)) {
         allOpportunities.push(...stageResult.opportunities.map(opp => ({
           ...opp,
           source: stageResult.stageMetadata?.stageName || 'Unknown Stage'
         })));
       }
+      
+      // 2. Synthesis stage: consolidated_opportunities.prioritized_list
+      if (stageResult.data?.consolidated_opportunities?.prioritized_list) {
+        const synthOps = stageResult.data.consolidated_opportunities.prioritized_list;
+        allOpportunities.push(...synthOps.map(opp => ({
+          title: opp.opportunity || opp.title,
+          description: opp.quick_summary || opp.pr_angle || opp.description,
+          urgency: opp.urgency,
+          type: opp.type,
+          confidence: opp.confidence,
+          source: 'Strategic Synthesis'
+        })));
+      }
+      
+      // 3. Also check in analysis field
+      if (stageResult.analysis?.consolidated_opportunities?.prioritized_list) {
+        const analysisOps = stageResult.analysis.consolidated_opportunities.prioritized_list;
+        allOpportunities.push(...analysisOps.map(opp => ({
+          title: opp.opportunity || opp.title,
+          description: opp.quick_summary || opp.pr_angle || opp.description,
+          urgency: opp.urgency,
+          type: opp.type,
+          confidence: opp.confidence,
+          source: 'Analysis Synthesis'
+        })));
+      }
     });
     
+    console.log('📊 FINAL OPPORTUNITY EXTRACTION:', {
+      totalOpportunities: allOpportunities.length,
+      opportunitiesList: allOpportunities.slice(0, 3),
+      sources: [...new Set(allOpportunities.map(o => o.source))]
+    });
     return allOpportunities;
   };
 
@@ -1302,6 +1366,96 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     );
   }
 
+  // Debug function to test opportunity flow
+  const runOpportunityDebugTest = async () => {
+    console.log('🔍 STARTING OPPORTUNITY DEBUG TEST');
+    console.log('Running minimal pipeline: Extraction + Synthesis only');
+    
+    // Clear existing results
+    setStageResults({});
+    setCurrentStage(0);
+    setIsComplete(false);
+    
+    try {
+      // Run extraction stage
+      const extractionConfig = createStageConfig(0, organization);
+      console.log('📦 Running extraction with config:', extractionConfig);
+      const extractionResult = await intelligenceOrchestratorV4.orchestrate(extractionConfig);
+      console.log('✅ Extraction complete:', {
+        hasData: !!extractionResult.data,
+        hasOrganization: !!extractionResult.organization
+      });
+      
+      // Create minimal previous results for synthesis
+      const minimalPreviousResults = {
+        extraction: extractionResult.data || {},
+        stage1: { competitors: { direct: [] } },
+        stage2: { media_coverage: {} },
+        stage3: { regulatory_status: {} },
+        stage4: { trends: [] }
+      };
+      
+      // Run synthesis stage directly
+      const synthesisConfig = {
+        organization: extractionResult.organization || organization,
+        stageConfig: {
+          stageId: 'synthesis',
+          stageName: 'Strategic Synthesis',
+          focus: 'synthesis',
+          isElaboratePipeline: true,
+          previousStageResults: minimalPreviousResults
+        }
+      };
+      
+      console.log('🎯 Running synthesis with config:', synthesisConfig);
+      const synthesisResult = await intelligenceOrchestratorV4.orchestrate(synthesisConfig);
+      console.log('✅ Synthesis complete:', {
+        hasData: !!synthesisResult.data,
+        hasOpportunities: !!synthesisResult.opportunities,
+        opportunityCount: synthesisResult.opportunities?.length || 0,
+        hasConsolidated: !!synthesisResult.data?.consolidated_opportunities,
+        consolidatedCount: synthesisResult.data?.consolidated_opportunities?.prioritized_list?.length || 0
+      });
+      
+      // Store results
+      setStageResults({
+        extraction: extractionResult,
+        synthesis: synthesisResult
+      });
+      
+      // Extract and display opportunities
+      const opportunities = extractOpportunitiesFromAllStages({
+        extraction: extractionResult,
+        synthesis: synthesisResult
+      });
+      
+      console.log('🏆 OPPORTUNITY DEBUG TEST COMPLETE:', {
+        totalOpportunities: opportunities.length,
+        opportunities: opportunities
+      });
+      
+      // Force completion
+      setIsComplete(true);
+      setCurrentStage(2);
+      
+      // Trigger synthesis callback
+      const elaborateIntelligence = synthesizeElaborateResults(
+        { extraction: extractionResult, synthesis: synthesisResult },
+        extractionResult.organization || organization,
+        10
+      );
+      
+      setFinalIntelligence(elaborateIntelligence);
+      if (onComplete) {
+        onComplete(elaborateIntelligence);
+      }
+      
+    } catch (error) {
+      console.error('❌ Debug test failed:', error);
+      setError(`Debug test failed: ${error.message}`);
+    }
+  };
+
   return (
     <div className="multi-stage-intelligence">
       <div className="analysis-header">
@@ -1314,6 +1468,22 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         <div className="pipeline-metadata">
           <span className="pipeline-version">Elaborate Pipeline v2.0</span>
           <span className="pipeline-stages">{INTELLIGENCE_STAGES.length} Stages</span>
+          {/* Debug button - only show in development */}
+          <button 
+            onClick={runOpportunityDebugTest}
+            style={{
+              marginLeft: '20px',
+              padding: '8px 16px',
+              background: '#ff6b6b',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '12px'
+            }}
+          >
+            🔍 Debug Opportunities
+          </button>
         </div>
       </div>
 
