@@ -101,6 +101,7 @@ class IntelligenceOrchestratorV4 {
     const stageEndpoints = {
       extraction: 'intelligence-discovery-v3',
       competitive: 'intelligence-stage-1-competitors',
+      stakeholders: 'intelligence-stage-2-media',  // Media stage analyzes stakeholders
       media: 'intelligence-stage-2-media',
       regulatory: 'intelligence-stage-3-regulatory',
       trends: 'intelligence-stage-4-trends',
