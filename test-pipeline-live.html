@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Intelligence Pipeline - Live</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 20px; background: #1a1a1a; color: #fff; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { color: #00ff88; margin-bottom: 30px; }
+        .test-section { background: #2a2a2a; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        button { background: #00ff88; color: #000; border: none; padding: 12px 24px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin: 10px; }
+        button:hover { background: #00cc66; }
+        button:disabled { background: #666; cursor: not-allowed; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .status.success { background: #00442211; border: 1px solid #00ff88; }
+        .status.error { background: #440000; border: 1px solid #ff4444; }
+        .status.info { background: #002244; border: 1px solid #4488ff; }
+        .stage-progress { margin: 20px 0; }
+        .stage { padding: 10px; margin: 5px 0; border-radius: 4px; background: #333; }
+        .stage.active { background: #00442211; border: 1px solid #00ff88; }
+        .stage.complete { background: #00332211; border: 1px solid #00aa55; }
+        .log { background: #1a1a1a; padding: 15px; border-radius: 4px; margin: 10px 0; border: 1px solid #444; font-family: monospace; font-size: 12px; max-height: 400px; overflow-y: auto; }
+        .log-entry { margin: 2px 0; padding: 2px; }
+        .log-entry.error { color: #ff6666; }
+        .log-entry.success { color: #00ff88; }
+        .log-entry.info { color: #88ccff; }
+        .json-output { background: #0a0a0a; padding: 15px; border-radius: 4px; margin: 10px 0; border: 1px solid #333; font-family: monospace; font-size: 11px; white-space: pre-wrap; word-wrap: break-word; max-height: 500px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Intelligence Pipeline Live Test</h1>
+        
+        <div class="test-section">
+            <h2>Test Configuration</h2>
+            <input type="text" id="orgName" placeholder="Organization name (e.g., Tesla)" style="padding: 10px; width: 300px; background: #333; color: #fff; border: 1px solid #666; border-radius: 4px;">
+            <button onclick="testFullPipeline()">Run Full Pipeline (6 Stages)</button>
+            <button onclick="testSingleStage()">Test Single Stage</button>
+            <button onclick="clearData()">Clear Cached Data</button>
+        </div>
+
+        <div class="test-section">
+            <h2>Pipeline Status</h2>
+            <div id="status" class="status info">Ready to test pipeline...</div>
+            <div class="stage-progress" id="stageProgress"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Live Logs</h2>
+            <div id="logs" class="log"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Response Data</h2>
+            <div id="output" class="json-output">No data yet...</div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        const stages = [
+            { id: 'extraction', name: 'Organization Data Extraction', endpoint: 'intelligence-collection-v1' },
+            { id: 'competitive', name: 'Competitive Intelligence', endpoint: 'intelligence-stage-1-competitors' },
+            { id: 'media', name: 'Media Landscape Mapping', endpoint: 'intelligence-stage-2-media' },
+            { id: 'regulatory', name: 'Regulatory Environment', endpoint: 'intelligence-stage-3-regulatory' },
+            { id: 'trends', name: 'Market Trends Analysis', endpoint: 'intelligence-stage-4-trends' },
+            { id: 'synthesis', name: 'Strategic Synthesis', endpoint: 'intelligence-stage-5-synthesis' }
+        ];
+
+        let stageResults = {};
+
+        function log(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logs.appendChild(entry);
+            logs.scrollTop = logs.scrollHeight;
+            console.log(message);
+        }
+
+        function setStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.className = `status ${type}`;
+            status.textContent = message;
+        }
+
+        function updateStageProgress() {
+            const progress = document.getElementById('stageProgress');
+            progress.innerHTML = stages.map((stage, index) => {
+                const result = stageResults[stage.id];
+                let className = 'stage';
+                let status = 'Pending';
+                
+                if (result) {
+                    if (result.inProgress) {
+                        className += ' active';
+                        status = 'Running...';
+                    } else if (result.success) {
+                        className += ' complete';
+                        status = '✅ Complete';
+                    } else if (result.error) {
+                        className += ' error';
+                        status = '❌ Failed';
+                    }
+                }
+                
+                return `<div class="${className}">Stage ${index + 1}: ${stage.name} - ${status}</div>`;
+            }).join('');
+        }
+
+        async function runStage(stageIndex, organization, previousResults = {}) {
+            const stage = stages[stageIndex];
+            log(`Starting Stage ${stageIndex + 1}: ${stage.name}`, 'info');
+            
+            stageResults[stage.id] = { inProgress: true };
+            updateStageProgress();
+
+            try {
+                const payload = {
+                    organization: { name: organization },
+                    previousResults: previousResults
+                };
+
+                if (stageIndex === 0) {
+                    // Stage 1 needs different payload
+                    payload.entities = {};
+                    payload.savedProfile = {};
+                }
+
+                log(`Calling ${stage.endpoint}...`, 'info');
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/${stage.endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+
+                const data = await response.json();
+                log(`Stage ${stageIndex + 1} completed successfully`, 'success');
+                
+                stageResults[stage.id] = { 
+                    success: true, 
+                    data: data,
+                    timestamp: new Date().toISOString()
+                };
+                updateStageProgress();
+                
+                return data;
+            } catch (error) {
+                log(`Stage ${stageIndex + 1} failed: ${error.message}`, 'error');
+                stageResults[stage.id] = { 
+                    error: error.message,
+                    timestamp: new Date().toISOString()
+                };
+                updateStageProgress();
+                throw error;
+            }
+        }
+
+        async function testFullPipeline() {
+            const orgName = document.getElementById('orgName').value || 'Tesla';
+            log(`Starting full pipeline for: ${orgName}`, 'success');
+            setStatus('Pipeline running...', 'info');
+            
+            stageResults = {};
+            updateStageProgress();
+            
+            let allResults = {};
+            
+            try {
+                for (let i = 0; i < stages.length; i++) {
+                    const result = await runStage(i, orgName, allResults);
+                    allResults[stages[i].id] = result;
+                    
+                    // Wait a bit between stages
+                    if (i < stages.length - 1) {
+                        log('Waiting 2 seconds before next stage...', 'info');
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                    }
+                }
+                
+                setStatus('✅ Pipeline completed successfully!', 'success');
+                document.getElementById('output').textContent = JSON.stringify(allResults, null, 2);
+                
+                // Check for opportunities in synthesis
+                const synthesis = allResults.synthesis;
+                if (synthesis?.data?.consolidated_opportunities?.prioritized_list) {
+                    const opportunities = synthesis.data.consolidated_opportunities.prioritized_list;
+                    log(`🎯 Found ${opportunities.length} opportunities!`, 'success');
+                } else {
+                    log('⚠️ No opportunities found in synthesis', 'error');
+                }
+                
+            } catch (error) {
+                setStatus(`❌ Pipeline failed: ${error.message}`, 'error');
+                document.getElementById('output').textContent = JSON.stringify(stageResults, null, 2);
+            }
+        }
+
+        async function testSingleStage() {
+            const orgName = document.getElementById('orgName').value || 'Tesla';
+            log(`Testing Stage 1 only for: ${orgName}`, 'info');
+            setStatus('Testing single stage...', 'info');
+            
+            try {
+                const result = await runStage(0, orgName, {});
+                setStatus('✅ Stage test completed!', 'success');
+                document.getElementById('output').textContent = JSON.stringify(result, null, 2);
+            } catch (error) {
+                setStatus(`❌ Stage test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function clearData() {
+            const orgName = document.getElementById('orgName').value || 'Tesla';
+            log(`Clearing cached data for: ${orgName}`, 'info');
+            
+            try {
+                // Clear from Supabase
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-persistence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        action: 'clearAnalysis',
+                        organization_name: orgName
+                    })
+                });
+                
+                if (response.ok) {
+                    log('✅ Cached data cleared successfully', 'success');
+                    setStatus('Data cleared', 'success');
+                } else {
+                    log('⚠️ Could not clear data', 'error');
+                }
+            } catch (error) {
+                log(`Error clearing data: ${error.message}`, 'error');
+            }
+        }
+
+        // Initialize
+        updateStageProgress();
+        log('Pipeline test ready. Enter an organization name and click "Run Full Pipeline"', 'info');
+    </script>
+</body>
+</html>

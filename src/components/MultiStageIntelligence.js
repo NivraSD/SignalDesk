@@ -537,15 +537,41 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
   const extractOpportunitiesFromAllStages = (results) => {
     const allOpportunities = [];
     
-    Object.values(results).forEach(stageResult => {
+    Object.entries(results).forEach(([stageId, stageResult]) => {
+      // Check for opportunities at top level
       if (stageResult.opportunities && Array.isArray(stageResult.opportunities)) {
         allOpportunities.push(...stageResult.opportunities.map(opp => ({
           ...opp,
           source: stageResult.stageMetadata?.stageName || 'Unknown Stage'
         })));
       }
+      
+      // Check for consolidated_opportunities in synthesis stage
+      if (stageId === 'synthesis' && stageResult.data?.consolidated_opportunities?.prioritized_list) {
+        console.log('🎯 Found consolidated opportunities in synthesis stage!');
+        const consolidatedOpps = stageResult.data.consolidated_opportunities.prioritized_list;
+        allOpportunities.push(...consolidatedOpps.map(opp => ({
+          ...opp,
+          source: 'Strategic Synthesis',
+          fromSynthesis: true
+        })));
+      }
+      
+      // Also check if success=true and data has consolidated_opportunities (for edge function responses)
+      if (stageResult.success && stageResult.data?.consolidated_opportunities?.prioritized_list) {
+        console.log('🎯 Found opportunities in stage data!');
+        const prioritizedOpps = stageResult.data.consolidated_opportunities.prioritized_list;
+        if (!allOpportunities.some(o => o.fromSynthesis)) { // Avoid duplicates
+          allOpportunities.push(...prioritizedOpps.map(opp => ({
+            ...opp,
+            source: 'Intelligence Synthesis',
+            fromSynthesis: true
+          })));
+        }
+      }
     });
     
+    console.log(`📊 Extracted ${allOpportunities.length} total opportunities from all stages`);
     return allOpportunities;
   };
 

@@ -105,25 +105,66 @@ const OpportunityEngine = ({ onAIMessage, isDragging = false }) => {
   const loadOpportunities = async () => {
     setLoading(true);
     try {
-      // Import cache manager at top of component if not already
-      const cacheManager = (await import('../utils/cacheManager')).default;
+      // Get current organization from localStorage
+      const orgData = localStorage.getItem('signaldesk_organization');
+      const organization = orgData ? JSON.parse(orgData) : null;
       
-      // Try to load from synthesis cache
-      const synthesis = cacheManager.getSynthesis();
-      if (synthesis && synthesis.opportunities && synthesis.opportunities.length > 0) {
-        console.log('🎯 Loading opportunities from cache:', synthesis.opportunities.length);
-        setOpportunities(synthesis.opportunities);
+      if (!organization?.name) {
+        console.log('⚠️ No organization selected, using mock data');
+        setOpportunities(mockOpportunities);
         setLoading(false);
         return;
       }
       
-      // Try to load from intelligence cache
-      const intelligence = cacheManager.getIntelligence();
-      if (intelligence && intelligence.opportunities && intelligence.opportunities.length > 0) {
-        console.log('📊 Loading opportunities from intelligence:', intelligence.opportunities.length);
-        setOpportunities(intelligence.opportunities);
-        setLoading(false);
-        return;
+      console.log(`🔍 Loading opportunities for ${organization.name} from Supabase...`);
+      
+      // Import supabase data service
+      const supabaseDataService = (await import('../services/supabaseDataService')).default;
+      
+      // Load complete analysis from Supabase
+      const analysis = await supabaseDataService.loadCompleteAnalysis(organization.name);
+      
+      if (analysis && analysis.stageData?.synthesis) {
+        const synthesisData = analysis.stageData.synthesis;
+        
+        // Check for consolidated opportunities
+        if (synthesisData.data?.consolidated_opportunities?.prioritized_list) {
+          const opportunities = synthesisData.data.consolidated_opportunities.prioritized_list;
+          console.log(`🎯 Found ${opportunities.length} opportunities from synthesis!`);
+          setOpportunities(opportunities.map(opp => ({
+            ...opp,
+            id: opp.id || Math.random().toString(36).substr(2, 9),
+            confidence: opp.confidence || 75,
+            status: 'active'
+          })));
+          setLoading(false);
+          return;
+        }
+        
+        // Check for opportunities at top level
+        if (synthesisData.opportunities && Array.isArray(synthesisData.opportunities)) {
+          console.log(`📊 Found ${synthesisData.opportunities.length} opportunities!`);
+          setOpportunities(synthesisData.opportunities);
+          setLoading(false);
+          return;
+        }
+      }
+      
+      // Try to extract opportunities from all stages
+      if (analysis && analysis.stageData) {
+        const allOpportunities = [];
+        Object.values(analysis.stageData).forEach(stage => {
+          if (stage.opportunities && Array.isArray(stage.opportunities)) {
+            allOpportunities.push(...stage.opportunities);
+          }
+        });
+        
+        if (allOpportunities.length > 0) {
+          console.log(`📊 Found ${allOpportunities.length} opportunities across all stages`);
+          setOpportunities(allOpportunities);
+          setLoading(false);
+          return;
+        }
       }
       
       // Fall back to mock data if no real opportunities
