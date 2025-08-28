@@ -42,13 +42,25 @@ async function collectIntelligence(entities: any, organization: any, savedProfil
   // 1. RSS Collection (fast)
   collectors.push(collectRSS(organization, timeout))
   
-  // 2. Firecrawl for top 3 competitors only (rate limited)
+  // 2. Firecrawl for top competitors (rate limited)
   if (enhancedEntities.competitors?.length > 0) {
     const topCompetitors = enhancedEntities.competitors.slice(0, 5)
     collectors.push(collectFirecrawl(topCompetitors, timeout))
   }
   
-  // 3. Quick monitoring check
+  // 3. Yahoo Finance Intelligence
+  collectors.push(collectYahooFinance(organization, timeout))
+  
+  // 4. Google News Intelligence
+  collectors.push(collectGoogleNews(organization, timeout))
+  
+  // 5. Reddit Intelligence
+  collectors.push(collectReddit(organization, timeout))
+  
+  // 6. Twitter/X Intelligence
+  collectors.push(collectTwitter(organization, timeout))
+  
+  // 7. General monitoring check
   collectors.push(collectMonitoring(organization, timeout))
   
   // Wait for all collectors to complete or timeout individually
@@ -218,6 +230,182 @@ async function collectMonitoring(organization: any, timeout: number) {
   }
   
   return { signals: [], source: 'Monitoring (failed)' }
+}
+
+async function collectYahooFinance(organization: any, timeout: number) {
+  try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), Math.min(timeout, 8000))
+    
+    const response = await fetch(
+      'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/yahoo-finance-intelligence',
+      {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8'
+        },
+        body: JSON.stringify({ 
+          query: organization.name,
+          industry: organization.industry
+        })
+      }
+    )
+    
+    clearTimeout(timeoutId)
+    
+    if (response.ok) {
+      const data = await response.json()
+      const signals = data.articles?.map(article => ({
+        type: 'finance',
+        title: article.title,
+        content: article.description || article.summary,
+        source: 'Yahoo Finance',
+        url: article.link,
+        published: article.published,
+        raw: article
+      })) || []
+      
+      return { signals, source: 'Yahoo Finance' }
+    }
+  } catch (error) {
+    console.log('Yahoo Finance collection error:', error.message)
+  }
+  
+  return { signals: [], source: 'Yahoo Finance (failed)' }
+}
+
+async function collectGoogleNews(organization: any, timeout: number) {
+  try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), Math.min(timeout, 8000))
+    
+    const response = await fetch(
+      'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/google-intelligence',
+      {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8'
+        },
+        body: JSON.stringify({ 
+          query: organization.name,
+          limit: 20
+        })
+      }
+    )
+    
+    clearTimeout(timeoutId)
+    
+    if (response.ok) {
+      const data = await response.json()
+      const signals = data.results?.map(result => ({
+        type: 'news',
+        title: result.title,
+        content: result.snippet || result.description,
+        source: result.source,
+        url: result.link,
+        published: result.date,
+        raw: result
+      })) || []
+      
+      return { signals, source: 'Google News' }
+    }
+  } catch (error) {
+    console.log('Google News collection error:', error.message)
+  }
+  
+  return { signals: [], source: 'Google News (failed)' }
+}
+
+async function collectReddit(organization: any, timeout: number) {
+  try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), Math.min(timeout, 8000))
+    
+    const response = await fetch(
+      'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/reddit-intelligence',
+      {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8'
+        },
+        body: JSON.stringify({ 
+          query: organization.name,
+          subreddits: ['business', 'technology', 'stocks']
+        })
+      }
+    )
+    
+    clearTimeout(timeoutId)
+    
+    if (response.ok) {
+      const data = await response.json()
+      const signals = data.posts?.map(post => ({
+        type: 'social',
+        title: post.title,
+        content: post.selftext || post.body,
+        source: `Reddit r/${post.subreddit}`,
+        url: post.url,
+        engagement: post.score,
+        raw: post
+      })) || []
+      
+      return { signals, source: 'Reddit' }
+    }
+  } catch (error) {
+    console.log('Reddit collection error:', error.message)
+  }
+  
+  return { signals: [], source: 'Reddit (failed)' }
+}
+
+async function collectTwitter(organization: any, timeout: number) {
+  try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), Math.min(timeout, 8000))
+    
+    const response = await fetch(
+      'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/twitter-intelligence',
+      {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8'
+        },
+        body: JSON.stringify({ 
+          query: organization.name,
+          limit: 30
+        })
+      }
+    )
+    
+    clearTimeout(timeoutId)
+    
+    if (response.ok) {
+      const data = await response.json()
+      const signals = data.tweets?.map(tweet => ({
+        type: 'social',
+        title: `@${tweet.author}: ${tweet.text.substring(0, 100)}`,
+        content: tweet.text,
+        source: 'Twitter/X',
+        url: tweet.url,
+        engagement: tweet.metrics?.retweet_count + tweet.metrics?.like_count,
+        raw: tweet
+      })) || []
+      
+      return { signals, source: 'Twitter/X' }
+    }
+  } catch (error) {
+    console.log('Twitter collection error:', error.message)
+  }
+  
+  return { signals: [], source: 'Twitter/X (failed)' }
 }
 
 serve(async (req) => {
