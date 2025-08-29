@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import './MultiStageIntelligence.css';
 import intelligenceOrchestratorV4 from '../services/intelligenceOrchestratorV4';
 import supabaseDataService from '../services/supabaseDataService';
@@ -87,7 +87,6 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
   const completionRef = useRef(false);
   const runningRef = useRef(false); // Prevent multiple simultaneous runs
   const accumulatedResultsRef = useRef({}); // Track accumulated results across stages
-  const handleCompleteWithResultsRef = useRef(null); // Store completion handler
   
   // Initialize organization state
   const [organization] = useState(() => {
@@ -359,7 +358,7 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
   };
 
   // Complete analysis and synthesize all stage results with provided results
-  const handleCompleteWithResults = useCallback((finalResults) => {
+  const handleCompleteWithResults = (finalResults) => {
     // Prevent multiple calls using ref only (not isComplete state)
     if (completionRef.current) {
       console.log('⚠️ Pipeline already completing, skipping duplicate call');
@@ -411,10 +410,7 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
       console.log('📤 Calling onComplete callback with intelligence');
       onComplete(elaborateIntelligence);
     }
-  }, [organizationProfile, organization, startTime, onComplete]); // Removed stageResults to prevent render loop
-  
-  // Store ref to completion handler - set directly without useEffect to avoid re-renders
-  handleCompleteWithResultsRef.current = handleCompleteWithResults;
+  };
 
   // Complete analysis and synthesize all stage results
   const handleComplete = () => {
@@ -945,10 +941,22 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
 
     return () => clearInterval(timer);
   }, [startTime]);
+  
+  // Clear window flags on mount to ensure fresh logging
+  useEffect(() => {
+    window._completionLogged = false;
+    window._opportunitiesLogged = false;
+    
+    return () => {
+      // Clean up on unmount
+      window._completionLogged = false;
+      window._opportunitiesLogged = false;
+    };
+  }, []);
 
   // Tab Render Functions - Pure Intelligence Analysis
-  
-  const renderExecutiveSummary = (intelligence) => {
+  // Wrap in useCallback to prevent recreation on every render
+  const renderExecutiveSummary = useCallback((intelligence) => {
     const { tabs = {}, patterns = [], statistics = {} } = intelligence;
     
     return (
@@ -1011,9 +1019,9 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         </div>
       </div>
     );
-  };
+  }, []); // No dependencies, pure function
   
-  const renderCompetitiveAnalysis = (intelligence) => {
+  const renderCompetitiveAnalysis = useCallback((intelligence) => {
     const { tabs = {} } = intelligence;
     const competitiveData = tabs.competitive || {};
     
@@ -1070,9 +1078,9 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         </div>
       </div>
     );
-  };
+  }, []); // No dependencies, pure function
   
-  const renderTrendingTopics = (intelligence) => {
+  const renderTrendingTopics = useCallback((intelligence) => {
     const { tabs = {} } = intelligence;
     const marketData = tabs.market || {};
     const thoughtData = tabs.thought || {};
@@ -1129,9 +1137,9 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         </div>
       </div>
     );
-  };
+  }, []); // No dependencies, pure function
   
-  const renderStakeholders = (intelligence) => {
+  const renderStakeholders = useCallback((intelligence) => {
     const { tabs = {} } = intelligence;
     const regulatoryData = tabs.regulatory || {};
     
@@ -1181,9 +1189,9 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         </div>
       </div>
     );
-  };
+  }, []); // No dependencies, pure function
   
-  const renderEarlySignals = (intelligence) => {
+  const renderEarlySignals = useCallback((intelligence) => {
     const { tabs = {}, patterns = [] } = intelligence;
     const forwardData = tabs.forward || {};
     
@@ -1245,17 +1253,22 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         </div>
       </div>
     );
-  };
+  }, []); // No dependencies, pure function
 
-  const renderOpportunities = (intelligence) => {
+  const renderOpportunities = useCallback((intelligence) => {
     const { opportunities = [], tabs = {} } = intelligence;
     
-    console.log('🎯 Rendering opportunities:', {
-      count: opportunities.length,
-      opportunities: opportunities.slice(0, 2), // Show first 2 for debugging
-      hasTabsData: !!tabs,
-      tabKeys: Object.keys(tabs)
-    });
+    // Only log opportunities once to avoid spam
+    if (!window._opportunitiesLogged) {
+      console.log('🎯 Rendering opportunities:', {
+        count: opportunities.length,
+        fullOpportunities: opportunities, // Show ALL opportunities
+        hasTabsData: !!tabs,
+        tabKeys: Object.keys(tabs)
+      });
+      console.log('📋 Full opportunity details:', JSON.stringify(opportunities, null, 2));
+      window._opportunitiesLogged = true;
+    }
     
     return (
       <div className="opportunities-content">
@@ -1315,7 +1328,7 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         )}
       </div>
     );
-  };
+  }, []); // No dependencies, pure function
 
   // Run stages sequentially - ONLY ONCE per organization
   useEffect(() => {
@@ -1399,42 +1412,12 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     }
   }, [currentStage, organization?.name, hasStarted]); // Removed isComplete to prevent circular dependency
 
-  // Monitor completion state
-  useEffect(() => {
-    if (isComplete && finalIntelligence) {
-      console.log('🎨 RENDER TRIGGER: Both isComplete and finalIntelligence are set!');
-      console.log('Final intelligence available:', {
-        hasData: !!finalIntelligence,
-        keys: finalIntelligence ? Object.keys(finalIntelligence) : [],
-        tabCount: finalIntelligence?.tabs ? Object.keys(finalIntelligence.tabs).length : 0
-      });
-    }
-  }, [isComplete, finalIntelligence]);
-
-  // Show initialization message
-  if (!organization) {
-    return (
-      <div className="multi-stage-intelligence">
-        <div className="analysis-header">
-          <h1>Initializing Elaborate Intelligence Pipeline</h1>
-          <p className="analysis-subtitle">
-            Loading organization data for comprehensive analysis...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show completed intelligence display with tabbed interface
-  if (isComplete && finalIntelligence) {
-    console.log('🎨 Rendering completed intelligence UI', {
-      isComplete,
-      hasFinalIntelligence: !!finalIntelligence,
-      finalIntelligenceKeys: finalIntelligence ? Object.keys(finalIntelligence) : []
-    });
+  // Memoize tab content to prevent infinite re-renders
+  // Must be before any conditional returns per React rules
+  const intelligenceTabs = useMemo(() => {
+    if (!finalIntelligence) return {};
     
-    // Process intelligence for pure analysis display
-    const intelligenceTabs = {
+    return {
       executive: {
         label: 'Executive Summary',
         icon: '📊',
@@ -1466,6 +1449,39 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         content: renderOpportunities(finalIntelligence)
       }
     };
+  }, [finalIntelligence, renderExecutiveSummary, renderCompetitiveAnalysis, 
+      renderTrendingTopics, renderStakeholders, renderEarlySignals, renderOpportunities]); // Include render functions
+  
+  // Monitor completion state - only log once
+  useEffect(() => {
+    if (isComplete && finalIntelligence && !window._completionLogged) {
+      console.log('🎨 RENDER TRIGGER: Both isComplete and finalIntelligence are set!');
+      console.log('Final intelligence available:', {
+        hasData: !!finalIntelligence,
+        keys: finalIntelligence ? Object.keys(finalIntelligence) : [],
+        tabCount: finalIntelligence?.tabs ? Object.keys(finalIntelligence.tabs).length : 0
+      });
+      window._completionLogged = true;
+    }
+  }, [isComplete, finalIntelligence]);
+
+  // Show initialization message
+  if (!organization) {
+    return (
+      <div className="multi-stage-intelligence">
+        <div className="analysis-header">
+          <h1>Initializing Elaborate Intelligence Pipeline</h1>
+          <p className="analysis-subtitle">
+            Loading organization data for comprehensive analysis...
+          </p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Show completed intelligence display with tabbed interface
+  if (isComplete && finalIntelligence) {
+    // Removed console.log from render to prevent infinite loop
     
     return (
       <div className="multi-stage-intelligence completed">
