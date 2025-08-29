@@ -413,10 +413,8 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     }
   }, [organizationProfile, organization, startTime, onComplete]); // Removed stageResults to prevent render loop
   
-  // Store ref to completion handler
-  useEffect(() => {
-    handleCompleteWithResultsRef.current = handleCompleteWithResults;
-  }, [handleCompleteWithResults]);
+  // Store ref to completion handler - set directly without useEffect to avoid re-renders
+  handleCompleteWithResultsRef.current = handleCompleteWithResults;
 
   // Complete analysis and synthesize all stage results
   const handleComplete = () => {
