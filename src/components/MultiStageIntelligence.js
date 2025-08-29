@@ -228,12 +228,14 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
       clearInterval(progressTimer);
       setStageProgress(100);
       
-      console.log(`📊 Stage ${stageIndex + 1} (${stage.name}) result:`, {
+      console.log(`📊 Stage ${stageIndex + 1} (${stage.name}) FULL result:`, result);
+      console.log(`📊 Stage ${stageIndex + 1} (${stage.name}) result summary:`, {
         success: result?.success,
         hasData: !!result?.data,
         hasIntelligence: !!result?.intelligence,
-        dataKeys: result?.data ? Object.keys(result.data).slice(0, 5) : [],
-        resultKeys: result ? Object.keys(result).slice(0, 10) : []
+        dataKeys: result?.data ? Object.keys(result.data) : [],
+        resultKeys: result ? Object.keys(result) : [],
+        actualData: result?.data ? JSON.stringify(result.data).slice(0, 500) : 'No data'
       });
       
       // Check if we actually got data
@@ -409,7 +411,7 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
       console.log('📤 Calling onComplete callback with intelligence');
       onComplete(elaborateIntelligence);
     }
-  }, [organizationProfile, organization, startTime, onComplete, stageResults]);
+  }, [organizationProfile, organization, startTime, onComplete]); // Removed stageResults to prevent render loop
   
   // Store ref to completion handler
   useEffect(() => {
@@ -719,14 +721,24 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
       }
       
       // Check for consolidated_opportunities in synthesis stage
-      if (stageId === 'synthesis' && stageResult.data?.consolidated_opportunities?.prioritized_list) {
-        console.log('🎯 Found consolidated opportunities in synthesis stage!');
-        const consolidatedOpps = stageResult.data.consolidated_opportunities.prioritized_list;
-        allOpportunities.push(...consolidatedOpps.map(opp => ({
-          ...opp,
-          source: 'Strategic Synthesis',
-          fromSynthesis: true
-        })));
+      if (stageId === 'synthesis') {
+        console.log('🔍 Synthesis stage data structure:', {
+          hasData: !!stageResult.data,
+          dataKeys: stageResult.data ? Object.keys(stageResult.data) : [],
+          hasConsolidatedOpps: !!stageResult.data?.consolidated_opportunities,
+          hasPrioritizedList: !!stageResult.data?.consolidated_opportunities?.prioritized_list,
+          actualData: stageResult.data
+        });
+        
+        if (stageResult.data?.consolidated_opportunities?.prioritized_list) {
+          console.log('🎯 Found consolidated opportunities in synthesis stage!');
+          const consolidatedOpps = stageResult.data.consolidated_opportunities.prioritized_list;
+          allOpportunities.push(...consolidatedOpps.map(opp => ({
+            ...opp,
+            source: 'Strategic Synthesis',
+            fromSynthesis: true
+          })));
+        }
       }
       
       // Also check if success=true and data has consolidated_opportunities (for edge function responses)
@@ -1240,7 +1252,12 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
   const renderOpportunities = (intelligence) => {
     const { opportunities = [], tabs = {} } = intelligence;
     
-    console.log('🎯 Rendering opportunities:', opportunities.length);
+    console.log('🎯 Rendering opportunities:', {
+      count: opportunities.length,
+      opportunities: opportunities.slice(0, 2), // Show first 2 for debugging
+      hasTabsData: !!tabs,
+      tabKeys: Object.keys(tabs)
+    });
     
     return (
       <div className="opportunities-content">
