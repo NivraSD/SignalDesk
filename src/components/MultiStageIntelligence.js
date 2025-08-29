@@ -495,15 +495,42 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     let intelligenceTabs = {};
     
     // Check if synthesis stage has the final intelligence structure
-    if (results.synthesis?.data) {
-      const synthesisData = results.synthesis.data;
-      console.log('🎯 Using synthesis data for tabs:', Object.keys(synthesisData));
+    // The synthesis stage returns: { data: results, tabs: tabs, opportunities: [...] }
+    if (results.synthesis) {
+      const synthesisResult = results.synthesis;
+      console.log('🎯 Using synthesis data for tabs:', {
+        hasData: !!synthesisResult.data,
+        hasTabs: !!synthesisResult.tabs,
+        hasOpportunities: !!synthesisResult.opportunities,
+        tabKeys: synthesisResult.tabs ? Object.keys(synthesisResult.tabs) : [],
+        opportunityCount: synthesisResult.opportunities?.length || 0
+      });
       
-      // The synthesis stage should have the complete intelligence
-      if (synthesisData.intelligence) {
-        intelligenceTabs = synthesisData.intelligence.tabs || {};
-      } else if (synthesisData.tabs) {
-        intelligenceTabs = synthesisData.tabs;
+      // The synthesis stage returns tabs directly at the top level
+      if (synthesisResult.tabs) {
+        intelligenceTabs = synthesisResult.tabs;
+      } 
+      // Also check in the data property
+      else if (synthesisResult.data?.tabs) {
+        intelligenceTabs = synthesisResult.data.tabs;
+      }
+      // Build from the synthesis results
+      else if (synthesisResult.data) {
+        const data = synthesisResult.data;
+        intelligenceTabs = {
+          executive: data.executive_summary || {},
+          competitive: extractedData.competitive || {},
+          media: extractedData.media || {},
+          regulatory: extractedData.regulatory || {},
+          market: extractedData.trends || {},
+          synthesis: {
+            patterns: data.patterns || [],
+            cascade_predictions: data.cascade_predictions || [],
+            strategic_recommendations: data.strategic_recommendations || {},
+            elite_insights: data.elite_insights || {},
+            action_matrix: data.action_matrix || {}
+          }
+        };
       }
     }
     
@@ -533,14 +560,24 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
       };
     }
     
+    // Get opportunities from synthesis stage first, then fallback to extraction
+    let opportunities = [];
+    if (results.synthesis?.opportunities) {
+      opportunities = results.synthesis.opportunities;
+    } else if (results.synthesis?.data?.consolidated_opportunities?.prioritized_list) {
+      opportunities = results.synthesis.data.consolidated_opportunities.prioritized_list;
+    } else {
+      opportunities = extractOpportunitiesFromAllStages(results);
+    }
+    
     const elaborateIntelligence = {
       success: true,
       analysis: primaryResult?.data || primaryResult?.analysis || extractedData.synthesis || extractedData.competitive || {},
       tabs: intelligenceTabs,
-      opportunities: extractOpportunitiesFromAllStages(results) || [],
+      opportunities: opportunities,
       stageInsights: generateStageInsights(results) || {},
-      patterns: identifyPatternsAcrossStages(results) || [],
-      recommendations: generateStrategicRecommendations(results) || {},
+      patterns: results.synthesis?.data?.patterns || identifyPatternsAcrossStages(results) || [],
+      recommendations: results.synthesis?.data?.strategic_recommendations || generateStrategicRecommendations(results) || {},
       metadata: {
         organization: orgProfile?.name || 'Unknown',
         pipeline: 'elaborate-multi-stage',
