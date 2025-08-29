@@ -271,7 +271,8 @@
       "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/force-fresh-deployment.sh)",
       "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/fix-hardcoded-keys.sh:*)",
       "Bash(do if [ \"$dir\" != \"niv-orchestrator-robust\" ])",
-      "Bash(then echo \"Archiving: $dir\")"
+      "Bash(then echo \"Archiving: $dir\")",
+      "WebFetch(domain:signaldesk-21dmtvuij-nivra-sd.vercel.app)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

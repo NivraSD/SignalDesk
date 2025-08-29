@@ -491,23 +491,45 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     console.log('📈 Extracted data from stages:', Object.keys(extractedData));
     
     // Create comprehensive intelligence combining all stages
-    // Ensure we always have valid tabs
-    let intelligenceTabs = primaryResult?.tabs || generateDefaultTabs(extractedData);
+    // First try to get tabs from synthesis stage which has the final aggregated data
+    let intelligenceTabs = {};
+    
+    // Check if synthesis stage has the final intelligence structure
+    if (results.synthesis?.data) {
+      const synthesisData = results.synthesis.data;
+      console.log('🎯 Using synthesis data for tabs:', Object.keys(synthesisData));
+      
+      // The synthesis stage should have the complete intelligence
+      if (synthesisData.intelligence) {
+        intelligenceTabs = synthesisData.intelligence.tabs || {};
+      } else if (synthesisData.tabs) {
+        intelligenceTabs = synthesisData.tabs;
+      }
+    }
+    
+    // If no tabs from synthesis, try to build from individual stages
     if (!intelligenceTabs || Object.keys(intelligenceTabs).length === 0) {
       intelligenceTabs = generateTabsFromStageData(results);
     }
     
     // Ensure we always have some tabs for display
     if (!intelligenceTabs || Object.keys(intelligenceTabs).length === 0) {
-      console.warn('⚠️ No tabs generated, using fallback structure');
+      console.warn('⚠️ No tabs generated, using stage data directly');
+      // Build tabs from raw stage data
       intelligenceTabs = {
         executive: {
           headline: `${orgProfile?.name || 'Organization'} Intelligence Analysis Complete`,
-          overview: 'Pipeline completed successfully',
+          overview: `Comprehensive analysis across ${Object.keys(results).length} intelligence dimensions`,
           statistics: {
-            stages_completed: Object.keys(results).length
+            stages_completed: Object.keys(results).length,
+            opportunities_identified: extractOpportunitiesFromAllStages(results).length
           }
-        }
+        },
+        competitive: extractedData.competitive || { summary: 'Competitive analysis in progress' },
+        media: extractedData.media || { summary: 'Media landscape analysis in progress' },
+        regulatory: extractedData.regulatory || { summary: 'Regulatory environment analysis in progress' },
+        market: extractedData.trends || { summary: 'Market trends analysis in progress' },
+        synthesis: extractedData.synthesis || { summary: 'Strategic synthesis in progress' }
       };
     }
     
@@ -599,6 +621,13 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
   // Generate tabs directly from stage data if default tabs fail
   const generateTabsFromStageData = (results) => {
     const tabs = {};
+    
+    // Log what we're working with
+    console.log('🔄 Generating tabs from stage data:', {
+      stageCount: Object.keys(results).length,
+      stages: Object.keys(results),
+      synthesisData: results.synthesis?.data ? Object.keys(results.synthesis.data) : 'no synthesis data'
+    });
     
     // Create executive summary from all stages
     const immediateActions = [];
@@ -946,18 +975,37 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
   useEffect(() => {
     window._completionLogged = false;
     window._opportunitiesLogged = false;
+    window._intelligenceStructureLogged = false;
+    window._competitiveDataLogged = false;
+    window._executiveDataLogged = false;
     
     return () => {
       // Clean up on unmount
       window._completionLogged = false;
       window._opportunitiesLogged = false;
+      window._intelligenceStructureLogged = false;
+      window._competitiveDataLogged = false;
+      window._executiveDataLogged = false;
     };
   }, []);
 
   // Tab Render Functions - Pure Intelligence Analysis
   // Wrap in useCallback to prevent recreation on every render
   const renderExecutiveSummary = useCallback((intelligence) => {
-    const { tabs = {}, patterns = [], statistics = {} } = intelligence;
+    const { tabs = {}, patterns = [], statistics = {}, analysis = {}, metadata = {} } = intelligence;
+    
+    // Log what data we have for executive summary
+    if (!window._executiveDataLogged) {
+      console.log('📊 Executive summary data:', {
+        hasTabsExecutive: !!tabs.executive,
+        hasAnalysis: !!analysis,
+        analysisKeys: Object.keys(analysis).slice(0, 10),
+        hasPatterns: patterns.length > 0,
+        patternCount: patterns.length,
+        metadataOrg: metadata.organization
+      });
+      window._executiveDataLogged = true;
+    }
     
     return (
       <div className="executive-summary-content">
@@ -965,8 +1013,8 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
           <h3>Current State Analysis</h3>
           <div className="narrative-block">
             <p>
-              {tabs.executive?.overview || 
-               'Intelligence gathering across 6 analytical dimensions reveals a complex operational environment.'}
+              {tabs.executive?.overview || analysis.overview ||
+               `Intelligence gathering across ${metadata.stagesCompleted?.length || 6} analytical dimensions for ${metadata.organization || 'the organization'}.`}
             </p>
             {tabs.executive?.headline && (
               <div className="headline-metric">{tabs.executive.headline}</div>
@@ -1022,22 +1070,34 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
   }, []); // No dependencies, pure function
   
   const renderCompetitiveAnalysis = useCallback((intelligence) => {
-    const { tabs = {} } = intelligence;
-    const competitiveData = tabs.competitive || {};
+    const { tabs = {}, analysis = {} } = intelligence;
+    const competitiveData = tabs.competitive || analysis.competitive || {};
+    
+    // Log what data we have for competitive analysis
+    if (!window._competitiveDataLogged) {
+      console.log('🎯 Competitive data structure:', {
+        hasTabsCompetitive: !!tabs.competitive,
+        hasAnalysisCompetitive: !!analysis.competitive,
+        competitiveKeys: Object.keys(competitiveData),
+        hasCompetitors: !!competitiveData.competitors,
+        hasCompetitorActions: !!competitiveData.competitor_actions
+      });
+      window._competitiveDataLogged = true;
+    }
     
     return (
       <div className="competitive-analysis-content">
         <div className="analysis-section">
           <h3>Competitive Landscape</h3>
           <div className="landscape-overview">
-            <p>{competitiveData.summary || 'Monitoring competitive environment across multiple vectors.'}</p>
+            <p>{competitiveData.summary || competitiveData.overview || 'Monitoring competitive environment across multiple vectors.'}</p>
           </div>
         </div>
         
         <div className="analysis-section">
           <h3>Observed Competitor Actions</h3>
           <div className="actions-grid">
-            {competitiveData.competitor_actions?.slice(0, 5).map((action, idx) => (
+            {(competitiveData.competitor_actions || competitiveData.competitors?.direct || []).slice(0, 5).map((action, idx) => (
               <div key={idx} className="action-card">
                 <div className="competitor-name">{action.entity}</div>
                 <div className="action-description">{action.action}</div>
@@ -1416,6 +1476,21 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
   // Must be before any conditional returns per React rules
   const intelligenceTabs = useMemo(() => {
     if (!finalIntelligence) return {};
+    
+    // Debug: Log the structure of finalIntelligence to understand what data we have
+    if (!window._intelligenceStructureLogged) {
+      console.log('🔍 Final Intelligence Structure:', {
+        keys: Object.keys(finalIntelligence),
+        hasOpportunities: !!finalIntelligence.opportunities,
+        opportunityCount: finalIntelligence.opportunities?.length,
+        hasTabs: !!finalIntelligence.tabs,
+        tabKeys: finalIntelligence.tabs ? Object.keys(finalIntelligence.tabs) : [],
+        hasPatterns: !!finalIntelligence.patterns,
+        patternCount: finalIntelligence.patterns?.length,
+        fullData: finalIntelligence
+      });
+      window._intelligenceStructureLogged = true;
+    }
     
     return {
       executive: {
