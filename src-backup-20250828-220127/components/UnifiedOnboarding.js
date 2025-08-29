@@ -1,0 +1,880 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import intelligentDiscoveryService from '../services/intelligentDiscoveryService';
+import { clearAllIntelligenceCache } from '../utils/clearCache';
+import cacheManager from '../utils/cacheManager';
+import './UnifiedOnboarding.css';
+
+const UnifiedOnboarding = ({ onComplete }) => {
+  const navigate = useNavigate();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisComplete, setAnalysisComplete] = useState(false);
+  
+  // Handle onboarding initialization
+  useEffect(() => {
+    // ALWAYS perform comprehensive reset when entering onboarding
+    // This prevents data contamination between organizations
+    console.log('🧹 COMPREHENSIVE RESET: Clearing ALL cached data on onboarding entry');
+    
+    // Use centralized cache manager to clear everything
+    const cleared = cacheManager.clearAll();
+    console.log(`  ✅ Cleared ${cleared} localStorage items`);
+    
+    // Clear sessionStorage completely
+    sessionStorage.clear();
+    console.log('  ✅ Cleared all sessionStorage');
+    
+    // Clear discovery service in-memory cache
+    if (intelligentDiscoveryService && intelligentDiscoveryService.cache) {
+      intelligentDiscoveryService.cache.clear();
+      console.log('  ✅ Cleared discovery service in-memory cache');
+    }
+    
+    // 5. Reset to clean default profile
+    const cleanProfile = getDefaultProfile();
+    // Ensure organization ID is reset
+    cleanProfile.organization.id = '';
+    cleanProfile.organization.website = '';
+    setProfile(cleanProfile);
+    console.log('  ✅ Reset profile to clean defaults');
+    
+    // Check if user wants to explicitly start fresh
+    const urlParams = new URLSearchParams(window.location.search);
+    const isNewOrg = urlParams.get('new') === 'true';
+    
+    if (isNewOrg) {
+      console.log('🆕 URL parameter new=true detected - extra confirmation of fresh start');
+    }
+    
+    console.log('✨ Onboarding ready with completely clean slate');
+  }, []); // Only run once on mount
+  
+  // Helper to get default profile
+  const getDefaultProfile = () => ({
+    // Organization basics (used by all)
+    organization: {
+      id: '',
+      name: '',
+      industry: '',
+      website: '',
+      description: ''
+    },
+    
+    // Competitors (used by Intelligence Hub)
+    competitors: [],
+    
+    // Topics to Monitor (used by Intelligence Hub)
+    monitoring_topics: [],
+    
+    // Brand & Voice (Opportunity Engine)
+    brand: {
+      voice: 'professional',
+      risk_tolerance: 'moderate',
+      response_speed: 'considered'
+    },
+    
+    // Key Messages (Opportunity Engine)
+    messaging: {
+      core_value_props: [],
+      proof_points: [],
+      competitive_advantages: [],
+      key_narratives: []
+    },
+    
+    // Media Strategy (Opportunity Engine)
+    media: {
+      preferred_tiers: [],
+      journalist_relationships: [],
+      no_comment_topics: [],
+      exclusive_partners: []
+    },
+    
+    // Spokespeople (Opportunity Engine)
+    spokespeople: [],
+    
+    // Opportunity Settings (Opportunity Engine)
+    opportunities: {
+      types: {
+        competitor_weakness: true,
+        narrative_vacuum: true,
+        cascade_effect: true,
+        crisis_prevention: true,
+        viral_moment: false
+      },
+      minimum_confidence: 70,
+      auto_execute_threshold: 95
+    }
+  });
+  
+  const [profile, setProfile] = useState(() => getDefaultProfile());
+
+  const steps = [
+    { id: 1, title: 'Organization', icon: '🏢', required: true },
+    { id: 2, title: 'Brand Voice', icon: '🎯', required: true },
+    { id: 3, title: 'Key Messages', icon: '💬', required: false },
+    { id: 4, title: 'Media Strategy', icon: '📰', required: false },
+    { id: 5, title: 'Opportunities', icon: '💎', required: true }
+  ];
+
+  const handleNext = async () => {
+    if (validateCurrentStep()) {
+      // Run AI discovery when leaving step 1
+      if (currentStep === 1 && !analysisComplete && profile.organization.name) {
+        console.log('🚀 NEXT BUTTON CLICKED - Starting API call to analyze:', profile.organization.name);
+        await analyzeOrganization();
+        // Wait a moment for state to update
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      
+      if (currentStep < steps.length) {
+        setCurrentStep(currentStep + 1);
+      } else {
+        saveProfile();
+      }
+    }
+  };
+
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const handleSkip = () => {
+    if (!steps[currentStep - 1].required) {
+      if (currentStep < steps.length) {
+        setCurrentStep(currentStep + 1);
+      } else {
+        saveProfile();
+      }
+    }
+  };
+
+  const validateCurrentStep = () => {
+    switch (currentStep) {
+      case 1:
+        return profile.organization.name; // Only name required now
+      case 2:
+        return true; // Has defaults for brand voice
+      default:
+        return true;
+    }
+  };
+
+  const analyzeOrganization = async () => {
+    if (!profile.organization.name.trim()) return;
+    
+    setIsAnalyzing(true);
+    console.log('🎯 API CALL STARTING NOW for:', profile.organization.name);
+    console.log('📡 Environment:', {
+      supabaseUrl: intelligentDiscoveryService.supabaseUrl,
+      hasKey: !!intelligentDiscoveryService.supabaseKey,
+      keyPreview: intelligentDiscoveryService.supabaseKey?.substring(0, 30) + '...'
+    });
+    
+    try {
+      console.log('🔍 Calling intelligentDiscoveryService.discoverCompanyIntelligence()...');
+      
+      const intelligence = await intelligentDiscoveryService.discoverCompanyIntelligence(
+        profile.organization.name,
+        profile.organization.website,
+        profile.organization.description
+      );
+      
+      console.log('📥 API Response received:', intelligence);
+      
+      if (intelligence && intelligence.company) {
+        console.log('✅ Claude analysis complete with data:', intelligence.company);
+        
+        // Update organization with Claude's analysis
+        console.log('📦 Processing intelligence data:', {
+          hasCompany: !!intelligence.company,
+          hasCompetitors: !!intelligence.competitors,
+          hasStakeholders: !!intelligence.stakeholders,
+          stakeholderKeys: intelligence.stakeholders ? Object.keys(intelligence.stakeholders) : [],
+          mediaInStakeholders: intelligence.stakeholders?.media?.length || 0
+        });
+        
+        const updatedProfile = {
+          ...profile,
+          organization: {
+            ...profile.organization,
+            industry: intelligence.company?.industry || profile.organization.industry,
+            description: intelligence.company?.description || profile.organization.description,
+            business_model: intelligence.company?.business_model,
+            market_position: intelligence.company?.market_position,
+            key_products: intelligence.company?.key_products,
+            target_customers: intelligence.company?.target_customers
+          },
+          // Auto-populate competitors from Claude analysis
+          competitors: intelligence.competitors || [],
+          // Auto-populate monitoring topics
+          monitoring_topics: intelligence.topics || [],
+          // CRITICAL: Save ALL stakeholder data for Intelligence Hub
+          stakeholders: intelligence.stakeholders || {},
+          regulators: intelligence.stakeholders?.regulators || [],
+          activists: intelligence.stakeholders?.activists || [],
+          media_outlets: intelligence.stakeholders?.media || [],
+          investors: intelligence.stakeholders?.investors || [],
+          analysts: intelligence.stakeholders?.analysts || []
+        };
+        
+        setProfile(updatedProfile);
+        setAnalysisComplete(true);
+        
+        // CRITICAL: Save the discovered data immediately to localStorage
+        console.log('💾 Saving discovered data to localStorage immediately...');
+        const discoveredProfile = {
+          ...updatedProfile,
+          timestamp: new Date().toISOString(),
+          version: '2.0'
+        };
+        
+        // Save complete profile with all discovered data (use cache manager)
+        cacheManager.saveCompleteProfile(discoveredProfile);
+        // Also save as unified for backward compatibility
+        localStorage.setItem('signaldesk_unified_profile', JSON.stringify(discoveredProfile));
+        console.log('✅ Saved complete profile with stakeholders:', {
+          competitors: discoveredProfile.competitors?.length || 0,
+          regulators: discoveredProfile.regulators?.length || 0,
+          media: discoveredProfile.media_outlets?.length || 0,
+          topics: discoveredProfile.monitoring_topics?.length || 0
+        });
+        
+        // Also save for backward compatibility
+        localStorage.setItem('signaldesk_organization', JSON.stringify(discoveredProfile.organization));
+        localStorage.setItem('signaldesk_onboarding', JSON.stringify({
+          organization: discoveredProfile.organization,
+          competitors: discoveredProfile.competitors,
+          monitoring_topics: discoveredProfile.monitoring_topics,
+          stakeholders: discoveredProfile.stakeholders
+        }));
+        
+        // Save opportunity profile for Opportunity Engine (with defaults since we're early in onboarding)
+        localStorage.setItem('opportunity_profile', JSON.stringify({
+          voice: discoveredProfile.brand?.voice || 'professional',
+          risk_tolerance: discoveredProfile.brand?.risk_tolerance || 'moderate',
+          response_speed: discoveredProfile.brand?.response_speed || 'immediate',
+          core_value_props: discoveredProfile.messaging?.core_value_props || [],
+          proof_points: discoveredProfile.messaging?.proof_points || [],
+          competitive_advantages: discoveredProfile.messaging?.competitive_advantages || [],
+          key_narratives: discoveredProfile.messaging?.key_narratives || [],
+          preferred_tiers: discoveredProfile.media?.preferred_tiers || ['tier1_business', 'tier1_tech'],
+          journalist_relationships: discoveredProfile.media?.journalist_relationships || [],
+          no_comment_topics: discoveredProfile.media?.no_comment_topics || [],
+          exclusive_partners: discoveredProfile.media?.exclusive_partners || [],
+          spokespeople: discoveredProfile.spokespeople || [],
+          opportunity_types: discoveredProfile.opportunities?.types || {
+            competitor_weakness: true,
+            narrative_vacuum: true,
+            cascade_effect: true,
+            crisis_prevention: true,
+            viral_moment: false
+          },
+          minimum_confidence: discoveredProfile.opportunities?.minimum_confidence || 70,
+          auto_execute_threshold: discoveredProfile.opportunities?.auto_execute_threshold || 95,
+          competitors: discoveredProfile.competitors || []
+        }));
+        
+        console.log('🔍 Verification - localStorage now contains:');
+        console.log('- signaldesk_unified_profile:', localStorage.getItem('signaldesk_unified_profile') ? '✅' : '❌');
+        console.log('- signaldesk_organization:', localStorage.getItem('signaldesk_organization') ? '✅' : '❌');
+        console.log('- signaldesk_onboarding:', localStorage.getItem('signaldesk_onboarding') ? '✅' : '❌');
+      }
+    } catch (error) {
+      console.error('❌ Claude analysis failed:', error);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const saveProfile = async () => {
+    // Ensure organization has an ID
+    if (!profile.organization.id && profile.organization.name) {
+      profile.organization.id = profile.organization.name.toLowerCase().replace(/\s+/g, '-');
+    }
+    
+    // Save unified profile
+    const unifiedProfile = {
+      ...profile,
+      timestamp: new Date().toISOString(),
+      version: '2.0'
+    };
+    
+    // Clear all cached intelligence data before saving new profile
+    clearAllIntelligenceCache();
+    
+    // Save complete profile using cache manager
+    cacheManager.saveCompleteProfile(unifiedProfile);
+    // Also save as unified for backward compatibility
+    localStorage.setItem('signaldesk_unified_profile', JSON.stringify(unifiedProfile));
+    
+    // Also save specific parts for backward compatibility
+    localStorage.setItem('signaldesk_organization', JSON.stringify(profile.organization));
+    localStorage.setItem('opportunity_profile', JSON.stringify({
+      ...profile.brand,
+      ...profile.messaging,
+      ...profile.media,
+      spokespeople: profile.spokespeople,
+      opportunity_types: profile.opportunities.types,
+      minimum_confidence: profile.opportunities.minimum_confidence,
+      auto_execute_threshold: profile.opportunities.auto_execute_threshold,
+      competitors: profile.competitors
+    }));
+    
+    // Keep old onboarding for backward compatibility but with new structure
+    localStorage.setItem('signaldesk_onboarding', JSON.stringify({
+      organization: profile.organization,
+      competitors: profile.competitors,
+      monitoring_topics: profile.monitoring_topics
+    }));
+    
+    // Handle completion
+    if (onComplete) {
+      onComplete(unifiedProfile);
+    }
+    
+    // Redirect to main app after successful setup
+    console.log('✅ Onboarding complete, navigating to main app...');
+    navigate('/');
+  };
+
+  const renderStep = () => {
+    switch (currentStep) {
+      case 1:
+        return renderOrganization();
+      case 2:
+        return renderBrandVoice();
+      case 3:
+        return renderKeyMessages();
+      case 4:
+        return renderMediaStrategy();
+      case 5:
+        return renderOpportunities();
+      default:
+        return null;
+    }
+  };
+
+  const renderOrganization = () => (
+    <div className="onboarding-step">
+      <h2>Tell us about your organization</h2>
+      <p className="step-description">We'll discover your competitors and industry details through our intelligence engine.</p>
+      
+      <div className="form-group">
+        <label>Organization Name *</label>
+        <input
+          type="text"
+          placeholder="Enter your organization name"
+          value={profile.organization.name}
+          onChange={(e) => setProfile({
+            ...profile,
+            organization: { ...profile.organization, name: e.target.value }
+          })}
+          className="form-input"
+        />
+        
+        {/* Debug: Manual API trigger button */}
+        {profile.organization.name && !analysisComplete && (
+          <button 
+            type="button"
+            onClick={analyzeOrganization}
+            disabled={isAnalyzing}
+            style={{ 
+              marginTop: '10px',
+              background: isAnalyzing ? '#666' : '#00ff00',
+              color: '#000',
+              padding: '8px 16px',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: isAnalyzing ? 'wait' : 'pointer'
+            }}
+          >
+            {isAnalyzing ? '🔄 Analyzing...' : '🚀 Analyze Now (Debug)'}
+          </button>
+        )}
+        
+        {analysisComplete && (
+          <div style={{ marginTop: '10px', color: '#00ff00' }}>
+            ✅ Analysis complete! Found {profile.competitors?.length || 0} competitors
+          </div>
+        )}
+      </div>
+
+
+      <div className="form-group">
+        <label>Website (optional)</label>
+        <input
+          type="url"
+          placeholder="https://www.example.com"
+          value={profile.organization.website}
+          onChange={(e) => setProfile({
+            ...profile,
+            organization: { ...profile.organization, website: e.target.value }
+          })}
+          className="form-input"
+        />
+      </div>
+
+      <div className="form-group">
+        <label>Brief Description</label>
+        <textarea
+          placeholder="What does your organization do?"
+          value={profile.organization.description}
+          onChange={(e) => setProfile({
+            ...profile,
+            organization: { ...profile.organization, description: e.target.value }
+          })}
+          className="form-textarea"
+          rows={3}
+        />
+      </div>
+
+      {/* AI Analysis Status */}
+      <div className="analysis-section">
+
+        {isAnalyzing && (
+          <div className="ai-discovery-status">
+            <div className="discovery-spinner"></div>
+            <p className="discovery-text">🤖 AI is analyzing your organization...</p>
+            <p className="discovery-detail">Discovering competitors, industry trends, and strategic opportunities</p>
+          </div>
+        )}
+
+        {analysisComplete && (
+          <div className="discovered-info neon-card">
+            <h3 className="discovered-title">
+              <span className="neon-icon">✨</span>
+              AI-Discovered Intelligence
+            </h3>
+            <div className="discovered-grid">
+              {profile.organization.industry && (
+                <div className="discovered-item">
+                  <div className="discovered-label">Industry</div>
+                  <div className="discovered-value">{profile.organization.industry}</div>
+                </div>
+              )}
+              {profile.competitors.length > 0 && (
+                <div className="discovered-item">
+                  <div className="discovered-label">Key Competitors</div>
+                  <div className="discovered-value">
+                    {profile.competitors.slice(0, 3).join(', ')}
+                    {profile.competitors.length > 3 && ` +${profile.competitors.length - 3} more`}
+                  </div>
+                </div>
+              )}
+              {profile.monitoring_topics.length > 0 && (
+                <div className="discovered-item">
+                  <div className="discovered-label">Topics to Monitor</div>
+                  <div className="discovered-value">
+                    {profile.monitoring_topics.slice(0, 3).join(', ')}
+                    {profile.monitoring_topics.length > 3 && ` +${profile.monitoring_topics.length - 3} more`}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // Removed renderCompetitors - will be discovered through intelligence
+
+  const renderBrandVoice = () => (
+    <div className="onboarding-step">
+      <h2>How does {profile.organization.name || 'your organization'} communicate?</h2>
+      <p className="step-description">This helps us generate content and responses that match your brand.</p>
+      
+      <div className="form-group">
+        <label>Brand Voice</label>
+        <div className="option-grid">
+          {[
+            { value: 'professional', label: 'Professional', desc: 'Formal, authoritative' },
+            { value: 'conversational', label: 'Conversational', desc: 'Friendly, approachable' },
+            { value: 'bold', label: 'Bold', desc: 'Confident, assertive' },
+            { value: 'technical', label: 'Technical', desc: 'Detailed, precise' },
+            { value: 'inspirational', label: 'Inspirational', desc: 'Visionary, motivating' }
+          ].map(option => (
+            <button
+              key={option.value}
+              className={`option-card ${profile.brand.voice === option.value ? 'selected' : ''}`}
+              onClick={() => setProfile({
+                ...profile,
+                brand: { ...profile.brand, voice: option.value }
+              })}
+            >
+              <strong>{option.label}</strong>
+              <span>{option.desc}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="form-group">
+        <label>Risk Tolerance</label>
+        <div className="option-grid">
+          {[
+            { value: 'conservative', label: 'Conservative', desc: 'Careful, measured responses' },
+            { value: 'moderate', label: 'Moderate', desc: 'Balanced approach' },
+            { value: 'aggressive', label: 'Aggressive', desc: 'First-mover, bold statements' }
+          ].map(option => (
+            <button
+              key={option.value}
+              className={`option-card ${profile.brand.risk_tolerance === option.value ? 'selected' : ''}`}
+              onClick={() => setProfile({
+                ...profile,
+                brand: { ...profile.brand, risk_tolerance: option.value }
+              })}
+            >
+              <strong>{option.label}</strong>
+              <span>{option.desc}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="form-group">
+        <label>Response Speed</label>
+        <div className="option-grid">
+          {[
+            { value: 'immediate', label: 'Immediate', desc: 'First to respond' },
+            { value: 'considered', label: 'Considered', desc: 'Thoughtful responses' },
+            { value: 'strategic', label: 'Strategic', desc: 'Wait for right moment' }
+          ].map(option => (
+            <button
+              key={option.value}
+              className={`option-card ${profile.brand.response_speed === option.value ? 'selected' : ''}`}
+              onClick={() => setProfile({
+                ...profile,
+                brand: { ...profile.brand, response_speed: option.value }
+              })}
+            >
+              <strong>{option.label}</strong>
+              <span>{option.desc}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderKeyMessages = () => (
+    <div className="onboarding-step">
+      <h2>Key Messages & Proof Points</h2>
+      <p className="step-description">Optional: Add your core messages and supporting evidence. You can skip this for now.</p>
+      
+      <div className="form-group">
+        <label>Core Value Propositions</label>
+        <div className="input-list">
+          {profile.messaging.core_value_props.map((prop, idx) => (
+            <div key={idx} className="input-item">
+              <input
+                type="text"
+                value={prop}
+                onChange={(e) => {
+                  const newProps = [...profile.messaging.core_value_props];
+                  newProps[idx] = e.target.value;
+                  setProfile({
+                    ...profile,
+                    messaging: { ...profile.messaging, core_value_props: newProps }
+                  });
+                }}
+                placeholder="e.g., 'Industry-leading reliability'"
+                className="form-input"
+              />
+              <button
+                onClick={() => {
+                  const newProps = profile.messaging.core_value_props.filter((_, i) => i !== idx);
+                  setProfile({
+                    ...profile,
+                    messaging: { ...profile.messaging, core_value_props: newProps }
+                  });
+                }}
+                className="remove-btn"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+          <button
+            onClick={() => setProfile({
+              ...profile,
+              messaging: {
+                ...profile.messaging,
+                core_value_props: [...profile.messaging.core_value_props, '']
+              }
+            })}
+            className="add-btn-small"
+          >
+            + Add Value Proposition
+          </button>
+        </div>
+      </div>
+
+      <div className="form-group">
+        <label>Proof Points</label>
+        <div className="input-list">
+          {profile.messaging.proof_points.map((point, idx) => (
+            <div key={idx} className="input-item">
+              <input
+                type="text"
+                value={point}
+                onChange={(e) => {
+                  const newPoints = [...profile.messaging.proof_points];
+                  newPoints[idx] = e.target.value;
+                  setProfile({
+                    ...profile,
+                    messaging: { ...profile.messaging, proof_points: newPoints }
+                  });
+                }}
+                placeholder="e.g., '#1 in customer satisfaction for 5 years'"
+                className="form-input"
+              />
+              <button
+                onClick={() => {
+                  const newPoints = profile.messaging.proof_points.filter((_, i) => i !== idx);
+                  setProfile({
+                    ...profile,
+                    messaging: { ...profile.messaging, proof_points: newPoints }
+                  });
+                }}
+                className="remove-btn"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+          <button
+            onClick={() => setProfile({
+              ...profile,
+              messaging: {
+                ...profile.messaging,
+                proof_points: [...profile.messaging.proof_points, '']
+              }
+            })}
+            className="add-btn-small"
+          >
+            + Add Proof Point
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderMediaStrategy = () => (
+    <div className="onboarding-step">
+      <h2>Media Preferences</h2>
+      <p className="step-description">Optional: Select your preferred media outlets. You can configure this later.</p>
+      
+      <div className="form-group">
+        <label>Preferred Media Tiers</label>
+        <div className="checkbox-grid">
+          {[
+            { id: 'tier1_business', label: 'Business Media', desc: 'WSJ, Bloomberg, FT' },
+            { id: 'tier1_tech', label: 'Tech Media', desc: 'TechCrunch, Verge' },
+            { id: 'tier1_general', label: 'General News', desc: 'NYT, CNN, BBC' },
+            { id: 'trade', label: 'Trade Publications', desc: 'Industry-specific' },
+            { id: 'regional', label: 'Regional Media', desc: 'Local coverage' }
+          ].map(tier => (
+            <label key={tier.id} className="checkbox-item">
+              <input
+                type="checkbox"
+                checked={profile.media.preferred_tiers.includes(tier.id)}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setProfile({
+                      ...profile,
+                      media: {
+                        ...profile.media,
+                        preferred_tiers: [...profile.media.preferred_tiers, tier.id]
+                      }
+                    });
+                  } else {
+                    setProfile({
+                      ...profile,
+                      media: {
+                        ...profile.media,
+                        preferred_tiers: profile.media.preferred_tiers.filter(t => t !== tier.id)
+                      }
+                    });
+                  }
+                }}
+              />
+              <div className="checkbox-content">
+                <strong>{tier.label}</strong>
+                <span>{tier.desc}</span>
+              </div>
+            </label>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderOpportunities = () => (
+    <div className="onboarding-step">
+      <h2>What opportunities should we pursue?</h2>
+      <p className="step-description">Choose which types of opportunities to detect and act on.</p>
+      
+      <div className="form-group">
+        <label>Opportunity Types</label>
+        <div className="checkbox-grid">
+          {[
+            {
+              id: 'competitor_weakness',
+              label: 'Competitor Weakness',
+              desc: 'Capitalize when competitors stumble',
+              icon: '🎯'
+            },
+            {
+              id: 'narrative_vacuum',
+              label: 'Narrative Vacuum',
+              desc: 'Own unclaimed stories',
+              icon: '📢'
+            },
+            {
+              id: 'cascade_effect',
+              label: 'Cascade Prediction',
+              desc: 'Get ahead of spreading trends',
+              icon: '🌊'
+            },
+            {
+              id: 'crisis_prevention',
+              label: 'Crisis Prevention',
+              desc: 'Proactive risk mitigation',
+              icon: '🛡️'
+            },
+            {
+              id: 'alliance_opening',
+              label: 'Partnerships',
+              desc: 'Strategic collaborations',
+              icon: '🤝'
+            }
+          ].map(type => (
+            <label key={type.id} className="checkbox-item opportunity-type">
+              <input
+                type="checkbox"
+                checked={profile.opportunities.types[type.id]}
+                onChange={(e) => {
+                  setProfile({
+                    ...profile,
+                    opportunities: {
+                      ...profile.opportunities,
+                      types: {
+                        ...profile.opportunities.types,
+                        [type.id]: e.target.checked
+                      }
+                    }
+                  });
+                }}
+              />
+              <div className="checkbox-content">
+                <span className="type-icon">{type.icon}</span>
+                <div>
+                  <strong>{type.label}</strong>
+                  <span>{type.desc}</span>
+                </div>
+              </div>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div className="form-group">
+        <label>Confidence Thresholds</label>
+        <div className="threshold-settings">
+          <div className="threshold-item">
+            <label>Minimum confidence to show opportunity</label>
+            <div className="slider-container">
+              <input
+                type="range"
+                min="50"
+                max="100"
+                value={profile.opportunities.minimum_confidence}
+                onChange={(e) => setProfile({
+                  ...profile,
+                  opportunities: {
+                    ...profile.opportunities,
+                    minimum_confidence: parseInt(e.target.value)
+                  }
+                })}
+                className="slider"
+              />
+              <span className="slider-value">{profile.opportunities.minimum_confidence}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Check if profile already exists
+  useEffect(() => {
+    const existingProfile = localStorage.getItem('signaldesk_unified_profile');
+    if (existingProfile) {
+      const parsed = JSON.parse(existingProfile);
+      setProfile(parsed);
+    } else {
+      // Check for legacy onboarding data
+      const legacyOnboarding = localStorage.getItem('signaldesk_onboarding');
+      if (legacyOnboarding) {
+        const legacy = JSON.parse(legacyOnboarding);
+        setProfile(prev => ({
+          ...prev,
+          organization: legacy.organization || prev.organization,
+          competitors: legacy.competitors || prev.competitors
+        }));
+      }
+    }
+  }, []);
+
+  return (
+    <div className="unified-onboarding">
+      <div className="onboarding-container">
+        <div className="onboarding-header">
+          <h1>Welcome to SignalDesk</h1>
+          <p>Let's configure your intelligent opportunity engine</p>
+        </div>
+
+        {/* Progress bar removed - was causing cutoff issue */}
+
+        <div className="onboarding-content">
+          {renderStep()}
+        </div>
+
+        <div className="onboarding-footer">
+          <button
+            className="btn-secondary"
+            onClick={handleBack}
+            disabled={currentStep === 1}
+          >
+            Back
+          </button>
+          
+          <div className="footer-right">
+            {!steps[currentStep - 1].required && (
+              <button
+                className="btn-ghost"
+                onClick={handleSkip}
+              >
+                Skip for now
+              </button>
+            )}
+            
+            <button
+              className="btn-primary"
+              onClick={handleNext}
+              disabled={!validateCurrentStep()}
+            >
+              {currentStep === steps.length ? 'Complete Setup' : 'Next'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default UnifiedOnboarding;

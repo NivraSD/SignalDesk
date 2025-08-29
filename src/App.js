@@ -5,6 +5,7 @@ import { ProjectProvider } from "./contexts/ProjectContext";
 import { IntelligenceProvider } from "./context/IntelligenceContext";
 import { supabase } from "./config/supabase"; // Force Supabase to be included
 import { migrateToUnifiedProfile } from "./utils/migrateProfile"; // Auto-migrate existing data
+import ErrorBoundary from "./components/ErrorBoundary";
 import Dashboard from "./components/Dashboard";
 import AIAssistant from "./components/AIAssistant";
 import ContentGenerator from "./components/ContentGenerator";
@@ -42,7 +43,7 @@ import NivDirect from "./pages/NivDirect"; // Direct API integration - most reli
 import RailwayV2 from "./components/RailwayV2";
 import SystemInitializer from "./components/SystemInitializer";
 import SmartOnboarding from "./components/SmartOnboarding";
-import OnboardingV2 from "./components/OnboardingV2";
+// import OnboardingV2 from "./components/OnboardingV2"; // Removed - using OnboardingV3
 import OnboardingV3 from "./components/OnboardingV3";
 import SimpleIntelligenceTest from "./components/SimpleIntelligenceTest";
 import SupabaseIntelligence from "./components/SupabaseIntelligence"; // Clean Supabase-only implementation
@@ -97,12 +98,13 @@ function App() {
   console.log("📅 Build Date: August 26, 2025");
   
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <ProjectProvider>
-          <IntelligenceProvider>
-            {/* RailwayV2 - Modern Neon Interface */}
-            <Routes>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AuthProvider>
+          <ProjectProvider>
+            <IntelligenceProvider>
+              {/* RailwayV2 - Modern Neon Interface */}
+              <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/initialize" element={<OnboardingV3 />} />
               <Route path="/onboarding" element={<OnboardingV3 />} />
@@ -135,6 +137,7 @@ function App() {
         </ProjectProvider>
       </AuthProvider>
     </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 

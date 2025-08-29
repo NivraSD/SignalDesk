@@ -17,7 +17,7 @@ serve(async (req) => {
   }
 
   try {
-    const { organization, previousResults } = await req.json();
+    const { organization, previousResults, intelligence } = await req.json();
     console.log(`📰 Stage 2: Deep Media Analysis for ${organization.name}`);
     
     const startTime = Date.now();
@@ -25,10 +25,13 @@ serve(async (req) => {
     // Extract competitive context from Stage 1
     const competitiveContext = previousResults?.competitors || {};
     
-    // Fetch monitoring data from database
-    let monitoringData = {};
-    try {
-      const findingsResponse = await fetch(
+    // Extract monitoring data from intelligence prop passed from previous stages
+    let monitoringData = intelligence || {};
+    
+    // If monitoring data not passed, fetch it from database
+    if (!monitoringData.findings && !monitoringData.raw_count) {
+      try {
+        const findingsResponse = await fetch(
         'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/intelligence-persistence',
         {
           method: 'POST',
@@ -57,8 +60,9 @@ serve(async (req) => {
           console.log(`✅ Retrieved ${monitoringData.raw_count} monitoring findings for media analysis`);
         }
       }
-    } catch (e) {
-      console.log('Could not retrieve monitoring data:', e);
+      } catch (e) {
+        console.log('Could not retrieve monitoring data:', e);
+      }
     }
     
     // Use Claude Media Analyst for comprehensive analysis
@@ -120,11 +124,28 @@ serve(async (req) => {
       console.error('Failed to save media results:', saveError);
     }
 
+    // Format for UI display - with safe access
+    const tabs = {
+      media: {
+        media_coverage: results?.media_landscape?.recent_coverage || [],
+        sentiment: results?.stakeholder_sentiment?.overall || 'neutral',
+        opportunities: results?.media_opportunities || [],
+        summary: `Monitoring ${results?.media_landscape?.outlets_tracking || 0} media outlets`
+      },
+      stakeholders: {
+        analysts: results?.stakeholders?.analysts || {},
+        investors: results?.stakeholders?.investors || {},
+        activists: results?.stakeholders?.activists || {},
+        summary: `Tracking ${Object.keys(results?.stakeholders || {}).length} stakeholder groups`
+      }
+    };
+
     return new Response(JSON.stringify({
       success: true,
       stage: 'media_analysis',
       data: results,
-      intelligence: monitoringData // Pass through monitoring data
+      intelligence: monitoringData, // Pass through monitoring data
+      tabs: tabs // UI-formatted data
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });

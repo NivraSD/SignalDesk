@@ -268,7 +268,10 @@
       "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/REMOVE_ALL_LOCALSTORAGE.sh:*)",
       "Bash(if [ -f \"$file\" ])",
       "Bash(test:*)",
-      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/force-fresh-deployment.sh)"
+      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/force-fresh-deployment.sh)",
+      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/fix-hardcoded-keys.sh:*)",
+      "Bash(do if [ \"$dir\" != \"niv-orchestrator-robust\" ])",
+      "Bash(then echo \"Archiving: $dir\")"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

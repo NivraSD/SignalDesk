@@ -87,6 +87,7 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
   const completionRef = useRef(false);
   const runningRef = useRef(false); // Prevent multiple simultaneous runs
   const accumulatedResultsRef = useRef({}); // Track accumulated results across stages
+  const handleCompleteWithResultsRef = useRef(null); // Store completion handler
   
   // Initialize organization state
   const [organization] = useState(() => {
@@ -162,8 +163,9 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
               metadata: existingAnalysis.metadata
             };
             setFinalIntelligence(finalIntel);
-            setIsComplete(true);
             completionRef.current = true;
+            setIsComplete(true);
+            setHasStarted(true); // Prevent re-running pipeline
           }
         } else {
           console.log('🔄 Existing analysis is stale (> 5 minutes old), running fresh pipeline...');
@@ -271,10 +273,22 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         // Update accumulated results ref for next stage
         accumulatedResultsRef.current = updatedResults;
         
-        // Progress to next stage with proper delay for Claude processing
+        // Save opportunities to localStorage for OpportunityEngine (if synthesis stage)
+        if (stage.id === 'synthesis' && result.data?.consolidated_opportunities?.prioritized_list) {
+          const opportunities = result.data.consolidated_opportunities.prioritized_list;
+          console.log(`💾 Saving ${opportunities.length} opportunities to localStorage for OpportunityEngine`);
+          localStorage.setItem('signaldesk_latest_intelligence', JSON.stringify({
+            opportunities: opportunities,
+            timestamp: Date.now(),
+            organization: organization.name
+          }));
+        }
+        
+        // Progress to next stage (or complete if this was the last)
+        // The completion will be handled by the useEffect when currentStage >= INTELLIGENCE_STAGES.length
         setTimeout(() => {
           setCurrentStage(stageIndex + 1);
-        }, 3000); // 3 seconds between stages
+        }, stageIndex === INTELLIGENCE_STAGES.length - 1 ? 1000 : 3000); // Shorter delay for completion
         
         // Return the updated results for the next stage to use
         return updatedResults;
@@ -342,11 +356,71 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     };
   };
 
+  // Complete analysis and synthesize all stage results with provided results
+  const handleCompleteWithResults = useCallback((finalResults) => {
+    // Prevent multiple calls using ref only (not isComplete state)
+    if (completionRef.current) {
+      console.log('⚠️ Pipeline already completing, skipping duplicate call');
+      return;
+    }
+    
+    // Set ref immediately to prevent any re-entry
+    completionRef.current = true;
+    
+    const totalTime = Math.floor((Date.now() - startTime) / 1000);
+    console.log(`🎉 ELABORATE PIPELINE COMPLETE in ${totalTime} seconds`);
+    console.log('📊 Final stage results:', Object.keys(finalResults));
+    console.log('📊 Stage results detail:', finalResults);
+    
+    // Validate all stages completed
+    const requiredStages = INTELLIGENCE_STAGES.map(s => s.id);
+    const completedStages = Object.keys(finalResults);
+    const hasAllStages = requiredStages.every(stage => completedStages.includes(stage));
+    
+    if (!hasAllStages) {
+      console.warn('⚠️ Some stages incomplete, using available data:', {
+        required: requiredStages,
+        completed: completedStages,
+        missing: requiredStages.filter(s => !completedStages.includes(s))
+      });
+      // Continue anyway with partial results instead of returning
+    }
+    
+    // Update stageResults state with final accumulated results
+    setStageResults(finalResults);
+    
+    // Synthesize elaborate intelligence from all stages (even if partial)
+    const elaborateIntelligence = synthesizeElaborateResults(finalResults, organizationProfile || organization, totalTime);
+    
+    console.log('🎯 Setting final intelligence:', elaborateIntelligence);
+    console.log('🔍 Intelligence structure:', {
+      hasAnalysis: !!elaborateIntelligence.analysis,
+      hasTabs: !!elaborateIntelligence.tabs,
+      hasOpportunities: !!elaborateIntelligence.opportunities,
+      keys: Object.keys(elaborateIntelligence)
+    });
+    
+    setFinalIntelligence(elaborateIntelligence);
+    
+    // Set completion state immediately (no setTimeout needed)
+    setIsComplete(true);
+    console.log('✅ Component marked as complete, should render results now');
+    if (onComplete) {
+      console.log('📤 Calling onComplete callback with intelligence');
+      onComplete(elaborateIntelligence);
+    }
+  }, [organizationProfile, organization, startTime, onComplete, stageResults]);
+  
+  // Store ref to completion handler
+  useEffect(() => {
+    handleCompleteWithResultsRef.current = handleCompleteWithResults;
+  }, [handleCompleteWithResults]);
+
   // Complete analysis and synthesize all stage results
-  const handleComplete = useCallback(() => {
-    // Prevent multiple calls using ref
-    if (completionRef.current || isComplete) {
-      console.log('⚠️ Pipeline already complete or completing, skipping');
+  const handleComplete = () => {
+    // Prevent multiple calls using ref only (not isComplete state)
+    if (completionRef.current) {
+      console.log('⚠️ Pipeline already completing, skipping duplicate call');
       return;
     }
     
@@ -356,9 +430,7 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     const totalTime = Math.floor((Date.now() - startTime) / 1000);
     console.log(`🎉 ELABORATE PIPELINE COMPLETE in ${totalTime} seconds`);
     console.log('📊 Final stage results:', Object.keys(stageResults));
-    
-    // Mark as complete to update UI
-    setIsComplete(true);
+    console.log('📊 Stage results detail:', stageResults);
     
     // Validate all stages completed
     const requiredStages = INTELLIGENCE_STAGES.map(s => s.id);
@@ -377,12 +449,25 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     // Synthesize elaborate intelligence from all stages (even if partial)
     const elaborateIntelligence = synthesizeElaborateResults(stageResults, organizationProfile || organization, totalTime);
     
+    console.log('🎯 Setting final intelligence:', elaborateIntelligence);
+    console.log('🔍 Intelligence structure:', {
+      hasAnalysis: !!elaborateIntelligence.analysis,
+      hasTabs: !!elaborateIntelligence.tabs,
+      hasOpportunities: !!elaborateIntelligence.opportunities,
+      keys: Object.keys(elaborateIntelligence)
+    });
+    
     setFinalIntelligence(elaborateIntelligence);
+    
+    // Set completion state immediately (no setTimeout needed)
+    setIsComplete(true);
+    console.log('✅ Component marked as complete, should render results now');
 
     if (onComplete) {
+      console.log('📤 Calling onComplete callback with intelligence');
       onComplete(elaborateIntelligence);
     }
-  }, [startTime, stageResults, organization, organizationProfile, onComplete]);
+  };
 
   // Advanced synthesis of all stage results
   const synthesizeElaborateResults = (results, orgProfile, duration) => {
@@ -410,14 +495,34 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     console.log('📈 Extracted data from stages:', Object.keys(extractedData));
     
     // Create comprehensive intelligence combining all stages
+    // Ensure we always have valid tabs
+    let intelligenceTabs = primaryResult?.tabs || generateDefaultTabs(extractedData);
+    if (!intelligenceTabs || Object.keys(intelligenceTabs).length === 0) {
+      intelligenceTabs = generateTabsFromStageData(results);
+    }
+    
+    // Ensure we always have some tabs for display
+    if (!intelligenceTabs || Object.keys(intelligenceTabs).length === 0) {
+      console.warn('⚠️ No tabs generated, using fallback structure');
+      intelligenceTabs = {
+        executive: {
+          headline: `${orgProfile?.name || 'Organization'} Intelligence Analysis Complete`,
+          overview: 'Pipeline completed successfully',
+          statistics: {
+            stages_completed: Object.keys(results).length
+          }
+        }
+      };
+    }
+    
     const elaborateIntelligence = {
       success: true,
       analysis: primaryResult?.data || primaryResult?.analysis || extractedData.synthesis || extractedData.competitive || {},
-      tabs: primaryResult?.tabs || generateDefaultTabs(extractedData) || generateTabsFromStageData(results),
-      opportunities: extractOpportunitiesFromAllStages(results),
-      stageInsights: generateStageInsights(results),
-      patterns: identifyPatternsAcrossStages(results),
-      recommendations: generateStrategicRecommendations(results),
+      tabs: intelligenceTabs,
+      opportunities: extractOpportunitiesFromAllStages(results) || [],
+      stageInsights: generateStageInsights(results) || {},
+      patterns: identifyPatternsAcrossStages(results) || [],
+      recommendations: generateStrategicRecommendations(results) || {},
       metadata: {
         organization: orgProfile?.name || 'Unknown',
         pipeline: 'elaborate-multi-stage',
@@ -430,6 +535,14 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
       }
     };
     
+    console.log('✅ Elaborate intelligence synthesized:', {
+      hasAnalysis: !!elaborateIntelligence.analysis,
+      hasTabs: !!elaborateIntelligence.tabs,
+      hasOpportunities: !!elaborateIntelligence.opportunities,
+      opportunityCount: elaborateIntelligence.opportunities?.length || 0,
+      tabKeys: elaborateIntelligence.tabs ? Object.keys(elaborateIntelligence.tabs) : [],
+      analysisKeys: elaborateIntelligence.analysis ? Object.keys(elaborateIntelligence.analysis).slice(0, 5) : []
+    });
     
     return elaborateIntelligence;
   };
@@ -1207,7 +1320,7 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     });
     
     // Don't run if already complete or no organization
-    if (isComplete || completionRef.current || !organization) {
+    if (completionRef.current || !organization) {
       console.log('✅ Pipeline complete or no organization');
       return;
     }
@@ -1245,12 +1358,43 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
       runStage(currentStage, accumulatedResultsRef.current).then(results => {
         accumulatedResultsRef.current = results || accumulatedResultsRef.current;
       }).finally(() => { runningRef.current = false; });
-    } else if (currentStage === INTELLIGENCE_STAGES.length && !isComplete && !completionRef.current) {
+    } else if (currentStage >= INTELLIGENCE_STAGES.length && !isComplete && !completionRef.current) {
       console.log('🎉 All stages done, completing pipeline...');
-      completionRef.current = true; // Set immediately to prevent re-entry
-      handleComplete();
+      console.log('📊 Current state before completion:', {
+        currentStage,
+        totalStages: INTELLIGENCE_STAGES.length,
+        isComplete,
+        completionRefCurrent: completionRef.current,
+        stageResultsCount: Object.keys(stageResults).length,
+        accumulatedResultsCount: Object.keys(accumulatedResultsRef.current).length
+      });
+      
+      // Use accumulated results ref which has the most complete data
+      // This ensures synthesis stage results are included
+      if (Object.keys(accumulatedResultsRef.current).length >= INTELLIGENCE_STAGES.length) {
+        console.log('✅ All stage results accumulated, proceeding with completion');
+        handleCompleteWithResults(accumulatedResultsRef.current);
+      } else {
+        console.log('⏳ Waiting for all stage results to accumulate...');
+        // Set a slight delay to ensure synthesis results are captured
+        setTimeout(() => {
+          handleCompleteWithResults(accumulatedResultsRef.current);
+        }, 1000);
+      }
     }
-  }, [currentStage, organization?.name, hasStarted, isComplete]); // Reduced dependencies
+  }, [currentStage, organization?.name, hasStarted]); // Removed isComplete to prevent circular dependency
+
+  // Monitor completion state
+  useEffect(() => {
+    if (isComplete && finalIntelligence) {
+      console.log('🎨 RENDER TRIGGER: Both isComplete and finalIntelligence are set!');
+      console.log('Final intelligence available:', {
+        hasData: !!finalIntelligence,
+        keys: finalIntelligence ? Object.keys(finalIntelligence) : [],
+        tabCount: finalIntelligence?.tabs ? Object.keys(finalIntelligence.tabs).length : 0
+      });
+    }
+  }, [isComplete, finalIntelligence]);
 
   // Show initialization message
   if (!organization) {
@@ -1268,6 +1412,12 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
 
   // Show completed intelligence display with tabbed interface
   if (isComplete && finalIntelligence) {
+    console.log('🎨 Rendering completed intelligence UI', {
+      isComplete,
+      hasFinalIntelligence: !!finalIntelligence,
+      finalIntelligenceKeys: finalIntelligence ? Object.keys(finalIntelligence) : []
+    });
+    
     // Process intelligence for pure analysis display
     const intelligenceTabs = {
       executive: {

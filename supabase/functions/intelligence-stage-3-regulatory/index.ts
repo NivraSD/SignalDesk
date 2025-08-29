@@ -15,14 +15,57 @@ serve(async (req) => {
   }
 
   try {
-    const { organization, regulators = [], analysts = [], investors = [], previousResults = {} } = await req.json();
+    const { organization, regulators = [], analysts = [], investors = [], previousResults = {}, intelligence } = await req.json();
     console.log(`⚖️ Stage 3: Deep Regulatory & Stakeholder Analysis for ${organization.name}`);
+    
+    // Extract monitoring data from intelligence prop passed from previous stages
+    let monitoringData = intelligence || {};
+    console.log(`📊 Monitoring data received:`, {
+      hasIntelligence: !!intelligence,
+      findingsCount: intelligence?.findings?.length || 0,
+      rawCount: intelligence?.raw_count || 0
+    });
     
     const startTime = Date.now();
     
     // Retrieve saved profile and previous stage data from database
     let savedProfile = null;
     let previousIntelligence = [];
+    
+    // If monitoring data not passed, fetch it from database
+    if (!monitoringData.findings && !monitoringData.raw_count) {
+      try {
+        const findingsResponse = await fetch(
+          'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/intelligence-persistence',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': req.headers.get('Authorization') || ''
+            },
+            body: JSON.stringify({
+              action: 'retrieve',
+              organization_name: organization.name,
+              limit: 100
+            })
+          }
+        );
+        
+        if (findingsResponse.ok) {
+          const findingsData = await findingsResponse.json();
+          if (findingsData.success && findingsData.data) {
+            monitoringData = {
+              findings: findingsData.data.findings || [],
+              stage_data: findingsData.data.stage_data || [],
+              raw_count: findingsData.data.findings?.length || 0
+            };
+            console.log(`✅ Retrieved ${monitoringData.raw_count} monitoring findings from database`);
+          }
+        }
+      } catch (e) {
+        console.log('Could not retrieve monitoring data:', e);
+      }
+    }
     
     try {
       const profileResponse = await fetch(
@@ -132,11 +175,23 @@ serve(async (req) => {
       console.error('Failed to save regulatory results:', saveError);
     }
 
+    // Format for UI display - with safe access
+    const tabs = {
+      regulatory: {
+        developments: results?.regulatory?.recent_developments || [],
+        compliance_status: results?.regulatory?.compliance_status || 'compliant',
+        risks: results?.risks_and_opportunities?.risks || [],
+        opportunities: results?.risks_and_opportunities?.opportunities || [],
+        summary: `Tracking ${results?.regulatory?.bodies?.length || 0} regulatory bodies`
+      }
+    };
+
     return new Response(JSON.stringify({
       success: true,
       stage: 'regulatory_analysis',
       data: results,
-      intelligence: monitoringData // Pass through monitoring data
+      intelligence: monitoringData, // Pass through monitoring data
+      tabs: tabs // UI-formatted data
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });

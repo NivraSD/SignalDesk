@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 // DISABLED: import cacheManager from '../utils/cacheManager';
-import './OnboardingV2.css';
+// import './OnboardingV2.css'; // CSS file removed, using inline styles
 
 /**
  * ONBOARDING V3 - BULLETPROOF DATA FLOW
@@ -94,8 +94,8 @@ const OnboardingV3 = () => {
       
       // STEP 2: Call discovery
       addDebugLog('🔍 Step 2: Calling Claude discovery');
-      const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co';
-      const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+      const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL;
+      const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || process.env.REACT_APP_SUPABASE_ANON_KEY;
       
       const requestPayload = {
         organizationName: orgName.trim(),

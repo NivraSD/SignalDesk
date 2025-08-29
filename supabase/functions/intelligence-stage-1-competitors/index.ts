@@ -314,11 +314,31 @@ serve(async (req) => {
       console.log('Could not save results:', e);
     }
 
+    // Format for UI display - with safe access
+    const directCompetitors = results?.competitors?.direct || [];
+    const indirectCompetitors = results?.competitors?.indirect || [];
+    
+    const tabs = {
+      competitive: {
+        competitor_actions: directCompetitors.map((c: any) => ({
+          entity: c?.name || 'Unknown',
+          action: c?.recent_action || 'Active in market',
+          impact: c?.threat_level || 'Medium',
+          timestamp: new Date().toISOString()
+        })),
+        summary: `Analyzing ${directCompetitors.length} direct competitors, ${indirectCompetitors.length} indirect competitors`,
+        positioning: {
+          threats: results?.market_positioning?.threats || []
+        }
+      }
+    };
+
     return new Response(JSON.stringify({
       success: true,
       stage: 'competitor_analysis',
       data: results,
       intelligence: monitoringData, // CRITICAL: Pass through monitoring data
+      tabs: tabs, // UI-formatted data
       debug: {
         inputCompetitorCount: competitors.length,
         analyzedCompetitorCount: totalCompetitors,

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import './RailwayV2.css';
 import IntelligenceHubV8 from './IntelligenceHubV8';
 import MultiStageIntelligence from './MultiStageIntelligence';
+import SimpleIntelligencePipeline from './SimpleIntelligencePipeline';
 import OpportunityModulePR from './Modules/OpportunityModulePR';
 import ExecutionModule from './Modules/ExecutionModule';
 import MemoryVaultModule from './Modules/MemoryVaultModule';
@@ -48,8 +49,8 @@ const RailwayV2 = () => {
       // Fallback to Supabase if no localStorage
       console.log('🔍 No localStorage, trying Supabase...');
       
-      const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co';
-      const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+      const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL;
+      const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || process.env.REACT_APP_SUPABASE_ANON_KEY;
       
       try {
         const response = await fetch(`${supabaseUrl}/functions/v1/intelligence-persistence`, {
@@ -114,8 +115,8 @@ const RailwayV2 = () => {
     localStorage.removeItem('hasCompletedOnboarding');
     
     // Clear Supabase data for current organization
-    const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co';
-    const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+    const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL;
+    const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || process.env.REACT_APP_SUPABASE_ANON_KEY;
     
     try {
       // Clear the current profile in Supabase

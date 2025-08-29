@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Trends Stage Fix</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #000; color: #0f0; }
+        .stage { border: 1px solid #0f0; padding: 10px; margin: 10px 0; }
+        .success { color: #0f0; }
+        .error { color: #f00; }
+        .waiting { color: #ff0; }
+        pre { white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body>
+    <h1>Testing Intelligence Pipeline - Trends Stage Fix</h1>
+    <div id="results"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        const organization = {
+            name: "Meta",
+            industry: "Technology",
+            competitors: ["Google", "Apple", "Microsoft", "Amazon", "TikTok"],
+            regulators: ["FTC", "EU Commission"],
+            media_outlets: ["TechCrunch", "The Verge"],
+            activists: ["Privacy Rights Groups"],
+            investors: ["Major Institutional Investors"],
+            analysts: ["Tech Industry Analysts"]
+        };
+
+        async function testStage(stageName, endpoint, requestBody) {
+            const resultsDiv = document.getElementById('results');
+            const stageDiv = document.createElement('div');
+            stageDiv.className = 'stage';
+            stageDiv.innerHTML = `<h3>Testing ${stageName}...</h3>`;
+            resultsDiv.appendChild(stageDiv);
+
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    stageDiv.innerHTML += `<div class="error">❌ ${stageName} failed: ${response.status}</div>`;
+                    stageDiv.innerHTML += `<pre class="error">${JSON.stringify(data, null, 2)}</pre>`;
+                    return null;
+                }
+
+                stageDiv.innerHTML += `<div class="success">✅ ${stageName} completed successfully!</div>`;
+                stageDiv.innerHTML += `<details><summary>Response Data</summary><pre>${JSON.stringify(data, null, 2)}</pre></details>`;
+                return data;
+            } catch (error) {
+                stageDiv.innerHTML += `<div class="error">❌ ${stageName} error: ${error.message}</div>`;
+                return null;
+            }
+        }
+
+        async function runPipeline() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<h2>Starting Intelligence Pipeline Test...</h2>';
+
+            // Stage 1: Discovery
+            const discovery = await testStage('Stage 1: Discovery', 'intelligence-discovery-v3', {
+                organization
+            });
+
+            if (!discovery) return;
+
+            // Stage 2: Competitors 
+            const competitors = await testStage('Stage 2: Competitors', 'intelligence-stage-1-competitors', {
+                organization,
+                previousResults: { extraction: discovery },
+                intelligence: discovery.intelligence
+            });
+
+            if (!competitors) return;
+
+            // Stage 3: Media/Stakeholders
+            const media = await testStage('Stage 3: Media/Stakeholders', 'intelligence-stage-2-media', {
+                organization,
+                previousResults: { 
+                    extraction: discovery,
+                    competitive: competitors
+                },
+                intelligence: discovery.intelligence
+            });
+
+            if (!media) return;
+
+            // Stage 4: Regulatory
+            const regulatory = await testStage('Stage 4: Regulatory', 'intelligence-stage-3-regulatory', {
+                organization,
+                previousResults: { 
+                    extraction: discovery,
+                    competitive: competitors,
+                    media: media
+                },
+                intelligence: discovery.intelligence
+            });
+
+            if (!regulatory) return;
+
+            // Stage 5: Trends (THE FIX TEST)
+            const trends = await testStage('Stage 5: Trends', 'intelligence-stage-4-trends', {
+                organization,
+                previousResults: { 
+                    extraction: discovery,
+                    competitive: competitors,
+                    media: media,
+                    regulatory: regulatory
+                },
+                intelligence: discovery.intelligence
+            });
+
+            if (!trends) {
+                resultsDiv.innerHTML += '<div class="error"><h2>❌ TRENDS STAGE STILL FAILING!</h2></div>';
+                return;
+            }
+
+            resultsDiv.innerHTML += '<div class="success"><h2>✅ ALL STAGES COMPLETED SUCCESSFULLY!</h2></div>';
+
+            // Stage 6: Synthesis
+            const synthesis = await testStage('Stage 6: Synthesis', 'intelligence-stage-5-synthesis', {
+                organization,
+                previousResults: {
+                    extraction: discovery,
+                    competitive: competitors,
+                    media: media,
+                    regulatory: regulatory,
+                    trends: trends
+                },
+                stage1: competitors.data,
+                stage2: media.data,
+                stage3: regulatory.data,
+                stage4: trends.data,
+                monitoring: discovery.intelligence
+            });
+
+            if (synthesis) {
+                resultsDiv.innerHTML += '<div class="success"><h2>🎉 COMPLETE PIPELINE SUCCESS!</h2></div>';
+            }
+        }
+
+        // Run the test
+        runPipeline();
+    </script>
+</body>
+</html>

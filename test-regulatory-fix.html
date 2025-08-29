@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Regulatory Stage Fix</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #000;
+            color: #0f0;
+        }
+        .stage {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #0f0;
+        }
+        .success { color: #0f0; }
+        .error { color: #f00; }
+        .info { color: #ff0; }
+        button {
+            background: #0f0;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-family: monospace;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        #output {
+            white-space: pre-wrap;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Test Regulatory Stage Fix</h1>
+    <p>This tests if the monitoring data issue in Stage 5 (Regulatory) is fixed</p>
+    
+    <button onclick="runTest()">Run Regulatory Stage Test</button>
+    
+    <div id="output"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type;
+            output.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+        }
+
+        async function runTest() {
+            log('🚀 Starting regulatory stage test...', 'info');
+            
+            try {
+                // Test with monitoring data included
+                log('📊 Testing WITH monitoring data...', 'info');
+                const response1 = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-3-regulatory`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: {
+                            name: 'OpenAI',
+                            industry: 'technology'
+                        },
+                        regulators: [],
+                        analysts: [],
+                        investors: [],
+                        intelligence: {
+                            findings: [
+                                { id: 1, content: 'Test finding 1' },
+                                { id: 2, content: 'Test finding 2' }
+                            ],
+                            raw_count: 2
+                        }
+                    })
+                });
+
+                if (response1.ok) {
+                    const data1 = await response1.json();
+                    log('✅ SUCCESS with monitoring data!', 'success');
+                    log(`Response stage: ${data1.stage}`, 'success');
+                    log(`Has intelligence data: ${!!data1.intelligence}`, 'success');
+                } else {
+                    log(`❌ ERROR with monitoring data: ${response1.status}`, 'error');
+                    const error = await response1.text();
+                    log(`Error details: ${error}`, 'error');
+                }
+
+                // Test without monitoring data (should fetch from DB)
+                log('\n📊 Testing WITHOUT monitoring data (should fetch from DB)...', 'info');
+                const response2 = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-3-regulatory`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: {
+                            name: 'OpenAI',
+                            industry: 'technology'
+                        },
+                        regulators: [],
+                        analysts: [],
+                        investors: []
+                        // No intelligence property - should fetch from DB
+                    })
+                });
+
+                if (response2.ok) {
+                    const data2 = await response2.json();
+                    log('✅ SUCCESS without monitoring data!', 'success');
+                    log(`Response stage: ${data2.stage}`, 'success');
+                    log(`Has intelligence data: ${!!data2.intelligence}`, 'success');
+                } else {
+                    log(`❌ ERROR without monitoring data: ${response2.status}`, 'error');
+                    const error = await response2.text();
+                    log(`Error details: ${error}`, 'error');
+                }
+
+                log('\n🎉 Test complete!', 'info');
+                
+            } catch (error) {
+                log(`❌ Test failed: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+    </script>
+</body>
+</html>

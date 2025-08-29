@@ -1,0 +1,409 @@
+/* Organization Settings Modal */
+.org-settings-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.org-settings-modal {
+  background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%);
+  border: 1px solid rgba(0, 255, 204, 0.2);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 0 100px rgba(0, 255, 204, 0.1);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.org-settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px;
+  border-bottom: 1px solid rgba(0, 255, 204, 0.1);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.org-settings-header h2 {
+  margin: 0;
+  font-size: 24px;
+  background: linear-gradient(135deg, #00ffcc, #00ff88);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 700;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 32px;
+  cursor: pointer;
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.org-settings-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+/* Sections */
+.current-org-section,
+.switch-org-section,
+.new-org-section,
+.advanced-section {
+  margin-bottom: 32px;
+}
+
+.org-settings-content h3 {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 600;
+}
+
+.section-note {
+  margin: -8px 0 16px 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.4);
+  font-style: italic;
+}
+
+/* Current Organization Card */
+.current-org-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: rgba(0, 255, 204, 0.05);
+  border: 1px solid rgba(0, 255, 204, 0.2);
+  border-radius: 12px;
+  position: relative;
+}
+
+.delete-current-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  padding: 6px 10px;
+  background: rgba(255, 0, 0, 0.1);
+  border: 1px solid rgba(255, 0, 0, 0.3);
+  border-radius: 6px;
+  color: #ff4444;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.delete-current-btn:hover {
+  background: rgba(255, 0, 0, 0.2);
+  border-color: #ff4444;
+  box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+}
+
+.org-icon {
+  font-size: 32px;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 255, 204, 0.1);
+  border-radius: 12px;
+}
+
+.org-info {
+  flex: 1;
+}
+
+.org-info h4 {
+  margin: 0 0 4px 0;
+  font-size: 18px;
+  color: #ffffff;
+}
+
+.org-info p {
+  margin: 0 0 8px 0;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+}
+
+.org-type {
+  display: inline-block;
+  padding: 4px 12px;
+  background: rgba(0, 255, 136, 0.2);
+  border: 1px solid rgba(0, 255, 136, 0.3);
+  border-radius: 16px;
+  font-size: 12px;
+  color: #00ff88;
+  text-transform: capitalize;
+}
+
+/* Organization List */
+.org-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.org-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.org-option:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(0, 255, 204, 0.3);
+  transform: translateX(4px);
+}
+
+.org-option .org-icon {
+  width: 48px;
+  height: 48px;
+  font-size: 24px;
+}
+
+.org-option .org-info {
+  flex: 1;
+}
+
+.org-option .org-info h4 {
+  font-size: 16px;
+  margin-bottom: 2px;
+}
+
+.org-option .org-info p {
+  font-size: 13px;
+  margin: 0;
+}
+
+.org-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.switch-btn {
+  padding: 8px 20px;
+  background: linear-gradient(135deg, rgba(0, 255, 204, 0.2), rgba(0, 255, 204, 0.1));
+  border: 1px solid #00ffcc;
+  border-radius: 8px;
+  color: #00ffcc;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.delete-btn {
+  padding: 8px 12px;
+  background: rgba(255, 0, 0, 0.1);
+  border: 1px solid rgba(255, 0, 0, 0.3);
+  border-radius: 8px;
+  color: #ff4444;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.delete-btn:hover {
+  background: rgba(255, 0, 0, 0.2);
+  border-color: #ff4444;
+  box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+}
+
+.switch-btn:hover {
+  background: rgba(0, 255, 204, 0.3);
+  box-shadow: 0 0 20px rgba(0, 255, 204, 0.5);
+}
+
+/* Create Organization */
+.create-org-btn {
+  width: 100%;
+  padding: 16px;
+  background: rgba(136, 0, 255, 0.1);
+  border: 2px dashed rgba(136, 0, 255, 0.3);
+  border-radius: 12px;
+  color: #8800ff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.create-org-btn:hover {
+  background: rgba(136, 0, 255, 0.2);
+  border-color: #8800ff;
+  border-style: solid;
+}
+
+/* New Organization Form */
+.new-org-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(136, 0, 255, 0.2);
+  border-radius: 12px;
+}
+
+.org-input,
+.org-select,
+.org-textarea {
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.org-input:focus,
+.org-select:focus,
+.org-textarea:focus {
+  outline: none;
+  border-color: #8800ff;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 3px rgba(136, 0, 255, 0.1);
+}
+
+.org-textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.cancel-btn,
+.save-btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+}
+
+.save-btn {
+  background: linear-gradient(135deg, #8800ff, #6600cc);
+  border: none;
+  color: #ffffff;
+}
+
+.save-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #9900ff, #7700dd);
+  box-shadow: 0 4px 20px rgba(136, 0, 255, 0.4);
+}
+
+.save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Advanced Section */
+.onboarding-btn {
+  padding: 12px 24px;
+  background: rgba(255, 0, 255, 0.1);
+  border: 1px solid rgba(255, 0, 255, 0.3);
+  border-radius: 8px;
+  color: #ff00ff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.onboarding-btn:hover {
+  background: rgba(255, 0, 255, 0.2);
+  border-color: #ff00ff;
+  box-shadow: 0 0 20px rgba(255, 0, 255, 0.3);
+}
+
+/* Scrollbar */
+.org-settings-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.org-settings-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.org-settings-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 204, 0.3);
+  border-radius: 4px;
+}
+
+.org-settings-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 204, 0.5);
+}

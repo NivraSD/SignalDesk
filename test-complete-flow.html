@@ -1,140 +1,108 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Test Complete Flow</title>
     <style>
-        body {
-            font-family: system-ui, -apple-system, sans-serif;
-            max-width: 1400px;
-            margin: 40px auto;
-            padding: 20px;
-            background: #0f0f0f;
-            color: #fff;
-        }
-        .test-section {
-            background: #1a1a1a;
-            padding: 20px;
-            margin: 20px 0;
-            border-radius: 8px;
-            border: 1px solid #333;
-        }
-        h2 {
-            color: #00ff00;
-            margin-top: 0;
-        }
-        button {
-            background: #00ff00;
-            color: #000;
-            border: none;
-            padding: 10px 20px;
-            margin: 5px;
-            cursor: pointer;
-            border-radius: 4px;
-            font-weight: bold;
-        }
-        .result {
-            background: #0a0a0a;
-            padding: 15px;
-            margin-top: 15px;
-            border-radius: 4px;
-            white-space: pre-wrap;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        .success { border-left: 4px solid #00ff00; }
-        .error { border-left: 4px solid #ff0000; }
-        .warning { border-left: 4px solid #ffff00; }
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #0f0; }
+        button { background: #0f0; color: #000; padding: 10px 20px; margin: 10px; cursor: pointer; }
+        .stage { margin: 10px 0; padding: 10px; border: 1px solid #0f0; }
+        .success { color: #0f0; }
+        .error { color: #f00; }
+        .data { color: #ff0; }
+        pre { background: #000; padding: 10px; overflow-x: auto; }
     </style>
 </head>
 <body>
-    <h1>🔬 SignalDesk Complete Flow Test</h1>
-    
-    <div class="test-section">
-        <h2>Step 1: Check Current Data</h2>
-        <button onclick="checkCurrentData()">Check LocalStorage</button>
-        <div id="current-data" class="result"></div>
-    </div>
-
-    <div class="test-section">
-        <h2>Step 2: Test Data Loading</h2>
-        <button onclick="testDataLoading()">Test getUnifiedCompleteProfile()</button>
-        <div id="data-loading" class="result"></div>
-    </div>
+    <h1>Test Complete Intelligence Pipeline Flow</h1>
+    <button onclick="testPipeline()">Run Complete Test</button>
+    <div id="output"></div>
 
     <script>
-        function checkCurrentData() {
-            const resultDiv = document.getElementById('current-data');
-            
-            const keys = [
-                'signaldesk_unified_profile',
-                'signaldesk_organization', 
-                'signaldesk_onboarding',
-                'opportunity_profile'
-            ];
-            
-            let output = 'LocalStorage Status:\n\n';
-            
-            keys.forEach(key => {
-                const value = localStorage.getItem(key);
-                if (value) {
-                    try {
-                        const parsed = JSON.parse(value);
-                        output += '✅ ' + key + ':\n';
-                        
-                        if (key === 'signaldesk_unified_profile') {
-                            output += '   Organization: ' + (parsed.organization?.name || 'Not set') + '\n';
-                            output += '   Competitors: ' + (parsed.competitors?.length || 0) + ' items\n';
-                            output += '   Regulators: ' + (parsed.regulators?.length || 0) + ' items\n';
-                            output += '   Media: ' + (parsed.media_outlets?.length || 0) + ' items\n';
-                            output += '   Topics: ' + (parsed.monitoring_topics?.length || 0) + ' items\n';
-                        }
-                    } catch (e) {
-                        output += '⚠️ ' + key + ': Present but not valid JSON\n';
-                    }
-                } else {
-                    output += '❌ ' + key + ': Not found\n';
-                }
-            });
-            
-            resultDiv.className = 'result';
-            resultDiv.textContent = output;
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+
+        function log(message, type = 'data') {
+            document.getElementById('output').innerHTML += `<div class="${type}">${message}</div>`;
         }
 
-        function testDataLoading() {
-            const resultDiv = document.getElementById('data-loading');
+        async function testPipeline() {
+            log('Starting pipeline test...', 'success');
             
-            const unifiedProfile = localStorage.getItem('signaldesk_unified_profile');
-            let profile = null;
+            // Test Stage 1: Extraction
+            log('\n📊 Stage 1: Extraction (Discovery)', 'stage');
+            const stage1Response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-discovery-v3`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                },
+                body: JSON.stringify({
+                    organization: 'OpenAI',
+                    organizationInfo: { industry: 'AI' }
+                })
+            });
             
-            if (unifiedProfile) {
-                try {
-                    profile = JSON.parse(unifiedProfile);
-                } catch (e) {
-                    console.warn('Error parsing unified profile:', e);
-                }
+            const stage1Data = await stage1Response.json();
+            log(`Stage 1 Status: ${stage1Response.ok ? 'SUCCESS' : 'FAILED'}`, stage1Response.ok ? 'success' : 'error');
+            log(`Intelligence signals: ${stage1Data.intelligence?.raw_signals?.length || 0}`);
+            
+            // Test Stage 2: Competitors with intelligence data
+            log('\n⚔️ Stage 2: Competitors', 'stage');
+            const stage2Response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-1-competitors`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                },
+                body: JSON.stringify({
+                    organization: { name: 'OpenAI', industry: 'AI' },
+                    competitors: ['Anthropic', 'Google AI', 'Microsoft AI'],
+                    intelligence: stage1Data.intelligence || {},
+                    previousResults: { extraction: stage1Data }
+                })
+            });
+            
+            const stage2Data = await stage2Response.json();
+            log(`Stage 2 Status: ${stage2Response.ok ? 'SUCCESS' : 'FAILED'}`, stage2Response.ok ? 'success' : 'error');
+            log(`Has tabs: ${!!stage2Data.tabs}`);
+            log(`Competitor actions in tabs: ${stage2Data.tabs?.competitive?.competitor_actions?.length || 0}`);
+            
+            // Show tabs structure
+            if (stage2Data.tabs) {
+                log('\nTabs structure:', 'data');
+                log('<pre>' + JSON.stringify(stage2Data.tabs, null, 2) + '</pre>');
             }
             
-            let output = 'Data Loading Test:\n\n';
+            // Test Stage 4: Trends
+            log('\n📈 Stage 4: Trends', 'stage');
+            const stage4Response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-4-trends`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                },
+                body: JSON.stringify({
+                    organization: { name: 'OpenAI', industry: 'AI' },
+                    intelligence: stage1Data.intelligence || {},
+                    previousResults: {
+                        extraction: stage1Data,
+                        competitive: stage2Data
+                    }
+                })
+            });
             
-            if (profile) {
-                output += '✅ Profile loaded successfully\n\n';
-                output += 'Complete Profile:\n';
-                output += '- Organization: ' + (profile.organization?.name || 'NOT FOUND') + '\n';
-                output += '- Competitors: ' + (profile.competitors?.join(', ') || 'NONE') + '\n';
-                output += '- Regulators: ' + (profile.regulators?.join(', ') || 'NONE') + '\n';
-                output += '- Media: ' + (profile.media_outlets?.join(', ') || 'NONE') + '\n';
-                output += '- Topics: ' + (profile.monitoring_topics?.join(', ') || 'NONE') + '\n';
-                output += '\nFull profile object:\n' + JSON.stringify(profile, null, 2);
+            if (stage4Response.ok) {
+                const stage4Data = await stage4Response.json();
+                log(`Stage 4 Status: SUCCESS`, 'success');
+                log(`Has tabs: ${!!stage4Data.tabs}`);
+                log(`Market trends: ${stage4Data.tabs?.market?.market_trends?.length || 0}`);
             } else {
-                output += '❌ No profile found!';
+                log(`Stage 4 Status: FAILED - ${stage4Response.status}`, 'error');
+                const errorText = await stage4Response.text();
+                log(`Error: ${errorText}`, 'error');
             }
             
-            resultDiv.className = profile ? 'result success' : 'result error';
-            resultDiv.textContent = output;
+            log('\n✅ Test complete!', 'success');
         }
     </script>
 </body>
