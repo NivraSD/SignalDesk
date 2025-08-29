@@ -503,7 +503,11 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         hasTabs: !!synthesisResult.tabs,
         hasOpportunities: !!synthesisResult.opportunities,
         tabKeys: synthesisResult.tabs ? Object.keys(synthesisResult.tabs) : [],
-        opportunityCount: synthesisResult.opportunities?.length || 0
+        opportunityCount: synthesisResult.opportunities?.length || 0,
+        // Log the actual synthesis result structure
+        synthesisKeys: Object.keys(synthesisResult),
+        dataKeys: synthesisResult.data ? Object.keys(synthesisResult.data).slice(0, 10) : [],
+        sampleTab: synthesisResult.tabs ? Object.keys(synthesisResult.tabs)[0] : null
       });
       
       // The synthesis stage returns tabs directly at the top level
@@ -1035,6 +1039,7 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     if (!window._executiveDataLogged) {
       console.log('📊 Executive summary data:', {
         hasTabsExecutive: !!tabs.executive,
+        executiveKeys: tabs.executive ? Object.keys(tabs.executive) : [],
         hasAnalysis: !!analysis,
         analysisKeys: Object.keys(analysis).slice(0, 10),
         hasPatterns: patterns.length > 0,
@@ -1049,33 +1054,58 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         <div className="summary-section">
           <h3>Current State Analysis</h3>
           <div className="narrative-block">
+            {tabs.executive?.headline && (
+              <div className="headline-metric">{tabs.executive.headline}</div>
+            )}
             <p>
               {tabs.executive?.overview || analysis.overview ||
                `Intelligence gathering across ${metadata.stagesCompleted?.length || 6} analytical dimensions for ${metadata.organization || 'the organization'}.`}
             </p>
-            {tabs.executive?.headline && (
-              <div className="headline-metric">{tabs.executive.headline}</div>
+            {tabs.executive?.competitive_highlight && (
+              <p className="competitive-highlight">
+                <strong>Competitive:</strong> {tabs.executive.competitive_highlight}
+              </p>
+            )}
+            {tabs.executive?.market_highlight && (
+              <p className="market-highlight">
+                <strong>Market:</strong> {tabs.executive.market_highlight}
+              </p>
             )}
           </div>
         </div>
         
         <div className="summary-section">
-          <h3>Comparative Position</h3>
+          <h3>Intelligence Statistics</h3>
           <div className="position-grid">
             <div className="position-item">
-              <span className="label">Market Position:</span>
-              <span className="value">{tabs.positioning?.strengths?.length > 0 ? 'Competitive' : 'Developing'}</span>
+              <span className="label">Entities Tracked:</span>
+              <span className="value">{tabs.executive?.statistics?.entities_tracked || 0}</span>
             </div>
             <div className="position-item">
-              <span className="label">Narrative Control:</span>
-              <span className="value">{tabs.market?.summary || 'Monitoring'}</span>
+              <span className="label">Actions Captured:</span>
+              <span className="value">{tabs.executive?.statistics?.actions_captured || 0}</span>
             </div>
             <div className="position-item">
-              <span className="label">Threat Level:</span>
-              <span className="value">{tabs.competitive?.summary || 'Moderate'}</span>
+              <span className="label">Topics Monitored:</span>
+              <span className="value">{tabs.executive?.statistics?.topics_monitored || 0}</span>
+            </div>
+            <div className="position-item">
+              <span className="label">Opportunities:</span>
+              <span className="value">{tabs.executive?.statistics?.opportunities_identified || 0}</span>
             </div>
           </div>
         </div>
+        
+        {tabs.executive?.immediate_actions && tabs.executive.immediate_actions.length > 0 && (
+          <div className="summary-section">
+            <h3>Immediate Actions</h3>
+            <ul className="actions-list">
+              {tabs.executive.immediate_actions.slice(0, 5).map((action, idx) => (
+                <li key={idx}>{action.action || action}</li>
+              ))}
+            </ul>
+          </div>
+        )}
         
         <div className="summary-section">
           <h3>Convergence Patterns</h3>
@@ -1134,20 +1164,22 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         <div className="analysis-section">
           <h3>Observed Competitor Actions</h3>
           <div className="actions-grid">
-            {(competitiveData.competitor_actions || competitiveData.competitors?.direct || []).slice(0, 5).map((action, idx) => (
-              <div key={idx} className="action-card">
-                <div className="competitor-name">{action.entity}</div>
-                <div className="action-description">{action.action}</div>
-                <div className="action-meta">
-                  <span className="impact">Impact: {action.impact || 'Assessing'}</span>
-                  {action.timestamp && (
-                    <span className="timing">
-                      {new Date(action.timestamp).toLocaleDateString()}
-                    </span>
-                  )}
+            {(tabs.competitive?.competitor_actions || competitiveData.competitor_actions || []).length > 0 ? (
+              (tabs.competitive?.competitor_actions || competitiveData.competitor_actions || []).slice(0, 5).map((action, idx) => (
+                <div key={idx} className="action-card">
+                  <div className="competitor-name">{action.competitor || action.entity || 'Competitor'}</div>
+                  <div className="action-description">{action.action || 'Active in market'}</div>
+                  <div className="action-meta">
+                    <span className="impact">Impact: {action.impact || 'Assessing'}</span>
+                    {action.response && (
+                      <span className="response">Response: {action.response}</span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )) || <p>No significant competitive moves detected in current timeframe.</p>}
+              ))
+            ) : (
+              <p>No significant competitive moves detected in current timeframe.</p>
+            )}
           </div>
         </div>
         
@@ -1524,7 +1556,10 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         tabKeys: finalIntelligence.tabs ? Object.keys(finalIntelligence.tabs) : [],
         hasPatterns: !!finalIntelligence.patterns,
         patternCount: finalIntelligence.patterns?.length,
-        fullData: finalIntelligence
+        // Check what's actually in the tabs
+        executiveTab: finalIntelligence.tabs?.executive ? Object.keys(finalIntelligence.tabs.executive).slice(0, 5) : 'no executive tab',
+        competitiveTab: finalIntelligence.tabs?.competitive ? Object.keys(finalIntelligence.tabs.competitive).slice(0, 5) : 'no competitive tab',
+        analysisKeys: finalIntelligence.analysis ? Object.keys(finalIntelligence.analysis).slice(0, 5) : 'no analysis'
       });
       window._intelligenceStructureLogged = true;
     }
