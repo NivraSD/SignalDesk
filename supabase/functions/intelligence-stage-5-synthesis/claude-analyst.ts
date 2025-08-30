@@ -254,7 +254,7 @@ USE THE FULL 8000 TOKENS AVAILABLE. Generate COMPREHENSIVE, ELITE-LEVEL analysis
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',  // Latest Claude 3.5 Sonnet
+        model: 'claude-sonnet-4-20250514',  // Claude 4 Sonnet
         max_tokens: 8000,  // DOUBLE THE OUTPUT CAPACITY
         temperature: 0.7,  // MORE CREATIVE AND COMPREHENSIVE
         messages: [{

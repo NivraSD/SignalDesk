@@ -119,7 +119,7 @@ Focus on actionable intelligence and specific competitive insights.`;
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 4000,
         temperature: 0.3,
         messages: [{
@@ -137,7 +137,7 @@ Focus on actionable intelligence and specific competitive insights.`;
       console.error('❌ CLAUDE API FAILED - THIS IS WHY NO ANALYSIS:', {
         status: response.status,
         error: errorText,
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-20250514',
         apiKeyLength: ANTHROPIC_API_KEY?.length || 0,
         apiKeyPrefix: ANTHROPIC_API_KEY?.substring(0, 10) || 'NO KEY'
       });

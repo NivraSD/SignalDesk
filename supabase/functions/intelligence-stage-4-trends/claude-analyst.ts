@@ -150,7 +150,7 @@ Focus on actionable trend intelligence and future opportunities from the monitor
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 4000,
         temperature: 0.3,
         messages: [{
@@ -186,7 +186,7 @@ Focus on actionable trend intelligence and future opportunities from the monitor
           analyst_personality: 'trend_forecaster',
           analysis_timestamp: new Date().toISOString(),
           had_monitoring_data: hasRealData,
-          model_used: 'claude-3-5-sonnet-20241022'
+          model_used: 'claude-sonnet-4-20250514'
         }
       };
     }
