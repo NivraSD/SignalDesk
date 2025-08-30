@@ -407,6 +407,18 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         dataKeys: synthesis.data ? Object.keys(synthesis.data).slice(0, 10) : 'no data'
       });
       
+      // Deep debug of tabs content
+      if (synthesis.tabs) {
+        console.log('📊 TABS CONTENT DEEP DIVE:');
+        Object.entries(synthesis.tabs).slice(0, 3).forEach(([tabName, tabContent]) => {
+          console.log(`  ${tabName}:`, {
+            hasContent: !!tabContent,
+            keys: tabContent ? Object.keys(tabContent).slice(0, 5) : 'no content',
+            sample: tabContent ? JSON.stringify(tabContent).substring(0, 200) : 'empty'
+          });
+        });
+      }
+      
       // Use synthesis tabs and opportunities directly
       elaborateIntelligence = {
         success: true,
