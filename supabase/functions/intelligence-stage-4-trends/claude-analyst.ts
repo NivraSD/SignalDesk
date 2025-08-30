@@ -10,19 +10,40 @@ export async function analyzeWithClaudeTrends(
 ) {
   const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
   if (!ANTHROPIC_API_KEY) {
-    console.log('⚠️ No Claude API key, returning existing analysis');
+    console.log('❌ CRITICAL: No ANTHROPIC_API_KEY environment variable found!');
+    console.log('🔍 Available env vars:', Object.keys(Deno.env.toObject()).filter(k => k.includes('ANTHROPIC') || k.includes('CLAUDE')));
+    console.log('⚠️ Claude Trends Analyst DISABLED - returning basic fallback');
     return existingAnalysis;
   }
+  
+  console.log('✅ Claude API key found, starting trends analysis...');
+  
+  // Determine if we have real monitoring data
+  const hasRealData = monitoringData?.findings?.length > 0 || monitoringData?.raw_count > 0;
 
-  const prompt = `You are an elite trend forecaster and strategic futurist specializing in ${organization.industry || 'business'} innovation.
+  const prompt = `You are Dr. Alexandra Kim, a renowned Strategic Futurist and Innovation Intelligence Director with 14 years of experience in ${organization.industry || 'business'} trend analysis. You've advised C-suite executives on disruptive technologies, market shifts, and strategic positioning for the future.
 
+Your expertise includes:
+- Emerging technology assessment and adoption forecasting
+- Market trend analysis and disruption pattern recognition
+- Strategic foresight and scenario planning
+- Innovation opportunity identification and timing analysis
+- Competitive advantage development through trend leverage
+
+ANALYSIS TARGET:
 Organization: ${organization.name}
 Industry: ${organization.industry || 'Unknown'}
 
-IMPORTANT: Analyze the following REAL monitoring data collected from our intelligence aggregators:
+${hasRealData ? 
+  `IMPORTANT: Analyze the following REAL monitoring data collected from our intelligence aggregators:
 
 Monitoring Data:
-${JSON.stringify(monitoringData, null, 2)}
+${JSON.stringify(monitoringData, null, 2)}` : 
+  `NOTE: No fresh monitoring data available. Provide strategic trend analysis based on the organization's industry context and current market dynamics.`}
+
+${hasRealData ? 
+  'Based on the actual monitoring data provided, extract trend insights and future opportunities' : 
+  'Based on industry knowledge and strategic analysis, provide trend intelligence'}
 
 Extract trend insights and future opportunities from the monitoring data. Provide analysis in this exact JSON structure:
 
@@ -117,6 +138,10 @@ Extract trend insights and future opportunities from the monitoring data. Provid
 Focus on actionable trend intelligence and future opportunities from the monitoring data.`;
 
   try {
+    // Add timeout to prevent hanging
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
+    
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -125,15 +150,18 @@ Focus on actionable trend intelligence and future opportunities from the monitor
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
-        max_tokens: 3000,
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: 4000,
         temperature: 0.3,
         messages: [{
           role: 'user',
           content: prompt
         }]
-      })
+      }),
+      signal: controller.signal
     });
+    
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       console.error('Claude API error:', response.status);
@@ -156,7 +184,9 @@ Focus on actionable trend intelligence and future opportunities from the monitor
           ...existingAnalysis.metadata,
           claude_enhanced: true,
           analyst_personality: 'trend_forecaster',
-          analysis_timestamp: new Date().toISOString()
+          analysis_timestamp: new Date().toISOString(),
+          had_monitoring_data: hasRealData,
+          model_used: 'claude-3-5-sonnet-20241022'
         }
       };
     }

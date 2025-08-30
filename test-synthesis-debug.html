@@ -1,78 +1,179 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Synthesis Debug Test</title>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            background: #1a1a1a;
-            color: #fff;
-        }
-        .container {
-            background: #2a2a2a;
-            border-radius: 12px;
-            padding: 30px;
-        }
-        button {
-            background: #00ffcc;
-            color: #000;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
-            margin: 10px 5px;
-        }
-        .result {
-            margin: 20px 0;
-            padding: 15px;
-            border-radius: 6px;
-            font-family: 'Courier New', monospace;
-            white-space: pre-wrap;
-            word-break: break-all;
-            max-height: 600px;
-            overflow-y: auto;
-            background: #333;
-        }
+        body { font-family: monospace; padding: 20px; background: #000; color: #0f0; }
+        button { background: #0f0; color: #000; padding: 10px 20px; margin: 10px; cursor: pointer; }
+        #status { margin-top: 20px; padding: 20px; background: #111; }
+        .stage { margin: 10px 0; padding: 10px; border-left: 3px solid #0f0; }
+        .error { color: #f00; }
+        .success { color: #0f0; }
+        .warning { color: #ff0; }
+        pre { background: #222; padding: 10px; overflow: auto; max-height: 400px; }
+        .log-link { color: #0ff; text-decoration: underline; cursor: pointer; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🔍 Synthesis Stage Debug</h1>
-        
-        <button onclick="testSynthesisSimple()">Test Synthesis (Simple)</button>
-        <button onclick="clearResults()">Clear</button>
-        
-        <div id="result" class="result" style="display:none;"></div>
-    </div>
-
+    <h1>🔍 Synthesis Pipeline Debug Test</h1>
+    <p class="warning">⚠️ Using PRODUCTION Supabase instance (Docker not running locally)</p>
+    <button onclick="runFullPipeline()">Run Full Pipeline (All 7 Stages)</button>
+    <button onclick="testSynthesisOnly()">Test Synthesis Only (Mock Data)</button>
+    <button onclick="clearStatus()">Clear Output</button>
+    
+    <div id="status"></div>
+    
     <script>
         const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
         
-        function log(message, data = null) {
-            const result = document.getElementById('result');
-            result.style.display = 'block';
-            result.innerHTML += message + '\n';
-            if (data) {
-                result.innerHTML += JSON.stringify(data, null, 2) + '\n\n';
+        const testOrg = {
+            name: "Zara",
+            industry: "Fashion",
+            description: "Fast fashion retailer",
+            competitors: ["H&M", "Uniqlo", "Forever 21"],
+            regulators: ["FTC", "EPA"],
+            media_outlets: ["Vogue", "WWD", "Business of Fashion"],
+            activists: ["Fashion Revolution", "Clean Clothes Campaign"],
+            investors: ["Inditex"],
+            analysts: ["Morgan Stanley", "Goldman Sachs"]
+        };
+        
+        function log(message, type = 'info') {
+            const status = document.getElementById('status');
+            const div = document.createElement('div');
+            div.className = `stage ${type}`;
+            div.innerHTML = `[${new Date().toISOString()}] ${message}`;
+            status.appendChild(div);
+            status.scrollTop = status.scrollHeight;
+            console.log(message);
+        }
+        
+        function clearStatus() {
+            document.getElementById('status').innerHTML = '';
+            log('Output cleared', 'warning');
+        }
+        
+        async function runFullPipeline() {
+            log('🚀 Starting full 7-stage pipeline...', 'success');
+            
+            const stages = [
+                { id: 'extraction', endpoint: 'intelligence-discovery-v3', name: 'Discovery/Extraction' },
+                { id: 'competitive', endpoint: 'intelligence-stage-1-competitors', name: 'Competitive Analysis' },
+                { id: 'media', endpoint: 'intelligence-stage-2-media', name: 'Media/Stakeholders' },
+                { id: 'regulatory', endpoint: 'intelligence-stage-3-regulatory', name: 'Regulatory' },
+                { id: 'trends', endpoint: 'intelligence-stage-4-trends', name: 'Trends' },
+                { id: 'synthesis', endpoint: 'intelligence-stage-5-synthesis', name: 'SYNTHESIS (with debug)' }
+            ];
+            
+            let previousResults = {};
+            
+            for (const stage of stages) {
+                log(`📊 Stage: ${stage.name}...`);
+                
+                try {
+                    const body = stage.id === 'synthesis' ? {
+                        organization: testOrg,
+                        previousResults: previousResults,
+                        stage1: previousResults.competitive?.data,
+                        stage2: previousResults.media?.data,
+                        stage3: previousResults.regulatory?.data,
+                        stage4: previousResults.trends?.data,
+                        monitoring: previousResults.extraction?.intelligence
+                    } : {
+                        organization: testOrg,
+                        ...testOrg,
+                        previousResults: previousResults,
+                        intelligence: previousResults.extraction?.intelligence || {}
+                    };
+                    
+                    const response = await fetch(`${SUPABASE_URL}/functions/v1/${stage.endpoint}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${SUPABASE_KEY}`
+                        },
+                        body: JSON.stringify(body)
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        throw new Error(`Stage failed: ${JSON.stringify(data)}`);
+                    }
+                    
+                    previousResults[stage.id] = {
+                        data: data,
+                        intelligence: data.intelligence
+                    };
+                    
+                    if (stage.id === 'synthesis') {
+                        log(`✅ SYNTHESIS COMPLETE!`, 'success');
+                        
+                        // Show key insights from synthesis
+                        if (data.tabs) {
+                            log('📊 TABS GENERATED:', 'success');
+                            log(`  - Executive: ${data.tabs.executive?.headline || 'No headline'}`);
+                            log(`  - Competitive: ${data.tabs.competitive?.competitor_actions?.length || 0} actions`);
+                            log(`  - Market: ${data.tabs.market?.market_trends?.length || 0} trends`);
+                        }
+                        
+                        if (data.opportunities) {
+                            log(`💡 OPPORTUNITIES: ${data.opportunities.length || 0} found`, 'success');
+                        }
+                        
+                        log(`<details><summary>Click to expand full synthesis response</summary><pre>${JSON.stringify(data, null, 2)}</pre></details>`);
+                        
+                        log('', 'warning');
+                        log('📋 CHECK DASHBOARD LOGS FOR DEBUG OUTPUT:', 'warning');
+                        log(`<a href="https://supabase.com/dashboard/project/zskaxjtyuaqazydouifp/functions/intelligence-stage-5-synthesis/logs" target="_blank" class="log-link">Open Supabase Dashboard Logs →</a>`, 'warning');
+                        log('', 'warning');
+                    } else {
+                        log(`✅ ${stage.name} complete - ${JSON.stringify(data).length} bytes of data`);
+                    }
+                    
+                } catch (error) {
+                    log(`❌ ${stage.name} failed: ${error.message}`, 'error');
+                    break;
+                }
             }
         }
         
-        function clearResults() {
-            document.getElementById('result').innerHTML = '';
-            document.getElementById('result').style.display = 'none';
-        }
-        
-        async function testSynthesisSimple() {
-            clearResults();
-            log('Testing synthesis with minimal data...');
+        async function testSynthesisOnly() {
+            log('🎯 Testing synthesis with mock data...', 'success');
+            
+            const mockPreviousResults = {
+                extraction: {
+                    intelligence: {
+                        raw_signals: [
+                            { entity: "H&M", title: "H&M launches sustainable collection", content: "New eco-friendly line", source: "Vogue" },
+                            { entity: "Uniqlo", title: "Uniqlo expands to new markets", content: "Opening stores in Africa", source: "WWD" }
+                        ]
+                    }
+                },
+                competitive: {
+                    data: {
+                        competitors: [
+                            { name: "H&M", actions: ["Sustainability push"], threats: ["Market expansion"] }
+                        ]
+                    }
+                },
+                media: {
+                    data: {
+                        coverage: ["Fashion Week coverage", "Sustainability trends"]
+                    }
+                },
+                regulatory: {
+                    data: {
+                        issues: ["Supply chain transparency", "Labor practices"]
+                    }
+                },
+                trends: {
+                    data: {
+                        trends: ["Digital transformation", "Circular fashion"]
+                    }
+                }
+            };
             
             try {
                 const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-5-synthesis`, {
@@ -82,20 +183,45 @@
                         'Authorization': `Bearer ${SUPABASE_KEY}`
                     },
                     body: JSON.stringify({
-                        organization: { name: 'OpenAI' },
-                        previousResults: {}
+                        organization: testOrg,
+                        previousResults: mockPreviousResults,
+                        stage1: mockPreviousResults.competitive.data,
+                        stage2: mockPreviousResults.media.data,
+                        stage3: mockPreviousResults.regulatory.data,
+                        stage4: mockPreviousResults.trends.data,
+                        monitoring: mockPreviousResults.extraction.intelligence
                     })
                 });
                 
                 const data = await response.json();
                 
-                if (response.ok) {
-                    log('✅ Success!', data);
-                } else {
-                    log('❌ Failed:', data);
+                if (!response.ok) {
+                    throw new Error(`Synthesis failed: ${JSON.stringify(data)}`);
                 }
+                
+                log(`✅ SYNTHESIS WITH MOCK DATA COMPLETE!`, 'success');
+                
+                // Show key insights from synthesis
+                if (data.tabs) {
+                    log('📊 TABS GENERATED:', 'success');
+                    log(`  - Executive: ${data.tabs.executive?.headline || 'No headline'}`);
+                    log(`  - Competitive: ${data.tabs.competitive?.competitor_actions?.length || 0} actions`);
+                    log(`  - Market: ${data.tabs.market?.market_trends?.length || 0} trends`);
+                }
+                
+                if (data.opportunities) {
+                    log(`💡 OPPORTUNITIES: ${data.opportunities.length || 0} found`, 'success');
+                }
+                
+                log(`<details><summary>Click to expand full synthesis response</summary><pre>${JSON.stringify(data, null, 2)}</pre></details>`);
+                
+                log('', 'warning');
+                log('📋 CHECK DASHBOARD LOGS FOR DEBUG OUTPUT:', 'warning');
+                log(`<a href="https://supabase.com/dashboard/project/zskaxjtyuaqazydouifp/functions/intelligence-stage-5-synthesis/logs" target="_blank" class="log-link">Open Supabase Dashboard Logs →</a>`, 'warning');
+                log('', 'warning');
+                
             } catch (error) {
-                log('❌ Error:', error.message);
+                log(`❌ Synthesis failed: ${error.message}`, 'error');
             }
         }
     </script>

@@ -272,7 +272,13 @@
       "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/fix-hardcoded-keys.sh:*)",
       "Bash(do if [ \"$dir\" != \"niv-orchestrator-robust\" ])",
       "Bash(then echo \"Archiving: $dir\")",
-      "WebFetch(domain:signaldesk-21dmtvuij-nivra-sd.vercel.app)"
+      "WebFetch(domain:signaldesk-21dmtvuij-nivra-sd.vercel.app)",
+      "Bash(./test-claude-api-direct.sh:*)",
+      "Bash(./test-stages-3-5.sh:*)",
+      "Bash(./test-stage-logs.sh:*)",
+      "Bash(./test-complete-pipeline.sh:*)",
+      "Bash(./test-synthesis-only.sh:*)",
+      "Bash(./test-claude-direct.sh:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

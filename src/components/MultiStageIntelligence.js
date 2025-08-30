@@ -352,7 +352,7 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         stageName: stage.name,
         focus: stage.focus,
         isElaboratePipeline: true,
-        previousStageResults: Object.keys(resultsToUse).length > 0 ? resultsToUse : null
+        previousStageResults: resultsToUse || {} // NEVER pass null - always pass object
       }
     };
   };

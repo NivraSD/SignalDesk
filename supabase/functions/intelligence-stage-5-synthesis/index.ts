@@ -16,7 +16,7 @@ serve(async (req) => {
     const requestData = await req.json();
     const { 
       organization, 
-      previousResults, 
+      previousResults = {}, // Default to empty object
       fullProfile, 
       dataVersion,
       stage1,
@@ -40,7 +40,7 @@ serve(async (req) => {
     });
     
     // Deep debug of previous results
-    if (previousResults) {
+    if (previousResults && typeof previousResults === 'object' && previousResults !== null) {
       console.log('🔍 Deep inspection of previousResults:');
       Object.entries(previousResults).forEach(([stageName, stageData]) => {
         console.log(`  ${stageName}:`, {
@@ -51,6 +51,8 @@ serve(async (req) => {
           sampleData: stageData?.data ? JSON.stringify(stageData.data).substring(0, 200) : 'no data'
         });
       });
+    } else {
+      console.log('⚠️ No previousResults provided or invalid format');
     }
     
     // Ensure we have an organization
@@ -94,17 +96,52 @@ serve(async (req) => {
     // First try to get Claude's analysis which includes opportunities
     let claudeAnalysis = null;
     try {
-      console.log('🤖 Calling Claude for synthesis and opportunity generation...');
+      console.log('🤖 CLAUDE SYNTHESIS ATTEMPT...');
+      console.log('📊 Data completeness before Claude:', {
+        hasCompetitors: normalizedData.competitors?.all?.length > 0,
+        competitorCount: normalizedData.competitors?.all?.length || 0,
+        hasMedia: normalizedData.media?.coverage?.length > 0,
+        mediaCount: normalizedData.media?.coverage?.length || 0,
+        hasTrends: normalizedData.trends?.topics?.length > 0,
+        trendsCount: normalizedData.trends?.topics?.length || 0,
+        hasMonitoring: !!normalizedData.monitoring,
+        monitoringSignals: normalizedData.monitoring?.raw_signals?.length || 0,
+        dataCompleteness: calculateDataCompleteness(normalizedData)
+      });
+      
+      // Pass BOTH normalized data AND full stage analyses to Claude
+      const enrichedData = {
+        ...normalizedData,
+        // Add the complete Claude analyses from each stage
+        fullAnalyses: {
+          stage1_competitive: allStageData?.stage1 || previousResults?.competitive,
+          stage2_media: allStageData?.stage2 || previousResults?.media,
+          stage3_regulatory: allStageData?.stage3 || previousResults?.regulatory,
+          stage4_trends: allStageData?.stage4 || previousResults?.trends,
+          stage5_extraction: previousResults?.extraction
+        }
+      };
+      
       claudeAnalysis = await analyzeWithClaudeSynthesis(
         organization,
-        normalizedData,
+        enrichedData,  // Pass enriched data with full analyses
         previousResults,
         null
       );
-      console.log('✅ Claude analysis complete, opportunities:', 
-        claudeAnalysis?.consolidated_opportunities?.prioritized_list?.length || 0);
+      
+      if (claudeAnalysis) {
+        console.log('✅ Claude analysis complete, opportunities:', 
+          claudeAnalysis?.consolidated_opportunities?.prioritized_list?.length || 0);
+      } else {
+        console.log('⚠️ Claude returned null - using fallback data');
+      }
     } catch (error) {
-      console.error('Claude analysis failed:', error);
+      console.error('❌ CLAUDE SYNTHESIS FAILED:', error.message || error);
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack?.split('\n').slice(0, 3).join('\n')
+      });
     }
     
     // Use Claude's results if available, otherwise fall back to basic functions
@@ -218,14 +255,32 @@ async function normalizeAllStageData(allStageData: any, organization: any, fullP
   
   try {
   
+  console.log('📊 NORMALIZATION DEBUG - Input data:', {
+    hasStage1: !!allStageData?.stage1,
+    hasStage2: !!allStageData?.stage2,
+    hasStage3: !!allStageData?.stage3,
+    hasStage4: !!allStageData?.stage4,
+    hasMonitoring: !!allStageData?.monitoring,
+    stage1Keys: allStageData?.stage1 ? Object.keys(allStageData.stage1).slice(0, 5) : [],
+    stage2Keys: allStageData?.stage2 ? Object.keys(allStageData.stage2).slice(0, 5) : [],
+  });
+  
   // Store monitoring data if available
   if (allStageData?.monitoring) {
     normalized.monitoring = allStageData.monitoring;
   }
   
-  // Process Stage 1 - Competitive Intelligence
+  // Process Stage 1 - Competitive Intelligence (handle both data structures)
   if (allStageData?.stage1) {
-    const compData = allStageData.stage1;
+    // Handle both direct data and nested data.competitors structure
+    const compData = allStageData.stage1?.data || allStageData.stage1;
+    console.log('📊 Stage 1 Competitive Data:', {
+      hasData: !!allStageData.stage1.data,
+      hasCompetitors: !!compData.competitors,
+      hasCompetitiveAnalysis: !!compData.competitive_analysis,
+      directCompetitors: compData.competitors?.direct?.length || 0,
+      allKeys: compData ? Object.keys(compData).slice(0, 10) : []
+    });
     
     // Store the full Claude analysis
     normalized.competitors.fullAnalysis = compData;
@@ -291,7 +346,12 @@ async function normalizeAllStageData(allStageData: any, organization: any, fullP
   
   // Process Stage 2 - Media Analysis
   if (allStageData?.stage2) {
-    const mediaData = allStageData.stage2;
+    // Handle both direct data and nested data structure
+    const mediaData = allStageData.stage2?.data || allStageData.stage2;
+    console.log('📊 Stage 2 Media Data:', {
+      hasData: !!allStageData.stage2.data,
+      allKeys: mediaData ? Object.keys(mediaData).slice(0, 10) : []
+    });
     
     // Store full Claude analysis
     normalized.media.fullAnalysis = mediaData;
@@ -311,7 +371,12 @@ async function normalizeAllStageData(allStageData: any, organization: any, fullP
   
   // Process Stage 3 - Regulatory Intelligence
   if (allStageData?.stage3) {
-    const regData = allStageData.stage3;
+    // Handle both direct data and nested data structure
+    const regData = allStageData.stage3?.data || allStageData.stage3;
+    console.log('📊 Stage 3 Regulatory Data:', {
+      hasData: !!allStageData.stage3.data,
+      allKeys: regData ? Object.keys(regData).slice(0, 10) : []
+    });
     
     // Store full Claude analysis
     normalized.regulatory.fullAnalysis = regData;
@@ -331,21 +396,28 @@ async function normalizeAllStageData(allStageData: any, organization: any, fullP
   
   // Process Stage 4 - Trend Analysis
   if (allStageData?.stage4) {
-    const trendsData = allStageData.stage4;
+    // Handle both direct data and nested data structure
+    const trendsData = allStageData.stage4?.data || allStageData.stage4;
+    console.log('📊 Stage 4 Trends Data:', {
+      hasData: !!allStageData.stage4.data,
+      allKeys: trendsData ? Object.keys(trendsData).slice(0, 10) : []
+    });
     
     // Store full Claude analysis
     normalized.trends.fullAnalysis = trendsData;
     
-    // Extract from multiple possible structures
+    // Extract from multiple possible structures (including tabs)
     normalized.trends.topics = trendsData.topics || trendsData.current_trends || 
-                               trendsData.trending_topics || trendsData.market_trends?.topics || [];
+                               trendsData.trending_topics || trendsData.market_trends?.topics || 
+                               trendsData.tabs?.market?.market_trends || [];
     normalized.trends.gaps = trendsData.gaps || trendsData.conversation_gaps || 
-                            trendsData.narrative_gaps || [];
+                            trendsData.narrative_gaps || trendsData.white_space || [];
     normalized.trends.opportunities = trendsData.opportunities || 
                                      trendsData.emerging_opportunities || 
                                      trendsData.trend_opportunities || 
                                      trendsData.pr_opportunities || [];
-    normalized.trends.predictions = trendsData.trend_predictions || trendsData.future_trends || [];
+    normalized.trends.predictions = trendsData.trend_predictions || trendsData.future_trends || 
+                                    trendsData.disruption_signals || [];
   }
   
   } catch (error) {
@@ -353,6 +425,26 @@ async function normalizeAllStageData(allStageData: any, organization: any, fullP
     // Return the normalized structure even if there's an error
     // to prevent the entire synthesis from failing
   }
+  
+  console.log('📊 NORMALIZATION RESULT:', {
+    competitors: {
+      direct: normalized.competitors.direct?.length || 0,
+      indirect: normalized.competitors.indirect?.length || 0,
+      emerging: normalized.competitors.emerging?.length || 0,
+      all: normalized.competitors.all?.length || 0
+    },
+    media: {
+      coverage: normalized.media.coverage?.length || 0,
+      topics: normalized.media.topics?.length || 0
+    },
+    trends: {
+      topics: normalized.trends.topics?.length || 0,
+      gaps: normalized.trends.gaps?.length || 0
+    },
+    regulatory: {
+      developments: normalized.regulatory.developments?.length || 0
+    }
+  });
   
   return normalized;
 }
@@ -379,19 +471,49 @@ async function fetchDataFromDatabase(organizationName: string, authHeader: strin
     if (response.ok) {
       const data = await response.json();
       if (data.success && data.data) {
-        // Process stage data
+        // Store FULL stage data including Claude analyses
         const result = {
           competitors: { direct: [], indirect: [], emerging: [] },
           media: {},
           regulatory: {},
-          trends: {}
+          trends: {},
+          fullStageAnalyses: {}  // Store complete Claude analyses here
         };
         
         for (const stageData of data.data) {
-          if (stageData.stage_name === 'competitor_analysis' && stageData.stage_data?.competitors) {
-            result.competitors = stageData.stage_data.competitors;
+          console.log(`📦 Retrieved stage: ${stageData.stage_name} with full analysis`);
+          
+          // Store the COMPLETE stage data for Claude synthesis
+          result.fullStageAnalyses[stageData.stage_name] = stageData.stage_data;
+          
+          switch(stageData.stage_name) {
+            case 'discovery':
+            case 'extraction':
+              result.monitoring = stageData.stage_data;
+              console.log('✅ Found discovery/extraction data');
+              break;
+            case 'competitor_analysis':
+            case 'competitive':
+              result.competitors = stageData.stage_data?.competitors || stageData.stage_data;
+              console.log('✅ Found competitive analysis with Claude insights');
+              break;
+            case 'media_analysis':
+            case 'media':
+            case 'stakeholders':
+              result.media = stageData.stage_data;
+              console.log('✅ Found media/stakeholder data');
+              break;
+            case 'regulatory_analysis':
+            case 'regulatory':
+              result.regulatory = stageData.stage_data;
+              console.log('✅ Found regulatory data');
+              break;
+            case 'trends_analysis':
+            case 'trends':
+              result.trends = stageData.stage_data;
+              console.log('✅ Found trends data');
+              break;
           }
-          // Add other stages as needed
         }
         
         return result;
@@ -712,15 +834,39 @@ async function createExecutiveSummary(data: any, organization: any) {
 }
 
 async function buildActionMatrix(data: any, organization: any) {
+  // Generate more realistic actions based on available data
+  const actions = [];
+  
+  if (data.competitors?.all?.length > 0) {
+    actions.push({
+      action: `Analyze ${data.competitors.all[0]?.name || 'competitor'} recent moves and prepare response`,
+      owner: 'Strategy Team',
+      deadline: '1 week',
+      success_metrics: 'Competitive analysis completed'
+    });
+  }
+  
+  if (data.media?.topics?.length > 0) {
+    actions.push({
+      action: `Develop thought leadership content on ${data.media.topics[0] || 'trending topics'}`,
+      owner: 'Marketing Team',
+      deadline: '2 weeks',
+      success_metrics: 'Content published'
+    });
+  }
+  
+  // Always have at least one action
+  if (actions.length === 0) {
+    actions.push({
+      action: `Conduct comprehensive market analysis for ${organization.name}`,
+      owner: 'Strategy Team',
+      deadline: '2 weeks',
+      success_metrics: 'Analysis report delivered'
+    });
+  }
+  
   return {
-    high_impact_high_urgency: [
-      {
-        action: 'Competitive Response Strategy',
-        owner: 'Strategy Team',
-        deadline: '2 weeks',
-        success_metrics: 'Response plan completed'
-      }
-    ],
+    high_impact_high_urgency: actions,
     high_impact_low_urgency: [
       {
         action: 'Innovation Roadmap Development',
@@ -949,6 +1095,7 @@ async function generateConsolidatedOpportunities(data: any, organization: any) {
 }
 
 function countInsights(insights: any): number {
+  if (!insights || typeof insights !== 'object') return 0;
   let count = 0;
   Object.values(insights).forEach((category: any) => {
     if (Array.isArray(category)) {
@@ -959,6 +1106,7 @@ function countInsights(insights: any): number {
 }
 
 function countRecommendations(recommendations: any): number {
+  if (!recommendations || typeof recommendations !== 'object') return 0;
   let count = 0;
   Object.values(recommendations).forEach((timeframe: any) => {
     if (Array.isArray(timeframe)) {
@@ -973,14 +1121,29 @@ function generateIntelligenceHubTabs(results: any, normalizedData: any, organiza
   return {
     executive: {
       headline: results.executive_summary?.headline || `${organization.name} Intelligence Summary`,
-      competitive_highlight: results.executive_summary?.key_findings?.[0] || 'Competitive landscape analysis complete',
-      market_highlight: results.patterns?.[0]?.insight || 'Market conditions stable',
-      immediate_actions: results.action_matrix?.high_impact_high_urgency || [],
+      overview: results.executive_summary?.narrative_health?.current_perception || 
+                results.key_takeaways?.what_happened?.[0] || 
+                `Comprehensive intelligence analysis for ${organization.name} across competitive, media, regulatory and market dimensions`,
+      competitive_highlight: results.executive_summary?.key_findings?.[0] || 
+                            results.executive_summary?.key_developments?.[0]?.development ||
+                            'Competitive landscape analysis complete',
+      market_highlight: results.patterns?.[0]?.insight || 
+                       results.key_takeaways?.what_it_means?.[0] ||
+                       'Market conditions stable',
+      immediate_actions: results.action_matrix?.high_impact_high_urgency || 
+                        results.key_takeaways?.pr_priorities ||
+                        results.executive_summary?.pr_implications?.map(i => i.implication) || [],
       statistics: {
-        entities_tracked: 6,
-        actions_captured: results.patterns?.length || 0,
-        topics_monitored: countItems(normalizedData.trends),
-        opportunities_identified: results.consolidated_opportunities?.prioritized_list?.length || 0
+        entities_tracked: normalizedData.competitors?.all?.length + 
+                         (normalizedData.media?.coverage?.length || 0) + 
+                         (normalizedData.regulatory?.developments?.length || 0) || 6,
+        actions_captured: normalizedData.competitors?.all?.length || 
+                         results.patterns?.length || 
+                         normalizedData.monitoring?.raw_signals?.length || 1,
+        topics_monitored: normalizedData.trends?.topics?.length || 
+                         normalizedData.media?.topics?.length || 0,
+        opportunities_identified: results.consolidated_opportunities?.prioritized_list?.length || 
+                                 results.consolidated_opportunities?.total_opportunities || 0
       }
     },
     competitive: {
@@ -995,16 +1158,25 @@ function generateIntelligenceHubTabs(results: any, normalizedData: any, organiza
       key_messages: ['Innovation leadership', 'Customer focus', 'Market expertise']
     },
     market: {
-      market_trends: Array.isArray(normalizedData.trends?.topics) 
+      market_trends: Array.isArray(normalizedData.trends?.topics) && normalizedData.trends.topics.length > 0
         ? normalizedData.trends.topics.map((topic: any) => ({
-            topic: topic.topic || topic,
-            trend: 'emerging',
-            mentions: topic.mentions || 0,
+            topic: topic.topic || topic.trend || topic,
+            trend: topic.trajectory || topic.trend || 'emerging',
+            mentions: topic.mentions || topic.signals || 1,
             sources: topic.sources || []
           }))
-        : [],
-      opportunities: results.consolidated_opportunities?.from_trends || [],
-      market_position: results.elite_insights?.market_positioning?.[0]?.insight || 'Position being analyzed'
+        : results.cross_dimensional_insights?.patterns?.map((p: any) => ({
+            topic: p.pattern,
+            trend: 'identified',
+            mentions: p.occurrences?.length || 1,
+            sources: p.occurrences || []
+          })) || [],
+      opportunities: results.consolidated_opportunities?.from_trends || 
+                    results.consolidated_opportunities?.prioritized_list?.filter((o: any) => 
+                      o.source_stage === 'trends' || o.type === 'trend') || [],
+      market_position: results.elite_insights?.market_positioning?.[0]?.insight || 
+                      results.meaning_and_context?.organizational_position?.current_standing ||
+                      `${organization.name} operates in a moderately competitive market`
     },
     regulatory: {
       regulatory_developments: normalizedData.regulatory?.developments || [],

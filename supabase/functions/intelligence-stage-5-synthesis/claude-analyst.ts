@@ -36,17 +36,17 @@ You have received intelligence from multiple specialized analysts. Your role is 
 
 IMPORTANT: You are NOT providing strategic recommendations. You are providing analysis and understanding.
 
-Stage 1 - Competitive Intelligence (Full Analysis):
-${JSON.stringify(normalizedData.competitors?.fullAnalysis || normalizedData.competitors || {}, null, 2)}
+Stage 1 - Competitive Intelligence (COMPLETE CLAUDE ANALYSIS):
+${JSON.stringify(normalizedData.fullAnalyses?.stage1_competitive || normalizedData.competitors || {}, null, 2)}
 
-Stage 2 - Media Analysis (Full Analysis):
-${JSON.stringify(normalizedData.media?.fullAnalysis || normalizedData.media || {}, null, 2)}
+Stage 2 - Media Analysis (COMPLETE CLAUDE ANALYSIS):
+${JSON.stringify(normalizedData.fullAnalyses?.stage2_media || normalizedData.media || {}, null, 2)}
 
-Stage 3 - Regulatory Intelligence (Full Analysis):
-${JSON.stringify(normalizedData.regulatory?.fullAnalysis || normalizedData.regulatory || {}, null, 2)}
+Stage 3 - Regulatory Intelligence (COMPLETE CLAUDE ANALYSIS):
+${JSON.stringify(normalizedData.fullAnalyses?.stage3_regulatory || normalizedData.regulatory || {}, null, 2)}
 
-Stage 4 - Trend Analysis (Full Analysis):
-${JSON.stringify(normalizedData.trends?.fullAnalysis || normalizedData.trends || {}, null, 2)}
+Stage 4 - Trend Analysis (COMPLETE CLAUDE ANALYSIS):
+${JSON.stringify(normalizedData.fullAnalyses?.stage4_trends || normalizedData.trends || {}, null, 2)}
 
 Raw Monitoring Data (100+ signals collected):
 ${JSON.stringify(normalizedData.monitoring ? {
@@ -211,16 +211,41 @@ Provide comprehensive synthesis in this exact JSON structure:
 
 Remember: Focus on ANALYSIS and UNDERSTANDING, not strategic recommendations. Help users comprehend their environment and PR implications.
 
-CRITICAL: You MUST generate 4-8 specific, actionable PR/marketing opportunities in the consolidated_opportunities.prioritized_list based on the intelligence provided. Look for:
-- Narrative gaps where the organization can establish thought leadership
-- Competitive weaknesses to exploit through messaging
-- Regulatory changes that create first-mover advantages
-- Emerging trends the organization can ride
-- Cross-stage insights that reveal unique positioning opportunities
+CRITICAL REQUIREMENTS - YOU MUST GENERATE RICH, DETAILED CONTENT:
 
-Even if the data seems limited, use your analytical skills to identify opportunities based on what IS available.`;
+1. EXECUTIVE SUMMARY MUST HAVE:
+   - At least 3-5 key_developments with SPECIFIC details from the data
+   - DETAILED comparative_position analysis (not generic statements)
+   - SPECIFIC narrative_health assessment based on actual signals
+   - At least 3-5 SPECIFIC pr_implications with urgency levels
+
+2. CROSS-DIMENSIONAL INSIGHTS MUST HAVE:
+   - At least 3-5 connections showing how different data points relate
+   - At least 2-3 patterns identified from the intelligence
+   - Any contradictions found in the data
+
+3. OPPORTUNITIES - GENERATE AT LEAST 6-10 SPECIFIC OPPORTUNITIES:
+   - Each with SPECIFIC PR angle and supporting evidence
+   - Draw from EVERY stage of analysis
+   - Include immediate, short-term, and long-term opportunities
+   - Be SPECIFIC - name competitors, cite trends, reference regulations
+
+4. KEY TAKEAWAYS MUST BE COMPREHENSIVE:
+   - 5+ specific things that happened
+   - 5+ implications of what it means
+   - 5+ PR priorities to address
+   - 5+ items to watch
+
+DO NOT GENERATE GENERIC CONTENT. Every item must reference SPECIFIC data from the intelligence provided.
+If you generate generic placeholders, you have failed the task.
+
+USE THE FULL 8000 TOKENS AVAILABLE. Generate COMPREHENSIVE, ELITE-LEVEL analysis.`;
 
   try {
+    // Add timeout to prevent hanging
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
+    
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -229,41 +254,98 @@ Even if the data seems limited, use your analytical skills to identify opportuni
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
-        max_tokens: 4000,
-        temperature: 0.3,
+        model: 'claude-3-5-sonnet-20241022',  // Latest Claude 3.5 Sonnet
+        max_tokens: 8000,  // DOUBLE THE OUTPUT CAPACITY
+        temperature: 0.7,  // MORE CREATIVE AND COMPREHENSIVE
         messages: [{
           role: 'user',
           content: prompt
         }]
-      })
+      }),
+      signal: controller.signal
     });
+    
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
-      console.error('Claude API error:', response.status);
-      return existingAnalysis;
+      const errorText = await response.text();
+      console.error('❌ Claude API error:', response.status, errorText);
+      return existingAnalysis || null;
     }
 
     const claudeData = await response.json();
-    const content = claudeData.content[0].text;
+    console.log('🔍 Claude API response structure:', {
+      hasContent: !!claudeData.content,
+      contentType: typeof claudeData.content,
+      contentLength: Array.isArray(claudeData.content) ? claudeData.content.length : 0,
+      topLevelKeys: Object.keys(claudeData).slice(0, 10)
+    });
     
-    // Extract JSON from Claude's response
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const claudeAnalysis = JSON.parse(jsonMatch[0]);
-      
-      // Merge Claude's analysis with existing data
-      return {
-        ...existingAnalysis,
-        ...claudeAnalysis,
-        metadata: {
-          ...existingAnalysis.metadata,
-          claude_enhanced: true,
-          analyst_personality: 'intelligence_synthesizer',
-          analysis_timestamp: new Date().toISOString()
-        }
-      };
+    // Check if we have an error response
+    if (claudeData.error) {
+      console.error('❌ Claude API error:', claudeData.error);
+      return null;
     }
+    
+    // Safely access content
+    if (!claudeData.content || !Array.isArray(claudeData.content) || claudeData.content.length === 0) {
+      console.error('❌ Invalid Claude response structure:', claudeData);
+      return null;
+    }
+    
+    const content = claudeData.content[0]?.text;
+    if (!content) {
+      console.error('❌ No text content in Claude response');
+      return null;
+    }
+    
+    // Extract JSON from Claude's response (handle potential formatting issues)
+    let claudeAnalysis;
+    try {
+      // First try to parse the entire content as JSON
+      claudeAnalysis = JSON.parse(content);
+    } catch (e) {
+      // If that fails, try to extract JSON from the text
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          // Clean up common JSON issues
+          let cleanJson = jsonMatch[0]
+            .replace(/,\s*}/g, '}')  // Remove trailing commas
+            .replace(/,\s*]/g, ']')  // Remove trailing commas in arrays
+            .replace(/"\s*:\s*undefined/g, '": null')  // Replace undefined with null
+            .replace(/'\s*:\s*'/g, '": "')  // Fix single quotes if any
+            .trim();
+          
+          claudeAnalysis = JSON.parse(cleanJson);
+        } catch (parseError) {
+          console.error('❌ Failed to parse Claude JSON:', parseError);
+          console.log('Raw content (first 500 chars):', content.substring(0, 500));
+          return null;
+        }
+      } else {
+        console.error('❌ No JSON found in Claude response');
+        return null;
+      }
+    }
+    
+    if (!claudeAnalysis) {
+      console.error('❌ No valid analysis from Claude');
+      return null;
+    }
+    
+    // Merge Claude's analysis with existing data
+    return {
+      ...existingAnalysis,
+      ...claudeAnalysis,
+      metadata: {
+        ...existingAnalysis?.metadata,
+        claude_enhanced: true,
+        analyst_personality: 'intelligence_synthesizer',
+        analysis_timestamp: new Date().toISOString()
+      }
+    };
+    
   } catch (error) {
     console.error('Claude analysis error:', error);
   }

@@ -8,11 +8,23 @@ export async function analyzeWithClaudeRegulatory(
   monitoringData: any,
   existingAnalysis: any
 ) {
+  console.log('🚀 analyzeWithClaudeRegulatory CALLED!');
+  
   const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
+  console.log('🔑 API Key check:', {
+    hasKey: !!ANTHROPIC_API_KEY,
+    keyLength: ANTHROPIC_API_KEY?.length,
+    keyPrefix: ANTHROPIC_API_KEY?.substring(0, 10)
+  });
+  
   if (!ANTHROPIC_API_KEY) {
-    console.log('⚠️ No Claude API key, returning existing analysis');
+    console.log('❌ CRITICAL: No ANTHROPIC_API_KEY environment variable found!');
+    console.log('🔍 Available env vars:', Object.keys(Deno.env.toObject()).filter(k => k.includes('ANTHROPIC') || k.includes('CLAUDE')));
+    console.log('⚠️ Claude Regulatory Analyst DISABLED - returning basic fallback');
     return existingAnalysis;
   }
+  
+  console.log('✅ Claude API key found, starting regulatory analysis...');
 
   console.log('🤖 Claude Regulatory Analyst starting...', {
     hasMonitoringData: !!monitoringData,
@@ -21,8 +33,16 @@ export async function analyzeWithClaudeRegulatory(
 
   const hasRealData = monitoringData?.findings?.length > 0 || monitoringData?.raw_count > 0;
   
-  const prompt = `You are an elite regulatory compliance expert specializing in ${organization.industry || 'business'} regulations.
+  const prompt = `You are Dr. James Wellington, a Senior Regulatory Affairs Director with 18 years of experience in ${organization.industry || 'business'} compliance and government relations. You've guided companies through major regulatory transitions, enforcement actions, and policy development.
 
+Your expertise includes:
+- Regulatory landscape analysis and compliance strategy
+- Government relations and stakeholder engagement
+- Risk assessment and regulatory impact analysis  
+- Enforcement trend monitoring and response planning
+- Policy development participation and industry advocacy
+
+ANALYSIS TARGET:
 Organization: ${organization.name}
 Industry: ${organization.industry || 'Unknown'}
 
@@ -138,6 +158,10 @@ Extract regulatory and stakeholder intelligence and provide analysis in this exa
 Focus on actionable regulatory intelligence from the monitoring data.`;
 
   try {
+    // Add timeout to prevent hanging
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
+    
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -146,18 +170,24 @@ Focus on actionable regulatory intelligence from the monitoring data.`;
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
-        max_tokens: 3000,
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: 4000,
         temperature: 0.3,
         messages: [{
           role: 'user',
           content: prompt
         }]
-      })
+      }),
+      signal: controller.signal
     });
+    
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
-      console.error('Claude API error:', response.status);
+      const errorText = await response.text();
+      console.error('❌ Claude API error:', response.status, errorText);
+      console.error('Model used:', 'claude-3-5-sonnet-20241022');
+      console.error('API Key prefix:', ANTHROPIC_API_KEY?.substring(0, 15));
       return existingAnalysis;
     }
 
@@ -194,7 +224,12 @@ Focus on actionable regulatory intelligence from the monitoring data.`;
       console.error('❌ No JSON found in Claude regulatory response');
     }
   } catch (error) {
-    console.error('Claude analysis error:', error);
+    console.error('❌ Claude regulatory analysis error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack?.substring(0, 500)
+    });
   }
 
   return existingAnalysis;

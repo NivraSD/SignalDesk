@@ -10,9 +10,13 @@ export async function analyzeWithClaudeCompetitive(
 ) {
   const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
   if (!ANTHROPIC_API_KEY) {
-    console.log('⚠️ No Claude API key, returning existing analysis');
+    console.log('❌ CRITICAL: No ANTHROPIC_API_KEY environment variable found!');
+    console.log('🔍 Available env vars:', Object.keys(Deno.env.toObject()).filter(k => k.includes('ANTHROPIC') || k.includes('CLAUDE')));
+    console.log('⚠️ Claude Competitive Analyst DISABLED - returning basic fallback');
     return existingAnalysis;
   }
+  
+  console.log('✅ Claude API key found, starting competitive analysis...');
 
   console.log('🤖 Claude Competitive Analyst starting...', {
     hasMonitoringData: !!monitoringData,
@@ -23,11 +27,18 @@ export async function analyzeWithClaudeCompetitive(
   // Determine if we have real monitoring data
   const hasRealData = monitoringData?.findings?.length > 0 || monitoringData?.raw_count > 0;
   
-  const prompt = `You are an elite competitive intelligence analyst specializing in ${organization.industry || 'business'} strategy.
+  const prompt = `You are Marcus Chen, a Senior Director of Competitive Intelligence with 15 years of experience in ${organization.industry || 'business'} strategy. You've helped Fortune 500 companies identify competitive threats, market opportunities, and strategic positioning.
 
+Your expertise includes:
+- Deep industry analysis and competitor benchmarking
+- Strategic threat assessment and competitive moat identification  
+- Market positioning and differentiation strategy
+- Competitive response planning and battle card development
+
+ANALYSIS TARGET:
 Organization: ${organization.name}
 Industry: ${organization.industry || 'Unknown'}
-Known Competitors: ${existingAnalysis?.competitors?.direct?.map(c => c.name).join(', ') || 'Unknown'}
+Known Competitors: ${existingAnalysis?.competitors?.direct?.map(c => c.name).join(', ') || 'Discovery required'}
 
 ${hasRealData ? 
   `IMPORTANT: Analyze the following REAL monitoring data collected from our intelligence aggregators:
@@ -96,6 +107,10 @@ Focus on actionable intelligence and specific competitive insights.`;
 
   try {
     console.log('📡 Calling Claude API...');
+    // Add timeout to prevent hanging
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
+    
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -104,19 +119,30 @@ Focus on actionable intelligence and specific competitive insights.`;
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
-        max_tokens: 3000,
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: 4000,
         temperature: 0.3,
         messages: [{
           role: 'user',
           content: prompt
         }]
-      })
+      }),
+      signal: controller.signal
     });
+    
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Claude API error:', response.status, errorText);
+      console.error('❌ CLAUDE API FAILED - THIS IS WHY NO ANALYSIS:', {
+        status: response.status,
+        error: errorText,
+        model: 'claude-3-5-sonnet-20241022',
+        apiKeyLength: ANTHROPIC_API_KEY?.length || 0,
+        apiKeyPrefix: ANTHROPIC_API_KEY?.substring(0, 10) || 'NO KEY'
+      });
+      // Log full error for debugging
+      console.error('Full error response:', errorText);
       return existingAnalysis;
     }
 

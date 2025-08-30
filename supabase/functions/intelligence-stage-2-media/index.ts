@@ -104,18 +104,11 @@ serve(async (req) => {
             'Authorization': req.headers.get('Authorization') || ''
           },
           body: JSON.stringify({
-            action: 'save',
-            organization_id: organization.name,
+            action: 'saveStageData',
             organization_name: organization.name,
             stage: 'media_analysis',
-            data_type: 'media_insights',
-            content: results,
-            metadata: {
-              stage: 2,
-              outlets_analyzed: results.metadata.outlets_analyzed,
-              journalists_identified: results.metadata.journalists_identified,
-              timestamp: new Date().toISOString()
-            }
+            stage_data: results,  // This is the FULL Claude analysis
+            metadata: results.metadata
           })
         }
       );

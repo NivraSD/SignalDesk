@@ -1,116 +1,93 @@
 #!/bin/bash
 
-SUPABASE_URL="https://zskaxjtyuaqazydouifp.supabase.co"
-SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0"
-
-echo "🚀 Testing Complete Intelligence Pipeline with Data Storage"
-echo "==========================================================="
-
-# Step 1: Run Stage 1 - Competitors
-echo -e "\n🎯 Stage 1: Competitor Analysis..."
-STAGE1_RESULT=$(curl -s -X POST "$SUPABASE_URL/functions/v1/intelligence-stage-1-competitors" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $SUPABASE_KEY" \
-  -d '{
-    "organization": {
-      "name": "Nike",
-      "industry": "sportswear",
-      "description": "Global athletic footwear and apparel company"
-    },
-    "competitors": ["Adidas", "Under Armour", "Puma"]
-  }' \
-  --max-time 30)
-
-echo "Stage 1 Status:"
-echo "$STAGE1_RESULT" | jq -r 'if .competitors then "✅ Competitors analyzed" else "❌ No competitor data" end' 2>/dev/null || echo "⚠️ HTML response received"
-
-# Save the results for next stages
-COMPETITORS=$(echo "$STAGE1_RESULT" | jq '.competitors' 2>/dev/null || echo '{}')
-
-# Step 2: Run Stage 2 - Media
-echo -e "\n📰 Stage 2: Media Analysis..."
-STAGE2_RESULT=$(curl -s -X POST "$SUPABASE_URL/functions/v1/intelligence-stage-2-media" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $SUPABASE_KEY" \
-  -d "{
-    \"organization\": {
-      \"name\": \"Nike\",
-      \"industry\": \"sportswear\"
-    },
-    \"previousResults\": {
-      \"competitors\": $COMPETITORS
-    }
-  }" \
-  --max-time 30)
-
-echo "Stage 2 Status:"
-echo "$STAGE2_RESULT" | jq -r 'if .media_coverage then "✅ Media analyzed" else "❌ No media data" end' 2>/dev/null || echo "⚠️ HTML response received"
-
-# Step 3: Run Stage 5 - Synthesis
-echo -e "\n🧠 Stage 5: Intelligence Synthesis..."
-SYNTHESIS_RESULT=$(curl -s -X POST "$SUPABASE_URL/functions/v1/intelligence-stage-5-synthesis" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $SUPABASE_KEY" \
-  -d '{
-    "organization": {
-      "name": "Nike",
-      "industry": "sportswear"
-    },
-    "previousResults": {
-      "competitors": '"$COMPETITORS"',
-      "media": {}
-    },
-    "dataVersion": "2.0"
-  }' \
-  --max-time 30)
-
-echo "Synthesis Status:"
-echo "$SYNTHESIS_RESULT" | jq -r 'if .patterns then "✅ Synthesis complete" else "❌ No synthesis generated" end' 2>/dev/null || echo "⚠️ HTML response received"
-
-# Step 4: Check if data was persisted
-echo -e "\n💾 Checking data persistence..."
-PERSISTENCE_CHECK=$(curl -s -X POST "$SUPABASE_URL/functions/v1/intelligence-persistence" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $SUPABASE_KEY" \
-  -d '{
-    "action": "getStageData",
-    "organization_name": "Nike",
-    "limit": 10
-  }')
-
-echo "Persistence Check:"
-echo "$PERSISTENCE_CHECK" | jq -r '
-  if .data then 
-    "✅ Found " + (.count | tostring) + " stored records"
-  else 
-    "❌ No data found in storage"
-  end' 2>/dev/null || echo "⚠️ Cannot access persistence data"
-
-# Step 5: Test direct database query via REST API
-echo -e "\n🔍 Checking database directly via REST API..."
-DB_CHECK=$(curl -s -X GET "$SUPABASE_URL/rest/v1/intelligence_stage_data?organization_name=eq.Nike&limit=5" \
-  -H "apikey: $SUPABASE_KEY" \
-  -H "Authorization: Bearer $SUPABASE_KEY")
-
-echo "Database Check:"
-echo "$DB_CHECK" | jq -r 'if length > 0 then "✅ Found " + (length | tostring) + " records in database" else "❌ No records in database" end' 2>/dev/null || echo "⚠️ Database not accessible"
-
-echo -e "\n==========================================================="
-echo "✅ Pipeline Test Complete"
+echo "🚀 Testing COMPLETE Intelligence Pipeline (All 5 Stages)"
+echo "========================================================="
 echo ""
-echo "Summary:"
-echo "--------"
-echo "1. Check Supabase dashboard for stored data in:"
-echo "   - intelligence_stage_data table"
-echo "   - organization_profiles table"
-echo "   - intelligence_findings table"
+
+AUTH="Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8"
+BASE_URL="https://zskaxjtyuaqazydouifp.supabase.co/functions/v1"
+ORG='{"organization": {"name": "TestCorp", "industry": "technology"}}'
+
+echo "📊 Stage 1: Competitive Intelligence"
+echo "------------------------------------"
+STAGE1_RESPONSE=$(curl -s -X POST "$BASE_URL/intelligence-stage-1-competitors" \
+  -H "Content-Type: application/json" \
+  -H "$AUTH" \
+  -d "$ORG")
+echo "$STAGE1_RESPONSE" | jq '.metadata' 2>/dev/null || echo "Stage 1 failed"
+STAGE1_DATA=$(echo "$STAGE1_RESPONSE" | jq -c '.data' 2>/dev/null || echo '{}')
+
 echo ""
-echo "2. If seeing HTML responses, check:"
-echo "   - Edge functions are deployed correctly"
-echo "   - CORS settings in Supabase"
-echo "   - Function logs in Supabase dashboard"
+echo "📰 Stage 2: Media & Stakeholder Analysis"
+echo "----------------------------------------"
+STAGE2_RESPONSE=$(curl -s -X POST "$BASE_URL/intelligence-stage-2-media" \
+  -H "Content-Type: application/json" \
+  -H "$AUTH" \
+  -d "$ORG")
+echo "$STAGE2_RESPONSE" | jq '.metadata' 2>/dev/null || echo "Stage 2 failed"
+STAGE2_DATA=$(echo "$STAGE2_RESPONSE" | jq -c '.data' 2>/dev/null || echo '{}')
+
 echo ""
-echo "3. Next steps:"
-echo "   - Open frontend and test the Intelligence Hub"
-echo "   - Check browser console for any errors"
-echo "   - Verify data appears in the UI tabs"
+echo "⚖️ Stage 3: Regulatory Intelligence"
+echo "-----------------------------------"
+STAGE3_RESPONSE=$(curl -s -X POST "$BASE_URL/intelligence-stage-3-regulatory" \
+  -H "Content-Type: application/json" \
+  -H "$AUTH" \
+  -d "$ORG")
+echo "$STAGE3_RESPONSE" | jq '.metadata' 2>/dev/null || echo "Stage 3 failed"
+STAGE3_DATA=$(echo "$STAGE3_RESPONSE" | jq -c '.data' 2>/dev/null || echo '{}')
+
+echo ""
+echo "📈 Stage 4: Trend Analysis"
+echo "--------------------------"
+STAGE4_RESPONSE=$(curl -s -X POST "$BASE_URL/intelligence-stage-4-trends" \
+  -H "Content-Type: application/json" \
+  -H "$AUTH" \
+  -d "$ORG")
+echo "$STAGE4_RESPONSE" | jq '.metadata' 2>/dev/null || echo "Stage 4 failed"
+STAGE4_DATA=$(echo "$STAGE4_RESPONSE" | jq -c '.data' 2>/dev/null || echo '{}')
+
+echo ""
+echo "🧩 Stage 5: Synthesis & Strategic Analysis"
+echo "------------------------------------------"
+# Pass previous stage data to synthesis
+SYNTHESIS_PAYLOAD=$(cat <<JSON
+{
+  "organization": {"name": "TestCorp", "industry": "technology"},
+  "previousResults": {
+    "competitive": $STAGE1_DATA,
+    "media": $STAGE2_DATA,
+    "regulatory": $STAGE3_DATA,
+    "trends": $STAGE4_DATA
+  }
+}
+JSON
+)
+
+STAGE5_RESPONSE=$(curl -s -X POST "$BASE_URL/intelligence-stage-5-synthesis" \
+  -H "Content-Type: application/json" \
+  -H "$AUTH" \
+  -d "$SYNTHESIS_PAYLOAD")
+
+echo "$STAGE5_RESPONSE" | jq '.metadata' 2>/dev/null || echo "Stage 5 failed"
+
+echo ""
+echo "📊 Final Synthesis Results:"
+echo "---------------------------"
+echo "$STAGE5_RESPONSE" | jq '{
+  success: .success,
+  opportunities_count: .opportunities | length,
+  has_tabs: (.tabs != null),
+  tab_keys: (.tabs | keys),
+  patterns: .data.patterns | length,
+  recommendations: .data.strategic_recommendations
+}' 2>/dev/null || echo "Could not parse synthesis results"
+
+echo ""
+echo "🎯 Claude 4 Usage Summary:"
+echo "--------------------------"
+echo "Stage 1: $(echo "$STAGE1_RESPONSE" | jq -r '.metadata.claude_enhanced // false')"
+echo "Stage 2: $(echo "$STAGE2_RESPONSE" | jq -r '.metadata.claude_enhanced // false')"
+echo "Stage 3: $(echo "$STAGE3_RESPONSE" | jq -r '.metadata.claude_enhanced // false')"
+echo "Stage 4: $(echo "$STAGE4_RESPONSE" | jq -r '.metadata.claude_enhanced // false')"
+echo "Stage 5: $(echo "$STAGE5_RESPONSE" | jq -r '.metadata.claude_enhanced // false')"

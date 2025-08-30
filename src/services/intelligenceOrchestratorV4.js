@@ -137,14 +137,14 @@ class IntelligenceOrchestratorV4 {
         },
         body: JSON.stringify({
           organization,
-          // Pass all previous stage data for synthesis
-          previousResults: previousStageResults,
-          // Also pass structured stage data
-          stage1: previousStageResults?.competitive?.data,
-          stage2: previousStageResults?.media?.data,
-          stage3: previousStageResults?.regulatory?.data,
-          stage4: previousStageResults?.trends?.data,
-          monitoring: previousStageResults?.extraction?.intelligence
+          // Pass all previous stage data for synthesis - NEVER undefined
+          previousResults: previousStageResults || {},
+          // Also pass structured stage data with proper fallbacks
+          stage1: previousStageResults?.competitive?.data || previousStageResults?.competitive,
+          stage2: previousStageResults?.media?.data || previousStageResults?.media,
+          stage3: previousStageResults?.regulatory?.data || previousStageResults?.regulatory,
+          stage4: previousStageResults?.trends?.data || previousStageResults?.trends,
+          monitoring: previousStageResults?.extraction?.intelligence || previousStageResults?.extraction?.data
         })
       });
       
