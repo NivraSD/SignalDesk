@@ -390,8 +390,62 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     // Update stageResults state with final accumulated results
     setStageResults(finalResults);
     
-    // Synthesize elaborate intelligence from all stages (even if partial)
-    const elaborateIntelligence = synthesizeElaborateResults(finalResults, organizationProfile || organization, totalTime);
+    // COMPREHENSIVE FIX: Use synthesis stage as single source of truth
+    let elaborateIntelligence = null;
+    
+    if (finalResults.synthesis) {
+      const synthesis = finalResults.synthesis;
+      
+      console.log('🔧 COMPREHENSIVE FIX: Using synthesis as single source of truth');
+      console.log('📦 SYNTHESIS CONTENT:', {
+        topLevelKeys: Object.keys(synthesis),
+        hasTabs: !!synthesis.tabs,
+        tabKeys: synthesis.tabs ? Object.keys(synthesis.tabs) : 'no tabs',
+        hasOpportunities: !!synthesis.opportunities,
+        opportunityCount: synthesis.opportunities?.length || 0,
+        hasData: !!synthesis.data,
+        dataKeys: synthesis.data ? Object.keys(synthesis.data).slice(0, 10) : 'no data'
+      });
+      
+      // Use synthesis tabs and opportunities directly
+      elaborateIntelligence = {
+        success: true,
+        tabs: synthesis.tabs || {},
+        opportunities: synthesis.opportunities || [],
+        analysis: synthesis.data || synthesis.analysis || {},
+        patterns: synthesis.data?.patterns || [],
+        recommendations: synthesis.data?.strategic_recommendations || {},
+        metadata: {
+          organization: organizationProfile?.name || organization?.name || 'Unknown',
+          pipeline: 'synthesis-direct',
+          version: 'v4.0',
+          duration: totalTime,
+          timestamp: new Date().toISOString(),
+          stagesCompleted: Object.keys(finalResults)
+        }
+      };
+      
+      console.log('✅ Built intelligence from synthesis:', {
+        tabCount: Object.keys(elaborateIntelligence.tabs).length,
+        tabKeys: Object.keys(elaborateIntelligence.tabs),
+        opportunityCount: elaborateIntelligence.opportunities.length
+      });
+    } else {
+      // Fallback if no synthesis
+      console.error('❌ NO SYNTHESIS STAGE FOUND - This should not happen!');
+      elaborateIntelligence = {
+        success: false,
+        error: 'No synthesis stage found',
+        tabs: {},
+        opportunities: [],
+        analysis: {},
+        metadata: {
+          organization: organizationProfile?.name || organization?.name || 'Unknown',
+          duration: totalTime,
+          timestamp: new Date().toISOString()
+        }
+      };
+    }
     
     console.log('🎯 Setting final intelligence:', elaborateIntelligence);
     console.log('🔍 Intelligence structure:', {
