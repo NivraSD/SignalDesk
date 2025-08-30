@@ -410,13 +410,26 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
       // Deep debug of tabs content
       if (synthesis.tabs) {
         console.log('📊 TABS CONTENT DEEP DIVE:');
-        Object.entries(synthesis.tabs).slice(0, 3).forEach(([tabName, tabContent]) => {
-          console.log(`  ${tabName}:`, {
-            hasContent: !!tabContent,
-            keys: tabContent ? Object.keys(tabContent).slice(0, 5) : 'no content',
-            sample: tabContent ? JSON.stringify(tabContent).substring(0, 200) : 'empty'
-          });
-        });
+        console.log('  Executive tab:', synthesis.tabs.executive ? {
+          headline: synthesis.tabs.executive.headline,
+          hasActions: !!synthesis.tabs.executive.immediate_actions,
+          actionCount: synthesis.tabs.executive.immediate_actions?.length || 0,
+          statistics: synthesis.tabs.executive.statistics
+        } : 'NO EXECUTIVE TAB');
+        
+        console.log('  Competitive tab:', synthesis.tabs.competitive ? {
+          hasActions: !!synthesis.tabs.competitive.competitor_actions,
+          actionCount: synthesis.tabs.competitive.competitor_actions?.length || 0,
+          firstAction: synthesis.tabs.competitive.competitor_actions?.[0]
+        } : 'NO COMPETITIVE TAB');
+        
+        console.log('  Market tab:', synthesis.tabs.market ? {
+          hasTrends: !!synthesis.tabs.market.market_trends,
+          trendCount: synthesis.tabs.market.market_trends?.length || 0,
+          position: synthesis.tabs.market.market_position
+        } : 'NO MARKET TAB');
+      } else {
+        console.log('❌ NO TABS IN SYNTHESIS RESPONSE!');
       }
       
       // Use synthesis tabs and opportunities directly
@@ -1114,6 +1127,9 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
       console.log('📊 Executive summary data:', {
         hasTabsExecutive: !!tabs.executive,
         executiveKeys: tabs.executive ? Object.keys(tabs.executive) : [],
+        headline: tabs.executive?.headline,
+        immediateActions: tabs.executive?.immediate_actions,
+        statistics: tabs.executive?.statistics,
         hasAnalysis: !!analysis,
         analysisKeys: Object.keys(analysis).slice(0, 10),
         hasPatterns: patterns.length > 0,
