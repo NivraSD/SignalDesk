@@ -507,8 +507,16 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         // Log the actual synthesis result structure
         synthesisKeys: Object.keys(synthesisResult),
         dataKeys: synthesisResult.data ? Object.keys(synthesisResult.data).slice(0, 10) : [],
-        sampleTab: synthesisResult.tabs ? Object.keys(synthesisResult.tabs)[0] : null
+        sampleTab: synthesisResult.tabs ? Object.keys(synthesisResult.tabs)[0] : null,
+        // Log actual tab content
+        executiveTabContent: synthesisResult.tabs?.executive ? 
+          Object.keys(synthesisResult.tabs.executive).slice(0, 5) : 'no executive tab',
+        competitiveTabContent: synthesisResult.tabs?.competitive ? 
+          Object.keys(synthesisResult.tabs.competitive).slice(0, 5) : 'no competitive tab'
       });
+      
+      // Also log the raw synthesis result for debugging
+      console.log('📦 Raw synthesis result:', synthesisResult);
       
       // The synthesis stage returns tabs directly at the top level
       if (synthesisResult.tabs) {

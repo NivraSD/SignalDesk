@@ -155,9 +155,9 @@ class IntelligenceOrchestratorV4 {
       const data = await response.json();
       return {
         success: true,
-        data: data,
-        analysis: data,
-        tabs: data.tabs,
+        data: data.data || data, // Use data.data if it exists (the actual results)
+        analysis: data.data || data,
+        tabs: data.tabs, // Pre-generated tabs from synthesis
         opportunities: data.opportunities || data.consolidated_opportunities?.prioritized_list || [],
         raw_count: data.raw_count
       };
