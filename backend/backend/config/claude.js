@@ -32,12 +32,12 @@ class ClaudeService {
         console.error('Set ANTHROPIC_API_KEY in Railway dashboard NOW.');
         // Don't throw error - use fallback instead to keep app running
         this.client = null;
-        this.model = process.env.CLAUDE_MODEL || "claude-3-5-sonnet-20241022";
+        this.model = process.env.CLAUDE_MODEL || "claude-sonnet-4-20250514";
         return;
       } else {
         console.log('Running in development mode - API calls will fail without a valid key');
         this.client = null;
-        this.model = process.env.CLAUDE_MODEL || "claude-3-5-sonnet-20241022";
+        this.model = process.env.CLAUDE_MODEL || "claude-sonnet-4-20250514";
         return;
       }
     }
@@ -45,7 +45,7 @@ class ClaudeService {
     this.client = new Anthropic({
       apiKey: apiKey,
     });
-    this.model = process.env.CLAUDE_MODEL || "claude-3-5-sonnet-20241022";
+    this.model = process.env.CLAUDE_MODEL || "claude-sonnet-4-20250514";
     console.log('Claude service initialized with model:', this.model);
   }
 

@@ -35,7 +35,7 @@ This document comprehensively covers the massive transformation and successful d
 │                                                                  │
 │   ┌──────────────────────────────────────────────────┐         │
 │   │  Claude AI Integration                           │         │
-│   │  - Anthropic API (claude-3-5-sonnet-20241022)   │         │
+│   │  - Anthropic API (claude-sonnet-4-20250514)   │         │
 │   │  - Sophisticated prompts for each feature        │         │
 │   │  - Fallback mechanisms for reliability           │         │
 │   └──────────────────────────────────────────────────┘         │

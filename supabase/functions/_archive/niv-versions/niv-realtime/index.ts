@@ -159,7 +159,7 @@ Your personality:
   });
 
   const requestBody = {
-    model: 'claude-3-5-sonnet-20241022',  // Using Claude 3.5 Sonnet
+    model: 'claude-sonnet-4-20250514',  // Using Claude 3.5 Sonnet
     max_tokens: 2000,
     temperature: 0.7,
     system: systemPrompt,

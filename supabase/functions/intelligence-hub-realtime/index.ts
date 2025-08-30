@@ -492,7 +492,7 @@ Format as JSON with keys: summary, key_insights, recommendations`
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 500,
         temperature: 0.3,
         messages: [{

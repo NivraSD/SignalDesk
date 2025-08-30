@@ -247,7 +247,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         Return ONLY valid JSON array.`;
         
         const completion = await anthropic.messages.create({
-          model: 'claude-3-haiku-20240307',
+          model: 'claude-sonnet-4-20250514',
           max_tokens: 1000,
           temperature: 0.7,
           messages: [{ role: 'user', content: prompt }]
@@ -314,7 +314,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         Return as JSON object.`;
         
         const completion = await anthropic.messages.create({
-          model: 'claude-3-haiku-20240307',
+          model: 'claude-sonnet-4-20250514',
           max_tokens: 800,
           temperature: 0.7,
           messages: [{ role: 'user', content: prompt }]
@@ -379,7 +379,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         Return as JSON array with: name, publication, beat, email, whyRelevant`;
         
         const completion = await anthropic.messages.create({
-          model: 'claude-3-haiku-20240307',
+          model: 'claude-sonnet-4-20250514',
           max_tokens: 1000,
           temperature: 0.7,
           messages: [{ role: 'user', content: prompt }]
@@ -488,7 +488,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         Body: [email body]`;
         
         const completion = await anthropic.messages.create({
-          model: 'claude-3-haiku-20240307',
+          model: 'claude-sonnet-4-20250514',
           max_tokens: 500,
           temperature: 0.7,
           messages: [{ role: 'user', content: pitchPrompt }]

@@ -53,7 +53,7 @@ Provide clear, actionable crisis management advice including:
 5. Success metrics to track`;
       
       const aiMessage = await anthropic.messages.create({
-        model: 'claude-3-haiku-20240307',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 1500,
         temperature: 0.3,
         system: systemPrompt,

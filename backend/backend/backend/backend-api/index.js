@@ -64,7 +64,7 @@ app.get('/test-claude', async (req, res) => {
     });
     
     const response = await anthropic.messages.create({
-      model: 'claude-3-haiku-20240307',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 100,
       messages: [{
         role: 'user',
@@ -75,7 +75,7 @@ app.get('/test-claude', async (req, res) => {
     res.json({
       success: true,
       message: response.content[0].text,
-      model: 'claude-3-haiku-20240307'
+      model: 'claude-sonnet-4-20250514'
     });
   } catch (error) {
     console.error('Claude test error:', error);
@@ -172,7 +172,7 @@ app.post('/api/content/ai-generate', async (req, res) => {
       });
       
       const response = await anthropic.messages.create({
-        model: 'claude-3-haiku-20240307',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 2000,
         messages: [{
           role: 'user',

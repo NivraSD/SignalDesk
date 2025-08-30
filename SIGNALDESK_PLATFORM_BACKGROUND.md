@@ -91,7 +91,7 @@ Current Deployments:
 - Redis for caching (configured but not implemented)
 
 **AI Integration:**
-- Claude API (claude-3-5-sonnet-20241022)
+- Claude API (claude-sonnet-4-20250514)
 - Model Context Protocol (MCP) servers
 - Local execution via Claude Desktop
 

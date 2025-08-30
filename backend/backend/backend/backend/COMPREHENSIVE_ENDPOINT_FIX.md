@@ -125,7 +125,7 @@ app.post('/api/media/generate-pitch-angles', async (req, res) => {
     
     try {
       const response = await anthropic.messages.create({
-        model: 'claude-3-haiku-20240307',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 1500,
         system: 'You are a PR expert. Generate creative, newsworthy pitch angles.',
         messages: [{ role: 'user', content: prompt }]
@@ -186,7 +186,7 @@ app.post('/api/ai/assistant', async (req, res) => {
     
     try {
       const response = await anthropic.messages.create({
-        model: 'claude-3-haiku-20240307',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
         messages: [{ role: 'user', content: message }]
       });
@@ -213,7 +213,7 @@ app.post('/api/ai/analyze', async (req, res) => {
     
     try {
       const response = await anthropic.messages.create({
-        model: 'claude-3-haiku-20240307',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 1500,
         system: `Analyze this ${type} content and provide insights.`,
         messages: [{ role: 'user', content: content }]
@@ -243,7 +243,7 @@ app.post('/api/reports/generate', async (req, res) => {
     
     try {
       const response = await anthropic.messages.create({
-        model: 'claude-3-haiku-20240307',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 3000,
         system: 'You are a report generator. Create comprehensive, well-structured reports.',
         messages: [{ role: 'user', content: prompt }]
@@ -273,7 +273,7 @@ app.post('/api/monitoring/chat-analyze', async (req, res) => {
     
     try {
       const response = await anthropic.messages.create({
-        model: 'claude-3-haiku-20240307',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
         system: 'Analyze monitoring data and answer queries.',
         messages: [{ role: 'user', content: `Query: ${query}\nData: ${JSON.stringify(data)}` }]

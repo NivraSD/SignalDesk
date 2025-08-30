@@ -14,7 +14,7 @@ serve(async (req) => {
   try {
     const requestBody = await req.json()
     // Support both 'message' and 'prompt' fields for backwards compatibility
-    const { message, prompt, model = 'claude-3-haiku-20240307', max_tokens = 1000, ...options } = requestBody
+    const { message, prompt, model = 'claude-sonnet-4-20250514', max_tokens = 1000, ...options } = requestBody
     const userPrompt = message || prompt || ''
     
     if (!userPrompt) {

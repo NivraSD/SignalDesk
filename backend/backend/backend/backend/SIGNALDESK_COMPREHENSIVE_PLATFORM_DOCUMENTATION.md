@@ -688,8 +688,8 @@ GET / api / mcp / health; // MCP health check
 ```javascript
 {
   "models": {
-    "fast": "claude-3-haiku-20240307",
-    "smart": "claude-3-5-sonnet-20241022"
+    "fast": "claude-sonnet-4-20250514",
+    "smart": "claude-sonnet-4-20250514"
   },
   "capabilities": [
     "Content generation",

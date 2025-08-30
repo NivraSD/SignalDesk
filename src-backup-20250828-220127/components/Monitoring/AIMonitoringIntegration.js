@@ -136,7 +136,7 @@ Provide:
 
 Format as structured JSON.`,
         {
-          model: 'claude-3-sonnet-20240229',
+          model: 'claude-sonnet-4-20250514',
           max_tokens: 1500
         }
       );

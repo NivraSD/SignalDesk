@@ -163,7 +163,7 @@ Provide strategic, actionable advice. When creating substantial content (press r
 indicate this by using phrases like "Here's a strategic framework..." or "Let me create a comprehensive plan..."`;
 
     const claudePromise = anthropic.messages.create({
-      model: 'claude-3-sonnet-20240229',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 2000,
       temperature: 0.7,
       system: systemPrompt,

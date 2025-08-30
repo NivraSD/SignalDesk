@@ -7,9 +7,9 @@ Your 7-stage intelligence pipeline has been diagnosed. The Claude analysts **ARE
 ## **ROOT CAUSES IDENTIFIED** 🔍
 
 ### 1. **Model Quality Issue** ❌ → ✅ **FIXED**
-- **Problem**: All stages were using `claude-3-haiku-20240307` (cheapest, fastest model)
+- **Problem**: All stages were using `claude-sonnet-4-20250514` (cheapest, fastest model)
 - **Impact**: Haiku prioritizes speed/cost over analysis depth
-- **Fix**: Upgraded to `claude-3-5-sonnet-20241022` (best reasoning model)
+- **Fix**: Upgraded to `claude-sonnet-4-20250514` (best reasoning model)
 
 ### 2. **Poor Error Visibility** ❌ → ✅ **FIXED**  
 - **Problem**: Silent fallbacks when API key missing

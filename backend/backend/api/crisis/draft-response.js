@@ -58,7 +58,7 @@ Create a professional response that:
 5. Maintains appropriate legal positioning`;
       
       const message = await anthropic.messages.create({
-        model: 'claude-3-haiku-20240307',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 1500,
         temperature: 0.3,
         system: systemPrompt,

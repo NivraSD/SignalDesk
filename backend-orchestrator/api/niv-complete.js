@@ -151,7 +151,7 @@ async function generateScopedResponse(message, history, scope) {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: scope === 'package' ? 4000 : scope === 'quick' ? 500 : 2000,
         temperature: 0.7,
         system: systemPrompt,

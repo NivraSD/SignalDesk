@@ -16,7 +16,7 @@ Go to your Railway Dashboard and add these environment variables:
 ```
 ANTHROPIC_API_KEY = _YOUR_API_KEY_HERE
 NODE_ENV = production
-CLAUDE_MODEL = claude-3-5-sonnet-20241022
+CLAUDE_MODEL = claude-sonnet-4-20250514
 JWT_SECRET = your-secret-jwt-key-here-change-this-in-production
 ```
 
@@ -113,7 +113,7 @@ chmod +x verify-deployment.sh
 railway logs
 
 # Check for these success indicators:
-# ✅ "Claude service initialized with model: claude-3-5-sonnet-20241022"
+# ✅ "Claude service initialized with model: claude-sonnet-4-20250514"
 # ✅ "API Key found: true"
 # ✅ "API Key length: 108" (or similar)
 

@@ -40,7 +40,7 @@ Or manually:
 
 ```
 CLAUDE_API_KEY=your_new_claude_api_key_here
-CLAUDE_MODEL=claude-3-5-sonnet-20241022
+CLAUDE_MODEL=claude-sonnet-4-20250514
 JWT_SECRET=your_jwt_secret_here
 NODE_ENV=production
 ```

@@ -53,7 +53,7 @@ Identify REAL, SPECIFIC opportunities to monitor. Return JSON with:
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 1500,
         temperature: 0.3,
         messages: [{ role: 'user', content: prompt }]
@@ -275,7 +275,7 @@ For each, add specific strategic recommendations for ${organization.name}. Retur
           'anthropic-version': '2023-06-01'
         },
         body: JSON.stringify({
-          model: 'claude-3-haiku-20240307',
+          model: 'claude-sonnet-4-20250514',
           max_tokens: 800,
           temperature: 0.3,
           messages: [{ role: 'user', content: enrichPrompt }]

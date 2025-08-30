@@ -71,7 +71,7 @@ Login → Homepage (AI Assistant) → Projects List → Project (MemoryVault)
 - **Database**: PostgreSQL with pg package
 - **Authentication**: JWT with bcrypt
 - **AI Integration**: @anthropic-ai/sdk
-- **AI Model**: claude-3-5-sonnet-20241022
+- **AI Model**: claude-sonnet-4-20250514
 - **Claude Service**: Singleton instance with sendMessage() and sendConversation()
 - **File Uploads**: Multer
 - **RSS Parser**: rss-parser package

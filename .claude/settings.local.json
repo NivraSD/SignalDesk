@@ -278,7 +278,8 @@
       "Bash(./test-stage-logs.sh:*)",
       "Bash(./test-complete-pipeline.sh:*)",
       "Bash(./test-synthesis-only.sh:*)",
-      "Bash(./test-claude-direct.sh:*)"
+      "Bash(./test-claude-direct.sh:*)",
+      "Bash(if [ -d \"/Users/jonathanliebowitz/Desktop/SignalDesk/$dir\" ])"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-3-sonnet-20240229',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 2000,
         temperature: 0.7,
         system: `You are Niv, an elite AI PR strategist with 20 years of experience. You help with:

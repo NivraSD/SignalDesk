@@ -693,8 +693,8 @@ GET / api / mcp / health; // MCP health check
 ```javascript
 {
   "models": {
-    "fast": "claude-3-haiku-20240307",
-    "smart": "claude-3-5-sonnet-20241022"
+    "fast": "claude-sonnet-4-20250514",
+    "smart": "claude-sonnet-4-20250514"
   },
   "capabilities": [
     "Content generation",
@@ -2374,7 +2374,7 @@ serve(async (req) => {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: "claude-3-haiku-20240307",
+        model: "claude-sonnet-4-20250514",
         max_tokens: 1000,
         messages: messages
       })

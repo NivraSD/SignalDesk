@@ -280,8 +280,8 @@ IntelligenceHubV8 → intelligenceOrchestratorV4 → Fetch all stages
 ## 🧠 Claude AI Integration
 
 ### Configuration
-- Model: `claude-3-haiku-20240307` (fast, cost-effective)
-- Fallback: `claude-3-5-sonnet-20241022` (more capable)
+- Model: `claude-sonnet-4-20250514` (fast, cost-effective)
+- Fallback: `claude-sonnet-4-20250514` (more capable)
 - API Endpoint: `https://api.anthropic.com/v1/messages`
 - Temperature: 0.3 (focused, consistent outputs)
 - Max Tokens: 3000 per request
@@ -296,7 +296,7 @@ IntelligenceHubV8 → intelligenceOrchestratorV4 → Fetch all stages
 ### Example Claude Request Structure
 ```javascript
 {
-  model: 'claude-3-haiku-20240307',
+  model: 'claude-sonnet-4-20250514',
   max_tokens: 3000,
   temperature: 0.3,
   messages: [{

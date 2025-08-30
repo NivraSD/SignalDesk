@@ -29,7 +29,7 @@ Your Claude API key was cancelled because it was exposed in the public GitHub re
 4. Add these variables:
    ```
    CLAUDE_API_KEY=your_new_claude_api_key
-   CLAUDE_MODEL=claude-3-5-sonnet-20241022
+   CLAUDE_MODEL=claude-sonnet-4-20250514
    JWT_SECRET=your_jwt_secret
    NODE_ENV=production
    ```
@@ -95,7 +95,7 @@ jobs:
 For local development, create `backend/.env.local`:
 ```env
 CLAUDE_API_KEY=your_dev_api_key
-CLAUDE_MODEL=claude-3-5-sonnet-20241022
+CLAUDE_MODEL=claude-sonnet-4-20250514
 JWT_SECRET=local-dev-secret
 NODE_ENV=development
 ```

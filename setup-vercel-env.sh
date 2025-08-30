@@ -72,7 +72,7 @@ $ANTHROPIC_API_KEY
 EOF
     
     vercel env add REACT_APP_CLAUDE_MODEL production preview << EOF
-claude-3-opus-20240229
+claude-sonnet-4-20250514
 EOF
     
     echo "✅ Claude API configured"

@@ -100,7 +100,7 @@ class IntelligenceService {
     // Generate clarification questions using AI
     try {
       const response = await anthropic.messages.create({
-        model: 'claude-3-haiku-20240307',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 500,
         messages: [{
           role: 'user',

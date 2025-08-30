@@ -195,7 +195,7 @@ Create a compelling email pitch that:
 5. Includes a clear call to action\`;
       
       const message = await anthropic.messages.create({
-        model: 'claude-3-haiku-20240307',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
         temperature: 0.7,
         system: systemPrompt,

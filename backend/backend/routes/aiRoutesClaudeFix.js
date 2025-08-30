@@ -113,7 +113,7 @@ Begin the actual ${state.contentType} content below:`;
 
       try {
         const completion = await anthropic.messages.create({
-          model: 'claude-3-5-sonnet-20241022', // Better model for content generation
+          model: 'claude-sonnet-4-20250514', // Better model for content generation
           max_tokens: 2000,
           temperature: 0.7,
           messages: [{ role: 'user', content: prompt }]
@@ -155,7 +155,7 @@ Give a brief response (if you have enough info, say "I'll generate that now"):`;
 
       try {
         const completion = await anthropic.messages.create({
-          model: 'claude-3-5-sonnet-20241022', // Better model for conversation
+          model: 'claude-sonnet-4-20250514', // Better model for conversation
           max_tokens: 300, // Good length for conversation
           temperature: 0.7,
           messages: [{ role: 'user', content: prompt }]

@@ -103,7 +103,7 @@ async function callClaude(prompt: string, systemPrompt: string): Promise<string>
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 4000,
         temperature: 0.3, // Lower temperature for more factual analysis
         system: systemPrompt,

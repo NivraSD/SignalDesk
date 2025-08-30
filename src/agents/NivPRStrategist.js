@@ -124,7 +124,7 @@ class NivPRStrategist {
    */
   async analyzeIntent(message, context) {
     const analysis = await this.anthropic.messages.create({
-      model: 'claude-3-opus-20240229',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 500,
       messages: [{
         role: 'user',
@@ -176,7 +176,7 @@ Remember to:
 - Anticipate potential challenges`;
 
     const response = await this.anthropic.messages.create({
-      model: 'claude-3-opus-20240229',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 1500,
       messages: [
         { role: 'user', content: prompt },
@@ -210,7 +210,7 @@ Provide media strategy that includes:
 Be specific about journalist preferences and pet peeves.`;
 
     const response = await this.anthropic.messages.create({
-      model: 'claude-3-opus-20240229',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 1500,
       messages: [{ role: 'user', content: prompt }]
     });
@@ -242,7 +242,7 @@ Apply crisis management best practices:
 - Message consistency`;
 
     const response = await this.anthropic.messages.create({
-      model: 'claude-3-opus-20240229',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 2000,
       messages: [{ role: 'user', content: prompt }]
     });
@@ -275,7 +275,7 @@ Think strategically about:
 - Measurement and optimization`;
 
     const response = await this.anthropic.messages.create({
-      model: 'claude-3-opus-20240229',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 2000,
       messages: [{ role: 'user', content: prompt }]
     });
@@ -306,7 +306,7 @@ Remember:
 - Make it easy for journalists`;
 
     const response = await this.anthropic.messages.create({
-      model: 'claude-3-opus-20240229',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 2000,
       messages: [{ role: 'user', content: prompt }]
     });
@@ -330,7 +330,7 @@ Context: ${JSON.stringify(context)}
 Respond as Niv would - strategic, experienced, and helpful.`;
 
     const response = await this.anthropic.messages.create({
-      model: 'claude-3-opus-20240229',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 1500,
       messages: [{ role: 'user', content: prompt }]
     });

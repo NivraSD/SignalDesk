@@ -21,7 +21,7 @@ Seven specialized intelligence gathering functions deployed with `--no-verify-jw
 - **monitor-intelligence**: Continuous monitoring and alerting
 
 ### 2. Claude AI Synthesis Layer
-- **Model**: `claude-3-haiku-20240307` (for fast responses)
+- **Model**: `claude-sonnet-4-20250514` (for fast responses)
 - **Edge Functions**: 
   - `claude-intelligence-synthesizer-v2`: Persona-based synthesis
   - `ai-industry-expansion`: Industry detection and enrichment
@@ -44,7 +44,7 @@ Seven specialized intelligence gathering functions deployed with `--no-verify-jw
 ```javascript
 // Standardized Claude API configuration
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const model = 'claude-3-haiku-20240307'; // Fast, accurate responses
+const model = 'claude-sonnet-4-20250514'; // Fast, accurate responses
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; // Valid production key
 ```
 

@@ -1127,7 +1127,7 @@ Supabase:
 
 Claude API:
   Endpoint: https://api.anthropic.com/v1/messages
-  Model: claude-3-opus-20240229
+  Model: claude-sonnet-4-20250514
 
 Google Cloud AI:
   Endpoint: https://us-central1-aiplatform.googleapis.com

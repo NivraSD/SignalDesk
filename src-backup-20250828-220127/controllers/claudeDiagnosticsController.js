@@ -14,7 +14,7 @@ const claudeDiagnosticsController = {
         success: true,
         message: 'Claude API is connected',
         response: response,
-        model: process.env.CLAUDE_MODEL || 'claude-3-5-sonnet-20241022',
+        model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-20250514',
         timestamp: new Date().toISOString()
       });
     } catch (error) {
@@ -25,7 +25,7 @@ const claudeDiagnosticsController = {
         error: error.message,
         details: {
           hasApiKey: !!process.env.CLAUDE_API_KEY || !!process.env.ANTHROPIC_API_KEY,
-          model: process.env.CLAUDE_MODEL || 'claude-3-5-sonnet-20241022'
+          model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-20250514'
         }
       });
     }
@@ -36,7 +36,7 @@ const claudeDiagnosticsController = {
     const results = {
       timestamp: new Date().toISOString(),
       apiKeyConfigured: !!process.env.CLAUDE_API_KEY || !!process.env.ANTHROPIC_API_KEY,
-      model: process.env.CLAUDE_MODEL || 'claude-3-5-sonnet-20241022',
+      model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-20250514',
       features: {}
     };
 
@@ -201,7 +201,7 @@ const claudeDiagnosticsController = {
         error: error.message,
         troubleshooting: {
           checkApiKey: 'Ensure CLAUDE_API_KEY or ANTHROPIC_API_KEY is set in .env',
-          checkModel: 'Verify CLAUDE_MODEL is set correctly (default: claude-3-5-sonnet-20241022)',
+          checkModel: 'Verify CLAUDE_MODEL is set correctly (default: claude-sonnet-4-20250514)',
           checkNetwork: 'Ensure server can reach api.anthropic.com',
           checkLogs: 'Review server logs for detailed error messages'
         }
@@ -213,7 +213,7 @@ const claudeDiagnosticsController = {
   getConfig: async (req, res) => {
     res.json({
       configured: !!process.env.CLAUDE_API_KEY || !!process.env.ANTHROPIC_API_KEY,
-      model: process.env.CLAUDE_MODEL || 'claude-3-5-sonnet-20241022',
+      model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-20250514',
       keySource: process.env.CLAUDE_API_KEY ? 'CLAUDE_API_KEY' : 
                   process.env.ANTHROPIC_API_KEY ? 'ANTHROPIC_API_KEY' : 'none',
       keyLength: (process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY || '').length,

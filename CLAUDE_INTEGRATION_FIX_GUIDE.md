@@ -90,7 +90,7 @@ Set ONE of these in Railway dashboard:
 5. The service will auto-redeploy
 
 ### Optional Configuration
-- `CLAUDE_MODEL` - Defaults to "claude-3-5-sonnet-20241022"
+- `CLAUDE_MODEL` - Defaults to "claude-sonnet-4-20250514"
 - `NODE_ENV` - Set to "production" for Railway
 
 ## Deployment Steps

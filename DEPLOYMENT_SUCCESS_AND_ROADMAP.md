@@ -54,7 +54,7 @@ SignalDesk has been successfully migrated from a problematic monolithic Vercel d
 ### **Claude AI Integration**
 - **Status**: ✅ FULLY OPERATIONAL
 - **API Key**: Updated and working
-- **Model**: claude-3-haiku-20240307
+- **Model**: claude-sonnet-4-20250514
 - **Capabilities**: Content generation, strategic analysis, crisis response
 
 ---

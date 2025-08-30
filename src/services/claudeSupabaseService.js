@@ -46,7 +46,7 @@ class ClaudeSupabaseService {
         body: {
           prompt,
           ...options,
-          model: options.model || 'claude-3-haiku-20240307',
+          model: options.model || 'claude-sonnet-4-20250514',
           max_tokens: options.max_tokens || 1000
         }
       });
@@ -103,7 +103,7 @@ Provide analysis in JSON format with:
 
     try {
       const response = await this.callClaude(prompt, {
-        model: 'claude-3-haiku-20240307',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 500
       });
 
@@ -157,7 +157,7 @@ Provide analysis in JSON format with:
 
     try {
       const response = await this.callClaude(prompt, {
-        model: 'claude-3-sonnet-20240229',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 2000
       });
 
@@ -192,7 +192,7 @@ Return as JSON.`;
 
     try {
       const response = await this.callClaude(prompt, {
-        model: 'claude-3-sonnet-20240229',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 1500
       });
 

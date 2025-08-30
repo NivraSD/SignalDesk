@@ -68,7 +68,7 @@ For announcements: Include messaging framework, distribution strategy, and timel
             'anthropic-version': '2023-06-01',
           },
           body: JSON.stringify({
-            model: 'claude-3-5-sonnet-20241022',  // Fixed model name
+            model: 'claude-sonnet-4-20250514',  // Fixed model name
             max_tokens: 2000,
             temperature: 0.7,
             system: systemPrompt,

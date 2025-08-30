@@ -48,7 +48,7 @@ module.exports = async function handler(req, res) {
     
     // Call Claude API
     const message = await anthropic.messages.create({
-      model: 'claude-3-haiku-20240307', // Using Haiku for faster, cost-effective generation
+      model: 'claude-sonnet-4-20250514', // Using Haiku for faster, cost-effective generation
       max_tokens: 1500,
       temperature: tone === 'bold' ? 0.8 : tone === 'conversational' ? 0.7 : 0.5,
       system: systemPrompt,

@@ -138,7 +138,7 @@ Analyze the actual business model and industry, then provide the detailed JSON s
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 2000,
         temperature: 0.1,
         system: systemPrompt,

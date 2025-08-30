@@ -67,7 +67,7 @@ serve(async (req) => {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-sonnet-20240229',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: maxTokens,
         temperature: temperature,
         messages: messages
@@ -108,7 +108,7 @@ serve(async (req) => {
               input_data: { prompt, context },
               output_data: { response: responseText },
               metadata: {
-                model: 'claude-3-sonnet-20240229',
+                model: 'claude-sonnet-4-20250514',
                 temperature,
                 maxTokens
               }

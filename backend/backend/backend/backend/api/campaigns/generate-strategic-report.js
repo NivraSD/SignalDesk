@@ -76,7 +76,7 @@ Create a comprehensive report including:
 Format: ${format === 'detailed' ? 'Provide detailed analysis for each section' : 'Provide concise bullet points'}`;
       
       const message = await anthropic.messages.create({
-        model: 'claude-3-haiku-20240307',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 3000,
         temperature: 0.4,
         system: systemPrompt,

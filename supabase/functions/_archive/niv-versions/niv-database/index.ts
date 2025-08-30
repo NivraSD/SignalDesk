@@ -32,7 +32,7 @@ async function callClaude(messages: ChatMessage[], systemPrompt: string): Promis
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-3-sonnet-20240229',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 4000,
       temperature: 0.7,
       system: systemPrompt,

@@ -394,7 +394,7 @@ ${memoryVaultContext.summary ? `Memory Vault context: ${memoryVaultContext.summa
     ];
 
     const response = await this.anthropic.messages.create({
-      model: 'claude-3-opus-20240229',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 4000,
       temperature: this.personality.adaptability.creativityLevel,
       messages,

@@ -14,7 +14,7 @@ Add these in Vercel Dashboard → Settings → Environment Variables:
 | Variable | Value | Environment |
 |----------|-------|-------------|
 | `REACT_APP_CLAUDE_API_KEY` | Your Anthropic API key | Production only |
-| `REACT_APP_CLAUDE_MODEL` | `claude-3-opus-20240229` | Production, Preview |
+| `REACT_APP_CLAUDE_MODEL` | `claude-sonnet-4-20250514` | Production, Preview |
 
 ### Build Configuration
 | Variable | Value | Environment |

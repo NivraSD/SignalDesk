@@ -66,7 +66,7 @@ Create a working artifact system for Niv (AI PR strategist) where:
 ### Key Technologies
 - Frontend: React
 - Backend: Supabase Edge Functions (Deno)
-- AI: Claude API (claude-3-sonnet-20240229)
+- AI: Claude API (claude-sonnet-4-20250514)
 - Deployment: Vercel + Supabase
 
 ### Environment Variables

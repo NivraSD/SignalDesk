@@ -4739,9 +4739,7 @@ const AISentimentMonitor = () => {
                     }}
                     disabled={!claudeConfig.enabled}
                   >
-                    <option value="claude-3-opus">Claude 3 Opus (Most Capable)</option>
-                    <option value="claude-3-sonnet">Claude 3 Sonnet (Balanced)</option>
-                    <option value="claude-3-haiku">Claude 3 Haiku (Fastest)</option>
+                    <option value="claude-sonnet-4-20250514">Claude 4 Sonnet (Latest)</option>
                   </select>
                 </div>
 

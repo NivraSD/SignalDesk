@@ -163,7 +163,7 @@ Focus on ACTIONABLE opportunities with clear execution paths. Think like a PR op
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 4000,
         temperature: 0.4, // Slightly higher for creative opportunity detection
         messages: [{
@@ -192,7 +192,7 @@ Focus on ACTIONABLE opportunities with clear execution paths. Think like a PR op
         metadata: {
           enhanced_by: 'claude_opportunity_hunter',
           enhancement_timestamp: new Date().toISOString(),
-          model: 'claude-3-haiku-20240307'
+          model: 'claude-sonnet-4-20250514'
         }
       };
     }

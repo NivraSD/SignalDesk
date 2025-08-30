@@ -65,7 +65,7 @@ Response:
       "client": "Demo Client",
       "createdAt": "2024-01-11T10:00:00.000Z",
       "settings": {
-        "aiModel": "claude-3-5-sonnet-20241022",
+        "aiModel": "claude-sonnet-4-20250514",
         "tone": "professional"
       }
     }
@@ -95,7 +95,7 @@ Response:
     "client": "TechCorp",
     "createdAt": "2024-01-11T10:00:00.000Z",
     "settings": {
-      "aiModel": "claude-3-5-sonnet-20241022",
+      "aiModel": "claude-sonnet-4-20250514",
       "tone": "professional"
     }
   }
