@@ -396,38 +396,38 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     if (finalResults.synthesis) {
       const synthesis = finalResults.synthesis;
       
-      console.log('🔧 COMPREHENSIVE FIX: Using synthesis as single source of truth');
-      console.log('📦 SYNTHESIS CONTENT:', {
-        topLevelKeys: Object.keys(synthesis),
-        hasTabs: !!synthesis.tabs,
-        tabKeys: synthesis.tabs ? Object.keys(synthesis.tabs) : 'no tabs',
-        hasOpportunities: !!synthesis.opportunities,
-        opportunityCount: synthesis.opportunities?.length || 0,
-        hasData: !!synthesis.data,
-        dataKeys: synthesis.data ? Object.keys(synthesis.data).slice(0, 10) : 'no data'
-      });
+      console.log('🔧 COMPREHENSIVE FIX v3.0: DEEP SYNTHESIS INSPECTION', new Date().toISOString());
+      console.log('📦 SYNTHESIS RAW STRUCTURE:', synthesis);
+      console.log('📦 SYNTHESIS TOP LEVEL KEYS:', Object.keys(synthesis));
+      console.log('📦 SYNTHESIS.TABS EXISTS?', !!synthesis.tabs);
+      console.log('📦 SYNTHESIS.DATA EXISTS?', !!synthesis.data);
+      console.log('📦 SYNTHESIS.OPPORTUNITIES EXISTS?', !!synthesis.opportunities);
+      
+      // Check if tabs is nested deeper
+      if (synthesis.data && synthesis.data.tabs) {
+        console.log('🔍 FOUND TABS IN synthesis.data.tabs!');
+      }
+      if (synthesis.analysis && synthesis.analysis.tabs) {
+        console.log('🔍 FOUND TABS IN synthesis.analysis.tabs!');
+      }
       
       // Deep debug of tabs content
       if (synthesis.tabs) {
         console.log('📊 TABS CONTENT DEEP DIVE:');
-        console.log('  Executive tab:', synthesis.tabs.executive ? {
-          headline: synthesis.tabs.executive.headline,
-          hasActions: !!synthesis.tabs.executive.immediate_actions,
-          actionCount: synthesis.tabs.executive.immediate_actions?.length || 0,
-          statistics: synthesis.tabs.executive.statistics
-        } : 'NO EXECUTIVE TAB');
         
-        console.log('  Competitive tab:', synthesis.tabs.competitive ? {
-          hasActions: !!synthesis.tabs.competitive.competitor_actions,
-          actionCount: synthesis.tabs.competitive.competitor_actions?.length || 0,
-          firstAction: synthesis.tabs.competitive.competitor_actions?.[0]
-        } : 'NO COMPETITIVE TAB');
+        // Force log the actual values
+        console.log('  Executive tab headline:', synthesis.tabs.executive?.headline || 'NO HEADLINE');
+        console.log('  Executive tab overview:', synthesis.tabs.executive?.overview || 'NO OVERVIEW');
+        console.log('  Executive immediate actions:', synthesis.tabs.executive?.immediate_actions || 'NO ACTIONS');
+        console.log('  Executive statistics:', JSON.stringify(synthesis.tabs.executive?.statistics) || 'NO STATS');
         
-        console.log('  Market tab:', synthesis.tabs.market ? {
-          hasTrends: !!synthesis.tabs.market.market_trends,
-          trendCount: synthesis.tabs.market.market_trends?.length || 0,
-          position: synthesis.tabs.market.market_position
-        } : 'NO MARKET TAB');
+        console.log('  Competitive actions:', synthesis.tabs.competitive?.competitor_actions?.length || 0, 'actions');
+        if (synthesis.tabs.competitive?.competitor_actions?.[0]) {
+          console.log('  First competitor action:', JSON.stringify(synthesis.tabs.competitive.competitor_actions[0]));
+        }
+        
+        console.log('  Market trends count:', synthesis.tabs.market?.market_trends?.length || 0);
+        console.log('  Market position:', synthesis.tabs.market?.market_position || 'NO POSITION');
       } else {
         console.log('❌ NO TABS IN SYNTHESIS RESPONSE!');
       }

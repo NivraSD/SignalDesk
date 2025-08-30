@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SignalDesk Test - No Cache</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <script>
+        // Force clear cache and redirect
+        if (window.location.href.indexOf('nocache') === -1) {
+            window.location.href = 'http://localhost:3000?nocache=' + Date.now();
+        } else {
+            // Clear all caches
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => caches.delete(name));
+                });
+            }
+            
+            // Clear localStorage
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Redirect to app with timestamp
+            setTimeout(() => {
+                window.location.href = 'http://localhost:3000?t=' + Date.now();
+            }, 1000);
+        }
+    </script>
+</head>
+<body>
+    <h1>Clearing cache and redirecting...</h1>
+</body>
+</html>
