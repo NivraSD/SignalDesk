@@ -193,26 +193,20 @@ class IntelligenceOrchestratorV4 {
     
     // STEP 2: Collection - Gather signals using discovered entities
     console.log('📡 Step 2: Collecting intelligence signals...');
-    const collectionResponse = await fetchWithTimeout(`${this.supabaseUrl}/functions/v1/intelligence-collection-v1`, {
+    // Use intelligence-gathering function which is active and deployed
+    const collectionResponse = await fetchWithTimeout(`${this.supabaseUrl}/functions/v1/intelligence-gathering`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${this.supabaseKey}`
       },
       body: JSON.stringify({ 
-        organization,
-        request_id: requestId, // Pass request_id for Claude analysis storage
-        entities: {
-          competitors: config.competitors || [],
-          regulators: config.regulators || [],
-          activists: config.activists || [],
-          media_outlets: config.media_outlets || [],
-          investors: config.investors || [],
-          analysts: config.analysts || []
-        },
-        previousResults: previousResults // Include previous stage results
+        organization: {
+          ...organization,
+          industry: organization.industry || 'technology'
+        }
       })
-    });
+    }, 60000); // 60 second timeout - matches Supabase limit
 
     if (!collectionResponse.ok) {
       const errorText = await collectionResponse.text();
@@ -223,18 +217,39 @@ class IntelligenceOrchestratorV4 {
     console.log('📥 Collection response received, parsing...');
     const collectionData = await collectionResponse.json();
     console.log('✅ Collection data parsed:', {
-      hasIntelligence: !!collectionData.intelligence,
-      signalCount: collectionData.intelligence?.raw_signals?.length || 0
+      hasRawIntelligence: !!collectionData.raw_intelligence,
+      sourcesCount: Object.keys(collectionData.raw_intelligence || {}).length,
+      success: collectionData.success
     });
+    
+    // Transform intelligence-gathering response to match expected format
+    const rawSignals = [];
+    if (collectionData.raw_intelligence) {
+      Object.entries(collectionData.raw_intelligence).forEach(([source, data]) => {
+        if (data && data.data && Array.isArray(data.data.articles)) {
+          data.data.articles.forEach(article => {
+            rawSignals.push({
+              type: source.replace('-intelligence', ''),
+              title: article.title,
+              content: article.description || article.content,
+              source: article.source || source,
+              url: article.url || article.link,
+              published: article.published || article.date,
+              raw: article
+            });
+          });
+        }
+      });
+    }
     
     // Transform into enriched organization profile with guaranteed name
     const enrichedOrganization = {
       ...safeOrganization,  // Use safeOrganization to ensure name is present
-      signals_collected: collectionData.intelligence?.raw_signals?.length || 0,
-      data_sources: collectionData.intelligence?.metadata?.sources || [],
+      signals_collected: rawSignals.length,
+      data_sources: Object.keys(collectionData.raw_intelligence || {}),
       extraction_timestamp: new Date().toISOString(),
       stakeholder_mapping: {
-        competitors: config.competitors || [],
+        competitors: collectionData.discovered_context?.competitors || config.competitors || [],
         regulators: config.regulators || [],
         media_outlets: config.media_outlets || [],
         investors: config.investors || [],
@@ -245,9 +260,16 @@ class IntelligenceOrchestratorV4 {
     // SAVE RESULTS TO SUPABASE - SINGLE SOURCE OF TRUTH
     const stageData = {
       organization: enrichedOrganization,
-      intelligence: collectionData.intelligence,
+      intelligence: {
+        raw_signals: rawSignals,
+        metadata: {
+          sources: Object.keys(collectionData.raw_intelligence || {}),
+          collected_at: new Date().toISOString(),
+          organization: enrichedOrganization.name
+        }
+      },
       analysis: {
-        extraction_summary: `Extracted ${collectionData.intelligence?.raw_signals?.length || 0} signals from ${collectionData.intelligence?.metadata?.sources?.length || 0} sources`,
+        extraction_summary: `Extracted ${rawSignals.length} signals from ${Object.keys(collectionData.raw_intelligence || {}).length} sources`,
         stakeholder_count: Object.values(enrichedOrganization.stakeholder_mapping).flat().length
       }
     };
@@ -280,9 +302,9 @@ class IntelligenceOrchestratorV4 {
       success: true,
       request_id: requestId, // Pass request_id forward to next stages
       organization: enrichedOrganization,
-      intelligence: collectionData.intelligence,
+      intelligence: stageData.intelligence,
       analysis: stageData.analysis,
-      tabs: this.generateExtractionTabs(enrichedOrganization, collectionData),
+      tabs: this.generateExtractionTabs(enrichedOrganization, stageData),
       data: stageData
     };
   }
@@ -1357,21 +1379,16 @@ class IntelligenceOrchestratorV4 {
       // PHASE 1: FAST COLLECTION (30s limit)
       console.log('📡 Phase 1: Fast Intelligence Collection');
       
-      const collectionResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-collection-v1`, {
+      const collectionResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-gathering`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${this.supabaseKey}`
         },
         body: JSON.stringify({ 
-          organization,
-          entities: {
-            competitors: config.competitors || organization.competitors || [],
-            regulators: config.regulators || organization.regulators || [],
-            activists: config.activists || organization.activists || [],
-            media_outlets: config.media_outlets || organization.media_outlets || [],
-            investors: config.investors || organization.investors || [],
-            analysts: config.analysts || organization.analysts || []
+          organization: {
+            ...organization,
+            industry: organization.industry || 'technology'
           }
         })
       });
@@ -1381,17 +1398,46 @@ class IntelligenceOrchestratorV4 {
       }
 
       const collectionData = await collectionResponse.json();
+      
+      // Transform intelligence-gathering response format
+      const transformedIntelligence = {
+        raw_signals: [],
+        metadata: {
+          sources: Object.keys(collectionData.raw_intelligence || {}),
+          collected_at: new Date().toISOString()
+        }
+      };
+      
+      // Extract signals from intelligence-gathering format
+      if (collectionData.raw_intelligence) {
+        Object.entries(collectionData.raw_intelligence).forEach(([source, data]) => {
+          if (data && data.data && Array.isArray(data.data.articles)) {
+            data.data.articles.forEach(article => {
+              transformedIntelligence.raw_signals.push({
+                type: source.replace('-intelligence', ''),
+                title: article.title,
+                content: article.description || article.content,
+                source: article.source || source,
+                url: article.url || article.link,
+                published: article.published || article.date,
+                raw: article
+              });
+            });
+          }
+        });
+      }
+      
       console.log('✅ Collection complete:', {
-        signals: collectionData.intelligence?.raw_signals?.length || 0,
-        sources: collectionData.intelligence?.metadata?.sources || []
+        signals: transformedIntelligence.raw_signals.length,
+        sources: transformedIntelligence.metadata.sources
       });
 
       // PHASE 2: DEEP ANALYSIS - Direct to Edge Function synthesis
       console.log('🧠 Phase 2: Deep Analysis via Edge Function');
-      const analysisResult = await this.callEdgeSynthesis(collectionData.intelligence, organization);
+      const analysisResult = await this.callEdgeSynthesis(transformedIntelligence, organization);
 
       // PHASE 3: FORMAT FOR DISPLAY
-      const formattedResult = this.formatForDisplay(analysisResult, collectionData);
+      const formattedResult = this.formatForDisplay(analysisResult, { intelligence: transformedIntelligence });
       
       return {
         success: true,
