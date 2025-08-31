@@ -280,7 +280,16 @@
       "Bash(./test-synthesis-only.sh:*)",
       "Bash(./test-claude-direct.sh:*)",
       "Bash(if [ -d \"/Users/jonathanliebowitz/Desktop/SignalDesk/$dir\" ])",
-      "Bash(./test-synthesis-debug.sh:*)"
+      "Bash(./test-synthesis-debug.sh:*)",
+      "Bash(./test-synthesis-full-data.sh:*)",
+      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/test-synthesis-full-data.sh:*)",
+      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/FIX_CLAUDE_ANALYSIS_PASSTHROUGH.sh)",
+      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/test-claude-storage.sh)",
+      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/SMART_CLAUDE_SYNTHESIS_UPDATE.sh:*)",
+      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/test-claude-analysis-passthrough.sh)",
+      "WebFetch(domain:signaldesk-or4xxizzt-nivra-sd.vercel.app)",
+      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/test-org-discovery.sh)",
+      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/test-latest-profile.sh:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

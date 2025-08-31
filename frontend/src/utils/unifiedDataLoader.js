@@ -18,8 +18,7 @@ export const getUnifiedOrganization = async () => {
           'Authorization': `Bearer ${supabaseDataService.supabaseKey}`
         },
         body: JSON.stringify({
-          action: 'getProfile',
-          limit: 1  // Get most recent profile
+          action: 'getLatestProfile'  // Use the correct action for RailwayV2
         })
       }
     );
@@ -33,6 +32,10 @@ export const getUnifiedOrganization = async () => {
     if (data.success && data.profile) {
       const org = data.profile.organization || data.profile;
       console.log('✅ Loaded organization from edge function:', org);
+      // Store the organization name for future requests
+      if (org?.name) {
+        window.__currentOrganizationName = org.name;
+      }
       return org;
     } else {
       console.warn('⚠️ No organization profile in edge function');
