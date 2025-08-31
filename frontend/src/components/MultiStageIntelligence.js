@@ -696,10 +696,8 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
   const extractOpportunitiesFromAllStages = (results) => {
     const allOpportunities = [];
     
-    console.log('🔍 EXTRACTING OPPORTUNITIES FROM STAGES:', {
-      stageCount: Object.keys(results).length,
-      stages: Object.keys(results)
-    });
+    // REMOVED: No longer extracting opportunities
+    return []; // Always return empty - we don't want opportunities
     
     Object.entries(results).forEach(([stageId, stageResult]) => {
       console.log(`📋 Checking stage '${stageId}' for opportunities:`, {
@@ -851,8 +849,8 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
       });
     }
     
-    // Strategic opportunities
-    const opportunities = extractOpportunitiesFromAllStages(results);
+    // REMOVED: No longer extracting opportunities  
+    const opportunities = []; // Always empty - we focus on Claude analysis only
     if (opportunities.length > 0) {
       recommendations.push({
         priority: 'high',
