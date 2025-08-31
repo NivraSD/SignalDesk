@@ -109,7 +109,7 @@ Focus on actionable intelligence and specific competitive insights.`;
     console.log('📡 Calling Claude API...');
     // Add timeout to prevent hanging
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 50000); // 50 second timeout for Claude 4
     
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',

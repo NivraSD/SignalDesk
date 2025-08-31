@@ -279,7 +279,8 @@
       "Bash(./test-complete-pipeline.sh:*)",
       "Bash(./test-synthesis-only.sh:*)",
       "Bash(./test-claude-direct.sh:*)",
-      "Bash(if [ -d \"/Users/jonathanliebowitz/Desktop/SignalDesk/$dir\" ])"
+      "Bash(if [ -d \"/Users/jonathanliebowitz/Desktop/SignalDesk/$dir\" ])",
+      "Bash(./test-synthesis-debug.sh:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

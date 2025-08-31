@@ -10,8 +10,15 @@ export async function analyzeWithClaudeSynthesis(
   existingAnalysis: any
 ) {
   const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
+  console.log('🔑 Claude API Key check:', {
+    hasKey: !!ANTHROPIC_API_KEY,
+    keyLength: ANTHROPIC_API_KEY?.length || 0,
+    keyPrefix: ANTHROPIC_API_KEY?.substring(0, 10) || 'NO_KEY'
+  });
+  
   if (!ANTHROPIC_API_KEY) {
-    console.log('⚠️ No Claude API key, returning existing analysis');
+    console.error('❌ CRITICAL: No Claude API key found in environment!');
+    console.error('Available env vars:', Object.keys(Deno.env.toObject()));
     return existingAnalysis;
   }
 
@@ -244,7 +251,7 @@ USE THE FULL 8000 TOKENS AVAILABLE. Generate COMPREHENSIVE, ELITE-LEVEL analysis
   try {
     // Add timeout to prevent hanging
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 50000); // 50 second timeout for Claude 4
     
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -347,7 +354,19 @@ USE THE FULL 8000 TOKENS AVAILABLE. Generate COMPREHENSIVE, ELITE-LEVEL analysis
     };
     
   } catch (error) {
-    console.error('Claude analysis error:', error);
+    console.error('❌ CLAUDE ANALYSIS ERROR:', {
+      name: error.name,
+      message: error.message,
+      isAbortError: error.name === 'AbortError',
+      stack: error.stack?.split('\n').slice(0, 3).join('\n')
+    });
+    
+    if (error.name === 'AbortError') {
+      console.error('⏱️ Claude API call timed out after 50 seconds');
+    }
+    
+    // Return null to trigger fallback
+    return null;
   }
 
   return existingAnalysis;

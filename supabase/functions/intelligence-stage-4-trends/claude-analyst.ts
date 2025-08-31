@@ -140,7 +140,7 @@ Focus on actionable trend intelligence and future opportunities from the monitor
   try {
     // Add timeout to prevent hanging
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 50000); // 50 second timeout for Claude 4
     
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
