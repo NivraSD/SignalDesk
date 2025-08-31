@@ -69,9 +69,12 @@ const OrganizationSettings = ({ onClose, onOrganizationChange }) => {
     // Clear current organization to trigger onboarding
     localStorage.removeItem('signaldesk_organization');
     localStorage.removeItem('signaldesk_onboarding');
+    localStorage.removeItem('selectedOrganization');
+    localStorage.removeItem('organizationData');
+    localStorage.removeItem('organizationProfile');
     
-    // Navigate to the onboarding flow
-    navigate('/initialize');
+    // Navigate to the SimpleOrgInit where you can type in a new organization
+    navigate('/onboarding');
   };
 
   const deleteOrganization = (orgId) => {
@@ -91,7 +94,8 @@ const OrganizationSettings = ({ onClose, onOrganizationChange }) => {
         if (updatedOrgs.length > 0) {
           switchOrganization(updatedOrgs[0]);
         } else {
-          navigate('/initialize');
+          // No organizations left, go to onboarding
+          navigate('/onboarding');
         }
       }
     }
