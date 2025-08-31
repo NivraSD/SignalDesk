@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import intelligentDiscoveryService from '../services/intelligentDiscoveryService';
-import { clearAllIntelligenceCache } from '../utils/clearCache';
-import cacheManager from '../utils/cacheManager';
+import { saveOnboardingData } from '../utils/onboardingAdapter';
 import './UnifiedOnboarding.css';
 
 const UnifiedOnboarding = ({ onComplete }) => {
@@ -11,48 +10,14 @@ const UnifiedOnboarding = ({ onComplete }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
   
-  // Handle onboarding initialization
+  // Clear all SignalDesk data when onboarding starts
+  // NO localStorage clearing - edge function is the SINGLE SOURCE OF TRUTH
   useEffect(() => {
-    // ALWAYS perform comprehensive reset when entering onboarding
-    // This prevents data contamination between organizations
-    console.log('🧹 COMPREHENSIVE RESET: Clearing ALL cached data on onboarding entry');
-    
-    // Use centralized cache manager to clear everything
-    const cleared = cacheManager.clearAll();
-    console.log(`  ✅ Cleared ${cleared} localStorage items`);
-    
-    // Clear sessionStorage completely
-    sessionStorage.clear();
-    console.log('  ✅ Cleared all sessionStorage');
-    
-    // Clear discovery service in-memory cache
-    if (intelligentDiscoveryService && intelligentDiscoveryService.cache) {
-      intelligentDiscoveryService.cache.clear();
-      console.log('  ✅ Cleared discovery service in-memory cache');
-    }
-    
-    // 5. Reset to clean default profile
-    const cleanProfile = getDefaultProfile();
-    // Ensure organization ID is reset
-    cleanProfile.organization.id = '';
-    cleanProfile.organization.website = '';
-    setProfile(cleanProfile);
-    console.log('  ✅ Reset profile to clean defaults');
-    
-    // Check if user wants to explicitly start fresh
-    const urlParams = new URLSearchParams(window.location.search);
-    const isNewOrg = urlParams.get('new') === 'true';
-    
-    if (isNewOrg) {
-      console.log('🆕 URL parameter new=true detected - extra confirmation of fresh start');
-    }
-    
-    console.log('✨ Onboarding ready with completely clean slate');
+    console.log('🎉 Starting onboarding - will save to edge function only');
   }, []); // Only run once on mount
   
-  // Helper to get default profile
-  const getDefaultProfile = () => ({
-    // Organization basics (used by all)
+  const [profile, setProfile] = useState({
+    // Organization Basics (used by Intelligence Hub)
     organization: {
       id: '',
       name: '',
@@ -69,9 +34,9 @@ const UnifiedOnboarding = ({ onComplete }) => {
     
     // Brand & Voice (Opportunity Engine)
     brand: {
-      voice: 'professional',
-      risk_tolerance: 'moderate',
-      response_speed: 'considered'
+      voice: 'professional', // professional, conversational, bold, technical
+      risk_tolerance: 'moderate', // conservative, moderate, aggressive
+      response_speed: 'considered' // immediate, considered, strategic
     },
     
     // Key Messages (Opportunity Engine)
@@ -84,7 +49,7 @@ const UnifiedOnboarding = ({ onComplete }) => {
     
     // Media Strategy (Opportunity Engine)
     media: {
-      preferred_tiers: [],
+      preferred_tiers: [], // tier1_business, tier1_tech, trade, regional
       journalist_relationships: [],
       no_comment_topics: [],
       exclusive_partners: []
@@ -93,21 +58,19 @@ const UnifiedOnboarding = ({ onComplete }) => {
     // Spokespeople (Opportunity Engine)
     spokespeople: [],
     
-    // Opportunity Settings (Opportunity Engine)
+    // Opportunity Preferences (Opportunity Engine)
     opportunities: {
       types: {
         competitor_weakness: true,
         narrative_vacuum: true,
         cascade_effect: true,
         crisis_prevention: true,
-        viral_moment: false
+        alliance_opening: false
       },
       minimum_confidence: 70,
       auto_execute_threshold: 95
     }
   });
-  
-  const [profile, setProfile] = useState(() => getDefaultProfile());
 
   const steps = [
     { id: 1, title: 'Organization', icon: '🏢', required: true },
@@ -121,7 +84,6 @@ const UnifiedOnboarding = ({ onComplete }) => {
     if (validateCurrentStep()) {
       // Run AI discovery when leaving step 1
       if (currentStep === 1 && !analysisComplete && profile.organization.name) {
-        console.log('🚀 NEXT BUTTON CLICKED - Starting API call to analyze:', profile.organization.name);
         await analyzeOrganization();
         // Wait a moment for state to update
         await new Promise(resolve => setTimeout(resolve, 500));
@@ -166,15 +128,8 @@ const UnifiedOnboarding = ({ onComplete }) => {
     if (!profile.organization.name.trim()) return;
     
     setIsAnalyzing(true);
-    console.log('🎯 API CALL STARTING NOW for:', profile.organization.name);
-    console.log('📡 Environment:', {
-      supabaseUrl: intelligentDiscoveryService.supabaseUrl,
-      hasKey: !!intelligentDiscoveryService.supabaseKey,
-      keyPreview: intelligentDiscoveryService.supabaseKey?.substring(0, 30) + '...'
-    });
-    
     try {
-      console.log('🔍 Calling intelligentDiscoveryService.discoverCompanyIntelligence()...');
+      console.log('🔍 Analyzing organization with Claude:', profile.organization.name);
       
       const intelligence = await intelligentDiscoveryService.discoverCompanyIntelligence(
         profile.organization.name,
@@ -182,105 +137,28 @@ const UnifiedOnboarding = ({ onComplete }) => {
         profile.organization.description
       );
       
-      console.log('📥 API Response received:', intelligence);
-      
       if (intelligence && intelligence.company) {
-        console.log('✅ Claude analysis complete with data:', intelligence.company);
+        console.log('✅ Claude analysis complete:', intelligence.company);
         
         // Update organization with Claude's analysis
-        console.log('📦 Processing intelligence data:', {
-          hasCompany: !!intelligence.company,
-          hasCompetitors: !!intelligence.competitors,
-          hasStakeholders: !!intelligence.stakeholders,
-          stakeholderKeys: intelligence.stakeholders ? Object.keys(intelligence.stakeholders) : [],
-          mediaInStakeholders: intelligence.stakeholders?.media?.length || 0
-        });
-        
-        const updatedProfile = {
-          ...profile,
+        setProfile(prev => ({
+          ...prev,
           organization: {
-            ...profile.organization,
-            industry: intelligence.company?.industry || profile.organization.industry,
-            description: intelligence.company?.description || profile.organization.description,
-            business_model: intelligence.company?.business_model,
-            market_position: intelligence.company?.market_position,
-            key_products: intelligence.company?.key_products,
-            target_customers: intelligence.company?.target_customers
+            ...prev.organization,
+            industry: intelligence.company.industry || prev.organization.industry,
+            description: intelligence.company.description || prev.organization.description,
+            business_model: intelligence.company.business_model,
+            market_position: intelligence.company.market_position,
+            key_products: intelligence.company.key_products,
+            target_customers: intelligence.company.target_customers
           },
           // Auto-populate competitors from Claude analysis
           competitors: intelligence.competitors || [],
           // Auto-populate monitoring topics
-          monitoring_topics: intelligence.topics || [],
-          // CRITICAL: Save ALL stakeholder data for Intelligence Hub
-          stakeholders: intelligence.stakeholders || {},
-          regulators: intelligence.stakeholders?.regulators || [],
-          activists: intelligence.stakeholders?.activists || [],
-          media_outlets: intelligence.stakeholders?.media || [],
-          investors: intelligence.stakeholders?.investors || [],
-          analysts: intelligence.stakeholders?.analysts || []
-        };
+          monitoring_topics: intelligence.topics || []
+        }));
         
-        setProfile(updatedProfile);
         setAnalysisComplete(true);
-        
-        // CRITICAL: Save the discovered data immediately to localStorage
-        console.log('💾 Saving discovered data to localStorage immediately...');
-        const discoveredProfile = {
-          ...updatedProfile,
-          timestamp: new Date().toISOString(),
-          version: '2.0'
-        };
-        
-        // Save complete profile with all discovered data (use cache manager)
-        cacheManager.saveCompleteProfile(discoveredProfile);
-        // Also save as unified for backward compatibility
-        localStorage.setItem('signaldesk_unified_profile', JSON.stringify(discoveredProfile));
-        console.log('✅ Saved complete profile with stakeholders:', {
-          competitors: discoveredProfile.competitors?.length || 0,
-          regulators: discoveredProfile.regulators?.length || 0,
-          media: discoveredProfile.media_outlets?.length || 0,
-          topics: discoveredProfile.monitoring_topics?.length || 0
-        });
-        
-        // Also save for backward compatibility
-        localStorage.setItem('signaldesk_organization', JSON.stringify(discoveredProfile.organization));
-        localStorage.setItem('signaldesk_onboarding', JSON.stringify({
-          organization: discoveredProfile.organization,
-          competitors: discoveredProfile.competitors,
-          monitoring_topics: discoveredProfile.monitoring_topics,
-          stakeholders: discoveredProfile.stakeholders
-        }));
-        
-        // Save opportunity profile for Opportunity Engine (with defaults since we're early in onboarding)
-        localStorage.setItem('opportunity_profile', JSON.stringify({
-          voice: discoveredProfile.brand?.voice || 'professional',
-          risk_tolerance: discoveredProfile.brand?.risk_tolerance || 'moderate',
-          response_speed: discoveredProfile.brand?.response_speed || 'immediate',
-          core_value_props: discoveredProfile.messaging?.core_value_props || [],
-          proof_points: discoveredProfile.messaging?.proof_points || [],
-          competitive_advantages: discoveredProfile.messaging?.competitive_advantages || [],
-          key_narratives: discoveredProfile.messaging?.key_narratives || [],
-          preferred_tiers: discoveredProfile.media?.preferred_tiers || ['tier1_business', 'tier1_tech'],
-          journalist_relationships: discoveredProfile.media?.journalist_relationships || [],
-          no_comment_topics: discoveredProfile.media?.no_comment_topics || [],
-          exclusive_partners: discoveredProfile.media?.exclusive_partners || [],
-          spokespeople: discoveredProfile.spokespeople || [],
-          opportunity_types: discoveredProfile.opportunities?.types || {
-            competitor_weakness: true,
-            narrative_vacuum: true,
-            cascade_effect: true,
-            crisis_prevention: true,
-            viral_moment: false
-          },
-          minimum_confidence: discoveredProfile.opportunities?.minimum_confidence || 70,
-          auto_execute_threshold: discoveredProfile.opportunities?.auto_execute_threshold || 95,
-          competitors: discoveredProfile.competitors || []
-        }));
-        
-        console.log('🔍 Verification - localStorage now contains:');
-        console.log('- signaldesk_unified_profile:', localStorage.getItem('signaldesk_unified_profile') ? '✅' : '❌');
-        console.log('- signaldesk_organization:', localStorage.getItem('signaldesk_organization') ? '✅' : '❌');
-        console.log('- signaldesk_onboarding:', localStorage.getItem('signaldesk_onboarding') ? '✅' : '❌');
       }
     } catch (error) {
       console.error('❌ Claude analysis failed:', error);
@@ -302,33 +180,73 @@ const UnifiedOnboarding = ({ onComplete }) => {
       version: '2.0'
     };
     
-    // Clear all cached intelligence data before saving new profile
-    clearAllIntelligenceCache();
-    
-    // Save complete profile using cache manager
-    cacheManager.saveCompleteProfile(unifiedProfile);
-    // Also save as unified for backward compatibility
-    localStorage.setItem('signaldesk_unified_profile', JSON.stringify(unifiedProfile));
-    
-    // Also save specific parts for backward compatibility
-    localStorage.setItem('signaldesk_organization', JSON.stringify(profile.organization));
-    localStorage.setItem('opportunity_profile', JSON.stringify({
-      ...profile.brand,
-      ...profile.messaging,
-      ...profile.media,
-      spokespeople: profile.spokespeople,
-      opportunity_types: profile.opportunities.types,
-      minimum_confidence: profile.opportunities.minimum_confidence,
-      auto_execute_threshold: profile.opportunities.auto_execute_threshold,
-      competitors: profile.competitors
-    }));
-    
-    // Keep old onboarding for backward compatibility but with new structure
-    localStorage.setItem('signaldesk_onboarding', JSON.stringify({
-      organization: profile.organization,
-      competitors: profile.competitors,
-      monitoring_topics: profile.monitoring_topics
-    }));
+    // CRITICAL: Save DIRECTLY to edge function - SINGLE SOURCE OF TRUTH
+    // NO localStorage - edge function persistence ONLY
+    try {
+      // Import supabase service for edge function calls
+      const supabaseDataService = await import('../services/supabaseDataService').then(m => m.default);
+      
+      // Save profile directly to intelligence-persistence edge function
+      const response = await fetch(
+        `${supabaseDataService.supabaseUrl}/functions/v1/intelligence-persistence`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseDataService.supabaseKey}`
+          },
+          body: JSON.stringify({
+            action: 'saveProfile',
+            organization_name: profile.organization.name,
+            profile: unifiedProfile
+          })
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error(`Failed to save to edge function: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      console.log('✅ Profile saved to edge function (single source of truth):', result);
+      
+      // Also save opportunity profile to edge function
+      const opportunityProfile = {
+        ...profile.brand,
+        ...profile.messaging,
+        ...profile.media,
+        spokespeople: profile.spokespeople,
+        opportunity_types: profile.opportunities.types,
+        minimum_confidence: profile.opportunities.minimum_confidence,
+        auto_execute_threshold: profile.opportunities.auto_execute_threshold,
+        competitors: profile.competitors
+      };
+      
+      // Save opportunity profile to edge function
+      await fetch(
+        `${supabaseDataService.supabaseUrl}/functions/v1/intelligence-persistence`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseDataService.supabaseKey}`
+          },
+          body: JSON.stringify({
+            action: 'saveStageData',
+            organization_name: profile.organization.name,
+            stage: 'opportunity_profile',
+            data: opportunityProfile
+          })
+        }
+      );
+      
+      console.log('✅ All data saved to edge functions - NO localStorage used!');
+      
+    } catch (error) {
+      console.error('❌ Error saving to edge function:', error);
+      // CRITICAL: Do NOT fall back to localStorage - edge function is the ONLY source
+      throw error; // Fail if edge function save fails
+    }
     
     // Handle completion
     if (onComplete) {
@@ -374,32 +292,6 @@ const UnifiedOnboarding = ({ onComplete }) => {
           })}
           className="form-input"
         />
-        
-        {/* Debug: Manual API trigger button */}
-        {profile.organization.name && !analysisComplete && (
-          <button 
-            type="button"
-            onClick={analyzeOrganization}
-            disabled={isAnalyzing}
-            style={{ 
-              marginTop: '10px',
-              background: isAnalyzing ? '#666' : '#00ff00',
-              color: '#000',
-              padding: '8px 16px',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: isAnalyzing ? 'wait' : 'pointer'
-            }}
-          >
-            {isAnalyzing ? '🔄 Analyzing...' : '🚀 Analyze Now (Debug)'}
-          </button>
-        )}
-        
-        {analysisComplete && (
-          <div style={{ marginTop: '10px', color: '#00ff00' }}>
-            ✅ Analysis complete! Found {profile.competitors?.length || 0} competitors
-          </div>
-        )}
       </div>
 
 
@@ -810,24 +702,9 @@ const UnifiedOnboarding = ({ onComplete }) => {
     </div>
   );
 
-  // Check if profile already exists
+  // NO localStorage - edge function is SINGLE SOURCE OF TRUTH
   useEffect(() => {
-    const existingProfile = localStorage.getItem('signaldesk_unified_profile');
-    if (existingProfile) {
-      const parsed = JSON.parse(existingProfile);
-      setProfile(parsed);
-    } else {
-      // Check for legacy onboarding data
-      const legacyOnboarding = localStorage.getItem('signaldesk_onboarding');
-      if (legacyOnboarding) {
-        const legacy = JSON.parse(legacyOnboarding);
-        setProfile(prev => ({
-          ...prev,
-          organization: legacy.organization || prev.organization,
-          competitors: legacy.competitors || prev.competitors
-        }));
-      }
-    }
+    console.log('\ud83c\udf86 Onboarding will save to edge function only');
   }, []);
 
   return (

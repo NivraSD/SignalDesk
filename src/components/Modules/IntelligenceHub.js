@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './IntelligenceHub.css';
-import IntelligenceOrchestratorV3 from '../../services/intelligenceOrchestratorV3';
+import claudeIntelligenceServiceV2 from '../../services/claudeIntelligenceServiceV2';
 import { supabase } from '../../config/supabase';
 
 const IntelligenceHub = ({ organizationId }) => {
@@ -17,24 +17,17 @@ const IntelligenceHub = ({ organizationId }) => {
     setError(null);
     
     try {
-      // Always get fresh profile from localStorage (no caching)
+      // Try to get unified profile first, fallback to onboarding
       let config = {};
       const unifiedProfile = localStorage.getItem('signaldesk_unified_profile');
       
       if (unifiedProfile) {
         const profile = JSON.parse(unifiedProfile);
-        // Extract ALL stakeholder data for Intelligence Hub
+        // Extract the parts that Intelligence Hub needs
         config = {
           organization: profile.organization,
           competitors: profile.competitors,
-          monitoring_topics: profile.monitoring_topics || [],
-          // Include ALL stakeholder types for comprehensive monitoring
-          stakeholders: profile.stakeholders || {},
-          regulators: profile.regulators || [],
-          activists: profile.activists || [],
-          media_outlets: profile.media_outlets || [],
-          investors: profile.investors || [],
-          analysts: profile.analysts || []
+          monitoring_topics: profile.monitoring_topics || []
         };
       } else {
         // Fallback to old onboarding data
@@ -43,22 +36,13 @@ const IntelligenceHub = ({ organizationId }) => {
       
       // First try the real-time Firecrawl edge function
       console.log('🔥 Attempting real-time intelligence with Firecrawl...');
-      console.log('📊 Config being sent:', { organization: config.organization, timeframe });
-      
-      // Add timestamp to force fresh results
-      const requestTimestamp = Date.now();
-      
       try {
         const { data: realtimeData, error: realtimeError } = await supabase.functions.invoke('intelligence-hub-realtime', {
           body: {
             organization: config.organization || { name: 'Default Org', industry: 'technology' },
-            timeframe,
-            timestamp: requestTimestamp,
-            forceRefresh: true
+            timeframe
           }
         });
-        
-        console.log('🔍 Edge Function Response:', { data: realtimeData, error: realtimeError });
         
         if (!realtimeError && realtimeData && realtimeData.success) {
           console.log('✅ Real-time intelligence from Firecrawl:', realtimeData);
@@ -81,14 +65,12 @@ const IntelligenceHub = ({ organizationId }) => {
           return;
         }
       } catch (realtimeErr) {
-        console.warn('⚠️ Real-time intelligence not available, using V3 orchestrator:', realtimeErr);
+        console.warn('⚠️ Real-time intelligence not available, falling back to Claude service:', realtimeErr);
       }
       
-      // Use Intelligence Orchestrator V3 for fresh real-time data
-      console.log('🚀 Using Intelligence Orchestrator V3 for fresh data...');
-      const orchestrator = new IntelligenceOrchestratorV3();
-      // Pass FULL config with all stakeholders, not just organization
-      const intelligence = await orchestrator.orchestrate(config);
+      // Fallback to Claude Intelligence Service V2
+      console.log('🔄 Falling back to Claude intelligence service...');
+      const intelligence = await claudeIntelligenceServiceV2.gatherAndAnalyze(config, timeframe, { forceRefresh: true });
       
       console.log('📊 Raw intelligence received:', intelligence);
       
@@ -123,51 +105,23 @@ const IntelligenceHub = ({ organizationId }) => {
   // Transform functions to convert Claude's analysis to our UI format
   const transformCompetitorData = (intelligence) => {
     const competitorAnalysis = intelligence.competitor || {};
-    
-    // Generate richer competitor movements if not enough data
-    const movements = competitorAnalysis.key_movements?.map(movement => ({
-      company: movement.competitor,
-      type: 'strategic',
-      title: movement.action,
-      description: movement.impact_on_goals,
-      impact: movement.threat_level,
-      threat: movement.threat_level,
-      opportunity: movement.opportunity,
-      timestamp: 'Recent'
-    })) || [];
-    
-    // Add default movements if empty
-    if (movements.length === 0) {
-      movements.push({
-        company: 'Industry Leader',
-        type: 'strategic',
-        title: 'Expanding AI capabilities',
-        description: 'Major investment in AI infrastructure and talent acquisition',
-        impact: 'high',
-        threat: 'medium',
-        opportunity: 'Partner for complementary services',
-        timestamp: '2 days ago'
-      });
-      movements.push({
-        company: 'Emerging Competitor',
-        type: 'product',
-        title: 'New platform launch',
-        description: 'Launching competitive solution targeting SMB market',
-        impact: 'medium',
-        threat: 'low',
-        opportunity: 'Differentiate with enterprise features',
-        timestamp: '1 week ago'
-      });
-    }
-    
     return {
-      movements,
-      regulatory: competitorAnalysis.regulatory_changes || [],
-      viralMoments: competitorAnalysis.viral_moments || [],
-      patterns: competitorAnalysis.strategic_patterns || ['Market consolidation trend', 'Shift to AI-first solutions'],
-      recommendations: competitorAnalysis.recommended_actions || ['Monitor pricing strategies', 'Strengthen partnerships'],
-      advantage: competitorAnalysis.competitive_advantage || 'Superior integration capabilities',
-      priority: competitorAnalysis.priority_focus || 'Maintain technical leadership'
+      movements: competitorAnalysis.key_movements?.map(movement => ({
+        company: movement.competitor,
+        type: 'strategic',
+        title: movement.action,
+        description: movement.impact_on_goals,
+        impact: movement.threat_level,
+        threat: movement.threat_level,
+        opportunity: movement.opportunity,
+        timestamp: 'Recent'
+      })) || [],
+      regulatory: [],
+      viralMoments: [],
+      patterns: competitorAnalysis.strategic_patterns || [],
+      recommendations: competitorAnalysis.recommended_actions || [],
+      advantage: competitorAnalysis.competitive_advantage,
+      priority: competitorAnalysis.priority_focus
     };
   };
 

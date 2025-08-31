@@ -8,8 +8,6 @@ const OpportunityModulePR = ({ organizationId, sharedIntelligence, onIntelligenc
   const [loading, setLoading] = useState(true);
   const [selectedOpportunity, setSelectedOpportunity] = useState(null);
 
-  console.log('🎯 OpportunityModulePR component mounted/updated');
-  
   useEffect(() => {
     const orgData = getUnifiedOrganization();
     console.log('🔍 OpportunityModulePR - Organization data:', orgData);
@@ -18,31 +16,8 @@ const OpportunityModulePR = ({ organizationId, sharedIntelligence, onIntelligenc
     // Always show loading initially
     setLoading(true);
     
-    // Check for opportunities directly from synthesis
-    if (sharedIntelligence && sharedIntelligence.opportunities && sharedIntelligence.opportunities.length > 0) {
-      console.log('🎯 Using opportunities from synthesis:', sharedIntelligence.opportunities.length);
-      // Transform opportunities to ensure they have the right structure
-      const formattedOpps = sharedIntelligence.opportunities.map((opp, index) => ({
-        id: opp.id || `synth-opp-${Date.now()}-${index}`,
-        type: opp.type || 'Strategic Opportunity',
-        urgency: opp.urgency || 'medium',
-        title: opp.title || opp.opportunity || 'Untitled Opportunity',
-        description: opp.description || opp.quick_summary || opp.pr_angle || '',
-        action_plan: opp.action_plan || [
-          'Analyze the opportunity context',
-          'Develop PR angle and messaging',
-          'Identify target media outlets',
-          'Execute outreach campaign'
-        ],
-        source: opp.source || 'Intelligence Pipeline',
-        rationale: opp.rationale || `Confidence: ${opp.confidence || 'N/A'}%`
-      }));
-      console.log('✅ Formatted opportunities for display:', formattedOpps);
-      setOpportunities(formattedOpps);
-      setTimeout(() => setLoading(false), 500);
-    }
-    // Fallback to old structure for backward compatibility
-    else if (sharedIntelligence && (sharedIntelligence.news || sharedIntelligence.gaps || sharedIntelligence.risks)) {
+    // Wait for shared intelligence to be available
+    if (sharedIntelligence && (sharedIntelligence.news || sharedIntelligence.gaps || sharedIntelligence.risks)) {
       console.log('📊 Using shared intelligence to generate opportunities');
       console.log('  - News items:', sharedIntelligence.news?.length || 0);
       console.log('  - Gaps:', sharedIntelligence.gaps?.length || 0);
@@ -204,7 +179,6 @@ const OpportunityModulePR = ({ organizationId, sharedIntelligence, onIntelligenc
   };
 
   const gatherPRIntelligence = async (orgData) => {
-    console.log('🚀 Starting PR Intelligence gathering, setting loading=true');
     setLoading(true);
     try {
       console.log('🎯 Gathering PR Intelligence for:', orgData.name);
@@ -235,31 +209,11 @@ const OpportunityModulePR = ({ organizationId, sharedIntelligence, onIntelligenc
 
       if (!error && data) {
         console.log('✅ PR Intelligence gathered:', data);
-        console.log('🔍 Opportunities array:', data.opportunities);
-        console.log('🔢 Number of opportunities:', data.opportunities?.length || 0);
-        console.log('🎭 Personas used:', data.personas_used);
-        console.log('📊 Phases completed:', data.phases_completed);
-        console.log('🔥 Data sources:', data.data_sources);
-        
-        // Check if we're getting real data or fallbacks
-        if (data.opportunities && data.opportunities.length > 0) {
-          const firstOpp = data.opportunities[0];
-          console.log('🔍 Sample opportunity details:', {
-            title: firstOpp.title || firstOpp.name,
-            persona: firstOpp.persona,
-            confidence: firstOpp.confidence,
-            source: firstOpp.source,
-            // Check for real data by looking for actual content fields
-            hasRealData: !!(firstOpp.action && firstOpp.expected_impact) || !!firstOpp.url || !!firstOpp.source
-          });
-        }
         
         // Check if we got opportunities
         if (data.opportunities && data.opportunities.length > 0) {
-          console.log('📦 Processing opportunities for PR action...');
           // Process opportunities for PR action
           const prOpportunities = processPROpportunities(data.opportunities, orgData);
-          console.log('✨ Processed opportunities:', prOpportunities);
           setOpportunities(prOpportunities);
           
           // Share intelligence with other modules
@@ -268,41 +222,29 @@ const OpportunityModulePR = ({ organizationId, sharedIntelligence, onIntelligenc
           }
         } else {
           console.warn('📭 No opportunities returned from API');
-          console.warn('Full response data:', JSON.stringify(data, null, 2));
           setOpportunities([]);
         }
       } else {
         console.error('❌ API error:', error);
-        console.error('Response data:', data);
-        console.error('Full error details:', JSON.stringify(error, null, 2));
         setOpportunities([]);
       }
     } catch (error) {
       console.error('❌ Error gathering PR intelligence:', error);
       setOpportunities([]);
     } finally {
-      console.log('🏁 Finished gathering PR intelligence, setting loading=false');
       setLoading(false);
     }
   };
 
   const processPROpportunities = (opportunities, orgData) => {
-    return opportunities.map(opp => {
-      // Map the actual fields from Edge Function to what the UI expects
-      const processed = {
-        ...opp,
-        id: opp.id || `opp-${Date.now()}-${Math.random()}`,
-        // CRITICAL: Map the actual field names to what UI expects
-        title: opp.title || opp.name || opp.headline || opp.opportunity_name || 'Untitled Opportunity',
-        description: opp.description || opp.details || opp.summary || opp.opportunity_description || 'No description available',
-        type: mapOpportunityType(opp.opportunity_type || opp.type),
-        urgency: calculateUrgency(opp),
-        action_plan: opp.action_plan || generateActionPlan(opp.opportunity_type, orgData),
-        rationale: opp.rationale || generateRationale(opp, orgData)
-      };
-      console.log('📦 Processed opportunity:', processed);
-      return processed;
-    });
+    return opportunities.map(opp => ({
+      ...opp,
+      id: opp.id || `opp-${Date.now()}-${Math.random()}`,
+      type: mapOpportunityType(opp.opportunity_type),
+      urgency: calculateUrgency(opp),
+      action_plan: opp.action_plan || generateActionPlan(opp.opportunity_type, orgData),
+      rationale: opp.rationale || generateRationale(opp, orgData)
+    }));
   };
 
   const mapOpportunityType = (apiType) => {
@@ -459,27 +401,33 @@ const OpportunityModulePR = ({ organizationId, sharedIntelligence, onIntelligenc
         </div>
 
         <div className="detail-section">
-          <h3>Situation</h3>
+          <h3>📋 Situation</h3>
           <p>{selectedOpportunity.description}</p>
         </div>
 
-        {selectedOpportunity.deadline && (
-          <div className="detail-section">
-            <h3>Timeline</h3>
-            <p className="deadline">Action needed within: {selectedOpportunity.deadline}</p>
-          </div>
-        )}
+        <div className="detail-section">
+          <h3>⚡ Why Act Now</h3>
+          <p>{selectedOpportunity.why || selectedOpportunity.rationale || "This opportunity has a limited window based on current news cycle momentum. Acting quickly positions you ahead of competitors."}</p>
+        </div>
 
-        {selectedOpportunity.action_plan && selectedOpportunity.action_plan.length > 0 && (
-          <div className="detail-section">
-            <h3>Action Plan</h3>
+        <div className="detail-section">
+          <h3>🎯 How to Execute</h3>
+          {selectedOpportunity.how ? (
+            <div className="how-to-execute">
+              {selectedOpportunity.how.split('\n').map((step, idx) => (
+                <p key={idx} className="execution-step">{step}</p>
+              ))}
+            </div>
+          ) : selectedOpportunity.action_plan ? (
             <ol className="action-plan-list">
               {selectedOpportunity.action_plan.map((step, idx) => (
                 <li key={idx}>{step}</li>
               ))}
             </ol>
-          </div>
-        )}
+          ) : (
+            <p>Develop your unique angle and reach out to relevant media contacts immediately.</p>
+          )}
+        </div>
 
         <div className="action-buttons">
           <button className="btn-primary">Create Content</button>
@@ -491,19 +439,14 @@ const OpportunityModulePR = ({ organizationId, sharedIntelligence, onIntelligenc
   };
 
   if (loading) {
-    console.log('🌀 Rendering loading state');
     return (
       <div className="module-loading">
         <div className="loading-spinner"></div>
-        <div className="loading-text">Loading Opportunities</div>
-        <div className="loading-detail">Analyzing intelligence for PR opportunities...</div>
+        <p>Analyzing intelligence for PR opportunities...</p>
       </div>
     );
   }
 
-  console.log('🎨 Rendering main component with opportunities:', opportunities.length);
-  console.log('📋 First opportunity:', opportunities[0]);
-  
   return (
     <div className="pr-opportunity-module">
       {selectedOpportunity ? (
@@ -519,16 +462,7 @@ const OpportunityModulePR = ({ organizationId, sharedIntelligence, onIntelligenc
 
           <div className="opportunities-grid">
             {opportunities && opportunities.length > 0 ? (
-              (() => {
-                const filtered = opportunities.filter(opp => opp && opp.title && opp.description);
-                console.log('🔍 Filtered opportunities:', filtered.length, 'from', opportunities.length);
-                console.log('🔍 Filter check - first opp:', { 
-                  hasTitle: !!opportunities[0]?.title, 
-                  hasDescription: !!opportunities[0]?.description,
-                  opportunity: opportunities[0]
-                });
-                return filtered.map(opp => renderOpportunityCard(opp));
-              })()
+              opportunities.filter(opp => opp && opp.title && opp.description).map(opp => renderOpportunityCard(opp))
             ) : (
               <div className="no-opportunities">
                 <p>No immediate PR opportunities detected.</p>

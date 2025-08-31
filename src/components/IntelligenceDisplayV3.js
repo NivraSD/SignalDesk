@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './IntelligenceDisplayV3.css';
 import intelligenceOrchestratorV3 from '../services/intelligenceOrchestratorV3';
-import { getUnifiedOrganization, getUnifiedCompleteProfile } from '../utils/unifiedDataLoader';
-import cacheManager from '../utils/cacheManager';
-import RealIntelligenceDisplay from './RealIntelligenceDisplay';
+import { getUnifiedOrganization } from '../utils/unifiedDataLoader';
 import { 
   RocketIcon, AlertIcon, TrendingUpIcon, TargetIcon, 
   ChartIcon, BuildingIcon
@@ -35,29 +33,38 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0, onIntelligenc
       hasOrgName: !!organization?.name
     });
     
-    // If refresh triggered, clear current intelligence first
-    if (refreshTrigger > 0) {
-      console.log('🔄 Refresh triggered - clearing current intelligence');
-      setIntelligence(null);
-      setError(null);
-    }
-    
-    // Check for cached intelligence (skip if refresh triggered)
-    if (refreshTrigger === 0) {
-      const cachedData = cacheManager.getIntelligence();
-      if (cachedData) {
-        console.log('📦 Using cached intelligence');
-        setIntelligence(cachedData);
-        setLoading(false);
-        return;
+    // Check if we have cached intelligence
+    const cachedIntel = localStorage.getItem('signaldesk_intelligence_cache');
+    if (cachedIntel && refreshTrigger === 0) {  // Don't use cache if manual refresh
+      try {
+        const cached = JSON.parse(cachedIntel);
+        // Use cached data indefinitely until manual refresh
+        if (cached.data && cached.organizationName === organization?.name) {
+          console.log('📦 Using cached intelligence for:', organization?.name);
+          console.log('🕐 Cached at:', new Date(cached.timestamp).toLocaleString());
+          setIntelligence(cached.data);
+          // Share intelligence with other modules
+          if (onIntelligenceUpdate && cached.data) {
+            onIntelligenceUpdate(cached.data);
+          }
+          setLoading(false);
+          return;
+        }
+      } catch (e) {
+        console.log('Cache parse error:', e);
       }
     }
     
-    // Auto-fetch intelligence when organization changes or on refresh
+    // Auto-fetch intelligence immediately after onboarding or on refresh
     if (organization?.name) {
-      if (!intelligence || refreshTrigger > 0) {
+      const hasJustOnboarded = localStorage.getItem('signaldesk_just_onboarded') === 'true';
+      if (hasJustOnboarded || !intelligence || refreshTrigger > 0) {
         console.log('🚀 Auto-fetching intelligence for:', organization.name);
-        console.log('📍 Reason:', refreshTrigger > 0 ? 'Manual refresh' : 'No intelligence yet');
+        console.log('📍 Reason:', hasJustOnboarded ? 'Just onboarded' : refreshTrigger > 0 ? 'Manual refresh' : 'No intelligence yet');
+        // Clear the onboarding flag
+        if (hasJustOnboarded) {
+          localStorage.removeItem('signaldesk_just_onboarded');
+        }
         fetchIntelligence();
       }
     }
@@ -66,44 +73,17 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0, onIntelligenc
   const fetchIntelligence = async () => {
     console.log('🔍 V3 fetchIntelligence called, organization:', organization);
     
-    // Use unified COMPLETE profile data loader to get stakeholders too
-    let profileToUse = null;
+    // Use unified organization data loader
+    let orgToUse = organization;
     
-    if (!organization?.name) {
+    if (!orgToUse?.name) {
       console.log('⚠️ No organization provided, using unified data loader...');
-      profileToUse = getUnifiedCompleteProfile();
-      console.log('📦 Unified COMPLETE profile loaded:', profileToUse);
+      orgToUse = getUnifiedOrganization();
+      console.log('📦 Unified organization loaded:', orgToUse);
       
-      if (!profileToUse?.organization?.name) {
+      if (!orgToUse?.name) {
         console.log('❌ No organization found in any storage location');
         return;
-      }
-    } else {
-      // Even if we have organization, ALWAYS get the complete profile for stakeholders
-      profileToUse = getUnifiedCompleteProfile();
-      console.log('📦 Using complete profile with stakeholders:', {
-        hasOrganization: !!profileToUse?.organization,
-        competitors: profileToUse?.competitors?.length || 0,
-        media: profileToUse?.media_outlets?.length || 0,
-        regulators: profileToUse?.regulators?.length || 0,
-        analysts: profileToUse?.analysts?.length || 0,
-        investors: profileToUse?.investors?.length || 0,
-        activists: profileToUse?.activists?.length || 0
-      });
-      
-      if (!profileToUse?.organization) {
-        // Fallback: use provided organization with empty stakeholders
-        profileToUse = { 
-          organization, 
-          competitors: [], 
-          monitoring_topics: [],
-          stakeholders: {},
-          regulators: [],
-          activists: [],
-          media_outlets: [],
-          investors: [],
-          analysts: []
-        };
       }
     }
     
@@ -113,17 +93,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0, onIntelligenc
     setLoadingProgress(0);
     setPhaseProgress({ gathering: 0, analysis: 0, synthesis: 0, preparing: 0 });
     
-    console.log('🚀 Starting V3 orchestration with complete profile:', {
-      organizationName: profileToUse?.organization?.name,
-      competitors: profileToUse?.competitors,
-      regulators: profileToUse?.regulators,
-      media_outlets: profileToUse?.media_outlets,
-      activists: profileToUse?.activists,
-      investors: profileToUse?.investors,
-      analysts: profileToUse?.analysts,
-      monitoring_topics: profileToUse?.monitoring_topics,
-      fullProfile: profileToUse
-    });
+    console.log('🚀 Starting V3 orchestration with:', orgToUse);
     
     // Start all progress bars animation with overlapping phases
     let elapsed = 0;
@@ -171,20 +141,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0, onIntelligenc
     }, 100);
     
     try {
-      // CRITICAL: Ensure we have proper structure before calling orchestrator
-      const orchestratorConfig = {
-        organization: profileToUse?.organization || { name: 'Unknown', industry: 'Technology' },
-        competitors: profileToUse?.competitors || [],
-        regulators: profileToUse?.regulators || [],
-        activists: profileToUse?.activists || [],
-        media_outlets: profileToUse?.media_outlets || [],
-        investors: profileToUse?.investors || [],
-        analysts: profileToUse?.analysts || [],
-        monitoring_topics: profileToUse?.monitoring_topics || []
-      };
-      
-      console.log('🎯 Calling orchestrator with config:', orchestratorConfig);
-      const result = await intelligenceOrchestratorV3.orchestrate(orchestratorConfig);
+      const result = await intelligenceOrchestratorV3.orchestrate(orgToUse);
       clearInterval(progressInterval);
       setLoadingProgress(100);
       setPhaseProgress({ gathering: 100, analysis: 100, synthesis: 100, preparing: 100 });
@@ -207,15 +164,17 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0, onIntelligenc
       if (result.success) {
         setIntelligence(result);
         
-        // Save intelligence and synthesis to cache
-        if (result.opportunities && result.opportunities.length > 0) {
-          console.log('💾 Caching opportunities for Opportunity Engine:', result.opportunities.length);
-          // Save synthesis for opportunity engine
-          cacheManager.saveSynthesis(result);
+        // Cache the intelligence data with organization name
+        try {
+          localStorage.setItem('signaldesk_intelligence_cache', JSON.stringify({
+            data: result,
+            organizationName: orgToUse?.name,
+            timestamp: Date.now()
+          }));
+          console.log('💾 Cached intelligence for:', orgToUse?.name);
+        } catch (e) {
+          console.error('Error caching intelligence:', e);
         }
-        
-        // Save intelligence data
-        cacheManager.saveIntelligence(result);
         
         // Share intelligence with other modules
         if (onIntelligenceUpdate && result) {
@@ -235,7 +194,7 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0, onIntelligenc
       console.error('Error details:', {
         message: err.message,
         stack: err.stack,
-        organization: profileToUse?.organization
+        organization: orgToUse
       });
       clearInterval(progressInterval);
       setError(err.message);
@@ -246,8 +205,6 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0, onIntelligenc
 
   const tabs = [
     { id: 'executive', name: 'Executive', Icon: RocketIcon, color: '#ff00ff' },
-    { id: 'competitive', name: 'Competitive Intel', Icon: TargetIcon, color: '#00ff88' },
-    { id: 'market', name: 'Market Trends', Icon: TrendingUpIcon, color: '#00ffcc' },
     { id: 'positioning', name: 'Your Position', Icon: TargetIcon, color: '#00ffcc' },
     { id: 'between', name: 'Between Lines', Icon: TrendingUpIcon, color: '#00ff88' },
     { id: 'thought', name: 'Thought Leaders', Icon: ChartIcon, color: '#ffcc00' },
@@ -1623,16 +1580,15 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0, onIntelligenc
     const tabData = intelligence.tabs[activeTab];
     console.log(`🎨 Rendering tab [${activeTab}] with data:`, tabData);
     
-    // Use RealIntelligenceDisplay for tabs that show raw intelligence
-    if (activeTab === 'competitive' || activeTab === 'market' || activeTab === 'positioning') {
-      return <RealIntelligenceDisplay intelligence={intelligence} tab={activeTab} />;
-    }
-    
     switch (activeTab) {
       case 'executive':
         return renderExecutiveSummaryTab(tabData);
+      case 'positioning':
+        return renderCompetitivePositioningTab(tabData);
       case 'between':
         return renderBetweenTheLinesTab(tabData);
+      case 'market':
+        return renderMarketSegmentTab(tabData);
       case 'regulatory':
         return renderRegulatoryTab(tabData);
       case 'thought':

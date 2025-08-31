@@ -1,204 +1,148 @@
-// Unified Data Loader - Single source of truth for organization data
-// Fixes inconsistency where different modules read from different localStorage keys
+// Unified Data Loader - EDGE FUNCTION as SINGLE SOURCE OF TRUTH
+// NO localStorage - ALL data comes from intelligence-persistence edge function
 
-export const getUnifiedOrganization = () => {
-  // Priority order: signaldesk_unified_profile > signaldesk_organization > signaldesk_onboarding
-  
-  // Check unified profile first (most complete)
-  const unifiedProfile = localStorage.getItem('signaldesk_unified_profile');
-  if (unifiedProfile) {
-    try {
-      const profile = JSON.parse(unifiedProfile);
-      if (profile.organization?.name) {
-        return profile.organization;
-      }
-    } catch (e) {
-      console.warn('Error parsing unified profile:', e);
-    }
-  }
-  
-  // Check direct organization storage
-  const directOrg = localStorage.getItem('signaldesk_organization');
-  if (directOrg) {
-    try {
-      const org = JSON.parse(directOrg);
-      if (org.name) {
-        return org;
-      }
-    } catch (e) {
-      console.warn('Error parsing organization:', e);
-    }
-  }
-  
-  // Fallback to onboarding data
-  const onboardingData = localStorage.getItem('signaldesk_onboarding');
-  if (onboardingData) {
-    try {
-      const data = JSON.parse(onboardingData);
-      if (data.organization?.name) {
-        return data.organization;
-      }
-    } catch (e) {
-      console.warn('Error parsing onboarding data:', e);
-    }
-  }
-  
-  console.warn('No organization data found in localStorage');
-  return null;
-};
+import supabaseDataService from '../services/supabaseDataService';
 
-export const getUnifiedCompleteProfile = () => {
-  // Get the COMPLETE profile including all stakeholders
-  // Check both possible keys (complete_profile is the new standard)
-  const completeProfile = localStorage.getItem('signaldesk_complete_profile');
-  if (completeProfile) {
-    try {
-      const profile = JSON.parse(completeProfile);
-      console.log('📂 Loaded complete profile from cache');
-      return profile;
-    } catch (e) {
-      console.warn('Error parsing complete profile:', e);
+export const getUnifiedOrganization = async () => {
+  // Check localStorage for organization name first
+  const savedOrgName = localStorage.getItem('selectedOrganization');
+  console.log('🔍 Loading organization from edge function...', savedOrgName ? `for: ${savedOrgName}` : '(latest)');
+  
+  try {
+    // Get current user's organization from edge function
+    const requestBody = {
+      action: 'getLatestProfile'
+    };
+    
+    // If we have a saved organization name, use it
+    if (savedOrgName) {
+      requestBody.organization_name = savedOrgName;
     }
-  }
-  
-  // Fallback to unified profile
-  const unifiedProfile = localStorage.getItem('signaldesk_unified_profile');
-  if (unifiedProfile) {
-    try {
-      const profile = JSON.parse(unifiedProfile);
-      console.log('📂 Loaded profile from localStorage:', {
-        hasOrganization: !!profile.organization,
-        competitors: profile.competitors,
-        regulators: profile.regulators,
-        media_outlets: profile.media_outlets,
-        activists: profile.activists,
-        investors: profile.investors,
-        analysts: profile.analysts
-      });
-      
-      return {
-        organization: profile.organization,
-        competitors: profile.competitors || [],
-        monitoring_topics: profile.monitoring_topics || [],
-        // Include ALL stakeholder types
-        stakeholders: profile.stakeholders || {},
-        regulators: profile.regulators || [],
-        activists: profile.activists || [],
-        media_outlets: profile.media_outlets || [],
-        investors: profile.investors || [],
-        analysts: profile.analysts || [],
-        // Include opportunity config
-        opportunities: profile.opportunities,
-        brand: profile.brand,
-        messaging: profile.messaging,
-        media: profile.media,
-        spokespeople: profile.spokespeople
-      };
-    } catch (e) {
-      console.warn('Error parsing unified profile:', e);
-    }
-  }
-  
-  // Fallback to organization only
-  return {
-    organization: getUnifiedOrganization(),
-    competitors: [],
-    monitoring_topics: [],
-    stakeholders: {},
-    regulators: [],
-    activists: [],
-    media_outlets: [],
-    investors: [],
-    analysts: []
-  };
-};
-
-export const getUnifiedOpportunityConfig = () => {
-  // Priority: opportunity_profile > signaldesk_unified_profile > defaults
-  
-  const opportunityProfile = localStorage.getItem('opportunity_profile');
-  if (opportunityProfile) {
-    try {
-      return JSON.parse(opportunityProfile);
-    } catch (e) {
-      console.warn('Error parsing opportunity profile:', e);
-    }
-  }
-  
-  // Extract from unified profile
-  const unifiedProfile = localStorage.getItem('signaldesk_unified_profile');
-  if (unifiedProfile) {
-    try {
-      const profile = JSON.parse(unifiedProfile);
-      return {
-        minimum_confidence: profile.opportunities?.minimum_confidence || 70,
-        opportunity_types: profile.opportunities?.types || {
-          competitor_weakness: true,
-          narrative_vacuum: true,
-          cascade_effect: true,
-          crisis_prevention: true,
-          viral_moment: false
+    
+    const response = await fetch(
+      `${supabaseDataService.supabaseUrl}/functions/v1/intelligence-persistence`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseDataService.supabaseKey}`
         },
-        risk_tolerance: profile.brand?.risk_tolerance || 'moderate',
-        preferred_tiers: profile.media?.preferred_tiers || ['tier1_business', 'tier1_tech'],
-        voice: profile.brand?.voice || 'professional',
-        response_speed: profile.brand?.response_speed || 'immediate',
-        core_value_props: profile.messaging?.core_value_props || [],
-        industry: profile.organization?.industry || 'technology'
-      };
-    } catch (e) {
-      console.warn('Error parsing unified profile for opportunities:', e);
+        body: JSON.stringify(requestBody)
+      }
+    );
+    
+    if (!response.ok) {
+      console.error('❌ Failed to load from edge function:', response.statusText);
+      return null;
     }
+    
+    const data = await response.json();
+    if (data.success && data.profile) {
+      const org = data.profile.organization || data.profile;
+      console.log('✅ Loaded organization from edge function:', org);
+      // Store the organization name for future requests
+      if (org?.name) {
+        window.__currentOrganizationName = org.name;
+      }
+      return org;
+    } else {
+      console.warn('⚠️ No organization profile in edge function');
+      return null;
+    }
+  } catch (error) {
+    console.error('❌ Failed to load from edge function:', error);
+    return null;
   }
-  
-  // Default config
-  return {
-    minimum_confidence: 70,
-    opportunity_types: {
-      competitor_weakness: true,
-      narrative_vacuum: true,
-      cascade_effect: true,
-      crisis_prevention: true,
-      viral_moment: false
-    },
-    risk_tolerance: 'moderate',
-    preferred_tiers: ['tier1_business', 'tier1_tech'],
-    voice: 'professional',
-    response_speed: 'immediate',
-    industry: 'technology'
-  };
 };
 
-// Sync all storage keys to ensure consistency
-export const syncOrganizationData = (organization) => {
+export const getUnifiedOpportunityConfig = async () => {
+  // Load from edge function - NO localStorage
+  try {
+    // First get the organization profile
+    const org = await getUnifiedOrganization();
+    if (!org?.name) {
+      console.warn('No organization found for opportunity config');
+      return getDefaultOpportunityConfig();
+    }
+    
+    // Get opportunity profile from edge function
+    const response = await fetch(
+      `${supabaseDataService.supabaseUrl}/functions/v1/intelligence-persistence`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseDataService.supabaseKey}`
+        },
+        body: JSON.stringify({
+          action: 'getStageData',
+          organization_name: org.name,
+          stage: 'opportunity_profile'
+        })
+      }
+    );
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success && data.data) {
+        console.log('✅ Loaded opportunity config from edge function');
+        return data.data;
+      }
+    }
+  } catch (error) {
+    console.error('Error loading opportunity config:', error);
+  }
+  
+  return getDefaultOpportunityConfig();
+};
+
+const getDefaultOpportunityConfig = () => ({
+  minimum_confidence: 70,
+  opportunity_types: {
+    competitor_weakness: true,
+    narrative_vacuum: true,
+    cascade_effect: true,
+    crisis_prevention: true,
+    viral_moment: false
+  },
+  risk_tolerance: 'moderate',
+  preferred_tiers: ['tier1_business', 'tier1_tech'],
+  voice: 'professional',
+  response_speed: 'immediate',
+  industry: 'technology'
+});
+
+// Save organization data to edge function - NO localStorage
+export const syncOrganizationData = async (organization) => {
   if (!organization?.name) return;
   
-  console.log('🔄 Syncing organization data across all storage keys:', organization);
+  console.log('🔄 Saving organization data to edge function:', organization);
   
-  // Update all storage locations
-  localStorage.setItem('signaldesk_organization', JSON.stringify(organization));
-  
-  // Update unified profile
-  const unifiedProfile = localStorage.getItem('signaldesk_unified_profile');
-  if (unifiedProfile) {
-    try {
-      const profile = JSON.parse(unifiedProfile);
-      profile.organization = organization;
-      localStorage.setItem('signaldesk_unified_profile', JSON.stringify(profile));
-    } catch (e) {
-      console.warn('Error updating unified profile:', e);
+  try {
+    // Save to edge function ONLY
+    const response = await fetch(
+      `${supabaseDataService.supabaseUrl}/functions/v1/intelligence-persistence`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseDataService.supabaseKey}`
+        },
+        body: JSON.stringify({
+          action: 'saveProfile',
+          organization_name: organization.name,
+          profile: { organization }
+        })
+      }
+    );
+    
+    if (!response.ok) {
+      throw new Error(`Failed to save: ${response.statusText}`);
     }
-  }
-  
-  // Update onboarding data
-  const onboardingData = localStorage.getItem('signaldesk_onboarding');
-  if (onboardingData) {
-    try {
-      const data = JSON.parse(onboardingData);
-      data.organization = organization;
-      localStorage.setItem('signaldesk_onboarding', JSON.stringify(data));
-    } catch (e) {
-      console.warn('Error updating onboarding data:', e);
-    }
+    
+    console.log('✅ Organization saved to edge function');
+  } catch (error) {
+    console.error('❌ Failed to save organization to edge function:', error);
+    throw error; // Fail if save fails - NO localStorage fallback
   }
 };

@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuickInit Test - Direct API</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        h1 {
+            margin: 0 0 30px 0;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            background: rgba(255, 255, 255, 0.12);
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3);
+        }
+        button:disabled {
+            background: rgba(255, 255, 255, 0.1);
+            cursor: not-allowed;
+            transform: none;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .status.success {
+            border-color: rgba(34, 197, 94, 0.5);
+            background: rgba(34, 197, 94, 0.1);
+        }
+        .status.error {
+            border-color: rgba(239, 68, 68, 0.5);
+            background: rgba(239, 68, 68, 0.1);
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 13px;
+        }
+        .test-controls {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .test-button {
+            padding: 10px;
+            margin: 5px 0;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            width: 100%;
+            text-align: left;
+        }
+        .test-button:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+        pre {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>QuickInit Test - Direct API</h1>
+        
+        <form id="initForm">
+            <div class="form-group">
+                <label for="companyName">Company Name</label>
+                <input 
+                    type="text" 
+                    id="companyName" 
+                    placeholder="e.g., Tesla, Microsoft, Toyota"
+                    value="Tesla"
+                >
+            </div>
+            <button type="submit" id="submitBtn">Start Discovery Pipeline</button>
+        </form>
+
+        <div id="status" class="status" style="display: none;"></div>
+        <div id="logs"></div>
+
+        <div class="test-controls">
+            <h3>Testing Tools</h3>
+            <button class="test-button" onclick="checkLocalStorage()">
+                Check LocalStorage
+            </button>
+            <button class="test-button" onclick="clearLocalStorage()">
+                Clear LocalStorage
+            </button>
+            <button class="test-button" onclick="testDirectAPI()">
+                Test Direct API Call
+            </button>
+            <button class="test-button" onclick="testWithDifferentCompany()">
+                Test with Apple
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+
+        // Logging functions
+        function log(message, data = null) {
+            const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.innerHTML = `[${timestamp}] ${message}`;
+            
+            if (data) {
+                const pre = document.createElement('pre');
+                pre.textContent = JSON.stringify(data, null, 2);
+                logEntry.appendChild(pre);
+            }
+            
+            document.getElementById('logs').appendChild(logEntry);
+            console.log(message, data || '');
+        }
+
+        function showStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            statusEl.style.display = 'block';
+            statusEl.className = `status ${type}`;
+            statusEl.innerHTML = message;
+        }
+
+        // Main discovery pipeline
+        async function startDiscovery(companyName) {
+            log(`Starting discovery for: ${companyName}`);
+            
+            // Step 1: Save to localStorage
+            const organizationData = {
+                name: companyName,
+                id: companyName.toLowerCase().replace(/\s+/g, '-'),
+                industry: 'Technology',
+                competitors: [],
+                stakeholders: {},
+                keywords: [companyName],
+                created_at: new Date().toISOString()
+            };
+
+            localStorage.setItem('selectedOrganization', companyName);
+            localStorage.setItem('organizationData', JSON.stringify(organizationData));
+            log('Saved to localStorage', { selectedOrganization: companyName });
+
+            // Step 2: Call intelligence-discovery-v3
+            try {
+                showStatus('Calling intelligence-discovery-v3...');
+                log('Calling intelligence-discovery-v3 edge function');
+                
+                const discoveryResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-discovery-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: {
+                            name: companyName,
+                            ...organizationData
+                        },
+                        config: {
+                            useCache: false,
+                            comprehensive: true
+                        }
+                    })
+                });
+
+                const discoveryResult = await discoveryResponse.json();
+                log('Discovery response received', discoveryResult);
+
+                if (!discoveryResponse.ok) {
+                    throw new Error(`Discovery failed: ${discoveryResult.error || discoveryResponse.status}`);
+                }
+
+                const requestId = discoveryResult.request_id;
+                if (requestId) {
+                    log(`Request ID: ${requestId}`);
+                }
+
+                // Step 3: Process discovery results
+                showStatus('Processing discovery results...');
+                log('Processing discovery data from intelligence-discovery-v3');
+
+                // Extract and merge all the data from discovery result
+                const completeData = {
+                    ...organizationData,
+                    ...discoveryResult.organization,
+                    competitors: discoveryResult.competitors || [],
+                    topics: discoveryResult.topics || [],
+                    keywords: discoveryResult.keywords || [],
+                    stakeholders: discoveryResult.entities || {},
+                    intelligence: discoveryResult.intelligence || {},
+                    request_id: requestId,
+                    discovery_timestamp: new Date().toISOString()
+                };
+
+                // Update localStorage
+                localStorage.setItem('organizationData', JSON.stringify(completeData));
+                localStorage.setItem('latestDiscovery', JSON.stringify({
+                    timestamp: new Date().toISOString(),
+                    request_id: requestId,
+                    company_name: companyName,
+                    data: completeData
+                }));
+
+                showStatus(`✅ Success! Company "${companyName}" initialized with request_id: ${requestId}`, 'success');
+                log('Pipeline complete', completeData);
+                
+                return completeData;
+
+            } catch (error) {
+                log(`Error: ${error.message}`);
+                showStatus(`❌ Error: ${error.message}`, 'error');
+                throw error;
+            }
+        }
+
+        // Form submission
+        document.getElementById('initForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const companyName = document.getElementById('companyName').value.trim();
+            if (!companyName) {
+                alert('Please enter a company name');
+                return;
+            }
+
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('logs').innerHTML = '';
+            
+            try {
+                await startDiscovery(companyName);
+            } catch (error) {
+                console.error('Discovery failed:', error);
+            } finally {
+                document.getElementById('submitBtn').disabled = false;
+            }
+        });
+
+        // Test functions
+        function checkLocalStorage() {
+            const selectedOrg = localStorage.getItem('selectedOrganization');
+            const orgData = localStorage.getItem('organizationData');
+            const latestDiscovery = localStorage.getItem('latestDiscovery');
+            
+            log('LocalStorage contents:', {
+                selectedOrganization: selectedOrg,
+                organizationData: orgData ? JSON.parse(orgData) : null,
+                latestDiscovery: latestDiscovery ? JSON.parse(latestDiscovery) : null
+            });
+        }
+
+        function clearLocalStorage() {
+            localStorage.removeItem('selectedOrganization');
+            localStorage.removeItem('organizationData');
+            localStorage.removeItem('latestDiscovery');
+            log('LocalStorage cleared');
+            showStatus('LocalStorage cleared', 'success');
+        }
+
+        async function testDirectAPI() {
+            const companyName = 'Microsoft';
+            log(`Testing direct API with: ${companyName}`);
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-discovery-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: {
+                            name: companyName
+                        }
+                    })
+                });
+
+                const result = await response.json();
+                log('Direct API test result:', result);
+                
+                if (response.ok) {
+                    showStatus('✅ Direct API test successful', 'success');
+                } else {
+                    showStatus(`❌ Direct API test failed: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                log(`Direct API test error: ${error.message}`);
+                showStatus(`❌ Direct API test error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testWithDifferentCompany() {
+            document.getElementById('companyName').value = 'Apple';
+            document.getElementById('initForm').dispatchEvent(new Event('submit'));
+        }
+
+        // Initial check
+        window.addEventListener('load', () => {
+            log('Page loaded - QuickInit Test Ready');
+            checkLocalStorage();
+        });
+    </script>
+</body>
+</html>

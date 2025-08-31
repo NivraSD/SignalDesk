@@ -42,6 +42,11 @@ import NivDirect from "./pages/NivDirect"; // Direct API integration - most reli
 import RailwayV2Enhanced from "./components/RailwayV2Enhanced";
 import SystemInitializer from "./components/SystemInitializer";
 import SmartOnboarding from "./components/SmartOnboarding";
+import SimpleOrgInit from "./components/SimpleOrgInit";
+import UnifiedOnboarding from "./components/UnifiedOnboarding";
+import QuickInit from "./components/QuickInit";
+import TestQuickInit from "./TestQuickInit";
+import QuickInitBridge from "./components/QuickInitBridge";
 
 // Log Supabase initialization for debugging
 console.log('🚀 SignalDesk initialized with Supabase:', supabase ? 'Connected' : 'Not connected');
@@ -98,8 +103,11 @@ function App() {
             {/* RailwayV2 - Modern Neon Interface */}
             <Routes>
               <Route path="/login" element={<Login />} />
-              <Route path="/initialize" element={<SmartOnboarding />} />
-              <Route path="/onboarding" element={<SmartOnboarding />} />
+              <Route path="/initialize" element={<SystemInitializer />} />
+              <Route path="/onboarding" element={<SimpleOrgInit />} />
+              <Route path="/quickinit" element={<QuickInit />} />
+              <Route path="/test-quickinit" element={<TestQuickInit />} />
+              <Route path="/quickinit-bridge" element={<QuickInitBridge />} />
               <Route
                 path="/*"
                 element={

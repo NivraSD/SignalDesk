@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { saveOnboardingData } from '../../utils/onboardingAdapter';
 import './FinalOnboarding.css';
 
 const FinalOnboarding = () => {
@@ -380,10 +381,14 @@ const FinalOnboarding = () => {
         version: '2.0'
       };
       
-      // Save to localStorage
+      // Save using both old format (for compatibility) and new intelligence pipeline format
       localStorage.setItem('signaldesk_onboarding', JSON.stringify(config));
       localStorage.setItem('signaldesk_organization', JSON.stringify(formData.organization));
       localStorage.setItem('signaldesk_completed', 'true');
+      
+      // Save and convert to intelligence profile format
+      const profile = await saveOnboardingData(config);
+      console.log('✅ Organization profile created:', profile.organization.name);
       
       // Small delay for UX
       await new Promise(resolve => setTimeout(resolve, 500));

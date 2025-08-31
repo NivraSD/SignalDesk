@@ -19,395 +19,366 @@ SignalDesk Configuration - SUPABASE ONLY:
   ✅ Using Supabase URL: https://zskaxjtyuaqazydouifp.supabase.co
   🔒 No backend server required
   ⚡ All APIs handled by Supabase Edge Functions
-  📅 Build time: 2025-08-31T03:24:08.195Z
+  📅 Build time: 2025-08-31T14:33:07.630Z
   ✅ API Service initialized with FORCE URL:
   API Service using URL:
-  🎯 V4 Elite Orchestrator initialized
+  🎯 V4 Elite Orchestrator - Edge Function Mode (No Cache)
   ⚠️ Cache Manager DISABLED - Using Supabase only
   🛠️ Cache debug functions available:
   - window.debugCache() - Show cache state
   - window.clearAllCache() - Clear all caches
   - window.checkCacheContamination() - Check for issues
     🚀 SignalDesk initialized with Supabase: Connected
-    ⚡⚡⚡ RAILWAY V2 NEON INTERFACE v3.1.0 - DEPLOYED: 2025-08-31T03:24:08.199Z
+    ⚡⚡⚡ RAILWAY V2 NEON INTERFACE - DEPLOYED: 2025-08-31T14:33:07.634Z
     🎯 Modern Railway design with neon buttons
     💎 Intelligence Hub with practical insights
-    📍 Deployed from ROOT directory - Fixed Aug 24, 2024
     🚀 VERSION 0.2.0 - Firecrawl Integration Active
-    📅 Build Date: August 26, 2025
-    🔍 🚀 OnboardingV3 mounted null
-    🔍 📝 No existing organization found null
-    🔍 🚀 Starting discovery process Object
-    🔍 🧹 Step 1: Clearing old data null
-    🔍 ✅ Skipping localStorage clear null
-    🔍 🔍 Step 2: Calling Claude discovery null
-    🔍 📤 Request payload Object
-    🔍 📥 Discovery response status: 200 null
-    🔍 ✅ Discovery response received Object
-    🔍 💾 Step 3: Saving organization data null
-    🔍 💾 Complete organization data Object
-    🔍 💾 Saved to localStorage as backup null
-    🔍 💾 Step 3.5: Saving to Supabase edge function null
-    🔍 ✅ Saved to Supabase edge function successfully null
-    🔍 🔍 Step 4: Data saved to Supabase only null
-    🔍 ➡️ Step 5: Navigating to railway null
-    ✅ Loaded organization from localStorage: Meta
-    🔄 Reset pipeline for new organization: Meta
-    🔍 Checking Supabase for existing data for Meta...
-    📊 Loading complete analysis for Meta from Supabase...
+    📅 Build Date: August 23, 2025
+    🚀 Starting with simple org data: Object
+    ✅ Organization saved to localStorage: Object
+    ✅ Organization saved to edge function database
+    🔍 Loading organization from edge function (single source of truth)...
+    📱 Using organization from localStorage: Meta
+    🎯 ELABORATE PIPELINE - Stage trigger check: Object
+    ⏳ No organization yet
+    🔍 Loading organization from edge function... for: Meta
+    🚀 Organization loaded: Meta - Running FRESH pipeline
+    📝 Ready to run COMPLETE fresh analysis pipeline - no cache loading
     🎯 ELABORATE PIPELINE - Stage trigger check: Object
     🚀 Starting pipeline for the first time
     🔄 Starting stage 1: Organization Data Extraction
-    📡 Calling orchestrator for stage 1 with config: Object
-    🚀 V4 Elite Analysis starting for Meta, Stage: Organization Data Extraction
-    🎯 Executing stage: extraction
-    📊 Stage extraction request: Object
-    ✅ Loaded 0 stage records from Supabase
-    ✅ Loaded 0 stage records from Supabase
-    ✅ Loaded 0 stage records from Supabase
-    ✅ Loaded 0 stage records from Supabase
-    ✅ Loaded 0 stage records from Supabase
-    ✅ Loaded 10 stage records from Supabase
-    ✅ Loaded synthesis stage data
-    ✅ Loaded 1 stages from Supabase
-    ✅ Found existing analysis in Supabase!
-    🔄 Existing analysis is stale (> 5 minutes old), running fresh pipeline...
-    📊 Stage 1 (Organization Data Extraction) FULL result: Object
-    📊 Stage 1 (Organization Data Extraction) result summary: Object
+    🎯 Creating config for Stage 1 (extraction): Object
+    🚀 V4 Elaborate Analysis for Meta
+    📊 Stage focus: Data gathering and organization profiling
+    🎯 Running Elaborate Stage: Organization Data Extraction
+    🔍 DEBUG runElaborateStage params: Object
+    🏢 Stage 1: Organization Data Extraction & Discovery
+    🔍 Step 1: Discovering organization profile for: Meta
+    📦 Discovery request payload: Object
+    🚀 Calling discovery edge function at: https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/intelligence-discovery-v3
+    ✅ Loaded organization from edge function: Object
+    🏢 RailwayV2Enhanced loaded organization from edge function: Object
+    📥 Discovery response received, parsing...
+    ✅ Discovery complete: Object
+    🔑 Pipeline request_id from discovery: req_1756650792307_9mc5gkzd4
+    📡 Step 2: Collecting intelligence signals...
+    📥 Collection response received, parsing...
+    ✅ Collection data parsed: Object
+    ✅ Saved extraction stage data to Supabase
+    🔍 Generating opportunities for stage: extraction
+    🔍 Generating opportunities for Organization Data Extraction
+    ✅ Stage 1 (extraction) completed with: Object
+    📊 Stage 1 (extraction) results stored. Total stages accumulated: 1
+    📋 Current accumulated stages: Array(1)
+    🔍 Stage data has: Object
     🎯 ELABORATE PIPELINE - Stage trigger check: Object
     🚀 RUNNING STAGE 2: Competitive Intelligence Analysis
     🔄 Starting stage 2: Competitive Intelligence Analysis
-    📡 Calling orchestrator for stage 2 with config: Object
-    🚀 V4 Elite Analysis starting for Meta, Stage: Competitive Intelligence Analysis
-    🎯 Executing stage: competitive
-    📊 Stage competitive request: Object
-    📊 Stage 2 (Competitive Intelligence Analysis) FULL result: Object
-    📊 Stage 2 (Competitive Intelligence Analysis) result summary: Object
+    🎯 Creating config for Stage 2 (competitive): Object
+    🚀 V4 Elaborate Analysis for Meta
+    📊 Stage focus: Competitor actions, market positioning, competitive threats
+    🎯 Running Elaborate Stage: Competitive Intelligence Analysis
+    🔍 DEBUG runElaborateStage params: Object
+    🎯 Stage 2: Competitive Intelligence Analysis
+    🔑 Using request_id from extraction stage: req_1756650792307_9mc5gkzd4
+    🔍 DEBUG runCompetitiveStage inputs: Object
+    📊 Loading organization profile from edge function for: Meta
+    ✅ Loaded profile from edge function with 10 competitors
+    📊 Skipping backend persistence calls to avoid 500 errors
+    📤 Sending to competitor stage: Object
+    ✅ Saved competitive stage data to Supabase
+    🔄 Stage 2 (competitive) returning data: Object
+    🔍 Generating opportunities for stage: competitive
+    🔍 Generating opportunities for Competitive Intelligence Analysis
+    ✅ Stage 2 (competitive) completed with: Object
+    📊 Stage 2 (competitive) results stored. Total stages accumulated: 2
+    📋 Current accumulated stages: Array(2)
+    🔍 Stage data has: Object
     🎯 ELABORATE PIPELINE - Stage trigger check: Object
-    🚀 RUNNING STAGE 3: Stakeholder Analysis
-    🔄 Starting stage 3: Stakeholder Analysis
-    📡 Calling orchestrator for stage 3 with config: Object
-    🚀 V4 Elite Analysis starting for Meta, Stage: Stakeholder Analysis
-    🎯 Executing stage: stakeholders
-    📊 Stage stakeholders request: Object
-    📊 Stage 3 (Stakeholder Analysis) FULL result: Object
-    📊 Stage 3 (Stakeholder Analysis) result summary: Object
+    🚀 RUNNING STAGE 3: Media Landscape Mapping
+    🔄 Starting stage 3: Media Landscape Mapping
+    🎯 Creating config for Stage 3 (media): Object
+    🚀 V4 Elaborate Analysis for Meta
+    📊 Stage focus: Media relations, coverage analysis, journalist identification
+    🎯 Running Elaborate Stage: Media Landscape Mapping
+    🔍 DEBUG runElaborateStage params: Object
+    📰 Stage 3: Media Landscape Mapping
+    📊 Loading media profile from edge function for: Meta
+    ✅ Retrieved saved profile from edge function with media outlets: 8
+    ✅ Saved media stage data to Supabase
+    🔍 Generating opportunities for stage: media
+    🔍 Generating opportunities for Media Landscape Mapping
+    ✅ Stage 3 (media) completed with: Object
+    📊 Stage 3 (media) results stored. Total stages accumulated: 3
+    📋 Current accumulated stages: Array(3)
+    🔍 Stage data has: Object
     🎯 ELABORATE PIPELINE - Stage trigger check: Object
-    🚀 RUNNING STAGE 4: Media Landscape Mapping
-    🔄 Starting stage 4: Media Landscape Mapping
-    📡 Calling orchestrator for stage 4 with config: Object
-    🚀 V4 Elite Analysis starting for Meta, Stage: Media Landscape Mapping
-    🎯 Executing stage: media
-    📊 Stage media request: Object
-    📊 Stage 4 (Media Landscape Mapping) FULL result: Object
-    📊 Stage 4 (Media Landscape Mapping) result summary: Object
+    🚀 RUNNING STAGE 4: Regulatory & Stakeholder Environment
+    🔄 Starting stage 4: Regulatory & Stakeholder Environment
+    🎯 Creating config for Stage 4 (regulatory): Object
+    🚀 V4 Elaborate Analysis for Meta
+    📊 Stage focus: Compliance requirements, analyst opinions, investor relations
+    🎯 Running Elaborate Stage: Regulatory & Stakeholder Environment
+    🔍 DEBUG runElaborateStage params: Object
+    ⚖️ Stage 4: Regulatory & Stakeholder Analysis
+    🔑 Using request_id in regulatory stage: req_1756650792307_9mc5gkzd4
+    📊 Retrieving saved stakeholders from database for: Meta
+    ✅ Retrieved saved profile with stakeholders: Object
+    ✅ Saved regulatory stage data to Supabase
+    🔍 Generating opportunities for stage: regulatory
+    🔍 Generating opportunities for Regulatory & Stakeholder Environment
+    ✅ Stage 4 (regulatory) completed with: Object
+    📊 Stage 4 (regulatory) results stored. Total stages accumulated: 4
+    📋 Current accumulated stages: Array(4)
+    🔍 Stage data has: Object
     🎯 ELABORATE PIPELINE - Stage trigger check: Object
-    🚀 RUNNING STAGE 5: Regulatory Environment
-    🔄 Starting stage 5: Regulatory Environment
-    📡 Calling orchestrator for stage 5 with config: Object
-    🚀 V4 Elite Analysis starting for Meta, Stage: Regulatory Environment
-    🎯 Executing stage: regulatory
-    📊 Stage regulatory request: Object
-    📊 Stage 5 (Regulatory Environment) FULL result: Object
-    📊 Stage 5 (Regulatory Environment) result summary: Object
+    🚀 RUNNING STAGE 5: Market Trends & Topic Analysis
+    🔄 Starting stage 5: Market Trends & Topic Analysis
+    🎯 Creating config for Stage 5 (trends): Object
+    🚀 V4 Elaborate Analysis for Meta
+    📊 Stage focus: Market trends, topic analysis, narrative gaps
+    🎯 Running Elaborate Stage: Market Trends & Topic Analysis
+    🔍 DEBUG runElaborateStage params: Object
+    📈 Stage 5: Market Trends & Topic Analysis
+    🔑 Using request_id in trends stage: req_1756650792307_9mc5gkzd4
+    📊 Retrieving saved topics and previous intelligence...
+    ✅ Retrieved saved profile with keywords: 16
+    ✅ Retrieved 50 recent intelligence items for trend analysis
+    ✅ Saved trends stage data to Supabase
+    🔍 Generating opportunities for stage: trends
+    🔍 Generating opportunities for Market Trends & Topic Analysis
+    ✅ Stage 5 (trends) completed with: Object
+    📊 Stage 5 (trends) results stored. Total stages accumulated: 5
+    📋 Current accumulated stages: Array(5)
+    🔍 Stage data has: Object
     🎯 ELABORATE PIPELINE - Stage trigger check: Object
-    🚀 RUNNING STAGE 6: Market Trends & Topic Analysis
-    🔄 Starting stage 6: Market Trends & Topic Analysis
-    📡 Calling orchestrator for stage 6 with config: Object
-    🚀 V4 Elite Analysis starting for Meta, Stage: Market Trends & Topic Analysis
-    🎯 Executing stage: trends
-    📊 Stage trends request: Object
-    📊 Stage 6 (Market Trends & Topic Analysis) FULL result: Object
-    📊 Stage 6 (Market Trends & Topic Analysis) result summary: Object
-    🎯 ELABORATE PIPELINE - Stage trigger check: Object
-    🚀 RUNNING STAGE 7: Strategic Synthesis & Pattern Recognition
-    🔄 Starting stage 7: Strategic Synthesis & Pattern Recognition
-    📡 Calling orchestrator for stage 7 with config: Object
-    🚀 V4 Elite Analysis starting for Meta, Stage: Strategic Synthesis & Pattern Recognition
-    🎯 Executing stage: synthesis
-    📊 Synthesis stage - passing all previous results: Array(6)
-    🔍 Synthesis - Intelligence data check: Object
-    MultiStageIntelligence.js:230 📊 Stage 7 (Strategic Synthesis & Pattern Recognition) FULL result: Object
-    MultiStageIntelligence.js:231 📊 Stage 7 (Strategic Synthesis & Pattern Recognition) result summary: Object
-    MultiStageIntelligence.js:280 💾 Saving 4 opportunities to localStorage for OpportunityEngine
-    MultiStageIntelligence.js:1559 🎯 ELABORATE PIPELINE - Stage trigger check: Object
-    MultiStageIntelligence.js:1609 🎉 All stages done, completing pipeline...
-    MultiStageIntelligence.js:1610 📊 Current state before completion: Object
-    MultiStageIntelligence.js:1622 ✅ All stage results accumulated, proceeding with completion
-    MultiStageIntelligence.js:372 🎉 ELABORATE PIPELINE COMPLETE in 147 seconds
-    MultiStageIntelligence.js:373 📊 Final stage results: Array(7)
-    MultiStageIntelligence.js:374 📊 Stage results detail: Object
-    MultiStageIntelligence.js:399 🔧 COMPREHENSIVE FIX v3.0: DEEP SYNTHESIS INSPECTION 2025-08-31T03:26:48.423Z
-    MultiStageIntelligence.js:400 📦 SYNTHESIS RAW STRUCTURE: Object
-    MultiStageIntelligence.js:401 📦 SYNTHESIS TOP LEVEL KEYS: Array(9)
-    MultiStageIntelligence.js:402 📦 SYNTHESIS.TABS EXISTS? true
-    MultiStageIntelligence.js:403 📦 SYNTHESIS.DATA EXISTS? true
-    MultiStageIntelligence.js:404 📦 SYNTHESIS.OPPORTUNITIES EXISTS? true
-    MultiStageIntelligence.js:416 📊 TABS CONTENT DEEP DIVE:
-    MultiStageIntelligence.js:419 Executive tab headline: Meta Intelligence Summary
-    MultiStageIntelligence.js:420 Executive tab overview: Comprehensive intelligence analysis for Meta across competitive, media, regulatory and market dimensions
-    MultiStageIntelligence.js:421 Executive immediate actions: Array(1)
-    MultiStageIntelligence.js:422 Executive statistics: {"entities_tracked":6,"actions_captured":6,"topics_monitored":0,"opportunities_identified":4}
-    MultiStageIntelligence.js:424 Competitive actions: 6 actions
-    MultiStageIntelligence.js:426 First competitor action: {"competitor":"Twitter","action":"Active in market","impact":"Medium","response":"Monitor closely"}
-    MultiStageIntelligence.js:429 Market trends count: 0
-    MultiStageIntelligence.js:430 Market position: Meta operates in a highly competitive market
-    MultiStageIntelligence.js:453 ✅ Built intelligence from synthesis: Object
-    MultiStageIntelligence.js:475 🎯 Setting final intelligence: Object
-    MultiStageIntelligence.js:476 🔍 Intelligence structure: Object
-    MultiStageIntelligence.js:487 ✅ Component marked as complete, should render results now
-    MultiStageIntelligence.js:489 📤 Calling onComplete callback with intelligence
-    MultiStageIntelligence.js:1641 🔍 Final Intelligence Structure: Object
-    MultiStageIntelligence.js:1127 📊 Executive summary data: Object
-    MultiStageIntelligence.js:1235 🎯 Competitive data structure: Object
-    MultiStageIntelligence.js:1482 🎯 Rendering opportunities: Object
-    MultiStageIntelligence.js:1488 📋 Full opportunity details: [
-    {
-    "opportunity": "Launch Meta thought leadership campaign on industry trends",
-    "source_stage": "media_analysis",
-    "type": "narrative",
-    "urgency": "high",
-    "confidence": 85,
-    "pr_angle": "Position as industry innovator through expert commentary and insights",
-    "quick_summary": "Media landscape analysis reveals thought leadership opportunity",
-    "supporting_evidence": [
-    "Gap in current media narratives",
-    "Limited competitor voice in key topics"
-    ]
-    },
-    {
-    "opportunity": "Leverage emerging trends for Meta innovation announcements",
-    "source_stage": "trends_analysis",
-    "type": "trend",
-    "urgency": "high",
-    "confidence": 82,
-    "pr_angle": "Align product/service announcements with trending market themes",
-    "quick_summary": "Market trends create perfect timing for strategic announcements",
-    "supporting_evidence": [
-    "Trending topics identified",
-    "Market momentum building"
-    ]
-    },
-    {
-    "opportunity": "Position Meta against key competitors through differentiation campaign",
-    "source_stage": "competitive_analysis",
-    "type": "competitive",
-    "urgency": "high",
-    "confidence": 80,
-    "pr_angle": "Highlight unique technology/service advantages in head-to-head comparisons",
-    "quick_summary": "Competitive analysis reveals clear differentiation opportunities",
-    "supporting_evidence": [
-    "Competitor gaps identified",
-    "Unique value propositions available"
-    ]
-    },
-    {
-    "opportunity": "Establish Meta as regulatory compliance leader in Social Media & Networking",
-    "source_stage": "regulatory_analysis",
-    "type": "regulatory",
-    "urgency": "medium",
-    "confidence": 75,
-    "pr_angle": "Showcase proactive compliance and industry leadership in regulatory matters",
-    "quick_summary": "Regulatory landscape creates compliance leadership opportunity",
-    "supporting_evidence": [
-    "Upcoming regulatory changes",
-    "Compliance as competitive advantage"
-    ]
-    }
-    ]
-    MultiStageIntelligence.js:1695 🎨 RENDER TRIGGER: Both isComplete and finalIntelligence are set!
-    MultiStageIntelligence.js:1696 Final intelligence available: Object
-    OnboardingV3.js:27 🔍 🚀 OnboardingV3 mounted null
-    OnboardingV3.js:27 🔍 📝 No existing organization found null
-    OnboardingV3.js:27 🔍 🚀 Starting discovery process Object
-    OnboardingV3.js:27 🔍 🧹 Step 1: Clearing old data null
-    OnboardingV3.js:27 🔍 ✅ Skipping localStorage clear null
-    OnboardingV3.js:27 🔍 🔍 Step 2: Calling Claude discovery null
-    OnboardingV3.js:27 🔍 📤 Request payload Object
-    OnboardingV3.js:27 🔍 📥 Discovery response status: 200 null
-    OnboardingV3.js:27 🔍 ✅ Discovery response received Object
-    OnboardingV3.js:27 🔍 💾 Step 3: Saving organization data null
-    OnboardingV3.js:27 🔍 💾 Complete organization data Object
-    OnboardingV3.js:27 🔍 💾 Saved to localStorage as backup null
-    OnboardingV3.js:27 🔍 💾 Step 3.5: Saving to Supabase edge function null
-    OnboardingV3.js:27 🔍 ✅ Saved to Supabase edge function successfully null
-    OnboardingV3.js:27 🔍 🔍 Step 4: Data saved to Supabase only null
-    OnboardingV3.js:27 🔍 ➡️ Step 5: Navigating to railway null
-    RailwayV2.js:41 ✅ Loaded organization from localStorage: Tesla
-    MultiStageIntelligence.js:124 🔄 Reset pipeline for new organization: Tesla
-    MultiStageIntelligence.js:138 🔍 Checking Supabase for existing data for Tesla...
-    supabaseDataService.js:125 📊 Loading complete analysis for Tesla from Supabase...
-    MultiStageIntelligence.js:1559 🎯 ELABORATE PIPELINE - Stage trigger check: Object
-    MultiStageIntelligence.js:1577 🚀 Starting pipeline for the first time
-    MultiStageIntelligence.js:200 🔄 Starting stage 1: Organization Data Extraction
-    MultiStageIntelligence.js:219 📡 Calling orchestrator for stage 1 with config: Object
-    intelligenceOrchestratorV4.js:28 🚀 V4 Elite Analysis starting for Tesla, Stage: Organization Data Extraction
-    intelligenceOrchestratorV4.js:102 🎯 Executing stage: extraction
-    intelligenceOrchestratorV4.js:185 📊 Stage extraction request: Object
-    supabaseDataService.js:45 ✅ Loaded 0 stage records from Supabase
-    supabaseDataService.js:45 ✅ Loaded 0 stage records from Supabase
-    supabaseDataService.js:45 ✅ Loaded 0 stage records from Supabase
-    supabaseDataService.js:45 ✅ Loaded 0 stage records from Supabase
-    supabaseDataService.js:45 ✅ Loaded 0 stage records from Supabase
-    supabaseDataService.js:45 ✅ Loaded 6 stage records from Supabase
-    supabaseDataService.js:134 ✅ Loaded synthesis stage data
-    supabaseDataService.js:139 ✅ Loaded 1 stages from Supabase
-    MultiStageIntelligence.js:144 ✅ Found existing analysis in Supabase!
-    MultiStageIntelligence.js:170 🔄 Existing analysis is stale (> 5 minutes old), running fresh pipeline...
-    MultiStageIntelligence.js:230 📊 Stage 1 (Organization Data Extraction) FULL result: {success: true, data: {…}, intelligence: {…}, organization: {…}, metadata: {…}}
-    MultiStageIntelligence.js:231 📊 Stage 1 (Organization Data Extraction) result summary: {success: true, hasData: true, hasIntelligence: true, dataKeys: Array(8), resultKeys: Array(5), …}
-    MultiStageIntelligence.js:1559 🎯 ELABORATE PIPELINE - Stage trigger check: {hasOrganization: true, hasStarted: true, currentStage: 1, totalStages: 7, hasError: false, …}
-    MultiStageIntelligence.js:1602 🚀 RUNNING STAGE 2: Competitive Intelligence Analysis
-    MultiStageIntelligence.js:200 🔄 Starting stage 2: Competitive Intelligence Analysis
-    MultiStageIntelligence.js:219 📡 Calling orchestrator for stage 2 with config: {stageId: 'competitive', hasPreviousResults: true, previousStageCount: 1}
-    intelligenceOrchestratorV4.js:28 🚀 V4 Elite Analysis starting for Tesla, Stage: Competitive Intelligence Analysis
-    intelligenceOrchestratorV4.js:102 🎯 Executing stage: competitive
-    intelligenceOrchestratorV4.js:185 📊 Stage competitive request: {hasIntelligence: true, intelligenceSignals: 160, hasPreviousResults: true, previousStageCount: 1, competitors: 5}
-    MultiStageIntelligence.js:230 📊 Stage 2 (Competitive Intelligence Analysis) FULL result: {success: true, data: {…}, intelligence: {…}, organization: undefined, metadata: {…}}
-    MultiStageIntelligence.js:231 📊 Stage 2 (Competitive Intelligence Analysis) result summary: {success: true, hasData: true, hasIntelligence: true, dataKeys: Array(7), resultKeys: Array(5), …}
-    MultiStageIntelligence.js:1559 🎯 ELABORATE PIPELINE - Stage trigger check: {hasOrganization: true, hasStarted: true, currentStage: 2, totalStages: 7, hasError: false, …}
-    MultiStageIntelligence.js:1602 🚀 RUNNING STAGE 3: Stakeholder Analysis
-    MultiStageIntelligence.js:200 🔄 Starting stage 3: Stakeholder Analysis
-    MultiStageIntelligence.js:219 📡 Calling orchestrator for stage 3 with config: {stageId: 'stakeholders', hasPreviousResults: true, previousStageCount: 2}
-    intelligenceOrchestratorV4.js:28 🚀 V4 Elite Analysis starting for Tesla, Stage: Stakeholder Analysis
-    intelligenceOrchestratorV4.js:102 🎯 Executing stage: stakeholders
-    intelligenceOrchestratorV4.js:185 📊 Stage stakeholders request: {hasIntelligence: true, intelligenceSignals: 160, hasPreviousResults: true, previousStageCount: 2, competitors: 5}
-    MultiStageIntelligence.js:230 📊 Stage 3 (Stakeholder Analysis) FULL result: {success: true, data: {…}, intelligence: {…}, organization: undefined, metadata: {…}}
-    MultiStageIntelligence.js:231 📊 Stage 3 (Stakeholder Analysis) result summary: {success: true, hasData: true, hasIntelligence: true, dataKeys: Array(5), resultKeys: Array(5), …}
-    MultiStageIntelligence.js:1559 🎯 ELABORATE PIPELINE - Stage trigger check: {hasOrganization: true, hasStarted: true, currentStage: 3, totalStages: 7, hasError: false, …}
-    MultiStageIntelligence.js:1602 🚀 RUNNING STAGE 4: Media Landscape Mapping
-    MultiStageIntelligence.js:200 🔄 Starting stage 4: Media Landscape Mapping
-    MultiStageIntelligence.js:219 📡 Calling orchestrator for stage 4 with config: {stageId: 'media', hasPreviousResults: true, previousStageCount: 3}
-    intelligenceOrchestratorV4.js:28 🚀 V4 Elite Analysis starting for Tesla, Stage: Media Landscape Mapping
-    intelligenceOrchestratorV4.js:102 🎯 Executing stage: media
-    intelligenceOrchestratorV4.js:185 📊 Stage media request: {hasIntelligence: true, intelligenceSignals: 160, hasPreviousResults: true, previousStageCount: 3, competitors: 5}
-    MultiStageIntelligence.js:230 📊 Stage 4 (Media Landscape Mapping) FULL result: {success: true, data: {…}, intelligence: {…}, organization: undefined, metadata: {…}}
-    MultiStageIntelligence.js:231 📊 Stage 4 (Media Landscape Mapping) result summary: {success: true, hasData: true, hasIntelligence: true, dataKeys: Array(5), resultKeys: Array(5), …}
-    MultiStageIntelligence.js:1559 🎯 ELABORATE PIPELINE - Stage trigger check: {hasOrganization: true, hasStarted: true, currentStage: 4, totalStages: 7, hasError: false, …}
-    MultiStageIntelligence.js:1602 🚀 RUNNING STAGE 5: Regulatory Environment
-    MultiStageIntelligence.js:200 🔄 Starting stage 5: Regulatory Environment
-    MultiStageIntelligence.js:219 📡 Calling orchestrator for stage 5 with config: {stageId: 'regulatory', hasPreviousResults: true, previousStageCount: 4}
-    intelligenceOrchestratorV4.js:28 🚀 V4 Elite Analysis starting for Tesla, Stage: Regulatory Environment
-    intelligenceOrchestratorV4.js:102 🎯 Executing stage: regulatory
-    intelligenceOrchestratorV4.js:185 📊 Stage regulatory request: {hasIntelligence: true, intelligenceSignals: 160, hasPreviousResults: true, previousStageCount: 4, competitors: 5}
-    MultiStageIntelligence.js:230 📊 Stage 5 (Regulatory Environment) FULL result: {success: true, data: {…}, intelligence: {…}, organization: undefined, metadata: {…}}
-    MultiStageIntelligence.js:231 📊 Stage 5 (Regulatory Environment) result summary: {success: true, hasData: true, hasIntelligence: true, dataKeys: Array(5), resultKeys: Array(5), …}
-    MultiStageIntelligence.js:1559 🎯 ELABORATE PIPELINE - Stage trigger check: {hasOrganization: true, hasStarted: true, currentStage: 5, totalStages: 7, hasError: false, …}
-    MultiStageIntelligence.js:1602 🚀 RUNNING STAGE 6: Market Trends & Topic Analysis
-    MultiStageIntelligence.js:200 🔄 Starting stage 6: Market Trends & Topic Analysis
-    MultiStageIntelligence.js:219 📡 Calling orchestrator for stage 6 with config: {stageId: 'trends', hasPreviousResults: true, previousStageCount: 5}
-    intelligenceOrchestratorV4.js:28 🚀 V4 Elite Analysis starting for Tesla, Stage: Market Trends & Topic Analysis
-    intelligenceOrchestratorV4.js:102 🎯 Executing stage: trends
-    intelligenceOrchestratorV4.js:185 📊 Stage trends request: {hasIntelligence: true, intelligenceSignals: 160, hasPreviousResults: true, previousStageCount: 5, competitors: 5}
-    MultiStageIntelligence.js:230 📊 Stage 6 (Market Trends & Topic Analysis) FULL result: {success: true, data: {…}, intelligence: {…}, organization: undefined, metadata: {…}}
-    MultiStageIntelligence.js:231 📊 Stage 6 (Market Trends & Topic Analysis) result summary: {success: true, hasData: true, hasIntelligence: true, dataKeys: Array(5), resultKeys: Array(5), …}
-    MultiStageIntelligence.js:1559 🎯 ELABORATE PIPELINE - Stage trigger check: {hasOrganization: true, hasStarted: true, currentStage: 6, totalStages: 7, hasError: false, …}
-    MultiStageIntelligence.js:1602 🚀 RUNNING STAGE 7: Strategic Synthesis & Pattern Recognition
-    MultiStageIntelligence.js:200 🔄 Starting stage 7: Strategic Synthesis & Pattern Recognition
-    MultiStageIntelligence.js:219 📡 Calling orchestrator for stage 7 with config: {stageId: 'synthesis', hasPreviousResults: true, previousStageCount: 6}
-    intelligenceOrchestratorV4.js:28 🚀 V4 Elite Analysis starting for Tesla, Stage: Strategic Synthesis & Pattern Recognition
-    intelligenceOrchestratorV4.js:102 🎯 Executing stage: synthesis
-    intelligenceOrchestratorV4.js:122 📊 Synthesis stage - passing all previous results: (6) ['extraction', 'competitive', 'stakeholders', 'media', 'regulatory', 'trends']
-    intelligenceOrchestratorV4.js:125 🔍 Synthesis - Intelligence data check: {hasExtraction: true, hasIntelligence: true, intelligenceSignals: 160, extractionKeys: Array(8)}
-    MultiStageIntelligence.js:230 📊 Stage 7 (Strategic Synthesis & Pattern Recognition) FULL result: {success: true, data: {…}, analysis: {…}, tabs: {…}, opportunities: Array(5), …}
-    MultiStageIntelligence.js:231 📊 Stage 7 (Strategic Synthesis & Pattern Recognition) result summary: {success: true, hasData: true, hasIntelligence: false, dataKeys: Array(8), resultKeys: Array(6), …}
-    MultiStageIntelligence.js:280 💾 Saving 5 opportunities to localStorage for OpportunityEngine
-    MultiStageIntelligence.js:1559 🎯 ELABORATE PIPELINE - Stage trigger check: {hasOrganization: true, hasStarted: true, currentStage: 7, totalStages: 7, hasError: false, …}
-    MultiStageIntelligence.js:1609 🎉 All stages done, completing pipeline...
-    MultiStageIntelligence.js:1610 📊 Current state before completion: {currentStage: 7, totalStages: 7, isComplete: false, completionRefCurrent: false, stageResultsCount: 7, …}
-    MultiStageIntelligence.js:1622 ✅ All stage results accumulated, proceeding with completion
-    MultiStageIntelligence.js:372 🎉 ELABORATE PIPELINE COMPLETE in 368 seconds
-    MultiStageIntelligence.js:373 📊 Final stage results: (7) ['extraction', 'competitive', 'stakeholders', 'media', 'regulatory', 'trends', 'synthesis']
-    MultiStageIntelligence.js:374 📊 Stage results detail: {extraction: {…}, competitive: {…}, stakeholders: {…}, media: {…}, regulatory: {…}, …}
-    MultiStageIntelligence.js:399 🔧 COMPREHENSIVE FIX v3.0: DEEP SYNTHESIS INSPECTION 2025-08-31T03:50:08.172Z
-    MultiStageIntelligence.js:400 📦 SYNTHESIS RAW STRUCTURE: {success: true, data: {…}, analysis: {…}, tabs: {…}, opportunities: Array(5), …}
-    MultiStageIntelligence.js:401 📦 SYNTHESIS TOP LEVEL KEYS: (9) ['success', 'data', 'analysis', 'tabs', 'opportunities', 'raw_count', 'inProgress', 'completed', 'stageMetadata']
-    MultiStageIntelligence.js:402 📦 SYNTHESIS.TABS EXISTS? true
-    MultiStageIntelligence.js:403 📦 SYNTHESIS.DATA EXISTS? true
-    MultiStageIntelligence.js:404 📦 SYNTHESIS.OPPORTUNITIES EXISTS? true
-    MultiStageIntelligence.js:416 📊 TABS CONTENT DEEP DIVE:
-    MultiStageIntelligence.js:419 Executive tab headline: Tesla Intelligence Summary
-    MultiStageIntelligence.js:420 Executive tab overview: Comprehensive intelligence analysis for Tesla across competitive, media, regulatory and market dimensions
-    MultiStageIntelligence.js:421 Executive immediate actions: [{…}]
-    MultiStageIntelligence.js:422 Executive statistics: {"entities_tracked":8,"actions_captured":6,"topics_monitored":0,"opportunities_identified":5}
-    MultiStageIntelligence.js:424 Competitive actions: 6 actions
-    MultiStageIntelligence.js:426 First competitor action: {"competitor":"Lucid Motors","action":"Active in market","impact":"medium","response":"Monitor closely"}
-    MultiStageIntelligence.js:429 Market trends count: 0
-    MultiStageIntelligence.js:430 Market position: Tesla operates in a highly competitive market
-    MultiStageIntelligence.js:453 ✅ Built intelligence from synthesis: {tabCount: 6, tabKeys: Array(6), opportunityCount: 5}
-    MultiStageIntelligence.js:475 🎯 Setting final intelligence: {success: true, tabs: {…}, opportunities: Array(5), analysis: {…}, patterns: Array(1), …}
-    MultiStageIntelligence.js:476 🔍 Intelligence structure: {hasAnalysis: true, hasTabs: true, hasOpportunities: true, keys: Array(7)}
-    MultiStageIntelligence.js:487 ✅ Component marked as complete, should render results now
-    MultiStageIntelligence.js:489 📤 Calling onComplete callback with intelligence
-    MultiStageIntelligence.js:1641 🔍 Final Intelligence Structure: {keys: Array(7), hasOpportunities: true, opportunityCount: 5, hasTabs: true, tabKeys: Array(6), …}
-    MultiStageIntelligence.js:1127 📊 Executive summary data: {hasTabsExecutive: true, executiveKeys: Array(6), headline: 'Tesla Intelligence Summary', immediateActions: Array(1), statistics: {…}, …}
-    MultiStageIntelligence.js:1235 🎯 Competitive data structure: {hasTabsCompetitive: true, hasAnalysisCompetitive: false, competitiveKeys: Array(4), hasCompetitors: false, hasCompetitorActions: true}
-    MultiStageIntelligence.js:1482 🎯 Rendering opportunities: {count: 5, fullOpportunities: Array(5), hasTabsData: true, tabKeys: Array(6)}
-    MultiStageIntelligence.js:1488 📋 Full opportunity details: [
-    {
-    "opportunity": "Launch Tesla thought leadership campaign on industry trends",
-    "source_stage": "media_analysis",
-    "type": "narrative",
-    "urgency": "high",
-    "confidence": 85,
-    "pr_angle": "Position as industry innovator through expert commentary and insights",
-    "quick_summary": "Media landscape analysis reveals thought leadership opportunity",
-    "supporting_evidence": [
-    "Gap in current media narratives",
-    "Limited competitor voice in key topics"
-    ]
-    },
-    {
-    "opportunity": "Leverage emerging trends for Tesla innovation announcements",
-    "source_stage": "trends_analysis",
-    "type": "trend",
-    "urgency": "high",
-    "confidence": 82,
-    "pr_angle": "Align product/service announcements with trending market themes",
-    "quick_summary": "Market trends create perfect timing for strategic announcements",
-    "supporting_evidence": [
-    "Trending topics identified",
-    "Market momentum building"
-    ]
-    },
-    {
-    "opportunity": "Position Tesla against key competitors through differentiation campaign",
-    "source_stage": "competitive_analysis",
-    "type": "competitive",
-    "urgency": "high",
-    "confidence": 80,
-    "pr_angle": "Highlight unique technology/service advantages in head-to-head comparisons",
-    "quick_summary": "Competitive analysis reveals clear differentiation opportunities",
-    "supporting_evidence": [
-    "Competitor gaps identified",
-    "Unique value propositions available"
-    ]
-    },
-    {
-    "opportunity": "Proactive response to emerging competitive threats",
-    "source_stage": "competitive_analysis",
-    "type": "competitive",
-    "urgency": "medium",
-    "confidence": 75,
-    "pr_angle": "Establish market leadership before new entrants gain traction",
-    "quick_summary": "Early response to emerging competitors maintains advantage",
-    "supporting_evidence": [
-    "1 emerging threats detected"
-    ]
-    },
-    {
-    "opportunity": "Establish Tesla as regulatory compliance leader in Automotive",
-    "source_stage": "regulatory_analysis",
-    "type": "regulatory",
-    "urgency": "medium",
-    "confidence": 75,
-    "pr_angle": "Showcase proactive compliance and industry leadership in regulatory matters",
-    "quick_summary": "Regulatory landscape creates compliance leadership opportunity",
-    "supporting_evidence": [
-    "Upcoming regulatory changes",
-    "Compliance as competitive advantage"
-    ]
-    }
-    ]
-    MultiStageIntelligence.js:1695 🎨 RENDER TRIGGER: Both isComplete and finalIntelligence are set!
-    MultiStageIntelligence.js:1696 Final intelligence available: {hasData: true, keys: Array(7), tabCount: 6}
+    🚀 RUNNING STAGE 6: Strategic Synthesis & Pattern Recognition
+    🔄 Starting stage 6: Strategic Synthesis & Pattern Recognition
+    🎯 Creating config for Stage 6 (synthesis): Object
+    🚀 V4 Elaborate Analysis for Meta
+    📊 Stage focus: Pattern recognition, strategic implications, actionable recommendations
+    🎯 Running Elaborate Stage: Strategic Synthesis & Pattern Recognition
+    🔍 DEBUG runElaborateStage params: Object
+    🧠 Stage 6: Strategic Synthesis & Pattern Recognition
+    📊 Previous stage results structure: Object
+    📊 Retrieving saved intelligence from database...
+    main.370b5139.js:2 ✅ Retrieved 200 saved intelligence items
+    main.370b5139.js:2 📊 Transformed results for synthesis: Object
+    main.370b5139.js:2 🔑 Using request_id for synthesis: req_1756650792307_9mc5gkzd4
+    main.370b5139.js:2 ✅ Synthesis Stage 5 response received: Object
+    main.370b5139.js:2 🎯 SYNTHESIS OPPORTUNITIES EXTRACTION: Object
+    main.370b5139.js:2 🚀 SYNTHESIS RETURN DATA: Object
+    main.370b5139.js:2 ✅ Saved synthesis stage data to Supabase
+    main.370b5139.js:2 ✅ Stage 6 (synthesis) completed with: Object
+    main.370b5139.js:2 🎯 SYNTHESIS STAGE OPPORTUNITIES CHECK: Object
+    main.370b5139.js:2 📊 Stage 6 (synthesis) results stored. Total stages accumulated: 6
+    main.370b5139.js:2 📋 Current accumulated stages: Array(6)
+    main.370b5139.js:2 🔍 Stage data has: Object
+    main.370b5139.js:2 🎯 ELABORATE PIPELINE - Stage trigger check: Object
+    main.370b5139.js:2 🎉 All stages done, completing pipeline...
+    main.370b5139.js:2 🎉 ELABORATE PIPELINE COMPLETE in 288 seconds
+    main.370b5139.js:2 📊 Final stage results: Array(6)
+    main.370b5139.js:2 🔄 ELABORATE SYNTHESIS: Combining insights from all stages...
+    main.370b5139.js:2 📊 Stage results structure: Array(6)
+    main.370b5139.js:2 📈 Extracted data from stages: Array(6)
+    main.370b5139.js:2 🧠 SYNTHESIS STAGE CONTENT: Object
+    main.370b5139.js:2 🔍 EXTRACTING OPPORTUNITIES FROM STAGES: Object
+    main.370b5139.js:2 📋 Checking stage 'extraction' for opportunities: Object
+    main.370b5139.js:2 📋 Checking stage 'competitive' for opportunities: Object
+    main.370b5139.js:2 📋 Checking stage 'media' for opportunities: Object
+    main.370b5139.js:2 📋 Checking stage 'regulatory' for opportunities: Object
+    main.370b5139.js:2 📋 Checking stage 'trends' for opportunities: Object
+    main.370b5139.js:2 📋 Checking stage 'synthesis' for opportunities: Object
+    main.370b5139.js:2 📊 FINAL OPPORTUNITY EXTRACTION: Object
+    main.370b5139.js:2 🔍 EXTRACTING OPPORTUNITIES FROM STAGES: Object
+    main.370b5139.js:2 📋 Checking stage 'extraction' for opportunities: Object
+    main.370b5139.js:2 📋 Checking stage 'competitive' for opportunities: Object
+    main.370b5139.js:2 📋 Checking stage 'media' for opportunities: Object
+    main.370b5139.js:2 📋 Checking stage 'regulatory' for opportunities: Object
+    main.370b5139.js:2 📋 Checking stage 'trends' for opportunities: Object
+    main.370b5139.js:2 📋 Checking stage 'synthesis' for opportunities: Object
+    main.370b5139.js:2 📊 FINAL OPPORTUNITY EXTRACTION: Object
+    main.370b5139.js:2 🔍 EXTRACTING OPPORTUNITIES FROM STAGES: Object
+    main.370b5139.js:2 📋 Checking stage 'extraction' for opportunities: Object
+    main.370b5139.js:2 📋 Checking stage 'competitive' for opportunities: Object
+    main.370b5139.js:2 📋 Checking stage 'media' for opportunities: Object
+    main.370b5139.js:2 📋 Checking stage 'regulatory' for opportunities: Object
+    main.370b5139.js:2 📋 Checking stage 'trends' for opportunities: Object
+    main.370b5139.js:2 📋 Checking stage 'synthesis' for opportunities: Object
+    main.370b5139.js:2 📊 FINAL OPPORTUNITY EXTRACTION: Object
+    main.370b5139.js:2 🎯 Intelligence complete: Object
+    main.370b5139.js:2 ✅ Pipeline complete or no organization
+    main.370b5139.js:2 🚀 Starting with simple org data: Object
+    main.370b5139.js:2 ✅ Organization saved to localStorage: Object
+    main.370b5139.js:2 ✅ Organization saved to edge function database
+    main.370b5139.js:2 🔍 Loading organization from edge function (single source of truth)...
+    main.370b5139.js:2 📱 Using organization from localStorage: OpenAI
+    main.370b5139.js:2 🎯 ELABORATE PIPELINE - Stage trigger check: Object
+    main.370b5139.js:2 ⏳ No organization yet
+    main.370b5139.js:2 🔍 Loading organization from edge function... for: OpenAI
+    main.370b5139.js:2 🚀 Organization loaded: OpenAI - Running FRESH pipeline
+    main.370b5139.js:2 📝 Ready to run COMPLETE fresh analysis pipeline - no cache loading
+    main.370b5139.js:2 🎯 ELABORATE PIPELINE - Stage trigger check: Object
+    main.370b5139.js:2 🚀 Starting pipeline for the first time
+    main.370b5139.js:2 🔄 Starting stage 1: Organization Data Extraction
+    main.370b5139.js:2 🎯 Creating config for Stage 1 (extraction): Object
+    main.370b5139.js:2 🚀 V4 Elaborate Analysis for OpenAI
+    main.370b5139.js:2 📊 Stage focus: Data gathering and organization profiling
+    main.370b5139.js:2 🎯 Running Elaborate Stage: Organization Data Extraction
+    main.370b5139.js:2 🔍 DEBUG runElaborateStage params: Object
+    main.370b5139.js:2 🏢 Stage 1: Organization Data Extraction & Discovery
+    main.370b5139.js:2 🔍 Step 1: Discovering organization profile for: OpenAI
+    main.370b5139.js:2 📦 Discovery request payload: Object
+    main.370b5139.js:2 🚀 Calling discovery edge function at: https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/intelligence-discovery-v3
+    main.370b5139.js:2 ✅ Loaded organization from edge function: Object
+    main.370b5139.js:2 🏢 RailwayV2Enhanced loaded organization from edge function: Object
+    main.370b5139.js:2 📥 Discovery response received, parsing...
+    main.370b5139.js:2 ✅ Discovery complete: {hasEntities: true, entities: Array(6), saved: true, request_id: 'req_1756652975812_gw6t9kjw3'}
+    main.370b5139.js:2 🔑 Pipeline request_id from discovery: req_1756652975812_gw6t9kjw3
+    main.370b5139.js:2 📡 Step 2: Collecting intelligence signals...
+    main.370b5139.js:2 📥 Collection response received, parsing...
+    main.370b5139.js:2 ✅ Collection data parsed: {hasIntelligence: true, signalCount: 160}
+    main.370b5139.js:2 ✅ Saved extraction stage data to Supabase
+    main.370b5139.js:2 🔍 Generating opportunities for stage: extraction
+    main.370b5139.js:2 🔍 Generating opportunities for Organization Data Extraction
+    main.370b5139.js:2 ✅ Stage 1 (extraction) completed with: {hasData: true, hasTabs: true, hasAnalysis: true, hasOpportunities: true, opportunityCount: 0, …}
+    main.370b5139.js:2 📊 Stage 1 (extraction) results stored. Total stages accumulated: 1
+    main.370b5139.js:2 📋 Current accumulated stages: ['extraction']
+    main.370b5139.js:2 🔍 Stage data has: {hasData: true, hasAnalysis: true, hasTabs: true}
+    main.370b5139.js:2 🎯 ELABORATE PIPELINE - Stage trigger check: {hasOrganization: true, hasStarted: true, currentStage: 1, totalStages: 6, hasError: false, …}
+    main.370b5139.js:2 🚀 RUNNING STAGE 2: Competitive Intelligence Analysis
+    main.370b5139.js:2 🔄 Starting stage 2: Competitive Intelligence Analysis
+    main.370b5139.js:2 🎯 Creating config for Stage 2 (competitive): {hasStageResults: true, stageResultsKeys: Array(1), stageResultsCount: 1}
+    main.370b5139.js:2 🚀 V4 Elaborate Analysis for OpenAI
+    main.370b5139.js:2 📊 Stage focus: Competitor actions, market positioning, competitive threats
+    main.370b5139.js:2 🎯 Running Elaborate Stage: Competitive Intelligence Analysis
+    main.370b5139.js:2 🔍 DEBUG runElaborateStage params: {stageConfig: {…}, organization: {…}, organizationType: 'object', hasOrgName: true, config: {…}, …}
+    main.370b5139.js:2 🎯 Stage 2: Competitive Intelligence Analysis
+    main.370b5139.js:2 🔑 Using request_id from extraction stage: req_1756652975812_gw6t9kjw3
+    main.370b5139.js:2 🔍 DEBUG runCompetitiveStage inputs: {organizationParam: {…}, organizationType: 'object', requestId: 'req_1756652975812_gw6t9kjw3', organizationKeys: Array(16), configParam: {…}, …}
+    main.370b5139.js:2 📊 Loading organization profile from edge function for: OpenAI
+    main.370b5139.js:2 ✅ Loaded profile from edge function with 10 competitors
+    main.370b5139.js:2 📊 Skipping backend persistence calls to avoid 500 errors
+    main.370b5139.js:2 📤 Sending to competitor stage: {hasProfile: true, competitorCount: 10, competitors: Array(3), organizationName: 'OpenAI', fullRequestBody: {…}}
+    main.370b5139.js:2 ✅ Saved competitive stage data to Supabase
+    main.370b5139.js:2 🔄 Stage 2 (competitive) returning data: {hasData: true, hasCompetitors: true, competitorsStructure: Array(4), hasTabs: true}
+    main.370b5139.js:2 🔍 Generating opportunities for stage: competitive
+    main.370b5139.js:2 🔍 Generating opportunities for Competitive Intelligence Analysis
+    main.370b5139.js:2 ✅ Stage 2 (competitive) completed with: {hasData: true, hasTabs: true, hasAnalysis: true, hasOpportunities: true, opportunityCount: 0, …}
+    main.370b5139.js:2 📊 Stage 2 (competitive) results stored. Total stages accumulated: 2
+    main.370b5139.js:2 📋 Current accumulated stages: (2) ['extraction', 'competitive']
+    main.370b5139.js:2 🔍 Stage data has: {hasData: true, hasAnalysis: true, hasTabs: true}
+    main.370b5139.js:2 🎯 ELABORATE PIPELINE - Stage trigger check: {hasOrganization: true, hasStarted: true, currentStage: 2, totalStages: 6, hasError: false, …}
+    main.370b5139.js:2 🚀 RUNNING STAGE 3: Media Landscape Mapping
+    main.370b5139.js:2 🔄 Starting stage 3: Media Landscape Mapping
+    main.370b5139.js:2 🎯 Creating config for Stage 3 (media): {hasStageResults: true, stageResultsKeys: Array(1), stageResultsCount: 1}
+    main.370b5139.js:2 🚀 V4 Elaborate Analysis for OpenAI
+    main.370b5139.js:2 📊 Stage focus: Media relations, coverage analysis, journalist identification
+    main.370b5139.js:2 🎯 Running Elaborate Stage: Media Landscape Mapping
+    main.370b5139.js:2 🔍 DEBUG runElaborateStage params: {stageConfig: {…}, organization: {…}, organizationType: 'object', hasOrgName: true, config: {…}, …}
+    main.370b5139.js:2 📰 Stage 3: Media Landscape Mapping
+    main.370b5139.js:2 📊 Loading media profile from edge function for: OpenAI
+    main.370b5139.js:2 ✅ Retrieved saved profile from edge function with media outlets: 8
+    main.370b5139.js:2 ✅ Saved media stage data to Supabase
+    main.370b5139.js:2 🔍 Generating opportunities for stage: media
+    main.370b5139.js:2 🔍 Generating opportunities for Media Landscape Mapping
+    main.370b5139.js:2 ✅ Stage 3 (media) completed with: {hasData: true, hasTabs: true, hasAnalysis: true, hasOpportunities: true, opportunityCount: 0, …}
+    main.370b5139.js:2 📊 Stage 3 (media) results stored. Total stages accumulated: 3
+    main.370b5139.js:2 📋 Current accumulated stages: (3) ['extraction', 'competitive', 'media']
+    main.370b5139.js:2 🔍 Stage data has: {hasData: true, hasAnalysis: true, hasTabs: true}
+    main.370b5139.js:2 🎯 ELABORATE PIPELINE - Stage trigger check: {hasOrganization: true, hasStarted: true, currentStage: 3, totalStages: 6, hasError: false, …}
+    main.370b5139.js:2 🚀 RUNNING STAGE 4: Regulatory & Stakeholder Environment
+    main.370b5139.js:2 🔄 Starting stage 4: Regulatory & Stakeholder Environment
+    main.370b5139.js:2 🎯 Creating config for Stage 4 (regulatory): {hasStageResults: true, stageResultsKeys: Array(1), stageResultsCount: 1}
+    main.370b5139.js:2 🚀 V4 Elaborate Analysis for OpenAI
+    main.370b5139.js:2 📊 Stage focus: Compliance requirements, analyst opinions, investor relations
+    main.370b5139.js:2 🎯 Running Elaborate Stage: Regulatory & Stakeholder Environment
+    main.370b5139.js:2 🔍 DEBUG runElaborateStage params: {stageConfig: {…}, organization: {…}, organizationType: 'object', hasOrgName: true, config: {…}, …}
+    main.370b5139.js:2 ⚖️ Stage 4: Regulatory & Stakeholder Analysis
+    main.370b5139.js:2 🔑 Using request_id in regulatory stage: req_1756652975812_gw6t9kjw3
+    main.370b5139.js:2 📊 Retrieving saved stakeholders from database for: OpenAI
+    main.370b5139.js:2 ✅ Retrieved saved profile with stakeholders: {regulators: 0, analysts: 0, investors: 0}
+    main.370b5139.js:2 ✅ Saved regulatory stage data to Supabase
+    main.370b5139.js:2 🔍 Generating opportunities for stage: regulatory
+    main.370b5139.js:2 🔍 Generating opportunities for Regulatory & Stakeholder Environment
+    main.370b5139.js:2 ✅ Stage 4 (regulatory) completed with: {hasData: true, hasTabs: true, hasAnalysis: true, hasOpportunities: true, opportunityCount: 0, …}
+    main.370b5139.js:2 📊 Stage 4 (regulatory) results stored. Total stages accumulated: 4
+    main.370b5139.js:2 📋 Current accumulated stages: (4) ['extraction', 'competitive', 'media', 'regulatory']
+    main.370b5139.js:2 🔍 Stage data has: {hasData: true, hasAnalysis: true, hasTabs: true}
+    main.370b5139.js:2 🎯 ELABORATE PIPELINE - Stage trigger check: {hasOrganization: true, hasStarted: true, currentStage: 4, totalStages: 6, hasError: false, …}
+    main.370b5139.js:2 🚀 RUNNING STAGE 5: Market Trends & Topic Analysis
+    main.370b5139.js:2 🔄 Starting stage 5: Market Trends & Topic Analysis
+    main.370b5139.js:2 🎯 Creating config for Stage 5 (trends): {hasStageResults: true, stageResultsKeys: Array(1), stageResultsCount: 1}
+    main.370b5139.js:2 🚀 V4 Elaborate Analysis for OpenAI
+    main.370b5139.js:2 📊 Stage focus: Market trends, topic analysis, narrative gaps
+    main.370b5139.js:2 🎯 Running Elaborate Stage: Market Trends & Topic Analysis
+    main.370b5139.js:2 🔍 DEBUG runElaborateStage params: {stageConfig: {…}, organization: {…}, organizationType: 'object', hasOrgName: true, config: {…}, …}
+    main.370b5139.js:2 📈 Stage 5: Market Trends & Topic Analysis
+    main.370b5139.js:2 🔑 Using request_id in trends stage: req_1756652975812_gw6t9kjw3
+    main.370b5139.js:2 📊 Retrieving saved topics and previous intelligence...
+    main.370b5139.js:2 ✅ Retrieved saved profile with keywords: 12
+    main.370b5139.js:2 ✅ Retrieved 50 recent intelligence items for trend analysis
+    main.370b5139.js:2 ✅ Saved trends stage data to Supabase
+    main.370b5139.js:2 🔍 Generating opportunities for stage: trends
+    main.370b5139.js:2 🔍 Generating opportunities for Market Trends & Topic Analysis
+    main.370b5139.js:2 ✅ Stage 5 (trends) completed with: {hasData: true, hasTabs: true, hasAnalysis: true, hasOpportunities: true, opportunityCount: 0, …}
+    main.370b5139.js:2 📊 Stage 5 (trends) results stored. Total stages accumulated: 5
+    main.370b5139.js:2 📋 Current accumulated stages: (5) ['extraction', 'competitive', 'media', 'regulatory', 'trends']
+    main.370b5139.js:2 🔍 Stage data has: {hasData: true, hasAnalysis: true, hasTabs: true}
+    main.370b5139.js:2 🎯 ELABORATE PIPELINE - Stage trigger check: {hasOrganization: true, hasStarted: true, currentStage: 5, totalStages: 6, hasError: false, …}
+    main.370b5139.js:2 🚀 RUNNING STAGE 6: Strategic Synthesis & Pattern Recognition
+    main.370b5139.js:2 🔄 Starting stage 6: Strategic Synthesis & Pattern Recognition
+    main.370b5139.js:2 🎯 Creating config for Stage 6 (synthesis): {hasStageResults: true, stageResultsKeys: Array(1), stageResultsCount: 1}
+    main.370b5139.js:2 🚀 V4 Elaborate Analysis for OpenAI
+    main.370b5139.js:2 📊 Stage focus: Pattern recognition, strategic implications, actionable recommendations
+    main.370b5139.js:2 🎯 Running Elaborate Stage: Strategic Synthesis & Pattern Recognition
+    main.370b5139.js:2 🔍 DEBUG runElaborateStage params: {stageConfig: {…}, organization: {…}, organizationType: 'object', hasOrgName: true, config: {…}, …}
+    main.370b5139.js:2 🧠 Stage 6: Strategic Synthesis & Pattern Recognition
+    main.370b5139.js:2 📊 Previous stage results structure: {hasResults: true, stageCount: 1, stages: Array(1), sampleStage: 'extraction'}
+    main.370b5139.js:2 📊 Retrieving saved intelligence from database...
+    main.370b5139.js:2 ✅ Retrieved 200 saved intelligence items
+    main.370b5139.js:2 📊 Transformed results for synthesis: {originalKeys: Array(1), transformedKeys: Array(1), hasCompetitors: false, hasMedia: false}
+    main.370b5139.js:2 🔑 Using request_id for synthesis: req_1756652975812_gw6t9kjw3
+    main.370b5139.js:2 ✅ Synthesis Stage 5 response received: {success: true, hasData: true, dataKeys: Array(1)}
+    main.370b5139.js:2 🎯 SYNTHESIS OPPORTUNITIES EXTRACTION: {hasConsolidatedOps: false, hasPrioritizedList: false, opportunityCount: 0, firstOpportunity: undefined, dataStructure: Array(1)}
+    main.370b5139.js:2 🚀 SYNTHESIS RETURN DATA: {hasOpportunities: true, opportunityCount: 0, hasData: true, hasConsolidatedInData: false, consolidatedCount: 0, …}
+    main.370b5139.js:2 ✅ Saved synthesis stage data to Supabase
+    main.370b5139.js:2 ✅ Stage 6 (synthesis) completed with: {hasData: true, hasTabs: true, hasAnalysis: true, hasOpportunities: true, opportunityCount: 0, …}
+    main.370b5139.js:2 🎯 SYNTHESIS STAGE OPPORTUNITIES CHECK: {directOpportunities: Array(0), consolidatedPath: undefined, analysisPath: undefined, totalFound: 0}
+    main.370b5139.js:2 📊 Stage 6 (synthesis) results stored. Total stages accumulated: 6
+    main.370b5139.js:2 📋 Current accumulated stages: (6) ['extraction', 'competitive', 'media', 'regulatory', 'trends', 'synthesis']
+    main.370b5139.js:2 🔍 Stage data has: {hasData: true, hasAnalysis: true, hasTabs: true}
+    main.370b5139.js:2 🎯 ELABORATE PIPELINE - Stage trigger check: {hasOrganization: true, hasStarted: true, currentStage: 6, totalStages: 6, hasError: false, …}
+    main.370b5139.js:2 🎉 All stages done, completing pipeline...
+    main.370b5139.js:2 🎉 ELABORATE PIPELINE COMPLETE in 243 seconds
+    main.370b5139.js:2 📊 Final stage results: (6) ['extraction', 'competitive', 'media', 'regulatory', 'trends', 'synthesis']
+    main.370b5139.js:2 🔄 ELABORATE SYNTHESIS: Combining insights from all stages...
+    main.370b5139.js:2 📊 Stage results structure: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+    main.370b5139.js:2 📈 Extracted data from stages: (6) ['extraction', 'competitive', 'media', 'regulatory', 'trends', 'synthesis']
+    main.370b5139.js:2 🧠 SYNTHESIS STAGE CONTENT: {hasSynthesis: true, synthesisKeys: Array(10), hasData: true, dataKeys: Array(1), hasAnalysis: true, …}
+    main.370b5139.js:2 🔍 EXTRACTING OPPORTUNITIES FROM STAGES: {stageCount: 6, stages: Array(6)}
+    main.370b5139.js:2 📋 Checking stage 'extraction' for opportunities: {hasDirectOps: true, directCount: 0, hasDataField: true, hasConsolidatedInData: false, consolidatedInDataCount: 0, …}
+    main.370b5139.js:2 📋 Checking stage 'competitive' for opportunities: {hasDirectOps: true, directCount: 0, hasDataField: true, hasConsolidatedInData: false, consolidatedInDataCount: 0, …}
+    main.370b5139.js:2 📋 Checking stage 'media' for opportunities: {hasDirectOps: true, directCount: 0, hasDataField: true, hasConsolidatedInData: false, consolidatedInDataCount: 0, …}
+    main.370b5139.js:2 📋 Checking stage 'regulatory' for opportunities: {hasDirectOps: true, directCount: 0, hasDataField: true, hasConsolidatedInData: false, consolidatedInDataCount: 0, …}
+    main.370b5139.js:2 📋 Checking stage 'trends' for opportunities: {hasDirectOps: true, directCount: 0, hasDataField: true, hasConsolidatedInData: false, consolidatedInDataCount: 0, …}
+    main.370b5139.js:2 📋 Checking stage 'synthesis' for opportunities: {hasDirectOps: true, directCount: 0, hasDataField: true, hasConsolidatedInData: false, consolidatedInDataCount: 0, …}
+    main.370b5139.js:2 📊 FINAL OPPORTUNITY EXTRACTION: {totalOpportunities: 0, opportunitiesList: Array(0), sources: Array(0)}
+    main.370b5139.js:2 🔍 EXTRACTING OPPORTUNITIES FROM STAGES: {stageCount: 6, stages: Array(6)}
+    main.370b5139.js:2 📋 Checking stage 'extraction' for opportunities: {hasDirectOps: true, directCount: 0, hasDataField: true, hasConsolidatedInData: false, consolidatedInDataCount: 0, …}
+    main.370b5139.js:2 📋 Checking stage 'competitive' for opportunities: {hasDirectOps: true, directCount: 0, hasDataField: true, hasConsolidatedInData: false, consolidatedInDataCount: 0, …}
+    main.370b5139.js:2 📋 Checking stage 'media' for opportunities: {hasDirectOps: true, directCount: 0, hasDataField: true, hasConsolidatedInData: false, consolidatedInDataCount: 0, …}
+    main.370b5139.js:2 📋 Checking stage 'regulatory' for opportunities: {hasDirectOps: true, directCount: 0, hasDataField: true, hasConsolidatedInData: false, consolidatedInDataCount: 0, …}
+    main.370b5139.js:2 📋 Checking stage 'trends' for opportunities: {hasDirectOps: true, directCount: 0, hasDataField: true, hasConsolidatedInData: false, consolidatedInDataCount: 0, …}
+    main.370b5139.js:2 📋 Checking stage 'synthesis' for opportunities: {hasDirectOps: true, directCount: 0, hasDataField: true, hasConsolidatedInData: false, consolidatedInDataCount: 0, …}
+    main.370b5139.js:2 📊 FINAL OPPORTUNITY EXTRACTION: {totalOpportunities: 0, opportunitiesList: Array(0), sources: Array(0)}
+    main.370b5139.js:2 🔍 EXTRACTING OPPORTUNITIES FROM STAGES: {stageCount: 6, stages: Array(6)}
+    main.370b5139.js:2 📋 Checking stage 'extraction' for opportunities: {hasDirectOps: true, directCount: 0, hasDataField: true, hasConsolidatedInData: false, consolidatedInDataCount: 0, …}
+    main.370b5139.js:2 📋 Checking stage 'competitive' for opportunities: {hasDirectOps: true, directCount: 0, hasDataField: true, hasConsolidatedInData: false, consolidatedInDataCount: 0, …}
+    main.370b5139.js:2 📋 Checking stage 'media' for opportunities: {hasDirectOps: true, directCount: 0, hasDataField: true, hasConsolidatedInData: false, consolidatedInDataCount: 0, …}
+    main.370b5139.js:2 📋 Checking stage 'regulatory' for opportunities: {hasDirectOps: true, directCount: 0, hasDataField: true, hasConsolidatedInData: false, consolidatedInDataCount: 0, …}
+    main.370b5139.js:2 📋 Checking stage 'trends' for opportunities: {hasDirectOps: true, directCount: 0, hasDataField: true, hasConsolidatedInData: false, consolidatedInDataCount: 0, …}
+    main.370b5139.js:2 📋 Checking stage 'synthesis' for opportunities: {hasDirectOps: true, directCount: 0, hasDataField: true, hasConsolidatedInData: false, consolidatedInDataCount: 0, …}
+    main.370b5139.js:2 📊 FINAL OPPORTUNITY EXTRACTION: {totalOpportunities: 0, opportunitiesList: Array(0), sources: Array(0)}
+    main.370b5139.js:2 🎯 Intelligence complete: {success: true, analysis: {…}, tabs: {…}, opportunities: Array(0), stageInsights: {…}, …}
+    main.370b5139.js:2 ✅ Pipeline complete or no organization

@@ -5,7 +5,6 @@ import { ProjectProvider } from "./contexts/ProjectContext";
 import { IntelligenceProvider } from "./context/IntelligenceContext";
 import { supabase } from "./config/supabase"; // Force Supabase to be included
 import { migrateToUnifiedProfile } from "./utils/migrateProfile"; // Auto-migrate existing data
-import ErrorBoundary from "./components/ErrorBoundary";
 import Dashboard from "./components/Dashboard";
 import AIAssistant from "./components/AIAssistant";
 import ContentGenerator from "./components/ContentGenerator";
@@ -40,14 +39,14 @@ import NivDatabase from "./pages/NivDatabase"; // Database-driven Niv (no realti
 import NivDirect from "./pages/NivDirect"; // Direct API integration - most reliable
 
 // New Railway V2 with Neon Effects
-import RailwayV2 from "./components/RailwayV2";
+import RailwayV2Enhanced from "./components/RailwayV2Enhanced";
 import SystemInitializer from "./components/SystemInitializer";
 import SmartOnboarding from "./components/SmartOnboarding";
-// import OnboardingV2 from "./components/OnboardingV2"; // Removed - using OnboardingV3
-import OnboardingV3 from "./components/OnboardingV3";
-import SimpleIntelligenceTest from "./components/SimpleIntelligenceTest";
-import SupabaseIntelligence from "./components/SupabaseIntelligence"; // Clean Supabase-only implementation
-
+import SimpleOrgInit from "./components/SimpleOrgInit";
+import UnifiedOnboarding from "./components/UnifiedOnboarding";
+import QuickInit from "./components/QuickInit";
+import TestQuickInit from "./TestQuickInit";
+import QuickInitBridge from "./components/QuickInitBridge";
 
 // Log Supabase initialization for debugging
 console.log('🚀 SignalDesk initialized with Supabase:', supabase ? 'Connected' : 'Not connected');
@@ -90,45 +89,30 @@ function PrivateRoute({ children }) {
 
 function App() {
   // BRAND NEW RailwayV2 with Neon Effects and Intelligence
-  console.log("⚡⚡⚡ RAILWAY V2 NEON INTERFACE v3.1.0 - DEPLOYED:", new Date().toISOString());
+  console.log("⚡⚡⚡ RAILWAY V2 NEON INTERFACE - DEPLOYED:", new Date().toISOString());
   console.log("🎯 Modern Railway design with neon buttons");
   console.log("💎 Intelligence Hub with practical insights");
-  console.log("📍 Deployed from ROOT directory - Fixed Aug 24, 2024");
   console.log("🚀 VERSION 0.2.0 - Firecrawl Integration Active");
-  console.log("📅 Build Date: August 26, 2025");
+  console.log("📅 Build Date: August 23, 2025");
   
   return (
-    <ErrorBoundary>
-      <BrowserRouter>
-        <AuthProvider>
-          <ProjectProvider>
-            <IntelligenceProvider>
-              {/* RailwayV2 - Modern Neon Interface */}
-              <Routes>
+    <BrowserRouter>
+      <AuthProvider>
+        <ProjectProvider>
+          <IntelligenceProvider>
+            {/* RailwayV2 - Modern Neon Interface */}
+            <Routes>
               <Route path="/login" element={<Login />} />
-              <Route path="/initialize" element={<OnboardingV3 />} />
-              <Route path="/onboarding" element={<OnboardingV3 />} />
+              <Route path="/initialize" element={<SystemInitializer />} />
+              <Route path="/onboarding" element={<SimpleOrgInit />} />
+              <Route path="/quickinit" element={<QuickInit />} />
+              <Route path="/test-quickinit" element={<TestQuickInit />} />
+              <Route path="/quickinit-bridge" element={<QuickInitBridge />} />
               <Route
-                path="/railway"
+                path="/*"
                 element={
                   <PrivateRoute>
-                    <RailwayV2 />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/"
-                element={
-                  <PrivateRoute>
-                    <RailwayV2 />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/supabase-intel"
-                element={
-                  <PrivateRoute>
-                    <SupabaseIntelligence organization={{ name: 'Nike', industry: 'sportswear' }} />
+                    <RailwayV2Enhanced />
                   </PrivateRoute>
                 }
               />
@@ -137,11 +121,9 @@ function App() {
         </ProjectProvider>
       </AuthProvider>
     </BrowserRouter>
-    </ErrorBoundary>
   );
 }
 
 export default App;
 // CACHE BUST: RailwayV2 Neon Interface - 2025-08-20T15:00:00Z
-// Force rebuild: Sun Aug 24 22:32:41 EDT 2025
-// Force deployment Sun Aug 24 23:09:57 EDT 2025
+// Force deployment: Wed Aug 27 15:31:58 EDT 2025

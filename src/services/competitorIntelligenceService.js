@@ -8,8 +8,8 @@ class CompetitorIntelligenceService {
     this.competitorData = new Map();
     this.trackingAgents = new Map();
     this.sourceConfigurations = new Map();
-    this.supabaseUrl = process.env.REACT_APP_SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL;
-    this.supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || process.env.REACT_APP_SUPABASE_ANON_KEY;
+    this.supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co';
+    this.supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
   }
 
   // Call Edge Functions directly

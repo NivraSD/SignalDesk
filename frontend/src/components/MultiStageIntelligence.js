@@ -99,8 +99,28 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         console.log('🔍 Loading organization from edge function (single source of truth)...');
         
         try {
-          // If we have organization from prop, try to load that specific organization
-          const orgName = organizationProp?.name || 'Default Organization';
+          // CRITICAL: Check localStorage FIRST for the organization name
+          const savedOrgData = localStorage.getItem('organizationData');
+          const savedOrgName = localStorage.getItem('selectedOrganization');
+          
+          let orgName = organizationProp?.name || savedOrgName || 'Default Organization';
+          
+          // If we have saved data in localStorage, use it directly
+          if (savedOrgData) {
+            try {
+              const parsedOrg = JSON.parse(savedOrgData);
+              if (parsedOrg.name) {
+                console.log('📱 Using organization from localStorage:', parsedOrg.name);
+                setOrganization(parsedOrg);
+                setLoadingOrg(false);
+                return; // Exit early, we have what we need
+              }
+            } catch (e) {
+              console.warn('Could not parse localStorage org data');
+            }
+          }
+          
+          // Otherwise continue with edge function lookup
           if (orgName) {
             console.log(`📊 Loading organization profile for: ${orgName}`);
             const response = await fetch(
@@ -261,20 +281,30 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         }
         
         // Store stage-specific results (replace inProgress marker)
-        setStageResults(prev => ({
-          ...prev,
-          [stage.id]: {
-            ...result,
-            inProgress: false,
-            completed: true,
-            stageMetadata: {
-              stageName: stage.name,
-              focus: stage.focus,
-              duration: Date.now() - startTime,
-              timestamp: new Date().toISOString()
+        setStageResults(prev => {
+          const updated = {
+            ...prev,
+            [stage.id]: {
+              ...result,
+              inProgress: false,
+              completed: true,
+              stageMetadata: {
+                stageName: stage.name,
+                focus: stage.focus,
+                duration: Date.now() - startTime,
+                timestamp: new Date().toISOString()
+              }
             }
-          }
-        }));
+          };
+          console.log(`📊 Stage ${stageIndex + 1} (${stage.id}) results stored. Total stages accumulated:`, Object.keys(updated).length);
+          console.log('📋 Current accumulated stages:', Object.keys(updated));
+          console.log('🔍 Stage data has:', {
+            hasData: !!result.data,
+            hasAnalysis: !!result.analysis,
+            hasTabs: !!result.tabs
+          });
+          return updated;
+        });
         
         // Progress to next stage
         setTimeout(() => {
@@ -342,6 +372,14 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
 
     // Add stage-specific focus parameters
     const stage = INTELLIGENCE_STAGES[stageIndex];
+    
+    // Debug log to track stage results being passed
+    console.log(`🎯 Creating config for Stage ${stageIndex + 1} (${stage.id}):`, {
+      hasStageResults: Object.keys(stageResults).length > 0,
+      stageResultsKeys: Object.keys(stageResults),
+      stageResultsCount: Object.keys(stageResults).length
+    });
+    
     return {
       ...baseConfig,
       stageConfig: {
@@ -429,14 +467,37 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     console.log('📈 Extracted data from stages:', Object.keys(extractedData));
     
     // Create comprehensive intelligence combining all stages
+    // PRIORITIZE Claude synthesis analysis over opportunities
+    const synthesisStage = results.synthesis || {};
+    const claudeAnalysis = synthesisStage.data || synthesisStage.analysis || {};
+    
+    console.log('🧠 SYNTHESIS STAGE CONTENT:', {
+      hasSynthesis: !!results.synthesis,
+      synthesisKeys: Object.keys(synthesisStage),
+      hasData: !!synthesisStage.data,
+      dataKeys: synthesisStage.data ? Object.keys(synthesisStage.data).slice(0, 10) : [],
+      hasAnalysis: !!synthesisStage.analysis,
+      analysisKeys: synthesisStage.analysis ? Object.keys(synthesisStage.analysis).slice(0, 10) : [],
+      hasTabs: !!synthesisStage.tabs,
+      tabCount: synthesisStage.tabs ? Object.keys(synthesisStage.tabs).length : 0
+    });
+    
     const elaborateIntelligence = {
       success: true,
-      analysis: primaryResult?.data || primaryResult?.analysis || extractedData.synthesis || extractedData.competitive || {},
-      tabs: primaryResult?.tabs || generateDefaultTabs(extractedData) || generateTabsFromStageData(results),
-      opportunities: extractOpportunitiesFromAllStages(results),
+      // Prioritize Claude's synthesized analysis
+      analysis: claudeAnalysis,
+      // Get tabs from synthesis or generate from all data
+      tabs: synthesisStage.tabs || primaryResult?.tabs || generateDefaultTabs(extractedData) || generateTabsFromStageData(results),
+      // Remove opportunities - focus on analysis only
+      opportunities: [],
+      // Get insights from individual stages
       stageInsights: generateStageInsights(results),
-      patterns: identifyPatternsAcrossStages(results),
-      recommendations: generateStrategicRecommendations(results),
+      // Extract patterns identified by Claude
+      patterns: claudeAnalysis.patterns || identifyPatternsAcrossStages(results),
+      // Get Claude's recommendations
+      recommendations: claudeAnalysis.recommendations || generateStrategicRecommendations(results),
+      // Add raw stage data for debugging
+      rawStageData: extractedData,
       metadata: {
         organization: orgProfile?.name || 'Unknown',
         pipeline: 'elaborate-multi-stage',
@@ -445,7 +506,8 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         duration: duration,
         stagesCompleted: Object.keys(results),
         timestamp: new Date().toISOString(),
-        comprehensiveAnalysis: true
+        comprehensiveAnalysis: true,
+        hasClaudeAnalysis: !!claudeAnalysis && Object.keys(claudeAnalysis).length > 0
       }
     };
     
@@ -739,9 +801,8 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
   const identifyPatternsAcrossStages = (results) => {
     const patterns = [];
     
-    // Pattern 1: Cross-stage opportunity alignment
-    const allOpportunities = extractOpportunitiesFromAllStages(results);
-    if (allOpportunities.length > 3) {
+    // Pattern 1: Cross-stage analysis alignment (opportunity extraction removed)
+    if (Object.keys(results).length > 3) {
       patterns.push({
         type: 'opportunity_convergence',
         description: 'Multiple stages identified aligned strategic opportunities',
@@ -887,15 +948,39 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
   // Tab Render Functions - Pure Intelligence Analysis
   
   const renderExecutiveSummary = (intelligence) => {
-    const { tabs = {}, patterns = [], statistics = {} } = intelligence;
+    const { tabs = {}, patterns = [], statistics = {}, analysis = {}, rawStageData = {} } = intelligence;
+    
+    // Get Claude synthesis analysis from rawStageData or analysis
+    const claudeSynthesis = rawStageData?.synthesis || analysis;
     
     return (
       <div className="executive-summary-content">
+        {/* Claude Executive Summary */}
+        {claudeSynthesis?.executive_summary && (
+          <div className="summary-section">
+            <h3>Executive Intelligence Summary</h3>
+            <div className="narrative-block">
+              <p className="headline">{claudeSynthesis.executive_summary.headline}</p>
+              <p>{claudeSynthesis.executive_summary.narrative}</p>
+              {claudeSynthesis.executive_summary.key_insights && (
+                <div className="key-insights">
+                  <h4>Key Insights</h4>
+                  <ul>
+                    {claudeSynthesis.executive_summary.key_insights.map((insight, idx) => (
+                      <li key={idx}>{insight}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        
         <div className="summary-section">
           <h3>Current State Analysis</h3>
           <div className="narrative-block">
             <p>
-              {tabs.executive?.overview || 
+              {tabs.executive?.overview || claudeSynthesis?.executive_summary?.narrative ||
                'Intelligence gathering across 6 analytical dimensions reveals a complex operational environment.'}
             </p>
             {tabs.executive?.headline && (
@@ -925,10 +1010,15 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         <div className="summary-section">
           <h3>Convergence Patterns</h3>
           <div className="patterns-list">
-            {patterns.slice(0, 3).map((pattern, idx) => (
+            {/* Use Claude's patterns if available */}
+            {(claudeSynthesis?.patterns || patterns).slice(0, 5).map((pattern, idx) => (
               <div key={idx} className="pattern-item">
-                <span className="pattern-type">{pattern.type || pattern}:</span>
-                <span className="pattern-desc">{pattern.description || 'Pattern identified'}</span>
+                <span className="pattern-type">
+                  {typeof pattern === 'string' ? 'Pattern:' : (pattern.type || 'Insight:')}
+                </span>
+                <span className="pattern-desc">
+                  {typeof pattern === 'string' ? pattern : (pattern.description || pattern.insight || 'Pattern identified')}
+                </span>
                 {pattern.confidence && (
                   <span className="confidence">Confidence: {pattern.confidence}%</span>
                 )}
@@ -936,6 +1026,29 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
             ))}
           </div>
         </div>
+        
+        {/* Claude Strategic Recommendations */}
+        {claudeSynthesis?.strategic_recommendations && (
+          <div className="summary-section">
+            <h3>Strategic Recommendations</h3>
+            <div className="recommendations-list">
+              {Object.entries(claudeSynthesis.strategic_recommendations).map(([category, items], idx) => (
+                <div key={idx} className="recommendation-category">
+                  <h4>{category.replace(/_/g, ' ').toUpperCase()}</h4>
+                  {Array.isArray(items) ? (
+                    <ul>
+                      {items.slice(0, 3).map((item, itemIdx) => (
+                        <li key={itemIdx}>{item}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>{items}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         
         <div className="summary-section">
           <h3>Risk Indicators</h3>
@@ -1319,15 +1432,15 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
             {intelligenceTabs[activeTab]?.content}
           </div>
           
-          {/* Opportunity Engine Link - Separate from Intelligence */}
-          {finalIntelligence.opportunities && finalIntelligence.opportunities.length > 0 && (
-            <div className="opportunity-engine-link">
+          {/* Claude Analysis Summary */}
+          {finalIntelligence.metadata?.hasClaudeAnalysis && (
+            <div className="claude-analysis-footer">
               <div className="separator-line" />
-              <div className="opportunity-notice">
-                <span className="notice-icon">💡</span>
+              <div className="analysis-notice">
+                <span className="notice-icon">🧠</span>
                 <span className="notice-text">
-                  {finalIntelligence.opportunities.length} strategic opportunities identified. 
-                  View in Opportunity Engine for actionable recommendations.
+                  Claude synthesis complete across {finalIntelligence.metadata.stagesCompleted.length} intelligence stages.
+                  Analysis duration: {Math.round(finalIntelligence.metadata.duration / 1000)}s
                 </span>
               </div>
             </div>
@@ -1423,15 +1536,13 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         synthesis: synthesisResult
       });
       
-      // Extract and display opportunities
-      const opportunities = extractOpportunitiesFromAllStages({
-        extraction: extractionResult,
-        synthesis: synthesisResult
-      });
-      
-      console.log('🏆 OPPORTUNITY DEBUG TEST COMPLETE:', {
-        totalOpportunities: opportunities.length,
-        opportunities: opportunities
+      // Focus on Claude synthesis analysis
+      console.log('🏆 SYNTHESIS DEBUG TEST COMPLETE:', {
+        hasClaudeAnalysis: !!synthesisResult?.data,
+        analysisKeys: synthesisResult?.data ? Object.keys(synthesisResult.data) : [],
+        executiveSummary: synthesisResult?.data?.executive_summary,
+        patterns: synthesisResult?.data?.patterns?.length || 0,
+        recommendations: synthesisResult?.data?.strategic_recommendations ? Object.keys(synthesisResult.data.strategic_recommendations) : []
       });
       
       // Force completion
@@ -1482,7 +1593,7 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
               fontSize: '12px'
             }}
           >
-            🔍 Debug Opportunities
+            🧠 Debug Synthesis
           </button>
         </div>
       </div>

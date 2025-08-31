@@ -4,11 +4,21 @@
 import supabaseDataService from '../services/supabaseDataService';
 
 export const getUnifiedOrganization = async () => {
-  // CRITICAL: Load ONLY from edge function - NO localStorage
-  console.log('🔍 Loading organization from edge function (single source of truth)...');
+  // Check localStorage for organization name first
+  const savedOrgName = localStorage.getItem('selectedOrganization');
+  console.log('🔍 Loading organization from edge function...', savedOrgName ? `for: ${savedOrgName}` : '(latest)');
   
   try {
     // Get current user's organization from edge function
+    const requestBody = {
+      action: 'getLatestProfile'
+    };
+    
+    // If we have a saved organization name, use it
+    if (savedOrgName) {
+      requestBody.organization_name = savedOrgName;
+    }
+    
     const response = await fetch(
       `${supabaseDataService.supabaseUrl}/functions/v1/intelligence-persistence`,
       {
@@ -17,9 +27,7 @@ export const getUnifiedOrganization = async () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${supabaseDataService.supabaseKey}`
         },
-        body: JSON.stringify({
-          action: 'getLatestProfile'  // Use the correct action for RailwayV2
-        })
+        body: JSON.stringify(requestBody)
       }
     );
     

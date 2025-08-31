@@ -105,91 +105,26 @@ const OpportunityEngine = ({ onAIMessage, isDragging = false }) => {
   const loadOpportunities = async () => {
     setLoading(true);
     try {
-      // Get current organization from localStorage
-      const orgData = localStorage.getItem('signaldesk_organization');
-      const organization = orgData ? JSON.parse(orgData) : null;
+      // No backend API - use mock data
+      const token = localStorage.getItem('token');
+      const response = { ok: false };
       
-      if (!organization?.name) {
-        console.log('⚠️ No organization selected, using mock data');
+      /* Original Railway API call disabled:
+      const response = await fetch('/api/opportunities/discover', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      */
+      
+      if (response.ok) {
+        const data = await response.json();
+        setOpportunities(data.opportunities || []);
+      } else {
+        // Fall back to mock data if backend fails
         setOpportunities(mockOpportunities);
-        setLoading(false);
-        return;
       }
-      
-      // Check if Intelligence Hub already ran and saved opportunities
-      const cachedIntelligence = localStorage.getItem('signaldesk_latest_intelligence');
-      if (cachedIntelligence) {
-        const data = JSON.parse(cachedIntelligence);
-        // Check if cache is recent (within 5 minutes) and for same organization
-        if (data.opportunities && 
-            data.organization === organization.name &&
-            Date.now() - data.timestamp < 5 * 60 * 1000) {
-          console.log(`✅ Using ${data.opportunities.length} cached opportunities from Intelligence Hub`);
-          setOpportunities(data.opportunities.map(opp => ({
-            ...opp,
-            id: opp.id || Math.random().toString(36).substr(2, 9),
-            confidence: opp.confidence || 75,
-            status: 'active'
-          })));
-          setLoading(false);
-          return;
-        }
-      }
-      
-      console.log(`🔍 No cached opportunities, loading from Supabase...`);
-      
-      // Import supabase data service
-      const supabaseDataService = (await import('../services/supabaseDataService')).default;
-      
-      // Load complete analysis from Supabase
-      const analysis = await supabaseDataService.loadCompleteAnalysis(organization.name);
-      
-      if (analysis && analysis.stageData?.synthesis) {
-        const synthesisData = analysis.stageData.synthesis;
-        
-        // Check for consolidated opportunities
-        if (synthesisData.data?.consolidated_opportunities?.prioritized_list) {
-          const opportunities = synthesisData.data.consolidated_opportunities.prioritized_list;
-          console.log(`🎯 Found ${opportunities.length} opportunities from synthesis!`);
-          setOpportunities(opportunities.map(opp => ({
-            ...opp,
-            id: opp.id || Math.random().toString(36).substr(2, 9),
-            confidence: opp.confidence || 75,
-            status: 'active'
-          })));
-          setLoading(false);
-          return;
-        }
-        
-        // Check for opportunities at top level
-        if (synthesisData.opportunities && Array.isArray(synthesisData.opportunities)) {
-          console.log(`📊 Found ${synthesisData.opportunities.length} opportunities!`);
-          setOpportunities(synthesisData.opportunities);
-          setLoading(false);
-          return;
-        }
-      }
-      
-      // Try to extract opportunities from all stages
-      if (analysis && analysis.stageData) {
-        const allOpportunities = [];
-        Object.values(analysis.stageData).forEach(stage => {
-          if (stage.opportunities && Array.isArray(stage.opportunities)) {
-            allOpportunities.push(...stage.opportunities);
-          }
-        });
-        
-        if (allOpportunities.length > 0) {
-          console.log(`📊 Found ${allOpportunities.length} opportunities across all stages`);
-          setOpportunities(allOpportunities);
-          setLoading(false);
-          return;
-        }
-      }
-      
-      // Fall back to mock data if no real opportunities
-      console.log('⚠️ No real opportunities found, using mock data');
-      setOpportunities(mockOpportunities);
       setLoading(false);
     } catch (error) {
       console.error('Error loading opportunities:', error);

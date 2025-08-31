@@ -83,12 +83,7 @@ class IntelligenceOrchestratorV4 {
           stageResult = await this.runComprehensiveAnalysis(organization, config);
       }
 
-      // Generate opportunities for this stage if not synthesis
-      if (stageConfig.stageId !== 'synthesis' && stageResult.success) {
-        console.log('🔍 Generating opportunities for stage:', stageConfig.stageId);
-        const opportunities = await this.generateStageOpportunities(stageResult, organization, stageConfig);
-        stageResult.opportunities = opportunities;
-      }
+      // Analysis-focused pipeline: skip opportunity generation for cleaner logs and faster execution
 
       return stageResult;
       
@@ -118,9 +113,15 @@ class IntelligenceOrchestratorV4 {
     
     // STEP 1: Discovery - Extract and save comprehensive organization data
     console.log(`🔍 Step 1: Discovering organization profile for: ${orgName}`);
+    console.log('📦 Discovery request payload:', {
+      organization: safeOrganization,
+      stakeholders_count: Object.keys(config).length,
+      config_keys: Object.keys(config),
+      previousResults_count: Object.keys(previousResults).length
+    });
     
     // Add timeout wrapper
-    const fetchWithTimeout = async (url, options, timeout = 30000) => {
+    const fetchWithTimeout = async (url, options, timeout = 60000) => {
       const controller = new AbortController();
       const id = setTimeout(() => controller.abort(), timeout);
       try {
@@ -139,6 +140,7 @@ class IntelligenceOrchestratorV4 {
       }
     };
     
+    console.log(`🚀 Calling discovery edge function at: ${this.supabaseUrl}/functions/v1/intelligence-discovery-v3`);
     const discoveryResponse = await fetchWithTimeout(`${this.supabaseUrl}/functions/v1/intelligence-discovery-v3`, {
       method: 'POST',
       headers: {
@@ -267,6 +269,11 @@ class IntelligenceOrchestratorV4 {
       console.log('✅ Saved extraction stage data to Supabase');
     } catch (error) {
       console.error('❌ Failed to save extraction stage data:', error);
+    }
+
+    // Save Claude analysis for synthesis stage retrieval
+    if (stageData.analysis) {
+      await this.saveClaudeAnalysis('extraction', stageData, orgName, requestId);
     }
 
     return {
@@ -452,6 +459,11 @@ class IntelligenceOrchestratorV4 {
       console.log('✅ Saved competitive stage data to Supabase');
     } catch (error) {
       console.error('❌ Failed to save competitive stage data:', error);
+    }
+
+    // Save Claude analysis for synthesis stage retrieval
+    if (returnData.analysis) {
+      await this.saveClaudeAnalysis('competitive', returnData, orgName, requestId);
     }
     
     console.log('🔄 Stage 2 (competitive) returning data:', {
@@ -679,6 +691,12 @@ class IntelligenceOrchestratorV4 {
     } catch (error) {
       console.error('❌ Failed to save media stage data:', error);
     }
+
+    // Save Claude analysis for synthesis stage retrieval
+    const requestId = previousResults?.extraction?.request_id || previousResults?.request_id;
+    if (returnData.analysis && requestId) {
+      await this.saveClaudeAnalysis('media', returnData, orgName, requestId);
+    }
     
     return returnData;
   }
@@ -796,6 +814,11 @@ class IntelligenceOrchestratorV4 {
       console.log('✅ Saved regulatory stage data to Supabase');
     } catch (error) {
       console.error('❌ Failed to save regulatory stage data:', error);
+    }
+
+    // Save Claude analysis for synthesis stage retrieval
+    if (returnData.analysis) {
+      await this.saveClaudeAnalysis('regulatory', returnData, orgName, requestId);
     }
     
     return returnData;
@@ -929,6 +952,11 @@ class IntelligenceOrchestratorV4 {
       console.log('✅ Saved trends stage data to Supabase');
     } catch (error) {
       console.error('❌ Failed to save trends stage data:', error);
+    }
+
+    // Save Claude analysis for synthesis stage retrieval
+    if (returnData.analysis) {
+      await this.saveClaudeAnalysis('trends', returnData, orgName, requestId);
     }
     
     return returnData;
@@ -1111,15 +1139,7 @@ class IntelligenceOrchestratorV4 {
       dataKeys: synthesisData.data ? Object.keys(synthesisData.data) : []
     });
     
-    // Extract opportunities from synthesis
-    const opportunities = synthesisData.data?.consolidated_opportunities?.prioritized_list || [];
-    console.log('🎯 SYNTHESIS OPPORTUNITIES EXTRACTION:', {
-      hasConsolidatedOps: !!synthesisData.data?.consolidated_opportunities,
-      hasPrioritizedList: !!synthesisData.data?.consolidated_opportunities?.prioritized_list,
-      opportunityCount: opportunities.length,
-      firstOpportunity: opportunities[0],
-      dataStructure: synthesisData.data ? Object.keys(synthesisData.data) : []
-    });
+    // Analysis-focused: Skip opportunity extraction, focus on Claude analysis
     
     // Build proper tabs from Claude's comprehensive synthesis - now 7 tabs
     const synthesizedTabs = {
@@ -1170,19 +1190,20 @@ class IntelligenceOrchestratorV4 {
       success: true,
       patterns: synthesisData.data?.cross_dimensional_insights?.patterns || [],
       elite_insights: synthesisData.data?.cross_dimensional_insights || {},
-      opportunities,
       analysis: synthesisData.data || {},
       tabs: synthesizedTabs,
-      data: synthesisData.data
+      data: synthesisData.data,
+      opportunities: [] // Analysis-focused pipeline
     };
     
     console.log('🚀 SYNTHESIS RETURN DATA:', {
-      hasOpportunities: !!returnData.opportunities,
-      opportunityCount: returnData.opportunities?.length || 0,
-      hasData: !!returnData.data,
-      hasConsolidatedInData: !!returnData.data?.consolidated_opportunities,
-      consolidatedCount: returnData.data?.consolidated_opportunities?.prioritized_list?.length || 0,
-      returning: 'Full synthesis results with opportunities'
+      hasAnalysis: !!returnData.analysis,
+      analysisKeys: Object.keys(returnData.analysis || {}),
+      hasTabs: !!returnData.tabs,
+      tabCount: Object.keys(returnData.tabs || {}).length,
+      hasPatterns: !!returnData.patterns,
+      patternsCount: returnData.patterns?.length || 0,
+      returning: 'Claude synthesis analysis with tabs'
     });
     
     // SAVE RESULTS TO SUPABASE - SINGLE SOURCE OF TRUTH
@@ -1206,6 +1227,33 @@ class IntelligenceOrchestratorV4 {
     }
     
     return returnData;
+  }
+
+  /**
+   * Save Claude analysis from stage to claude-analysis-storage
+   */
+  async saveClaudeAnalysis(stageId, stageData, organizationName, requestId) {
+    if (!stageData.analysis) return;
+    
+    try {
+      await fetch(`${this.supabaseUrl}/functions/v1/claude-analysis-storage`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.supabaseKey}`
+        },
+        body: JSON.stringify({
+          action: 'store',
+          organization_name: organizationName,
+          request_id: requestId,
+          stage: stageId,
+          analysis: stageData.analysis
+        })
+      });
+      console.log(`✅ Saved ${stageId} Claude analysis to storage`);
+    } catch (error) {
+      console.error(`❌ Failed to save ${stageId} Claude analysis:`, error);
+    }
   }
 
   /**
@@ -1850,4 +1898,4 @@ class IntelligenceOrchestratorV4 {
 }
 
 const orchestratorInstance = new IntelligenceOrchestratorV4();
-export default orchestratorInstance;
+export default orchestratorInstance;// Cache bust: Sun Aug 31 08:06:10 EDT 2025

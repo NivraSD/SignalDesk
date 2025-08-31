@@ -28,7 +28,7 @@ serve(async (req) => {
       case 'getProfile':
         return await handleGetProfile(body)
       case 'getLatestProfile':
-        return await handleGetLatestProfile()
+        return await handleGetLatestProfile(body)
       case 'clearProfile':
         return await handleClearProfile()
       case 'saveStageData':
@@ -501,10 +501,43 @@ async function handleRetrieve(data: any) {
 }
 
 // Get the latest organization profile (for RailwayV2)
-async function handleGetLatestProfile() {
+async function handleGetLatestProfile(data: any) {
   console.log('📖 Getting latest organization profile')
   
-  // Get the most recent profile from organization_profiles
+  // If organization_name is provided, get that specific one
+  if (data?.organization_name) {
+    console.log(`📖 Looking for specific organization: ${data.organization_name}`)
+    const { data: profile, error } = await supabase
+      .from('organization_profiles')
+      .select('*')
+      .eq('organization_name', data.organization_name)
+      .single()
+    
+    if (error || !profile) {
+      console.log('Profile not found, returning null')
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          profile: null,
+          organization_name: null,
+          message: 'Profile not found'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    
+    console.log('✅ Found specific profile:', profile.organization_name)
+    return new Response(
+      JSON.stringify({ 
+        success: true,
+        profile: profile.profile_data,
+        organization_name: profile.organization_name
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  }
+  
+  // Otherwise get the most recent profile
   const { data: profiles, error } = await supabase
     .from('organization_profiles')
     .select('*')
@@ -517,7 +550,7 @@ async function handleGetLatestProfile() {
   }
   
   const profile = profiles?.[0]
-  console.log('✅ Found profile:', profile ? profile.organization_name : 'none')
+  console.log('✅ Found latest profile:', profile ? profile.organization_name : 'none')
   
   return new Response(
     JSON.stringify({ 

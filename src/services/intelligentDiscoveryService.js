@@ -6,8 +6,8 @@
 
 class IntelligentDiscoveryService {
   constructor() {
-    this.supabaseUrl = process.env.REACT_APP_SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL;
-    this.supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || process.env.REACT_APP_SUPABASE_ANON_KEY;
+    this.supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co';
+    this.supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
     this.cache = new Map();
   }
 
@@ -17,44 +17,28 @@ class IntelligentDiscoveryService {
   async discoverCompanyIntelligence(companyName, website = null, description = null) {
     console.log(`🔍 Starting intelligent discovery for ${companyName}`);
     
-    // DISABLED CACHE - was returning wrong company data
-    // Cache was returning Netflix data for Mitsui & Co searches
-    // Always do fresh discovery for accuracy
+    // Check cache first
     const cacheKey = `${companyName}_${website}`;
-    
-    // Clear any existing cache for safety
-    this.cache.clear();
+    if (this.cache.has(cacheKey)) {
+      console.log('📦 Using cached discovery');
+      return this.cache.get(cacheKey);
+    }
 
     try {
       // Step 1: Use Claude to analyze the company
       const companyAnalysis = await this.analyzeCompanyWithClaude(companyName, website, description);
       
-      // Use Claude's data if available, otherwise discover manually
-      const competitors = companyAnalysis.competitors?.length > 0 
-        ? companyAnalysis.competitors 
-        : await this.discoverRealCompetitors(companyName, companyAnalysis.industry);
+      // Step 2: Discover actual competitors (not placeholders!)
+      const competitors = await this.discoverRealCompetitors(companyName, companyAnalysis.industry);
       
-      const stakeholders = companyAnalysis.stakeholders 
-        ? companyAnalysis.stakeholders
-        : await this.mapRealStakeholders(companyName, companyAnalysis.industry);
+      // Step 3: Map actual stakeholders
+      const stakeholders = await this.mapRealStakeholders(companyName, companyAnalysis.industry);
       
-      const topics = companyAnalysis.topics?.length > 0
-        ? companyAnalysis.topics
-        : await this.identifyRelevantTopics(companyAnalysis);
+      // Step 4: Identify relevant topics based on industry
+      const topics = await this.identifyRelevantTopics(companyAnalysis);
       
-      const keywords = companyAnalysis.keywords?.length > 0
-        ? companyAnalysis.keywords
-        : await this.generateSmartKeywords(companyName, companyAnalysis);
-      
-      console.log('🔧 Discovery assembled:', {
-        competitors: competitors?.length || 0,
-        hasStakeholders: !!stakeholders,
-        regulators: stakeholders?.regulators?.length || 0,
-        media: stakeholders?.media?.length || 0,
-        activists: stakeholders?.activists?.length || 0,
-        investors: stakeholders?.investors?.length || 0,
-        analysts: stakeholders?.analysts?.length || 0
-      });
+      // Step 5: Generate monitoring keywords
+      const keywords = await this.generateSmartKeywords(companyName, companyAnalysis);
       
       const discovery = {
         company: {
@@ -71,7 +55,8 @@ class IntelligentDiscoveryService {
         discovered_at: new Date().toISOString()
       };
       
-      // CACHE DISABLED - was causing cross-company data pollution
+      // Cache the discovery
+      this.cache.set(cacheKey, discovery);
       
       return discovery;
       
@@ -133,45 +118,12 @@ class IntelligentDiscoveryService {
       
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Claude API Response:', {
-          success: data.success,
-          hasAnalysis: !!data.analysis,
-          baseCompetitors: data.analysis?.competitors,
-          realCompetitors: data.analysis?.additional_niche_competitors,
-          mediaOutlets: data.analysis?.key_media_outlets,
-          enhancedByClaude: data.analysis?.enhanced_by_claude,
-          fullData: data
-        });
-        
+        console.log('✅ Claude analysis successful:', data);
+        // Make sure we return the full analysis with competitors
         if (data.analysis) {
-          // Map the Edge Function response to our expected structure
-          const mappedAnalysis = {
-            ...data.analysis,
-            // Merge base competitors with additional niche competitors
-            competitors: [
-              ...(data.analysis.additional_niche_competitors || []),
-              ...(data.analysis.competitors || []).filter(c => !c.includes('Industry Leader'))
-            ].filter(Boolean),
-            // Build proper stakeholders object from various fields
-            stakeholders: {
-              regulators: data.analysis.stakeholders?.regulators || [],
-              activists: data.analysis.stakeholders?.activists || [],
-              media: data.analysis.key_media_outlets || data.analysis.stakeholders?.media || [],
-              investors: data.analysis.stakeholders?.investors || [],
-              analysts: data.analysis.stakeholders?.analysts || []
-            },
-            // Use emerging_trends if available
-            topics: data.analysis.emerging_trends || data.analysis.topics || [],
-            // Industry from industryInsights
-            industry: data.analysis.industryInsights?.industry || data.analysis.industry || 'general'
-          };
-          
-          console.log('🎯 Mapped competitors:', mappedAnalysis.competitors);
-          console.log('🎯 Mapped stakeholders:', mappedAnalysis.stakeholders);
-          
-          return mappedAnalysis;
+          console.log('🎯 Discovered competitors:', data.analysis.competitors);
+          return data.analysis;
         }
-        console.warn('⚠️ No analysis in response, using default');
         return this.getDefaultAnalysis(companyName);
       } else {
         const errorText = await response.text();
@@ -240,36 +192,22 @@ class IntelligentDiscoveryService {
       partners: [],
       regulators: [],
       analysts: [],
-      media: [],
-      activists: [] // Add activists
+      media: []
     };
 
-    // Industry-specific stakeholders - ALWAYS populate these
+    // Industry-specific stakeholders
     if (industry === 'automotive') {
       stakeholders.regulators = ['NHTSA', 'EPA', 'CARB', 'EU Commission', 'METI (Japan)'];
       stakeholders.analysts = ['Cox Automotive', 'JD Power', 'IHS Markit', 'Bloomberg Intelligence'];
       stakeholders.media = ['Automotive News', 'Car and Driver', 'Motor Trend', 'Electrek'];
-      stakeholders.activists = ['Sierra Club', 'Greenpeace', 'Transport & Environment'];
-      stakeholders.investors = ['BlackRock', 'Vanguard', 'State Street', 'Fidelity'];
     } else if (industry === 'finance' || industry === 'trading') {
       stakeholders.regulators = ['SEC', 'FINRA', 'Federal Reserve', 'FSA (Japan)', 'FCA (UK)'];
       stakeholders.analysts = ['Moody\'s', 'S&P Global', 'Fitch Ratings', 'Bloomberg'];
       stakeholders.media = ['Wall Street Journal', 'Financial Times', 'Bloomberg', 'Reuters'];
-      stakeholders.activists = ['Better Markets', 'Public Citizen', 'Americans for Financial Reform'];
-      stakeholders.investors = ['Berkshire Hathaway', 'JPMorgan Chase', 'Goldman Sachs'];
     } else if (industry === 'technology') {
       stakeholders.regulators = ['FTC', 'EU Commission', 'FCC', 'Data Protection Authorities'];
       stakeholders.analysts = ['Gartner', 'Forrester', 'IDC', 'CB Insights'];
       stakeholders.media = ['TechCrunch', 'The Verge', 'Wired', 'Ars Technica', 'The Information'];
-      stakeholders.activists = ['EFF', 'Privacy International', 'Center for AI Safety'];
-      stakeholders.investors = ['Sequoia', 'Andreessen Horowitz', 'Accel', 'SoftBank'];
-    } else {
-      // Default stakeholders for any industry
-      stakeholders.regulators = ['FTC', 'SEC', 'EPA', 'EU Commission'];
-      stakeholders.analysts = ['Gartner', 'McKinsey', 'BCG', 'Deloitte'];
-      stakeholders.media = ['Wall Street Journal', 'Bloomberg', 'Reuters', 'Financial Times', 'TechCrunch'];
-      stakeholders.activists = ['Consumer Reports', 'Public Interest Groups'];
-      stakeholders.investors = ['BlackRock', 'Vanguard', 'State Street'];
     }
 
     return stakeholders;

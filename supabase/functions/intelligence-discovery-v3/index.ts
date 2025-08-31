@@ -1,4 +1,5 @@
 // Intelligence Discovery V3 - DISCOVERS and SAVES organization data
+// CRITICAL UPDATE: 2025-08-31 - Generate request_id for pipeline tracking v2
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { corsHeaders } from "../_shared/cors.ts"
 
@@ -13,6 +14,10 @@ serve(async (req) => {
 
   try {
     const { organization, stakeholders, monitoring_topics } = await req.json()
+    
+    // Generate unique request_id for this pipeline run
+    const request_id = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    console.log(`🔑 Generated request_id for pipeline: ${request_id}`)
     
     console.log('🔍 Discovery V3 - Starting comprehensive discovery:', {
       organization: organization?.name,
@@ -124,43 +129,12 @@ serve(async (req) => {
       console.error('Database save error:', saveError)
     }
     
-    // Step 4: CRITICAL - Collect intelligence from monitoring sources
-    console.log('📡 Collecting intelligence from monitoring sources...')
+    // Step 4: SKIP intelligence collection for speed - this is just discovery
+    console.log('⚡ Skipping intelligence collection for faster discovery (collection happens in later stages)')
     let collectedIntelligence = null
-    try {
-      const collectionResponse = await fetch(
-        'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/intelligence-collection-v1',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': req.headers.get('Authorization') || ''
-          },
-          body: JSON.stringify({
-            entities,
-            organization: {
-              name: orgName,
-              industry: discoveredData?.industry || organization?.industry || 'technology',
-              description: discoveredData?.description || organization?.description,
-              url: discoveredData?.url || organization?.url
-            },
-            savedProfile,
-            monitoring_topics
-          })
-        }
-      )
-      
-      if (collectionResponse.ok) {
-        const collectionResult = await collectionResponse.json()
-        collectedIntelligence = collectionResult.intelligence || collectionResult
-        console.log(`✅ Collected ${collectedIntelligence?.raw_signals?.length || 0} intelligence signals from ${collectedIntelligence?.metadata?.sources?.length || 0} sources`)
-      } else {
-        const errorText = await collectionResponse.text()
-        console.error('Failed to collect intelligence:', errorText)
-      }
-    } catch (collectionError) {
-      console.error('Intelligence collection error:', collectionError)
-    }
+    
+    // For extraction stage, we only need basic organization data, not intelligence signals
+    // This saves 20-40 seconds and prevents timeouts
     
     // Step 5: Return enriched entities AND collected intelligence
     const enrichedOrganization = typeof organization === 'string' 
@@ -182,19 +156,21 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
+        request_id, // CRITICAL: Include request_id for pipeline tracking
         entities,
         organization: enrichedOrganization,
         competitors: entities.competitors, // Add competitors at top level too
         topics: discoveredData?.recent_topics || monitoring_topics || [],
         keywords: discoveredData?.keywords || [orgName],
-        intelligence: collectedIntelligence, // CRITICAL: Include collected intelligence
+        intelligence: null, // Skipped for speed - collected in later stages
         statistics: {
           total_entities: Object.values(entities).flat().length,
           total_topics: monitoring_topics?.length || 0,
           discovered: !!discoveredData,
           saved: true,
-          signals_collected: collectedIntelligence?.raw_signals?.length || 0,
-          sources_used: collectedIntelligence?.metadata?.sources?.length || 0
+          signals_collected: 0, // Skipped for speed optimization
+          sources_used: 0, // Skipped for speed optimization
+          request_id // Also include in statistics for debugging
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

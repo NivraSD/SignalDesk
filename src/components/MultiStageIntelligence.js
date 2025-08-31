@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './MultiStageIntelligence.css';
 import intelligenceOrchestratorV4 from '../services/intelligenceOrchestratorV4';
 import supabaseDataService from '../services/supabaseDataService';
@@ -19,55 +19,48 @@ import supabaseDataService from '../services/supabaseDataService';
  * Quality over speed - designed for comprehensive strategic intelligence
  */
 
-// Define the elaborate 7-stage intelligence pipeline
+// Define the elaborate 6-stage intelligence pipeline
 const INTELLIGENCE_STAGES = [
   {
     id: 'extraction',
     name: 'Organization Data Extraction',
     description: 'Extracting comprehensive organization profile and stakeholder data...',
-    duration: 25,
+    duration: 30,
     focus: 'Data gathering and organization profiling'
   },
   {
     id: 'competitive',
     name: 'Competitive Intelligence Analysis',
     description: 'Conducting deep competitor analysis and threat assessment...',
-    duration: 35,
+    duration: 45,
     focus: 'Competitor actions, market positioning, competitive threats'
-  },
-  {
-    id: 'stakeholders',
-    name: 'Stakeholder Analysis',
-    description: 'Analyzing customers, thought leaders, influencers, and key stakeholders...',
-    duration: 35,
-    focus: 'Customer sentiment, thought leader opinions, influencer narratives, employee sentiment'
   },
   {
     id: 'media',
     name: 'Media Landscape Mapping',
     description: 'Mapping journalist networks and media coverage patterns...',
-    duration: 30,
+    duration: 40,
     focus: 'Media relations, coverage analysis, journalist identification'
   },
   {
     id: 'regulatory',
-    name: 'Regulatory Environment',
-    description: 'Analyzing regulatory developments and compliance landscape...',
-    duration: 25,
-    focus: 'Compliance requirements, regulatory changes, policy implications'
+    name: 'Regulatory & Stakeholder Environment',
+    description: 'Analyzing regulatory developments and stakeholder sentiment...',
+    duration: 35,
+    focus: 'Compliance requirements, analyst opinions, investor relations'
   },
   {
     id: 'trends',
     name: 'Market Trends & Topic Analysis',
     description: 'Identifying trending narratives and conversation opportunities...',
-    duration: 25,
+    duration: 30,
     focus: 'Market trends, topic analysis, narrative gaps'
   },
   {
     id: 'synthesis',
     name: 'Strategic Synthesis & Pattern Recognition',
     description: 'Connecting insights and identifying strategic opportunities...',
-    duration: 45,
+    duration: 50,
     focus: 'Pattern recognition, strategic implications, actionable recommendations'
   }
 ];
@@ -86,45 +79,12 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
   const [hasStarted, setHasStarted] = useState(false);
   const completionRef = useRef(false);
   const runningRef = useRef(false); // Prevent multiple simultaneous runs
-  const accumulatedResultsRef = useRef({}); // Track accumulated results across stages
   
-  // Initialize organization state
-  const [organization] = useState(() => {
-    // Initialize organization
-    
-    if (organizationProp && organizationProp.name) {
-      return organizationProp;
-    }
-    
-    // DISABLED: No localStorage - load from Edge Functions/Supabase only
-    // const saved = localStorage.getItem('organization');
-    // if (saved) {
-    //   try {
-    //     const org = JSON.parse(saved);
-    //     return org;
-    //   } catch (e) {
-    //     console.error('Failed to parse organization:', e);
-    //   }
-    // }
-    
-    return null;
-  });
+  // Initialize organization state - ALWAYS from prop or will be loaded from edge function
+  const [organization, setOrganization] = useState(organizationProp || null);
+  const [loadingOrg, setLoadingOrg] = useState(!organizationProp);
 
-  // Reset pipeline when organization changes
-  useEffect(() => {
-    // Reset all state when organization changes
-    setCurrentStage(0);
-    setStageResults({});
-    setHasStarted(false);
-    setIsComplete(false);
-    setError(null);
-    completionRef.current = false;
-    runningRef.current = false;
-    accumulatedResultsRef.current = {}; // Reset accumulated results
-    console.log(`🔄 Reset pipeline for new organization: ${organization?.name}`);
-  }, [organization?.name]);
-  
-  // Load existing data from Supabase on mount - ONLY ONCE
+  // Load organization and existing data from edge function - SINGLE SOURCE OF TRUTH
   useEffect(() => {
     // Add guard to prevent re-running
     if (hasStarted) {
@@ -132,69 +92,137 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
       return;
     }
     
-    const loadExistingData = async () => {
-      if (!organization?.name) return;
-      
-      console.log(`🔍 Checking Supabase for existing data for ${organization.name}...`);
-      
-      // Try to load existing analysis from Supabase
-      const existingAnalysis = await supabaseDataService.loadCompleteAnalysis(organization.name);
-      
-      if (existingAnalysis && existingAnalysis.stageData) {
-        console.log('✅ Found existing analysis in Supabase!');
+    const loadFromEdgeFunction = async () => {
+      // If no organization prop, load from edge function
+      if (!organization) {
+        setLoadingOrg(true);
+        console.log('🔍 Loading organization from edge function (single source of truth)...');
         
-        // Check if this analysis is recent (less than 5 minutes old)
-        const synthesisData = existingAnalysis.stageData?.synthesis;
-        const timestamp = synthesisData?.timestamp || synthesisData?.data?.timestamp;
-        const isRecent = timestamp && (Date.now() - new Date(timestamp).getTime()) < 5 * 60 * 1000;
-        
-        if (isRecent) {
-          console.log('📊 Using recent cached analysis (< 5 minutes old)');
-          // Set the stage results from Supabase
-          setStageResults(existingAnalysis.stageData);
+        try {
+          // CRITICAL: Check localStorage FIRST for the organization name
+          const savedOrgData = localStorage.getItem('organizationData');
+          const savedOrgName = localStorage.getItem('selectedOrganization');
           
-          // Set final intelligence if synthesis exists
-          if (existingAnalysis.tabs) {
-            const finalIntel = {
-              success: true,
-              analysis: existingAnalysis.analysis,
-              tabs: existingAnalysis.tabs,
-              metadata: existingAnalysis.metadata
-            };
-            setFinalIntelligence(finalIntel);
-            completionRef.current = true;
-            setIsComplete(true);
-            setHasStarted(true); // Prevent re-running pipeline
+          let orgName = organizationProp?.name || savedOrgName || 'Default Organization';
+          
+          // If we have saved data in localStorage, use it directly
+          if (savedOrgData) {
+            try {
+              const parsedOrg = JSON.parse(savedOrgData);
+              if (parsedOrg.name) {
+                console.log('📱 Using organization from localStorage:', parsedOrg.name);
+                setOrganization(parsedOrg);
+                setLoadingOrg(false);
+                return; // Exit early, we have what we need
+              }
+            } catch (e) {
+              console.warn('Could not parse localStorage org data');
+            }
           }
-        } else {
-          console.log('🔄 Existing analysis is stale (> 5 minutes old), running fresh pipeline...');
-          // Don't set isComplete to true - let the pipeline run
-          setStageResults({});
-          setFinalIntelligence(null);
-          setIsComplete(false);
-          completionRef.current = false;
+          
+          // Otherwise continue with edge function lookup
+          if (orgName) {
+            console.log(`📊 Loading organization profile for: ${orgName}`);
+            const response = await fetch(
+              `${supabaseDataService.supabaseUrl}/functions/v1/intelligence-persistence`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${supabaseDataService.supabaseKey}`
+                },
+                body: JSON.stringify({
+                  action: 'getProfile',
+                  organization_name: orgName  // Pass the specific org name
+                })
+              }
+            );
+            
+            if (response.ok) {
+              const data = await response.json();
+              if (data.success && data.profile) {
+                console.log('✅ Loaded organization from edge function:', data.profile);
+                // Ensure the organization has a name
+                const org = data.profile.organization || data.profile;
+                if (!org.name && orgName) {
+                  org.name = orgName;
+                }
+                setOrganization(org);
+              } else {
+                console.log('⚠️ No organization profile found, creating basic structure');
+                // Create a basic organization structure with the name
+                setOrganization({
+                  name: orgName,
+                  industry: 'Technology',
+                  competitors: [],
+                  stakeholders: {}
+                });
+              }
+            } else {
+              console.log('⚠️ Failed to load profile, creating basic structure');
+              // Create a basic organization structure with the name
+              setOrganization({
+                name: orgName,
+                  industry: 'Technology',
+                  competitors: [],
+                  stakeholders: {}
+              });
+            }
+          } else {
+            console.log('⚠️ No organization name provided, creating default');
+            // If no orgName, create a default organization
+            setOrganization({
+              name: 'Default Organization',
+              industry: 'Technology',
+              competitors: [],
+              stakeholders: {}
+            });
+          }
+        } catch (error) {
+          console.error('❌ Failed to load from edge function:', error);
+          // On error, ensure we have a valid organization structure
+          const orgName = organizationProp?.name || 'Default Organization';
+          setOrganization({
+            name: orgName,
+            industry: 'Technology',
+            competitors: [],
+            stakeholders: {}
+          });
+        } finally {
+          setLoadingOrg(false);
         }
-      } else {
-        console.log('📝 No existing data in Supabase, ready to run new analysis');
+      }
+      
+      // DISABLED: Don't load existing analysis - always run fresh
+      if (organization?.name) {
+        console.log(`🚀 Organization loaded: ${organization.name} - Running FRESH pipeline`);
+        
+        // Clear any existing state to ensure fresh run
+        setStageResults({});
+        setIsComplete(false);
+        completionRef.current = false;
+        runningRef.current = false;
+        
+        // Optional: Clear old data from Supabase
+        // await supabaseDataService.clearAnalysis(organization.name);
+        
+        console.log('📝 Ready to run COMPLETE fresh analysis pipeline - no cache loading');
       }
     };
     
-    loadExistingData();
+    loadFromEdgeFunction();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array - run ONLY on mount
+  }, [organization]); // Re-run if organization changes
 
   // Run individual stage with specialized analysis
-  const runStage = useCallback(async (stageIndex, accumulatedResults = null) => {
+  const runStage = useCallback(async (stageIndex) => {
     const stage = INTELLIGENCE_STAGES[stageIndex];
     
-    // Use accumulated results or current state
-    const currentResults = accumulatedResults || stageResults;
-    
     // Check if this stage is already running or complete
-    if (currentResults[stage.id] && (currentResults[stage.id].inProgress || currentResults[stage.id].completed)) {
+    if (stageResults[stage.id] && (stageResults[stage.id].inProgress || stageResults[stage.id].completed)) {
       console.log(`⚠️ Stage ${stageIndex + 1} already processed, skipping`);
       setCurrentStage(stageIndex + 1);
-      return currentResults;
+      return;
     }
     
     console.log(`🔄 Starting stage ${stageIndex + 1}: ${stage.name}`);
@@ -207,8 +235,8 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         [stage.id]: { inProgress: true }
       }));
       
-      // Create stage-specific configuration with accumulated results
-      const stageConfig = createStageConfig(stageIndex, organizationProfile || organization, currentResults);
+      // Create stage-specific configuration
+      const stageConfig = createStageConfig(stageIndex, organizationProfile || organization);
       
       // Linear progress over ~25 seconds per stage (2.5 mins / 6 stages)
       const progressTimer = setInterval(() => {
@@ -216,35 +244,35 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
       }, 1000);
       
       // Run specialized analysis through orchestrator
-      console.log(`📡 Calling orchestrator for stage ${stageIndex + 1} with config:`, {
-        stageId: stageConfig.stageConfig?.stageId,
-        hasPreviousResults: !!stageConfig.stageConfig?.previousStageResults,
-        previousStageCount: Object.keys(stageConfig.stageConfig?.previousStageResults || {}).length
-      });
-      
       const result = await intelligenceOrchestratorV4.orchestrate(stageConfig);
       
       clearInterval(progressTimer);
       setStageProgress(100);
       
-      console.log(`📊 Stage ${stageIndex + 1} (${stage.name}) FULL result:`, result);
-      console.log(`📊 Stage ${stageIndex + 1} (${stage.name}) result summary:`, {
-        success: result?.success,
-        hasData: !!result?.data,
-        hasIntelligence: !!result?.intelligence,
-        dataKeys: result?.data ? Object.keys(result.data) : [],
-        resultKeys: result ? Object.keys(result) : [],
-        actualData: result?.data ? JSON.stringify(result.data).slice(0, 500) : 'No data'
-      });
-      
-      // Check if we actually got data
-      if (!result) {
-        console.error(`❌ Stage ${stageIndex + 1} returned null/undefined`);
-        throw new Error(`Stage ${stageIndex + 1} returned no result`);
-      }
-      
       if (result.success) {
         // Stage complete
+        console.log(`✅ Stage ${stageIndex + 1} (${stage.id}) completed with:`, {
+          hasData: !!result.data,
+          hasTabs: !!result.tabs,
+          hasAnalysis: !!result.analysis,
+          hasOpportunities: !!result.opportunities,
+          opportunityCount: result.opportunities?.length || 0,
+          hasConsolidatedOps: !!result.data?.consolidated_opportunities,
+          consolidatedCount: result.data?.consolidated_opportunities?.prioritized_list?.length || 0,
+          dataKeys: result.data ? Object.keys(result.data).slice(0, 5) : [],
+          tabCount: result.tabs ? Object.keys(result.tabs).length : 0
+        });
+        
+        // Special logging for synthesis stage
+        if (stage.id === 'synthesis') {
+          console.log('🎯 SYNTHESIS STAGE OPPORTUNITIES CHECK:', {
+            directOpportunities: result.opportunities,
+            consolidatedPath: result.data?.consolidated_opportunities?.prioritized_list,
+            analysisPath: result.analysis?.consolidated_opportunities?.prioritized_list,
+            totalFound: (result.opportunities?.length || 0) + 
+                       (result.data?.consolidated_opportunities?.prioritized_list?.length || 0)
+          });
+        }
         
         // STAGE 1: Extract and save organization profile
         if (stageIndex === 0 && result.organization) {
@@ -252,47 +280,37 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
           // Don't save to localStorage - let the edge functions handle persistence
         }
         
-        // Create the updated results object with this stage's data
-        const updatedResults = {
-          ...currentResults,
-          [stage.id]: {
-            ...result,
-            inProgress: false,
-            completed: true,
-            stageMetadata: {
-              stageName: stage.name,
-              focus: stage.focus,
-              duration: Date.now() - startTime,
-              timestamp: new Date().toISOString()
-            }
-          }
-        };
-        
         // Store stage-specific results (replace inProgress marker)
-        setStageResults(updatedResults);
+        setStageResults(prev => {
+          const updated = {
+            ...prev,
+            [stage.id]: {
+              ...result,
+              inProgress: false,
+              completed: true,
+              stageMetadata: {
+                stageName: stage.name,
+                focus: stage.focus,
+                duration: Date.now() - startTime,
+                timestamp: new Date().toISOString()
+              }
+            }
+          };
+          console.log(`📊 Stage ${stageIndex + 1} (${stage.id}) results stored. Total stages accumulated:`, Object.keys(updated).length);
+          console.log('📋 Current accumulated stages:', Object.keys(updated));
+          console.log('🔍 Stage data has:', {
+            hasData: !!result.data,
+            hasAnalysis: !!result.analysis,
+            hasTabs: !!result.tabs
+          });
+          return updated;
+        });
         
-        // Update accumulated results ref for next stage
-        accumulatedResultsRef.current = updatedResults;
-        
-        // Save opportunities to localStorage for OpportunityEngine (if synthesis stage)
-        if (stage.id === 'synthesis' && result.data?.consolidated_opportunities?.prioritized_list) {
-          const opportunities = result.data.consolidated_opportunities.prioritized_list;
-          console.log(`💾 Saving ${opportunities.length} opportunities to localStorage for OpportunityEngine`);
-          localStorage.setItem('signaldesk_latest_intelligence', JSON.stringify({
-            opportunities: opportunities,
-            timestamp: Date.now(),
-            organization: organization.name
-          }));
-        }
-        
-        // Progress to next stage (or complete if this was the last)
-        // The completion will be handled by the useEffect when currentStage >= INTELLIGENCE_STAGES.length
+        // Progress to next stage
         setTimeout(() => {
+          runningRef.current = false; // Clear running flag before next stage
           setCurrentStage(stageIndex + 1);
-        }, stageIndex === INTELLIGENCE_STAGES.length - 1 ? 1000 : 3000); // Shorter delay for completion
-        
-        // Return the updated results for the next stage to use
-        return updatedResults;
+        }, 1000);
         
       } else {
         throw new Error(`Stage ${stageIndex + 1} failed: ${result.error}`);
@@ -301,9 +319,9 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
       console.error(`Stage ${stageIndex + 1} error:`, err.message);
       setError(`Stage ${stageIndex + 1} (${stage.name}) failed: ${err.message}`);
       
-      // Create updated results with error
-      const updatedResults = {
-        ...currentResults,
+      // Store error but continue to next stage after delay
+      setStageResults(prev => ({
+        ...prev,
         [stage.id]: { 
           error: err.message,
           inProgress: false,
@@ -311,27 +329,38 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
           failed: true,
           stageMetadata: { stageName: stage.name, focus: stage.focus }
         }
-      };
-      
-      // Store error but continue to next stage after delay
-      setStageResults(updatedResults);
-      
-      // Update accumulated results ref even on error
-      accumulatedResultsRef.current = updatedResults;
+      }));
       
       setTimeout(() => {
+        runningRef.current = false; // Clear running flag even on error
         setCurrentStage(stageIndex + 1);
       }, 2000);
-      
-      // Return the updated results even on error
-      return updatedResults;
     }
   }, [organization, organizationProfile, startTime]);
 
   // Create specialized configuration for each stage
-  const createStageConfig = (stageIndex, baseOrganization, accumulatedResults = null) => {
+  const createStageConfig = (stageIndex, baseOrganization) => {
+    // CRITICAL FIX: Always ensure we have a proper organization name
+    // The baseOrganization might be just a profile object without a name field
+    const orgName = baseOrganization?.name || 
+                    baseOrganization?.organization?.name || 
+                    organizationProp?.name || 
+                    organization?.name || 
+                    'Default Organization';
+    
+    // Ensure organization always has a name
+    const safeOrganization = {
+      ...baseOrganization,
+      name: orgName  // Force the name to always be present
+    };
+    
+    // If the name is still "Default Organization", log a warning
+    if (orgName === 'Default Organization') {
+      console.warn('⚠️ Using default organization name - no real name found');
+    }
+    
     const baseConfig = {
-      organization: baseOrganization,
+      organization: safeOrganization,
       competitors: baseOrganization?.competitors || baseOrganization?.stakeholders?.competitors || [],
       regulators: baseOrganization?.regulators || baseOrganization?.stakeholders?.regulators || [],
       activists: baseOrganization?.activists || baseOrganization?.stakeholders?.activists || [],
@@ -343,8 +372,14 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
 
     // Add stage-specific focus parameters
     const stage = INTELLIGENCE_STAGES[stageIndex];
-    // Use accumulated results if provided, otherwise use current state
-    const resultsToUse = accumulatedResults || stageResults;
+    
+    // Debug log to track stage results being passed
+    console.log(`🎯 Creating config for Stage ${stageIndex + 1} (${stage.id}):`, {
+      hasStageResults: Object.keys(stageResults).length > 0,
+      stageResultsKeys: Object.keys(stageResults),
+      stageResultsCount: Object.keys(stageResults).length
+    });
+    
     return {
       ...baseConfig,
       stageConfig: {
@@ -352,150 +387,16 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         stageName: stage.name,
         focus: stage.focus,
         isElaboratePipeline: true,
-        previousStageResults: resultsToUse || {} // NEVER pass null - always pass object
+        previousStageResults: Object.keys(stageResults).length > 0 ? stageResults : null
       }
     };
   };
 
-  // Complete analysis and synthesize all stage results with provided results
-  const handleCompleteWithResults = (finalResults) => {
-    // Prevent multiple calls using ref only (not isComplete state)
-    if (completionRef.current) {
-      console.log('⚠️ Pipeline already completing, skipping duplicate call');
-      return;
-    }
-    
-    // Set ref immediately to prevent any re-entry
-    completionRef.current = true;
-    
-    const totalTime = Math.floor((Date.now() - startTime) / 1000);
-    console.log(`🎉 ELABORATE PIPELINE COMPLETE in ${totalTime} seconds`);
-    console.log('📊 Final stage results:', Object.keys(finalResults));
-    console.log('📊 Stage results detail:', finalResults);
-    
-    // Validate all stages completed
-    const requiredStages = INTELLIGENCE_STAGES.map(s => s.id);
-    const completedStages = Object.keys(finalResults);
-    const hasAllStages = requiredStages.every(stage => completedStages.includes(stage));
-    
-    if (!hasAllStages) {
-      console.warn('⚠️ Some stages incomplete, using available data:', {
-        required: requiredStages,
-        completed: completedStages,
-        missing: requiredStages.filter(s => !completedStages.includes(s))
-      });
-      // Continue anyway with partial results instead of returning
-    }
-    
-    // Update stageResults state with final accumulated results
-    setStageResults(finalResults);
-    
-    // COMPREHENSIVE FIX: Use synthesis stage as single source of truth
-    let elaborateIntelligence = null;
-    
-    if (finalResults.synthesis) {
-      const synthesis = finalResults.synthesis;
-      
-      console.log('🔧 COMPREHENSIVE FIX v3.0: DEEP SYNTHESIS INSPECTION', new Date().toISOString());
-      console.log('📦 SYNTHESIS RAW STRUCTURE:', synthesis);
-      console.log('📦 SYNTHESIS TOP LEVEL KEYS:', Object.keys(synthesis));
-      console.log('📦 SYNTHESIS.TABS EXISTS?', !!synthesis.tabs);
-      console.log('📦 SYNTHESIS.DATA EXISTS?', !!synthesis.data);
-      console.log('📦 SYNTHESIS.OPPORTUNITIES EXISTS?', !!synthesis.opportunities);
-      
-      // Check if tabs is nested deeper
-      if (synthesis.data && synthesis.data.tabs) {
-        console.log('🔍 FOUND TABS IN synthesis.data.tabs!');
-      }
-      if (synthesis.analysis && synthesis.analysis.tabs) {
-        console.log('🔍 FOUND TABS IN synthesis.analysis.tabs!');
-      }
-      
-      // Deep debug of tabs content
-      if (synthesis.tabs) {
-        console.log('📊 TABS CONTENT DEEP DIVE:');
-        
-        // Force log the actual values
-        console.log('  Executive tab headline:', synthesis.tabs.executive?.headline || 'NO HEADLINE');
-        console.log('  Executive tab overview:', synthesis.tabs.executive?.overview || 'NO OVERVIEW');
-        console.log('  Executive immediate actions:', synthesis.tabs.executive?.immediate_actions || 'NO ACTIONS');
-        console.log('  Executive statistics:', JSON.stringify(synthesis.tabs.executive?.statistics) || 'NO STATS');
-        
-        console.log('  Competitive actions:', synthesis.tabs.competitive?.competitor_actions?.length || 0, 'actions');
-        if (synthesis.tabs.competitive?.competitor_actions?.[0]) {
-          console.log('  First competitor action:', JSON.stringify(synthesis.tabs.competitive.competitor_actions[0]));
-        }
-        
-        console.log('  Market trends count:', synthesis.tabs.market?.market_trends?.length || 0);
-        console.log('  Market position:', synthesis.tabs.market?.market_position || 'NO POSITION');
-      } else {
-        console.log('❌ NO TABS IN SYNTHESIS RESPONSE!');
-      }
-      
-      // Use synthesis tabs and opportunities directly
-      elaborateIntelligence = {
-        success: true,
-        tabs: synthesis.tabs || {},
-        opportunities: synthesis.opportunities || [],
-        analysis: synthesis.data || synthesis.analysis || {},
-        patterns: synthesis.data?.patterns || [],
-        recommendations: synthesis.data?.strategic_recommendations || {},
-        metadata: {
-          organization: organizationProfile?.name || organization?.name || 'Unknown',
-          pipeline: 'synthesis-direct',
-          version: 'v4.0',
-          duration: totalTime,
-          timestamp: new Date().toISOString(),
-          stagesCompleted: Object.keys(finalResults)
-        }
-      };
-      
-      console.log('✅ Built intelligence from synthesis:', {
-        tabCount: Object.keys(elaborateIntelligence.tabs).length,
-        tabKeys: Object.keys(elaborateIntelligence.tabs),
-        opportunityCount: elaborateIntelligence.opportunities.length
-      });
-    } else {
-      // Fallback if no synthesis
-      console.error('❌ NO SYNTHESIS STAGE FOUND - This should not happen!');
-      elaborateIntelligence = {
-        success: false,
-        error: 'No synthesis stage found',
-        tabs: {},
-        opportunities: [],
-        analysis: {},
-        metadata: {
-          organization: organizationProfile?.name || organization?.name || 'Unknown',
-          duration: totalTime,
-          timestamp: new Date().toISOString()
-        }
-      };
-    }
-    
-    console.log('🎯 Setting final intelligence:', elaborateIntelligence);
-    console.log('🔍 Intelligence structure:', {
-      hasAnalysis: !!elaborateIntelligence.analysis,
-      hasTabs: !!elaborateIntelligence.tabs,
-      hasOpportunities: !!elaborateIntelligence.opportunities,
-      keys: Object.keys(elaborateIntelligence)
-    });
-    
-    setFinalIntelligence(elaborateIntelligence);
-    
-    // Set completion state immediately (no setTimeout needed)
-    setIsComplete(true);
-    console.log('✅ Component marked as complete, should render results now');
-    if (onComplete) {
-      console.log('📤 Calling onComplete callback with intelligence');
-      onComplete(elaborateIntelligence);
-    }
-  };
-
   // Complete analysis and synthesize all stage results
-  const handleComplete = () => {
-    // Prevent multiple calls using ref only (not isComplete state)
-    if (completionRef.current) {
-      console.log('⚠️ Pipeline already completing, skipping duplicate call');
+  const handleComplete = useCallback(() => {
+    // Prevent multiple calls using ref
+    if (completionRef.current || isComplete) {
+      console.log('⚠️ Pipeline already complete or completing, skipping');
       return;
     }
     
@@ -505,7 +406,9 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     const totalTime = Math.floor((Date.now() - startTime) / 1000);
     console.log(`🎉 ELABORATE PIPELINE COMPLETE in ${totalTime} seconds`);
     console.log('📊 Final stage results:', Object.keys(stageResults));
-    console.log('📊 Stage results detail:', stageResults);
+    
+    // Mark as complete to update UI
+    setIsComplete(true);
     
     // Validate all stages completed
     const requiredStages = INTELLIGENCE_STAGES.map(s => s.id);
@@ -524,25 +427,12 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     // Synthesize elaborate intelligence from all stages (even if partial)
     const elaborateIntelligence = synthesizeElaborateResults(stageResults, organizationProfile || organization, totalTime);
     
-    console.log('🎯 Setting final intelligence:', elaborateIntelligence);
-    console.log('🔍 Intelligence structure:', {
-      hasAnalysis: !!elaborateIntelligence.analysis,
-      hasTabs: !!elaborateIntelligence.tabs,
-      hasOpportunities: !!elaborateIntelligence.opportunities,
-      keys: Object.keys(elaborateIntelligence)
-    });
-    
     setFinalIntelligence(elaborateIntelligence);
-    
-    // Set completion state immediately (no setTimeout needed)
-    setIsComplete(true);
-    console.log('✅ Component marked as complete, should render results now');
 
     if (onComplete) {
-      console.log('📤 Calling onComplete callback with intelligence');
       onComplete(elaborateIntelligence);
     }
-  };
+  }, [startTime, stageResults, organization, organizationProfile, onComplete]);
 
   // Advanced synthesis of all stage results
   const synthesizeElaborateResults = (results, orgProfile, duration) => {
@@ -562,113 +452,52 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     // Extract the actual data from Edge Function responses
     const extractedData = {};
     Object.entries(results).forEach(([stageId, stageResult]) => {
+      // Different stages return data in different formats
       if (stageResult?.data) {
         extractedData[stageId] = stageResult.data;
+      } else if (stageResult?.analysis) {
+        // Most stages return analysis instead of data
+        extractedData[stageId] = stageResult.analysis;
+      } else if (stageResult?.intelligence) {
+        // Extraction stage returns intelligence
+        extractedData[stageId] = stageResult.intelligence;
       }
     });
     
     console.log('📈 Extracted data from stages:', Object.keys(extractedData));
     
     // Create comprehensive intelligence combining all stages
-    // First try to get tabs from synthesis stage which has the final aggregated data
-    let intelligenceTabs = {};
+    // PRIORITIZE Claude synthesis analysis over opportunities
+    const synthesisStage = results.synthesis || {};
+    const claudeAnalysis = synthesisStage.data || synthesisStage.analysis || {};
     
-    // Check if synthesis stage has the final intelligence structure
-    // The synthesis stage returns: { data: results, tabs: tabs, opportunities: [...] }
-    if (results.synthesis) {
-      const synthesisResult = results.synthesis;
-      console.log('🎯 Using synthesis data for tabs:', {
-        hasData: !!synthesisResult.data,
-        hasTabs: !!synthesisResult.tabs,
-        hasOpportunities: !!synthesisResult.opportunities,
-        tabKeys: synthesisResult.tabs ? Object.keys(synthesisResult.tabs) : [],
-        opportunityCount: synthesisResult.opportunities?.length || 0,
-        // Log the actual synthesis result structure
-        synthesisKeys: Object.keys(synthesisResult),
-        dataKeys: synthesisResult.data ? Object.keys(synthesisResult.data).slice(0, 10) : [],
-        sampleTab: synthesisResult.tabs ? Object.keys(synthesisResult.tabs)[0] : null,
-        // Log actual tab content
-        executiveTabContent: synthesisResult.tabs?.executive ? 
-          Object.keys(synthesisResult.tabs.executive).slice(0, 5) : 'no executive tab',
-        competitiveTabContent: synthesisResult.tabs?.competitive ? 
-          Object.keys(synthesisResult.tabs.competitive).slice(0, 5) : 'no competitive tab'
-      });
-      
-      // Also log the raw synthesis result for debugging
-      console.log('📦 Raw synthesis result:', synthesisResult);
-      
-      // The synthesis stage returns tabs directly at the top level
-      if (synthesisResult.tabs) {
-        intelligenceTabs = synthesisResult.tabs;
-      } 
-      // Also check in the data property
-      else if (synthesisResult.data?.tabs) {
-        intelligenceTabs = synthesisResult.data.tabs;
-      }
-      // Build from the synthesis results
-      else if (synthesisResult.data) {
-        const data = synthesisResult.data;
-        intelligenceTabs = {
-          executive: data.executive_summary || {},
-          competitive: extractedData.competitive || {},
-          media: extractedData.media || {},
-          regulatory: extractedData.regulatory || {},
-          market: extractedData.trends || {},
-          synthesis: {
-            patterns: data.patterns || [],
-            cascade_predictions: data.cascade_predictions || [],
-            strategic_recommendations: data.strategic_recommendations || {},
-            elite_insights: data.elite_insights || {},
-            action_matrix: data.action_matrix || {}
-          }
-        };
-      }
-    }
-    
-    // If no tabs from synthesis, try to build from individual stages
-    if (!intelligenceTabs || Object.keys(intelligenceTabs).length === 0) {
-      intelligenceTabs = generateTabsFromStageData(results);
-    }
-    
-    // Ensure we always have some tabs for display
-    if (!intelligenceTabs || Object.keys(intelligenceTabs).length === 0) {
-      console.warn('⚠️ No tabs generated, using stage data directly');
-      // Build tabs from raw stage data
-      intelligenceTabs = {
-        executive: {
-          headline: `${orgProfile?.name || 'Organization'} Intelligence Analysis Complete`,
-          overview: `Comprehensive analysis across ${Object.keys(results).length} intelligence dimensions`,
-          statistics: {
-            stages_completed: Object.keys(results).length,
-            opportunities_identified: extractOpportunitiesFromAllStages(results).length
-          }
-        },
-        competitive: extractedData.competitive || { summary: 'Competitive analysis in progress' },
-        media: extractedData.media || { summary: 'Media landscape analysis in progress' },
-        regulatory: extractedData.regulatory || { summary: 'Regulatory environment analysis in progress' },
-        market: extractedData.trends || { summary: 'Market trends analysis in progress' },
-        synthesis: extractedData.synthesis || { summary: 'Strategic synthesis in progress' }
-      };
-    }
-    
-    // Get opportunities from synthesis stage first, then fallback to extraction
-    let opportunities = [];
-    if (results.synthesis?.opportunities) {
-      opportunities = results.synthesis.opportunities;
-    } else if (results.synthesis?.data?.consolidated_opportunities?.prioritized_list) {
-      opportunities = results.synthesis.data.consolidated_opportunities.prioritized_list;
-    } else {
-      opportunities = extractOpportunitiesFromAllStages(results);
-    }
+    console.log('🧠 SYNTHESIS STAGE CONTENT:', {
+      hasSynthesis: !!results.synthesis,
+      synthesisKeys: Object.keys(synthesisStage),
+      hasData: !!synthesisStage.data,
+      dataKeys: synthesisStage.data ? Object.keys(synthesisStage.data).slice(0, 10) : [],
+      hasAnalysis: !!synthesisStage.analysis,
+      analysisKeys: synthesisStage.analysis ? Object.keys(synthesisStage.analysis).slice(0, 10) : [],
+      hasTabs: !!synthesisStage.tabs,
+      tabCount: synthesisStage.tabs ? Object.keys(synthesisStage.tabs).length : 0
+    });
     
     const elaborateIntelligence = {
       success: true,
-      analysis: primaryResult?.data || primaryResult?.analysis || extractedData.synthesis || extractedData.competitive || {},
-      tabs: intelligenceTabs,
-      opportunities: opportunities,
-      stageInsights: generateStageInsights(results) || {},
-      patterns: results.synthesis?.data?.patterns || identifyPatternsAcrossStages(results) || [],
-      recommendations: results.synthesis?.data?.strategic_recommendations || generateStrategicRecommendations(results) || {},
+      // Prioritize Claude's synthesized analysis
+      analysis: claudeAnalysis,
+      // Get tabs from synthesis or generate from all data
+      tabs: synthesisStage.tabs || primaryResult?.tabs || generateDefaultTabs(extractedData) || generateTabsFromStageData(results),
+      // Remove opportunities - focus on analysis only
+      opportunities: [],
+      // Get insights from individual stages
+      stageInsights: generateStageInsights(results),
+      // Extract patterns identified by Claude
+      patterns: claudeAnalysis.patterns || identifyPatternsAcrossStages(results),
+      // Get Claude's recommendations
+      recommendations: claudeAnalysis.recommendations || generateStrategicRecommendations(results),
+      // Add raw stage data for debugging
+      rawStageData: extractedData,
       metadata: {
         organization: orgProfile?.name || 'Unknown',
         pipeline: 'elaborate-multi-stage',
@@ -677,18 +506,11 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         duration: duration,
         stagesCompleted: Object.keys(results),
         timestamp: new Date().toISOString(),
-        comprehensiveAnalysis: true
+        comprehensiveAnalysis: true,
+        hasClaudeAnalysis: !!claudeAnalysis && Object.keys(claudeAnalysis).length > 0
       }
     };
     
-    console.log('✅ Elaborate intelligence synthesized:', {
-      hasAnalysis: !!elaborateIntelligence.analysis,
-      hasTabs: !!elaborateIntelligence.tabs,
-      hasOpportunities: !!elaborateIntelligence.opportunities,
-      opportunityCount: elaborateIntelligence.opportunities?.length || 0,
-      tabKeys: elaborateIntelligence.tabs ? Object.keys(elaborateIntelligence.tabs) : [],
-      analysisKeys: elaborateIntelligence.analysis ? Object.keys(elaborateIntelligence.analysis).slice(0, 5) : []
-    });
     
     return elaborateIntelligence;
   };
@@ -697,8 +519,17 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
   const generateDefaultTabs = (extractedData) => {
     const tabs = {};
     
-    // Create competitive tab
-    if (extractedData.competitive?.competitors) {
+    // Create extraction tab (Stage 1)
+    if (extractedData.extraction) {
+      tabs.extraction = {
+        title: 'Organization Profile',
+        content: extractedData.extraction,
+        hasData: true
+      };
+    }
+    
+    // Create competitive tab (Stage 2)
+    if (extractedData.competitive) {
       tabs.competitive = {
         title: 'Competitive Analysis',
         content: extractedData.competitive,
@@ -706,8 +537,8 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
       };
     }
     
-    // Create media tab
-    if (extractedData.media?.media_landscape || extractedData.media?.media_coverage) {
+    // Create media tab (Stage 3)
+    if (extractedData.media) {
       tabs.media = {
         title: 'Media Landscape',
         content: extractedData.media,
@@ -715,8 +546,8 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
       };
     }
     
-    // Create regulatory tab
-    if (extractedData.regulatory?.regulatory) {
+    // Create regulatory tab (Stage 4)
+    if (extractedData.regulatory) {
       tabs.regulatory = {
         title: 'Regulatory Analysis',
         content: extractedData.regulatory,
@@ -750,22 +581,18 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
   const generateTabsFromStageData = (results) => {
     const tabs = {};
     
-    // Log what we're working with
-    console.log('🔄 Generating tabs from stage data:', {
-      stageCount: Object.keys(results).length,
-      stages: Object.keys(results),
-      synthesisData: results.synthesis?.data ? Object.keys(results.synthesis.data) : 'no synthesis data'
-    });
-    
     // Create executive summary from all stages
     const immediateActions = [];
     
-    // Extract immediate actions from each stage
-    if (results.competitive?.data?.recommendations?.immediate_actions) {
-      immediateActions.push(...results.competitive.data.recommendations.immediate_actions);
+    // Extract immediate actions from each stage - check both data and analysis fields
+    const competitiveData = results.competitive?.data || results.competitive?.analysis;
+    const synthesisData = results.synthesis?.data || results.synthesis?.analysis;
+    
+    if (competitiveData?.recommendations?.immediate_actions) {
+      immediateActions.push(...competitiveData.recommendations.immediate_actions);
     }
-    if (results.synthesis?.data?.action_matrix?.immediate) {
-      immediateActions.push(...results.synthesis.data.action_matrix.immediate);
+    if (synthesisData?.action_matrix?.immediate) {
+      immediateActions.push(...synthesisData.action_matrix.immediate);
     }
     
     tabs.executive = {
@@ -786,10 +613,17 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     
     // Process each stage result
     Object.entries(results).forEach(([stageId, stageResult]) => {
-      if (stageResult?.data && !stageResult.error) {
-        // Extract the actual stage data
-        const stageData = stageResult.data;
+      // Check both data and analysis fields, also check tabs field
+      const stageData = stageResult?.data || stageResult?.analysis || stageResult?.intelligence;
+      const stageTabs = stageResult?.tabs;
+      
+      if ((stageData || stageTabs) && !stageResult.error) {
+        // Use existing tabs if available
+        if (stageTabs) {
+          Object.assign(tabs, stageTabs);
+        }
         
+        // Also create tabs from data
         if (stageId === 'competitive' && stageData?.competitors) {
           tabs.competitive = {
             competitors: stageData.competitors,
@@ -862,8 +696,25 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
   const extractOpportunitiesFromAllStages = (results) => {
     const allOpportunities = [];
     
+    console.log('🔍 EXTRACTING OPPORTUNITIES FROM STAGES:', {
+      stageCount: Object.keys(results).length,
+      stages: Object.keys(results)
+    });
+    
     Object.entries(results).forEach(([stageId, stageResult]) => {
-      // Check for opportunities at top level
+      console.log(`📋 Checking stage '${stageId}' for opportunities:`, {
+        hasDirectOps: !!stageResult.opportunities,
+        directCount: stageResult.opportunities?.length || 0,
+        hasDataField: !!stageResult.data,
+        hasConsolidatedInData: !!stageResult.data?.consolidated_opportunities,
+        consolidatedInDataCount: stageResult.data?.consolidated_opportunities?.prioritized_list?.length || 0,
+        hasAnalysisField: !!stageResult.analysis,
+        hasConsolidatedInAnalysis: !!stageResult.analysis?.consolidated_opportunities,
+        consolidatedInAnalysisCount: stageResult.analysis?.consolidated_opportunities?.prioritized_list?.length || 0
+      });
+      // Check for opportunities in different possible locations
+      
+      // 1. Direct opportunities array
       if (stageResult.opportunities && Array.isArray(stageResult.opportunities)) {
         allOpportunities.push(...stageResult.opportunities.map(opp => ({
           ...opp,
@@ -871,42 +722,38 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         })));
       }
       
-      // Check for consolidated_opportunities in synthesis stage
-      if (stageId === 'synthesis') {
-        console.log('🔍 Synthesis stage data structure:', {
-          hasData: !!stageResult.data,
-          dataKeys: stageResult.data ? Object.keys(stageResult.data) : [],
-          hasConsolidatedOpps: !!stageResult.data?.consolidated_opportunities,
-          hasPrioritizedList: !!stageResult.data?.consolidated_opportunities?.prioritized_list,
-          actualData: stageResult.data
-        });
-        
-        if (stageResult.data?.consolidated_opportunities?.prioritized_list) {
-          console.log('🎯 Found consolidated opportunities in synthesis stage!');
-          const consolidatedOpps = stageResult.data.consolidated_opportunities.prioritized_list;
-          allOpportunities.push(...consolidatedOpps.map(opp => ({
-            ...opp,
-            source: 'Strategic Synthesis',
-            fromSynthesis: true
-          })));
-        }
+      // 2. Synthesis stage: consolidated_opportunities.prioritized_list
+      if (stageResult.data?.consolidated_opportunities?.prioritized_list) {
+        const synthOps = stageResult.data.consolidated_opportunities.prioritized_list;
+        allOpportunities.push(...synthOps.map(opp => ({
+          title: opp.opportunity || opp.title,
+          description: opp.quick_summary || opp.pr_angle || opp.description,
+          urgency: opp.urgency,
+          type: opp.type,
+          confidence: opp.confidence,
+          source: 'Strategic Synthesis'
+        })));
       }
       
-      // Also check if success=true and data has consolidated_opportunities (for edge function responses)
-      if (stageResult.success && stageResult.data?.consolidated_opportunities?.prioritized_list) {
-        console.log('🎯 Found opportunities in stage data!');
-        const prioritizedOpps = stageResult.data.consolidated_opportunities.prioritized_list;
-        if (!allOpportunities.some(o => o.fromSynthesis)) { // Avoid duplicates
-          allOpportunities.push(...prioritizedOpps.map(opp => ({
-            ...opp,
-            source: 'Intelligence Synthesis',
-            fromSynthesis: true
-          })));
-        }
+      // 3. Also check in analysis field
+      if (stageResult.analysis?.consolidated_opportunities?.prioritized_list) {
+        const analysisOps = stageResult.analysis.consolidated_opportunities.prioritized_list;
+        allOpportunities.push(...analysisOps.map(opp => ({
+          title: opp.opportunity || opp.title,
+          description: opp.quick_summary || opp.pr_angle || opp.description,
+          urgency: opp.urgency,
+          type: opp.type,
+          confidence: opp.confidence,
+          source: 'Analysis Synthesis'
+        })));
       }
     });
     
-    console.log(`📊 Extracted ${allOpportunities.length} total opportunities from all stages`);
+    console.log('📊 FINAL OPPORTUNITY EXTRACTION:', {
+      totalOpportunities: allOpportunities.length,
+      opportunitiesList: allOpportunities.slice(0, 3),
+      sources: [...new Set(allOpportunities.map(o => o.source))]
+    });
     return allOpportunities;
   };
 
@@ -954,9 +801,8 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
   const identifyPatternsAcrossStages = (results) => {
     const patterns = [];
     
-    // Pattern 1: Cross-stage opportunity alignment
-    const allOpportunities = extractOpportunitiesFromAllStages(results);
-    if (allOpportunities.length > 3) {
+    // Pattern 1: Cross-stage analysis alignment (opportunity extraction removed)
+    if (Object.keys(results).length > 3) {
       patterns.push({
         type: 'opportunity_convergence',
         description: 'Multiple stages identified aligned strategic opportunities',
@@ -1098,112 +944,81 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
 
     return () => clearInterval(timer);
   }, [startTime]);
-  
-  // Clear window flags on mount to ensure fresh logging
-  useEffect(() => {
-    window._completionLogged = false;
-    window._opportunitiesLogged = false;
-    window._intelligenceStructureLogged = false;
-    window._competitiveDataLogged = false;
-    window._executiveDataLogged = false;
-    
-    return () => {
-      // Clean up on unmount
-      window._completionLogged = false;
-      window._opportunitiesLogged = false;
-      window._intelligenceStructureLogged = false;
-      window._competitiveDataLogged = false;
-      window._executiveDataLogged = false;
-    };
-  }, []);
 
   // Tab Render Functions - Pure Intelligence Analysis
-  // Wrap in useCallback to prevent recreation on every render
-  const renderExecutiveSummary = useCallback((intelligence) => {
-    const { tabs = {}, patterns = [], statistics = {}, analysis = {}, metadata = {} } = intelligence;
+  
+  const renderExecutiveSummary = (intelligence) => {
+    const { tabs = {}, patterns = [], statistics = {}, analysis = {}, rawStageData = {} } = intelligence;
     
-    // Log what data we have for executive summary
-    if (!window._executiveDataLogged) {
-      console.log('📊 Executive summary data:', {
-        hasTabsExecutive: !!tabs.executive,
-        executiveKeys: tabs.executive ? Object.keys(tabs.executive) : [],
-        headline: tabs.executive?.headline,
-        immediateActions: tabs.executive?.immediate_actions,
-        statistics: tabs.executive?.statistics,
-        hasAnalysis: !!analysis,
-        analysisKeys: Object.keys(analysis).slice(0, 10),
-        hasPatterns: patterns.length > 0,
-        patternCount: patterns.length,
-        metadataOrg: metadata.organization
-      });
-      window._executiveDataLogged = true;
-    }
+    // Get Claude synthesis analysis from rawStageData or analysis
+    const claudeSynthesis = rawStageData?.synthesis || analysis;
     
     return (
       <div className="executive-summary-content">
-        <div className="summary-section">
-          <h3>Current State Analysis</h3>
-          <div className="narrative-block">
-            {tabs.executive?.headline && (
-              <div className="headline-metric">{tabs.executive.headline}</div>
-            )}
-            <p>
-              {tabs.executive?.overview || analysis.overview ||
-               `Intelligence gathering across ${metadata.stagesCompleted?.length || 6} analytical dimensions for ${metadata.organization || 'the organization'}.`}
-            </p>
-            {tabs.executive?.competitive_highlight && (
-              <p className="competitive-highlight">
-                <strong>Competitive:</strong> {tabs.executive.competitive_highlight}
-              </p>
-            )}
-            {tabs.executive?.market_highlight && (
-              <p className="market-highlight">
-                <strong>Market:</strong> {tabs.executive.market_highlight}
-              </p>
-            )}
-          </div>
-        </div>
-        
-        <div className="summary-section">
-          <h3>Intelligence Statistics</h3>
-          <div className="position-grid">
-            <div className="position-item">
-              <span className="label">Entities Tracked:</span>
-              <span className="value">{tabs.executive?.statistics?.entities_tracked || 0}</span>
-            </div>
-            <div className="position-item">
-              <span className="label">Actions Captured:</span>
-              <span className="value">{tabs.executive?.statistics?.actions_captured || 0}</span>
-            </div>
-            <div className="position-item">
-              <span className="label">Topics Monitored:</span>
-              <span className="value">{tabs.executive?.statistics?.topics_monitored || 0}</span>
-            </div>
-            <div className="position-item">
-              <span className="label">Opportunities:</span>
-              <span className="value">{tabs.executive?.statistics?.opportunities_identified || 0}</span>
-            </div>
-          </div>
-        </div>
-        
-        {tabs.executive?.immediate_actions && tabs.executive.immediate_actions.length > 0 && (
+        {/* Claude Executive Summary */}
+        {claudeSynthesis?.executive_summary && (
           <div className="summary-section">
-            <h3>Immediate Actions</h3>
-            <ul className="actions-list">
-              {tabs.executive.immediate_actions.slice(0, 5).map((action, idx) => (
-                <li key={idx}>{action.action || action}</li>
-              ))}
-            </ul>
+            <h3>Executive Intelligence Summary</h3>
+            <div className="narrative-block">
+              <p className="headline">{claudeSynthesis.executive_summary.headline}</p>
+              <p>{claudeSynthesis.executive_summary.narrative}</p>
+              {claudeSynthesis.executive_summary.key_insights && (
+                <div className="key-insights">
+                  <h4>Key Insights</h4>
+                  <ul>
+                    {claudeSynthesis.executive_summary.key_insights.map((insight, idx) => (
+                      <li key={idx}>{insight}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
           </div>
         )}
         
         <div className="summary-section">
+          <h3>Current State Analysis</h3>
+          <div className="narrative-block">
+            <p>
+              {tabs.executive?.overview || claudeSynthesis?.executive_summary?.narrative ||
+               'Intelligence gathering across 6 analytical dimensions reveals a complex operational environment.'}
+            </p>
+            {tabs.executive?.headline && (
+              <div className="headline-metric">{tabs.executive.headline}</div>
+            )}
+          </div>
+        </div>
+        
+        <div className="summary-section">
+          <h3>Comparative Position</h3>
+          <div className="position-grid">
+            <div className="position-item">
+              <span className="label">Market Position:</span>
+              <span className="value">{tabs.positioning?.strengths?.length > 0 ? 'Competitive' : 'Developing'}</span>
+            </div>
+            <div className="position-item">
+              <span className="label">Narrative Control:</span>
+              <span className="value">{tabs.market?.summary || 'Monitoring'}</span>
+            </div>
+            <div className="position-item">
+              <span className="label">Threat Level:</span>
+              <span className="value">{tabs.competitive?.summary || 'Moderate'}</span>
+            </div>
+          </div>
+        </div>
+        
+        <div className="summary-section">
           <h3>Convergence Patterns</h3>
           <div className="patterns-list">
-            {patterns.slice(0, 3).map((pattern, idx) => (
+            {/* Use Claude's patterns if available */}
+            {(claudeSynthesis?.patterns || patterns).slice(0, 5).map((pattern, idx) => (
               <div key={idx} className="pattern-item">
-                <span className="pattern-type">{pattern.type || pattern}:</span>
-                <span className="pattern-desc">{pattern.description || 'Pattern identified'}</span>
+                <span className="pattern-type">
+                  {typeof pattern === 'string' ? 'Pattern:' : (pattern.type || 'Insight:')}
+                </span>
+                <span className="pattern-desc">
+                  {typeof pattern === 'string' ? pattern : (pattern.description || pattern.insight || 'Pattern identified')}
+                </span>
                 {pattern.confidence && (
                   <span className="confidence">Confidence: {pattern.confidence}%</span>
                 )}
@@ -1211,6 +1026,29 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
             ))}
           </div>
         </div>
+        
+        {/* Claude Strategic Recommendations */}
+        {claudeSynthesis?.strategic_recommendations && (
+          <div className="summary-section">
+            <h3>Strategic Recommendations</h3>
+            <div className="recommendations-list">
+              {Object.entries(claudeSynthesis.strategic_recommendations).map(([category, items], idx) => (
+                <div key={idx} className="recommendation-category">
+                  <h4>{category.replace(/_/g, ' ').toUpperCase()}</h4>
+                  {Array.isArray(items) ? (
+                    <ul>
+                      {items.slice(0, 3).map((item, itemIdx) => (
+                        <li key={itemIdx}>{item}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>{items}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         
         <div className="summary-section">
           <h3>Risk Indicators</h3>
@@ -1224,52 +1062,38 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         </div>
       </div>
     );
-  }, []); // No dependencies, pure function
+  };
   
-  const renderCompetitiveAnalysis = useCallback((intelligence) => {
-    const { tabs = {}, analysis = {} } = intelligence;
-    const competitiveData = tabs.competitive || analysis.competitive || {};
-    
-    // Log what data we have for competitive analysis
-    if (!window._competitiveDataLogged) {
-      console.log('🎯 Competitive data structure:', {
-        hasTabsCompetitive: !!tabs.competitive,
-        hasAnalysisCompetitive: !!analysis.competitive,
-        competitiveKeys: Object.keys(competitiveData),
-        hasCompetitors: !!competitiveData.competitors,
-        hasCompetitorActions: !!competitiveData.competitor_actions
-      });
-      window._competitiveDataLogged = true;
-    }
+  const renderCompetitiveAnalysis = (intelligence) => {
+    const { tabs = {} } = intelligence;
+    const competitiveData = tabs.competitive || {};
     
     return (
       <div className="competitive-analysis-content">
         <div className="analysis-section">
           <h3>Competitive Landscape</h3>
           <div className="landscape-overview">
-            <p>{competitiveData.summary || competitiveData.overview || 'Monitoring competitive environment across multiple vectors.'}</p>
+            <p>{competitiveData.summary || 'Monitoring competitive environment across multiple vectors.'}</p>
           </div>
         </div>
         
         <div className="analysis-section">
           <h3>Observed Competitor Actions</h3>
           <div className="actions-grid">
-            {(tabs.competitive?.competitor_actions || competitiveData.competitor_actions || []).length > 0 ? (
-              (tabs.competitive?.competitor_actions || competitiveData.competitor_actions || []).slice(0, 5).map((action, idx) => (
-                <div key={idx} className="action-card">
-                  <div className="competitor-name">{action.competitor || action.entity || 'Competitor'}</div>
-                  <div className="action-description">{action.action || 'Active in market'}</div>
-                  <div className="action-meta">
-                    <span className="impact">Impact: {action.impact || 'Assessing'}</span>
-                    {action.response && (
-                      <span className="response">Response: {action.response}</span>
-                    )}
-                  </div>
+            {competitiveData.competitor_actions?.slice(0, 5).map((action, idx) => (
+              <div key={idx} className="action-card">
+                <div className="competitor-name">{action.entity}</div>
+                <div className="action-description">{action.action}</div>
+                <div className="action-meta">
+                  <span className="impact">Impact: {action.impact || 'Assessing'}</span>
+                  {action.timestamp && (
+                    <span className="timing">
+                      {new Date(action.timestamp).toLocaleDateString()}
+                    </span>
+                  )}
                 </div>
-              ))
-            ) : (
-              <p>No significant competitive moves detected in current timeframe.</p>
-            )}
+              </div>
+            )) || <p>No significant competitive moves detected in current timeframe.</p>}
           </div>
         </div>
         
@@ -1297,9 +1121,9 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         </div>
       </div>
     );
-  }, []); // No dependencies, pure function
+  };
   
-  const renderTrendingTopics = useCallback((intelligence) => {
+  const renderTrendingTopics = (intelligence) => {
     const { tabs = {} } = intelligence;
     const marketData = tabs.market || {};
     const thoughtData = tabs.thought || {};
@@ -1356,9 +1180,9 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         </div>
       </div>
     );
-  }, []); // No dependencies, pure function
+  };
   
-  const renderStakeholders = useCallback((intelligence) => {
+  const renderStakeholders = (intelligence) => {
     const { tabs = {} } = intelligence;
     const regulatoryData = tabs.regulatory || {};
     
@@ -1408,9 +1232,9 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         </div>
       </div>
     );
-  }, []); // No dependencies, pure function
+  };
   
-  const renderEarlySignals = useCallback((intelligence) => {
+  const renderEarlySignals = (intelligence) => {
     const { tabs = {}, patterns = [] } = intelligence;
     const forwardData = tabs.forward || {};
     
@@ -1472,87 +1296,17 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         </div>
       </div>
     );
-  }, []); // No dependencies, pure function
-
-  const renderOpportunities = useCallback((intelligence) => {
-    const { opportunities = [], tabs = {} } = intelligence;
-    
-    // Only log opportunities once to avoid spam
-    if (!window._opportunitiesLogged) {
-      console.log('🎯 Rendering opportunities:', {
-        count: opportunities.length,
-        fullOpportunities: opportunities, // Show ALL opportunities
-        hasTabsData: !!tabs,
-        tabKeys: Object.keys(tabs)
-      });
-      console.log('📋 Full opportunity details:', JSON.stringify(opportunities, null, 2));
-      window._opportunitiesLogged = true;
-    }
-    
-    return (
-      <div className="opportunities-content">
-        <div className="opportunities-section">
-          <h3>Strategic PR Opportunities</h3>
-          {opportunities && opportunities.length > 0 ? (
-            <div className="opportunities-grid">
-              {opportunities.map((opp, idx) => (
-                <div key={idx} className="opportunity-card">
-                  <div className="opportunity-header">
-                    <span className="opportunity-type">{opp.type || 'Strategic'}</span>
-                    <span className="opportunity-urgency urgency-{opp.urgency || 'medium'}">
-                      {opp.urgency || 'Medium'} Priority
-                    </span>
-                  </div>
-                  <h4 className="opportunity-title">{opp.opportunity || opp.title || opp.description}</h4>
-                  {opp.pr_angle && (
-                    <div className="opportunity-angle">
-                      <strong>PR Angle:</strong> {opp.pr_angle}
-                    </div>
-                  )}
-                  {opp.quick_summary && (
-                    <div className="opportunity-summary">{opp.quick_summary}</div>
-                  )}
-                  <div className="opportunity-meta">
-                    <span className="opportunity-source">Source: {opp.source || opp.source_stage || 'Synthesis'}</span>
-                    {opp.confidence && (
-                      <span className="opportunity-confidence">Confidence: {opp.confidence}%</span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="no-opportunities">
-              <p>No PR opportunities identified in this analysis cycle.</p>
-              <p className="help-text">
-                Opportunities are generated from the synthesis of all intelligence stages. 
-                They should appear here once the pipeline completes successfully.
-              </p>
-            </div>
-          )}
-        </div>
-        
-        {tabs.synthesis?.consolidated_opportunities?.prioritized_list && (
-          <div className="opportunities-section">
-            <h3>Consolidated Strategic Recommendations</h3>
-            <div className="recommendations-list">
-              {tabs.synthesis.consolidated_opportunities.prioritized_list.map((rec, idx) => (
-                <div key={idx} className="recommendation-item">
-                  <span className="rec-number">{idx + 1}.</span>
-                  <span className="rec-text">{rec.opportunity || rec}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }, []); // No dependencies, pure function
+  };
 
   // Run stages sequentially - ONLY ONCE per organization
   useEffect(() => {
-    // Guard against running when already running or complete
-    if (runningRef.current || completionRef.current) {
+    // Prevent re-runs if pipeline is complete or running
+    if (isComplete) {
+      console.log('✅ Pipeline complete or no organization');
+      return;
+    }
+    
+    if (runningRef.current) {
       return;
     }
     
@@ -1562,13 +1316,12 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
       currentStage,
       totalStages: INTELLIGENCE_STAGES.length,
       hasError: !!error,
-      isComplete,
-      completionRef: completionRef.current
+      isComplete
     });
     
-    // Don't run if already complete or no organization
-    if (completionRef.current || !organization) {
-      console.log('✅ Pipeline complete or no organization');
+    // Don't run if no organization
+    if (!organization) {
+      console.log('⏳ No organization yet');
       return;
     }
     
@@ -1576,85 +1329,51 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     if (currentStage === 0 && !hasStarted) {
       console.log('🚀 Starting pipeline for the first time');
       setHasStarted(true);
-      // Immediately trigger the first stage with empty accumulated results
       runningRef.current = true;
-      runStage(0, {}).then(results => {
-        accumulatedResultsRef.current = results || {};
-      }).finally(() => { runningRef.current = false; });
+      // Immediately trigger the first stage
+      runStage(0);
       return;
     }
     
     // Don't run stages if there's an error
     if (error) {
       console.log('❌ Pipeline has error, not running stage');
+      runningRef.current = false;
       return;
     }
     
-    // Check if current stage is already running
-    const currentStageId = INTELLIGENCE_STAGES[currentStage]?.id;
-    if (currentStageId && stageResults[currentStageId]?.inProgress) {
-      console.log(`⏳ Stage ${currentStage + 1} is already running`);
-      return;
-    }
+    // Don't check stageResults here - it causes re-renders
+    // The runStage function handles checking if already running
     
-    // Run the current stage if within bounds
-    if (currentStage >= 0 && currentStage < INTELLIGENCE_STAGES.length && hasStarted) {
+    // Run the current stage if within bounds and started
+    if (hasStarted && currentStage >= 0 && currentStage < INTELLIGENCE_STAGES.length) {
       console.log(`🚀 RUNNING STAGE ${currentStage + 1}: ${INTELLIGENCE_STAGES[currentStage].name}`);
       runningRef.current = true;
-      // Pass accumulated results to each stage
-      runStage(currentStage, accumulatedResultsRef.current).then(results => {
-        accumulatedResultsRef.current = results || accumulatedResultsRef.current;
-      }).finally(() => { runningRef.current = false; });
-    } else if (currentStage >= INTELLIGENCE_STAGES.length && !isComplete && !completionRef.current) {
+      runStage(currentStage);
+    } else if (currentStage === INTELLIGENCE_STAGES.length && !isComplete) {
       console.log('🎉 All stages done, completing pipeline...');
-      console.log('📊 Current state before completion:', {
-        currentStage,
-        totalStages: INTELLIGENCE_STAGES.length,
-        isComplete,
-        completionRefCurrent: completionRef.current,
-        stageResultsCount: Object.keys(stageResults).length,
-        accumulatedResultsCount: Object.keys(accumulatedResultsRef.current).length
-      });
-      
-      // Use accumulated results ref which has the most complete data
-      // This ensures synthesis stage results are included
-      if (Object.keys(accumulatedResultsRef.current).length >= INTELLIGENCE_STAGES.length) {
-        console.log('✅ All stage results accumulated, proceeding with completion');
-        handleCompleteWithResults(accumulatedResultsRef.current);
-      } else {
-        console.log('⏳ Waiting for all stage results to accumulate...');
-        // Set a slight delay to ensure synthesis results are captured
-        setTimeout(() => {
-          handleCompleteWithResults(accumulatedResultsRef.current);
-        }, 1000);
-      }
+      handleComplete();
     }
-  }, [currentStage, organization?.name, hasStarted]); // Removed isComplete to prevent circular dependency
+  }, [currentStage, organization, error, isComplete, hasStarted]); // Removed runStage, handleComplete, stageResults from deps
 
-  // Memoize tab content to prevent infinite re-renders
-  // Must be before any conditional returns per React rules
-  const intelligenceTabs = useMemo(() => {
-    if (!finalIntelligence) return {};
-    
-    // Debug: Log the structure of finalIntelligence to understand what data we have
-    if (!window._intelligenceStructureLogged) {
-      console.log('🔍 Final Intelligence Structure:', {
-        keys: Object.keys(finalIntelligence),
-        hasOpportunities: !!finalIntelligence.opportunities,
-        opportunityCount: finalIntelligence.opportunities?.length,
-        hasTabs: !!finalIntelligence.tabs,
-        tabKeys: finalIntelligence.tabs ? Object.keys(finalIntelligence.tabs) : [],
-        hasPatterns: !!finalIntelligence.patterns,
-        patternCount: finalIntelligence.patterns?.length,
-        // Check what's actually in the tabs
-        executiveTab: finalIntelligence.tabs?.executive ? Object.keys(finalIntelligence.tabs.executive).slice(0, 5) : 'no executive tab',
-        competitiveTab: finalIntelligence.tabs?.competitive ? Object.keys(finalIntelligence.tabs.competitive).slice(0, 5) : 'no competitive tab',
-        analysisKeys: finalIntelligence.analysis ? Object.keys(finalIntelligence.analysis).slice(0, 5) : 'no analysis'
-      });
-      window._intelligenceStructureLogged = true;
-    }
-    
-    return {
+  // Show initialization message
+  if (!organization) {
+    return (
+      <div className="multi-stage-intelligence">
+        <div className="analysis-header">
+          <h1>Initializing Elaborate Intelligence Pipeline</h1>
+          <p className="analysis-subtitle">
+            Loading organization data for comprehensive analysis...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show completed intelligence display with tabbed interface
+  if (isComplete && finalIntelligence) {
+    // Process intelligence for pure analysis display
+    const intelligenceTabs = {
       executive: {
         label: 'Executive Summary',
         icon: '📊',
@@ -1679,46 +1398,8 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         label: 'Early Signals',
         icon: '🔮',
         content: renderEarlySignals(finalIntelligence)
-      },
-      opportunities: {
-        label: 'PR Opportunities',
-        icon: '🎯',
-        content: renderOpportunities(finalIntelligence)
       }
     };
-  }, [finalIntelligence, renderExecutiveSummary, renderCompetitiveAnalysis, 
-      renderTrendingTopics, renderStakeholders, renderEarlySignals, renderOpportunities]); // Include render functions
-  
-  // Monitor completion state - only log once
-  useEffect(() => {
-    if (isComplete && finalIntelligence && !window._completionLogged) {
-      console.log('🎨 RENDER TRIGGER: Both isComplete and finalIntelligence are set!');
-      console.log('Final intelligence available:', {
-        hasData: !!finalIntelligence,
-        keys: finalIntelligence ? Object.keys(finalIntelligence) : [],
-        tabCount: finalIntelligence?.tabs ? Object.keys(finalIntelligence.tabs).length : 0
-      });
-      window._completionLogged = true;
-    }
-  }, [isComplete, finalIntelligence]);
-
-  // Show initialization message
-  if (!organization) {
-    return (
-      <div className="multi-stage-intelligence">
-        <div className="analysis-header">
-          <h1>Initializing Elaborate Intelligence Pipeline</h1>
-          <p className="analysis-subtitle">
-            Loading organization data for comprehensive analysis...
-          </p>
-        </div>
-      </div>
-    );
-  }
-  
-  // Show completed intelligence display with tabbed interface
-  if (isComplete && finalIntelligence) {
-    // Removed console.log from render to prevent infinite loop
     
     return (
       <div className="multi-stage-intelligence completed">
@@ -1751,15 +1432,15 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
             {intelligenceTabs[activeTab]?.content}
           </div>
           
-          {/* Opportunity Engine Link - Separate from Intelligence */}
-          {finalIntelligence.opportunities && finalIntelligence.opportunities.length > 0 && (
-            <div className="opportunity-engine-link">
+          {/* Claude Analysis Summary */}
+          {finalIntelligence.metadata?.hasClaudeAnalysis && (
+            <div className="claude-analysis-footer">
               <div className="separator-line" />
-              <div className="opportunity-notice">
-                <span className="notice-icon">💡</span>
+              <div className="analysis-notice">
+                <span className="notice-icon">🧠</span>
                 <span className="notice-text">
-                  {finalIntelligence.opportunities.length} strategic opportunities identified. 
-                  View in Opportunity Engine for actionable recommendations.
+                  Claude synthesis complete across {finalIntelligence.metadata.stagesCompleted.length} intelligence stages.
+                  Analysis duration: {Math.round(finalIntelligence.metadata.duration / 1000)}s
                 </span>
               </div>
             </div>
@@ -1770,6 +1451,122 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
   }
 
   // Show elaborate pipeline progress
+  // Show loading state while fetching organization from edge function
+  if (loadingOrg) {
+    return (
+      <div className="multi-stage-intelligence">
+        <div className="loading-container">
+          <h2>Loading Organization Profile...</h2>
+          <p>Fetching from intelligence edge function (single source of truth)</p>
+          <div className="loading-spinner"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show message if no organization found
+  if (!organization) {
+    return (
+      <div className="multi-stage-intelligence">
+        <div className="no-org-container">
+          <h2>No Organization Profile Found</h2>
+          <p>Please complete onboarding to configure your organization profile.</p>
+          <button onClick={() => window.location.href = '/onboarding'} className="action-button">
+            Complete Setup
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Debug function to test opportunity flow
+  const runOpportunityDebugTest = async () => {
+    console.log('🔍 STARTING OPPORTUNITY DEBUG TEST');
+    console.log('Running minimal pipeline: Extraction + Synthesis only');
+    
+    // Clear existing results
+    setStageResults({});
+    setCurrentStage(0);
+    setIsComplete(false);
+    
+    try {
+      // Run extraction stage
+      const extractionConfig = createStageConfig(0, organization);
+      console.log('📦 Running extraction with config:', extractionConfig);
+      const extractionResult = await intelligenceOrchestratorV4.orchestrate(extractionConfig);
+      console.log('✅ Extraction complete:', {
+        hasData: !!extractionResult.data,
+        hasOrganization: !!extractionResult.organization
+      });
+      
+      // Create minimal previous results for synthesis
+      const minimalPreviousResults = {
+        extraction: extractionResult.data || {},
+        stage1: { competitors: { direct: [] } },
+        stage2: { media_coverage: {} },
+        stage3: { regulatory_status: {} },
+        stage4: { trends: [] }
+      };
+      
+      // Run synthesis stage directly
+      const synthesisConfig = {
+        organization: extractionResult.organization || organization,
+        stageConfig: {
+          stageId: 'synthesis',
+          stageName: 'Strategic Synthesis',
+          focus: 'synthesis',
+          isElaboratePipeline: true,
+          previousStageResults: minimalPreviousResults
+        }
+      };
+      
+      console.log('🎯 Running synthesis with config:', synthesisConfig);
+      const synthesisResult = await intelligenceOrchestratorV4.orchestrate(synthesisConfig);
+      console.log('✅ Synthesis complete:', {
+        hasData: !!synthesisResult.data,
+        hasOpportunities: !!synthesisResult.opportunities,
+        opportunityCount: synthesisResult.opportunities?.length || 0,
+        hasConsolidated: !!synthesisResult.data?.consolidated_opportunities,
+        consolidatedCount: synthesisResult.data?.consolidated_opportunities?.prioritized_list?.length || 0
+      });
+      
+      // Store results
+      setStageResults({
+        extraction: extractionResult,
+        synthesis: synthesisResult
+      });
+      
+      // Focus on Claude synthesis analysis
+      console.log('🏆 SYNTHESIS DEBUG TEST COMPLETE:', {
+        hasClaudeAnalysis: !!synthesisResult?.data,
+        analysisKeys: synthesisResult?.data ? Object.keys(synthesisResult.data) : [],
+        executiveSummary: synthesisResult?.data?.executive_summary,
+        patterns: synthesisResult?.data?.patterns?.length || 0,
+        recommendations: synthesisResult?.data?.strategic_recommendations ? Object.keys(synthesisResult.data.strategic_recommendations) : []
+      });
+      
+      // Force completion
+      setIsComplete(true);
+      setCurrentStage(2);
+      
+      // Trigger synthesis callback
+      const elaborateIntelligence = synthesizeElaborateResults(
+        { extraction: extractionResult, synthesis: synthesisResult },
+        extractionResult.organization || organization,
+        10
+      );
+      
+      setFinalIntelligence(elaborateIntelligence);
+      if (onComplete) {
+        onComplete(elaborateIntelligence);
+      }
+      
+    } catch (error) {
+      console.error('❌ Debug test failed:', error);
+      setError(`Debug test failed: ${error.message}`);
+    }
+  };
+
   return (
     <div className="multi-stage-intelligence">
       <div className="analysis-header">
@@ -1782,6 +1579,22 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         <div className="pipeline-metadata">
           <span className="pipeline-version">Elaborate Pipeline v2.0</span>
           <span className="pipeline-stages">{INTELLIGENCE_STAGES.length} Stages</span>
+          {/* Debug button - only show in development */}
+          <button 
+            onClick={runOpportunityDebugTest}
+            style={{
+              marginLeft: '20px',
+              padding: '8px 16px',
+              background: '#ff6b6b',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '12px'
+            }}
+          >
+            🧠 Debug Synthesis
+          </button>
         </div>
       </div>
 

@@ -5,12 +5,8 @@
 
 class SupabaseDataService {
   constructor() {
-    this.supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
-    this.supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
-    
-    if (!this.supabaseUrl || !this.supabaseKey) {
-      console.error('⚠️ Supabase configuration missing. Please set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY environment variables.');
-    }
+    this.supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co';
+    this.supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
   }
 
   /**
@@ -81,8 +77,7 @@ class SupabaseDataService {
       const result = await response.json();
       if (result.success && result.profile) {
         console.log(`✅ Loaded organization profile from Supabase`);
-        // Also cache in localStorage for quick access
-        localStorage.setItem('signaldesk_organization', JSON.stringify(result.profile));
+        // NO localStorage - edge function is the SINGLE SOURCE OF TRUTH
         return result.profile;
       }
       
@@ -105,9 +100,7 @@ class SupabaseDataService {
         const latestSynthesis = stageData[0];
         console.log('✅ Loaded synthesis from Supabase:', latestSynthesis.created_at);
         
-        // Cache in localStorage
-        localStorage.setItem('signaldesk_synthesis', JSON.stringify(latestSynthesis.stage_data));
-        
+        // NO localStorage caching - edge function is the SINGLE SOURCE OF TRUTH
         return latestSynthesis.stage_data;
       }
       
@@ -151,9 +144,7 @@ class SupabaseDataService {
         }
       };
       
-      // Cache the complete profile
-      localStorage.setItem('signaldesk_complete_profile', JSON.stringify(fullIntelligence));
-      
+      // NO localStorage caching - edge function is the SINGLE SOURCE OF TRUTH
       return fullIntelligence;
     }
     

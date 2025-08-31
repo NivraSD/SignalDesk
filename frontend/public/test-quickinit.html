@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuickInit Component Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            color: white;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-section {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .button {
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .button:hover {
+            background: #6366f1;
+        }
+        .status {
+            padding: 10px;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .error {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+        .log {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>QuickInit Component Test</h1>
+        <p>Test the discovery pipeline directly without React</p>
+
+        <div class="test-section">
+            <h2>1. Enter Company Name</h2>
+            <input type="text" id="companyName" placeholder="e.g., Tesla, Microsoft, Toyota" value="Tesla">
+            <button class="button" onclick="testDiscovery()">Run Discovery Pipeline</button>
+            <div id="status"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. LocalStorage Verification</h2>
+            <button class="button" onclick="checkLocalStorage()">Check LocalStorage</button>
+            <button class="button" onclick="clearLocalStorage()">Clear LocalStorage</button>
+            <div id="localStorage" class="log"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>3. Console Log</h2>
+            <div id="console" class="log"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>4. Results</h2>
+            <div id="results" class="log"></div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+
+        function log(message) {
+            const consoleDiv = document.getElementById('console');
+            const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+            consoleDiv.innerHTML += `[${timestamp}] ${message}\n`;
+            console.log(message);
+        }
+
+        function setStatus(message, isError = false) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = isError ? 'status error' : 'status';
+            statusDiv.textContent = message;
+        }
+
+        async function testDiscovery() {
+            const companyName = document.getElementById('companyName').value.trim();
+            
+            if (!companyName) {
+                alert('Please enter a company name');
+                return;
+            }
+
+            log(`🚀 Starting discovery for: "${companyName}"`);
+            setStatus('Initializing discovery pipeline...');
+
+            try {
+                // Step 1: Save to localStorage
+                const organizationData = {
+                    name: companyName,
+                    id: companyName.toLowerCase().replace(/\s+/g, '-'),
+                    industry: 'Technology',
+                    competitors: [],
+                    stakeholders: {},
+                    keywords: [companyName],
+                    created_at: new Date().toISOString()
+                };
+
+                localStorage.setItem('selectedOrganization', companyName);
+                localStorage.setItem('organizationData', JSON.stringify(organizationData));
+                log('✅ Saved to localStorage');
+
+                // Step 2: Call intelligence-discovery-v3
+                setStatus('Calling discovery pipeline...');
+                log(`📡 Calling ${SUPABASE_URL}/functions/v1/intelligence-discovery-v3`);
+                
+                const discoveryResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-discovery-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization: organizationData,
+                        config: {
+                            useCache: false,
+                            comprehensive: true
+                        }
+                    })
+                });
+
+                log(`Response status: ${discoveryResponse.status}`);
+                
+                if (!discoveryResponse.ok) {
+                    const errorText = await discoveryResponse.text();
+                    throw new Error(`Discovery failed: ${discoveryResponse.status} - ${errorText}`);
+                }
+
+                const discoveryResult = await discoveryResponse.json();
+                log('✅ Discovery response received');
+                
+                if (discoveryResult.request_id) {
+                    log(`📌 Request ID: ${discoveryResult.request_id}`);
+                }
+
+                // Step 3: Call organization-discovery
+                setStatus('Analyzing company with Claude...');
+                log('🤖 Calling organization-discovery...');
+                
+                const analysisResponse = await fetch(`${SUPABASE_URL}/functions/v1/organization-discovery`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization_name: companyName,
+                        request_id: discoveryResult.request_id
+                    })
+                });
+
+                log(`Analysis response status: ${analysisResponse.status}`);
+
+                if (analysisResponse.ok) {
+                    const analysisResult = await analysisResponse.json();
+                    log('✅ Claude analysis complete');
+                    
+                    // Display results
+                    document.getElementById('results').innerHTML = JSON.stringify({
+                        discovery: discoveryResult,
+                        analysis: analysisResult
+                    }, null, 2);
+                }
+
+                setStatus('✅ Discovery pipeline complete!');
+                
+                // Update localStorage verification
+                checkLocalStorage();
+
+            } catch (error) {
+                log(`❌ Error: ${error.message}`);
+                setStatus(`Error: ${error.message}`, true);
+            }
+        }
+
+        function checkLocalStorage() {
+            const selectedOrg = localStorage.getItem('selectedOrganization');
+            const orgData = localStorage.getItem('organizationData');
+            const latestDiscovery = localStorage.getItem('latestDiscovery');
+            
+            const display = {
+                selectedOrganization: selectedOrg,
+                organizationData: orgData ? JSON.parse(orgData) : null,
+                latestDiscovery: latestDiscovery ? JSON.parse(latestDiscovery) : null
+            };
+            
+            document.getElementById('localStorage').innerHTML = JSON.stringify(display, null, 2);
+            log('📱 LocalStorage checked');
+        }
+
+        function clearLocalStorage() {
+            localStorage.removeItem('selectedOrganization');
+            localStorage.removeItem('organizationData');
+            localStorage.removeItem('latestDiscovery');
+            log('🗑️ LocalStorage cleared');
+            checkLocalStorage();
+        }
+
+        // Initial check
+        checkLocalStorage();
+        log('🎯 QuickInit Test Page Ready');
+    </script>
+</body>
+</html>

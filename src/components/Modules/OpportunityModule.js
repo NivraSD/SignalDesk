@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../config/supabase';
-import { getUnifiedOrganization, getUnifiedOpportunityConfig, getUnifiedCompleteProfile } from '../../utils/unifiedDataLoader';
+import { getUnifiedOrganization, getUnifiedOpportunityConfig } from '../../utils/unifiedDataLoader';
 import './ModuleStyles.css';
 
 const OpportunityModule = ({ organizationId }) => {
@@ -41,57 +41,20 @@ const OpportunityModule = ({ organizationId }) => {
         try {
           console.log('🎯 Calling opportunity-orchestrator with org:', orgData.name);
           console.log('📋 Using configuration:', userConfig);
-          console.log('🔍 Full request body:', {
-            organization: {
-              name: orgData.name,
-              industry: orgData.industry || userConfig?.industry || 'technology'
-            },
-            config: userConfig,
-            forceRefresh: false
-          });
           
-          // First, get the intelligence data that Intelligence Hub uses
-          console.log('📊 Fetching intelligence data for opportunity detection...');
-          const orchestrator = new (await import('../../services/intelligenceOrchestratorV3')).default();
-          // Get COMPLETE profile with all stakeholders
-          const completeProfile = getUnifiedCompleteProfile();
-          const intelligenceData = await orchestrator.orchestrate(completeProfile);
-          
-          console.log('🔍 Intelligence gathered:', {
-            actions: intelligenceData?.entity_actions?.total_count || 0,
-            topics: intelligenceData?.topic_trends?.total_monitored || 0
-          });
-          
-          // Use the new opportunity detector that consumes intelligence
-          const { data: orchestratedData, error: orchestratedError } = await supabase.functions.invoke('opportunity-detector-v3', {
+          // Try the orchestrated approach first
+          const { data: orchestratedData, error: orchestratedError } = await supabase.functions.invoke('opportunity-orchestrator', {
             body: {
-              intelligence: intelligenceData,
-              organization: orgData
+              organization: {
+                name: orgData.name,  // Use actual organization name
+                industry: orgData.industry || userConfig?.industry || 'technology'
+              },
+              config: userConfig,
+              forceRefresh: false
             }
           });
 
-          console.log('🔍 Orchestrator Response:', { 
-            data: orchestratedData, 
-            error: orchestratedError,
-            hasOpportunities: orchestratedData?.opportunities?.length,
-            success: orchestratedData?.success,
-            message: orchestratedData?.message
-          });
-          
-          // Check different possible response formats
-          if (orchestratedError) {
-            console.error('❌ Orchestrator error:', orchestratedError);
-          } else if (!orchestratedData) {
-            console.error('❌ No data returned from orchestrator');
-          } else if (!orchestratedData.success) {
-            console.error('❌ Orchestrator returned success=false:', orchestratedData.message);
-          } else if (!orchestratedData.opportunities) {
-            console.error('❌ No opportunities array in response');
-          } else if (orchestratedData.opportunities.length === 0) {
-            console.warn('⚠️ Empty opportunities array returned');
-          }
-          
-          if (!orchestratedError && orchestratedData?.opportunities && Array.isArray(orchestratedData.opportunities)) {
+          if (!orchestratedError && orchestratedData?.success && orchestratedData?.opportunities) {
             console.log('✅ Orchestrator succeeded with', orchestratedData.opportunities.length, 'opportunities');
             console.log('🎭 Personas used:', orchestratedData.personas_used);
             
@@ -131,22 +94,58 @@ const OpportunityModule = ({ organizationId }) => {
             }
           }
         } catch (orchestratorError) {
-          console.error('❌ V3 Orchestrator error:', orchestratorError);
-          console.error('❌ No fallbacks - V3 only. Check Edge Functions.');
-          setOpportunities([]);
-          setLoading(false);
-          return;
+          console.warn('Orchestrator not available, trying simple assessment:', orchestratorError);
+        }
+        
+        // Fallback to simple assessment if orchestrator fails
+        try {
+          console.log('🎯 Falling back to assess-opportunities-simple');
+          const { data, error } = await supabase.functions.invoke('assess-opportunities-simple', {
+            body: {
+              organizationId,
+              forceRefresh: false,
+              organizationProfile: userConfig
+            }
+          });
+
+          console.log('📊 Simple assessment response:', { data, error });
+          
+          if (error) {
+            console.error('❌ Edge Function error:', error);
+          }
+
+          if (!error && data && data.opportunities && Array.isArray(data.opportunities)) {
+            // Process opportunities from Edge Function
+            const scoredOpportunities = data.opportunities.map(opp => ({
+              ...opp,
+              priority_score: opp.adjusted_score || opp.score || opp.base_score,
+              configured_weight: userConfig?.[opp.opportunity_type]?.weight || 50,
+              opportunity_data: {
+                description: opp.description || opp.suggested_action || ''
+              }
+            }));
+
+            // Apply local filters
+            const filtered = scoredOpportunities.filter(opp => {
+              if (filters.type !== 'all' && opp.opportunity_type !== filters.type) return false;
+              if (opp.priority_score < filters.minScore) return false;
+              if (filters.status !== 'all' && opp.status !== filters.status) return false;
+              return true;
+            });
+
+            filtered.sort((a, b) => b.priority_score - a.priority_score);
+            setOpportunities(filtered);
+            setLoading(false);
+            return;
+          }
+        } catch (edgeFunctionError) {
+          console.warn('Edge Function not available, using fallback:', edgeFunctionError);
+          // Continue to fallback mock data
         }
       }
 
-      // If we get here, no org data was available
-      console.error('❌ No organization data available');
-      setOpportunities([]);
-      setLoading(false);
-      return;
-      
-      // REMOVED mock data - we want real data only
-      /*const mockOpportunities = [
+      // Fallback to mock data if Edge Function fails or no organizationId
+      const mockOpportunities = [
         {
           id: 1,
           opportunity_type: 'trending',
