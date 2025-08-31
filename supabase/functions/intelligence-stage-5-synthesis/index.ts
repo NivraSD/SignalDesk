@@ -23,10 +23,13 @@ serve(async (req) => {
       stage2,
       stage3,
       stage4,
-      monitoring
+      monitoring,
+      request_id // Get request_id from pipeline
     } = requestData;
     
+    const requestId = request_id;
     console.log(`🧩 Stage 5: Strategic Synthesis for ${organization?.name || 'Unknown'}`);
+    console.log(`🔑 Request ID: ${requestId}`);
     
     // Validate and debug incoming data
     console.log(`📊 Data received:`, {
@@ -36,7 +39,8 @@ serve(async (req) => {
       hasDirectStageData: !!(stage1 || stage2 || stage3 || stage4),
       hasMonitoring: !!monitoring,
       hasFullProfile: !!fullProfile,
-      dataVersion: dataVersion || 'unknown'
+      dataVersion: dataVersion || 'unknown',
+      hasRequestId: !!requestId
     });
     
     // Deep debug of previous results
@@ -80,6 +84,43 @@ serve(async (req) => {
       regulatory: countItems(normalizedData.regulatory),
       trends: countItems(normalizedData.trends)
     });
+
+    // Retrieve ALL Claude analyses from previous stages
+    let allClaudeInsights = {};
+    if (requestId) {
+      try {
+        console.log('🧠 Retrieving Claude insights from previous stages...');
+        const analysisResponse = await fetch(
+          'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/claude-analysis-storage',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': req.headers.get('Authorization') || ''
+            },
+            body: JSON.stringify({
+              action: 'retrieve',
+              organization_name: organization.name,
+              request_id: requestId
+            })
+          }
+        );
+        
+        const analysisData = await analysisResponse.json();
+        if (analysisData.success && analysisData.analyses) {
+          allClaudeInsights = analysisData.analyses;
+          console.log('🧠 Retrieved Claude insights from stages:', Object.keys(allClaudeInsights));
+          console.log('📊 Insights summary:', {
+            competitive: !!allClaudeInsights.competitive,
+            media: !!allClaudeInsights.media,
+            regulatory: !!allClaudeInsights.regulatory,
+            trends: !!allClaudeInsights.trends
+          });
+        }
+      } catch (e) {
+        console.error('Could not retrieve Claude analyses:', e);
+      }
+    }
     
     // If we don't have enough data, try to fetch from database
     if (!hasEnoughData(normalizedData)) {
@@ -109,23 +150,67 @@ serve(async (req) => {
         dataCompleteness: calculateDataCompleteness(normalizedData)
       });
       
-      // Pass BOTH normalized data AND full stage analyses to Claude
-      const enrichedData = {
-        ...normalizedData,
-        // Add the complete Claude analyses from each stage
-        fullAnalyses: {
-          stage1_competitive: allStageData?.stage1 || previousResults?.competitive,
-          stage2_media: allStageData?.stage2 || previousResults?.media,
-          stage3_regulatory: allStageData?.stage3 || previousResults?.regulatory,
-          stage4_trends: allStageData?.stage4 || previousResults?.trends,
-          stage5_extraction: previousResults?.extraction
+      // Create SMART synthesis data (insights + summaries, NOT raw data)
+      const synthesisData = {
+        // Claude insights from each stage (rich analysis)
+        claude_insights: {
+          competitive: allClaudeInsights.competitive || {},
+          media: allClaudeInsights.media || {},
+          regulatory: allClaudeInsights.regulatory || {},
+          trends: allClaudeInsights.trends || {}
+        },
+        
+        // Data summaries only (not full raw data)
+        data_summary: {
+          organization: organization.name,
+          industry: organization.industry,
+          
+          competitive_summary: {
+            total_competitors: normalizedData.competitors?.all?.length || 0,
+            direct_count: normalizedData.competitors?.direct?.length || 0,
+            indirect_count: normalizedData.competitors?.indirect?.length || 0,
+            emerging_count: normalizedData.competitors?.emerging?.length || 0,
+            top_threats: normalizedData.competitors?.direct?.slice(0, 3).map(c => c.name || c)
+          },
+          
+          media_summary: {
+            coverage_count: normalizedData.media?.coverage?.length || 0,
+            sentiment: normalizedData.media?.sentiment?.[0] || 'Unknown',
+            top_topics: normalizedData.media?.topics?.slice(0, 5),
+            opportunities_count: normalizedData.media?.opportunities?.length || 0
+          },
+          
+          regulatory_summary: {
+            developments_count: normalizedData.regulatory?.developments?.length || 0,
+            risks_count: normalizedData.regulatory?.risks?.length || 0,
+            opportunities_count: normalizedData.regulatory?.opportunities?.length || 0,
+            compliance_status: 'Active monitoring'
+          },
+          
+          trends_summary: {
+            trending_topics_count: normalizedData.trends?.topics?.length || 0,
+            gaps_identified: normalizedData.trends?.gaps?.length || 0,
+            opportunities_count: normalizedData.trends?.opportunities?.length || 0,
+            top_trends: normalizedData.trends?.topics?.slice(0, 3)
+          },
+          
+          monitoring_summary: {
+            total_signals: normalizedData.monitoring?.raw_signals?.length || 0,
+            sources_count: normalizedData.monitoring?.metadata?.sources?.length || 0,
+            time_range: normalizedData.monitoring?.metadata?.time_range || 'Last 7 days'
+          }
         }
       };
       
+      // Log data size reduction
+      console.log('📦 Synthesis data size:', JSON.stringify(synthesisData).length, 'bytes');
+      console.log('📦 Original data size:', JSON.stringify(normalizedData).length, 'bytes');
+      console.log('📉 Size reduction:', Math.round((1 - JSON.stringify(synthesisData).length / JSON.stringify(normalizedData).length) * 100) + '%');
+      
       claudeAnalysis = await analyzeWithClaudeSynthesis(
         organization,
-        enrichedData,  // Pass enriched data with full analyses
-        previousResults,
+        synthesisData,  // Smart data: Claude insights + summaries only
+        null,  // Don't pass previousResults (too much data)
         null
       );
       

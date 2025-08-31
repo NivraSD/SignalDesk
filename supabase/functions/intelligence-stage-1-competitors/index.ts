@@ -248,6 +248,10 @@ serve(async (req) => {
       }
     };
     
+    // Generate request ID if not provided
+    const requestId = requestData.request_id || `pipeline-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    console.log(`🔑 Request ID: ${requestId}`);
+
     // Use Claude to analyze the REAL monitoring data
     const results = await analyzeWithClaudeCompetitive(
       safeOrganization,
@@ -266,6 +270,49 @@ serve(async (req) => {
         }
       }
     );
+
+    // Store Claude's analysis separately for synthesis
+    if (results && results.metadata?.claude_enhanced !== false) {
+      try {
+        // Extract just the Claude insights (not raw data)
+        const claudeInsights = {
+          competitive_landscape: results.competitive_landscape,
+          battle_cards: results.battle_cards,
+          market_positioning: results.market_positioning,
+          threat_assessment: results.threat_assessment,
+          opportunities: results.opportunities,
+          key_insights: results.key_insights,
+          executive_summary: results.executive_summary,
+          metadata: {
+            stage: 'competitive',
+            timestamp: new Date().toISOString(),
+            competitors_analyzed: totalCompetitors,
+            monitoring_signals_processed: monitoringData.raw_count || 0
+          }
+        };
+
+        await fetch(
+          'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/claude-analysis-storage',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': req.headers.get('Authorization') || ''
+            },
+            body: JSON.stringify({
+              action: 'store',
+              organization_name: organizationName,
+              stage_name: 'competitive',
+              claude_analysis: claudeInsights, // Just insights, not raw data
+              request_id: requestId
+            })
+          }
+        );
+        console.log('🧠 Claude competitive insights stored for synthesis');
+      } catch (e) {
+        console.error('Could not store Claude analysis:', e);
+      }
+    }
 
     results.metadata.duration = Date.now() - startTime;
     console.log(`✅ Stage 1 complete in ${results.metadata.duration}ms with Claude analysis`);
@@ -338,13 +385,15 @@ serve(async (req) => {
       stage: 'competitor_analysis',
       data: results,
       intelligence: monitoringData, // CRITICAL: Pass through monitoring data
+      request_id: requestId, // Pass to next stage
       tabs: tabs, // UI-formatted data
       debug: {
         inputCompetitorCount: competitors.length,
         analyzedCompetitorCount: totalCompetitors,
         hadFullProfile: !!fullProfile,
         hadDatabaseData: !!dbProfile,
-        monitoringSignals: monitoringData?.raw_signals?.length || 0
+        monitoringSignals: monitoringData?.raw_signals?.length || 0,
+        requestId: requestId
       }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
