@@ -1246,8 +1246,8 @@ class IntelligenceOrchestratorV4 {
           action: 'store',
           organization_name: organizationName,
           request_id: requestId,
-          stage: stageId,
-          analysis: stageData.analysis
+          stage_name: stageId,                    // ✅ FIXED: "stage_name" instead of "stage"
+          claude_analysis: stageData.analysis     // ✅ FIXED: "claude_analysis" instead of "analysis"
         })
       });
       console.log(`✅ Saved ${stageId} Claude analysis to storage`);
