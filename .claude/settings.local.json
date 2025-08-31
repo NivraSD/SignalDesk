@@ -292,7 +292,8 @@
       "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/test-latest-profile.sh:*)",
       "Bash(__NEW_LINE__ supabase functions deploy intelligence-stage-5-synthesis --no-verify-jwt)",
       "Bash(supabase functions download:*)",
-      "Bash(__NEW_LINE__ echo \"\")"
+      "Bash(__NEW_LINE__ echo \"\")",
+      "WebFetch(domain:signaldesk-6oh2mcg68-nivra-sd.vercel.app)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

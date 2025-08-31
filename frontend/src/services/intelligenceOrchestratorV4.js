@@ -160,6 +160,8 @@ class IntelligenceOrchestratorV4 {
       })
     });
 
+    let requestId = null; // Initialize requestId outside the conditional block
+    
     if (!discoveryResponse.ok) {
       const errorText = await discoveryResponse.text();
       console.error('❌ Discovery failed:', discoveryResponse.status, errorText);
@@ -170,8 +172,15 @@ class IntelligenceOrchestratorV4 {
       console.log('✅ Discovery complete:', {
         hasEntities: !!discoveryData.entities,
         entities: Object.keys(discoveryData.entities || {}),
-        saved: discoveryData.statistics?.saved
+        saved: discoveryData.statistics?.saved,
+        request_id: discoveryData.request_id
       });
+      
+      // Extract request_id from discovery for pipeline tracking
+      requestId = discoveryData.request_id;
+      if (requestId) {
+        console.log(`🔑 Pipeline request_id from discovery: ${requestId}`);
+      }
       
       // Update config with discovered entities
       if (discoveryData.entities) {
@@ -190,6 +199,7 @@ class IntelligenceOrchestratorV4 {
       },
       body: JSON.stringify({ 
         organization,
+        request_id: requestId, // Pass request_id for Claude analysis storage
         entities: {
           competitors: config.competitors || [],
           regulators: config.regulators || [],
@@ -261,6 +271,7 @@ class IntelligenceOrchestratorV4 {
 
     return {
       success: true,
+      request_id: requestId, // Pass request_id forward to next stages
       organization: enrichedOrganization,
       intelligence: collectionData.intelligence,
       analysis: stageData.analysis,
@@ -275,10 +286,17 @@ class IntelligenceOrchestratorV4 {
   async runCompetitiveStage(organization, config, previousResults = {}) {
     console.log('🎯 Stage 2: Competitive Intelligence Analysis');
     
+    // Extract request_id from previous stage (extraction)
+    const requestId = previousResults.extraction?.request_id || previousResults.request_id;
+    if (requestId) {
+      console.log(`🔑 Using request_id from extraction stage: ${requestId}`);
+    }
+    
     // Debug logging to understand what's being passed
     console.log('🔍 DEBUG runCompetitiveStage inputs:', {
       organizationParam: organization,
       organizationType: typeof organization,
+      requestId: requestId,
       organizationKeys: organization ? Object.keys(organization) : null,
       configParam: config,
       configType: typeof config,
@@ -389,6 +407,7 @@ class IntelligenceOrchestratorV4 {
       },
       body: JSON.stringify({
         ...requestBody,
+        request_id: requestId, // Pass request_id for Claude analysis storage
         previousResults: previousResults // Include previous stage results for context
       })
     });
@@ -401,15 +420,9 @@ class IntelligenceOrchestratorV4 {
 
     const competitorData = await competitorResponse.json();
     
-    // Extract request_id for pipeline tracking
-    const requestId = competitorData.request_id;
-    if (requestId) {
-      console.log(`🔑 Pipeline request_id: ${requestId}`);
-    }
-    
     const returnData = {
       success: true,
-      request_id: requestId, // Pass request_id forward
+      request_id: requestId, // Pass request_id forward from extraction stage
       competitors: competitorData.data?.competitors || [],
       competitive_landscape: competitorData.data?.competitive_landscape || {},
       analysis: {
@@ -676,6 +689,14 @@ class IntelligenceOrchestratorV4 {
   async runRegulatoryStage(organization, config, previousResults = {}) {
     console.log('⚖️ Stage 4: Regulatory & Stakeholder Analysis');
     
+    // Extract request_id from previous stages
+    const requestId = previousResults.extraction?.request_id || 
+                     previousResults.competitive?.request_id ||
+                     previousResults.request_id;
+    if (requestId) {
+      console.log(`🔑 Using request_id in regulatory stage: ${requestId}`);
+    }
+    
     // Ensure organization has a name
     const orgName = organization?.name || config?.organization?.name || 'Default Organization';
     const safeOrganization = {
@@ -731,6 +752,7 @@ class IntelligenceOrchestratorV4 {
       },
       body: JSON.stringify({
         organization: safeOrganization,
+        request_id: requestId, // Pass request_id for Claude analysis storage
         regulators: config.regulators || savedProfile?.regulators || [],
         analysts: config.analysts || savedProfile?.analysts || [],
         investors: config.investors || savedProfile?.investors || [],
@@ -746,6 +768,7 @@ class IntelligenceOrchestratorV4 {
     
     const returnData = {
       success: true,
+      request_id: requestId, // Pass request_id forward to next stages
       regulatory: regulatoryData.data || {},
       analysis: {
         regulators_tracked: regulatoryData.data?.regulators?.length || 0,
@@ -783,6 +806,15 @@ class IntelligenceOrchestratorV4 {
    */
   async runTrendsStage(organization, config, previousResults = {}) {
     console.log('📈 Stage 5: Market Trends & Topic Analysis');
+    
+    // Extract request_id from previous stages
+    const requestId = previousResults.extraction?.request_id || 
+                     previousResults.competitive?.request_id ||
+                     previousResults.regulatory?.request_id ||
+                     previousResults.request_id;
+    if (requestId) {
+      console.log(`🔑 Using request_id in trends stage: ${requestId}`);
+    }
     
     // Ensure organization has a name
     const orgName = organization?.name || config?.organization?.name || 'Default Organization';
@@ -853,6 +885,7 @@ class IntelligenceOrchestratorV4 {
       },
       body: JSON.stringify({
         organization: safeOrganization,
+        request_id: requestId, // Pass request_id for Claude analysis storage
         monitoring_topics: config.monitoring_topics || savedProfile?.keywords || [],
         recent_intelligence: savedIntelligence,
         previousResults: previousResults // Include previous stage results
@@ -867,6 +900,7 @@ class IntelligenceOrchestratorV4 {
     
     const returnData = {
       success: true,
+      request_id: requestId, // Pass request_id forward to synthesis
       trending_topics: trendsData.data?.trends || [],
       conversation_gaps: trendsData.data?.gaps || [],
       analysis: {
@@ -1012,10 +1046,16 @@ class IntelligenceOrchestratorV4 {
       });
     }
     
-    // Extract request_id from competitive stage (Stage 1 competitors)
-    const requestId = transformedResults.competitors?.request_id || 
+    // Extract request_id from any previous stage (prioritize extraction stage)
+    const requestId = transformedResults.extraction?.request_id ||
+                     transformedResults.competitors?.request_id || 
+                     transformedResults.regulatory?.request_id ||
+                     transformedResults.trends?.request_id ||
+                     previousStageResults?.extraction?.request_id ||
                      previousStageResults?.competitive?.request_id ||
-                     previousStageResults?.competitors?.request_id;
+                     previousStageResults?.regulatory?.request_id ||
+                     previousStageResults?.trends?.request_id ||
+                     previousStageResults?.request_id;
     
     if (requestId) {
       console.log(`🔑 Using request_id for synthesis: ${requestId}`);
