@@ -289,7 +289,10 @@
       "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/test-claude-analysis-passthrough.sh)",
       "WebFetch(domain:signaldesk-or4xxizzt-nivra-sd.vercel.app)",
       "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/test-org-discovery.sh)",
-      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/test-latest-profile.sh:*)"
+      "Bash(/Users/jonathanliebowitz/Desktop/SignalDesk/test-latest-profile.sh:*)",
+      "Bash(__NEW_LINE__ supabase functions deploy intelligence-stage-5-synthesis --no-verify-jwt)",
+      "Bash(supabase functions download:*)",
+      "Bash(__NEW_LINE__ echo \"\")"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

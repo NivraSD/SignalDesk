@@ -39,7 +39,8 @@ serve(async (req) => {
       fullProfile,
       savedProfile,
       dataVersion,
-      previousResults = {}
+      previousResults = {},
+      request_id
     } = requestData;
 
     console.log(`🎯 Stage 1: Starting Competitor Analysis`);
@@ -249,7 +250,7 @@ serve(async (req) => {
     };
     
     // Generate request ID if not provided
-    const requestId = requestData.request_id || `pipeline-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const requestId = request_id || `pipeline-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     console.log(`🔑 Request ID: ${requestId}`);
 
     // Use Claude to analyze the REAL monitoring data

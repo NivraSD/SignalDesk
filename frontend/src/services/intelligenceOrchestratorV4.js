@@ -401,8 +401,15 @@ class IntelligenceOrchestratorV4 {
 
     const competitorData = await competitorResponse.json();
     
+    // Extract request_id for pipeline tracking
+    const requestId = competitorData.request_id;
+    if (requestId) {
+      console.log(`🔑 Pipeline request_id: ${requestId}`);
+    }
+    
     const returnData = {
       success: true,
+      request_id: requestId, // Pass request_id forward
       competitors: competitorData.data?.competitors || [],
       competitive_landscape: competitorData.data?.competitive_landscape || {},
       analysis: {
@@ -1005,6 +1012,15 @@ class IntelligenceOrchestratorV4 {
       });
     }
     
+    // Extract request_id from competitive stage (Stage 1 competitors)
+    const requestId = transformedResults.competitors?.request_id || 
+                     previousStageResults?.competitive?.request_id ||
+                     previousStageResults?.competitors?.request_id;
+    
+    if (requestId) {
+      console.log(`🔑 Using request_id for synthesis: ${requestId}`);
+    }
+    
     // Call Stage 5 Synthesis with ALL stage data for proper tab generation
     const synthesisResponse = await fetch(`${this.supabaseUrl}/functions/v1/intelligence-stage-5-synthesis`, {
       method: 'POST',
@@ -1014,6 +1030,7 @@ class IntelligenceOrchestratorV4 {
       },
       body: JSON.stringify({
         organization: safeOrganization,
+        request_id: requestId, // CRITICAL: Pass request_id for Claude insights retrieval
         previousResults: {
           stage1: transformedResults.competitors,
           stage2: transformedResults.stakeholders,
