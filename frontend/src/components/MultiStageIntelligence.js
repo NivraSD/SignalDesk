@@ -1453,6 +1453,38 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     }
   }, [currentStage, organization, error, isComplete, hasStarted]); // Removed runStage, handleComplete, stageResults from deps
 
+  // Define tab metadata (must be before any returns for hooks rules)
+  const tabMetadata = {
+    executive: { label: 'Executive Summary', icon: '📊' },
+    competitive: { label: 'Competitive', icon: '⚔️' },
+    market: { label: 'Market', icon: '📈' },
+    regulatory: { label: 'Regulatory', icon: '⚖️' },
+    media: { label: 'Media', icon: '📰' },
+    forward: { label: 'Forward Look', icon: '🔮' }
+  };
+  
+  // Render current tab content only when needed (must be called before any returns)
+  const currentTabContent = useMemo(() => {
+    if (!finalIntelligence || !activeTab) return null;
+    
+    switch(activeTab) {
+      case 'executive':
+        return renderExecutiveSummary(finalIntelligence);
+      case 'competitive':
+        return renderCompetitiveAnalysis(finalIntelligence);
+      case 'market':
+        return renderMarketAnalysis(finalIntelligence);
+      case 'regulatory':
+        return renderRegulatoryAnalysis(finalIntelligence);
+      case 'media':
+        return renderMediaAnalysis(finalIntelligence);
+      case 'forward':
+        return renderForwardAnalysis(finalIntelligence);
+      default:
+        return <div>No content available for this tab</div>;
+    }
+  }, [finalIntelligence, activeTab]); // Only re-render when these change
+
   // Show initialization message
   if (!organization) {
     return (
@@ -1483,38 +1515,6 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     //   hasRawStageData: !!finalIntelligence.rawStageData,
     //   rawStageKeys: Object.keys(finalIntelligence.rawStageData || {})
     // });
-    
-    // Define tab metadata
-    const tabMetadata = {
-      executive: { label: 'Executive Summary', icon: '📊' },
-      competitive: { label: 'Competitive', icon: '⚔️' },
-      market: { label: 'Market', icon: '📈' },
-      regulatory: { label: 'Regulatory', icon: '⚖️' },
-      media: { label: 'Media', icon: '📰' },
-      forward: { label: 'Forward Look', icon: '🔮' }
-    };
-    
-    // Render current tab content only when needed
-    const currentTabContent = useMemo(() => {
-      if (!finalIntelligence || !activeTab) return null;
-      
-      switch(activeTab) {
-        case 'executive':
-          return renderExecutiveSummary(finalIntelligence);
-        case 'competitive':
-          return renderCompetitiveAnalysis(finalIntelligence);
-        case 'market':
-          return renderMarketAnalysis(finalIntelligence);
-        case 'regulatory':
-          return renderRegulatoryAnalysis(finalIntelligence);
-        case 'media':
-          return renderMediaAnalysis(finalIntelligence);
-        case 'forward':
-          return renderForwardAnalysis(finalIntelligence);
-        default:
-          return <div>No content available for this tab</div>;
-      }
-    }, [finalIntelligence, activeTab]); // Only re-render when these change
     
     return (
       <div className="multi-stage-intelligence completed">
