@@ -271,7 +271,25 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
           tabCount: result.tabs ? Object.keys(result.tabs).length : 0
         });
         
-        // Special logging for synthesis stage
+        // Special detailed logging for synthesis stage
+        if (stage.id === 'synthesis') {
+          console.log('🔬 SYNTHESIS STAGE DETAILED TABS:', {
+            hasTabs: !!result.tabs,
+            tabKeys: result.tabs ? Object.keys(result.tabs) : [],
+            executiveTab: result.tabs?.executive ? {
+              keys: Object.keys(result.tabs.executive),
+              headline: result.tabs.executive.headline,
+              overviewPreview: result.tabs.executive.overview?.substring(0, 100),
+              hasNarrativeHealth: !!result.tabs.executive.narrative_health,
+              hasKeyConnections: !!result.tabs.executive.key_connections,
+              hasStatistics: !!result.tabs.executive.statistics,
+              immediateActionsCount: result.tabs.executive.immediate_actions?.length || 0
+            } : 'NO EXECUTIVE TAB',
+            competitiveTab: result.tabs?.competitive ? Object.keys(result.tabs.competitive).slice(0, 5) : 'NO COMPETITIVE TAB',
+            marketTab: result.tabs?.market ? Object.keys(result.tabs.market).slice(0, 5) : 'NO MARKET TAB'
+          });
+        }
+        
         if (stage.id === 'synthesis') {
           console.log('🎯 SYNTHESIS STAGE OPPORTUNITIES CHECK:', {
             directOpportunities: result.opportunities,
