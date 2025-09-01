@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import './MultiStageIntelligence.css';
 import intelligenceOrchestratorV4 from '../services/intelligenceOrchestratorV4';
 import supabaseDataService from '../services/supabaseDataService';
@@ -951,16 +951,16 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     // Get Claude synthesis analysis from rawStageData or analysis
     const claudeSynthesis = rawStageData?.synthesis || analysis;
     
-    // Debug what we're actually getting
-    console.log('🔍 RENDERING SYNTHESIS DEBUG:', {
-      hasClaudeSynthesis: !!claudeSynthesis,
-      claudeSynthesisKeys: Object.keys(claudeSynthesis || {}),
-      hasExecutiveSummary: !!claudeSynthesis?.executive_summary,
-      hasRawStageData: !!rawStageData,
-      rawStageDataKeys: Object.keys(rawStageData || {}),
-      hasAnalysis: !!analysis,
-      analysisKeys: Object.keys(analysis || {}).slice(0, 10)
-    });
+    // Debug what we're actually getting (commented to reduce console spam)
+    // console.log('🔍 RENDERING SYNTHESIS DEBUG:', {
+    //   hasClaudeSynthesis: !!claudeSynthesis,
+    //   claudeSynthesisKeys: Object.keys(claudeSynthesis || {}),
+    //   hasExecutiveSummary: !!claudeSynthesis?.executive_summary,
+    //   hasRawStageData: !!rawStageData,
+    //   rawStageDataKeys: Object.keys(rawStageData || {}),
+    //   hasAnalysis: !!analysis,
+    //   analysisKeys: Object.keys(analysis || {}).slice(0, 10)
+    // });
     
     return (
       <div className="executive-summary-content">
@@ -1077,16 +1077,16 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     const { tabs = {} } = intelligence;
     const competitiveData = tabs.competitive || {};
     
-    // Debug what competitive data we actually have
-    console.log('🎯 COMPETITIVE TAB DATA:', {
-      hasCompetitive: !!tabs.competitive,
-      competitiveKeys: Object.keys(competitiveData),
-      hasCompetitorActions: !!competitiveData.competitor_actions,
-      competitorActionsCount: competitiveData.competitor_actions?.length || 0,
-      hasBattleCards: !!competitiveData.battle_cards,
-      hasCompetitors: !!competitiveData.competitors,
-      sampleData: JSON.stringify(competitiveData).slice(0, 200)
-    });
+    // Debug what competitive data we actually have (commented to reduce console spam)
+    // console.log('🎯 COMPETITIVE TAB DATA:', {
+    //   hasCompetitive: !!tabs.competitive,
+    //   competitiveKeys: Object.keys(competitiveData),
+    //   hasCompetitorActions: !!competitiveData.competitor_actions,
+    //   competitorActionsCount: competitiveData.competitor_actions?.length || 0,
+    //   hasBattleCards: !!competitiveData.battle_cards,
+    //   hasCompetitors: !!competitiveData.competitors,
+    //   sampleData: JSON.stringify(competitiveData).slice(0, 200)
+    // });
     
     return (
       <div className="competitive-analysis-content">
@@ -1470,52 +1470,51 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
   // Show completed intelligence display with tabbed interface
   if (isComplete && finalIntelligence) {
     // Debug what tabs we actually have
-    console.log('📊 FINAL INTELLIGENCE TABS STRUCTURE:', {
-      hasFinalIntelligence: !!finalIntelligence,
-      hasTabs: !!finalIntelligence.tabs,
-      tabKeys: Object.keys(finalIntelligence.tabs || {}),
-      tabStructure: Object.entries(finalIntelligence.tabs || {}).map(([key, value]) => ({
-        tab: key,
-        hasData: !!value,
-        keys: Object.keys(value || {}).slice(0, 5)
-      })),
-      hasRawStageData: !!finalIntelligence.rawStageData,
-      rawStageKeys: Object.keys(finalIntelligence.rawStageData || {})
-    });
+    // Log final intelligence structure once (commented to reduce console spam)
+    // console.log('📊 FINAL INTELLIGENCE TABS STRUCTURE:', {
+    //   hasFinalIntelligence: !!finalIntelligence,
+    //   hasTabs: !!finalIntelligence.tabs,
+    //   tabKeys: Object.keys(finalIntelligence.tabs || {}),
+    //   tabStructure: Object.entries(finalIntelligence.tabs || {}).map(([key, value]) => ({
+    //     tab: key,
+    //     hasData: !!value,
+    //     keys: Object.keys(value || {}).slice(0, 5)
+    //   })),
+    //   hasRawStageData: !!finalIntelligence.rawStageData,
+    //   rawStageKeys: Object.keys(finalIntelligence.rawStageData || {})
+    // });
     
-    // Process intelligence for pure analysis display
-    const intelligenceTabs = {
-      executive: {
-        label: 'Executive Summary',
-        icon: '📊',
-        content: renderExecutiveSummary(finalIntelligence)
-      },
-      competitive: {
-        label: 'Competitive',
-        icon: '⚔️',
-        content: renderCompetitiveAnalysis(finalIntelligence)
-      },
-      market: {
-        label: 'Market',
-        icon: '📈',
-        content: renderMarketAnalysis(finalIntelligence)
-      },
-      regulatory: {
-        label: 'Regulatory',
-        icon: '⚖️',
-        content: renderRegulatoryAnalysis(finalIntelligence)
-      },
-      media: {
-        label: 'Media',
-        icon: '📰',
-        content: renderMediaAnalysis(finalIntelligence)
-      },
-      forward: {
-        label: 'Forward Look',
-        icon: '🔮',
-        content: renderForwardAnalysis(finalIntelligence)
-      }
+    // Define tab metadata
+    const tabMetadata = {
+      executive: { label: 'Executive Summary', icon: '📊' },
+      competitive: { label: 'Competitive', icon: '⚔️' },
+      market: { label: 'Market', icon: '📈' },
+      regulatory: { label: 'Regulatory', icon: '⚖️' },
+      media: { label: 'Media', icon: '📰' },
+      forward: { label: 'Forward Look', icon: '🔮' }
     };
+    
+    // Render current tab content only when needed
+    const currentTabContent = useMemo(() => {
+      if (!finalIntelligence || !activeTab) return null;
+      
+      switch(activeTab) {
+        case 'executive':
+          return renderExecutiveSummary(finalIntelligence);
+        case 'competitive':
+          return renderCompetitiveAnalysis(finalIntelligence);
+        case 'market':
+          return renderMarketAnalysis(finalIntelligence);
+        case 'regulatory':
+          return renderRegulatoryAnalysis(finalIntelligence);
+        case 'media':
+          return renderMediaAnalysis(finalIntelligence);
+        case 'forward':
+          return renderForwardAnalysis(finalIntelligence);
+        default:
+          return <div>No content available for this tab</div>;
+      }
+    }, [finalIntelligence, activeTab]); // Only re-render when these change
     
     return (
       <div className="multi-stage-intelligence completed">
@@ -1531,7 +1530,7 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
           
           {/* Tab Navigation */}
           <div className="tab-navigation">
-            {Object.entries(intelligenceTabs).map(([key, tab]) => (
+            {Object.entries(tabMetadata).map(([key, tab]) => (
               <button
                 key={key}
                 className={`tab-button ${activeTab === key ? 'active' : ''}`}
@@ -1545,7 +1544,7 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
           
           {/* Tab Content */}
           <div className="tab-content-area">
-            {intelligenceTabs[activeTab]?.content}
+            {currentTabContent}
           </div>
           
           {/* Claude Analysis Summary */}
