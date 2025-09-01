@@ -140,25 +140,17 @@ class IntelligenceOrchestratorV4 {
       }
     };
     
-    console.log(`🚀 Calling discovery edge function at: ${this.supabaseUrl}/functions/v1/intelligence-discovery-v3`);
-    const discoveryResponse = await fetchWithTimeout(`${this.supabaseUrl}/functions/v1/intelligence-discovery-v3`, {
+    console.log(`🚀 Calling organization discovery directly (faster than discovery-v3)`);
+    // Call organization-discovery directly to avoid nested edge function calls
+    const discoveryResponse = await fetchWithTimeout(`${this.supabaseUrl}/functions/v1/organization-discovery`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${this.supabaseKey}`
       },
       body: JSON.stringify({
-        organization: safeOrganization,
-        stakeholders: {
-          competitors: config.competitors || [],
-          regulators: config.regulators || [],
-          activists: config.activists || [],
-          media_outlets: config.media_outlets || [],
-          investors: config.investors || [],
-          analysts: config.analysts || []
-        },
-        monitoring_topics: config.monitoring_topics || [],
-        previousResults: previousResults // Include previous stage results (empty for first stage)
+        organizationName: orgName,
+        url: organization?.url
       })
     });
 
@@ -172,22 +164,28 @@ class IntelligenceOrchestratorV4 {
       console.log('📥 Discovery response received, parsing...');
       const discoveryData = await discoveryResponse.json();
       console.log('✅ Discovery complete:', {
-        hasEntities: !!discoveryData.entities,
-        entities: Object.keys(discoveryData.entities || {}),
-        saved: discoveryData.statistics?.saved,
-        request_id: discoveryData.request_id
+        hasOrganization: !!discoveryData.organization,
+        competitors: discoveryData.organization?.competitors?.length || 0,
+        stakeholders: Object.keys(discoveryData.organization?.stakeholders || {})
       });
       
-      // Extract request_id from discovery for pipeline tracking
-      requestId = discoveryData.request_id;
-      if (requestId) {
-        console.log(`🔑 Pipeline request_id from discovery: ${requestId}`);
-      }
+      // Generate request_id for pipeline tracking
+      requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      console.log(`🔑 Generated pipeline request_id: ${requestId}`);
       
       // Update config with discovered entities
-      if (discoveryData.entities) {
-        config = { ...config, ...discoveryData.entities };
-        organization = discoveryData.organization || organization;
+      if (discoveryData.organization) {
+        const org = discoveryData.organization;
+        config = {
+          ...config,
+          competitors: org.competitors || [],
+          regulators: org.stakeholders?.regulators || [],
+          media_outlets: org.stakeholders?.media || [],
+          investors: org.stakeholders?.investors || [],
+          analysts: org.stakeholders?.analysts || [],
+          activists: org.stakeholders?.critics || []
+        };
+        organization = org;
       }
     }
     
