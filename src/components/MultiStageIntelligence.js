@@ -951,10 +951,21 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     // Get Claude synthesis analysis from rawStageData or analysis
     const claudeSynthesis = rawStageData?.synthesis || analysis;
     
+    // Debug what we're actually getting
+    console.log('🔍 RENDERING SYNTHESIS DEBUG:', {
+      hasClaudeSynthesis: !!claudeSynthesis,
+      claudeSynthesisKeys: Object.keys(claudeSynthesis || {}),
+      hasExecutiveSummary: !!claudeSynthesis?.executive_summary,
+      hasRawStageData: !!rawStageData,
+      rawStageDataKeys: Object.keys(rawStageData || {}),
+      hasAnalysis: !!analysis,
+      analysisKeys: Object.keys(analysis || {}).slice(0, 10)
+    });
+    
     return (
       <div className="executive-summary-content">
-        {/* Claude Executive Summary */}
-        {claudeSynthesis?.executive_summary && (
+        {/* Claude Executive Summary - with fallback */}
+        {(claudeSynthesis?.executive_summary || claudeSynthesis?.data) && (
           <div className="summary-section">
             <h3>Executive Intelligence Summary</h3>
             <div className="narrative-block">
@@ -1065,6 +1076,17 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
   const renderCompetitiveAnalysis = (intelligence) => {
     const { tabs = {} } = intelligence;
     const competitiveData = tabs.competitive || {};
+    
+    // Debug what competitive data we actually have
+    console.log('🎯 COMPETITIVE TAB DATA:', {
+      hasCompetitive: !!tabs.competitive,
+      competitiveKeys: Object.keys(competitiveData),
+      hasCompetitorActions: !!competitiveData.competitor_actions,
+      competitorActionsCount: competitiveData.competitor_actions?.length || 0,
+      hasBattleCards: !!competitiveData.battle_cards,
+      hasCompetitors: !!competitiveData.competitors,
+      sampleData: JSON.stringify(competitiveData).slice(0, 200)
+    });
     
     return (
       <div className="competitive-analysis-content">
@@ -1370,6 +1392,20 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
 
   // Show completed intelligence display with tabbed interface
   if (isComplete && finalIntelligence) {
+    // Debug what tabs we actually have
+    console.log('📊 FINAL INTELLIGENCE TABS STRUCTURE:', {
+      hasFinalIntelligence: !!finalIntelligence,
+      hasTabs: !!finalIntelligence.tabs,
+      tabKeys: Object.keys(finalIntelligence.tabs || {}),
+      tabStructure: Object.entries(finalIntelligence.tabs || {}).map(([key, value]) => ({
+        tab: key,
+        hasData: !!value,
+        keys: Object.keys(value || {}).slice(0, 5)
+      })),
+      hasRawStageData: !!finalIntelligence.rawStageData,
+      rawStageKeys: Object.keys(finalIntelligence.rawStageData || {})
+    });
+    
     // Process intelligence for pure analysis display
     const intelligenceTabs = {
       executive: {
