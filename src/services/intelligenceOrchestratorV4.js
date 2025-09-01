@@ -1208,7 +1208,7 @@ class IntelligenceOrchestratorV4 {
       synthesis: synthesisData.tabs?.synthesis || {}
     };
     
-    // Log what tabs we're using
+    // Log what tabs we're using with more detail
     console.log('📊 Synthesis tabs structure:', {
       fromEdgeFunction: !!synthesisData.tabs,
       tabKeys: Object.keys(synthesizedTabs),
@@ -1218,6 +1218,16 @@ class IntelligenceOrchestratorV4 {
       hasCompetitivePosition: !!synthesizedTabs.competitive?.comparative_position,
       hasSynthesisTab: !!synthesizedTabs.synthesis,
       hasWeakSignals: !!synthesizedTabs.forward?.weak_signals
+    });
+    
+    // Log executive tab details
+    console.log('🎯 EXECUTIVE TAB DETAIL:', {
+      headline: synthesizedTabs.executive?.headline,
+      overview: synthesizedTabs.executive?.overview?.substring(0, 100),
+      immediateActions: synthesizedTabs.executive?.immediate_actions?.length || 0,
+      statistics: synthesizedTabs.executive?.statistics,
+      narrativeHealth: Object.keys(synthesizedTabs.executive?.narrative_health || {}),
+      keyConnections: synthesizedTabs.executive?.key_connections?.length || 0
     });
     
     const returnData = {

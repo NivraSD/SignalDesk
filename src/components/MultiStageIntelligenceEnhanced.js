@@ -5,6 +5,23 @@ export const renderExecutiveSummaryEnhanced = (intelligence) => {
   const { tabs = {} } = intelligence;
   const executiveTab = tabs.executive || {};
   
+  // Debug logging to see what we're actually getting
+  console.log('🔍 EXECUTIVE TAB ENHANCED DEBUG:', {
+    hasIntelligence: !!intelligence,
+    hasTabs: !!tabs,
+    tabKeys: Object.keys(tabs),
+    hasExecutiveTab: !!executiveTab,
+    executiveKeys: Object.keys(executiveTab),
+    headline: executiveTab.headline,
+    overview: executiveTab.overview?.substring(0, 100),
+    hasNarrativeHealth: !!executiveTab.narrative_health,
+    narrativeHealthKeys: Object.keys(executiveTab.narrative_health || {}),
+    hasKeyConnections: !!executiveTab.key_connections,
+    keyConnectionsCount: executiveTab.key_connections?.length || 0,
+    hasStatistics: !!executiveTab.statistics,
+    immediateActionsCount: executiveTab.immediate_actions?.length || 0
+  });
+  
   return (
     <div className="executive-summary-content">
       {/* Executive Intelligence Summary from enriched tabs */}
