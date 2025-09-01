@@ -1161,6 +1161,16 @@ class IntelligenceOrchestratorV4 {
     
     // Analysis-focused: Skip opportunity extraction, focus on Claude analysis
     
+    // Debug what we got from synthesis edge function
+    console.log('🔍 SYNTHESIS DATA RECEIVED:', {
+      hasSynthesisData: !!synthesisData,
+      synthesisDataKeys: Object.keys(synthesisData || {}),
+      hasTabs: !!synthesisData.tabs,
+      tabKeys: synthesisData.tabs ? Object.keys(synthesisData.tabs) : 'NO TABS',
+      hasData: !!synthesisData.data,
+      dataKeys: synthesisData.data ? Object.keys(synthesisData.data).slice(0, 5) : 'NO DATA'
+    });
+    
     // Use the enhanced tabs from the synthesis edge function if available
     // The edge function returns tabs with rich Claude analysis
     const synthesizedTabs = synthesisData.tabs || {
@@ -1228,6 +1238,17 @@ class IntelligenceOrchestratorV4 {
       statistics: synthesizedTabs.executive?.statistics,
       narrativeHealth: Object.keys(synthesizedTabs.executive?.narrative_health || {}),
       keyConnections: synthesizedTabs.executive?.key_connections?.length || 0
+    });
+    
+    // Log the actual content to see what we're getting
+    console.log('📝 ACTUAL TAB CONTENT SAMPLE:', {
+      executiveHeadline: synthesizedTabs.executive?.headline || 'NO HEADLINE',
+      executiveOverview: synthesizedTabs.executive?.overview || 'NO OVERVIEW',
+      competitivePosition: synthesizedTabs.competitive?.comparative_position || 'NO COMPETITIVE POSITION',
+      marketDynamics: synthesizedTabs.market?.market_dynamics || 'NO MARKET DYNAMICS',
+      regulatoryClimate: synthesizedTabs.regulatory?.regulatory_climate || 'NO REGULATORY CLIMATE',
+      mediaEnvironment: synthesizedTabs.media?.media_environment || 'NO MEDIA ENVIRONMENT',
+      weakSignals: synthesizedTabs.forward?.weak_signals?.length || 0
     });
     
     const returnData = {
