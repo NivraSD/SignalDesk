@@ -1161,8 +1161,9 @@ class IntelligenceOrchestratorV4 {
     
     // Analysis-focused: Skip opportunity extraction, focus on Claude analysis
     
-    // Build proper tabs from Claude's comprehensive synthesis - now 7 tabs
-    const synthesizedTabs = {
+    // Use the enhanced tabs from the synthesis edge function if available
+    // The edge function returns tabs with rich Claude analysis
+    const synthesizedTabs = synthesisData.tabs || {
       executive: {
         key_developments: synthesisData.data?.executive_summary?.key_developments || [],
         comparative_position: synthesisData.data?.executive_summary?.comparative_position || {},
@@ -1203,8 +1204,21 @@ class IntelligenceOrchestratorV4 {
         early_signals: synthesisData.data?.early_signals || {},
         cross_dimensional_insights: synthesisData.data?.cross_dimensional_insights || {},
         watch_items: synthesisData.data?.key_takeaways?.watch_items || []
-      }
+      },
+      synthesis: synthesisData.tabs?.synthesis || {}
     };
+    
+    // Log what tabs we're using
+    console.log('📊 Synthesis tabs structure:', {
+      fromEdgeFunction: !!synthesisData.tabs,
+      tabKeys: Object.keys(synthesizedTabs),
+      hasExecutive: !!synthesizedTabs.executive,
+      hasNarrativeHealth: !!synthesizedTabs.executive?.narrative_health,
+      hasKeyConnections: !!synthesizedTabs.executive?.key_connections,
+      hasCompetitivePosition: !!synthesizedTabs.competitive?.comparative_position,
+      hasSynthesisTab: !!synthesizedTabs.synthesis,
+      hasWeakSignals: !!synthesizedTabs.forward?.weak_signals
+    });
     
     const returnData = {
       success: true,
