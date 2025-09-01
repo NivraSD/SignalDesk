@@ -1143,7 +1143,7 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     );
   };
   
-  const renderTrendingTopics = (intelligence) => {
+  const renderMarketAnalysis = (intelligence) => {
     const { tabs = {} } = intelligence;
     const marketData = tabs.market || {};
     const thoughtData = tabs.thought || {};
@@ -1202,7 +1202,7 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     );
   };
   
-  const renderStakeholders = (intelligence) => {
+  const renderRegulatoryAnalysis = (intelligence) => {
     const { tabs = {} } = intelligence;
     const regulatoryData = tabs.regulatory || {};
     
@@ -1254,7 +1254,84 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     );
   };
   
-  const renderEarlySignals = (intelligence) => {
+  const renderMediaAnalysis = (intelligence) => {
+    const { tabs = {} } = intelligence;
+    const mediaData = tabs.media || {};
+    
+    return (
+      <div className="tab-content media-analysis">
+        <h3>Media Landscape Analysis</h3>
+        
+        {/* Media Environment */}
+        {mediaData.media_environment && (
+          <div className="analysis-section">
+            <h4>Media Environment</h4>
+            <p>{mediaData.media_environment}</p>
+          </div>
+        )}
+        
+        {/* Sentiment Trend */}
+        {mediaData.sentiment_trend && (
+          <div className="analysis-section">
+            <h4>Sentiment Trajectory</h4>
+            <div className="sentiment-indicator">
+              <span className={`sentiment-badge ${mediaData.sentiment_trend.toLowerCase()}`}>
+                {mediaData.sentiment_trend}
+              </span>
+            </div>
+          </div>
+        )}
+        
+        {/* Media Coverage */}
+        {mediaData.media_coverage && mediaData.media_coverage.length > 0 && (
+          <div className="analysis-section">
+            <h4>Recent Coverage</h4>
+            <div className="coverage-list">
+              {mediaData.media_coverage.slice(0, 5).map((item, idx) => (
+                <div key={idx} className="coverage-item">
+                  <div className="coverage-source">{item.source}</div>
+                  <div className="coverage-title">{item.title || item.topic}</div>
+                  <div className="coverage-sentiment">{item.sentiment}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Media Opportunities */}
+        {mediaData.media_opportunities && mediaData.media_opportunities.length > 0 && (
+          <div className="analysis-section">
+            <h4>Media Opportunities</h4>
+            <div className="opportunities-list">
+              {mediaData.media_opportunities.map((opp, idx) => (
+                <div key={idx} className="opportunity-item">
+                  <div className="opp-title">{opp.opportunity || opp}</div>
+                  {opp.pr_angle && <div className="opp-angle">{opp.pr_angle}</div>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Narrative Control */}
+        {mediaData.narrative_control && (
+          <div className="analysis-section">
+            <h4>Narrative Control</h4>
+            <div className="control-level">
+              Level: <span className={`control-badge ${mediaData.narrative_control}`}>
+                {mediaData.narrative_control}
+              </span>
+            </div>
+            {mediaData.media_strategy && (
+              <div className="strategy-text">{mediaData.media_strategy}</div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+  
+  const renderForwardAnalysis = (intelligence) => {
     const { tabs = {}, patterns = [] } = intelligence;
     const forwardData = tabs.forward || {};
     
@@ -1414,24 +1491,29 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
         content: renderExecutiveSummary(finalIntelligence)
       },
       competitive: {
-        label: 'Competitive Analysis',
+        label: 'Competitive',
         icon: '⚔️',
         content: renderCompetitiveAnalysis(finalIntelligence)
       },
-      trending: {
-        label: 'Trending Topics',
+      market: {
+        label: 'Market',
         icon: '📈',
-        content: renderTrendingTopics(finalIntelligence)
+        content: renderMarketAnalysis(finalIntelligence)
       },
-      stakeholders: {
-        label: 'Stakeholders & Regulatory',
-        icon: '👥',
-        content: renderStakeholders(finalIntelligence)
+      regulatory: {
+        label: 'Regulatory',
+        icon: '⚖️',
+        content: renderRegulatoryAnalysis(finalIntelligence)
       },
-      signals: {
-        label: 'Early Signals',
+      media: {
+        label: 'Media',
+        icon: '📰',
+        content: renderMediaAnalysis(finalIntelligence)
+      },
+      forward: {
+        label: 'Forward Look',
         icon: '🔮',
-        content: renderEarlySignals(finalIntelligence)
+        content: renderForwardAnalysis(finalIntelligence)
       }
     };
     
