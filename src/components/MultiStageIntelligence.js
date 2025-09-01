@@ -2,6 +2,14 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import './MultiStageIntelligence.css';
 import intelligenceOrchestratorV4 from '../services/intelligenceOrchestratorV4';
 import supabaseDataService from '../services/supabaseDataService';
+import { 
+  renderExecutiveSummaryEnhanced,
+  renderCompetitiveAnalysisEnhanced,
+  renderMarketAnalysisEnhanced,
+  renderRegulatoryAnalysisEnhanced,
+  renderMediaAnalysisEnhanced,
+  renderForwardLookingEnhanced
+} from './MultiStageIntelligenceEnhanced';
 
 /**
  * Multi-Stage Intelligence Analysis - ELABORATE PIPELINE
@@ -1469,17 +1477,17 @@ const MultiStageIntelligence = ({ organization: organizationProp, onComplete }) 
     
     switch(activeTab) {
       case 'executive':
-        return renderExecutiveSummary(finalIntelligence);
+        return renderExecutiveSummaryEnhanced(finalIntelligence);
       case 'competitive':
-        return renderCompetitiveAnalysis(finalIntelligence);
+        return renderCompetitiveAnalysisEnhanced(finalIntelligence);
       case 'market':
-        return renderMarketAnalysis(finalIntelligence);
+        return renderMarketAnalysisEnhanced(finalIntelligence);
       case 'regulatory':
-        return renderRegulatoryAnalysis(finalIntelligence);
+        return renderRegulatoryAnalysisEnhanced(finalIntelligence);
       case 'media':
-        return renderMediaAnalysis(finalIntelligence);
+        return renderMediaAnalysisEnhanced(finalIntelligence);
       case 'forward':
-        return renderForwardAnalysis(finalIntelligence);
+        return renderForwardLookingEnhanced(finalIntelligence);
       default:
         return <div>No content available for this tab</div>;
     }
