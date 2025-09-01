@@ -1201,85 +1201,200 @@ function countRecommendations(recommendations: any): number {
   return count;
 }
 
-// Generate tabs for Intelligence Hub V8 display
+// Generate tabs for Intelligence Hub V8 display - ENHANCED with Claude's rich analysis
 function generateIntelligenceHubTabs(results: any, normalizedData: any, organization: any) {
+  // Extract Claude's comprehensive analysis if available
+  const claudeInsights = {
+    executive: results.executive_summary || {},
+    crossDimensional: results.cross_dimensional_insights || {},
+    earlySignals: results.early_signals || {},
+    meaningContext: results.meaning_and_context || {},
+    keyTakeaways: results.key_takeaways || {},
+    opportunities: results.consolidated_opportunities || {}
+  };
+
   return {
     executive: {
-      headline: results.executive_summary?.headline || `${organization.name} Intelligence Summary`,
-      overview: results.executive_summary?.narrative_health?.current_perception || 
-                results.key_takeaways?.what_happened?.[0] || 
+      // Use Claude's rich executive summary
+      headline: claudeInsights.executive.headline || `${organization.name} Intelligence Summary`,
+      overview: claudeInsights.executive.narrative_health?.current_perception || 
+                claudeInsights.keyTakeaways.what_happened?.[0] || 
                 `Comprehensive intelligence analysis for ${organization.name} across competitive, media, regulatory and market dimensions`,
-      competitive_highlight: results.executive_summary?.key_findings?.[0] || 
-                            results.executive_summary?.key_developments?.[0]?.development ||
+      
+      // Pull from Claude's key developments with full context
+      competitive_highlight: claudeInsights.executive.key_developments?.[0] ? 
+                            `${claudeInsights.executive.key_developments[0].development} - ${claudeInsights.executive.key_developments[0].significance}` :
+                            claudeInsights.executive.comparative_position?.vs_competitors ||
                             'Competitive landscape analysis complete',
-      market_highlight: results.patterns?.[0]?.insight || 
-                       results.key_takeaways?.what_it_means?.[0] ||
+      
+      // Use Claude's pattern recognition insights
+      market_highlight: claudeInsights.crossDimensional.patterns?.[0] ? 
+                       `${claudeInsights.crossDimensional.patterns[0].pattern}: ${claudeInsights.crossDimensional.patterns[0].interpretation}` :
+                       claudeInsights.keyTakeaways.what_it_means?.[0] ||
                        'Market conditions stable',
-      immediate_actions: results.action_matrix?.high_impact_high_urgency || 
-                        results.key_takeaways?.pr_priorities ||
-                        results.executive_summary?.pr_implications?.map(i => i.implication) || [],
+      
+      // Prioritize Claude's PR implications
+      immediate_actions: claudeInsights.keyTakeaways.pr_priorities ||
+                        claudeInsights.executive.pr_implications?.map(i => 
+                          typeof i === 'object' ? `${i.implication} (${i.urgency})` : i
+                        ) || 
+                        results.action_matrix?.high_impact_high_urgency || [],
+      
       statistics: {
         entities_tracked: normalizedData.competitors?.all?.length + 
                          (normalizedData.media?.coverage?.length || 0) + 
                          (normalizedData.regulatory?.developments?.length || 0) || 6,
-        actions_captured: normalizedData.competitors?.all?.length || 
-                         results.patterns?.length || 
+        actions_captured: claudeInsights.executive.key_developments?.length ||
+                         normalizedData.competitors?.all?.length || 
                          normalizedData.monitoring?.raw_signals?.length || 1,
         topics_monitored: normalizedData.trends?.topics?.length || 
                          normalizedData.media?.topics?.length || 0,
-        opportunities_identified: results.consolidated_opportunities?.prioritized_list?.length || 
-                                 results.consolidated_opportunities?.total_opportunities || 0
-      }
+        opportunities_identified: claudeInsights.opportunities.prioritized_list?.length || 
+                                 claudeInsights.opportunities.total_opportunities || 0
+      },
+      
+      // Add Claude's narrative health assessment
+      narrative_health: claudeInsights.executive.narrative_health || {},
+      
+      // Add cross-dimensional connections
+      key_connections: claudeInsights.crossDimensional.connections?.slice(0, 3) || []
     },
+    
     competitive: {
+      // Enhanced with Claude's comparative analysis
+      comparative_position: claudeInsights.executive.comparative_position || {},
+      
       competitor_actions: normalizedData.competitors?.all?.map((comp: any) => ({
         competitor: comp.name || comp,
         action: comp.recent_action || 'Active in market',
         impact: comp.threat_level || 'Medium',
         response: 'Monitor closely'
       })) || [],
-      competitive_gaps: results.elite_insights?.competitive_dynamics || [],
-      pr_strategy: results.strategic_recommendations?.immediate?.[0]?.action || 'Competitive monitoring active',
+      
+      // Use Claude's identified gaps and strengths
+      competitive_gaps: claudeInsights.executive.comparative_position?.gaps_identified || 
+                       results.elite_insights?.competitive_dynamics || [],
+      strengths: claudeInsights.executive.comparative_position?.strengths_highlighted || [],
+      
+      // Pull competitive opportunities from Claude
+      competitive_opportunities: claudeInsights.opportunities.from_competitive || 
+                                claudeInsights.opportunities.prioritized_list?.filter((o: any) => 
+                                  o.type === 'competitive') || [],
+      
+      pr_strategy: claudeInsights.executive.comparative_position?.narrative_comparison ||
+                  results.strategic_recommendations?.immediate?.[0]?.action || 
+                  'Competitive monitoring active',
+      
       key_messages: ['Innovation leadership', 'Customer focus', 'Market expertise']
     },
+    
     market: {
+      // Enhanced with Claude's environmental assessment
+      market_dynamics: claudeInsights.meaningContext.environmental_assessment?.market_dynamics || '',
+      
       market_trends: Array.isArray(normalizedData.trends?.topics) && normalizedData.trends.topics.length > 0
         ? normalizedData.trends.topics.map((topic: any) => ({
             topic: topic.topic || topic.trend || topic,
             trend: topic.trajectory || topic.trend || 'emerging',
             mentions: topic.mentions || topic.signals || 1,
-            sources: topic.sources || []
+            sources: topic.sources || [],
+            interpretation: '' // Add interpretation if available
           }))
-        : results.cross_dimensional_insights?.patterns?.map((p: any) => ({
+        : claudeInsights.crossDimensional.patterns?.map((p: any) => ({
             topic: p.pattern,
             trend: 'identified',
             mentions: p.occurrences?.length || 1,
-            sources: p.occurrences || []
+            sources: p.occurrences || [],
+            interpretation: p.interpretation || ''
           })) || [],
-      opportunities: results.consolidated_opportunities?.from_trends || 
-                    results.consolidated_opportunities?.prioritized_list?.filter((o: any) => 
+      
+      // Use Claude's emerging narratives
+      emerging_narratives: claudeInsights.earlySignals.emerging_narratives || [],
+      
+      opportunities: claudeInsights.opportunities.from_trends || 
+                    claudeInsights.opportunities.prioritized_list?.filter((o: any) => 
                       o.source_stage === 'trends' || o.type === 'trend') || [],
-      market_position: results.elite_insights?.market_positioning?.[0]?.insight || 
-                      results.meaning_and_context?.organizational_position?.current_standing ||
-                      `${organization.name} operates in a moderately competitive market`
+      
+      market_position: claudeInsights.meaningContext.organizational_position?.current_standing ||
+                      results.elite_insights?.market_positioning?.[0]?.insight ||
+                      `${organization.name} operates in a moderately competitive market`,
+      
+      // Add perception gaps
+      perception_gaps: claudeInsights.meaningContext.organizational_position?.perception_gaps || []
     },
+    
     regulatory: {
+      // Enhanced with Claude's regulatory climate assessment
+      regulatory_climate: claudeInsights.meaningContext.environmental_assessment?.regulatory_climate || '',
+      
       regulatory_developments: normalizedData.regulatory?.developments || [],
       compliance_requirements: normalizedData.regulatory?.risks || [],
+      
+      // Use Claude's regulatory opportunities
+      regulatory_opportunities: claudeInsights.opportunities.from_regulatory || [],
+      
       regulatory_risks: results.elite_insights?.risk_factors || [],
-      regulatory_stance: 'Proactive compliance maintained'
+      regulatory_stance: claudeInsights.meaningContext.stakeholder_implications?.regulators ||
+                        'Proactive compliance maintained'
     },
+    
     media: {
+      // Enhanced with Claude's media environment assessment
+      media_environment: claudeInsights.meaningContext.environmental_assessment?.media_environment || '',
+      
       media_coverage: normalizedData.media?.coverage || [],
-      sentiment_trend: normalizedData.media?.sentiment?.[0] || 'Neutral',
-      journalist_interest: normalizedData.media?.topics || [],
-      media_strategy: results.strategic_recommendations?.immediate?.[1]?.action || 'Media monitoring active'
+      
+      // Use Claude's narrative health for sentiment
+      sentiment_trend: claudeInsights.executive.narrative_health?.sentiment_trajectory || 
+                      normalizedData.media?.sentiment?.[0] || 'Neutral',
+      
+      journalist_interest: claudeInsights.meaningContext.stakeholder_implications?.media ||
+                          normalizedData.media?.topics || [],
+      
+      // Pull media opportunities from Claude
+      media_opportunities: claudeInsights.opportunities.from_media || [],
+      
+      media_strategy: claudeInsights.executive.narrative_health?.key_messages_resonance ||
+                     results.strategic_recommendations?.immediate?.[1]?.action || 
+                     'Media monitoring active',
+      
+      // Add narrative control assessment
+      narrative_control: claudeInsights.executive.narrative_health?.narrative_control || 'moderate'
     },
+    
     forward: {
+      // Enhanced with Claude's early signals
+      weak_signals: claudeInsights.earlySignals.weak_signals || [],
+      pre_cascade_indicators: claudeInsights.earlySignals.pre_cascade_indicators || [],
+      
       predictions: results.cascade_predictions || [],
-      proactive_strategy: results.strategic_recommendations?.long_term?.[0]?.action || 'Strategic planning underway',
-      early_warnings: results.patterns?.filter((p: any) => p.urgency === 'high') || [],
-      monitoring_priorities: ['Competitive moves', 'Market shifts', 'Regulatory changes']
+      
+      // Use Claude's trajectory assessment
+      trajectory: claudeInsights.meaningContext.organizational_position?.trajectory || '',
+      
+      proactive_strategy: results.strategic_recommendations?.long_term?.[0]?.action || 
+                         'Strategic planning underway',
+      
+      // Use Claude's watch items
+      early_warnings: claudeInsights.keyTakeaways.watch_items ||
+                     results.patterns?.filter((p: any) => p.urgency === 'high') || [],
+      
+      monitoring_priorities: claudeInsights.keyTakeaways.watch_items?.slice(0, 3) ||
+                            ['Competitive moves', 'Market shifts', 'Regulatory changes'],
+      
+      // Add narrative risks and assets
+      narrative_risks: claudeInsights.meaningContext.pr_impact_analysis?.narrative_risks || [],
+      narrative_assets: claudeInsights.meaningContext.pr_impact_analysis?.narrative_assets || []
+    },
+    
+    // Add a synthesis tab with Claude's cross-dimensional insights
+    synthesis: {
+      connections: claudeInsights.crossDimensional.connections || [],
+      patterns: claudeInsights.crossDimensional.patterns || [],
+      contradictions: claudeInsights.crossDimensional.contradictions || [],
+      intelligence_quality: results.intelligence_quality || {},
+      key_takeaways: claudeInsights.keyTakeaways || {},
+      all_opportunities: claudeInsights.opportunities.prioritized_list || []
     }
   };
 }

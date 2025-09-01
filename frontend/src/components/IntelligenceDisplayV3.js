@@ -220,9 +220,62 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0, onIntelligenc
         <div className="executive-header">
           <h2 className="executive-headline">{data.headline || 'Strategic Intelligence Summary'}</h2>
           <p className="executive-overview">
-            {data.overview || `Currently monitoring ${intelligence?.statistics?.entities_tracked || 0} key entities and ${intelligence?.statistics?.topics_monitored || 0} trending topics across competitive, market, regulatory, and media landscapes. Our intelligence gathering has identified ${intelligence?.opportunities?.length || 0} immediate opportunities and ${intelligence?.risks?.length || 0} potential risks requiring attention. The current media sentiment analysis shows ${intelligence?.sentiment?.positive || 0}% positive coverage with ${intelligence?.sentiment?.mentions || 0} total mentions in the past 24 hours.`}
+            {data.overview || `Currently monitoring ${intelligence?.statistics?.entities_tracked || 0} key entities and ${intelligence?.statistics?.topics_monitored || 0} trending topics across competitive, market, regulatory, and media landscapes. Our intelligence gathering has identified ${intelligence?.statistics?.opportunities_identified || 0} immediate opportunities and ${intelligence?.risks?.length || 0} potential risks requiring attention. The current media sentiment analysis shows ${intelligence?.sentiment?.positive || 0}% positive coverage with ${intelligence?.sentiment?.mentions || 0} total mentions in the past 24 hours.`}
           </p>
         </div>
+        
+        {/* Render Claude's narrative health assessment if available */}
+        {data.narrative_health && Object.keys(data.narrative_health).length > 0 && (
+          <div className="narrative-health-section">
+            <h3>📊 Narrative Health Assessment</h3>
+            <div className="narrative-metrics">
+              {data.narrative_health.current_perception && (
+                <div className="metric-card">
+                  <span className="metric-label">Current Perception:</span>
+                  <span className="metric-value">{data.narrative_health.current_perception}</span>
+                </div>
+              )}
+              {data.narrative_health.sentiment_trajectory && (
+                <div className="metric-card">
+                  <span className="metric-label">Sentiment Trajectory:</span>
+                  <span className="metric-value trajectory">{data.narrative_health.sentiment_trajectory}</span>
+                </div>
+              )}
+              {data.narrative_health.narrative_control && (
+                <div className="metric-card">
+                  <span className="metric-label">Narrative Control:</span>
+                  <span className="metric-value control">{data.narrative_health.narrative_control}</span>
+                </div>
+              )}
+              {data.narrative_health.key_messages_resonance && (
+                <div className="metric-card full-width">
+                  <span className="metric-label">Message Resonance:</span>
+                  <span className="metric-value">{data.narrative_health.key_messages_resonance}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        
+        {/* Render Claude's key connections if available */}
+        {data.key_connections && data.key_connections.length > 0 && (
+          <div className="connections-section">
+            <h3>🔗 Cross-Dimensional Insights</h3>
+            <div className="connections-list">
+              {data.key_connections.map((connection, idx) => (
+                <div key={idx} className="connection-card">
+                  <div className="connection-insight">{connection.insight}</div>
+                  <div className="connection-meaning">{connection.meaning}</div>
+                  <div className="connection-evidence">
+                    {connection.supporting_evidence?.map((evidence, eidx) => (
+                      <span key={eidx} className="evidence-tag">{evidence}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         
         <div className="executive-highlights">
           <h3 className="highlights-title">📊 Strategic Intelligence Overview</h3>
@@ -1395,11 +1448,305 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0, onIntelligenc
     );
   };
   
+  const renderSynthesisTab = (data) => {
+    if (!data) return null;
+    
+    return (
+      <div className="v3-synthesis-tab">
+        <div className="synthesis-header">
+          <h3>Cross-Dimensional Intelligence Synthesis</h3>
+          <p>Patterns and connections across all intelligence streams</p>
+        </div>
+        
+        {/* Render connections */}
+        {data.connections && data.connections.length > 0 && (
+          <div className="synthesis-section">
+            <h4>🔗 Intelligence Connections</h4>
+            <div className="connections-grid">
+              {data.connections.map((conn, idx) => (
+                <div key={idx} className="connection-insight-card">
+                  <div className="insight-text">{conn.insight}</div>
+                  <div className="insight-meaning">{conn.meaning}</div>
+                  <div className="supporting-evidence">
+                    {conn.supporting_evidence?.map((evidence, eidx) => (
+                      <span key={eidx} className="evidence-chip">{evidence}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Render patterns */}
+        {data.patterns && data.patterns.length > 0 && (
+          <div className="synthesis-section">
+            <h4>📊 Identified Patterns</h4>
+            <div className="patterns-list">
+              {data.patterns.map((pattern, idx) => (
+                <div key={idx} className="pattern-card">
+                  <div className="pattern-name">{pattern.pattern}</div>
+                  <div className="pattern-interpretation">{pattern.interpretation}</div>
+                  <div className="pattern-occurrences">
+                    Observed in: {pattern.occurrences?.join(', ') || 'Multiple sources'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Render contradictions */}
+        {data.contradictions && data.contradictions.length > 0 && (
+          <div className="synthesis-section">
+            <h4>⚠️ Contradictions & Conflicts</h4>
+            <div className="contradictions-list">
+              {data.contradictions.map((conflict, idx) => (
+                <div key={idx} className="contradiction-card">
+                  <div className="conflict-description">{conflict.conflict}</div>
+                  <div className="conflict-sources">
+                    {conflict.sources?.map((source, sidx) => (
+                      <div key={sidx} className="source-item">{source}</div>
+                    ))}
+                  </div>
+                  <div className="conflict-assessment">{conflict.assessment}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Render all opportunities */}
+        {data.all_opportunities && data.all_opportunities.length > 0 && (
+          <div className="synthesis-section">
+            <h4>🎯 Prioritized Opportunities</h4>
+            <div className="opportunities-grid">
+              {data.all_opportunities.map((opp, idx) => (
+                <div key={idx} className={`opportunity-card urgency-${opp.urgency}`}>
+                  <div className="opp-header">
+                    <span className="opp-type">{opp.type}</span>
+                    <span className="opp-confidence">{opp.confidence}% confidence</span>
+                  </div>
+                  <div className="opp-text">{opp.opportunity}</div>
+                  <div className="opp-angle">PR Angle: {opp.pr_angle}</div>
+                  <div className="opp-summary">{opp.quick_summary}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Key takeaways */}
+        {data.key_takeaways && (
+          <div className="synthesis-section">
+            <h4>📌 Key Takeaways</h4>
+            <div className="takeaways-grid">
+              {data.key_takeaways.what_happened && (
+                <div className="takeaway-card">
+                  <h5>What Happened</h5>
+                  <ul>
+                    {data.key_takeaways.what_happened.map((item, idx) => (
+                      <li key={idx}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {data.key_takeaways.what_it_means && (
+                <div className="takeaway-card">
+                  <h5>What It Means</h5>
+                  <ul>
+                    {data.key_takeaways.what_it_means.map((item, idx) => (
+                      <li key={idx}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {data.key_takeaways.pr_priorities && (
+                <div className="takeaway-card">
+                  <h5>PR Priorities</h5>
+                  <ul>
+                    {data.key_takeaways.pr_priorities.map((item, idx) => (
+                      <li key={idx}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderCompetitiveTab = (data) => {
+    if (!data) return null;
+    
+    return (
+      <div className="v3-competitive-tab">
+        <div className="competitive-header">
+          <h3>Competitive Intelligence</h3>
+        </div>
+        
+        {/* Render comparative position if available */}
+        {data.comparative_position && Object.keys(data.comparative_position).length > 0 && (
+          <div className="comparative-position-section">
+            <h4>📊 Comparative Position</h4>
+            <div className="position-overview">
+              {data.comparative_position.vs_competitors && (
+                <div className="position-statement">{data.comparative_position.vs_competitors}</div>
+              )}
+              {data.comparative_position.narrative_comparison && (
+                <div className="narrative-comparison">{data.comparative_position.narrative_comparison}</div>
+              )}
+            </div>
+            <div className="position-details">
+              {data.comparative_position.strengths_highlighted && data.comparative_position.strengths_highlighted.length > 0 && (
+                <div className="strengths-section">
+                  <h5>Strengths</h5>
+                  <ul>
+                    {data.comparative_position.strengths_highlighted.map((strength, idx) => (
+                      <li key={idx}>{strength}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {data.comparative_position.gaps_identified && data.comparative_position.gaps_identified.length > 0 && (
+                <div className="gaps-section">
+                  <h5>Gaps to Address</h5>
+                  <ul>
+                    {data.comparative_position.gaps_identified.map((gap, idx) => (
+                      <li key={idx}>{gap}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        
+        {/* Render competitor actions */}
+        {data.competitor_actions && data.competitor_actions.length > 0 && (
+          <div className="competitor-actions-section">
+            <h4>🎯 Competitor Movements</h4>
+            <div className="actions-grid">
+              {data.competitor_actions.map((action, idx) => (
+                <div key={idx} className="competitor-action-card">
+                  <div className="competitor-name">{action.competitor}</div>
+                  <div className="competitor-action">{action.action}</div>
+                  <div className="action-impact">Impact: {action.impact}</div>
+                  <div className="action-response">Response: {action.response}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Render competitive opportunities */}
+        {data.competitive_opportunities && data.competitive_opportunities.length > 0 && (
+          <div className="competitive-opportunities-section">
+            <h4>💡 Competitive Opportunities</h4>
+            <div className="opportunities-list">
+              {data.competitive_opportunities.map((opp, idx) => (
+                <div key={idx} className="competitive-opp-card">
+                  <div className="opp-title">{opp.opportunity}</div>
+                  <div className="opp-angle">{opp.pr_angle}</div>
+                  <div className="opp-urgency">Urgency: {opp.urgency}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* PR Strategy */}
+        {data.pr_strategy && (
+          <div className="pr-strategy-section">
+            <h4>📢 PR Strategy</h4>
+            <p>{data.pr_strategy}</p>
+          </div>
+        )}
+      </div>
+    );
+  };
+  
   const renderForwardTab = (data) => {
     if (!data) return null;
     
     return (
       <div className="v3-segment-tab forward">
+        {/* Add weak signals section if available */}
+        {data.weak_signals && data.weak_signals.length > 0 && (
+          <div className="weak-signals-section">
+            <h3>🔮 Weak Signals Detection</h3>
+            <div className="signals-grid">
+              {data.weak_signals.map((signal, idx) => (
+                <div key={idx} className="weak-signal-card">
+                  <div className="signal-title">{signal.signal}</div>
+                  <div className="signal-source">Source: {signal.source}</div>
+                  <div className="signal-evolution">{signal.potential_evolution}</div>
+                  <div className="signal-monitoring">Monitor: {signal.monitoring_recommendation}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Add pre-cascade indicators if available */}
+        {data.pre_cascade_indicators && data.pre_cascade_indicators.length > 0 && (
+          <div className="cascade-indicators-section">
+            <h3>⚠️ Pre-Cascade Indicators</h3>
+            <div className="indicators-list">
+              {data.pre_cascade_indicators.map((indicator, idx) => (
+                <div key={idx} className="cascade-indicator-card">
+                  <div className="indicator-title">{indicator.indicator}</div>
+                  <div className="trigger-conditions">
+                    Triggers: {Array.isArray(indicator.trigger_conditions) 
+                      ? indicator.trigger_conditions.join(', ') 
+                      : indicator.trigger_conditions}
+                  </div>
+                  <div className="potential-impact">{indicator.potential_impact}</div>
+                  <div className="early-positioning">{indicator.early_positioning}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Add trajectory assessment if available */}
+        {data.trajectory && (
+          <div className="trajectory-section">
+            <h3>📈 Trajectory Assessment</h3>
+            <p className="trajectory-text">{data.trajectory}</p>
+          </div>
+        )}
+        
+        {/* Add narrative risks and assets if available */}
+        {(data.narrative_risks || data.narrative_assets) && (
+          <div className="narrative-assessment-section">
+            <h3>📝 Narrative Assessment</h3>
+            <div className="narrative-grid">
+              {data.narrative_risks && data.narrative_risks.length > 0 && (
+                <div className="narrative-risks">
+                  <h4>Risks</h4>
+                  <ul>
+                    {data.narrative_risks.map((risk, idx) => (
+                      <li key={idx} className="risk-item">{risk}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {data.narrative_assets && data.narrative_assets.length > 0 && (
+                <div className="narrative-assets">
+                  <h4>Assets</h4>
+                  <ul>
+                    {data.narrative_assets.map((asset, idx) => (
+                      <li key={idx} className="asset-item">{asset}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         {data.future_narratives && (
           <div className="segment-section">
             <h3 className="section-title"><span className="neon-icon">⟡</span> Future Narratives</h3>
@@ -1595,6 +1942,10 @@ const IntelligenceDisplayV3 = ({ organization, refreshTrigger = 0, onIntelligenc
         return renderThoughtLeadershipTab(tabData);
       case 'forward':
         return renderForwardTab(tabData);
+      case 'synthesis':
+        return renderSynthesisTab(tabData);
+      case 'competitive':
+        return renderCompetitiveTab(tabData);
       
       // Keep PR-focused tabs as fallback
       case 'narrative':
