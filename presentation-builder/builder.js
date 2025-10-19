@@ -213,29 +213,40 @@ class PresentationBuilder {
       valign: "top"
     });
 
-    // Right column: Image placeholder
-    const placeholderText = data.visualDescription || "Visual placeholder";
+    // Right column: Image or placeholder
+    if (data.imageUrl) {
+      // Add actual Vertex AI generated image
+      slide.addImage({
+        path: data.imageUrl,
+        x: 5.5,
+        y: 1.5,
+        w: 4,
+        h: 4,
+        sizing: { type: "cover" }
+      });
+    } else {
+      // Add placeholder if no image available
+      const placeholderText = data.visualDescription || "Visual placeholder";
 
-    // Add a rectangle as placeholder
-    slide.addShape("rect", {
-      x: 5.5,
-      y: 1.5,
-      w: 4,
-      h: 4,
-      fill: { color: colors.secondary }
-    });
+      slide.addShape("rect", {
+        x: 5.5,
+        y: 1.5,
+        w: 4,
+        h: 4,
+        fill: { color: colors.secondary }
+      });
 
-    // Add text over the rectangle
-    slide.addText(placeholderText, {
-      x: 5.5,
-      y: 3,
-      w: 4,
-      h: 1,
-      fontSize: 16,
-      color: colors.text,
-      align: "center",
-      valign: "middle"
-    });
+      slide.addText(placeholderText, {
+        x: 5.5,
+        y: 3,
+        w: 4,
+        h: 1,
+        fontSize: 16,
+        color: colors.text,
+        align: "center",
+        valign: "middle"
+      });
+    }
   }
 
   /**

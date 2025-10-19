@@ -166,7 +166,7 @@ const CONTENT_GENERATION_TOOLS = [
   },
   {
     name: "create_signaldeck_outline",
-    description: "Create a detailed presentation outline for SignalDeck (our AI presentation builder with charts, timelines, and professional layouts). Use this when user requests a presentation. Creates structured outline with sections, talking points, and VISUAL ELEMENTS (charts, timelines, diagrams, images) that the user can review and refine. Better than Gamma for data-driven presentations.",
+    description: "Create a detailed presentation outline for SignalDeck (our AI PowerPoint builder with charts, timelines, diagrams, and AI-generated images). Use this when user requests a presentation, deck, or slides. Creates structured outline with sections, talking points, and visual suggestions that the user can review and refine. Better than Gamma for data-driven presentations with professional charts and timelines.",
     input_schema: {
       type: "object",
       properties: {
@@ -199,33 +199,13 @@ const CONTENT_GENERATION_TOOLS = [
             properties: {
               title: { type: "string" },
               talking_points: { type: "array", items: { type: "string" } },
-              visual_element: {
-                type: "object",
-                description: "Visual element for this slide (chart, timeline, diagram, image, etc.)",
-                properties: {
-                  type: {
-                    type: "string",
-                    enum: ["chart", "timeline", "image", "diagram", "quote", "data_table", "none"],
-                    description: "Type of visual element"
-                  },
-                  description: {
-                    type: "string",
-                    description: "Description of the visual (e.g., 'Q4 revenue vs Q3', 'Product launch timeline', 'Process flow diagram')"
-                  },
-                  chart_type: {
-                    type: "string",
-                    enum: ["bar", "line", "pie", "column", "area"],
-                    description: "Chart type if visual_element.type is 'chart'"
-                  },
-                  data: {
-                    type: "object",
-                    description: "Data for charts/tables (labels, values, etc.)"
-                  }
-                }
+              visual_suggestion: {
+                type: "string",
+                description: "Visual element suggestion. Examples: 'Bar chart showing Q4 revenue vs Q3', 'Timeline of product launches from Jan-Dec', 'Diagram of sales process flow', 'Photo of diverse team collaborating', 'Modern office workspace image'"
               }
             }
           },
-          description: "Detailed outline sections with talking points and visual element specifications"
+          description: "Detailed outline sections with talking points and visual suggestions"
         }
       },
       required: ["topic", "audience", "purpose", "key_messages", "sections"]
@@ -1281,7 +1261,45 @@ ${campaignContext.timeline || 'Not specified'}
 
     // Trust the understanding - if Claude says it needs fresh data, do research
     // Access the nested understanding object
-    const needsResearch = !isSimpleMediaList && understanding.understanding?.requires_fresh_data;
+    let needsResearch = !isSimpleMediaList && understanding.understanding?.requires_fresh_data;
+
+    // TOPIC-CHANGE DETECTION: If topic has significantly changed from previous research, force new research
+    if (!needsResearch && conversationState.researchResults) {
+      const currentEntities = understanding.understanding?.entities || []
+      const currentTopics = understanding.understanding?.topics || []
+
+      // Get previous entities/topics from conversation history
+      const previousMessages = conversationHistory.slice(-5) // Last 5 messages
+      const previousEntities = new Set()
+      const previousTopics = new Set()
+
+      previousMessages.forEach(msg => {
+        if (msg.metadata?.understanding?.entities) {
+          msg.metadata.understanding.entities.forEach(e => previousEntities.add(e.toLowerCase()))
+        }
+        if (msg.metadata?.understanding?.topics) {
+          msg.metadata.understanding.topics.forEach(t => previousTopics.add(t.toLowerCase()))
+        }
+      })
+
+      // Check if current entities/topics overlap with previous ones
+      const entityOverlap = currentEntities.filter(e =>
+        previousEntities.has(e.toLowerCase())
+      ).length
+
+      const topicOverlap = currentTopics.filter(t =>
+        previousTopics.has(t.toLowerCase())
+      ).length
+
+      // If less than 30% overlap, this is a new topic requiring fresh research
+      const entityOverlapPercent = currentEntities.length > 0 ? entityOverlap / currentEntities.length : 0
+      const topicOverlapPercent = currentTopics.length > 0 ? topicOverlap / currentTopics.length : 0
+
+      if (entityOverlapPercent < 0.3 && topicOverlapPercent < 0.3 && (currentEntities.length > 0 || currentTopics.length > 0)) {
+        console.log(`🔄 Topic change detected (${Math.round(topicOverlapPercent * 100)}% overlap) - triggering fresh research`)
+        needsResearch = true
+      }
+    }
 
     let researchResults = null
     let freshResearch = false  // Track if this is NEW research
@@ -2471,7 +2489,7 @@ ${section.talking_points.map((point: string) => `- ${point}`).join('\n')}
 
         const researchData = conversationState.researchResults || null
 
-        // Format the outline for display with visual element details
+        // Format the outline for display with visual suggestions
         let outline = `# SignalDeck Presentation: ${toolUse.input.topic}
 
 **Audience:** ${toolUse.input.audience}
@@ -2484,34 +2502,27 @@ ${toolUse.input.key_messages.map((m: string, i: number) => `${i + 1}. ${m}`).joi
 ## Slide Structure
 
 ${toolUse.input.sections.map((section: any, i: number) => {
-  const visual = section.visual_element || {}
-  let visualDesc = ''
+  const visualSuggestion = section.visual_suggestion || 'Content slide'
 
-  if (visual.type === 'chart') {
-    visualDesc = `📊 Chart (${visual.chart_type || 'bar'}): ${visual.description || 'Data visualization'}`
-  } else if (visual.type === 'timeline') {
-    visualDesc = `📅 Timeline: ${visual.description || 'Timeline visualization'}`
-  } else if (visual.type === 'diagram') {
-    visualDesc = `📐 Diagram: ${visual.description || 'Process diagram'}`
-  } else if (visual.type === 'data_table') {
-    visualDesc = `📋 Data Table: ${visual.description || 'Tabular data'}`
-  } else if (visual.type === 'image') {
-    visualDesc = `🖼️  Image: ${visual.description || 'Visual image'}`
-  } else if (visual.type === 'quote') {
-    visualDesc = `💬 Quote slide`
-  } else {
-    visualDesc = `📄 Content only`
-  }
+  // Add visual icons based on keywords in suggestion
+  let icon = '📄'
+  const lower = visualSuggestion.toLowerCase()
+  if (lower.includes('chart') || lower.includes('graph')) icon = '📊'
+  else if (lower.includes('timeline') || lower.includes('roadmap')) icon = '📅'
+  else if (lower.includes('diagram') || lower.includes('flow') || lower.includes('process')) icon = '📐'
+  else if (lower.includes('photo') || lower.includes('image') || lower.includes('picture')) icon = '🖼️'
+  else if (lower.includes('quote')) icon = '💬'
+  else if (lower.includes('table') || lower.includes('data')) icon = '📋'
 
   return `**Slide ${i + 1}: ${section.title}**
 ${section.talking_points.map((p: string) => `  • ${p}`).join('\n')}
-  Visual: ${visualDesc}
+  Visual: ${icon} ${visualSuggestion}
 `
 }).join('\n')}
 
 ---
 
-*This will be a professional PowerPoint presentation with charts, timelines, and custom layouts.*
+*This will be a professional PowerPoint presentation with charts, timelines, diagrams, and AI-generated images.*
 *Once you're happy with this outline, I'll create your SignalDeck presentation!*`
 
         return new Response(JSON.stringify({
@@ -3121,7 +3132,7 @@ async function executeResearch(query: string, organizationId: string) {
         body: JSON.stringify({
           query: `${query} for ${organizationId}`,
           organizationId,
-          maxIterations: 1 // Limit to 1 iteration for speed (was 2)
+          maxIterations: 2 // Allow follow-up searches to improve quality
         })
       }
     );
@@ -3866,7 +3877,7 @@ Write ONLY the thought leadership content.`
       signal: controller.signal,
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 4000,
+        max_tokens: 16000,
         temperature: 0.7,
         messages: [{
           role: 'user',

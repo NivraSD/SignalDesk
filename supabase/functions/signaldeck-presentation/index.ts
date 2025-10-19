@@ -18,12 +18,7 @@ interface SignalDeckRequest {
     sections: Array<{
       title: string
       talking_points: string[]
-      visual_element?: {
-        type: 'chart' | 'timeline' | 'image' | 'diagram' | 'quote' | 'data_table' | 'none'
-        description?: string
-        chart_type?: 'bar' | 'line' | 'pie' | 'column' | 'area'
-        data?: any
-      }
+      visual_suggestion?: string
     }>
   }
   theme?: {
@@ -46,6 +41,98 @@ interface GenerationStatus {
 // In-memory storage for generation status (in production, use Redis or database)
 const generationStore = new Map<string, GenerationStatus>()
 
+// Parse visual suggestion to determine type and details
+function parseVisualSuggestion(suggestion: string) {
+  const lower = suggestion.toLowerCase()
+
+  // Determine visual type
+  if (lower.includes('chart') || lower.includes('graph')) {
+    // Determine chart type
+    let chart_type = 'bar'
+    if (lower.includes('line')) chart_type = 'line'
+    else if (lower.includes('pie')) chart_type = 'pie'
+    else if (lower.includes('column')) chart_type = 'column'
+    else if (lower.includes('area')) chart_type = 'area'
+
+    return {
+      type: 'chart',
+      chart_type,
+      description: suggestion,
+      needsVertexAI: false
+    }
+  } else if (lower.includes('timeline') || lower.includes('roadmap')) {
+    return {
+      type: 'timeline',
+      description: suggestion,
+      needsVertexAI: false
+    }
+  } else if (lower.includes('diagram') || lower.includes('flow') || lower.includes('process')) {
+    return {
+      type: 'diagram',
+      description: suggestion,
+      needsVertexAI: false
+    }
+  } else if (lower.includes('photo') || lower.includes('image') || lower.includes('picture') ||
+             lower.includes('workspace') || lower.includes('team') || lower.includes('office') ||
+             lower.includes('illustration') || lower.includes('scene')) {
+    return {
+      type: 'visual',
+      description: suggestion,
+      needsVertexAI: true,
+      imagePrompt: suggestion
+    }
+  } else if (lower.includes('quote')) {
+    return {
+      type: 'quote',
+      description: suggestion,
+      needsVertexAI: false
+    }
+  } else if (lower.includes('table') || lower.includes('data')) {
+    return {
+      type: 'data_table',
+      description: suggestion,
+      needsVertexAI: false
+    }
+  } else {
+    return {
+      type: 'content',
+      description: suggestion,
+      needsVertexAI: false
+    }
+  }
+}
+
+// Generate AI image using Vertex AI
+async function generateAIImage(prompt: string, organizationId: string): Promise<string | null> {
+  try {
+    console.log('🎨 Generating AI image with Vertex AI:', prompt)
+
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/vertex-ai-visual`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+      },
+      body: JSON.stringify({
+        prompt,
+        organizationId,
+        aspectRatio: '16:9' // Standard presentation aspect ratio
+      })
+    })
+
+    if (!response.ok) {
+      console.error('Vertex AI error:', response.statusText)
+      return null
+    }
+
+    const data = await response.json()
+    return data.imageUrl || data.url || null
+  } catch (error) {
+    console.error('Error generating AI image:', error)
+    return null
+  }
+}
+
 // Generate presentation data using Claude (like orchestrator.js)
 async function generatePresentationData(outline: SignalDeckRequest['approved_outline']) {
   console.log('📝 Generating presentation content with Claude')
@@ -63,24 +150,32 @@ Sections:
 ${outline.sections.map((s, i) => `
 Slide ${i + 1}: ${s.title}
 Talking Points: ${s.talking_points.join('; ')}
-Visual Element: ${s.visual_element?.type || 'none'} ${s.visual_element?.description ? `(${s.visual_element.description})` : ''}
+Visual Suggestion: ${s.visual_suggestion || 'content only'}
 `).join('\n')}
 
 For each section, generate:
 1. Slide title (concise, impactful)
 2. Body content (3-5 bullet points or 2-3 paragraphs)
 3. Speaker notes (what the presenter should say)
+4. For charts: include realistic sample data with labels and values
+5. For timelines: include events with dates
+6. For diagrams: include steps/nodes in the process
 
 Return JSON format:
 {
   "title": "Presentation title",
   "slides": [
     {
-      "type": "title|content|visual|chart|timeline|quote|closing",
+      "type": "title|content|visual|chart|timeline|diagram|quote|closing",
       "title": "Slide title",
       "body": ["Point 1", "Point 2", "Point 3"],
       "notes": "Speaker notes for this slide",
-      "visual_element": { "type": "chart", "description": "...", "data": {...} }
+      "visual_element": {
+        "type": "chart|timeline|diagram|image|quote|data_table|none",
+        "description": "Brief description",
+        "chart_type": "bar|line|pie|column|area",
+        "data": { "labels": ["Q1", "Q2"], "values": [100, 120] }
+      }
     }
   ]
 }`
@@ -269,7 +364,40 @@ async function generatePresentation(generationId: string, request: SignalDeckReq
     generationStore.set(generationId, {
       generationId,
       status: 'processing',
-      progress: 50
+      progress: 40
+    })
+
+    // Step 1.5: Generate AI images with Vertex AI for visual slides
+    console.log('Step 1.5: Processing visual suggestions...')
+    if (presentationData.slides) {
+      for (const slide of presentationData.slides) {
+        // Check if this slide needs Vertex AI image
+        if (slide.visual_element) {
+          const visualType = slide.visual_element.type
+          const needsAI = visualType === 'visual' || visualType === 'image'
+
+          if (needsAI && slide.visual_element.description) {
+            console.log('🎨 Generating AI image for:', slide.title)
+            const imageUrl = await generateAIImage(
+              slide.visual_element.description,
+              request.organization_id || 'default'
+            )
+
+            if (imageUrl) {
+              slide.imageUrl = imageUrl
+              console.log('✅ AI image generated:', imageUrl)
+            } else {
+              console.log('⚠️ AI image generation skipped (Vertex AI unavailable)')
+            }
+          }
+        }
+      }
+    }
+
+    generationStore.set(generationId, {
+      generationId,
+      status: 'processing',
+      progress: 60
     })
 
     // Step 2: Build PowerPoint
