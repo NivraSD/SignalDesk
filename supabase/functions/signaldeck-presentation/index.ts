@@ -190,10 +190,10 @@ Return JSON format:
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 4096,
+        max_tokens: 8192,  // Increased for larger presentations
         messages: [{
           role: 'user',
-          content: prompt
+          content: prompt + '\n\nIMPORTANT: Return ONLY valid JSON with no additional text before or after. Escape all quotes in content properly.'
         }]
       })
     })
@@ -203,17 +203,75 @@ Return JSON format:
     }
 
     const data = await response.json()
-    const content = data.content?.[0]?.text
+    let content = data.content?.[0]?.text
 
-    // Parse JSON from Claude's response
-    const jsonMatch = content.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) {
-      throw new Error('Could not parse Claude response')
+    if (!content) {
+      throw new Error('No content in Claude response')
     }
 
-    return JSON.parse(jsonMatch[0])
+    // Try to extract JSON more carefully
+    // First, try to find JSON wrapped in code blocks
+    const codeBlockMatch = content.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/)
+    if (codeBlockMatch) {
+      content = codeBlockMatch[1]
+    } else {
+      // Otherwise, look for JSON object boundaries
+      // Find the first { and count braces to find matching }
+      const firstBrace = content.indexOf('{')
+      if (firstBrace === -1) {
+        throw new Error('No JSON object found in Claude response')
+      }
+
+      let braceCount = 0
+      let inString = false
+      let escapeNext = false
+      let jsonEnd = -1
+
+      for (let i = firstBrace; i < content.length; i++) {
+        const char = content[i]
+
+        if (escapeNext) {
+          escapeNext = false
+          continue
+        }
+
+        if (char === '\\') {
+          escapeNext = true
+          continue
+        }
+
+        if (char === '"') {
+          inString = !inString
+          continue
+        }
+
+        if (!inString) {
+          if (char === '{') braceCount++
+          if (char === '}') {
+            braceCount--
+            if (braceCount === 0) {
+              jsonEnd = i + 1
+              break
+            }
+          }
+        }
+      }
+
+      if (jsonEnd === -1) {
+        throw new Error('Could not find complete JSON object')
+      }
+
+      content = content.substring(firstBrace, jsonEnd)
+    }
+
+    console.log('📝 Parsing JSON response...')
+    return JSON.parse(content)
   } catch (error) {
     console.error('Error generating with Claude:', error)
+    if (error instanceof SyntaxError) {
+      console.error('JSON parse error - response may be too large or malformed')
+      console.error('First 500 chars of content:', content?.substring(0, 500))
+    }
     throw error
   }
 }

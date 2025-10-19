@@ -1734,9 +1734,23 @@ ${campaignContext.timeline || 'Not specified'}
           };
         }
 
-        // Format journalists for display
+        // Format journalists for display with full contact info
         const formattedList = allJournalists.map((j, i) => {
-          return `${i + 1}. **${j.name}** - ${j.outlet}\n   ${j.title || 'Journalist'}\n   Focus: ${j.beat || j.coverage_area || focusArea}\n   ${j.twitter ? `Twitter: @${j.twitter}` : ''}`
+          const lines = [`${i + 1}. **${j.name}** - ${j.outlet}`];
+          lines.push(`   ${j.title || 'Journalist'}`);
+          lines.push(`   Focus: ${j.beat || j.coverage_area || focusArea}`);
+
+          // Add contact information if available
+          const contacts = [];
+          if (j.email) contacts.push(`📧 ${j.email}`);
+          if (j.twitter_handle || j.twitter) contacts.push(`🐦 @${j.twitter_handle || j.twitter}`);
+          if (j.linkedin_url) contacts.push(`💼 ${j.linkedin_url}`);
+
+          if (contacts.length > 0) {
+            lines.push(`   ${contacts.join(' • ')}`);
+          }
+
+          return lines.join('\n');
         }).join('\n\n')
 
         // Include additional journalists from web search if present
@@ -2411,7 +2425,7 @@ ${section.talking_points.map((point: string) => `- ${point}`).join('\n')}
           try {
             console.log('💾 Saving presentation outline to Memory Vault')
             await supabase.from('content_library').insert({
-              org_id: orgId,
+              org_id: organizationId,
               content_type: 'presentation_outline',
               title: outline.topic,
               content: markdownContent,
@@ -2560,7 +2574,7 @@ ${section.talking_points.map((p: string) => `  • ${p}`).join('\n')}
               accent: '0f3460'
             },
             include_speaker_notes: toolUse.input.include_speaker_notes !== false,
-            organization_id: orgId
+            organization_id: organizationId
           }
 
           console.log('📤 Sending to SignalDeck:', {
