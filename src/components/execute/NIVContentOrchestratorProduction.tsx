@@ -24,6 +24,7 @@ import {
 import type { NivStrategicFramework } from '@/types/niv-strategic-framework'
 import type { ContentItem } from '@/types/content'
 import { useAppStore } from '@/stores/useAppStore'
+import { SignalDeckOrchestrator } from '@/components/signaldeck/SignalDeckOrchestrator'
 
 // Content Routing Map - Maps content types to services
 const CONTENT_ROUTING_MAP: Record<string, {
@@ -56,6 +57,16 @@ const CONTENT_ROUTING_MAP: Record<string, {
     complexity: 'medium',
     workflow: 'direct',
     api: 'gamma'
+  },
+  'signaldeck': {
+    service: 'niv-content-intelligent-v2',
+    complexity: 'complex',
+    workflow: 'orchestrated'
+  },
+  'powerpoint': {
+    service: 'niv-content-intelligent-v2',
+    complexity: 'complex',
+    workflow: 'orchestrated'
   },
   'image': {
     service: 'vertex-ai-image-generation',
@@ -1157,6 +1168,46 @@ export default function NIVContentOrchestratorProduction({
           }
         }])
       }
+      else if (response.mode === 'signaldeck_outline') {
+        console.log('📊 SIGNALDECK OUTLINE - Displaying for review')
+
+        // Store the SignalDeck outline for later use
+        setConceptState(prev => ({
+          ...prev,
+          orchestrationContext: {
+            ...prev.orchestrationContext,
+            signaldeckOutline: response.signaldeckOutline
+          }
+        }))
+
+        // Display the outline with SignalDeckOrchestrator component
+        setMessages(prev => [...prev, {
+          id: `msg-${Date.now()}`,
+          role: 'assistant',
+          content: response.message,
+          timestamp: new Date(),
+          metadata: {
+            type: 'signaldeck_outline',
+            signaldeckOutline: response.signaldeckOutline,
+            awaitingApproval: true
+          }
+        }])
+      }
+      else if (response.mode === 'signaldeck_generating') {
+        console.log('⏳ SIGNALDECK GENERATING')
+
+        setMessages(prev => [...prev, {
+          id: `msg-${Date.now()}`,
+          role: 'assistant',
+          content: response.message,
+          timestamp: new Date(),
+          metadata: {
+            type: 'signaldeck_generating',
+            generationId: response.generationId,
+            pollUrl: response.pollUrl
+          }
+        }])
+      }
       else if (response.mode === 'generation_complete') {
         console.log('✅ GENERATION COMPLETE - Displaying content pieces:', response.generatedContent?.length)
 
@@ -2095,6 +2146,48 @@ IMPORTANT:
                         Save to Vault
                       </button>
                     </div>
+                  </div>
+                )}
+
+                {/* Show SignalDeck Outline */}
+                {msg.metadata?.type === 'signaldeck_outline' && msg.metadata?.signaldeckOutline && (
+                  <div className="mt-4">
+                    <SignalDeckOrchestrator
+                      outline={msg.metadata.signaldeckOutline}
+                      mode="outline"
+                      onApprove={async () => {
+                        // Call NIV to generate the PowerPoint
+                        try {
+                          const response = await fetch('/api/supabase/functions/niv-content-intelligent-v2', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              message: 'Generate PowerPoint',
+                              organizationId: organization?.id,
+                              conversationHistory: messages.map(m => ({ role: m.role, content: m.content })),
+                              context: {
+                                approvedOutline: msg.metadata.signaldeckOutline
+                              }
+                            })
+                          })
+                          const data = await response.json()
+                          console.log('SignalDeck generation initiated:', data)
+                        } catch (error) {
+                          console.error('Failed to generate SignalDeck:', error)
+                        }
+                      }}
+                    />
+                  </div>
+                )}
+
+                {/* Show SignalDeck Generating */}
+                {msg.metadata?.type === 'signaldeck_generating' && msg.metadata?.generationId && (
+                  <div className="mt-4">
+                    <SignalDeckOrchestrator
+                      outline={null}
+                      mode="generating"
+                      generationId={msg.metadata.generationId}
+                    />
                   </div>
                 )}
 
