@@ -136,19 +136,22 @@ export async function POST(request: NextRequest) {
           color: primaryColor
         })
 
+        // Check if slide has a chart - adjust layout accordingly
+        const hasChart = slideData.visual_element?.type === 'chart' && slideData.visual_element?.data
+
         // Add body content
         if (slideData.body && slideData.body.length > 0) {
           const bulletText = slideData.body.map(point => ({
             text: point,
-            options: { bullet: true, color: '333333', fontSize: 18 }
+            options: { bullet: true, color: '333333', fontSize: hasChart ? 14 : 18 }
           }))
 
           slide.addText(bulletText, {
             x: 0.75,
-            y: 1.75,
-            w: 8.5,
-            h: 4,
-            fontSize: 18,
+            y: 1.5,
+            w: hasChart ? 4 : 8.5,  // Narrower if chart is present
+            h: hasChart ? 4.5 : 4,
+            fontSize: hasChart ? 14 : 18,
             color: '333333'
           })
         }
@@ -162,22 +165,27 @@ export async function POST(request: NextRequest) {
             const chartType = slideData.visual_element.chart_type || 'bar'
             const chartData = slideData.visual_element.data
 
-            console.log(`  📊 Adding ${chartType} chart`)
+            console.log(`  📊 Adding ${chartType} chart with ${chartData.labels.length} data points`)
 
             slide.addChart(pptx.ChartType[chartType as keyof typeof pptx.ChartType] || pptx.ChartType.bar, [
               {
-                name: slideData.title,
+                name: slideData.visual_element.description || slideData.title,
                 labels: chartData.labels,
                 values: chartData.values
               }
             ], {
-              x: 1,
-              y: 2.5,
-              w: 8,
-              h: 3.5,
-              showTitle: false,
+              x: 5,        // Position on right side
+              y: 1.5,
+              w: 4.5,      // Wider chart
+              h: 4.5,      // Taller chart
+              showTitle: true,
               showLegend: true,
-              chartColors: [accentColor, primaryColor, secondaryColor]
+              showValue: true,
+              chartColors: ['#' + accentColor, '#' + primaryColor, '#' + secondaryColor, '#4CAF50', '#FF9800'],
+              titleFontSize: 14,
+              titleColor: primaryColor,
+              valAxisLabelFontSize: 11,
+              catAxisLabelFontSize: 11
             })
           }
 

@@ -231,11 +231,29 @@ ${outline.sections.map((s, i) => `    {
   ]
 }
 
-CRITICAL:
-- For visual_element, if description contains "chart"/"graph", add: "chart_type": "bar", "data": {"labels": ["Q1","Q2","Q3","Q4"], "values": [100,120,150,180]}
-- If description contains "timeline", add realistic events with dates
-- If description contains "image"/"photo"/"illustration", set type to "image"
-- Return ONLY valid JSON, no markdown code blocks, no extra text`
+CRITICAL - Chart Generation:
+For EVERY visual_element where description mentions charts/graphs, you MUST:
+1. Determine chart type from description (bar, line, pie, column, area)
+2. Generate realistic data based on the slide content:
+   - Extract meaningful labels from the talking points (not generic "Q1, Q2")
+   - Create data values that make sense for the narrative
+   - Include 4-8 data points minimum
+
+Example for "Creator economy growth chart":
+{
+  "type": "chart",
+  "chart_type": "bar",
+  "description": "Creator economy growth...",
+  "data": {
+    "labels": ["2019", "2020", "2021", "2022", "2023", "2024"],
+    "values": [50, 65, 84, 104, 128, 155]
+  }
+}
+
+For timelines: include 4-6 events with realistic dates
+For images: set type to "content" (we'll skip AI images for now)
+
+Return ONLY valid JSON, no markdown code blocks, no extra text`
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -494,32 +512,9 @@ async function generatePresentation(generationId: string, request: SignalDeckReq
       progress: 40
     }, orgId)
 
-    // Step 1.5: Generate AI images with Vertex AI for visual slides
+    // Step 1.5: Process visual elements (skip AI image generation for now)
     console.log('Step 1.5: Processing visual suggestions...')
-    if (presentationData.slides) {
-      for (const slide of presentationData.slides) {
-        // Check if this slide needs Vertex AI image
-        if (slide.visual_element) {
-          const visualType = slide.visual_element.type
-          const needsAI = visualType === 'visual' || visualType === 'image'
-
-          if (needsAI && slide.visual_element.description) {
-            console.log('🎨 Generating AI image for:', slide.title)
-            const imageUrl = await generateAIImage(
-              slide.visual_element.description,
-              request.organization_id || 'default'
-            )
-
-            if (imageUrl) {
-              slide.imageUrl = imageUrl
-              console.log('✅ AI image generated:', imageUrl)
-            } else {
-              console.log('⚠️ AI image generation skipped (Vertex AI unavailable)')
-            }
-          }
-        }
-      }
-    }
+    console.log('⚠️ AI image generation disabled - focusing on charts and data visualizations')
 
     await setGenerationStatus({
       generationId,
