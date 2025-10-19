@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Synthesis Output Test - Final Intelligence Report</title>
+    <style>
+        body {
+            font-family: 'SF Mono', Monaco, monospace;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .container {
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #333;
+        }
+        h1 {
+            color: #9C27B0;
+            border-bottom: 2px solid #9C27B0;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #2196F3;
+            margin-top: 30px;
+        }
+        h3 {
+            color: #4CAF50;
+            margin-top: 20px;
+        }
+        .stage {
+            background: #252525;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #2196F3;
+        }
+        .synthesis-output {
+            background: #0d0d0d;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #9C27B0;
+            margin: 20px 0;
+            white-space: pre-wrap;
+            font-family: 'SF Mono', Monaco, monospace;
+            line-height: 1.6;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #1a1a1a;
+            border-radius: 5px;
+        }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .warning { color: #FF9800; }
+        .info { color: #2196F3; }
+        button {
+            background: #9C27B0;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #7B1FA2;
+        }
+        .loading {
+            color: #FFC107;
+            font-style: italic;
+        }
+        .metric {
+            display: inline-block;
+            background: #333;
+            padding: 5px 10px;
+            border-radius: 3px;
+            margin: 5px;
+        }
+        .input-data {
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .quality-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin: 5px;
+        }
+        .quality-good { background: #1b5e20; color: white; }
+        .quality-template { background: #b71c1c; color: white; }
+        .quality-mixed { background: #f57c00; color: white; }
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .timestamp {
+            color: #666;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧠 Executive Synthesis Output Test</h1>
+    
+    <div class="container">
+        <h2>Test Controls</h2>
+        <button onclick="runSynthesisTest()">🚀 Run Full Pipeline → Synthesis</button>
+        <button onclick="testSynthesisOnly()">⚡ Test Synthesis with Mock Data</button>
+        <button onclick="clearResults()">🗑️ Clear Results</button>
+        <div id="status" class="loading"></div>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTEyOTYzNywiZXhwIjoyMDcwNzA1NjM3fQ.WO35k7riuKT2QXj_YvbtRwzLwi3Pev30-X9Yziej2pM';
+        
+        function updateStatus(message, type = 'loading') {
+            const status = document.getElementById('status');
+            status.className = type;
+            status.textContent = message;
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            updateStatus('Ready to test synthesis', 'success');
+        }
+        
+        async function runSynthesisTest() {
+            updateStatus('Running full pipeline to synthesis...', 'loading');
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+            
+            try {
+                // Step 1: Get profile
+                updateStatus('Step 1/5: Getting organization profile...', 'loading');
+                const profileResponse = await fetch(`${SUPABASE_URL}/functions/v1/mcp-discovery`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        method: 'tools/call',
+                        params: {
+                            name: 'create_organization_profile',
+                            arguments: { organization_name: 'Tesla' }
+                        }
+                    })
+                });
+                
+                const profileData = await profileResponse.json();
+                const profile = JSON.parse(profileData.content[0].text);
+                
+                // Step 2: Get articles
+                updateStatus('Step 2/5: Gathering articles...', 'loading');
+                const stage1Response = await fetch(`${SUPABASE_URL}/functions/v1/monitor-stage-1`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        profile: profile,
+                        organization_name: 'Tesla'
+                    })
+                });
+                
+                const stage1Data = await stage1Response.json();
+                
+                // Step 3: Relevance scoring
+                updateStatus('Step 3/5: Scoring relevance...', 'loading');
+                const relevanceResponse = await fetch(`${SUPABASE_URL}/functions/v1/monitor-stage-2-relevance`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        articles: stage1Data.articles || [],
+                        profile: profile,
+                        organization_name: 'Tesla',
+                        top_k: 25
+                    })
+                });
+                
+                const relevanceData = await relevanceResponse.json();
+                
+                // Step 4: Enrichment
+                updateStatus('Step 4/5: Enriching with Firecrawl...', 'loading');
+                const enrichmentResponse = await fetch(`${SUPABASE_URL}/functions/v1/monitoring-stage-2-enrichment`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        articles: relevanceData.findings || [],
+                        profile: profile,
+                        organization_name: 'Tesla'
+                    })
+                });
+                
+                const enrichmentData = await enrichmentResponse.json();
+                
+                // Step 5: SYNTHESIS - The main event!
+                updateStatus('Step 5/5: Running Executive Synthesis...', 'loading');
+                const synthesisResponse = await fetch(`${SUPABASE_URL}/functions/v1/mcp-executive-synthesis`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        method: 'tools/call',
+                        params: {
+                            name: 'synthesize_executive_intelligence',
+                            arguments: {
+                                enriched_data: enrichmentData,
+                                organization: { name: 'Tesla' },
+                                analysis_depth: 'comprehensive',
+                                synthesis_focus: 'all_consolidated'
+                            }
+                        }
+                    })
+                });
+                
+                const synthesisData = await synthesisResponse.json();
+                
+                // Debug log the raw response
+                console.log('Raw synthesis response:', synthesisData);
+                
+                // Display results
+                displaySynthesisResults(enrichmentData, synthesisData, resultsDiv);
+                
+                updateStatus('Synthesis test complete!', 'success');
+                
+            } catch (error) {
+                updateStatus(`Error: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+        
+        async function testSynthesisOnly() {
+            updateStatus('Testing synthesis with mock enriched data...', 'loading');
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+            
+            try {
+                // Create mock enriched data with real intelligence
+                const mockEnrichedData = {
+                    extracted_data: {
+                        events: [
+                            {
+                                type: "product_launch",
+                                description: "Ford announces new electric F-150 Lightning with 500-mile range, directly competing with Tesla Cybertruck",
+                                validated: true,
+                                articles: [{ title: "Ford F-150 Lightning Extended Range" }]
+                            },
+                            {
+                                type: "regulatory",
+                                description: "NHTSA opens investigation into Tesla Autopilot after 12 crashes",
+                                validated: true,
+                                articles: [{ title: "NHTSA Tesla Investigation" }]
+                            },
+                            {
+                                type: "financial",
+                                description: "Tesla reports Q3 earnings beat with $25B revenue, up 8% YoY",
+                                validated: true,
+                                articles: [{ title: "Tesla Q3 Earnings" }]
+                            },
+                            {
+                                type: "competitive",
+                                description: "GM announces $35 billion investment in EV production through 2025",
+                                validated: true,
+                                articles: [{ title: "GM EV Investment" }]
+                            },
+                            {
+                                type: "technology",
+                                description: "Tesla FSD v12 demonstrates fully autonomous city driving in beta test",
+                                validated: true,
+                                articles: [{ title: "Tesla FSD Update" }]
+                            }
+                        ]
+                    }
+                };
+                
+                // Get a basic profile
+                const profile = {
+                    organization_name: "Tesla",
+                    industry: "automotive",
+                    competition: {
+                        direct_competitors: ["Ford", "GM", "Rivian"],
+                        indirect_competitors: ["Toyota", "Volkswagen"]
+                    },
+                    stakeholders: {
+                        regulators: ["NHTSA", "EPA", "SEC"]
+                    }
+                };
+                
+                // Run synthesis
+                const synthesisResponse = await fetch(`${SUPABASE_URL}/functions/v1/mcp-executive-synthesis`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        method: 'tools/call',
+                        params: {
+                            name: 'synthesize_executive_intelligence',
+                            arguments: {
+                                enriched_data: mockEnrichedData,
+                                organization: { name: 'Tesla' },
+                                analysis_depth: 'comprehensive',
+                                synthesis_focus: 'all_consolidated'
+                            }
+                        }
+                    })
+                });
+                
+                const synthesisData = await synthesisResponse.json();
+                
+                displaySynthesisResults(mockEnrichedData, synthesisData, resultsDiv);
+                updateStatus('Mock synthesis test complete!', 'success');
+                
+            } catch (error) {
+                updateStatus(`Error: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+        
+        function displaySynthesisResults(enrichedData, synthesisData, resultsDiv) {
+            let html = '<div class="container">';
+            
+            // Show input data summary
+            html += '<h2>📥 Input Data Summary</h2>';
+            html += '<div class="input-data">';
+            
+            const events = enrichedData.extracted_data?.events || [];
+            html += `<div class="metric">Events extracted: ${events.length}</div><br>`;
+            
+            const eventTypes = {};
+            events.forEach(e => {
+                eventTypes[e.type] = (eventTypes[e.type] || 0) + 1;
+            });
+            
+            html += '<strong>Event Types:</strong><br>';
+            Object.entries(eventTypes).forEach(([type, count]) => {
+                html += `<div class="metric">${type}: ${count}</div>`;
+            });
+            
+            html += '<br><strong>Sample Events:</strong><br>';
+            events.slice(0, 3).forEach((event, idx) => {
+                html += `<div style="margin: 10px 0; padding: 10px; background: #2a2a2a; border-radius: 5px;">`;
+                html += `${idx + 1}. <span class="info">${event.type}</span>: ${event.description?.substring(0, 150)}...`;
+                html += '</div>';
+            });
+            
+            html += '</div>';
+            
+            // Show synthesis output
+            html += '<h2>🧠 Synthesis Output</h2>';
+            
+            // Check synthesis quality
+            let synthesisText = '';
+            let qualityClass = 'quality-template';
+            let qualityLabel = 'TEMPLATE RESPONSE';
+            
+            if (synthesisData.content && synthesisData.content[0]) {
+                synthesisText = synthesisData.content[0].text;
+                console.log('Synthesis text received:', synthesisText);
+                
+                // Parse the synthesis if it's JSON
+                try {
+                    const synthesis = typeof synthesisText === 'string' ? JSON.parse(synthesisText) : synthesisText;
+                    
+                    // Check if it's using real data
+                    const hasRealData = synthesis.synthesis && 
+                        !synthesis.synthesis.includes('[No specific') &&
+                        !synthesis.synthesis.includes('No significant');
+                    
+                    if (hasRealData) {
+                        qualityClass = 'quality-good';
+                        qualityLabel = 'REAL INTELLIGENCE';
+                    } else if (synthesis.synthesis && synthesis.synthesis.length > 100) {
+                        qualityClass = 'quality-mixed';
+                        qualityLabel = 'PARTIAL DATA';
+                    }
+                    
+                    // Format the synthesis nicely
+                    html += `<div class="quality-badge ${qualityClass}">${qualityLabel}</div>`;
+                    html += '<div class="synthesis-output">';
+                    
+                    if (synthesis.synthesis) {
+                        html += '<h3>Executive Summary:</h3>';
+                        html += `<pre>${synthesis.synthesis}</pre>`;
+                    }
+                    
+                    if (synthesis.key_findings && synthesis.key_findings.length > 0) {
+                        html += '<h3>Key Findings:</h3>';
+                        synthesis.key_findings.forEach((finding, idx) => {
+                            html += `<div style="margin: 10px 0;">`;
+                            html += `${idx + 1}. ${finding}`;
+                            html += '</div>';
+                        });
+                    }
+                    
+                    if (synthesis.competitive_dynamics) {
+                        html += '<h3>Competitive Dynamics:</h3>';
+                        html += `<pre>${JSON.stringify(synthesis.competitive_dynamics, null, 2)}</pre>`;
+                    }
+                    
+                    if (synthesis.recommended_actions && synthesis.recommended_actions.length > 0) {
+                        html += '<h3>Recommended Actions:</h3>';
+                        synthesis.recommended_actions.forEach((action, idx) => {
+                            html += `<div style="margin: 10px 0;">`;
+                            html += `${idx + 1}. ${action}`;
+                            html += '</div>';
+                        });
+                    }
+                    
+                    html += '</div>';
+                    
+                } catch (e) {
+                    // If not JSON, display as text
+                    html += `<div class="quality-badge ${qualityClass}">${qualityLabel}</div>`;
+                    html += '<div class="synthesis-output">';
+                    html += `<pre>${synthesisText}</pre>`;
+                    html += '</div>';
+                }
+            } else if (synthesisData.error) {
+                html += '<div class="quality-badge quality-template">ERROR</div>';
+                html += '<div class="synthesis-output error">';
+                html += `Error: ${synthesisData.error}`;
+                html += '</div>';
+            } else {
+                html += '<div class="quality-badge quality-template">NO OUTPUT</div>';
+                html += '<div class="synthesis-output">';
+                html += 'No synthesis output received';
+                html += '</div>';
+            }
+            
+            // Add timestamp
+            html += `<div class="timestamp">Generated: ${new Date().toLocaleString()}</div>`;
+            
+            // Analysis section
+            html += '<h2>📊 Quality Analysis</h2>';
+            html += '<div class="section">';
+            
+            // Check for template patterns
+            const templatePatterns = [
+                '[No specific',
+                'No significant',
+                'continue to monitor',
+                'standard market conditions',
+                'typical industry'
+            ];
+            
+            const foundPatterns = templatePatterns.filter(pattern => 
+                synthesisText.includes(pattern)
+            );
+            
+            if (foundPatterns.length > 0) {
+                html += '<div class="metric error">Template patterns found:</div><br>';
+                foundPatterns.forEach(pattern => {
+                    html += `<div class="metric warning">"${pattern}"</div>`;
+                });
+            } else {
+                html += '<div class="metric success">✅ No template patterns detected</div>';
+            }
+            
+            // Check if synthesis references actual events
+            const referencesEvents = events.some(event => {
+                const keywords = event.description?.split(' ').filter(w => w.length > 4) || [];
+                return keywords.some(keyword => 
+                    synthesisText.toLowerCase().includes(keyword.toLowerCase())
+                );
+            });
+            
+            if (referencesEvents) {
+                html += '<div class="metric success">✅ References actual events from input</div>';
+            } else {
+                html += '<div class="metric error">❌ Does not reference input events</div>';
+            }
+            
+            html += '</div>';
+            html += '</div>';
+            
+            resultsDiv.innerHTML = html;
+        }
+    </script>
+</body>
+</html>

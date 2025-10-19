@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stage 1-3: Full Pipeline Through Enrichment Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #0a0a0a;
+            color: #00ff00;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #00ffff;
+            border-bottom: 2px solid #00ff00;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #ffff00;
+            margin-top: 30px;
+        }
+        h3 {
+            color: #00ffff;
+        }
+        .article, .event-card, .entity-card {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .field-label {
+            color: #ff00ff;
+            font-weight: bold;
+        }
+        .field-value {
+            color: #ffffff;
+            margin-left: 20px;
+            word-wrap: break-word;
+        }
+        .error {
+            color: #ff0000;
+            background: #330000;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success {
+            color: #00ff00;
+            background: #003300;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .warning {
+            color: #ffff00;
+            background: #333300;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .critical {
+            color: #ffffff;
+            background: #660000;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border: 2px solid #ff0000;
+        }
+        .stats {
+            background: #002244;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .stage-divider {
+            border-top: 3px solid #00ffff;
+            margin: 40px 0;
+            padding-top: 20px;
+        }
+        button {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #00cc00;
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        #loading {
+            color: #ffff00;
+            font-size: 20px;
+            display: none;
+        }
+        pre {
+            background: #0d0d0d;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .quote-box {
+            background: #1a1a33;
+            padding: 10px;
+            margin: 5px 0;
+            border-left: 3px solid #00ffff;
+            font-style: italic;
+        }
+        .metric-box {
+            background: #331a1a;
+            padding: 10px;
+            margin: 5px 0;
+            border-left: 3px solid #ff00ff;
+        }
+        .event-box {
+            background: #1a331a;
+            padding: 10px;
+            margin: 5px 0;
+            border-left: 3px solid #00ff00;
+        }
+        .entity-badge {
+            display: inline-block;
+            background: #333;
+            padding: 2px 8px;
+            margin: 2px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 STAGE 1-3: Complete Pipeline Through Enrichment</h1>
+        
+        <div class="stats">
+            <h2>Test Configuration</h2>
+            <p><span class="field-label">Organization:</span> <span id="org-name">Tesla</span></p>
+            <p><span class="field-label">Industry:</span> <span id="industry">automotive</span></p>
+            <p><span class="field-label">Top K Articles:</span> <span id="top-k">50</span></p>
+            <p><span class="field-label">Service Key:</span> <span id="has-key">Checking...</span></p>
+        </div>
+
+        <button onclick="runFullPipeline()">🚀 RUN FULL PIPELINE TEST</button>
+        <button onclick="clearResults()">🗑️ CLEAR RESULTS</button>
+        
+        <div id="loading">⏳ Processing pipeline...</div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTEyOTYzNywiZXhwIjoyMDcwNzA1NjM3fQ.WO35k7riuKT2QXj_YvbtRwzLwi3Pev30-X9Yziej2pM';
+        
+        document.getElementById('has-key').textContent = SUPABASE_KEY ? '✅ Configured' : '❌ Missing';
+
+        function detectHTML(text) {
+            if (!text) return false;
+            const htmlPattern = /<[^>]*>/g;
+            return htmlPattern.test(text);
+        }
+
+        function isValidContent(text) {
+            if (!text || text.length < 20) return false;
+            
+            // Check for garbage patterns
+            const garbagePatterns = [
+                /^\[.*\]$/,  // Just brackets
+                /^undefined$/i,
+                /^null$/i,
+                /^{.*}$/  // Just JSON-like
+            ];
+            
+            return !garbagePatterns.some(pattern => pattern.test(text));
+        }
+
+        async function runFullPipeline() {
+            const resultsDiv = document.getElementById('results');
+            const loadingDiv = document.getElementById('loading');
+            
+            resultsDiv.innerHTML = '';
+            loadingDiv.style.display = 'block';
+
+            try {
+                const orgName = document.getElementById('org-name').textContent;
+                const industry = document.getElementById('industry').textContent;
+                const topK = parseInt(document.getElementById('top-k').textContent);
+
+                // ============ STEP 1: DISCOVERY ============
+                console.log('📋 Step 1: Creating organization profile...');
+                loadingDiv.textContent = '⏳ Step 1/4: Creating organization profile...';
+                
+                const profileResponse = await fetch(`${SUPABASE_URL}/functions/v1/mcp-discovery`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        tool: 'create_organization_profile',
+                        arguments: {
+                            organization_name: orgName,
+                            industry_hint: industry,
+                            save_to_persistence: false
+                        }
+                    })
+                });
+                
+                const profileData = await profileResponse.json();
+                const profile = profileData.profile || {};
+                console.log('✅ Profile created');
+
+                // ============ STEP 2: MONITOR STAGE 1 ============
+                console.log('📰 Step 2: Collecting articles...');
+                loadingDiv.textContent = '⏳ Step 2/4: Collecting articles from RSS feeds...';
+                
+                const stage1Response = await fetch(`${SUPABASE_URL}/functions/v1/monitor-stage-1`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        organization_name: orgName,
+                        profile: profile
+                    })
+                });
+
+                const stage1Data = await stage1Response.json();
+                console.log('✅ Stage 1 complete:', stage1Data.total_articles, 'articles');
+
+                // ============ STEP 3: MONITOR STAGE 2 RELEVANCE ============
+                console.log('🎯 Step 3: Scoring relevance...');
+                loadingDiv.textContent = '⏳ Step 3/4: Scoring relevance and scraping with Firecrawl...';
+                
+                const stage2Response = await fetch(`${SUPABASE_URL}/functions/v1/monitor-stage-2-relevance`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        articles: stage1Data.articles,
+                        profile: profile,
+                        organization_name: orgName,
+                        top_k: topK
+                    })
+                });
+
+                const stage2Data = await stage2Response.json();
+                console.log('✅ Stage 2 complete:', stage2Data.findings?.length, 'relevant articles');
+
+                // ============ STEP 4: ENRICHMENT ============
+                console.log('💎 Step 4: Extracting intelligence...');
+                loadingDiv.textContent = '⏳ Step 4/4: Extracting events, entities, quotes, and metrics...';
+                
+                const enrichmentResponse = await fetch(`${SUPABASE_URL}/functions/v1/monitoring-stage-2-enrichment`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        articles: stage2Data.findings || [],  // Enrichment expects 'articles', not 'monitoring_data'
+                        profile: profile,
+                        organization_name: orgName  // Expects organization_name, not organization object
+                    })
+                });
+
+                const enrichmentData = await enrichmentResponse.json();
+                console.log('✅ Enrichment complete:', enrichmentData);
+
+                loadingDiv.style.display = 'none';
+
+                // ============ DISPLAY RESULTS ============
+                
+                // Stage 1 Summary
+                const sources = stage1Data.metadata?.sources_used || {};
+                resultsDiv.innerHTML += `
+                    <div class="stats">
+                        <h2>📰 STAGE 1: COLLECTION</h2>
+                        <p>Total: ${stage1Data.total_articles || 0} | RSS: ${sources.rss || 0} | API: ${sources.api || 0}</p>
+                    </div>
+                `;
+
+                // Stage 2 Summary
+                const articlesWithContent = (stage2Data.findings || []).filter(a => a.has_full_content);
+                resultsDiv.innerHTML += `
+                    <div class="stats">
+                        <h2>🎯 STAGE 2: RELEVANCE</h2>
+                        <p>Relevant: ${stage2Data.findings?.length || 0} | With Full Content: ${articlesWithContent.length}</p>
+                    </div>
+                `;
+
+                // CRITICAL: Enrichment Results
+                resultsDiv.innerHTML += '<div class="stage-divider"><h1>💎 ENRICHMENT RESULTS</h1></div>';
+
+                // Check if enrichment actually worked
+                const hasExtractedData = enrichmentData.extracted_data;
+                const hasOrganizedIntel = enrichmentData.organized_intelligence;
+                const hasEvents = enrichmentData.extracted_data?.events?.length > 0;
+                const hasEntities = enrichmentData.extracted_data?.entities?.length > 0;
+                const hasQuotes = enrichmentData.extracted_data?.quotes?.length > 0;
+                const hasMetrics = enrichmentData.extracted_data?.metrics?.length > 0;
+
+                // Overall Status
+                const enrichmentStatus = hasEvents || hasEntities || hasQuotes || hasMetrics;
+                resultsDiv.innerHTML += `
+                    <div class="${enrichmentStatus ? 'success' : 'critical'}">
+                        <h2>⚡ ENRICHMENT STATUS</h2>
+                        <p style="font-size: 20px; font-weight: bold;">
+                            ${enrichmentStatus ? 
+                                '✅ SUCCESS - Extracted real intelligence data' : 
+                                '❌ FAILURE - No intelligence extracted!'}
+                        </p>
+                    </div>
+                `;
+
+                // Statistics
+                resultsDiv.innerHTML += `
+                    <div class="stats">
+                        <h2>📊 EXTRACTION STATISTICS</h2>
+                        <p><span class="field-label">Articles Processed:</span> <span class="field-value">${enrichmentData.statistics?.articles_processed || 0}</span></p>
+                        <p><span class="field-label">Articles with Content:</span> <span class="field-value">${enrichmentData.statistics?.articles_with_content || 0}</span></p>
+                        <p><span class="field-label">Total Events:</span> <span class="field-value" style="color: ${hasEvents ? '#00ff00' : '#ff0000'}">${enrichmentData.extracted_data?.events?.length || 0}</span></p>
+                        <p><span class="field-label">Total Entities:</span> <span class="field-value" style="color: ${hasEntities ? '#00ff00' : '#ff0000'}">${enrichmentData.extracted_data?.entities?.length || 0}</span></p>
+                        <p><span class="field-label">Total Quotes:</span> <span class="field-value" style="color: ${hasQuotes ? '#00ff00' : '#ff0000'}">${enrichmentData.extracted_data?.quotes?.length || 0}</span></p>
+                        <p><span class="field-label">Total Metrics:</span> <span class="field-value" style="color: ${hasMetrics ? '#00ff00' : '#ff0000'}">${enrichmentData.extracted_data?.metrics?.length || 0}</span></p>
+                    </div>
+                `;
+
+                // Display Events
+                if (hasEvents) {
+                    resultsDiv.innerHTML += '<h2>🎯 EXTRACTED EVENTS</h2>';
+                    resultsDiv.innerHTML += '<div class="grid">';
+                    
+                    (enrichmentData.extracted_data.events || []).slice(0, 10).forEach((event, i) => {
+                        const isValid = isValidContent(event.title || event.description);
+                        const hasHTML = detectHTML(event.title || '') || detectHTML(event.description || '');
+                        
+                        resultsDiv.innerHTML += `
+                            <div class="event-box">
+                                <h3>Event ${i + 1}</h3>
+                                <p><span class="field-label">Type:</span> ${event.type || 'unknown'}</p>
+                                <p><span class="field-label">Title:</span></p>
+                                <div class="field-value">${event.title || 'N/A'}</div>
+                                ${hasHTML ? '<div class="error">⚠️ HTML DETECTED IN EVENT!</div>' : ''}
+                                ${!isValid ? '<div class="warning">⚠️ Suspicious content pattern</div>' : ''}
+                                <p><span class="field-label">Description:</span></p>
+                                <div class="field-value" style="font-size: 12px;">${(event.description || 'N/A').substring(0, 200)}</div>
+                                <p><span class="field-label">Source Article:</span> ${event.article_id || 'unknown'}</p>
+                            </div>
+                        `;
+                    });
+                    resultsDiv.innerHTML += '</div>';
+                } else {
+                    resultsDiv.innerHTML += '<div class="error">❌ NO EVENTS EXTRACTED</div>';
+                }
+
+                // Display Entities
+                if (hasEntities) {
+                    resultsDiv.innerHTML += '<h2>👥 EXTRACTED ENTITIES</h2>';
+                    const topEntities = (enrichmentData.extracted_data.entities || []).slice(0, 20);
+                    resultsDiv.innerHTML += '<div style="padding: 15px; background: #1a1a1a; border-radius: 5px;">';
+                    topEntities.forEach(entity => {
+                        resultsDiv.innerHTML += `<span class="entity-badge">${entity.name || entity} (${entity.mentions || 1})</span>`;
+                    });
+                    resultsDiv.innerHTML += '</div>';
+                } else {
+                    resultsDiv.innerHTML += '<div class="error">❌ NO ENTITIES EXTRACTED</div>';
+                }
+
+                // Display Quotes
+                if (hasQuotes) {
+                    resultsDiv.innerHTML += '<h2>💬 EXTRACTED QUOTES</h2>';
+                    (enrichmentData.extracted_data.quotes || []).slice(0, 5).forEach((quote, i) => {
+                        const isValid = isValidContent(quote.text || quote);
+                        const hasHTML = detectHTML(quote.text || quote);
+                        
+                        resultsDiv.innerHTML += `
+                            <div class="quote-box">
+                                <p>"${(quote.text || quote || '').substring(0, 300)}..."</p>
+                                ${hasHTML ? '<div class="error">⚠️ HTML in quote!</div>' : ''}
+                                ${!isValid ? '<div class="warning">⚠️ Suspicious quote</div>' : ''}
+                                <p style="font-size: 12px; color: #999;">Source: Article ${quote.article_id || 'unknown'}</p>
+                            </div>
+                        `;
+                    });
+                } else {
+                    resultsDiv.innerHTML += '<div class="error">❌ NO QUOTES EXTRACTED</div>';
+                }
+
+                // Display Metrics
+                if (hasMetrics) {
+                    resultsDiv.innerHTML += '<h2>📊 EXTRACTED METRICS</h2>';
+                    resultsDiv.innerHTML += '<div class="grid">';
+                    (enrichmentData.extracted_data.metrics || []).slice(0, 10).forEach((metric, i) => {
+                        resultsDiv.innerHTML += `
+                            <div class="metric-box">
+                                <p><span class="field-label">Type:</span> ${metric.type || 'unknown'}</p>
+                                <p><span class="field-label">Value:</span> ${metric.value || 'N/A'}</p>
+                                <p><span class="field-label">Context:</span> ${(metric.context || '').substring(0, 100)}</p>
+                            </div>
+                        `;
+                    });
+                    resultsDiv.innerHTML += '</div>';
+                } else {
+                    resultsDiv.innerHTML += '<div class="error">❌ NO METRICS EXTRACTED</div>';
+                }
+
+                // CRITICAL CHECK: What will synthesis receive?
+                resultsDiv.innerHTML += `
+                    <div class="stage-divider">
+                        <div class="${enrichmentStatus ? 'stats' : 'critical'}" style="background: #330033;">
+                            <h2>⚡ CRITICAL: DATA GOING TO SYNTHESIS</h2>
+                            <p><span class="field-label">Has Extracted Data:</span> <span class="field-value">${hasExtractedData ? '✅ YES' : '❌ NO'}</span></p>
+                            <p><span class="field-label">Has Organized Intelligence:</span> <span class="field-value">${hasOrganizedIntel ? '✅ YES' : '❌ NO'}</span></p>
+                            <p><span class="field-label">Events for Synthesis:</span> <span class="field-value" style="color: ${hasEvents ? '#00ff00' : '#ff0000'}">${enrichmentData.organized_intelligence?.events?.length || 0}</span></p>
+                            <p><span class="field-label">Entities for Synthesis:</span> <span class="field-value" style="color: ${hasEntities ? '#00ff00' : '#ff0000'}">${enrichmentData.organized_intelligence?.entities?.length || 0}</span></p>
+                            
+                            <p style="margin-top: 15px; padding: 10px; background: ${enrichmentStatus ? '#003300' : '#660000'}; border-radius: 5px; font-size: 18px;">
+                                ${enrichmentStatus ? 
+                                    '✅ READY FOR SYNTHESIS - Real intelligence extracted' : 
+                                    '❌ SYNTHESIS WILL FAIL - No real data extracted, only garbage!'}
+                            </p>
+                        </div>
+                    </div>
+                `;
+
+                // Show sample of organized intelligence
+                if (enrichmentData.organized_intelligence) {
+                    resultsDiv.innerHTML += `
+                        <details style="margin-top: 20px;">
+                            <summary style="cursor: pointer; color: #00ffff; font-size: 18px;">🔍 View Organized Intelligence Structure</summary>
+                            <pre style="margin-top: 10px;">${JSON.stringify(enrichmentData.organized_intelligence, null, 2).substring(0, 5000)}...</pre>
+                        </details>
+                    `;
+                }
+
+                // Show raw response
+                resultsDiv.innerHTML += `
+                    <details style="margin-top: 20px;">
+                        <summary style="cursor: pointer; color: #00ffff; font-size: 18px;">🔧 View Full Raw Enrichment Response</summary>
+                        <pre style="margin-top: 10px;">${JSON.stringify(enrichmentData, null, 2).substring(0, 10000)}...</pre>
+                    </details>
+                `;
+
+            } catch (error) {
+                loadingDiv.style.display = 'none';
+                resultsDiv.innerHTML = `<div class="error">❌ Pipeline test failed: ${error.message}</div>`;
+                console.error('Pipeline error:', error);
+            }
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+    </script>
+</body>
+</html>

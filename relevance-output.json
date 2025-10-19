@@ -1,0 +1,613 @@
+{
+  "findings": [
+    {
+      "title": "BYD Overtakes Tesla in Global EV Sales",
+      "url": "https://www.reuters.com/business/autos-transportation/byd-tesla-ev-sales-2025/",
+      "published_at": "2025-09-11T21:59:53.055Z",
+      "source": "Reuters",
+      "description": "BYD surpasses Tesla in quarterly EV deliveries for the first time",
+      "pr_relevance_score": 225,
+      "pr_factors": [
+        "ORG_IN_TITLE: Tesla",
+        "ORG_OPPORTUNITY",
+        "MARKET_SIGNAL",
+        "TIME_SENSITIVE"
+      ],
+      "pr_extraction": {
+        "mentioned_entities": [
+          "Tesla"
+        ],
+        "has_crisis_signal": false,
+        "has_opportunity_signal": true,
+        "has_market_signal": true,
+        "primary_category": "opportunity",
+        "coverage_gaps": [],
+        "key_phrases": [],
+        "event_type": "financial",
+        "sentiment_indicators": {
+          "positive": [],
+          "negative": [],
+          "neutral": []
+        },
+        "strategic_relevance": 0,
+        "potential_events": [],
+        "mentioned_products": [],
+        "financial_signals": {
+          "amounts": [],
+          "percentages": [],
+          "metrics": []
+        },
+        "temporal_markers": [],
+        "extracted_quotes": [],
+        "extracted_metrics": [],
+        "extracted_entities": [],
+        "key_points": [],
+        "has_actionable_data": true
+      },
+      "pr_category": "opportunity",
+      "full_content": "# We can't find that page\n\nThe page may have moved, or the address may have been entered incorrectly.\n\nTry using the navigation to find stories of interest, or browse our latest stories.\n\nGo to the Reuters.com Homepage",
+      "content_length": 218,
+      "has_full_content": true,
+      "firecrawl_extracted": {
+        "quotes": [],
+        "metrics": [],
+        "entities": [],
+        "keyPoints": [
+          "The page may have moved.",
+          "The address may have been entered incorrectly.",
+          "Try using the navigation to find stories of interest.",
+          "Browse our latest stories.",
+          "Go to the Reuters.com Homepage"
+        ]
+      }
+    },
+    {
+      "title": "Tesla Robotaxi Launch and FSD Advancements",
+      "url": "https://electrek.co/2025/01/11/tesla-robotaxi-fsd/",
+      "published_at": "2025-09-11T21:59:53.055Z",
+      "source": "Electrek",
+      "description": "Tesla prepares for robotaxi deployment with latest FSD improvements",
+      "pr_relevance_score": 195,
+      "pr_factors": [
+        "ORG_IN_TITLE: Tesla",
+        "ORG_OPPORTUNITY",
+        "ACTIONABLE_PATTERN"
+      ],
+      "pr_extraction": {
+        "mentioned_entities": [
+          "Tesla"
+        ],
+        "has_crisis_signal": false,
+        "has_opportunity_signal": true,
+        "has_market_signal": false,
+        "primary_category": "opportunity",
+        "coverage_gaps": [],
+        "key_phrases": [],
+        "event_type": "product_launch",
+        "sentiment_indicators": {
+          "positive": [
+            "improve"
+          ],
+          "negative": [],
+          "neutral": []
+        },
+        "strategic_relevance": 0,
+        "potential_events": [
+          "launch and fsd advancements tesla pre"
+        ],
+        "mentioned_products": [],
+        "financial_signals": {
+          "amounts": [],
+          "percentages": [],
+          "metrics": []
+        },
+        "temporal_markers": [],
+        "extracted_quotes": [],
+        "extracted_metrics": [],
+        "extracted_entities": [],
+        "key_points": [],
+        "has_actionable_data": true
+      },
+      "pr_category": "opportunity",
+      "full_content": "[Skip to main content](https://electrek.co/2025/01/11/tesla-robotaxi-fsd/#main)\n\n* * *\n\n# 404\n\n* * *\n\nOops, look like the page that you are looking for doesn't exist.\n\n[Go to the front page](https://electrek.co/)\n\nSearch for: Submit",
+      "content_length": 232,
+      "has_full_content": true,
+      "firecrawl_extracted": {
+        "quotes": [],
+        "metrics": [],
+        "entities": [],
+        "keyPoints": []
+      }
+    },
+    {
+      "title": "Tesla Megapack Production Expansion",
+      "url": "https://www.teslarati.com/tesla-megapack-production-expansion/",
+      "published_at": "2025-09-11T21:59:53.055Z",
+      "source": "Teslarati",
+      "description": "Tesla expands Megapack production capacity to meet growing demand",
+      "pr_relevance_score": 195,
+      "pr_factors": [
+        "ORG_IN_TITLE: Tesla",
+        "ORG_OPPORTUNITY",
+        "ACTIONABLE_PATTERN"
+      ],
+      "pr_extraction": {
+        "mentioned_entities": [
+          "Tesla"
+        ],
+        "has_crisis_signal": false,
+        "has_opportunity_signal": true,
+        "has_market_signal": false,
+        "primary_category": "opportunity",
+        "coverage_gaps": [],
+        "key_phrases": [],
+        "event_type": "expansion",
+        "sentiment_indicators": {
+          "positive": [],
+          "negative": [],
+          "neutral": []
+        },
+        "strategic_relevance": 0,
+        "potential_events": [],
+        "mentioned_products": [],
+        "financial_signals": {
+          "amounts": [],
+          "percentages": [],
+          "metrics": []
+        },
+        "temporal_markers": [],
+        "extracted_quotes": [],
+        "extracted_metrics": [],
+        "extracted_entities": [],
+        "key_points": [],
+        "has_actionable_data": true
+      },
+      "pr_category": "opportunity",
+      "full_content": "[![TESLARATI](https://www.teslarati.com/wp-content/uploads/2025/03/Teslarati-Logo-white-transparent-170.png)](https://www.teslarati.com/)\n\nConnect with us\n\n# Error 404!\n\nThe page you requested does not exist or has moved.",
+      "content_length": 221,
+      "has_full_content": true,
+      "firecrawl_extracted": {
+        "quotes": [],
+        "metrics": [],
+        "entities": [],
+        "keyPoints": []
+      }
+    },
+    {
+      "title": "Tesla Energy Storage Business Accelerates",
+      "url": "https://www.bloomberg.com/news/articles/tesla-energy-storage-growth",
+      "published_at": "2025-09-11T21:59:53.055Z",
+      "source": "Bloomberg",
+      "description": "Tesla's energy storage deployments reach record levels in Q4",
+      "pr_relevance_score": 185,
+      "pr_factors": [
+        "ORG_IN_TITLE: Tesla",
+        "ORG_OPPORTUNITY",
+        "TIME_SENSITIVE"
+      ],
+      "pr_extraction": {
+        "mentioned_entities": [
+          "Tesla"
+        ],
+        "has_crisis_signal": false,
+        "has_opportunity_signal": true,
+        "has_market_signal": false,
+        "primary_category": "opportunity",
+        "coverage_gaps": [],
+        "key_phrases": [],
+        "event_type": "general_update",
+        "sentiment_indicators": {
+          "positive": [
+            "record"
+          ],
+          "negative": [],
+          "neutral": []
+        },
+        "strategic_relevance": 0,
+        "potential_events": [],
+        "mentioned_products": [],
+        "financial_signals": {
+          "amounts": [],
+          "percentages": [],
+          "metrics": []
+        },
+        "temporal_markers": [],
+        "extracted_quotes": [],
+        "extracted_metrics": [],
+        "extracted_entities": [],
+        "key_points": [],
+        "has_actionable_data": true
+      },
+      "pr_category": "opportunity",
+      "full_content": "# Our apologies   We’re unable to find the   page you’re looking for.\n\n404\\. Page Not Found\n\n[Go To Our Home Page](https://www.bloomberg.com/)",
+      "content_length": 142,
+      "has_full_content": true,
+      "firecrawl_extracted": {
+        "quotes": [],
+        "metrics": [],
+        "entities": [],
+        "keyPoints": [
+          "The user is looking for a page that cannot be found.",
+          "The error message indicates a 404 Page Not Found."
+        ]
+      }
+    },
+    {
+      "title": "Tesla Stock Breaks Out Past Buy Point",
+      "url": "https://www.investors.com/news/tesla-stock-buy-point-2025/",
+      "published_at": "2025-09-11T21:59:53.054Z",
+      "source": "Investor's Business Daily",
+      "description": "Tesla stock rises on FSD progress and energy storage momentum",
+      "pr_relevance_score": 140,
+      "pr_factors": [
+        "ORG_IN_TITLE: Tesla",
+        "MARKET_SIGNAL"
+      ],
+      "pr_extraction": {
+        "mentioned_entities": [
+          "Tesla"
+        ],
+        "has_crisis_signal": false,
+        "has_opportunity_signal": false,
+        "has_market_signal": true,
+        "primary_category": "organization",
+        "coverage_gaps": [],
+        "key_phrases": [],
+        "event_type": "general_update",
+        "sentiment_indicators": {
+          "positive": [],
+          "negative": [],
+          "neutral": []
+        },
+        "strategic_relevance": 0,
+        "potential_events": [
+          "buy point tesla stock rises on fsd"
+        ],
+        "mentioned_products": [],
+        "financial_signals": {
+          "amounts": [],
+          "percentages": [],
+          "metrics": []
+        },
+        "temporal_markers": [],
+        "extracted_quotes": [],
+        "extracted_metrics": [],
+        "extracted_entities": [],
+        "key_points": [],
+        "has_actionable_data": true
+      },
+      "pr_category": "organization",
+      "full_content": "**BREAKING: [Stock Market Hits Record High With Fed Rate Cut Locked In](https://www.investors.com/market-trend/stock-market-today/dow-jones-futures-market-rally-tesla-stocks-flashing-buy-signals/)**\n\n- [![ibddigital](https://www.investors.com/static/images/logo/ibddigital_logo.png)](https://get.investors.com/ibd/)\n- [![marketsurge](https://www.investors.com/static/images/logo/marketsurge_logo.png)](https://get.investors.com/marketsurge/?intcode=gnvb%7Cgnvb%7CMarketSurge%7C2023%7C06%7Cmsp%7Cna%7C%7C198859&src=AKCAGE)\n- [![ibdlive](https://www.investors.com/static/images/logo/ibdlive_logo.png)](https://get.investors.com/ibd-live/?intcode=gnvb%7Cgnvb%7Cprdmcst%7C2023%7Cna%7Cibdlive%7Cna%7C%7C134769&src=AKCAGE)\n- [![leaderboard](https://www.investors.com/static/images/logo/leaderboard_logo.png)](https://get.investors.com/leaderboard/?intcode=gnvb%7Cgnvb%7Cprdmcst%7C2023%7Cna%7Clb%7Cna%7C%7C780420&src=AKCAGE)\n- [![swingtrader](https://www.investors.com/static/images/logo/swingtrader_logo.png)](https://get.investors.com/swingtrader/?intcode=gnvb%7Cgnvb%7Cprdmcst%7C2023%7Cna%7Cst%7Cna%7C%7C345983&src=AKCAGE)\n- [![marketdiem](https://www.investors.com/static/images/logo/marketdiem.png)](https://get.investors.com/marketdiem/?intcode=gnvb%7Cgnvb%7Cprdmcst%7C2022%7C10%7Cmkdm%7Cna%7C%7C640213&src=AKCAGE)\n\nStore\n\n[Subscribe](https://get.investors.com/ibd/?intcode=hpsubbutton|hpsubbutton|na|na|na|na|na||144112&src=A00544)Sign In\n\nMy Subscriptions\n\n[Profile Settings](https://myibd.investors.com/)\n\n[Customer Center](https://customercenter.investors.com/) [My Stock Lists](https://myibd.investors.com/my-ibd/portfolio.aspx) [Email Preferences](https://myibd.investors.com/my-ibd/update-email-preferences) [Help & Support](https://ibd.my.site.com/s/) Sign Out\n\n[Subscribe](https://get.investors.com/ibd/?intcode=hpsubbutton|hpsubbutton|na|na|na|na|na||144112&src=A00544)Sign In\n\n[![ibd logo](https://www.investors.com/static/images/ibd-logo.png)](https://www.investors.com/)\n\n- [Market Trend](https://research.investors.com/markettrend.aspx)\n- [Stock Lists](https://www.investors.com/stock-lists/stocks-to-watch-top-rated-ipos-big-caps-and-growth-stocks/)\n- [Research](https://research.investors.com/)\n- [News](https://www.investors.com/tag/all-news-and-stock-ideas/)\n- [Videos](https://www.investors.com/ibd-videos/)\n- [Learn](https://www.investors.com/how-to-invest/how-to-invest-rules-for-when-buy-and-sell-stocks-in-bull-and-bear-markets/)\n- [Store](https://get.investors.com/?src=APA1BQ)\n\nSearch stocks or keywords\n\nSections\n\nMy IBD\n\nMarket Trend\n\n[MARKET TREND](https://research.investors.com/markettrend.aspx)\n\n[The Big Picture](https://www.investors.com/category/market-trend/the-big-picture/) [Stock Market Today](https://www.investors.com/news/stock-market-today-stock-market-news/) [ETF Market Strategy](https://www.investors.com/market-trend/ibds-etf-market-strategy/ibds-etf-market-strategy/) [Stock Market Data](https://www.investors.com/research/stock-market-data-dow-jones-sp-500-nasdaq-spdr-etfs/) [Psychological Indicators](https://research.investors.com/psychological-market-indicators/) [New? Start Here](https://get.investors.com/getting-started/?src=A00332A&intcode=EditorialTests_GettingStarted_MarketTrend) [IBD Digital: 2 Months for $20](https://get.investors.com/ibd/?intcode=gnvb%7Cgnvb%7Cevgr%7C2021%7C08%7Cibdd%7Cna%7C%7C115458&src=AKCAGE)\n\nStock Lists\n\n[STOCK LISTS](https://www.investors.com/stock-lists/stocks-to-watch-top-rated-ipos-big-caps-and-growth-stocks/)\n\n[IBD 50](https://research.investors.com/stock-lists/ibd-50/) [IBD Sector Leaders](https://research.investors.com/stock-lists/sector-leaders) [IBD Big Cap 20](https://research.investors.com/stock-lists/big-cap-20/) [IBD Long-Term Leaders](https://www.investors.com/research/best-stocks-to-buy-now-long-term-stocks-ibd-long-term-leaders-list/) [IPO Leaders](https://research.investors.com/stock-lists/ipo-leaders/) [My Stock Lists](https://myibd.investors.com/my-ibd/portfolio.aspx) [Stock Lists Update](https://www.investors.com/stock-lists/best-growth-stocks-buy-watch-ibd-stock-lists/) [Stocks On The Move](https://research.investors.com/stocksonthemove.aspx) [New Highs](https://research.investors.com/stock-lists/new-highs/) [Stock Spotlight](https://research.investors.com/stock-lists/stock-spotlight/) [Stocks Near Buy Zone](https://www.investors.com/category/stock-lists/stocks-near-a-buy-zone/) [RS Line At New High](https://research.investors.com/stock-lists/relative-strength-at-new-high/) [Rising Profit Estimates](https://research.investors.com/stock-lists/rising-profit-estimates/) [Stocks Funds Are Buying](https://research.investors.com/stock-lists/stocks-that-funds-are-buying/) [Your Weekly Review](https://research.investors.com/stock-lists/your-weekly-review/) [IBD ETF Indexes](https://www.investors.com/ibd-indexes/ibd-etf-indexes-ibd-50-etf-leaders-breakout-stocks-etf-ffty-ldrs-bout/) [IBD Data Tables](https://www.investors.com/ibd-data-tables/) [IBD Digital: 2 Months for $20](https://get.investors.com/ibd/?intcode=gnvb%7Cgnvb%7Cevgr%7C2021%7C08%7Cibdd%7Cna%7C%7C115458&src=AKCAGE) [New? Start Here](https://shop.investors.com/offer/splashresponsive.aspx?id=gettingstarted&src=A00332A&intcode=EditorialTests_GettingStarted_StockLists)\n\nResearch\n\n[STOCK RESEARCH](https://research.investors.com/)\n\n[IBD Stock Checkup](https://research.investors.com/stock-checkup/) [Stock Of The Day](https://www.investors.com/research/ibd-stock-of-the-day/) [Screen Of The Day](https://www.investors.com/research/best-stocks-to-buy-watch-ibd-screen-of-the-day/) [IBD Charts](https://research.investors.com/stock-charts/nasdaq-nasdaq-composite-0ndqc.htm?cht=pvc&type=DAILY) [Stock Screener](https://ibdstockscreener.investors.com/) [Swing Trading](https://www.investors.com/category/research/swing-trading/) [Options](https://www.investors.com/category/research/options/) [Investing Action Plan](https://www.investors.com/category/research/investing-action-plan/) [Earnings Preview](https://www.investors.com/category/research/earnings-preview/) [Earnings Calendar](https://www.investors.com/research/earnings-calendar-analyst-estimates-stocks-to-watch/) [IBD Industry Themes](https://www.investors.com/category/research/ibd-industry-themes/) [The New America](https://www.investors.com/category/research/the-new-america/) [Best ETFs](https://www.investors.com/etfs-and-funds/etfs/best-etfs-exchange-traded-funds/) [Best Mutual Funds](https://www.investors.com/etfs-and-funds/mutual-funds/best-mutual-funds-news-performance-reports-investing-ideas/) [The Income Investor](https://www.investors.com/category/research/the-income-investor/) [IBD Stock Analysis](https://www.investors.com/category/research/ibd-stock-analysis/) [Industry Snapshot](https://www.investors.com/category/research/industry-snapshot/) [IBD 50 Stocks To Watch](https://www.investors.com/research/ibd-50-growth-stocks-to-watch/) [IBD Data Stories](https://www.investors.com/ibd-data-stories/build-your-investing-watch-list-with-stock-ratings-buy-zones-earnings/) [IBD Digital: 2 Months for $20](https://get.investors.com/ibd/?intcode=gnvb%7Cgnvb%7Cevgr%7C2021%7C08%7Cibdd%7Cna%7C%7C115458&src=AKCAGE)\n\nNews\n\n[NEWS](https://www.investors.com/tag/all-news-and-stock-ideas/)\n\n[eIBD](https://research.investors.com/eIBD) [Technology](https://www.investors.com/technology/) [Magnificent Seven Stocks](https://www.investors.com/research/magnificent-seven-stocks-latest-news-market-cap-weighting/) [Personal Finance](https://www.investors.com/category/etfs-and-funds/personal-finance/) [Special Reports](https://www.investors.com/special-reports/) [Cryptocurrency](https://www.investors.com/news/cryptocurrency-prices-news/) [Retirement](https://www.investors.com/category/etfs-and-funds/retirement/) [Management](https://www.investors.com/management/)\n\n[ECONOMY](https://www.investors.com/economic-news-president-job-approval/)\n\n[Economic Calendar](https://research.investors.com/economic-calendar/) [Economic News](https://www.investors.com/category/news/economy/) [IBD Digital: 2 Months for $20](https://get.investors.com/ibd/?intcode=gnvb%7Cgnvb%7Cevgr%7C2021%7C08%7Cibdd%7Cna%7C%7C115458&src=AKCAGE)\n\nVideos\n\n[VIDEOS & PODCASTS](https://www.investors.com/ibd-videos/)\n\n[IBD Live](https://research.investors.com/ibdlive) [How To Invest Videos](https://www.investors.com/ibd-videos/category/how-to-invest-videos) [Options Videos](https://www.investors.com/ibd-videos/category/options-ibd-videos) [Investing With IBD Podcast](https://www.investors.com/podcast) [Growth Stories Podcast](https://get.investors.com/growth-stories/) [Webinars](https://www.investors.com/ibd-videos/category/webinars) [Online Courses](https://shop.investors.com/offer/splashresponsive.aspx?id=HSProgram&src=A00272A) [IBD Digital: 2 Months for $20](https://get.investors.com/ibd/?intcode=gnvb%7Cgnvb%7Cevgr%7C2021%7C08%7Cibdd%7Cna%7C%7C115458&src=AKCAGE)\n\nLearn\n\n[HOW TO INVEST](https://www.investors.com/how-to-invest/how-to-invest-rules-for-when-buy-and-sell-stocks-in-bull-and-bear-markets/)\n\n[How To Invest In Stocks](https://www.investors.com/how-to-invest/how-to-invest-in-stocks-investing-for-beginners/) [Stock Investing Keys](https://www.investors.com/how-to-invest/stock-investing-how-to-make-money-in-stock-3-key-factors/) [Stock Market Timing](https://www.investors.com/how-to-invest/stock-market-timing-how-to-invest-in-stocks-tracking-bull-markets-bear-markets-stock-market-trends/) [Track Market Trends](https://www.investors.com/how-to-invest/how-to-handle-changing-stock-market-trends/) [How To Read Stock Charts](https://www.investors.com/how-to-invest/how-to-read-stock-charts-understanding-technical-analysis/) [How To Buy Stocks](https://www.investors.com/how-to-invest/how-to-buy-stocks-using-stock-lists-stock-ratings-stock-screener/) [When To Sell Stocks](https://www.investors.com/how-to-invest/when-to-sell-stocks/) [Short Selling](https://www.investors.com/category/research/the-short-side/) [Swing Trading](https://www.investors.com/research/swing-trading/swing-trading-strategies/) [What Is Crypto](https://www.investors.com/how-to-invest/cryptocurrency-what-is-crypto/)\n\n[EDUCATIONAL RESOURCES](https://investors.com/how-to-invest/how-to-invest-rules-for-when-buy-and-sell-stocks-in-bull-and-bear-markets/)\n\n[New to IBD](https://get.investors.com/getting-started/) [Investor's Corner](https://www.investors.com/category/how-to-invest/investors-corner/) [Investing With IBD Podcast](https://www.investors.com/podcast) [Events & Webinars](https://get.investors.com/events/) [IBD Moneyworks](https://get.investors.com/moneyworks/) [12 Days Of Learning](https://get.investors.com/ibd/12-days-of-learning/) [Investing Infographics](https://get.investors.com/infographics/) [Premium Online Courses](https://get.investors.com/online-courses/?src=A00272A) [Premium Workshops](https://workshops.investors.com/)\n\n[Store](https://get.investors.com/?src=APA1BQ)\n\nMy Products\n\n[Founder's Club](http://foundersclub.investors.com/) [SwingTrader](https://swingtrader.investors.com/) [Leaderboard](https://leaderboard.investors.com/) [MarketSurge](http://marketsurge.investors.com/) [eIBD](https://research.investors.com/eIBD) [IBD Digital](https://shop.investors.com/offer/splashresponsive.aspx?id=DigitalWelcome) [IBD Live](https://research.investors.com/ibdlive)\n\n[Profile Settings](https://myibd.investors.com/)\n\nRecently Searched\n\n![image](https://www.investors.com/wp-content/uploads/2018/03/ibdstocksupdate5-640x360.jpg)\n\nNVTNaN%\n\nNVTNaN%\n\n[Stock Lists](https://investors.com/category/stock-lists/) 7:12 PM ET\n\n[AI Plays Palantir, NVent Lead 9 Additions To IBD Best Stock Lists. Looking For Top Performers To Buy And Watch? Check These Watchlists.](https://investors.com/stock-lists/looking-for-the-best-stocks-to-buy-and-watch-check-these-lists-4/)\n\n![image](https://cdn.jwplayer.com/v2/media/YFBUl7xk/poster.jpg?width=640)\n\n[Investing Podcast](https://investors.com/category/ibd-videos/investing-podcast) 6:52 PM ET\n\n[Here's How To Categorize Corrections — And Why Doing So Helps Set Expectations](https://investors.com/videos/heres-how-to-categorize-corrections-and-why-doing-so-helps-set-expectations/)\n\n![image](https://www.investors.com/wp-content/uploads/2023/03/Stock-oracle-hqaustin-03-company-640x360.jpg)\n\nFFTYNaN%\n\nFFTYNaN%\n\n[The Big Picture](https://investors.com/category/market-trend/the-big-picture) 6:39 PM ET\n\n[Key Stock Market Indexes Finish Off Fresh Highs, But Oracle's 36% Gain Pumps Up This Sector Again](https://investors.com/market-trend/the-big-picture/stock-market-indexes-all-time-highs-oracle-orcl-igv-klarna-stock-klar/)\n\n## Sorry, the dog ate our page.\n\n![404 - Page not found](https://www.investors.com/wp-content/themes/ibd/dist/images/404-dog.jpg)\n\n### But don’t worry, let’s find what you’re looking for:\n\nSearch for:\n\nINVESTING RESOURCES\n\n- [![](https://www.investors.com/wp-content/uploads/2015/08/footer-icons-trial-1.png)\\\\\n**Take a Trial Today** \\\\\n\\\\\nGet instant access to exclusive stock lists, expert market analysis and powerful tools with 2 months of IBD Digital for only $20!](https://shop.investors.com/Products/OfferSelection.aspx?refresh=&type=ica_n_20intro&intcode=InvestingTools_Offer_2For20&src=A00299A)\n- [![](https://www.investors.com/wp-content/uploads/2015/08/footer-icons-video.png)\\\\\n**IBD Videos** \\\\\n\\\\\nGet market updates, educational videos, webinars, and stock analysis.](https://www.investors.com/ibd-videos/)\n- [![](https://www.investors.com/wp-content/uploads/2015/08/footer-icons-started.png)\\\\\n**Get Started** \\\\\n\\\\\nLearn how you can make more money with IBD's investing tools, top-performing stock lists, and educational content.](http://shop.investors.com/offer/splashresponsive.aspx?id=gettingstarted)\n\nA2A\n\n[search by queryly](https://www.queryly.com/)Advanced Search![close](https://www.queryly.com/images/whitecloseicon.png)",
+      "content_length": 13871,
+      "has_full_content": true,
+      "firecrawl_extracted": {
+        "quotes": [],
+        "metrics": [],
+        "entities": [],
+        "key_points": []
+      }
+    }
+  ],
+  "articles": [
+    {
+      "title": "BYD Overtakes Tesla in Global EV Sales",
+      "url": "https://www.reuters.com/business/autos-transportation/byd-tesla-ev-sales-2025/",
+      "published_at": "2025-09-11T21:59:53.055Z",
+      "source": "Reuters",
+      "description": "BYD surpasses Tesla in quarterly EV deliveries for the first time",
+      "pr_relevance_score": 225,
+      "pr_factors": [
+        "ORG_IN_TITLE: Tesla",
+        "ORG_OPPORTUNITY",
+        "MARKET_SIGNAL",
+        "TIME_SENSITIVE"
+      ],
+      "pr_extraction": {
+        "mentioned_entities": [
+          "Tesla"
+        ],
+        "has_crisis_signal": false,
+        "has_opportunity_signal": true,
+        "has_market_signal": true,
+        "primary_category": "opportunity",
+        "coverage_gaps": [],
+        "key_phrases": [],
+        "event_type": "financial",
+        "sentiment_indicators": {
+          "positive": [],
+          "negative": [],
+          "neutral": []
+        },
+        "strategic_relevance": 0,
+        "potential_events": [],
+        "mentioned_products": [],
+        "financial_signals": {
+          "amounts": [],
+          "percentages": [],
+          "metrics": []
+        },
+        "temporal_markers": [],
+        "extracted_quotes": [],
+        "extracted_metrics": [],
+        "extracted_entities": [],
+        "key_points": [],
+        "has_actionable_data": true
+      },
+      "pr_category": "opportunity",
+      "full_content": "# We can't find that page\n\nThe page may have moved, or the address may have been entered incorrectly.\n\nTry using the navigation to find stories of interest, or browse our latest stories.\n\nGo to the Reuters.com Homepage",
+      "content_length": 218,
+      "has_full_content": true,
+      "firecrawl_extracted": {
+        "quotes": [],
+        "metrics": [],
+        "entities": [],
+        "keyPoints": [
+          "The page may have moved.",
+          "The address may have been entered incorrectly.",
+          "Try using the navigation to find stories of interest.",
+          "Browse our latest stories.",
+          "Go to the Reuters.com Homepage"
+        ]
+      }
+    },
+    {
+      "title": "Tesla Robotaxi Launch and FSD Advancements",
+      "url": "https://electrek.co/2025/01/11/tesla-robotaxi-fsd/",
+      "published_at": "2025-09-11T21:59:53.055Z",
+      "source": "Electrek",
+      "description": "Tesla prepares for robotaxi deployment with latest FSD improvements",
+      "pr_relevance_score": 195,
+      "pr_factors": [
+        "ORG_IN_TITLE: Tesla",
+        "ORG_OPPORTUNITY",
+        "ACTIONABLE_PATTERN"
+      ],
+      "pr_extraction": {
+        "mentioned_entities": [
+          "Tesla"
+        ],
+        "has_crisis_signal": false,
+        "has_opportunity_signal": true,
+        "has_market_signal": false,
+        "primary_category": "opportunity",
+        "coverage_gaps": [],
+        "key_phrases": [],
+        "event_type": "product_launch",
+        "sentiment_indicators": {
+          "positive": [
+            "improve"
+          ],
+          "negative": [],
+          "neutral": []
+        },
+        "strategic_relevance": 0,
+        "potential_events": [
+          "launch and fsd advancements tesla pre"
+        ],
+        "mentioned_products": [],
+        "financial_signals": {
+          "amounts": [],
+          "percentages": [],
+          "metrics": []
+        },
+        "temporal_markers": [],
+        "extracted_quotes": [],
+        "extracted_metrics": [],
+        "extracted_entities": [],
+        "key_points": [],
+        "has_actionable_data": true
+      },
+      "pr_category": "opportunity",
+      "full_content": "[Skip to main content](https://electrek.co/2025/01/11/tesla-robotaxi-fsd/#main)\n\n* * *\n\n# 404\n\n* * *\n\nOops, look like the page that you are looking for doesn't exist.\n\n[Go to the front page](https://electrek.co/)\n\nSearch for: Submit",
+      "content_length": 232,
+      "has_full_content": true,
+      "firecrawl_extracted": {
+        "quotes": [],
+        "metrics": [],
+        "entities": [],
+        "keyPoints": []
+      }
+    },
+    {
+      "title": "Tesla Megapack Production Expansion",
+      "url": "https://www.teslarati.com/tesla-megapack-production-expansion/",
+      "published_at": "2025-09-11T21:59:53.055Z",
+      "source": "Teslarati",
+      "description": "Tesla expands Megapack production capacity to meet growing demand",
+      "pr_relevance_score": 195,
+      "pr_factors": [
+        "ORG_IN_TITLE: Tesla",
+        "ORG_OPPORTUNITY",
+        "ACTIONABLE_PATTERN"
+      ],
+      "pr_extraction": {
+        "mentioned_entities": [
+          "Tesla"
+        ],
+        "has_crisis_signal": false,
+        "has_opportunity_signal": true,
+        "has_market_signal": false,
+        "primary_category": "opportunity",
+        "coverage_gaps": [],
+        "key_phrases": [],
+        "event_type": "expansion",
+        "sentiment_indicators": {
+          "positive": [],
+          "negative": [],
+          "neutral": []
+        },
+        "strategic_relevance": 0,
+        "potential_events": [],
+        "mentioned_products": [],
+        "financial_signals": {
+          "amounts": [],
+          "percentages": [],
+          "metrics": []
+        },
+        "temporal_markers": [],
+        "extracted_quotes": [],
+        "extracted_metrics": [],
+        "extracted_entities": [],
+        "key_points": [],
+        "has_actionable_data": true
+      },
+      "pr_category": "opportunity",
+      "full_content": "[![TESLARATI](https://www.teslarati.com/wp-content/uploads/2025/03/Teslarati-Logo-white-transparent-170.png)](https://www.teslarati.com/)\n\nConnect with us\n\n# Error 404!\n\nThe page you requested does not exist or has moved.",
+      "content_length": 221,
+      "has_full_content": true,
+      "firecrawl_extracted": {
+        "quotes": [],
+        "metrics": [],
+        "entities": [],
+        "keyPoints": []
+      }
+    },
+    {
+      "title": "Tesla Energy Storage Business Accelerates",
+      "url": "https://www.bloomberg.com/news/articles/tesla-energy-storage-growth",
+      "published_at": "2025-09-11T21:59:53.055Z",
+      "source": "Bloomberg",
+      "description": "Tesla's energy storage deployments reach record levels in Q4",
+      "pr_relevance_score": 185,
+      "pr_factors": [
+        "ORG_IN_TITLE: Tesla",
+        "ORG_OPPORTUNITY",
+        "TIME_SENSITIVE"
+      ],
+      "pr_extraction": {
+        "mentioned_entities": [
+          "Tesla"
+        ],
+        "has_crisis_signal": false,
+        "has_opportunity_signal": true,
+        "has_market_signal": false,
+        "primary_category": "opportunity",
+        "coverage_gaps": [],
+        "key_phrases": [],
+        "event_type": "general_update",
+        "sentiment_indicators": {
+          "positive": [
+            "record"
+          ],
+          "negative": [],
+          "neutral": []
+        },
+        "strategic_relevance": 0,
+        "potential_events": [],
+        "mentioned_products": [],
+        "financial_signals": {
+          "amounts": [],
+          "percentages": [],
+          "metrics": []
+        },
+        "temporal_markers": [],
+        "extracted_quotes": [],
+        "extracted_metrics": [],
+        "extracted_entities": [],
+        "key_points": [],
+        "has_actionable_data": true
+      },
+      "pr_category": "opportunity",
+      "full_content": "# Our apologies   We’re unable to find the   page you’re looking for.\n\n404\\. Page Not Found\n\n[Go To Our Home Page](https://www.bloomberg.com/)",
+      "content_length": 142,
+      "has_full_content": true,
+      "firecrawl_extracted": {
+        "quotes": [],
+        "metrics": [],
+        "entities": [],
+        "keyPoints": [
+          "The user is looking for a page that cannot be found.",
+          "The error message indicates a 404 Page Not Found."
+        ]
+      }
+    },
+    {
+      "title": "Tesla Stock Breaks Out Past Buy Point",
+      "url": "https://www.investors.com/news/tesla-stock-buy-point-2025/",
+      "published_at": "2025-09-11T21:59:53.054Z",
+      "source": "Investor's Business Daily",
+      "description": "Tesla stock rises on FSD progress and energy storage momentum",
+      "pr_relevance_score": 140,
+      "pr_factors": [
+        "ORG_IN_TITLE: Tesla",
+        "MARKET_SIGNAL"
+      ],
+      "pr_extraction": {
+        "mentioned_entities": [
+          "Tesla"
+        ],
+        "has_crisis_signal": false,
+        "has_opportunity_signal": false,
+        "has_market_signal": true,
+        "primary_category": "organization",
+        "coverage_gaps": [],
+        "key_phrases": [],
+        "event_type": "general_update",
+        "sentiment_indicators": {
+          "positive": [],
+          "negative": [],
+          "neutral": []
+        },
+        "strategic_relevance": 0,
+        "potential_events": [
+          "buy point tesla stock rises on fsd"
+        ],
+        "mentioned_products": [],
+        "financial_signals": {
+          "amounts": [],
+          "percentages": [],
+          "metrics": []
+        },
+        "temporal_markers": [],
+        "extracted_quotes": [],
+        "extracted_metrics": [],
+        "extracted_entities": [],
+        "key_points": [],
+        "has_actionable_data": true
+      },
+      "pr_category": "organization",
+      "full_content": "**BREAKING: [Stock Market Hits Record High With Fed Rate Cut Locked In](https://www.investors.com/market-trend/stock-market-today/dow-jones-futures-market-rally-tesla-stocks-flashing-buy-signals/)**\n\n- [![ibddigital](https://www.investors.com/static/images/logo/ibddigital_logo.png)](https://get.investors.com/ibd/)\n- [![marketsurge](https://www.investors.com/static/images/logo/marketsurge_logo.png)](https://get.investors.com/marketsurge/?intcode=gnvb%7Cgnvb%7CMarketSurge%7C2023%7C06%7Cmsp%7Cna%7C%7C198859&src=AKCAGE)\n- [![ibdlive](https://www.investors.com/static/images/logo/ibdlive_logo.png)](https://get.investors.com/ibd-live/?intcode=gnvb%7Cgnvb%7Cprdmcst%7C2023%7Cna%7Cibdlive%7Cna%7C%7C134769&src=AKCAGE)\n- [![leaderboard](https://www.investors.com/static/images/logo/leaderboard_logo.png)](https://get.investors.com/leaderboard/?intcode=gnvb%7Cgnvb%7Cprdmcst%7C2023%7Cna%7Clb%7Cna%7C%7C780420&src=AKCAGE)\n- [![swingtrader](https://www.investors.com/static/images/logo/swingtrader_logo.png)](https://get.investors.com/swingtrader/?intcode=gnvb%7Cgnvb%7Cprdmcst%7C2023%7Cna%7Cst%7Cna%7C%7C345983&src=AKCAGE)\n- [![marketdiem](https://www.investors.com/static/images/logo/marketdiem.png)](https://get.investors.com/marketdiem/?intcode=gnvb%7Cgnvb%7Cprdmcst%7C2022%7C10%7Cmkdm%7Cna%7C%7C640213&src=AKCAGE)\n\nStore\n\n[Subscribe](https://get.investors.com/ibd/?intcode=hpsubbutton|hpsubbutton|na|na|na|na|na||144112&src=A00544)Sign In\n\nMy Subscriptions\n\n[Profile Settings](https://myibd.investors.com/)\n\n[Customer Center](https://customercenter.investors.com/) [My Stock Lists](https://myibd.investors.com/my-ibd/portfolio.aspx) [Email Preferences](https://myibd.investors.com/my-ibd/update-email-preferences) [Help & Support](https://ibd.my.site.com/s/) Sign Out\n\n[Subscribe](https://get.investors.com/ibd/?intcode=hpsubbutton|hpsubbutton|na|na|na|na|na||144112&src=A00544)Sign In\n\n[![ibd logo](https://www.investors.com/static/images/ibd-logo.png)](https://www.investors.com/)\n\n- [Market Trend](https://research.investors.com/markettrend.aspx)\n- [Stock Lists](https://www.investors.com/stock-lists/stocks-to-watch-top-rated-ipos-big-caps-and-growth-stocks/)\n- [Research](https://research.investors.com/)\n- [News](https://www.investors.com/tag/all-news-and-stock-ideas/)\n- [Videos](https://www.investors.com/ibd-videos/)\n- [Learn](https://www.investors.com/how-to-invest/how-to-invest-rules-for-when-buy-and-sell-stocks-in-bull-and-bear-markets/)\n- [Store](https://get.investors.com/?src=APA1BQ)\n\nSearch stocks or keywords\n\nSections\n\nMy IBD\n\nMarket Trend\n\n[MARKET TREND](https://research.investors.com/markettrend.aspx)\n\n[The Big Picture](https://www.investors.com/category/market-trend/the-big-picture/) [Stock Market Today](https://www.investors.com/news/stock-market-today-stock-market-news/) [ETF Market Strategy](https://www.investors.com/market-trend/ibds-etf-market-strategy/ibds-etf-market-strategy/) [Stock Market Data](https://www.investors.com/research/stock-market-data-dow-jones-sp-500-nasdaq-spdr-etfs/) [Psychological Indicators](https://research.investors.com/psychological-market-indicators/) [New? Start Here](https://get.investors.com/getting-started/?src=A00332A&intcode=EditorialTests_GettingStarted_MarketTrend) [IBD Digital: 2 Months for $20](https://get.investors.com/ibd/?intcode=gnvb%7Cgnvb%7Cevgr%7C2021%7C08%7Cibdd%7Cna%7C%7C115458&src=AKCAGE)\n\nStock Lists\n\n[STOCK LISTS](https://www.investors.com/stock-lists/stocks-to-watch-top-rated-ipos-big-caps-and-growth-stocks/)\n\n[IBD 50](https://research.investors.com/stock-lists/ibd-50/) [IBD Sector Leaders](https://research.investors.com/stock-lists/sector-leaders) [IBD Big Cap 20](https://research.investors.com/stock-lists/big-cap-20/) [IBD Long-Term Leaders](https://www.investors.com/research/best-stocks-to-buy-now-long-term-stocks-ibd-long-term-leaders-list/) [IPO Leaders](https://research.investors.com/stock-lists/ipo-leaders/) [My Stock Lists](https://myibd.investors.com/my-ibd/portfolio.aspx) [Stock Lists Update](https://www.investors.com/stock-lists/best-growth-stocks-buy-watch-ibd-stock-lists/) [Stocks On The Move](https://research.investors.com/stocksonthemove.aspx) [New Highs](https://research.investors.com/stock-lists/new-highs/) [Stock Spotlight](https://research.investors.com/stock-lists/stock-spotlight/) [Stocks Near Buy Zone](https://www.investors.com/category/stock-lists/stocks-near-a-buy-zone/) [RS Line At New High](https://research.investors.com/stock-lists/relative-strength-at-new-high/) [Rising Profit Estimates](https://research.investors.com/stock-lists/rising-profit-estimates/) [Stocks Funds Are Buying](https://research.investors.com/stock-lists/stocks-that-funds-are-buying/) [Your Weekly Review](https://research.investors.com/stock-lists/your-weekly-review/) [IBD ETF Indexes](https://www.investors.com/ibd-indexes/ibd-etf-indexes-ibd-50-etf-leaders-breakout-stocks-etf-ffty-ldrs-bout/) [IBD Data Tables](https://www.investors.com/ibd-data-tables/) [IBD Digital: 2 Months for $20](https://get.investors.com/ibd/?intcode=gnvb%7Cgnvb%7Cevgr%7C2021%7C08%7Cibdd%7Cna%7C%7C115458&src=AKCAGE) [New? Start Here](https://shop.investors.com/offer/splashresponsive.aspx?id=gettingstarted&src=A00332A&intcode=EditorialTests_GettingStarted_StockLists)\n\nResearch\n\n[STOCK RESEARCH](https://research.investors.com/)\n\n[IBD Stock Checkup](https://research.investors.com/stock-checkup/) [Stock Of The Day](https://www.investors.com/research/ibd-stock-of-the-day/) [Screen Of The Day](https://www.investors.com/research/best-stocks-to-buy-watch-ibd-screen-of-the-day/) [IBD Charts](https://research.investors.com/stock-charts/nasdaq-nasdaq-composite-0ndqc.htm?cht=pvc&type=DAILY) [Stock Screener](https://ibdstockscreener.investors.com/) [Swing Trading](https://www.investors.com/category/research/swing-trading/) [Options](https://www.investors.com/category/research/options/) [Investing Action Plan](https://www.investors.com/category/research/investing-action-plan/) [Earnings Preview](https://www.investors.com/category/research/earnings-preview/) [Earnings Calendar](https://www.investors.com/research/earnings-calendar-analyst-estimates-stocks-to-watch/) [IBD Industry Themes](https://www.investors.com/category/research/ibd-industry-themes/) [The New America](https://www.investors.com/category/research/the-new-america/) [Best ETFs](https://www.investors.com/etfs-and-funds/etfs/best-etfs-exchange-traded-funds/) [Best Mutual Funds](https://www.investors.com/etfs-and-funds/mutual-funds/best-mutual-funds-news-performance-reports-investing-ideas/) [The Income Investor](https://www.investors.com/category/research/the-income-investor/) [IBD Stock Analysis](https://www.investors.com/category/research/ibd-stock-analysis/) [Industry Snapshot](https://www.investors.com/category/research/industry-snapshot/) [IBD 50 Stocks To Watch](https://www.investors.com/research/ibd-50-growth-stocks-to-watch/) [IBD Data Stories](https://www.investors.com/ibd-data-stories/build-your-investing-watch-list-with-stock-ratings-buy-zones-earnings/) [IBD Digital: 2 Months for $20](https://get.investors.com/ibd/?intcode=gnvb%7Cgnvb%7Cevgr%7C2021%7C08%7Cibdd%7Cna%7C%7C115458&src=AKCAGE)\n\nNews\n\n[NEWS](https://www.investors.com/tag/all-news-and-stock-ideas/)\n\n[eIBD](https://research.investors.com/eIBD) [Technology](https://www.investors.com/technology/) [Magnificent Seven Stocks](https://www.investors.com/research/magnificent-seven-stocks-latest-news-market-cap-weighting/) [Personal Finance](https://www.investors.com/category/etfs-and-funds/personal-finance/) [Special Reports](https://www.investors.com/special-reports/) [Cryptocurrency](https://www.investors.com/news/cryptocurrency-prices-news/) [Retirement](https://www.investors.com/category/etfs-and-funds/retirement/) [Management](https://www.investors.com/management/)\n\n[ECONOMY](https://www.investors.com/economic-news-president-job-approval/)\n\n[Economic Calendar](https://research.investors.com/economic-calendar/) [Economic News](https://www.investors.com/category/news/economy/) [IBD Digital: 2 Months for $20](https://get.investors.com/ibd/?intcode=gnvb%7Cgnvb%7Cevgr%7C2021%7C08%7Cibdd%7Cna%7C%7C115458&src=AKCAGE)\n\nVideos\n\n[VIDEOS & PODCASTS](https://www.investors.com/ibd-videos/)\n\n[IBD Live](https://research.investors.com/ibdlive) [How To Invest Videos](https://www.investors.com/ibd-videos/category/how-to-invest-videos) [Options Videos](https://www.investors.com/ibd-videos/category/options-ibd-videos) [Investing With IBD Podcast](https://www.investors.com/podcast) [Growth Stories Podcast](https://get.investors.com/growth-stories/) [Webinars](https://www.investors.com/ibd-videos/category/webinars) [Online Courses](https://shop.investors.com/offer/splashresponsive.aspx?id=HSProgram&src=A00272A) [IBD Digital: 2 Months for $20](https://get.investors.com/ibd/?intcode=gnvb%7Cgnvb%7Cevgr%7C2021%7C08%7Cibdd%7Cna%7C%7C115458&src=AKCAGE)\n\nLearn\n\n[HOW TO INVEST](https://www.investors.com/how-to-invest/how-to-invest-rules-for-when-buy-and-sell-stocks-in-bull-and-bear-markets/)\n\n[How To Invest In Stocks](https://www.investors.com/how-to-invest/how-to-invest-in-stocks-investing-for-beginners/) [Stock Investing Keys](https://www.investors.com/how-to-invest/stock-investing-how-to-make-money-in-stock-3-key-factors/) [Stock Market Timing](https://www.investors.com/how-to-invest/stock-market-timing-how-to-invest-in-stocks-tracking-bull-markets-bear-markets-stock-market-trends/) [Track Market Trends](https://www.investors.com/how-to-invest/how-to-handle-changing-stock-market-trends/) [How To Read Stock Charts](https://www.investors.com/how-to-invest/how-to-read-stock-charts-understanding-technical-analysis/) [How To Buy Stocks](https://www.investors.com/how-to-invest/how-to-buy-stocks-using-stock-lists-stock-ratings-stock-screener/) [When To Sell Stocks](https://www.investors.com/how-to-invest/when-to-sell-stocks/) [Short Selling](https://www.investors.com/category/research/the-short-side/) [Swing Trading](https://www.investors.com/research/swing-trading/swing-trading-strategies/) [What Is Crypto](https://www.investors.com/how-to-invest/cryptocurrency-what-is-crypto/)\n\n[EDUCATIONAL RESOURCES](https://investors.com/how-to-invest/how-to-invest-rules-for-when-buy-and-sell-stocks-in-bull-and-bear-markets/)\n\n[New to IBD](https://get.investors.com/getting-started/) [Investor's Corner](https://www.investors.com/category/how-to-invest/investors-corner/) [Investing With IBD Podcast](https://www.investors.com/podcast) [Events & Webinars](https://get.investors.com/events/) [IBD Moneyworks](https://get.investors.com/moneyworks/) [12 Days Of Learning](https://get.investors.com/ibd/12-days-of-learning/) [Investing Infographics](https://get.investors.com/infographics/) [Premium Online Courses](https://get.investors.com/online-courses/?src=A00272A) [Premium Workshops](https://workshops.investors.com/)\n\n[Store](https://get.investors.com/?src=APA1BQ)\n\nMy Products\n\n[Founder's Club](http://foundersclub.investors.com/) [SwingTrader](https://swingtrader.investors.com/) [Leaderboard](https://leaderboard.investors.com/) [MarketSurge](http://marketsurge.investors.com/) [eIBD](https://research.investors.com/eIBD) [IBD Digital](https://shop.investors.com/offer/splashresponsive.aspx?id=DigitalWelcome) [IBD Live](https://research.investors.com/ibdlive)\n\n[Profile Settings](https://myibd.investors.com/)\n\nRecently Searched\n\n![image](https://www.investors.com/wp-content/uploads/2018/03/ibdstocksupdate5-640x360.jpg)\n\nNVTNaN%\n\nNVTNaN%\n\n[Stock Lists](https://investors.com/category/stock-lists/) 7:12 PM ET\n\n[AI Plays Palantir, NVent Lead 9 Additions To IBD Best Stock Lists. Looking For Top Performers To Buy And Watch? Check These Watchlists.](https://investors.com/stock-lists/looking-for-the-best-stocks-to-buy-and-watch-check-these-lists-4/)\n\n![image](https://cdn.jwplayer.com/v2/media/YFBUl7xk/poster.jpg?width=640)\n\n[Investing Podcast](https://investors.com/category/ibd-videos/investing-podcast) 6:52 PM ET\n\n[Here's How To Categorize Corrections — And Why Doing So Helps Set Expectations](https://investors.com/videos/heres-how-to-categorize-corrections-and-why-doing-so-helps-set-expectations/)\n\n![image](https://www.investors.com/wp-content/uploads/2023/03/Stock-oracle-hqaustin-03-company-640x360.jpg)\n\nFFTYNaN%\n\nFFTYNaN%\n\n[The Big Picture](https://investors.com/category/market-trend/the-big-picture) 6:39 PM ET\n\n[Key Stock Market Indexes Finish Off Fresh Highs, But Oracle's 36% Gain Pumps Up This Sector Again](https://investors.com/market-trend/the-big-picture/stock-market-indexes-all-time-highs-oracle-orcl-igv-klarna-stock-klar/)\n\n## Sorry, the dog ate our page.\n\n![404 - Page not found](https://www.investors.com/wp-content/themes/ibd/dist/images/404-dog.jpg)\n\n### But don’t worry, let’s find what you’re looking for:\n\nSearch for:\n\nINVESTING RESOURCES\n\n- [![](https://www.investors.com/wp-content/uploads/2015/08/footer-icons-trial-1.png)\\\\\n**Take a Trial Today** \\\\\n\\\\\nGet instant access to exclusive stock lists, expert market analysis and powerful tools with 2 months of IBD Digital for only $20!](https://shop.investors.com/Products/OfferSelection.aspx?refresh=&type=ica_n_20intro&intcode=InvestingTools_Offer_2For20&src=A00299A)\n- [![](https://www.investors.com/wp-content/uploads/2015/08/footer-icons-video.png)\\\\\n**IBD Videos** \\\\\n\\\\\nGet market updates, educational videos, webinars, and stock analysis.](https://www.investors.com/ibd-videos/)\n- [![](https://www.investors.com/wp-content/uploads/2015/08/footer-icons-started.png)\\\\\n**Get Started** \\\\\n\\\\\nLearn how you can make more money with IBD's investing tools, top-performing stock lists, and educational content.](http://shop.investors.com/offer/splashresponsive.aspx?id=gettingstarted)\n\nA2A\n\n[search by queryly](https://www.queryly.com/)Advanced Search![close](https://www.queryly.com/images/whitecloseicon.png)",
+      "content_length": 13871,
+      "has_full_content": true,
+      "firecrawl_extracted": {
+        "quotes": [],
+        "metrics": [],
+        "entities": [],
+        "key_points": []
+      }
+    }
+  ],
+  "statistics": {
+    "total_processed": 5,
+    "total_selected": 5,
+    "avg_relevance_score": 188,
+    "score_distribution": {
+      "high": 5,
+      "medium": 0,
+      "low": 0
+    },
+    "category_breakdown": {
+      "opportunity": 4,
+      "organization": 1
+    },
+    "extraction_summary": {
+      "companies_found": 0,
+      "stakeholders_found": 0,
+      "keywords_matched": 0,
+      "crisis_signals": 0,
+      "opportunity_signals": 4
+    },
+    "coverage_achieved": {
+      "competitors": [],
+      "stakeholders": [],
+      "keywords": []
+    }
+  },
+  "metadata": {
+    "stage": "relevance_scoring",
+    "organization": "Tesla",
+    "profile_used": true,
+    "timestamp": "2025-09-11T22:00:08.414Z"
+  },
+  "success": true
+}

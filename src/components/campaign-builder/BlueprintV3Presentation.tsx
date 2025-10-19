@@ -1,0 +1,1271 @@
+'use client'
+
+import { useState } from 'react'
+import { motion } from 'framer-motion'
+
+interface BlueprintV3Data {
+  part1_strategicFoundation?: {
+    campaignGoal?: string
+    positioning?: {
+      name?: string
+      tagline?: string
+      description?: string
+      keyMessages?: string[]
+      differentiators?: string[]
+      targetAudiences?: string[]
+    }
+    selectedPattern?: {
+      pattern?: string
+      rationale?: string
+      confidence?: number
+      pillarEmphasis?: Record<string, string>
+      keyMechanics?: string[]
+    }
+    alternativePattern?: {
+      pattern?: string
+      rationale?: string
+      confidence?: number
+    }
+    campaignTimeline?: {
+      totalDuration?: string
+      phase1?: string
+      phase2?: string
+      phase3?: string
+      phase4?: string
+    }
+    targetStakeholders?: Array<{
+      name?: string
+      role?: string
+      influenceLevel?: string
+      primaryFear?: string
+      primaryAspiration?: string
+    }>
+  }
+  part2_psychologicalInfluence?: {
+    influenceStrategies?: Array<{
+      stakeholder?: string
+      psychologicalProfile?: {
+        primaryFear?: string
+        primaryAspiration?: string
+        decisionTrigger?: string
+      }
+      positioningAlignment?: {
+        coreMessage?: string
+        keyMessagesForThisStakeholder?: string[]
+        differentiatorsThatResonate?: string[]
+      }
+      influenceLevers?: Array<{
+        lever?: string
+        positioningMessage?: string
+        approach?: string
+        channels?: string[]
+        trustedVoices?: string[]
+        psychologicalMechanism?: string
+      }>
+      touchpointStrategy?: {
+        phase1_awareness?: {
+          objective?: string
+          channels?: string[]
+          messageFraming?: string
+          decisionTriggerActivation?: string
+        }
+        phase2_consideration?: {
+          objective?: string
+          channels?: string[]
+          messageFraming?: string
+          decisionTriggerActivation?: string
+        }
+        phase3_conversion?: {
+          objective?: string
+          channels?: string[]
+          messageFraming?: string
+          decisionTriggerActivation?: string
+        }
+        phase4_advocacy?: {
+          objective?: string
+          channels?: string[]
+          messageFraming?: string
+          decisionTriggerActivation?: string
+        }
+      }
+    }>
+  }
+  // NEW: Stakeholder Orchestration structure (multi-channel approach)
+  part3_stakeholderOrchestration?: {
+    stakeholderOrchestrationPlans?: Array<{
+      stakeholder?: {
+        name?: string
+        priority?: number
+        psychologicalProfile?: {
+          primaryFear?: string
+          primaryAspiration?: string
+          decisionTrigger?: string
+        }
+      }
+      influenceLevers?: Array<{
+        leverName?: string
+        leverType?: string
+        priority?: number
+        objective?: string
+        campaign?: {
+          leverName?: string
+          leverType?: string
+          objective?: string
+          mediaPitches?: Array<{
+            who?: string  // Journalist name
+            outlet?: string
+            beat?: string
+            what?: string  // Story angle
+            when?: string
+          }>
+          socialPosts?: Array<{
+            who?: string  // Person posting
+            platform?: string
+            what?: string  // Post topic
+            keyMessages?: string[]
+            when?: string
+          }>
+          thoughtLeadership?: Array<{
+            who?: string  // Author
+            what?: string  // Article title
+            where?: string  // Publication
+            keyPoints?: string[]
+            when?: string
+          }>
+          additionalTactics?: Array<{
+            type?: string
+            who?: string
+            what?: string
+            where?: string
+            when?: string
+            estimatedEffort?: string
+            resources?: string[]
+          }>
+        }
+        completionCriteria?: string[]
+      }>
+    }>
+  }
+  // OLD: Phase-based tactical orchestration (kept for backwards compatibility)
+  part3_tacticalOrchestration?: {
+    phase1_awareness?: PhaseData
+    phase2_consideration?: PhaseData
+    phase3_conversion?: PhaseData
+    phase4_advocacy?: PhaseData
+  }
+  part4_resourceRequirements?: {
+    status?: string
+    message?: string
+    totalContentPieces?: number
+    totalHours?: number
+    totalBudget?: number
+    teamPlanning?: {
+      recommendedTeamSize?: number
+      weeklyBandwidth?: string
+      teamComposition?: Array<{
+        role?: string
+        count?: number
+        allocation?: string
+      }>
+    }
+  }
+  part5_executionRoadmap?: {
+    weeklyPlan?: Array<{
+      week?: number
+      phase?: string
+      milestones?: string[]
+      contentDue?: string[]
+      successCriteria?: string[]
+    }>
+    integrationInstructions?: {
+      autoExecuteReady?: boolean
+    }
+  }
+  part6_contentInventory?: {
+    status?: string
+    message?: string
+    summary?: {
+      totalSignaldeskActions?: number
+      totalOrganizationActions?: number
+      autoExecutableCount?: number
+      userRequiredCount?: number
+    }
+    signaldeskActions?: {
+      description?: string
+      count?: number
+      items?: any[]
+    }
+    organizationActions?: {
+      description?: string
+      count?: number
+      items?: any[]
+    }
+  }
+  metadata?: {
+    generatedAt?: string
+    campaignGoal?: string
+    pattern?: string
+    stakeholderCount?: number
+    journalistCount?: number
+    totalContentPieces?: number
+    estimatedHours?: number
+    estimatedBudget?: number
+    performance?: {
+      totalTime?: string
+      enrichmentTime?: string
+      patternSelectionTime?: string
+      influenceMappingTime?: string
+      tacticalGenerationTime?: string
+      assemblyTime?: string
+    }
+  }
+}
+
+interface PhaseData {
+  weeks?: string
+  pillar1_ownedActions?: Array<{
+    contentType?: string
+    targetStakeholder?: string
+    positioningMessage?: string
+    psychologicalLever?: string
+    timing?: string
+    channels?: string[]
+    keyPoints?: string[]
+    executionOwner?: string
+  }>
+  pillar2_relationshipOrchestration?: Array<{
+    who?: string
+    action?: string
+    timing?: string
+    goal?: string
+    executionOwner?: string
+  }>
+  pillar3_eventOrchestration?: Array<{
+    event?: string
+    action?: string
+    timing?: string
+    goal?: string
+    executionOwner?: string
+  }>
+  pillar4_mediaEngagement?: Array<{
+    story?: string
+    journalists?: Array<{
+      name?: string
+      outlet?: string
+      beat?: string
+    }>
+    timing?: string
+    positioningMessage?: string
+    executionOwner?: string
+  }>
+}
+
+interface BlueprintV3PresentationProps {
+  blueprint: BlueprintV3Data
+  onRefine?: (request: string) => void
+  onExport?: () => void
+  onExecute?: () => void
+  isRefining?: boolean
+}
+
+export function BlueprintV3Presentation({
+  blueprint,
+  onRefine,
+  onExport,
+  onExecute,
+  isRefining
+}: BlueprintV3PresentationProps) {
+  const [expandedSection, setExpandedSection] = useState<string | null>('overview')
+  const [refinementInput, setRefinementInput] = useState('')
+  const [showRefinementInput, setShowRefinementInput] = useState(false)
+
+  const handleRefineSubmit = () => {
+    if (refinementInput.trim() && onRefine) {
+      onRefine(refinementInput.trim())
+      setRefinementInput('')
+      setShowRefinementInput(false)
+    }
+  }
+
+  const sections = [
+    {
+      id: 'overview',
+      title: 'Strategic Foundation',
+      icon: '🎯',
+      color: 'blue',
+      render: () => (
+        <div className="space-y-4">
+          {/* Campaign Goal */}
+          {blueprint.part1_strategicFoundation?.campaignGoal && (
+            <div>
+              <p className="text-sm text-gray-400 mb-1">Campaign Goal</p>
+              <p className="text-white">{blueprint.part1_strategicFoundation.campaignGoal}</p>
+            </div>
+          )}
+
+          {/* Positioning */}
+          {blueprint.part1_strategicFoundation?.positioning && (
+            <div className="p-3 bg-blue-900/20 border border-blue-500/30 rounded">
+              <p className="text-lg font-semibold text-blue-300 mb-2">
+                {blueprint.part1_strategicFoundation.positioning.name}
+              </p>
+              {blueprint.part1_strategicFoundation.positioning.tagline && (
+                <p className="text-sm text-gray-300 italic mb-2">
+                  {blueprint.part1_strategicFoundation.positioning.tagline}
+                </p>
+              )}
+              {blueprint.part1_strategicFoundation.positioning.description && (
+                <p className="text-sm text-gray-300 mb-3">
+                  {blueprint.part1_strategicFoundation.positioning.description}
+                </p>
+              )}
+
+              {/* Key Messages */}
+              {blueprint.part1_strategicFoundation.positioning.keyMessages &&
+               blueprint.part1_strategicFoundation.positioning.keyMessages.length > 0 && (
+                <div className="mb-3">
+                  <p className="text-xs text-blue-200 font-medium mb-1">Key Messages:</p>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-gray-300">
+                    {blueprint.part1_strategicFoundation.positioning.keyMessages.map((msg, i) => (
+                      <li key={i}>{msg}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Differentiators */}
+              {blueprint.part1_strategicFoundation.positioning.differentiators &&
+               blueprint.part1_strategicFoundation.positioning.differentiators.length > 0 && (
+                <div>
+                  <p className="text-xs text-blue-200 font-medium mb-1">Differentiators:</p>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-gray-300">
+                    {blueprint.part1_strategicFoundation.positioning.differentiators.map((diff, i) => (
+                      <li key={i}>{diff}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Selected Pattern */}
+          {blueprint.part1_strategicFoundation?.selectedPattern && (
+            <div className="p-3 bg-emerald-900/20 border border-emerald-500/30 rounded">
+              <div className="flex items-start justify-between mb-2">
+                <div>
+                  <p className="text-xs text-emerald-200 mb-1">Selected Pattern</p>
+                  <p className="text-2xl font-bold text-emerald-300">
+                    {blueprint.part1_strategicFoundation.selectedPattern.pattern}
+                  </p>
+                </div>
+                {blueprint.part1_strategicFoundation.selectedPattern.confidence && (
+                  <span className="px-2 py-1 bg-emerald-900/50 text-emerald-300 rounded text-sm">
+                    {Math.round(blueprint.part1_strategicFoundation.selectedPattern.confidence * 100)}% confidence
+                  </span>
+                )}
+              </div>
+              {blueprint.part1_strategicFoundation.selectedPattern.rationale && (
+                <p className="text-sm text-gray-300 mb-3">
+                  {blueprint.part1_strategicFoundation.selectedPattern.rationale}
+                </p>
+              )}
+              {blueprint.part1_strategicFoundation.selectedPattern.keyMechanics &&
+               blueprint.part1_strategicFoundation.selectedPattern.keyMechanics.length > 0 && (
+                <div>
+                  <p className="text-xs text-emerald-200 font-medium mb-1">Key Mechanics:</p>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-gray-300">
+                    {blueprint.part1_strategicFoundation.selectedPattern.keyMechanics.map((mech, i) => (
+                      <li key={i}>{mech}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Target Stakeholders */}
+          {blueprint.part1_strategicFoundation?.targetStakeholders &&
+           blueprint.part1_strategicFoundation.targetStakeholders.length > 0 && (
+            <div>
+              <p className="text-sm text-gray-400 mb-2">Target Stakeholders ({blueprint.part1_strategicFoundation.targetStakeholders.length})</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {blueprint.part1_strategicFoundation.targetStakeholders.map((stakeholder, i) => (
+                  <div key={i} className="p-2 bg-zinc-800/50 rounded text-sm">
+                    <p className="text-white font-medium">{stakeholder.name}</p>
+                    <p className="text-xs text-gray-400">{stakeholder.role}</p>
+                    {stakeholder.primaryFear && (
+                      <p className="text-xs text-red-300 mt-1">Fear: {stakeholder.primaryFear}</p>
+                    )}
+                    {stakeholder.primaryAspiration && (
+                      <p className="text-xs text-emerald-300 mt-1">Aspiration: {stakeholder.primaryAspiration}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Timeline */}
+          {blueprint.part1_strategicFoundation?.campaignTimeline && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <div className="p-2 bg-zinc-800/50 rounded text-center">
+                <p className="text-xs text-gray-400">Phase 1</p>
+                <p className="text-sm text-blue-300 font-medium">Awareness</p>
+                <p className="text-xs text-gray-500">Weeks 1-3</p>
+              </div>
+              <div className="p-2 bg-zinc-800/50 rounded text-center">
+                <p className="text-xs text-gray-400">Phase 2</p>
+                <p className="text-sm text-purple-300 font-medium">Consideration</p>
+                <p className="text-xs text-gray-500">Weeks 4-6</p>
+              </div>
+              <div className="p-2 bg-zinc-800/50 rounded text-center">
+                <p className="text-xs text-gray-400">Phase 3</p>
+                <p className="text-sm text-amber-300 font-medium">Conversion</p>
+                <p className="text-xs text-gray-500">Weeks 7-9</p>
+              </div>
+              <div className="p-2 bg-zinc-800/50 rounded text-center">
+                <p className="text-xs text-gray-400">Phase 4</p>
+                <p className="text-sm text-emerald-300 font-medium">Advocacy</p>
+                <p className="text-xs text-gray-500">Weeks 10-12</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )
+    },
+    {
+      id: 'psychology',
+      title: 'Psychological Influence Strategy',
+      icon: '🧠',
+      color: 'purple',
+      render: () => (
+        <div className="space-y-4">
+          {blueprint.part2_psychologicalInfluence?.influenceStrategies &&
+           blueprint.part2_psychologicalInfluence.influenceStrategies.length > 0 ? (
+            blueprint.part2_psychologicalInfluence.influenceStrategies.map((strategy, i) => (
+              <div key={i} className="p-4 bg-purple-900/20 border border-purple-500/30 rounded">
+                <p className="text-lg font-semibold text-purple-300 mb-3">{strategy.stakeholder}</p>
+
+                {/* Psychological Profile */}
+                {strategy.psychologicalProfile && (
+                  <div className="mb-3 p-3 bg-zinc-900/50 rounded">
+                    <p className="text-xs text-purple-200 font-medium mb-2">Psychological Profile</p>
+                    <div className="space-y-1 text-sm">
+                      {strategy.psychologicalProfile.primaryFear && (
+                        <p className="text-red-300">
+                          <span className="text-gray-400">Fear:</span> {strategy.psychologicalProfile.primaryFear}
+                        </p>
+                      )}
+                      {strategy.psychologicalProfile.primaryAspiration && (
+                        <p className="text-emerald-300">
+                          <span className="text-gray-400">Aspiration:</span> {strategy.psychologicalProfile.primaryAspiration}
+                        </p>
+                      )}
+                      {strategy.psychologicalProfile.decisionTrigger && (
+                        <p className="text-blue-300">
+                          <span className="text-gray-400">Decision Trigger:</span> {strategy.psychologicalProfile.decisionTrigger}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Positioning Alignment */}
+                {strategy.positioningAlignment?.coreMessage && (
+                  <div className="mb-3 p-3 bg-blue-900/20 rounded">
+                    <p className="text-xs text-blue-200 font-medium mb-1">Core Message for This Stakeholder</p>
+                    <p className="text-sm text-gray-300">{strategy.positioningAlignment.coreMessage}</p>
+                  </div>
+                )}
+
+                {/* Influence Levers */}
+                {strategy.influenceLevers && strategy.influenceLevers.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-xs text-purple-200 font-medium mb-2">Influence Levers ({strategy.influenceLevers.length})</p>
+                    <div className="space-y-2">
+                      {strategy.influenceLevers.map((lever, j) => (
+                        <div key={j} className="p-2 bg-zinc-900/50 rounded text-xs">
+                          <div className="flex items-start justify-between mb-1">
+                            <span className="font-semibold text-purple-400">{lever.lever}</span>
+                            {lever.channels && lever.channels.length > 0 && (
+                              <span className="text-gray-500">{lever.channels.length} channels</span>
+                            )}
+                          </div>
+                          {lever.approach && (
+                            <p className="text-gray-300 mb-1">{lever.approach}</p>
+                          )}
+                          {lever.psychologicalMechanism && (
+                            <p className="text-gray-500 italic text-[10px]">Why: {lever.psychologicalMechanism}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 4-Phase Touchpoint Strategy */}
+                {strategy.touchpointStrategy && (
+                  <div>
+                    <p className="text-xs text-purple-200 font-medium mb-2">4-Phase Journey</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {['phase1_awareness', 'phase2_consideration', 'phase3_conversion', 'phase4_advocacy'].map((phaseKey, idx) => {
+                        const phase = strategy.touchpointStrategy?.[phaseKey as keyof typeof strategy.touchpointStrategy]
+                        if (!phase) return null
+                        const phaseNames = ['Awareness', 'Consideration', 'Conversion', 'Advocacy']
+                        const phaseColors = ['blue', 'purple', 'amber', 'emerald']
+                        return (
+                          <div key={phaseKey} className={`p-2 bg-${phaseColors[idx]}-900/10 border border-${phaseColors[idx]}-500/20 rounded`}>
+                            <p className={`text-xs font-semibold text-${phaseColors[idx]}-300 mb-1`}>{phaseNames[idx]}</p>
+                            {phase.objective && (
+                              <p className="text-[10px] text-gray-300 mb-1">{phase.objective}</p>
+                            )}
+                            {phase.channels && phase.channels.length > 0 && (
+                              <p className="text-[10px] text-gray-500">{phase.channels.slice(0, 2).join(', ')}</p>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))
+          ) : (
+            <p className="text-gray-400">No influence strategies generated</p>
+          )}
+        </div>
+      )
+    },
+    {
+      id: 'tactical',
+      title: blueprint.part3_stakeholderOrchestration ? 'Stakeholder Orchestration' : 'Four-Pillar Tactical Orchestration',
+      icon: '📅',
+      color: 'amber',
+      render: () => {
+        // NEW STRUCTURE: Stakeholder Orchestration
+        if (blueprint.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans) {
+          return (
+            <div className="space-y-6">
+              {blueprint.part3_stakeholderOrchestration.stakeholderOrchestrationPlans.map((plan, i) => (
+                <div key={i} className="p-4 bg-purple-900/20 border border-purple-500/30 rounded">
+                  {/* Stakeholder Header */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-lg font-semibold text-purple-300">{plan.stakeholder?.name}</p>
+                        <span className="px-2 py-0.5 bg-purple-900/50 text-purple-300 text-xs rounded">
+                          Priority {plan.stakeholder?.priority}
+                        </span>
+                      </div>
+                      {plan.stakeholder?.psychologicalProfile && (
+                        <div className="mt-2 text-xs space-y-1">
+                          {plan.stakeholder.psychologicalProfile.primaryFear && (
+                            <p className="text-red-300">Fear: {plan.stakeholder.psychologicalProfile.primaryFear}</p>
+                          )}
+                          {plan.stakeholder.psychologicalProfile.primaryAspiration && (
+                            <p className="text-emerald-300">Aspiration: {plan.stakeholder.psychologicalProfile.primaryAspiration}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Influence Levers - Multi-Channel Campaigns */}
+                  {plan.influenceLevers && plan.influenceLevers.length > 0 && (
+                    <div className="space-y-4">
+                      {plan.influenceLevers.map((lever, j) => {
+                        const campaign = lever.campaign
+                        if (!campaign) return null
+
+                        return (
+                          <div key={j} className="pl-4 border-l-2 border-purple-500/30">
+                            {/* Lever Header */}
+                            <div className="flex items-start justify-between mb-3">
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <p className="text-sm font-semibold text-purple-200">{lever.leverName}</p>
+                                  <span className="px-2 py-0.5 bg-purple-900/30 text-purple-400 text-xs rounded">
+                                    {lever.leverType}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-gray-400 mt-1">{lever.objective}</p>
+                              </div>
+                              <span className="px-2 py-0.5 bg-purple-900/50 text-purple-300 text-xs rounded">
+                                Priority {lever.priority}
+                              </span>
+                            </div>
+
+                            <div className="space-y-3">
+                              {/* Media Pitches */}
+                              {campaign.mediaPitches && campaign.mediaPitches.length > 0 && (
+                                <div className="bg-emerald-900/10 border border-emerald-500/20 rounded p-3">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-emerald-400">📰</span>
+                                    <p className="text-sm font-semibold text-emerald-300">Media Pitches</p>
+                                    <span className="text-xs text-gray-500">({campaign.mediaPitches.length})</span>
+                                  </div>
+                                  <div className="space-y-2">
+                                    {campaign.mediaPitches.map((pitch, k) => (
+                                      <div key={k} className="bg-zinc-900/30 rounded p-2 text-xs">
+                                        <div className="grid grid-cols-3 gap-2 mb-1">
+                                          <div>
+                                            <p className="text-gray-500">WHO</p>
+                                            <p className="text-emerald-300 font-medium">{pitch.who}</p>
+                                          </div>
+                                          <div>
+                                            <p className="text-gray-500">WHERE</p>
+                                            <p className="text-emerald-300">{pitch.outlet}</p>
+                                          </div>
+                                          <div>
+                                            <p className="text-gray-500">WHEN</p>
+                                            <p className="text-emerald-300">{pitch.when}</p>
+                                          </div>
+                                        </div>
+                                        <p className="text-gray-500">WHAT</p>
+                                        <p className="text-white">{pitch.what}</p>
+                                        {pitch.beat && (
+                                          <p className="text-gray-600 text-[10px] mt-1">Beat: {pitch.beat}</p>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Social Posts */}
+                              {campaign.socialPosts && campaign.socialPosts.length > 0 && (
+                                <div className="bg-blue-900/10 border border-blue-500/20 rounded p-3">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-blue-400">📱</span>
+                                    <p className="text-sm font-semibold text-blue-300">Social Media</p>
+                                    <span className="text-xs text-gray-500">({campaign.socialPosts.length})</span>
+                                  </div>
+                                  <div className="space-y-2">
+                                    {campaign.socialPosts.map((post, k) => (
+                                      <div key={k} className="bg-zinc-900/30 rounded p-2 text-xs">
+                                        <div className="grid grid-cols-3 gap-2 mb-1">
+                                          <div>
+                                            <p className="text-gray-500">WHO</p>
+                                            <p className="text-blue-300 font-medium">{post.who}</p>
+                                          </div>
+                                          <div>
+                                            <p className="text-gray-500">WHERE</p>
+                                            <p className="text-blue-300">{post.platform}</p>
+                                          </div>
+                                          <div>
+                                            <p className="text-gray-500">WHEN</p>
+                                            <p className="text-blue-300">{post.when}</p>
+                                          </div>
+                                        </div>
+                                        <p className="text-gray-500">WHAT</p>
+                                        <p className="text-white mb-1">{post.what}</p>
+                                        {post.keyMessages && post.keyMessages.length > 0 && (
+                                          <ul className="list-disc list-inside text-gray-400 space-y-0.5">
+                                            {post.keyMessages.map((msg, m) => (
+                                              <li key={m}>{msg}</li>
+                                            ))}
+                                          </ul>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Thought Leadership */}
+                              {campaign.thoughtLeadership && campaign.thoughtLeadership.length > 0 && (
+                                <div className="bg-purple-900/10 border border-purple-500/20 rounded p-3">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-purple-400">✍️</span>
+                                    <p className="text-sm font-semibold text-purple-300">Thought Leadership</p>
+                                    <span className="text-xs text-gray-500">({campaign.thoughtLeadership.length})</span>
+                                  </div>
+                                  <div className="space-y-2">
+                                    {campaign.thoughtLeadership.map((article, k) => (
+                                      <div key={k} className="bg-zinc-900/30 rounded p-2 text-xs">
+                                        <div className="grid grid-cols-3 gap-2 mb-1">
+                                          <div>
+                                            <p className="text-gray-500">WHO</p>
+                                            <p className="text-purple-300 font-medium">{article.who}</p>
+                                          </div>
+                                          <div>
+                                            <p className="text-gray-500">WHERE</p>
+                                            <p className="text-purple-300">{article.where}</p>
+                                          </div>
+                                          <div>
+                                            <p className="text-gray-500">WHEN</p>
+                                            <p className="text-purple-300">{article.when}</p>
+                                          </div>
+                                        </div>
+                                        <p className="text-gray-500">WHAT</p>
+                                        <p className="text-white mb-1">{article.what}</p>
+                                        {article.keyPoints && article.keyPoints.length > 0 && (
+                                          <ul className="list-disc list-inside text-gray-400 space-y-0.5">
+                                            {article.keyPoints.map((point, m) => (
+                                              <li key={m}>{point}</li>
+                                            ))}
+                                          </ul>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Additional Tactics (User Must Execute) */}
+                              {campaign.additionalTactics && campaign.additionalTactics.length > 0 && (
+                                <div className="bg-amber-900/10 border border-amber-500/20 rounded p-3">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-amber-400">👤</span>
+                                    <p className="text-sm font-semibold text-amber-300">User Must Execute</p>
+                                    <span className="text-xs text-gray-500">({campaign.additionalTactics.length})</span>
+                                  </div>
+                                  <div className="space-y-2">
+                                    {campaign.additionalTactics.map((tactic, k) => (
+                                      <div key={k} className="bg-zinc-900/30 rounded p-2 text-xs">
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <span className="px-2 py-0.5 bg-amber-900/40 text-amber-300 rounded">
+                                            {tactic.type}
+                                          </span>
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-2 mb-1">
+                                          <div>
+                                            <p className="text-gray-500">WHO</p>
+                                            <p className="text-amber-300 font-medium">{tactic.who}</p>
+                                          </div>
+                                          <div>
+                                            <p className="text-gray-500">WHERE</p>
+                                            <p className="text-amber-300">{tactic.where}</p>
+                                          </div>
+                                          <div>
+                                            <p className="text-gray-500">WHEN</p>
+                                            <p className="text-amber-300">{tactic.when}</p>
+                                          </div>
+                                        </div>
+                                        <p className="text-gray-500">WHAT</p>
+                                        <p className="text-white mb-1">{tactic.what}</p>
+                                        {tactic.estimatedEffort && (
+                                          <p className="text-gray-600 text-[10px]">Effort: {tactic.estimatedEffort}</p>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Completion Criteria */}
+                            {lever.completionCriteria && lever.completionCriteria.length > 0 && (
+                              <div className="mt-3 p-2 bg-zinc-900/30 rounded">
+                                <p className="text-xs text-gray-500 font-semibold mb-1">Completion Criteria:</p>
+                                <ul className="list-disc list-inside text-xs text-gray-400 space-y-0.5">
+                                  {lever.completionCriteria.map((criteria, k) => (
+                                    <li key={k}>{criteria}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )
+        }
+
+        // OLD STRUCTURE: Phase-based Tactical Orchestration
+        const phases = [
+          { key: 'phase1_awareness', label: 'Phase 1: Awareness', weeks: 'Weeks 1-3', color: 'blue' },
+          { key: 'phase2_consideration', label: 'Phase 2: Consideration', weeks: 'Weeks 4-6', color: 'purple' },
+          { key: 'phase3_conversion', label: 'Phase 3: Conversion', weeks: 'Weeks 7-9', color: 'amber' },
+          { key: 'phase4_advocacy', label: 'Phase 4: Advocacy', weeks: 'Weeks 10-12', color: 'emerald' }
+        ]
+
+        return (
+          <div className="space-y-6">
+            {phases.map((phase, i) => {
+              const phaseData = blueprint.part3_tacticalOrchestration?.[phase.key as keyof typeof blueprint.part3_tacticalOrchestration]
+              if (!phaseData) return null
+
+              return (
+                <div key={i} className={`p-4 bg-${phase.color}-900/20 border border-${phase.color}-500/30 rounded`}>
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <p className={`text-lg font-semibold text-${phase.color}-300`}>{phase.label}</p>
+                      <p className="text-xs text-gray-400">{phase.weeks}</p>
+                    </div>
+                  </div>
+
+                  {/* Pillar 1: Owned Actions */}
+                  {phaseData.pillar1_ownedActions && phaseData.pillar1_ownedActions.length > 0 && (
+                    <div className="mb-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-blue-400">🏢</span>
+                        <p className="text-sm font-semibold text-blue-300">Pillar 1: Owned Actions</p>
+                        <span className="text-xs px-2 py-0.5 bg-emerald-900/30 text-emerald-300 rounded">
+                          Signaldesk Auto-Execute
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {phaseData.pillar1_ownedActions.map((action: any, j) => {
+                          const isSocialMedia = action.platform || action.postOwner || action.postFormat
+                          return (
+                            <div key={j} className={`p-3 rounded ${isSocialMedia ? 'bg-blue-900/20 border border-blue-500/30' : 'bg-zinc-900/50'}`}>
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <span className={`text-sm font-mono px-2 py-0.5 rounded ${isSocialMedia ? 'text-blue-300 bg-blue-900/50' : 'text-blue-400 bg-blue-900/30'}`}>
+                                    {action.contentType}
+                                  </span>
+                                  {isSocialMedia && (
+                                    <span className="text-xs px-2 py-0.5 bg-purple-900/40 text-purple-300 rounded border border-purple-500/30 flex items-center gap-1">
+                                      <span>📱</span>
+                                      Social Media
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-xs text-gray-500">{action.timing}</span>
+                              </div>
+                              <p className="text-sm text-white mb-1">For: {action.targetStakeholder}</p>
+                              <p className="text-xs text-gray-400 mb-2">{action.psychologicalLever}</p>
+
+                              {/* Social Media Details */}
+                              {isSocialMedia && (
+                                <div className="mb-2 p-2 bg-blue-900/20 rounded border border-blue-500/20">
+                                  <div className="flex flex-wrap gap-2 text-xs">
+                                    {action.platform && (
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-blue-200 font-medium">Platform:</span>
+                                        <span className="text-blue-300">{action.platform}</span>
+                                      </div>
+                                    )}
+                                    {action.postOwner && (
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-blue-200 font-medium">Posted by:</span>
+                                        <span className="text-blue-300">{action.postOwner}</span>
+                                      </div>
+                                    )}
+                                    {action.postFormat && (
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-blue-200 font-medium">Format:</span>
+                                        <span className="text-blue-300">{action.postFormat}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                              {action.keyPoints && action.keyPoints.length > 0 && (
+                                <div className="mt-2">
+                                  <p className="text-xs text-blue-200 mb-1">Key Points:</p>
+                                  <ul className="list-disc list-inside space-y-0.5">
+                                    {action.keyPoints.map((point, k) => (
+                                      <li key={k} className="text-xs text-gray-300">{point}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                              {action.channels && action.channels.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-2">
+                                  {action.channels.map((channel, k) => (
+                                    <span key={k} className="text-xs px-1.5 py-0.5 bg-zinc-800 text-gray-400 rounded">
+                                      {channel}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Pillar 2: Relationship Orchestration */}
+                  {phaseData.pillar2_relationshipOrchestration && phaseData.pillar2_relationshipOrchestration.length > 0 && (
+                    <div className="mb-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-purple-400">🤝</span>
+                        <p className="text-sm font-semibold text-purple-300">Pillar 2: Relationship Orchestration</p>
+                        <span className="text-xs px-2 py-0.5 bg-amber-900/30 text-amber-300 rounded">
+                          User Action Required
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {phaseData.pillar2_relationshipOrchestration.map((action, j) => (
+                          <div key={j} className="p-3 bg-zinc-900/50 rounded">
+                            <div className="flex items-start justify-between mb-1">
+                              <p className="text-sm text-white font-medium">{action.who}</p>
+                              <span className="text-xs text-gray-500">{action.timing}</span>
+                            </div>
+                            <p className="text-xs text-gray-300 mb-1">Action: {action.action}</p>
+                            <p className="text-xs text-emerald-300">Goal: {action.goal}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Pillar 3: Event Orchestration */}
+                  {phaseData.pillar3_eventOrchestration && phaseData.pillar3_eventOrchestration.length > 0 && (
+                    <div className="mb-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-amber-400">🎪</span>
+                        <p className="text-sm font-semibold text-amber-300">Pillar 3: Event Orchestration</p>
+                        <span className="text-xs px-2 py-0.5 bg-amber-900/30 text-amber-300 rounded">
+                          User Action Required
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {phaseData.pillar3_eventOrchestration.map((action, j) => (
+                          <div key={j} className="p-3 bg-zinc-900/50 rounded">
+                            <div className="flex items-start justify-between mb-1">
+                              <p className="text-sm text-white font-medium">{action.event}</p>
+                              <span className="text-xs text-gray-500">{action.timing}</span>
+                            </div>
+                            <p className="text-xs text-gray-300 mb-1">Action: {action.action}</p>
+                            <p className="text-xs text-emerald-300">Goal: {action.goal}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Pillar 4: Media Engagement */}
+                  {phaseData.pillar4_mediaEngagement && phaseData.pillar4_mediaEngagement.length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-emerald-400">📰</span>
+                        <p className="text-sm font-semibold text-emerald-300">Pillar 4: Media Engagement</p>
+                        <span className="text-xs px-2 py-0.5 bg-emerald-900/30 text-emerald-300 rounded">
+                          Signaldesk Auto-Execute
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {phaseData.pillar4_mediaEngagement.map((action, j) => (
+                          <div key={j} className="p-3 bg-zinc-900/50 rounded">
+                            <div className="flex items-start justify-between mb-2">
+                              <p className="text-sm text-white font-medium">{action.story}</p>
+                              <span className="text-xs text-gray-500">{action.timing}</span>
+                            </div>
+                            {action.journalists && action.journalists.length > 0 && (
+                              <div className="mb-2">
+                                <p className="text-xs text-emerald-200 mb-1">Target Journalists:</p>
+                                <div className="space-y-1">
+                                  {action.journalists.map((journalist, k) => (
+                                    <div key={k} className="text-xs">
+                                      <span className="text-white">{journalist.name}</span>
+                                      <span className="text-gray-400"> ({journalist.outlet})</span>
+                                      {journalist.beat && (
+                                        <span className="text-gray-500"> - {journalist.beat}</span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {action.positioningMessage && (
+                              <p className="text-xs text-gray-400 italic">{action.positioningMessage}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )
+      }
+    },
+    {
+      id: 'execution',
+      title: 'Content Inventory & Execution',
+      icon: '⚡',
+      color: 'emerald',
+      render: () => (
+        <div className="space-y-4">
+          {/* Pending Status */}
+          {blueprint.part6_contentInventory?.status === 'pending' && (
+            <div className="p-4 bg-amber-900/20 border border-amber-500/30 rounded">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">⏳</span>
+                <div>
+                  <p className="text-amber-300 font-semibold mb-1">Content Inventory Pending</p>
+                  <p className="text-sm text-gray-400">{blueprint.part6_contentInventory.message}</p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    This will be available once the new stakeholder orchestration format is fully integrated with the content inventory generator.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {blueprint.part6_contentInventory?.summary && (
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="p-3 bg-emerald-900/20 border border-emerald-500/30 rounded">
+                <p className="text-sm text-gray-400 mb-1">Signaldesk Auto-Execute</p>
+                <p className="text-2xl font-bold text-emerald-300">
+                  {blueprint.part6_contentInventory.summary.totalSignaldeskActions || 0}
+                </p>
+                <p className="text-xs text-gray-500">actions</p>
+              </div>
+              <div className="p-3 bg-amber-900/20 border border-amber-500/30 rounded">
+                <p className="text-sm text-gray-400 mb-1">User Action Required</p>
+                <p className="text-2xl font-bold text-amber-300">
+                  {blueprint.part6_contentInventory.summary.totalOrganizationActions || 0}
+                </p>
+                <p className="text-xs text-gray-500">actions</p>
+              </div>
+            </div>
+          )}
+
+          {/* Signaldesk Actions */}
+          {blueprint.part6_contentInventory?.signaldeskActions &&
+           blueprint.part6_contentInventory.signaldeskActions.items &&
+           blueprint.part6_contentInventory.signaldeskActions.items.length > 0 && (
+            <div className="mb-4">
+              <p className="text-sm font-semibold text-emerald-300 mb-2">
+                ✅ Signaldesk Auto-Execute ({blueprint.part6_contentInventory.signaldeskActions.count})
+              </p>
+              <p className="text-xs text-gray-400 mb-3">{blueprint.part6_contentInventory.signaldeskActions.description}</p>
+              <div className="space-y-2">
+                {blueprint.part6_contentInventory.signaldeskActions.items.slice(0, 5).map((action: any, i: number) => (
+                  <div key={i} className="p-2 bg-emerald-900/10 border border-emerald-500/20 rounded text-sm">
+                    <div className="flex items-start justify-between mb-1">
+                      <span className="text-emerald-300 font-medium">
+                        {action.contentType || action.pillar}
+                      </span>
+                      <span className="text-xs text-gray-500">{action.timing}</span>
+                    </div>
+                    <p className="text-xs text-gray-300">{action.targetStakeholder || action.story}</p>
+                  </div>
+                ))}
+                {blueprint.part6_contentInventory.signaldeskActions.items.length > 5 && (
+                  <p className="text-xs text-gray-500 text-center">
+                    + {blueprint.part6_contentInventory.signaldeskActions.items.length - 5} more actions
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Organization Actions */}
+          {blueprint.part6_contentInventory?.organizationActions &&
+           blueprint.part6_contentInventory.organizationActions.items &&
+           blueprint.part6_contentInventory.organizationActions.items.length > 0 && (
+            <div>
+              <p className="text-sm font-semibold text-amber-300 mb-2">
+                👤 User Action Required ({blueprint.part6_contentInventory.organizationActions.count})
+              </p>
+              <p className="text-xs text-gray-400 mb-3">{blueprint.part6_contentInventory.organizationActions.description}</p>
+              <div className="space-y-2">
+                {blueprint.part6_contentInventory.organizationActions.items.slice(0, 5).map((action: any, i: number) => (
+                  <div key={i} className="p-2 bg-amber-900/10 border border-amber-500/20 rounded text-sm">
+                    <div className="flex items-start justify-between mb-1">
+                      <span className="text-amber-300 font-medium">
+                        {action.event || action.who || action.pillar}
+                      </span>
+                      <span className="text-xs text-gray-500">{action.timing}</span>
+                    </div>
+                    <p className="text-xs text-gray-300">{action.action || action.goal}</p>
+                  </div>
+                ))}
+                {blueprint.part6_contentInventory.organizationActions.items.length > 5 && (
+                  <p className="text-xs text-gray-500 text-center">
+                    + {blueprint.part6_contentInventory.organizationActions.items.length - 5} more actions
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )
+    }
+  ]
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-6">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center space-y-2"
+      >
+        <div className="flex items-center justify-center gap-2">
+          <svg className="w-6 h-6 text-emerald-500 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <h2 className="text-3xl font-bold text-white">
+            {blueprint.part1_strategicFoundation?.positioning?.name || 'VECTOR Campaign Blueprint'}
+          </h2>
+        </div>
+        {blueprint.part1_strategicFoundation?.positioning?.tagline && (
+          <p className="text-lg text-gray-300 italic">{blueprint.part1_strategicFoundation.positioning.tagline}</p>
+        )}
+        <div className="flex items-center justify-center gap-3">
+          <div className="inline-block px-3 py-1 bg-blue-600/20 border border-blue-500/50 rounded-full">
+            <span className="text-sm text-blue-400 font-medium">
+              {blueprint.metadata?.pattern || 'VECTOR'} Pattern
+            </span>
+          </div>
+          {blueprint.metadata?.performance?.totalTime && (
+            <div className="inline-block px-3 py-1 bg-emerald-600/20 border border-emerald-500/50 rounded-full">
+              <span className="text-sm text-emerald-400 font-medium">
+                Generated in {blueprint.metadata.performance.totalTime}
+              </span>
+            </div>
+          )}
+        </div>
+      </motion.div>
+
+      {/* Blueprint Sections */}
+      <div className="grid grid-cols-1 gap-4">
+        {sections.map((section, i) => (
+          <motion.div
+            key={section.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
+            className={`bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden hover:border-${section.color}-500/50 transition-all`}
+          >
+            <button
+              onClick={() => setExpandedSection(expandedSection === section.id ? null : section.id)}
+              className="w-full p-4 text-left"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{section.icon}</span>
+                  <h3 className="font-semibold text-white text-lg">{section.title}</h3>
+                </div>
+                <svg
+                  className={`w-5 h-5 text-gray-400 transition-transform ${expandedSection === section.id ? 'rotate-180' : ''}`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </button>
+
+            {expandedSection === section.id && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="px-4 pb-4 border-t border-zinc-800"
+              >
+                <div className="pt-4">
+                  {section.render()}
+                </div>
+              </motion.div>
+            )}
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Refinement Input */}
+      {showRefinementInput && onRefine && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-3"
+        >
+          <textarea
+            value={refinementInput}
+            onChange={(e) => setRefinementInput(e.target.value)}
+            placeholder="What sections would you like me to refine or improve?"
+            className="w-full h-24 bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors resize-none"
+            disabled={isRefining}
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={handleRefineSubmit}
+              disabled={!refinementInput.trim() || isRefining}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              {isRefining ? 'Refining...' : 'Refine Blueprint'}
+            </button>
+            <button
+              onClick={() => {
+                setShowRefinementInput(false)
+                setRefinementInput('')
+              }}
+              className="px-4 py-2 bg-zinc-800 text-white rounded-lg font-medium hover:bg-zinc-700 transition-all"
+            >
+              Cancel
+            </button>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Action Buttons */}
+      {!showRefinementInput && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+          className="flex items-center justify-between pt-4 border-t border-zinc-800"
+        >
+          <div className="flex gap-3">
+            {onRefine && (
+              <button
+                onClick={() => setShowRefinementInput(true)}
+                disabled={isRefining}
+                className="flex items-center gap-2 px-4 py-2 text-gray-400 hover:text-white transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Refine Blueprint
+              </button>
+            )}
+            {onExport && (
+              <button
+                onClick={onExport}
+                className="flex items-center gap-2 px-4 py-2 text-gray-400 hover:text-white transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Export Blueprint
+              </button>
+            )}
+          </div>
+
+          {onExecute && (
+            <button
+              onClick={onExecute}
+              disabled={isRefining}
+              className="px-6 py-3 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+            >
+              Begin Execution
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </button>
+          )}
+        </motion.div>
+      )}
+
+      {/* Loading State */}
+      {isRefining && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex items-center justify-center gap-2 py-4 text-blue-400"
+        >
+          <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+          Refining blueprint...
+        </motion.div>
+      )}
+    </div>
+  )
+}

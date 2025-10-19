@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vertex AI Visual Generation Test</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e1e1e 0%, #2a2a2a 100%);
+            color: #e0e0e0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #ffd700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .subtitle {
+            color: #888;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        h2 {
+            color: #ffd700;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #bbb;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            background: #1e1e1e;
+            border: 1px solid #444;
+            border-radius: 4px;
+            color: #e0e0e0;
+            font-family: inherit;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        button {
+            background: #ffd700;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #ffed00;
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        .status.info { background: #1e3a5f; border: 1px solid #2e5a8f; }
+        .status.success { background: #1e4f1e; border: 1px solid #2e7f2e; }
+        .status.error { background: #4f1e1e; border: 1px solid #7f2e2e; }
+        .status.warning { background: #4f4f1e; border: 1px solid #7f7f2e; }
+        .result-display {
+            margin-top: 20px;
+            display: none;
+        }
+        .result-display.active {
+            display: block;
+        }
+        .image-result {
+            max-width: 100%;
+            border-radius: 8px;
+            border: 2px solid #444;
+            margin-top: 10px;
+        }
+        .fallback-content {
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            margin-top: 10px;
+        }
+        .metadata {
+            background: #1e1e1e;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        .setup-guide {
+            background: #1e3a5f;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .setup-guide h3 {
+            color: #87ceeb;
+            margin-bottom: 10px;
+        }
+        .setup-guide ol {
+            margin-left: 20px;
+        }
+        .setup-guide li {
+            margin-bottom: 5px;
+        }
+        .project-info {
+            background: #2a2a2a;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            border: 1px solid #ffd700;
+        }
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .info-label {
+            color: #888;
+        }
+        .info-value {
+            color: #ffd700;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Vertex AI Visual Generation Test</h1>
+        <p class="subtitle">Test Google Cloud Vertex AI integration for Imagen 3 and Veo</p>
+
+        <div class="project-info">
+            <div class="info-item">
+                <span class="info-label">Project ID:</span>
+                <span class="info-value">sigdesk-1753801804417</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Region:</span>
+                <span class="info-value">us-central1</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">API Key:</span>
+                <span class="info-value">Configured ✓</span>
+            </div>
+        </div>
+
+        <!-- Image Generation Test -->
+        <div class="test-section">
+            <h2>🖼️ Image Generation (Imagen 3)</h2>
+
+            <div class="form-group">
+                <label>Prompt:</label>
+                <textarea id="imagePrompt" placeholder="E.g., Modern office space with AI technology visualization">Modern office space with holographic displays showing data analytics, professional atmosphere, clean design</textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Style:</label>
+                <select id="imageStyle">
+                    <option value="photorealistic">Photorealistic</option>
+                    <option value="digital_art">Digital Art</option>
+                    <option value="illustration">Illustration</option>
+                    <option value="professional" selected>Professional</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Aspect Ratio:</label>
+                <select id="aspectRatio">
+                    <option value="1:1">1:1 (Square)</option>
+                    <option value="16:9" selected>16:9 (Landscape)</option>
+                    <option value="9:16">9:16 (Portrait)</option>
+                    <option value="4:3">4:3 (Standard)</option>
+                </select>
+            </div>
+
+            <button onclick="generateImage()">Generate Image</button>
+            <button onclick="generateWithFramework('image')">Generate from Framework</button>
+
+            <div id="imageStatus" class="status" style="display: none;"></div>
+            <div id="imageResult" class="result-display"></div>
+        </div>
+
+        <!-- Video Generation Test -->
+        <div class="test-section">
+            <h2>🎬 Video Generation (Veo)</h2>
+
+            <div class="form-group">
+                <label>Prompt:</label>
+                <textarea id="videoPrompt" placeholder="E.g., Corporate video showing innovation in action">Corporate video showcasing cutting-edge AI technology transforming business operations</textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Duration (seconds):</label>
+                <input type="number" id="videoDuration" value="10" min="5" max="30">
+            </div>
+
+            <div class="form-group">
+                <label>Style:</label>
+                <select id="videoStyle">
+                    <option value="cinematic">Cinematic</option>
+                    <option value="documentary">Documentary</option>
+                    <option value="animation">Animation</option>
+                    <option value="corporate" selected>Corporate</option>
+                </select>
+            </div>
+
+            <button onclick="generateVideo()">Generate Video</button>
+            <button onclick="generateWithFramework('video')">Generate from Framework</button>
+
+            <div id="videoStatus" class="status" style="display: none;"></div>
+            <div id="videoResult" class="result-display"></div>
+        </div>
+
+        <!-- Direct Edge Function Test -->
+        <div class="test-section">
+            <h2>🔧 Direct Edge Function Test</h2>
+            <button onclick="testDirectEdgeFunction()">Test Vertex AI Edge Function</button>
+            <div id="directStatus" class="status" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        // Test framework (simulated)
+        const testFramework = {
+            strategy: {
+                objective: "Launch revolutionary AI-powered productivity platform",
+                narrative: "Transform how businesses operate with intelligent automation",
+                proof_points: [
+                    "90% efficiency improvement",
+                    "Real-time insights",
+                    "Enterprise-grade security"
+                ],
+                visual_brief: "Modern, professional imagery showcasing AI technology in action, with clean interfaces and data visualization"
+            }
+        };
+
+        function showStatus(elementId, message, type = 'info') {
+            const status = document.getElementById(elementId);
+            status.style.display = 'block';
+            status.className = `status ${type}`;
+            status.textContent = message;
+        }
+
+        async function generateImage() {
+            const prompt = document.getElementById('imagePrompt').value;
+            const style = document.getElementById('imageStyle').value;
+            const aspectRatio = document.getElementById('aspectRatio').value;
+
+            if (!prompt) {
+                showStatus('imageStatus', 'Please enter a prompt', 'error');
+                return;
+            }
+
+            showStatus('imageStatus', 'Generating image with Vertex AI Imagen 3...', 'info');
+
+            try {
+                const response = await fetch('/api/supabase/functions/content-visual-generation', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'image',
+                        prompt,
+                        style,
+                        aspectRatio,
+                        numberOfImages: 1
+                    })
+                });
+
+                const result = await response.json();
+                console.log('Image generation result:', result);
+
+                const resultDiv = document.getElementById('imageResult');
+                resultDiv.className = 'result-display active';
+
+                if (result.success && result.images) {
+                    showStatus('imageStatus', `✓ Generated ${result.images.length} image(s) successfully!`, 'success');
+
+                    resultDiv.innerHTML = result.images.map(img => `
+                        <div>
+                            <img src="${img.url}" alt="Generated image" class="image-result">
+                            ${img.metadata ? `
+                                <div class="metadata">
+                                    <strong>Metadata:</strong><br>
+                                    ${JSON.stringify(img.metadata, null, 2)}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `).join('');
+                } else if (result.fallback) {
+                    showStatus('imageStatus', 'Vertex AI not available - Fallback mode', 'warning');
+
+                    resultDiv.innerHTML = `
+                        <div class="fallback-content">
+                            <strong>Type:</strong> ${result.fallback.type}<br>
+                            <strong>Instructions:</strong> ${result.fallback.instructions}<br><br>
+                            <strong>Visual Brief:</strong><br>
+                            ${result.fallback.content}
+                        </div>
+                        ${result.fallback.setupGuide ? `
+                            <div class="setup-guide">
+                                <h3>${result.fallback.setupGuide.title}</h3>
+                                <ol>
+                                    ${result.fallback.setupGuide.steps.map(step => `<li>${step}</li>`).join('')}
+                                </ol>
+                                <p style="margin-top: 10px;">
+                                    <strong>Project ID:</strong> ${result.fallback.setupGuide.projectId}<br>
+                                    <a href="${result.fallback.setupGuide.consoleUrl}" target="_blank" style="color: #87ceeb;">Open Google Cloud Console →</a>
+                                </p>
+                            </div>
+                        ` : ''}
+                    `;
+                } else {
+                    showStatus('imageStatus', `Error: ${result.error || 'Unknown error'}`, 'error');
+                    resultDiv.innerHTML = '';
+                }
+            } catch (error) {
+                showStatus('imageStatus', `Error: ${error.message}`, 'error');
+                console.error('Image generation error:', error);
+            }
+        }
+
+        async function generateVideo() {
+            const prompt = document.getElementById('videoPrompt').value;
+            const duration = document.getElementById('videoDuration').value;
+            const style = document.getElementById('videoStyle').value;
+
+            if (!prompt) {
+                showStatus('videoStatus', 'Please enter a prompt', 'error');
+                return;
+            }
+
+            showStatus('videoStatus', 'Generating video with Vertex AI Veo...', 'info');
+
+            try {
+                const response = await fetch('/api/supabase/functions/content-visual-generation', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'video',
+                        prompt,
+                        duration: parseInt(duration),
+                        style,
+                        aspectRatio: '16:9'
+                    })
+                });
+
+                const result = await response.json();
+                console.log('Video generation result:', result);
+
+                const resultDiv = document.getElementById('videoResult');
+                resultDiv.className = 'result-display active';
+
+                if (result.success && result.videos) {
+                    showStatus('videoStatus', `✓ Generated ${result.videos.length} video(s) successfully!`, 'success');
+
+                    resultDiv.innerHTML = result.videos.map(vid => `
+                        <div>
+                            <video controls style="width: 100%; max-width: 600px; margin-top: 10px; border-radius: 8px;">
+                                <source src="${vid.url}" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            ${vid.metadata ? `
+                                <div class="metadata">
+                                    <strong>Metadata:</strong><br>
+                                    ${JSON.stringify(vid.metadata, null, 2)}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `).join('');
+                } else if (result.success && result.jobId) {
+                    showStatus('videoStatus', `✓ Video job started: ${result.jobId}`, 'success');
+
+                    resultDiv.innerHTML = `
+                        <div class="metadata">
+                            <strong>Job ID:</strong> ${result.jobId}<br>
+                            <strong>Status:</strong> ${result.status}<br>
+                            <strong>Estimated Time:</strong> ${result.estimatedTime}<br>
+                            <strong>Webhook URL:</strong> ${result.webhookUrl}
+                        </div>
+                    `;
+                } else if (result.fallback) {
+                    showStatus('videoStatus', 'Veo not available - Script generated', 'warning');
+
+                    resultDiv.innerHTML = `
+                        <div class="fallback-content">
+                            <strong>Type:</strong> ${result.fallback.type}<br>
+                            <strong>Instructions:</strong> ${result.fallback.instructions}<br><br>
+                            <strong>Video Script:</strong><br>
+                            ${result.fallback.content}
+                        </div>
+                        ${result.fallback.alternatives ? `
+                            <div class="metadata">
+                                <strong>Alternative Services:</strong><br>
+                                ${result.fallback.alternatives.map(alt =>
+                                    `• <a href="${alt.url}" target="_blank" style="color: #87ceeb;">${alt.name}</a> - ${alt.description}`
+                                ).join('<br>')}
+                            </div>
+                        ` : ''}
+                    `;
+                } else {
+                    showStatus('videoStatus', `Error: ${result.error || 'Unknown error'}`, 'error');
+                    resultDiv.innerHTML = '';
+                }
+            } catch (error) {
+                showStatus('videoStatus', `Error: ${error.message}`, 'error');
+                console.error('Video generation error:', error);
+            }
+        }
+
+        async function generateWithFramework(type) {
+            const statusId = type === 'image' ? 'imageStatus' : 'videoStatus';
+            const resultId = type === 'image' ? 'imageResult' : 'videoResult';
+
+            showStatus(statusId, `Generating ${type} from framework...`, 'info');
+
+            try {
+                const response = await fetch('/api/supabase/functions/content-visual-generation', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type,
+                        framework: testFramework,
+                        style: type === 'image' ? 'professional' : 'corporate',
+                        aspectRatio: '16:9',
+                        duration: type === 'video' ? 15 : undefined
+                    })
+                });
+
+                const result = await response.json();
+                console.log(`${type} generation with framework:`, result);
+
+                const resultDiv = document.getElementById(resultId);
+                resultDiv.className = 'result-display active';
+
+                if (result.fallback) {
+                    showStatus(statusId, 'Framework-based generation (fallback mode)', 'warning');
+                    resultDiv.innerHTML = `
+                        <div class="fallback-content">
+                            <strong>Generated from Framework:</strong><br>
+                            ${result.fallback.content || result.prompt}
+                        </div>
+                    `;
+                } else {
+                    showStatus(statusId, 'Generated from framework', 'success');
+                }
+            } catch (error) {
+                showStatus(statusId, `Error: ${error.message}`, 'error');
+                console.error('Framework generation error:', error);
+            }
+        }
+
+        async function testDirectEdgeFunction() {
+            showStatus('directStatus', 'Testing direct Edge Function call...', 'info');
+
+            try {
+                const supabaseUrl = 'https://zskaxjtyuaqazydouifp.supabase.co';
+                const response = await fetch(`${supabaseUrl}/functions/v1/vertex-ai-visual`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU5MzA4MzcsImV4cCI6MjA1MTUwNjgzN30.yWT6UP7h38USHQZMqqBN5VymXI6EKmDE5VaQl8oCRd4'
+                    },
+                    body: JSON.stringify({
+                        type: 'image',
+                        prompt: 'Test image generation',
+                        style: 'professional',
+                        aspectRatio: '16:9'
+                    })
+                });
+
+                const result = await response.json();
+                console.log('Direct Edge Function result:', result);
+
+                if (response.ok) {
+                    showStatus('directStatus', `✓ Edge Function responded successfully! ${result.success ? 'Generation attempted' : 'Fallback provided'}`, 'success');
+                } else {
+                    showStatus('directStatus', `Edge Function error: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                showStatus('directStatus', `Connection error: ${error.message}`, 'error');
+                console.error('Direct test error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+@@ -264,7 +264,8 @@
+   
+   // Base opportunity structure
+   const opportunity: EnhancedOpportunity = {
+-    id: crypto.randomUUID(),
++    // Include timestamp to ensure uniqueness across runs
++    id: `${crypto.randomUUID()}-${Date.now()}`,
+     title: rawOpp.raw_insight.title || `${rawOpp.type} Opportunity`,
+     description: rawOpp.raw_insight.action || rawOpp.raw_insight.response_required || 
+                  rawOpp.raw_insight.preparation_needed || 'Action required',
+@@ -495,7 +496,8 @@
+     const { data, error } = await supabase
+       .from('opportunities')
+       .upsert(opportunitiesToInsert, {
+-        onConflict: 'opportunity_id',
++        // Always insert new opportunities, don't update existing
++        onConflict: 'opportunity_id', 
+         ignoreDuplicates: false
+       })
+ 

@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalDesk V3 - Optimized Pipeline Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .subtitle {
+            color: rgba(255,255,255,0.9);
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1.2em;
+        }
+        
+        .test-controls {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 25px;
+        }
+        
+        button {
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .test-full { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .test-stage { background: linear-gradient(135deg, #f093fb, #f5576c); }
+        .test-discovery { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+        .test-monitor { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+        .test-relevance { background: linear-gradient(135deg, #fa709a, #fee140); }
+        .test-enrichment { background: linear-gradient(135deg, #30cfd0, #330867); }
+        .test-synthesis { background: linear-gradient(135deg, #a8edea, #fed6e3); color: #333; }
+        .test-opportunities { background: linear-gradient(135deg, #ff9a9e, #fecfef); color: #333; }
+        
+        .status-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .status-item {
+            padding: 15px;
+            border-radius: 8px;
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+        }
+        
+        .status-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        
+        .status-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .results-container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            max-height: 800px;
+            overflow-y: auto;
+        }
+        
+        .results-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            background: #f8f9fa;
+            border: none;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .synthesis-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .synthesis-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .insight-item {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border-left: 3px solid #00f2fe;
+        }
+        
+        .coverage-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .coverage-item {
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+            text-align: center;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .coverage-item.covered {
+            border-color: #43e97b;
+            background: #f0fff4;
+        }
+        
+        .coverage-item.partial {
+            border-color: #fee140;
+            background: #fffbf0;
+        }
+        
+        .coverage-item.missing {
+            border-color: #f5576c;
+            background: #fff0f0;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background: #fee;
+            border-left: 4px solid #f00;
+            padding: 15px;
+            border-radius: 8px;
+            color: #c00;
+            margin-bottom: 20px;
+        }
+        
+        .success {
+            background: #efe;
+            border-left: 4px solid #0c0;
+            padding: 15px;
+            border-radius: 8px;
+            color: #060;
+            margin-bottom: 20px;
+        }
+        
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .metric-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+        
+        .metric-value {
+            font-size: 32px;
+            font-weight: bold;
+        }
+        
+        .discovery-targets {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .target-category {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        
+        .target-category h4 {
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+        
+        .target-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .target-badge {
+            padding: 5px 10px;
+            background: white;
+            border-radius: 15px;
+            font-size: 12px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .target-badge.found {
+            background: #43e97b;
+            color: white;
+            border-color: #38f9d7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 SignalDesk V3 - Optimized Pipeline Test</h1>
+        <p class="subtitle">Testing Enhanced Coverage, Discovery Hunting & 30-Article Firecrawl</p>
+        
+        <div class="test-controls">
+            <div class="input-group">
+                <label for="orgName">Organization Name</label>
+                <input type="text" id="orgName" value="Tesla" placeholder="Enter organization name">
+            </div>
+            
+            <div class="input-group">
+                <label for="industry">Industry</label>
+                <select id="industry">
+                    <option value="automotive">Automotive</option>
+                    <option value="technology">Technology</option>
+                    <option value="finance">Finance</option>
+                    <option value="healthcare">Healthcare</option>
+                    <option value="retail">Retail</option>
+                    <option value="energy">Energy</option>
+                </select>
+            </div>
+            
+            <div class="button-group">
+                <button onclick="testFullPipeline()" class="test-full">🔄 Test Full Pipeline</button>
+                <button onclick="testDiscovery()" class="test-discovery">🔍 Test Discovery</button>
+                <button onclick="testMonitorStage1()" class="test-monitor">📡 Test Monitor Stage 1</button>
+                <button onclick="testRelevance()" class="test-relevance">🎯 Test Relevance + Firecrawl</button>
+                <button onclick="testEnrichment()" class="test-enrichment">💎 Test Enrichment</button>
+                <button onclick="testSynthesis()" class="test-synthesis">🧠 Test Synthesis</button>
+                <button onclick="testOpportunities()" class="test-opportunities">💡 Test Opportunities</button>
+            </div>
+        </div>
+        
+        <div class="status-panel" id="statusPanel" style="display: none;">
+            <h3>Pipeline Status</h3>
+            <div class="status-grid" id="statusGrid"></div>
+        </div>
+        
+        <div class="results-container" id="results">
+            <div class="loading">
+                <p>Ready to test the optimized pipeline...</p>
+                <p style="margin-top: 10px; color: #999;">Key improvements:</p>
+                <ul style="text-align: left; display: inline-block; margin-top: 10px; color: #666;">
+                    <li>✅ Monitor-Stage-1 organizes articles by discovery categories</li>
+                    <li>✅ Relevance actively hunts for ALL competitors & stakeholders</li>
+                    <li>✅ Firecrawl now processes 30 articles (up from 25)</li>
+                    <li>✅ Enrichment handles both full and partial content</li>
+                    <li>✅ Synthesis focuses on executive analysis</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        // Using service role key for internal function calls
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTEyOTYzNywiZXhwIjoyMDcwNzA1NjM3fQ.WO35k7riuKT2QXj_YvbtRwzLwi3Pev30-X9Yziej2pM';
+        
+        let currentResults = {};
+        
+        function showLoading(message) {
+            document.getElementById('results').innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+        
+        function showError(message, details = null) {
+            document.getElementById('results').innerHTML = `
+                <div class="error">
+                    <strong>Error:</strong> ${message}
+                    ${details ? `<pre style="margin-top: 10px">${JSON.stringify(details, null, 2)}</pre>` : ''}
+                </div>
+            `;
+        }
+        
+        function updateStatus(stats) {
+            const statusPanel = document.getElementById('statusPanel');
+            const statusGrid = document.getElementById('statusGrid');
+            
+            statusPanel.style.display = 'block';
+            
+            const items = [
+                { label: 'Total Articles', value: stats.total_articles || 0 },
+                { label: 'With Full Content', value: stats.articles_with_full_content || 0 },
+                { label: 'With Partial Content', value: stats.articles_with_partial_content || 0 },
+                { label: 'Events Extracted', value: stats.unique_events || 0 },
+                { label: 'Entities Found', value: stats.unique_entities || 0 },
+                { label: 'Firecrawl Success', value: stats.articles_with_firecrawl_data || 0 }
+            ];
+            
+            statusGrid.innerHTML = items.map(item => `
+                <div class="status-item">
+                    <div class="status-label">${item.label}</div>
+                    <div class="status-value">${item.value}</div>
+                </div>
+            `).join('');
+        }
+        
+        async function testFullPipeline() {
+            const orgName = document.getElementById('orgName').value;
+            const industry = document.getElementById('industry').value;
+            
+            showLoading('Running full optimized pipeline test...');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-orchestrator-v2`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization_name: orgName,
+                        industry: industry,
+                        test_mode: true
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || 'Pipeline failed');
+                }
+                
+                currentResults = result;
+                displayFullResults(result);
+                
+            } catch (error) {
+                showError('Pipeline test failed', error);
+            }
+        }
+        
+        async function testDiscovery() {
+            const orgName = document.getElementById('orgName').value;
+            const industry = document.getElementById('industry').value;
+            
+            showLoading('Testing discovery with enhanced competitor detection...');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/mcp-discovery`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        tool: 'create_organization_profile',
+                        arguments: {
+                            organization_name: orgName,
+                            industry_hint: industry,
+                            save_to_persistence: false
+                        }
+                    })
+                });
+                
+                const result = await response.json();
+                displayDiscoveryResults(result);
+                
+            } catch (error) {
+                showError('Discovery test failed', error);
+            }
+        }
+        
+        async function testMonitorStage1() {
+            showLoading('Testing Monitor Stage 1 with category organization...');
+            
+            // First get profile
+            const profile = await getProfile();
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/monitor-stage-1`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization_name: document.getElementById('orgName').value,
+                        profile: profile
+                    })
+                });
+                
+                const result = await response.json();
+                displayMonitorResults(result);
+                
+            } catch (error) {
+                showError('Monitor Stage 1 test failed', error);
+            }
+        }
+        
+        async function testRelevance() {
+            showLoading('Testing Relevance with 30-article Firecrawl...');
+            
+            // Need to get articles from monitor stage first
+            const monitorResult = await runMonitorStage1();
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/monitor-stage-2-relevance`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        articles: monitorResult.articles,
+                        profile: await getProfile(),
+                        organization_name: document.getElementById('orgName').value,
+                        top_k: 60
+                    })
+                });
+                
+                const result = await response.json();
+                displayRelevanceResults(result);
+                
+            } catch (error) {
+                showError('Relevance test failed', error);
+            }
+        }
+        
+        async function getProfile() {
+            const response = await fetch(`${SUPABASE_URL}/functions/v1/mcp-discovery`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                },
+                body: JSON.stringify({
+                    tool: 'create_organization_profile',
+                    arguments: {
+                        organization_name: document.getElementById('orgName').value,
+                        industry_hint: document.getElementById('industry').value,
+                        save_to_persistence: false
+                    }
+                })
+            });
+            
+            const result = await response.json();
+            return result.profile;
+        }
+        
+        async function runMonitorStage1() {
+            const profile = await getProfile();
+            
+            const response = await fetch(`${SUPABASE_URL}/functions/v1/monitor-stage-1`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                },
+                body: JSON.stringify({
+                    organization_name: document.getElementById('orgName').value,
+                    profile: profile
+                })
+            });
+            
+            return await response.json();
+        }
+        
+        function displayFullResults(result) {
+            const synthesis = result.synthesis || {};
+            const metadata = result.metadata || {};
+            
+            let html = `
+                <div class="results-tabs">
+                    <button class="tab active" onclick="showTab('synthesis')">Synthesis</button>
+                    <button class="tab" onclick="showTab('coverage')">Coverage Analysis</button>
+                    <button class="tab" onclick="showTab('raw')">Raw Data</button>
+                </div>
+                
+                <div id="synthesis-tab" class="tab-content active">
+                    <div class="synthesis-section">
+                        <div class="synthesis-title">Executive Summary</div>
+                        <p>${synthesis.executive_summary || 'No summary available'}</p>
+                    </div>
+                    
+                    <div class="synthesis-section">
+                        <div class="synthesis-title">Top Insights</div>
+                        ${(synthesis.top_insights || []).map(insight => `
+                            <div class="insight-item">${insight}</div>
+                        `).join('')}
+                    </div>
+                    
+                    <div class="synthesis-section">
+                        <div class="synthesis-title">Competitor Moves</div>
+                        ${(synthesis.competitor_moves || []).map(move => `
+                            <div class="insight-item">${move}</div>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                <div id="coverage-tab" class="tab-content">
+                    <h3>Discovery Coverage Analysis</h3>
+                    <div class="coverage-grid">
+                        ${generateCoverageAnalysis(result)}
+                    </div>
+                </div>
+                
+                <div id="raw-tab" class="tab-content">
+                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                </div>
+            `;
+            
+            document.getElementById('results').innerHTML = html;
+            
+            if (metadata.statistics) {
+                updateStatus(metadata.statistics);
+            }
+        }
+        
+        function displayDiscoveryResults(result) {
+            const profile = result.profile || {};
+            
+            let html = `
+                <h3>Discovery Profile Created</h3>
+                <div class="discovery-targets">
+                    <div class="target-category">
+                        <h4>Competitors (${(profile.competition?.direct_competitors || []).length})</h4>
+                        <div class="target-list">
+                            ${(profile.competition?.direct_competitors || []).slice(0, 15).map(comp => 
+                                `<span class="target-badge">${comp}</span>`
+                            ).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="target-category">
+                        <h4>Stakeholders</h4>
+                        <div class="target-list">
+                            ${(profile.stakeholders?.regulators || []).map(reg => 
+                                `<span class="target-badge">${reg}</span>`
+                            ).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="target-category">
+                        <h4>Trending Topics</h4>
+                        <div class="target-list">
+                            ${(profile.trending?.hot_topics || []).slice(0, 10).map(topic => 
+                                `<span class="target-badge">${topic}</span>`
+                            ).join('')}
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <pre>${JSON.stringify(profile, null, 2)}</pre>
+                </div>
+            `;
+            
+            document.getElementById('results').innerHTML = html;
+        }
+        
+        function displayMonitorResults(result) {
+            const metadata = result.metadata || {};
+            
+            let html = `
+                <h3>Monitor Stage 1 Results</h3>
+                
+                <div class="metric-card">
+                    <div class="metric-label">Total Articles Collected</div>
+                    <div class="metric-value">${result.total_articles || 0}</div>
+                </div>
+                
+                <div class="status-grid">
+                    <div class="status-item">
+                        <div class="status-label">Category Breakdown</div>
+                        <div style="margin-top: 10px">
+                            ${Object.entries(metadata.category_breakdown || {}).map(([cat, count]) => 
+                                `<div>${cat}: ${count}</div>`
+                            ).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="status-item">
+                        <div class="status-label">Discovery Coverage</div>
+                        <div style="margin-top: 10px">
+                            <div>Competitors: ${metadata.discovery_coverage?.competitors_covered || 0}/${metadata.discovery_coverage?.total_competitors || 0}</div>
+                            <div>Stakeholders: ${metadata.discovery_coverage?.stakeholders_covered || 0}/${metadata.discovery_coverage?.total_stakeholders || 0}</div>
+                            <div>Topics: ${metadata.discovery_coverage?.topics_covered || 0}/${metadata.discovery_coverage?.total_topics || 0}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="status-item">
+                        <div class="status-label">Sources Used</div>
+                        <div style="margin-top: 10px">
+                            <div>RSS: ${metadata.sources_used?.rss || 0}</div>
+                            <div>API: ${metadata.sources_used?.api || 0}</div>
+                            <div>Scraped: ${metadata.sources_used?.scraped || 0}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <h4>Entity Coverage</h4>
+                    <div class="coverage-grid">
+                        ${Object.entries(metadata.entity_coverage || {}).map(([entity, count]) => 
+                            `<div class="coverage-item ${count > 0 ? 'covered' : 'missing'}">
+                                ${entity}: ${count}
+                            </div>`
+                        ).join('')}
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('results').innerHTML = html;
+        }
+        
+        function displayRelevanceResults(result) {
+            const stats = result.statistics || {};
+            const articlesWithContent = result.findings?.filter(a => a.has_full_content) || [];
+            
+            let html = `
+                <h3>Relevance & Firecrawl Results</h3>
+                
+                <div class="metric-card">
+                    <div class="metric-label">Articles Sent to Firecrawl</div>
+                    <div class="metric-value">${articlesWithContent.length}</div>
+                </div>
+                
+                <div class="status-grid">
+                    <div class="status-item">
+                        <div class="status-label">Score Distribution</div>
+                        <div style="margin-top: 10px">
+                            <div>High (70+): ${stats.score_distribution?.high || 0}</div>
+                            <div>Medium (30-69): ${stats.score_distribution?.medium || 0}</div>
+                            <div>Low (<30): ${stats.score_distribution?.low || 0}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="status-item">
+                        <div class="status-label">Coverage Achieved</div>
+                        <div style="margin-top: 10px">
+                            <div>Competitors: ${stats.coverage?.competitors || 0}</div>
+                            <div>Stakeholders: ${stats.coverage?.stakeholders || 0}</div>
+                            <div>Keywords: ${stats.coverage?.keywords || 0}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <h4>Top Articles for Firecrawl</h4>
+                    ${result.findings?.slice(0, 30).map((article, i) => `
+                        <div class="insight-item">
+                            <strong>${i + 1}. [Score: ${article.pr_relevance_score}]</strong> ${article.title}
+                            <div style="margin-top: 5px; font-size: 12px; color: #666;">
+                                ${article.has_full_content ? '✅ Full Content' : '⚠️ No Content Yet'}
+                                | Category: ${article.pr_category}
+                                | Factors: ${(article.pr_factors || []).slice(0, 2).join(', ')}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            document.getElementById('results').innerHTML = html;
+        }
+        
+        function generateCoverageAnalysis(result) {
+            // Extract coverage data from metadata
+            const enrichmentStats = result.metadata?.enrichment_stats || {};
+            const relevanceStats = result.metadata?.relevance_stats || {};
+            
+            const coverageItems = [
+                { label: 'Competitors Found', value: enrichmentStats.competitors_found || 0, target: 15 },
+                { label: 'Stakeholders Covered', value: enrichmentStats.stakeholders_found || 0, target: 10 },
+                { label: 'Topics Identified', value: enrichmentStats.topics_found || 0, target: 10 },
+                { label: 'Articles with Full Content', value: enrichmentStats.articles_with_full_content || 0, target: 30 },
+                { label: 'Events Extracted', value: enrichmentStats.events_extracted || 0, target: 20 },
+                { label: 'Entities Found', value: enrichmentStats.entities_found || 0, target: 30 }
+            ];
+            
+            return coverageItems.map(item => {
+                const percentage = Math.round((item.value / item.target) * 100);
+                const status = percentage >= 80 ? 'covered' : percentage >= 50 ? 'partial' : 'missing';
+                
+                return `
+                    <div class="coverage-item ${status}">
+                        <div style="font-weight: bold">${item.label}</div>
+                        <div style="font-size: 24px; margin: 10px 0">${item.value}/${item.target}</div>
+                        <div style="font-size: 12px">${percentage}% Coverage</div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            event.target.classList.add('active');
+        }
+        
+        // Additional test functions for other stages...
+        async function testEnrichment() {
+            showLoading('Testing Enrichment with partial content handling...');
+            // Implementation similar to above
+        }
+        
+        async function testSynthesis() {
+            showLoading('Testing Synthesis...');
+            // Implementation similar to above
+        }
+        
+        async function testOpportunities() {
+            showLoading('Testing Opportunity Detection...');
+            // Implementation similar to above
+        }
+    </script>
+</body>
+</html>

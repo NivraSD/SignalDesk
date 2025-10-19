@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test NIV Media List with Journalist Registry</title>
+  <style>
+    body { font-family: monospace; padding: 20px; }
+    .log { margin: 10px 0; padding: 10px; background: #f5f5f5; }
+    .error { background: #ffebee; color: #c62828; }
+    .success { background: #e8f5e9; color: #2e7d32; }
+  </style>
+</head>
+<body>
+  <h1>Test NIV Media List with Journalist Registry</h1>
+  <button onclick="testMediaList()">Test: "Give me 10 AI journalists"</button>
+  <div id="logs"></div>
+
+  <script>
+    const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+    const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTEyOTYzNywiZXhwIjoyMDcwNzA1NjM3fQ.0keCVMy3U1iCCi0-5rwWnEPNcn2C-rTNuZxfqN1g4mA';
+
+    function log(message, type = 'log') {
+      const div = document.createElement('div');
+      div.className = `log ${type}`;
+      div.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
+      document.getElementById('logs').appendChild(div);
+    }
+
+    async function testMediaList() {
+      document.getElementById('logs').innerHTML = '';
+      log('🧪 Testing NIV media list generation...');
+
+      try {
+        log('📤 Sending request to NIV...');
+
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/niv-content-intelligent-v2`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${SERVICE_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            message: "Give me 10 AI journalists",
+            userId: "test-user",
+            orgId: "60b16ab5-d9f3-4ae8-ab7d-b39fceb55bd3",
+            stage: "full"
+          })
+        });
+
+        log('📥 Received response from NIV');
+
+        const data = await response.json();
+
+        log(`📊 Response mode: ${data.mode}`, 'success');
+        log(`📊 Content type: ${data.contentType}`, 'success');
+
+        if (data.content) {
+          if (data.content.source === 'registry') {
+            log(`✅ Using journalist registry only!`, 'success');
+            log(`✅ Found ${data.content.journalists?.length} verified journalists`, 'success');
+          } else if (data.content.source === 'hybrid') {
+            log(`✅ Using hybrid approach (registry + mcp-media)`, 'success');
+            log(`✅ Verified: ${data.content.verified_journalists?.length}`, 'success');
+            log(`⚠️ Gap detected - filling with mcp-media`, 'log');
+          }
+
+          // Display first 3 journalists
+          const journalists = data.content.journalists || data.content.verified_journalists || [];
+          if (journalists.length > 0) {
+            log(`\n📋 Sample journalists:`, 'success');
+            journalists.slice(0, 3).forEach(j => {
+              log(`  - ${j.name} (${j.outlet}) - ${j.beat}`, 'log');
+            });
+          }
+        } else {
+          log(`⚠️ No content in response`, 'error');
+        }
+
+        log(`\n📝 Full response:`, 'log');
+        log(JSON.stringify(data, null, 2), 'log');
+
+      } catch (error) {
+        log(`❌ Error: ${error.message}`, 'error');
+        console.error(error);
+      }
+    }
+  </script>
+</body>
+</html>

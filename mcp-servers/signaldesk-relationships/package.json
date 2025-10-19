@@ -1,0 +1,27 @@
+{
+  "name": "@signaldesk/mcp-relationships",
+  "version": "1.0.0",
+  "description": "MCP server for SignalDesk Relationships - contact and relationship management",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "prepare": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.6.0",
+    "pg": "^8.16.3",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/pg": "^8.10.0",
+    "typescript": "^5.3.0",
+    "tsx": "^4.6.0"
+  },
+  "bin": {
+    "signaldesk-relationships": "dist/index.js"
+  }
+}

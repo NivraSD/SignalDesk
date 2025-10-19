@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stage 1: Monitor-Stage-1 Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #0a0a0a;
+            color: #00ff00;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #00ffff;
+            border-bottom: 2px solid #00ff00;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #ffff00;
+            margin-top: 30px;
+        }
+        .article {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .field-label {
+            color: #ff00ff;
+            font-weight: bold;
+        }
+        .field-value {
+            color: #ffffff;
+            margin-left: 20px;
+            word-wrap: break-word;
+        }
+        .error {
+            color: #ff0000;
+            background: #330000;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success {
+            color: #00ff00;
+            background: #003300;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .warning {
+            color: #ffff00;
+            background: #333300;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .stats {
+            background: #002244;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        button {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        button:hover {
+            background: #00cc00;
+        }
+        #loading {
+            color: #ffff00;
+            font-size: 20px;
+            display: none;
+        }
+        .html-indicator {
+            color: #ff0000;
+            font-weight: bold;
+        }
+        pre {
+            background: #0d0d0d;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 STAGE 1: Monitor-Stage-1 Article Retrieval Test</h1>
+        
+        <div class="stats">
+            <h2>Test Parameters</h2>
+            <p><span class="field-label">Organization:</span> <span id="org-name">Tesla</span></p>
+            <p><span class="field-label">Article Limit:</span> <span id="article-limit">10</span></p>
+            <p><span class="field-label">Service Key:</span> <span id="has-key">Checking...</span></p>
+        </div>
+
+        <button onclick="runTest()">🚀 RUN STAGE 1 TEST</button>
+        <button onclick="clearResults()">🗑️ CLEAR RESULTS</button>
+        
+        <div id="loading">⏳ Loading articles from RSS feeds...</div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTEyOTYzNywiZXhwIjoyMDcwNzA1NjM3fQ.WO35k7riuKT2QXj_YvbtRwzLwi3Pev30-X9Yziej2pM';
+        
+        document.getElementById('has-key').textContent = SUPABASE_KEY ? '✅ Configured' : '❌ Missing';
+
+        function detectHTML(text) {
+            const htmlPattern = /<[^>]*>/g;
+            return htmlPattern.test(text);
+        }
+
+        function analyzeContent(text) {
+            const analysis = {
+                hasHTML: detectHTML(text),
+                length: text ? text.length : 0,
+                hasGarbagePatterns: false,
+                garbagePatterns: []
+            };
+
+            const garbagePatterns = [
+                'BOL_footer',
+                'mod=',
+                'cookie',
+                'Cookie',
+                'advertisement',
+                'Advertisement',
+                '\\[\\s*\\]',
+                'href=',
+                'onclick',
+                '<!--',
+                '-->',
+                '\\.com/',
+                'http://',
+                'https://'
+            ];
+
+            garbagePatterns.forEach(pattern => {
+                if (text && text.includes(pattern)) {
+                    analysis.hasGarbagePatterns = true;
+                    analysis.garbagePatterns.push(pattern);
+                }
+            });
+
+            return analysis;
+        }
+
+        async function runTest() {
+            const resultsDiv = document.getElementById('results');
+            const loadingDiv = document.getElementById('loading');
+            
+            resultsDiv.innerHTML = '';
+            loadingDiv.style.display = 'block';
+
+            try {
+                console.log('Starting Stage 1 test...');
+                
+                // First, get the profile from discovery
+                console.log('Getting organization profile...');
+                const profileResponse = await fetch(`${SUPABASE_URL}/functions/v1/mcp-discovery`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        tool: 'create_organization_profile',
+                        arguments: {
+                            organization_name: document.getElementById('org-name').textContent,
+                            save_to_persistence: false
+                        }
+                    })
+                });
+                
+                const profileData = await profileResponse.json();
+                const profile = profileData.profile || {};
+                console.log('Got profile:', profile);
+                console.log('Profile has sources:', {
+                    monitoring_config_sources: profile.monitoring_config?.all_sources?.length || 0,
+                    competitors: profile.competition?.direct_competitors?.length || 0
+                });
+                
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/monitor-stage-1`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        organization_name: document.getElementById('org-name').textContent,
+                        profile: profile
+                    })
+                });
+
+                const data = await response.json();
+                console.log('Stage 1 response:', data);
+
+                loadingDiv.style.display = 'none';
+
+                if (!response.ok) {
+                    resultsDiv.innerHTML = `<div class="error">❌ Error: ${data.error || 'Unknown error'}</div>`;
+                    return;
+                }
+
+                // Display overall statistics
+                const stats = `
+                    <div class="stats">
+                        <h2>📊 Results Summary</h2>
+                        <p><span class="field-label">Total Articles Found:</span> <span class="field-value">${data.articles?.length || data.total_articles || 0}</span></p>
+                        <p><span class="field-label">Success:</span> <span class="field-value">${data.success ? '✅ Yes' : '❌ No'}</span></p>
+                        <p><span class="field-label">Timestamp:</span> <span class="field-value">${new Date().toLocaleString()}</span></p>
+                    </div>
+                `;
+                resultsDiv.innerHTML += stats;
+                
+                // Display metadata if available
+                if (data.metadata) {
+                    const sources = data.metadata.sources_used || {};
+                    const rssPercentage = data.total_articles > 0 ? 
+                        Math.round((sources.rss || 0) / data.total_articles * 100) : 0;
+                    
+                    const metadataDiv = `
+                        <div class="stats">
+                            <h2>📈 Source Analysis</h2>
+                            <p><span class="field-label">Organization:</span> <span class="field-value">${data.metadata.organization || 'N/A'}</span></p>
+                            <p><span class="field-label">Competitors Tracked:</span> <span class="field-value">${data.metadata.competitors_tracked || 0}</span></p>
+                            <p><span class="field-label">Keywords Used:</span> <span class="field-value">${data.metadata.keywords_used || 0}</span></p>
+                            <p><span class="field-label">Category Breakdown:</span> <span class="field-value">${JSON.stringify(data.metadata.category_breakdown || {})}</span></p>
+                            <div style="margin-top: 10px; padding: 10px; background: #1a1a1a; border-radius: 5px;">
+                                <p style="font-size: 18px; color: #00ffff;">📊 Source Distribution:</p>
+                                <p><span class="field-label">RSS Articles:</span> <span class="field-value" style="color: ${sources.rss > 0 ? '#00ff00' : '#ff0000'}">${sources.rss || 0} (${rssPercentage}%)</span></p>
+                                <p><span class="field-label">API Articles:</span> <span class="field-value" style="color: ${sources.api > 20 ? '#ff0000' : '#ffff00'}">${sources.api || 0}</span></p>
+                                <p><span class="field-label">Scraped:</span> <span class="field-value">${sources.scraped || 0}</span></p>
+                                <p style="margin-top: 10px; font-weight: bold; color: ${rssPercentage >= 80 ? '#00ff00' : rssPercentage >= 50 ? '#ffff00' : '#ff0000'}">
+                                    ${rssPercentage >= 80 ? '✅ EXCELLENT - RSS sources dominating' : 
+                                     rssPercentage >= 50 ? '⚠️ OK - Mixed sources' : 
+                                     '❌ PROBLEM - Too reliant on API searches'}
+                                </p>
+                            </div>
+                        </div>
+                    `;
+                    resultsDiv.innerHTML += metadataDiv;
+                }
+
+                // Analyze each article
+                if (data.articles && data.articles.length > 0) {
+                    resultsDiv.innerHTML += '<h2>📰 Articles Retrieved</h2>';
+                    
+                    data.articles.forEach((article, index) => {
+                        const titleAnalysis = analyzeContent(article.title);
+                        const descAnalysis = analyzeContent(article.description);
+                        
+                        const articleDiv = `
+                            <div class="article">
+                                <h3>Article ${index + 1}</h3>
+                                
+                                <p><span class="field-label">Title:</span></p>
+                                <div class="field-value">${article.title || 'N/A'}</div>
+                                ${titleAnalysis.hasHTML ? '<div class="error">⚠️ HTML DETECTED IN TITLE!</div>' : '<div class="success">✅ Title is clean</div>'}
+                                ${titleAnalysis.hasGarbagePatterns ? `<div class="warning">⚠️ Garbage patterns found: ${titleAnalysis.garbagePatterns.join(', ')}</div>` : ''}
+                                
+                                <p><span class="field-label">URL:</span></p>
+                                <div class="field-value">${article.url || 'N/A'}</div>
+                                
+                                <p><span class="field-label">Description (${descAnalysis.length} chars):</span></p>
+                                <div class="field-value">${article.description || 'N/A'}</div>
+                                ${descAnalysis.hasHTML ? '<div class="error">⚠️ HTML DETECTED IN DESCRIPTION!</div>' : '<div class="success">✅ Description is clean</div>'}
+                                ${descAnalysis.hasGarbagePatterns ? `<div class="warning">⚠️ Garbage patterns found: ${descAnalysis.garbagePatterns.join(', ')}</div>` : ''}
+                                
+                                <p><span class="field-label">Source:</span> <span class="field-value">${article.source || 'Unknown'}</span></p>
+                                <p><span class="field-label">Published:</span> <span class="field-value">${article.published || 'Unknown'}</span></p>
+                                
+                                ${article.full_content ? `
+                                    <p><span class="field-label">Has Full Content:</span> <span class="field-value">✅ Yes (${article.full_content.length} chars)</span></p>
+                                ` : `
+                                    <p><span class="field-label">Has Full Content:</span> <span class="field-value">❌ No</span></p>
+                                `}
+                            </div>
+                        `;
+                        resultsDiv.innerHTML += articleDiv;
+                    });
+
+                    // Overall quality assessment
+                    const htmlCount = data.articles.filter(a => detectHTML(a.title) || detectHTML(a.description)).length;
+                    const cleanCount = data.articles.length - htmlCount;
+                    
+                    const assessment = `
+                        <div class="stats">
+                            <h2>🎯 Quality Assessment</h2>
+                            <p><span class="field-label">Clean Articles:</span> <span class="field-value">${cleanCount} / ${data.articles.length}</span></p>
+                            <p><span class="field-label">Articles with HTML:</span> <span class="field-value">${htmlCount}</span></p>
+                            <p><span class="field-label">Overall Quality:</span> <span class="field-value">${
+                                htmlCount === 0 ? '✅ EXCELLENT - No HTML contamination' :
+                                htmlCount < data.articles.length / 2 ? '⚠️ WARNING - Some HTML contamination' :
+                                '❌ CRITICAL - Heavy HTML contamination'
+                            }</span></p>
+                        </div>
+                    `;
+                    resultsDiv.innerHTML += assessment;
+                    
+                } else {
+                    resultsDiv.innerHTML += '<div class="error">❌ No articles found!</div>';
+                }
+
+                // Show raw JSON for debugging
+                resultsDiv.innerHTML += `
+                    <h2>🔧 Raw Response (for debugging)</h2>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+
+            } catch (error) {
+                loadingDiv.style.display = 'none';
+                resultsDiv.innerHTML = `<div class="error">❌ Test failed: ${error.message}</div>`;
+                console.error('Test error:', error);
+            }
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+    </script>
+</body>
+</html>

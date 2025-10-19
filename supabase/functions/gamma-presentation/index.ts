@@ -1,0 +1,442 @@
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { corsHeaders } from '../_shared/cors.ts'
+
+// Gamma API configuration
+const GAMMA_API_URL = 'https://public-api.gamma.app/v0.2'
+const GAMMA_API_KEY = Deno.env.get('GAMMA_API_KEY') || 'sk-gamma-zFOvUwGMpXZaDiB5sWkl3a5lakNfP19E90ZUZUdZM'
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
+
+interface PresentationRequest {
+  title?: string
+  topic?: string  // Also accept 'topic' from NIVContentOrchestrator
+  content?: string
+  framework?: any
+  format?: 'presentation' | 'document' | 'social'
+  slideCount?: number  // Also accept slideCount
+  style?: string  // Also accept style
+  // Export options are provided by Gamma after generation, not requested upfront
+  options?: {
+    numCards?: number
+    themeName?: string
+    imageSource?: 'ai' | 'unsplash' | 'web'
+    tone?: string
+    audience?: string
+    cardSplit?: 'auto' | 'heading' | 'paragraph'
+  }
+}
+
+// Convert framework to presentation-optimized content
+function frameworkToPresentation(framework: any, title?: string): string {
+  const objective = framework?.strategy?.objective || framework?.core?.objective || title || 'Strategic Presentation'
+  const narrative = framework?.strategy?.narrative || framework?.core?.narrative || ''
+  const proofPoints = framework?.strategy?.proof_points || framework?.proofPoints || []
+  const tactics = framework?.tactics || {}
+  const keyMessages = framework?.strategy?.keyMessages || []
+
+  let presentationContent = `# ${objective}\n\n`
+
+  // Executive Summary
+  if (narrative) {
+    presentationContent += `## Executive Summary\n${narrative}\n\n`
+  }
+
+  // Strategic Overview
+  if (framework?.strategy?.rationale) {
+    presentationContent += `## Strategic Rationale\n${framework.strategy.rationale}\n\n`
+  }
+
+  // Key Proof Points as individual slides
+  if (proofPoints.length > 0) {
+    presentationContent += `## Key Value Propositions\n\n`
+    proofPoints.forEach((point: any, index: number) => {
+      if (typeof point === 'string') {
+        presentationContent += `### Point ${index + 1}\n${point}\n\n`
+      } else if (point.title) {
+        presentationContent += `### ${point.title}\n`
+        if (point.description) presentationContent += `${point.description}\n`
+        if (point.metrics?.length > 0) {
+          presentationContent += `\n**Key Metrics:**\n`
+          point.metrics.forEach((metric: string) => presentationContent += `- ${metric}\n`)
+        }
+        presentationContent += '\n'
+      }
+    })
+  }
+
+  // Key Messages
+  if (keyMessages.length > 0) {
+    presentationContent += `## Core Messages\n`
+    keyMessages.forEach((msg: string) => {
+      presentationContent += `- ${msg}\n`
+    })
+    presentationContent += '\n'
+  }
+
+  // Tactics & Implementation
+  if (Object.keys(tactics).length > 0) {
+    presentationContent += `## Implementation Strategy\n\n`
+
+    if (tactics.content_creation?.length > 0) {
+      presentationContent += `### Content Strategy\n`
+      tactics.content_creation.forEach((item: string) => presentationContent += `- ${item}\n`)
+      presentationContent += '\n'
+    }
+
+    if (tactics.distribution?.length > 0) {
+      presentationContent += `### Distribution Channels\n`
+      tactics.distribution.forEach((item: string) => presentationContent += `- ${item}\n`)
+      presentationContent += '\n'
+    }
+
+    if (tactics.next_steps?.length > 0) {
+      presentationContent += `### Next Steps\n`
+      tactics.next_steps.forEach((item: string) => presentationContent += `- ${item}\n`)
+      presentationContent += '\n'
+    }
+  }
+
+  // Call to Action
+  presentationContent += `## Call to Action\n`
+  presentationContent += `Let's bring this vision to life together.\n`
+  presentationContent += `Contact us to discuss next steps and implementation.\n`
+
+  return presentationContent
+}
+
+// Generate presentation via Gamma API
+async function generatePresentation(request: PresentationRequest) {
+  console.log('🎨 Generating presentation with Gamma')
+
+  // Handle both 'title' and 'topic' fields
+  const presentationTitle = request.title || request.topic || ''
+
+  // Prepare content
+  let inputText = request.content || ''
+
+  if (request.framework && !request.content) {
+    inputText = frameworkToPresentation(request.framework, presentationTitle)
+  } else if (!inputText && presentationTitle) {
+    inputText = `# ${presentationTitle}\n\nCreate a comprehensive presentation about ${presentationTitle}`
+  }
+
+  // No need to add tone/audience to inputText - we'll use textOptions instead
+
+  if (!inputText) {
+    throw new Error('No content provided for presentation generation')
+  }
+
+  console.log('📝 Input text preview:', inputText.substring(0, 200))
+
+  // Call Gamma API
+  try {
+    // Build Gamma API request with proper structure
+    const requestBody: any = {
+      inputText: inputText,
+      textMode: request.content ? 'preserve' : 'generate',
+      format: request.format || 'presentation',
+      numCards: request.options?.numCards || request.slideCount || (request.framework ? 12 : 10),
+      cardSplit: request.options?.cardSplit || 'auto'
+    }
+
+    // Note: Export URLs come from Gamma AFTER generation is complete
+    // We don't request them upfront
+
+    // Add theme only if specified (let Gamma use workspace default otherwise)
+    if (request.options?.themeName && request.options.themeName !== 'auto') {
+      requestBody.themeName = request.options.themeName
+    }
+
+    // Add text options if provided
+    const textOptions: any = {}
+    if (request.options?.tone || request.style) {
+      textOptions.tone = request.options?.tone || request.style
+    }
+    if (request.options?.audience) {
+      textOptions.audience = request.options.audience
+    }
+    if (Object.keys(textOptions).length > 0) {
+      requestBody.textOptions = textOptions
+    }
+
+    // Add image options
+    requestBody.imageOptions = {
+      source: request.options?.imageSource === 'ai' ? 'aiGenerated' :
+               request.options?.imageSource === 'web' ? 'webAllImages' :
+               request.options?.imageSource || 'aiGenerated'
+    }
+
+    console.log('📤 Gamma API request:', {
+      url: `${GAMMA_API_URL}/generations`,
+      bodyPreview: {
+        inputTextLength: inputText.length,
+        textMode: requestBody.textMode,
+        format: requestBody.format,
+        numCards: requestBody.numCards
+      }
+    })
+
+    const gammaResponse = await fetch(`${GAMMA_API_URL}/generations`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-KEY': GAMMA_API_KEY
+      },
+      body: JSON.stringify(requestBody)
+    })
+
+    if (!gammaResponse.ok) {
+      const errorText = await gammaResponse.text()
+      console.error('Gamma API error:', gammaResponse.status, errorText)
+
+      // Try to parse error details
+      let errorDetails = errorText
+      try {
+        const errorJson = JSON.parse(errorText)
+        errorDetails = errorJson.message || errorJson.error || errorText
+      } catch {
+        // Keep as text if not JSON
+      }
+
+      if (gammaResponse.status === 401) {
+        throw new Error('Gamma API authentication failed. Please check API key.')
+      } else if (gammaResponse.status === 429) {
+        throw new Error('Gamma API rate limit exceeded. Try again later.')
+      } else if (gammaResponse.status === 400) {
+        throw new Error(`Gamma API bad request: ${errorDetails}`)
+      }
+
+      throw new Error(`Gamma generation failed (${gammaResponse.status}): ${errorDetails}`)
+    }
+
+    const result = await gammaResponse.json()
+    console.log('✅ Gamma generation response:', JSON.stringify(result))
+
+    // According to API docs: POST returns only generationId
+    const generationId = result.generationId || result.id
+
+    if (!generationId) {
+      console.error('No generation ID in response:', result)
+      throw new Error('Gamma API did not return a generation ID')
+    }
+
+    console.log('📝 Generation started with ID:', generationId)
+
+    // Return immediately with pending status - let frontend poll for completion
+    // Presentations take 30-60 seconds to generate, so don't wait here
+    return {
+      success: true,
+      generationId: generationId,
+      gammaUrl: null,
+      presentationUrl: null,
+      url: null,
+      status: 'pending',
+      exportUrls: {},
+      estimatedTime: '30-60 seconds',
+      message: `Presentation is being generated. Generation ID: ${generationId}. Check status endpoint for updates.`,
+      statusEndpoint: `${SUPABASE_URL}/functions/v1/gamma-presentation/status/${generationId}`,
+      metadata: {
+        format: request.format || 'presentation',
+        numCards: request.options?.numCards || request.slideCount,
+        needsPolling: true
+      }
+    }
+  } catch (error) {
+    console.error('Gamma generation error:', error)
+    throw error
+  }
+}
+
+// Check generation status (for polling)
+async function checkGenerationStatus(generationId: string) {
+  console.log('🔍 Checking status for generation:', generationId)
+
+  try {
+    const response = await fetch(`${GAMMA_API_URL}/generations/${generationId}`, {
+      method: 'GET',
+      headers: {
+        'X-API-KEY': GAMMA_API_KEY
+      }
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      console.log('📊 Status response:', JSON.stringify(data))
+
+      // According to docs: completed response has gammaUrl field
+      const isCompleted = data.status === 'completed'
+
+      // Extract export options from the Gamma URL if available
+      const exportUrls: any = {}
+      if (data.gammaUrl) {
+        // Gamma provides export functionality through their UI
+        // We can construct the export URLs based on the gamma URL
+        const presentationId = data.gammaUrl.split('/').pop()
+        if (presentationId) {
+          exportUrls.view = data.gammaUrl
+          exportUrls.edit = `${data.gammaUrl}/edit`
+          // Note: Direct export URLs may be provided by Gamma in future API versions
+        }
+      }
+
+      return {
+        success: true,
+        status: data.status || 'pending',
+        gammaUrl: data.gammaUrl || null,  // This is the correct field from API
+        generationId: generationId,
+        exportUrls: exportUrls, // Export options available after generation
+        credits: data.credits || {},  // Credit usage info
+        message: data.message || (isCompleted ? 'Presentation ready!' : 'Still generating...')
+      }
+    } else if (response.status === 404) {
+      // Generation not found
+      return {
+        success: false,
+        status: 'not_found',
+        generationId: generationId,
+        message: 'Generation ID not found'
+      }
+    } else {
+      const errorText = await response.text()
+      console.error('Status check error:', response.status, errorText)
+      return {
+        success: false,
+        status: 'error',
+        generationId: generationId,
+        message: `Status check failed: ${response.status}`
+      }
+    }
+  } catch (error) {
+    console.error('Status check error:', error)
+    return {
+      success: false,
+      status: 'error',
+      generationId: generationId,
+      message: error.message
+    }
+  }
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
+  try {
+    const url = new URL(req.url)
+    const pathParts = url.pathname.split('/')
+
+    // Check if this is a status check request (two formats supported)
+    // 1. Path-based: /gamma-presentation/status/{generationId}
+    // 2. Query-based: /gamma-presentation?generationId={id}
+    const generationIdFromPath = pathParts.length > 2 && pathParts[pathParts.length - 2] === 'status'
+      ? pathParts[pathParts.length - 1]
+      : null
+    const generationIdFromQuery = url.searchParams.get('generationId')
+    const generationId = generationIdFromPath || generationIdFromQuery
+
+    if (generationId) {
+      console.log('🔍 Status check requested for generation:', generationId)
+      const status = await checkGenerationStatus(generationId)
+
+      return new Response(
+        JSON.stringify(status),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
+        }
+      )
+    }
+
+    // Regular generation request
+    let body
+    try {
+      const text = await req.text()
+      console.log('📥 Raw request body:', text.substring(0, 500))
+
+      if (!text || text.trim() === '') {
+        throw new Error('Request body is empty')
+      }
+
+      body = JSON.parse(text)
+    } catch (parseError) {
+      console.error('❌ Failed to parse request body:', parseError)
+      throw new Error(`Invalid JSON in request body: ${parseError.message}`)
+    }
+
+    // Handle both direct requests and MCP-style requests from niv-content-robust
+    let request: PresentationRequest
+    if (body.tool && body.parameters) {
+      // MCP-style request from niv-content-robust
+      request = body.parameters as PresentationRequest
+    } else if (body.arguments) {
+      // Alternative MCP-style
+      request = body.arguments as PresentationRequest
+    } else {
+      // Direct request
+      request = body as PresentationRequest
+    }
+
+    console.log('✅ Parsed request:', {
+      hasTitle: !!request.title,
+      hasTopic: !!request.topic,
+      hasContent: !!request.content,
+      hasFramework: !!request.framework
+    })
+
+    const result = await generatePresentation(request)
+
+    return new Response(
+      JSON.stringify(result),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200
+      }
+    )
+  } catch (error) {
+    console.error('Presentation generation error:', error)
+
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: error.message,
+        fallback: {
+          type: 'presentation_outline',
+          instructions: 'Manual presentation creation required',
+          suggestion: 'Try using the generated content with Google Slides or PowerPoint'
+        }
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500
+      }
+    )
+  }
+})
+
+/*
+ * GAMMA API DOCUMENTATION
+ *
+ * API Key: sk-gamma-zFOvUwGMpXZaDiB5sWkl3a5lakNfP19E90ZUZUdZM
+ *
+ * Endpoints:
+ * - POST /v0.2/generations - Create new presentation
+ * - GET /v0.2/generations/{id} - Check generation status
+ *
+ * Features:
+ * - AI-powered presentation generation
+ * - Multiple formats: presentation, document, social
+ * - AI image generation included
+ * - Export to PDF and PPTX
+ * - 60+ languages supported
+ *
+ * Limits:
+ * - 50 generations per day (Beta)
+ * - Max 750,000 characters input
+ * - Processing time: 1-3 minutes
+ *
+ * Best Practices:
+ * - Use structured content with clear headings
+ * - Specify audience and tone for better results
+ * - Poll status endpoint for completion
+ * - Cache generated presentations
+ */

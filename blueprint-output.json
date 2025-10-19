@@ -1,0 +1,473 @@
+{
+  "overview": {
+    "campaignName": "AI ROI Convergence",
+    "pattern": "CASCADE",
+    "patternRationale": "CFOs are risk-averse and need proof before adoption. CASCADE builds credibility through seeds (owned thought leadership) → convergence (industry voices) → revelation (media validation) over time.",
+    "duration": "12 weeks",
+    "complexity": "High",
+    "objective": "Position as the definitive AI sustainability ROI platform driving CFO evaluation and pilot adoption"
+  },
+  "part1_goalFramework": {
+    "primaryObjective": "Generate 50+ qualified CFO leads evaluating AI sustainability ROI solutions within 12 weeks",
+    "behavioralGoals": [
+      {
+        "stakeholder": "Enterprise CFOs",
+        "desiredBehavior": "Request ROI assessment demos and share platform internally",
+        "currentState": "Aware sustainability costs money, skeptical of AI ROI claims",
+        "successMetric": "30+ demo requests from F500 CFOs"
+      }
+    ],
+    "kpis": [
+      "50+ qualified CFO leads",
+      "15+ media mentions",
+      "200+ C-suite social shares",
+      "5+ speaking opportunities"
+    ],
+    "successCriteria": "CFOs proactively reach out citing our ROI methodology as reason for interest",
+    "riskAssessment": [
+      {
+        "risk": "Competitors claim similar ROI benefits",
+        "probability": "High",
+        "impact": "Dilutes differentiation",
+        "mitigation": "Lead with proprietary methodology + specific customer data"
+      },
+      {
+        "risk": "Economic downturn makes CFOs more risk-averse",
+        "probability": "Medium",
+        "impact": "Delays adoption decisions",
+        "mitigation": "Emphasize cost savings over investment requirements"
+      }
+    ]
+  },
+  "part2_stakeholderMapping": {
+    "groups": [
+      {
+        "name": "Enterprise CFOs",
+        "size": "5000",
+        "psychologicalProfile": {
+          "values": [
+            "Financial ROI",
+            "Risk mitigation",
+            "Board credibility"
+          ],
+          "fears": [
+            "Budget overruns",
+            "Unproven technology costs",
+            "Regulatory penalties"
+          ],
+          "aspirations": [
+            "Industry leadership",
+            "Operational efficiency",
+            "Stakeholder value"
+          ],
+          "decisionDrivers": [
+            "Quantified ROI",
+            "Peer validation",
+            "Risk assessment"
+          ]
+        },
+        "informationDiet": {
+          "primarySources": [
+            "CFO Magazine",
+            "Harvard Business Review",
+            "McKinsey reports"
+          ],
+          "trustedVoices": [
+            "Industry analysts",
+            "Peer CFOs",
+            "Board advisors"
+          ],
+          "consumptionHabits": "Scan headlines, deep-dive on ROI data, prefer case studies"
+        },
+        "decisionTriggers": [
+          "Regulatory pressure",
+          "Peer adoption",
+          "Board mandate"
+        ],
+        "currentPerception": "AI is expensive and unproven for sustainability ROI",
+        "targetPerception": "AI sustainability platforms deliver measurable financial returns",
+        "barriers": [
+          "Lack of ROI proof",
+          "Implementation complexity",
+          "Budget constraints"
+        ]
+      }
+    ],
+    "stakeholderRelationships": "CFOs influence each other through industry networks and board connections. They trust peer recommendations over vendor claims.",
+    "priorityOrder": [
+      "Enterprise CFOs"
+    ]
+  },
+  "part3_orchestrationStrategy": {
+    "phases": {
+      "phase1_awareness": {
+        "objective": "Establish credibility as ROI-focused sustainability AI authority",
+        "duration": "Weeks 1-4",
+        "stakeholderFocus": [
+          "Enterprise CFOs"
+        ],
+        "messageTheme": "AI sustainability platforms deliver quantifiable ROI when implemented with proper methodology",
+        "pillar1_ownedActions": {
+          "organizationalVoice": [
+            {
+              "who": "CEO",
+              "why": "Executive credibility with CFO peers",
+              "platforms": [
+                "LinkedIn",
+                "Company blog"
+              ],
+              "contentNeeds": [
+                {
+                  "contentType": "blog-post",
+                  "topic": "The CFO's Guide to AI Sustainability ROI: Beyond Greenwashing to Real Returns",
+                  "coreMessage": "Methodology for calculating true AI sustainability ROI with 18-month payback examples",
+                  "targetStakeholder": "Enterprise CFOs",
+                  "timing": "Week 1, Tuesday",
+                  "signaldeskGenerates": "Full blog draft with ROI framework and case study data",
+                  "userExecutes": "Publish on blog, share on LinkedIn with CFO hashtags, post in CFO communities",
+                  "successMetric": "100+ LinkedIn shares from finance executives"
+                },
+                {
+                  "contentType": "white-paper",
+                  "topic": "AI Sustainability ROI Benchmark Report: What 200+ CFOs Learned",
+                  "coreMessage": "Industry benchmarks showing average 2.3x ROI within 24 months",
+                  "targetStakeholder": "Enterprise CFOs",
+                  "timing": "Week 2, Thursday",
+                  "signaldeskGenerates": "20-page white paper with methodology, benchmarks, implementation framework",
+                  "userExecutes": "Gate behind email capture, promote in CFO newsletters, LinkedIn targeted ads",
+                  "successMetric": "300+ downloads from target companies"
+                }
+              ]
+            },
+            {
+              "who": "CTO",
+              "why": "Technical credibility for implementation concerns",
+              "platforms": [
+                "LinkedIn",
+                "Technical blogs"
+              ],
+              "contentNeeds": [
+                {
+                  "contentType": "linkedin-article",
+                  "topic": "Why Most AI Sustainability Projects Fail: The Technical ROI Killers CFOs Should Know",
+                  "coreMessage": "Technical implementation factors that determine ROI success/failure",
+                  "targetStakeholder": "Enterprise CFOs and CTOs",
+                  "timing": "Week 3, Wednesday",
+                  "signaldeskGenerates": "LinkedIn article with technical ROI framework",
+                  "userExecutes": "Publish and engage with comments from finance and tech leaders",
+                  "successMetric": "50+ comments from C-suite executives"
+                }
+              ]
+            }
+          ],
+          "distributionStrategy": {
+            "ownedChannels": [
+              "Company blog",
+              "Newsletter",
+              "LinkedIn company page"
+            ],
+            "engagementChannels": [
+              {
+                "platform": "Reddit r/CFO",
+                "engagementType": "Share ROI insights in relevant threads",
+                "cadence": "2-3 helpful comments per week",
+                "tone": "Data-driven peer advisor",
+                "signaldeskGenerates": "Comment templates with ROI talking points"
+              },
+              {
+                "platform": "LinkedIn CFO groups",
+                "engagementType": "Share case studies and respond to ROI questions",
+                "cadence": "Daily engagement",
+                "tone": "Experienced practitioner",
+                "signaldeskGenerates": "Engagement templates and conversation starters"
+              }
+            ]
+          }
+        },
+        "pillar2_relationshipOrchestration": {
+          "tier1Influencers": [
+            {
+              "stakeholderSegment": "CFO Thought Leaders",
+              "discoveryCriteria": [
+                "F500 CFO or former CFO with 10K+ LinkedIn followers",
+                "Regular content about sustainability or AI investment",
+                "Active in CFO communities and conferences"
+              ],
+              "exampleTargets": [
+                {
+                  "name": "[MOCK] Former F500 CFO turned advisor with sustainability focus",
+                  "source": "mock_recommendation",
+                  "relevanceScore": 0.94,
+                  "whyMock": "Need to identify specific CFO influencers in sustainability space",
+                  "userAction": "Search LinkedIn for 'CFO sustainability advisor' + '10000 followers'"
+                }
+              ],
+              "engagementStrategy": {
+                "objective": "Get them to reference our ROI methodology in their content",
+                "approach": "Value-first with exclusive data access",
+                "contentToCreateForThem": [
+                  {
+                    "contentType": "case-study",
+                    "topic": "CFO's Journey: $50M Sustainability ROI in 18 Months",
+                    "why": "They need concrete examples for their advisory work",
+                    "signaldeskGenerates": "Detailed case study with financials and implementation timeline",
+                    "userExecutes": "Share exclusively via LinkedIn DM with personalized note",
+                    "timing": "Week 2"
+                  },
+                  {
+                    "contentType": "infographic",
+                    "topic": "AI Sustainability ROI Decision Framework for CFOs",
+                    "why": "Shareable visual for their LinkedIn posts",
+                    "signaldeskGenerates": "Professional infographic with our methodology",
+                    "userExecutes": "Email with usage rights and suggested LinkedIn copy",
+                    "timing": "Week 3"
+                  }
+                ],
+                "touchpointCadence": [
+                  "Week 1: LinkedIn connection with value",
+                  "Week 2: Case study share",
+                  "Week 3: Infographic + framework",
+                  "Week 4: Invite to exclusive CFO roundtable"
+                ],
+                "successMetric": "2+ influencers cite our ROI methodology in their content within 6 weeks"
+              }
+            }
+          ]
+        },
+        "pillar3_eventOrchestration": {
+          "tier1Events": [
+            {
+              "event": "[MOCK] CFO Summit 2024",
+              "date": "March 2024",
+              "source": "mock_recommendation",
+              "relevanceScore": 0.96,
+              "whyAttend": "200+ F500 CFOs, sustainability track, media coverage",
+              "presenceStrategy": {
+                "officialParticipation": "Panel: 'ROI Reality Check: AI Sustainability Investments That Pay Off'",
+                "socialStrategy": "Live-tweet key ROI insights from other sessions",
+                "contentSignaldeskGenerates": [
+                  "panel-proposal: ROI methodology presentation",
+                  "social-posts: 25 tweet templates with CFO insights",
+                  "one-pager: AI Sustainability ROI Quick Assessment Tool",
+                  "email-templates: Follow-up sequences for new connections"
+                ]
+              },
+              "preEventContent": {
+                "blog-post": "5 Questions Every CFO Should Ask About AI Sustainability ROI",
+                "why": "Position as thought leader before event, drive booth traffic"
+              },
+              "postEventContent": {
+                "blog-post": "CFO Summit Insights: The ROI Reality of AI Sustainability",
+                "media-pitch": "Exclusive data from CFO conversations about AI ROI barriers"
+              }
+            }
+          ],
+          "virtualEvents": [
+            {
+              "eventType": "Exclusive CFO Roundtable",
+              "topic": "AI Sustainability ROI: Lessons from Early Adopters",
+              "contentSignaldeskGenerates": [
+                "webinar-script: Moderated discussion with customer CFOs",
+                "email-sequence: Invitation and follow-up series",
+                "social-posts: Teaser content about exclusive insights",
+                "blog-post: Key takeaways and ROI benchmarks",
+                "video-clips: Soundbites for social media"
+              ]
+            }
+          ]
+        },
+        "pillar4_mediaEngagement": {
+          "messageArchitecture": "Each tier validates that AI sustainability delivers measurable ROI when implemented correctly",
+          "outletStrategy": [
+            {
+              "outletTier": "Tier 1 - CFO/Finance",
+              "outlets": [
+                {
+                  "name": "CFO Magazine",
+                  "journalist": "Sarah Martinez",
+                  "beat": "Technology",
+                  "source": "journalist_registry",
+                  "whyThisOutlet": "Direct line to CFO decision makers"
+                }
+              ],
+              "storiesToPitch": [
+                {
+                  "storyAngle": "Exclusive: New Data Shows AI Sustainability ROI Reality vs. Hype",
+                  "messagePillar": "ROI methodology validation",
+                  "hook": "Survey of 200+ CFOs reveals average 2.3x ROI but 40% failure rate - here's why",
+                  "timing": "Week 3",
+                  "contentSignaldeskGenerates": {
+                    "media-pitch": "Full pitch email with exclusive data preview",
+                    "press-kit": "ROI benchmark report summary",
+                    "talking-points": "Interview prep on methodology and case studies",
+                    "follow-up-templates": "2 follow-up emails with additional data"
+                  },
+                  "supportingAssets": [
+                    "white-paper",
+                    "case-study"
+                  ],
+                  "successMetric": "Feature story published within 4 weeks",
+                  "howSupportsStrategy": "Validates Pillar 1 ROI claims, gives Pillar 2 influencers credible source to cite"
+                }
+              ]
+            },
+            {
+              "outletTier": "Tier 1 - Sustainability",
+              "outlets": [
+                {
+                  "name": "GreenBiz",
+                  "journalist": "David Chen",
+                  "beat": "Sustainability",
+                  "source": "journalist_registry",
+                  "whyThisOutlet": "Sustainability leaders who influence CFO decisions"
+                }
+              ],
+              "storiesToPitch": [
+                {
+                  "storyAngle": "The CFO's Dilemma: When Sustainability Meets ROI Requirements",
+                  "messagePillar": "Financial sustainability alignment",
+                  "hook": "How leading CFOs are making sustainability profitable with AI",
+                  "timing": "Week 4",
+                  "contentSignaldeskGenerates": {
+                    "media-pitch": "Pitch focusing on CFO perspective on sustainability ROI",
+                    "press-kit": "CFO case studies and financial impact data",
+                    "talking-points": "Interview prep on financial benefits of AI sustainability",
+                    "follow-up-templates": "Follow-up with additional CFO quotes"
+                  },
+                  "supportingAssets": [
+                    "case-study",
+                    "infographic"
+                  ],
+                  "successMetric": "Story published with CEO quote within 4 weeks",
+                  "howSupportsStrategy": "Reaches sustainability leaders who influence CFO thinking, reinforces ROI message from different angle"
+                }
+              ]
+            }
+          ]
+        },
+        "convergenceStrategy": "Owned content establishes ROI methodology → CFO influencers cite our framework → Event presence legitimizes expertise → Media validates with third-party reporting = CFOs encounter 'everyone talking about this ROI approach' from multiple independent sources",
+        "targetSystemState": "CFOs discover our ROI methodology from 4+ different sources without seeing coordination, creating perception of industry consensus",
+        "transitionToNextPhase": "Once ROI credibility established and media validation achieved, shift to competitive differentiation and urgency creation"
+      }
+    }
+  },
+  "part4_counterNarrative": {
+    "threatScenarios": [
+      {
+        "threat": "Competitor claims superior ROI methodology",
+        "earlyWarning": "Social listening flags competitor ROI content spike",
+        "responseSLA": "4 hours to draft response",
+        "responsePlaybook": {
+          "pillar1Owned": {
+            "contentType": "blog-post + qa-document",
+            "topic": "ROI Methodology Comparison: Why Sample Size and Timeframe Matter",
+            "signaldeskGenerates": "Response blog comparing methodologies + Q&A document + CEO talking points"
+          },
+          "pillar2Relationships": {
+            "activation": "Alert CFO influencers with exclusive data",
+            "contentType": "case-study",
+            "signaldeskGenerates": "Head-to-head ROI comparison case study for influencer sharing"
+          },
+          "pillar4Media": {
+            "action": "Proactive pitch to Sarah Martinez and David Chen",
+            "signaldeskGenerates": "Rapid response pitch: 'The ROI Claims Wars: What CFOs Need to Know'"
+          }
+        }
+      },
+      {
+        "threat": "Economic downturn narrative - 'AI investments too risky'",
+        "earlyWarning": "Media coverage of AI budget cuts",
+        "responseSLA": "6 hours to pivot messaging",
+        "responsePlaybook": {
+          "pillar1Owned": {
+            "contentType": "thought-leadership + email",
+            "topic": "Why Economic Uncertainty Makes AI Sustainability ROI More Critical",
+            "signaldeskGenerates": "Recession-proof ROI argument + customer email with cost-saving data"
+          },
+          "pillar2Relationships": {
+            "activation": "CFO influencers get 'recession ROI' talking points",
+            "contentType": "infographic",
+            "signaldeskGenerates": "Cost-cutting vs. smart investment framework visual"
+          },
+          "pillar4Media": {
+            "action": "Pitch counter-narrative to business media",
+            "signaldeskGenerates": "Pitch: 'CFOs Finding ROI Opportunities in Downturn Through AI Sustainability'"
+          }
+        }
+      }
+    ]
+  },
+  "part5_executionRequirements": {
+    "teamBandwidth": {
+      "minimumViable": {
+        "roles": [
+          "1 person: SignalDesk content creation and optimization (12 hrs/week)",
+          "1 person: Outreach and relationship management (10 hrs/week)",
+          "0.5 CEO: Media interviews and speaking (3 hrs/week)",
+          "0.25 CTO: Technical content review and LinkedIn engagement (2 hrs/week)"
+        ],
+        "totalCommitment": "27 hours/week across team"
+      }
+    },
+    "budgetConsiderations": {
+      "optionalPaidAmplification": {
+        "useCases": [
+          "LinkedIn targeted ads for white paper promotion to CFO segments",
+          "Sponsored content in CFO newsletters",
+          "Event booth and travel costs"
+        ],
+        "estimatedBudget": "$8-12K over 12 weeks"
+      },
+      "eventCosts": {
+        "tier1Events": "$8-15K (booth, travel, materials)",
+        "virtualEvents": "$500-1000 (platform, production)"
+      }
+    },
+    "adaptationStrategy": {
+      "leadingIndicators": [
+        {
+          "checkpoint": "Week 2",
+          "metric": "White paper downloads from target companies",
+          "target": "100+ downloads",
+          "ifMiss": "Survey downloaders for messaging gaps, A/B test headlines"
+        },
+        {
+          "checkpoint": "Week 4",
+          "metric": "CFO influencer engagement",
+          "target": "2+ influencers sharing our content",
+          "ifMiss": "Expand influencer outreach, create more exclusive content"
+        }
+      ],
+      "pivotScenarios": [
+        {
+          "trigger": "ROI messaging gets <10% engagement after 3 weeks",
+          "action": "Test 'risk mitigation' angle instead of 'profit generation'"
+        },
+        {
+          "trigger": "Media pitches get 0% response after 6 weeks",
+          "action": "Pivot to customer story angles, offer exclusive interviews"
+        }
+      ]
+    }
+  },
+  "part6_patternGuidance": {
+    "selectedPattern": {
+      "patternName": "CASCADE",
+      "patternDescription": "Builds momentum through sequential credibility layers - seeds establish foundation, convergence creates social proof, revelation delivers mainstream validation",
+      "whenToUse": "When audience needs proof before belief, especially risk-averse stakeholders like CFOs",
+      "pillarEmphasis": {
+        "pillar1Owned": "Heavy - Foundation layer that provides ammunition for all other pillars",
+        "pillar2Relationships": "Medium - Amplifies owned content but appears independent",
+        "pillar3Events": "Medium - Legitimizes expertise and creates networking opportunities",
+        "pillar4Media": "Heavy - Provides third-party validation that completes the cascade"
+      },
+      "timingStrategy": "Slow build over 12 weeks - establish credibility first, then amplify through relationships and events, culminate with media validation",
+      "executionAdjustments": [
+        "Front-load owned content creation to provide foundation",
+        "Stagger relationship outreach to create natural amplification waves",
+        "Time media pitches after influencer engagement for maximum credibility",
+        "Build in 2-week buffer between owned content and media outreach"
+      ]
+    }
+  }
+}

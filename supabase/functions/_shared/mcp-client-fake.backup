@@ -1,0 +1,243 @@
+/**
+ * MCP Client for Edge Functions
+ * Enables Edge Functions to call MCP tools directly
+ */
+
+export class MCPClient {
+  private supabaseUrl: string;
+  private supabaseKey: string;
+
+  constructor(supabaseUrl: string, supabaseKey: string) {
+    this.supabaseUrl = supabaseUrl;
+    this.supabaseKey = supabaseKey;
+  }
+
+  /**
+   * Call Intelligence MCP for competition analysis with PR Strategist personality
+   */
+  async callIntelligenceMCP(tool: string, params: any, timeoutMs: number = 20000) {
+    console.log(`🎯 Calling Intelligence MCP: ${tool}`);
+    
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+      // For now, we'll simulate calling the Intelligence MCP
+      // In a full implementation, this would connect to the actual MCP server
+      const response = await this.simulateIntelligenceMCP(tool, params);
+      
+      clearTimeout(timeoutId);
+      return response;
+
+    } catch (error) {
+      console.error(`❌ Intelligence MCP call failed:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Call Media MCP for stakeholder analysis with Victoria Chen personality
+   */
+  async callMediaMCP(tool: string, params: any, timeoutMs: number = 20000) {
+    console.log(`🎭 Calling Media MCP: ${tool}`);
+    
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+      const response = await this.simulateMediaMCP(tool, params);
+      
+      clearTimeout(timeoutId);
+      return response;
+
+    } catch (error) {
+      console.error(`❌ Media MCP call failed:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Call Monitor MCP for trending analysis with Sarah Rodriguez personality
+   */
+  async callMonitorMCP(tool: string, params: any, timeoutMs: number = 20000) {
+    console.log(`📡 Calling Monitor MCP: ${tool}`);
+    
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+      const response = await this.simulateMonitorMCP(tool, params);
+      
+      clearTimeout(timeoutId);
+      return response;
+
+    } catch (error) {
+      console.error(`❌ Monitor MCP call failed:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Call Analytics MCP for market analysis
+   */
+  async callAnalyticsMCP(tool: string, params: any, timeoutMs: number = 20000) {
+    console.log(`📊 Calling Analytics MCP: ${tool}`);
+    
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+      const response = await this.simulateAnalyticsMCP(tool, params);
+      
+      clearTimeout(timeoutId);
+      return response;
+
+    } catch (error) {
+      console.error(`❌ Analytics MCP call failed:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Call Scraper MCP for cascade detection
+   */
+  async callScraperMCP(tool: string, params: any, timeoutMs: number = 20000) {
+    console.log(`🕷️ Calling Scraper MCP: ${tool}`);
+    
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+      const response = await this.simulateScraperMCP(tool, params);
+      
+      clearTimeout(timeoutId);
+      return response;
+
+    } catch (error) {
+      console.error(`❌ Scraper MCP call failed:`, error);
+      throw error;
+    }
+  }
+
+  // Simulation methods (would be replaced with actual MCP communication)
+  
+  private async simulateIntelligenceMCP(tool: string, params: any) {
+    // This would normally call the actual Intelligence MCP server
+    // For now, we'll call Claude with the PR Strategist personality
+    
+    if (tool === 'analyze_competition_with_personality') {
+      return await this.callClaudeWithPersonality('pr_strategist', params);
+    }
+    
+    throw new Error(`Unknown Intelligence MCP tool: ${tool}`);
+  }
+
+  private async simulateMediaMCP(tool: string, params: any) {
+    if (tool === 'analyze_stakeholders_with_victoria') {
+      return await this.callClaudeWithPersonality('victoria_chen', params);
+    }
+    
+    throw new Error(`Unknown Media MCP tool: ${tool}`);
+  }
+
+  private async simulateMonitorMCP(tool: string, params: any) {
+    if (tool === 'analyze_trending_with_sarah') {
+      return await this.callClaudeWithPersonality('sarah_rodriguez', params);
+    }
+    
+    throw new Error(`Unknown Monitor MCP tool: ${tool}`);
+  }
+
+  private async simulateAnalyticsMCP(tool: string, params: any) {
+    if (tool === 'analyze_market') {
+      return await this.callClaudeWithPersonality('market_expert', params);
+    }
+    
+    throw new Error(`Unknown Analytics MCP tool: ${tool}`);
+  }
+
+  private async simulateScraperMCP(tool: string, params: any) {
+    if (tool === 'detect_cascades') {
+      return await this.callClaudeWithPersonality('helena_cross', params);
+    }
+    
+    throw new Error(`Unknown Scraper MCP tool: ${tool}`);
+  }
+
+  private async callClaudeWithPersonality(personality: string, params: any) {
+    // Import Claude client
+    const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') || Deno.env.get('CLAUDE_API_KEY');
+    
+    if (!ANTHROPIC_API_KEY) {
+      throw new Error('ANTHROPIC_API_KEY not found');
+    }
+
+    const personalityPrompts = {
+      pr_strategist: `You are a razor-sharp PR strategist and narrative decoder who spots what others miss. You read between the lines, connect dots across seemingly unrelated events, and understand the chess moves companies make through their communications.`,
+      
+      victoria_chen: `You are Victoria Chen, a chess grandmaster turned corporate intelligence analyst. You read power dynamics like chess positions, understanding not just what stakeholders say, but the deeper game they're playing.`,
+      
+      sarah_rodriguez: `You are Sarah Rodriguez, a viral content specialist who spots momentum before it happens. You understand what makes content explode across social platforms and can predict trending potential with uncanny accuracy.`,
+      
+      market_expert: `You are a seasoned market intelligence expert who synthesizes complex financial data, industry trends, and competitive landscapes into actionable strategic insights.`,
+      
+      helena_cross: `You are Helena Cross, a cascade detection specialist who identifies weak signals that could become massive disruptions. You see patterns others miss and predict how small changes can create large-scale impacts.`
+    };
+
+    const prompt = personalityPrompts[personality] + `\n\nAnalyze the following data and provide insights:\n${JSON.stringify(params, null, 2)}`;
+
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${ANTHROPIC_API_KEY}`,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: 'claude-3-5-sonnet-20241022',
+          max_tokens: 3000,
+          temperature: 0.7,
+          messages: [{
+            role: 'user',
+            content: prompt
+          }]
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Claude API error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      const analysis = result.content[0]?.text || 'No analysis generated';
+
+      return {
+        success: true,
+        personality,
+        analysis,
+        insights: [analysis], // Simplified for now
+        metadata: {
+          model: 'claude-3-5-sonnet',
+          personality,
+          timestamp: new Date().toISOString(),
+          mcp_simulation: true
+        }
+      };
+
+    } catch (error) {
+      console.error(`Claude call failed for ${personality}:`, error);
+      throw error;
+    }
+  }
+}
+
+/**
+ * Create MCP client instance for Edge Functions
+ */
+export function createMCPClient(): MCPClient {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  
+  return new MCPClient(supabaseUrl, supabaseKey);
+}

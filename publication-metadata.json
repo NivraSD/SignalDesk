@@ -1,0 +1,194 @@
+{
+  "publications": {
+    "tier1_elite": {
+      "outlets": [
+        "New York Times",
+        "Wall Street Journal",
+        "Washington Post",
+        "Bloomberg",
+        "Reuters",
+        "Financial Times",
+        "The Economist"
+      ],
+      "characteristics": "Global reach, agenda-setting, highest credibility"
+    },
+    "tier1_tech": {
+      "outlets": [
+        "The Verge",
+        "TechCrunch",
+        "Wired",
+        "Ars Technica",
+        "MIT Tech Review",
+        "The Information"
+      ],
+      "characteristics": "Tech-focused, industry influence, deep analysis"
+    },
+    "tier1_business": {
+      "outlets": [
+        "Forbes",
+        "Fortune",
+        "CNBC",
+        "Business Insider"
+      ],
+      "characteristics": "Business focus, executive audience, market impact"
+    },
+    "tier1_newsletters": {
+      "outlets": [
+        "Platformer",
+        "Big Technology",
+        "Semafor",
+        "Puck",
+        "Newcomer",
+        "Second Opinion",
+        "Unchained"
+      ],
+      "characteristics": "Independent voices, influential subscribers, thought leadership"
+    },
+    "tier1_vertical": {
+      "outlets": [
+        "STAT News",
+        "CoinDesk",
+        "The Block",
+        "Axios",
+        "Vox",
+        "Electrek",
+        "Digiday",
+        "Ad Age"
+      ],
+      "characteristics": "Industry-specific, expert audience, deep vertical knowledge"
+    },
+    "tier2": {
+      "outlets": [
+        "VentureBeat",
+        "The Next Web",
+        "ZDNet",
+        "Gizmodo",
+        "Engadget",
+        "CNET"
+      ],
+      "characteristics": "Good reach, tech enthusiasts, solid coverage"
+    }
+  },
+  "outlet_metadata": {
+    "New York Times": {
+      "tier": "tier1",
+      "category": "elite",
+      "reach": "global",
+      "audience": "general",
+      "focus": ["tech", "business", "policy", "healthcare"],
+      "influence_score": 10
+    },
+    "Bloomberg": {
+      "tier": "tier1",
+      "category": "elite",
+      "reach": "global",
+      "audience": "business_executives",
+      "focus": ["business", "finance", "technology", "markets"],
+      "influence_score": 10
+    },
+    "The Verge": {
+      "tier": "tier1",
+      "category": "tech",
+      "reach": "global",
+      "audience": "tech_professionals",
+      "focus": ["technology", "consumer_tech", "ai", "platforms"],
+      "influence_score": 9
+    },
+    "TechCrunch": {
+      "tier": "tier1",
+      "category": "tech",
+      "reach": "global",
+      "audience": "startup_ecosystem",
+      "focus": ["startups", "venture_capital", "technology"],
+      "influence_score": 9
+    },
+    "Wired": {
+      "tier": "tier1",
+      "category": "tech",
+      "reach": "global",
+      "audience": "tech_culture",
+      "focus": ["technology", "ai", "science", "culture"],
+      "influence_score": 9
+    },
+    "The Information": {
+      "tier": "tier1",
+      "category": "tech",
+      "reach": "global",
+      "audience": "executives",
+      "focus": ["technology", "business", "exclusive_reporting"],
+      "influence_score": 9
+    },
+    "Platformer": {
+      "tier": "tier1",
+      "category": "newsletter",
+      "reach": "global",
+      "audience": "tech_leaders",
+      "focus": ["platforms", "ai", "social_media"],
+      "influence_score": 8
+    },
+    "STAT News": {
+      "tier": "tier1",
+      "category": "vertical",
+      "reach": "national",
+      "audience": "healthcare_professionals",
+      "focus": ["healthcare", "biotech", "pharma", "health_tech"],
+      "influence_score": 9
+    },
+    "CoinDesk": {
+      "tier": "tier1",
+      "category": "vertical",
+      "reach": "global",
+      "audience": "crypto_industry",
+      "focus": ["cryptocurrency", "blockchain", "defi"],
+      "influence_score": 8
+    },
+    "Axios": {
+      "tier": "tier1",
+      "category": "vertical",
+      "reach": "national",
+      "audience": "professionals",
+      "focus": ["business", "tech", "policy", "media"],
+      "influence_score": 8
+    },
+    "CNBC": {
+      "tier": "tier1",
+      "category": "business",
+      "reach": "global",
+      "audience": "investors",
+      "focus": ["business", "markets", "technology"],
+      "influence_score": 9
+    },
+    "Wall Street Journal": {
+      "tier": "tier1",
+      "category": "elite",
+      "reach": "global",
+      "audience": "business_executives",
+      "focus": ["business", "finance", "markets", "technology"],
+      "influence_score": 10
+    },
+    "Washington Post": {
+      "tier": "tier1",
+      "category": "elite",
+      "reach": "global",
+      "audience": "general",
+      "focus": ["news", "tech", "policy", "business"],
+      "influence_score": 10
+    },
+    "Ars Technica": {
+      "tier": "tier1",
+      "category": "tech",
+      "reach": "global",
+      "audience": "tech_enthusiasts",
+      "focus": ["technology", "ai", "space", "gaming"],
+      "influence_score": 8
+    },
+    "MIT Tech Review": {
+      "tier": "tier1",
+      "category": "tech",
+      "reach": "global",
+      "audience": "tech_professionals",
+      "focus": ["emerging_tech", "ai", "climate", "biotech"],
+      "influence_score": 9
+    }
+  }
+}

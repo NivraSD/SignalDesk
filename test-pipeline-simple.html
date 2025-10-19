@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalDesk V3 - Simple Pipeline Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-left: 4px solid #17a2b8;
+        }
+        
+        .results {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        
+        .metric {
+            display: inline-block;
+            padding: 10px 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 8px;
+            margin: 5px;
+            font-weight: 600;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .stage-result {
+            border-left: 4px solid #667eea;
+            padding-left: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .coverage-item {
+            display: inline-block;
+            padding: 5px 10px;
+            margin: 3px;
+            border-radius: 15px;
+            font-size: 12px;
+            background: white;
+            border: 1px solid #ddd;
+        }
+        
+        .coverage-item.found {
+            background: #28a745;
+            color: white;
+            border-color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 SignalDesk V3 - Simple Pipeline Test</h1>
+        
+        <div class="card">
+            <h2>Test Configuration</h2>
+            <div style="margin: 20px 0;">
+                <label>Organization: </label>
+                <input type="text" id="orgName" value="Tesla" style="padding: 8px; margin-right: 10px;">
+                <label>Industry: </label>
+                <select id="industry" style="padding: 8px;">
+                    <option value="automotive">Automotive</option>
+                    <option value="technology">Technology</option>
+                    <option value="finance">Finance</option>
+                    <option value="healthcare">Healthcare</option>
+                </select>
+            </div>
+            
+            <div>
+                <button onclick="runSequentialTest()">🔄 Run Sequential Test</button>
+                <button onclick="clearResults()">🗑️ Clear Results</button>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>Test Progress</h2>
+            <div id="progress"></div>
+        </div>
+        
+        <div class="card">
+            <h2>Results</h2>
+            <div id="results" class="results">
+                <p>Click "Run Sequential Test" to start...</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Using localhost for local testing
+        const SUPABASE_URL = 'http://localhost:54321';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTEyOTYzNywiZXhwIjoyMDcwNzA1NjM3fQ.WO35k7riuKT2QXj_YvbtRwzLwi3Pev30-X9Yziej2pM';
+        
+        let testData = {};
+        
+        function showProgress(message, type = 'info') {
+            const progress = document.getElementById('progress');
+            const statusClass = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            progress.innerHTML += `
+                <div class="status ${statusClass}">
+                    ${message}
+                </div>
+            `;
+        }
+        
+        function showResults(title, data) {
+            const results = document.getElementById('results');
+            results.innerHTML += `
+                <div class="stage-result">
+                    <h3>${title}</h3>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                </div>
+            `;
+        }
+        
+        function clearResults() {
+            document.getElementById('progress').innerHTML = '';
+            document.getElementById('results').innerHTML = '<p>Click "Run Sequential Test" to start...</p>';
+            testData = {};
+        }
+        
+        async function runSequentialTest() {
+            clearResults();
+            const orgName = document.getElementById('orgName').value;
+            const industry = document.getElementById('industry').value;
+            
+            try {
+                // STEP 1: Create Profile
+                showProgress('📋 Step 1: Creating organization profile...');
+                const profile = await createProfile(orgName, industry);
+                testData.profile = profile;
+                showProgress(`✅ Profile created with ${profile.competition?.direct_competitors?.length || 0} competitors`, 'success');
+                
+                // Show discovery targets
+                displayDiscoveryTargets(profile);
+                
+                // STEP 2: Monitor Stage 1
+                showProgress('📡 Step 2: Collecting articles from sources...');
+                const monitorResult = await runMonitorStage1(orgName, profile);
+                testData.monitorResult = monitorResult;
+                showProgress(`✅ Collected ${monitorResult.total_articles} articles`, 'success');
+                
+                // Show coverage
+                displayMonitorCoverage(monitorResult.metadata);
+                
+                // STEP 3: Relevance + Firecrawl
+                showProgress('🎯 Step 3: Scoring relevance and running Firecrawl (30 articles)...');
+                const relevanceResult = await runRelevance(monitorResult.articles, profile, orgName);
+                testData.relevanceResult = relevanceResult;
+                
+                const articlesWithContent = relevanceResult.findings?.filter(a => a.has_full_content) || [];
+                showProgress(`✅ Scored ${relevanceResult.findings?.length || 0} articles, Firecrawl scraped ${articlesWithContent.length}`, 'success');
+                
+                // STEP 4: Intelligence Orchestrator V2 (Enrichment + Synthesis + Opportunities)
+                showProgress('🚀 Step 4: Running Intelligence Orchestrator V2 (Enrichment + Synthesis + Opportunities)...');
+                const orchestratorResult = await runIntelligenceOrchestratorV2(orgName, profile, relevanceResult);
+                testData.orchestratorResult = orchestratorResult;
+                
+                // Check if we got intelligence
+                if (orchestratorResult.intelligence) {
+                    const stats = orchestratorResult.intelligence.statistics || {};
+                    showProgress(`✅ Extracted ${stats.unique_events || 0} events, ${stats.unique_entities || 0} entities`, 'success');
+                    showProgress('✅ Executive synthesis complete!', 'success');
+                    
+                    if (orchestratorResult.opportunities?.length > 0) {
+                        showProgress(`✅ Generated ${orchestratorResult.opportunities.length} opportunities`, 'success');
+                    }
+                } else {
+                    showProgress('⚠️ No intelligence generated - check logs', 'error');
+                }
+                
+                // Display final results
+                displayFinalResults();
+                
+            } catch (error) {
+                showProgress(`❌ Error: ${error.message}`, 'error');
+                console.error('Test failed:', error);
+            }
+        }
+        
+        async function createProfile(orgName, industry) {
+            const response = await fetch(`${SUPABASE_URL}/functions/v1/mcp-discovery`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                },
+                body: JSON.stringify({
+                    tool: 'create_organization_profile',
+                    arguments: {
+                        organization_name: orgName,
+                        industry_hint: industry,
+                        save_to_persistence: false
+                    }
+                })
+            });
+            
+            if (!response.ok) {
+                const error = await response.text();
+                throw new Error(`Discovery failed: ${error}`);
+            }
+            
+            const result = await response.json();
+            return result.profile;
+        }
+        
+        async function runMonitorStage1(orgName, profile) {
+            const response = await fetch(`${SUPABASE_URL}/functions/v1/monitor-stage-1`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                },
+                body: JSON.stringify({
+                    organization_name: orgName,
+                    profile: profile
+                })
+            });
+            
+            if (!response.ok) {
+                const error = await response.text();
+                throw new Error(`Monitor Stage 1 failed: ${error}`);
+            }
+            
+            return await response.json();
+        }
+        
+        async function runRelevance(articles, profile, orgName) {
+            const response = await fetch(`${SUPABASE_URL}/functions/v1/monitor-stage-2-relevance`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                },
+                body: JSON.stringify({
+                    articles: articles,
+                    profile: profile,
+                    organization_name: orgName,
+                    top_k: 60
+                })
+            });
+            
+            if (!response.ok) {
+                const error = await response.text();
+                throw new Error(`Relevance failed: ${error}`);
+            }
+            
+            return await response.json();
+        }
+        
+        async function runIntelligenceOrchestratorV2(orgName, profile, relevanceResult) {
+            const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-orchestrator-v2`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                },
+                body: JSON.stringify({
+                    organization_name: orgName,
+                    profile: profile,
+                    monitoring_data: {
+                        findings: relevanceResult.findings || [],
+                        total_articles: relevanceResult.total_articles || 0,
+                        articles_processed: relevanceResult.articles_processed || relevanceResult.findings?.length || 0
+                    },
+                    skip_enrichment: false,
+                    skip_opportunity_engine: false,
+                    articles_limit: 200
+                })
+            });
+            
+            if (!response.ok) {
+                const error = await response.text();
+                throw new Error(`Intelligence Orchestrator V2 failed: ${error}`);
+            }
+            
+            return await response.json();
+        }
+        
+        function displayDiscoveryTargets(profile) {
+            const results = document.getElementById('results');
+            const competitors = profile.competition?.direct_competitors || [];
+            const stakeholders = profile.stakeholders?.regulators || [];
+            const topics = profile.trending?.hot_topics || [];
+            
+            results.innerHTML = `
+                <div class="stage-result">
+                    <h3>📋 Discovery Targets</h3>
+                    <div>
+                        <strong>Competitors (${competitors.length}):</strong><br>
+                        ${competitors.slice(0, 15).map(c => `<span class="coverage-item">${c}</span>`).join('')}
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <strong>Stakeholders (${stakeholders.length}):</strong><br>
+                        ${stakeholders.map(s => `<span class="coverage-item">${s}</span>`).join('')}
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <strong>Topics (${topics.length}):</strong><br>
+                        ${topics.slice(0, 10).map(t => `<span class="coverage-item">${t}</span>`).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        function displayMonitorCoverage(metadata) {
+            const coverage = metadata.discovery_coverage || {};
+            const entityCoverage = metadata.entity_coverage || {};
+            
+            showProgress(`📊 Coverage: ${coverage.competitors_covered}/${coverage.total_competitors} competitors, ${coverage.stakeholders_covered}/${coverage.total_stakeholders} stakeholders`, 'info');
+            
+            // Show which competitors were found
+            const foundCompetitors = Object.keys(entityCoverage).filter(e => entityCoverage[e] > 0);
+            if (foundCompetitors.length > 0) {
+                const results = document.getElementById('results');
+                results.innerHTML += `
+                    <div class="stage-result">
+                        <h3>📡 Found in Articles</h3>
+                        ${foundCompetitors.map(c => `<span class="coverage-item found">${c} (${entityCoverage[c]})</span>`).join('')}
+                    </div>
+                `;
+            }
+        }
+        
+        function displayFinalResults() {
+            const orchestrator = testData.orchestratorResult || {};
+            const intelligence = orchestrator.intelligence || {};
+            const synthesis = intelligence.executive_synthesis || {};
+            const stats = intelligence.statistics || {};
+            const opportunities = orchestrator.opportunities || [];
+            
+            const results = document.getElementById('results');
+            results.innerHTML += `
+                <div class="stage-result">
+                    <h3>🎯 Final Metrics</h3>
+                    <div>
+                        <span class="metric">Articles Processed: ${stats.total_articles || 0}</span>
+                        <span class="metric">With Full Content: ${stats.articles_with_full_content || 0}</span>
+                        <span class="metric">With Partial: ${stats.articles_with_partial_content || 0}</span>
+                        <span class="metric">Events: ${stats.unique_events || 0}</span>
+                        <span class="metric">Entities: ${stats.unique_entities || 0}</span>
+                        <span class="metric">Opportunities: ${opportunities.length || 0}</span>
+                    </div>
+                </div>
+                
+                <div class="stage-result">
+                    <h3>🧠 Executive Synthesis</h3>
+                    <div style="background: white; padding: 20px; border-radius: 8px; margin-top: 10px;">
+                        ${synthesis.executive_synthesis ? `
+                            <h4>Executive Summary</h4>
+                            <p>${synthesis.executive_synthesis}</p>
+                        ` : ''}
+                        
+                        ${synthesis.competitive_dynamics ? `
+                            <h4 style="margin-top: 20px;">Competitive Dynamics</h4>
+                            <ul>
+                                ${Object.entries(synthesis.competitive_dynamics).map(([k, v]) => `<li><strong>${k}:</strong> ${v}</li>`).join('')}
+                            </ul>
+                        ` : ''}
+                        
+                        ${synthesis.trending_narratives ? `
+                            <h4 style="margin-top: 20px;">Trending Narratives</h4>
+                            <ul>
+                                ${Object.entries(synthesis.trending_narratives).map(([k, v]) => `<li><strong>${k}:</strong> ${v}</li>`).join('')}
+                            </ul>
+                        ` : ''}
+                        
+                        ${synthesis.immediate_opportunities?.length > 0 ? `
+                            <h4 style="margin-top: 20px;">Immediate Opportunities</h4>
+                            <ul>
+                                ${synthesis.immediate_opportunities.map(o => `<li>${o}</li>`).join('')}
+                            </ul>
+                        ` : ''}
+                        
+                        ${synthesis.critical_threats?.length > 0 ? `
+                            <h4 style="margin-top: 20px;">Critical Threats</h4>
+                            <ul>
+                                ${synthesis.critical_threats.map(t => `<li>${t}</li>`).join('')}
+                            </ul>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                ${opportunities.length > 0 ? `
+                    <div class="stage-result">
+                        <h3>💡 Generated Opportunities</h3>
+                        ${opportunities.map(opp => `
+                            <div style="background: #f0f8ff; padding: 15px; border-radius: 8px; margin: 10px 0; border-left: 4px solid ${opp.urgency === 'CRITICAL' ? '#dc3545' : opp.urgency === 'HIGH' ? '#ff8c00' : '#28a745'};">
+                                <h4>${opp.title}</h4>
+                                <p><strong>Type:</strong> ${opp.opportunity_type} | <strong>Urgency:</strong> ${opp.urgency} | <strong>Window:</strong> ${opp.window}</p>
+                                <p>${opp.description}</p>
+                                ${opp.action_items?.length > 0 ? `
+                                    <p><strong>Action Items:</strong></p>
+                                    <ol>
+                                        ${opp.action_items.map(item => `<li>${item.action} (${item.owner}, ${item.deadline})</li>`).join('')}
+                                    </ol>
+                                ` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : ''}
+            `;
+        }
+    </script>
+</body>
+</html>

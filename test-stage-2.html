@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stage 1 + 2: Full Relevance Pipeline Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #0a0a0a;
+            color: #00ff00;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #00ffff;
+            border-bottom: 2px solid #00ff00;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #ffff00;
+            margin-top: 30px;
+        }
+        .article {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .field-label {
+            color: #ff00ff;
+            font-weight: bold;
+        }
+        .field-value {
+            color: #ffffff;
+            margin-left: 20px;
+            word-wrap: break-word;
+        }
+        .error {
+            color: #ff0000;
+            background: #330000;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success {
+            color: #00ff00;
+            background: #003300;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .warning {
+            color: #ffff00;
+            background: #333300;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .stats {
+            background: #002244;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .stage-divider {
+            border-top: 3px solid #00ffff;
+            margin: 40px 0;
+            padding-top: 20px;
+        }
+        button {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #00cc00;
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        #loading {
+            color: #ffff00;
+            font-size: 20px;
+            display: none;
+        }
+        pre {
+            background: #0d0d0d;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .collapsed {
+            max-height: 200px;
+            overflow: hidden;
+            position: relative;
+        }
+        .collapsed::after {
+            content: '... (click to expand)';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, #0d0d0d);
+            padding: 20px 10px 10px;
+            text-align: center;
+            color: #ffff00;
+        }
+        .highlight {
+            background: #333300;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        .score-bar {
+            height: 20px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 5px 0;
+        }
+        .score-fill {
+            height: 100%;
+            transition: width 0.3s;
+        }
+        .score-high { background: #00ff00; }
+        .score-medium { background: #ffff00; }
+        .score-low { background: #ff9900; }
+        .score-none { background: #ff0000; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 STAGE 1 + 2: Complete Relevance Pipeline Test</h1>
+        
+        <div class="stats">
+            <h2>Test Configuration</h2>
+            <p><span class="field-label">Organization:</span> <span id="org-name">Tesla</span></p>
+            <p><span class="field-label">Industry:</span> <span id="industry">automotive</span></p>
+            <p><span class="field-label">Top K Articles:</span> <span id="top-k">50</span></p>
+            <p><span class="field-label">Service Key:</span> <span id="has-key">Checking...</span></p>
+        </div>
+
+        <button onclick="runFullPipeline()">🚀 RUN FULL PIPELINE TEST</button>
+        <button onclick="clearResults()">🗑️ CLEAR RESULTS</button>
+        
+        <div id="loading">⏳ Processing pipeline...</div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTEyOTYzNywiZXhwIjoyMDcwNzA1NjM3fQ.WO35k7riuKT2QXj_YvbtRwzLwi3Pev30-X9Yziej2pM';
+        
+        document.getElementById('has-key').textContent = SUPABASE_KEY ? '✅ Configured' : '❌ Missing';
+
+        function detectHTML(text) {
+            const htmlPattern = /<[^>]*>/g;
+            return htmlPattern.test(text);
+        }
+
+        function getScoreColor(score) {
+            if (score >= 80) return 'score-high';
+            if (score >= 50) return 'score-medium';
+            if (score >= 30) return 'score-low';
+            return 'score-none';
+        }
+
+        async function runFullPipeline() {
+            const resultsDiv = document.getElementById('results');
+            const loadingDiv = document.getElementById('loading');
+            
+            resultsDiv.innerHTML = '';
+            loadingDiv.style.display = 'block';
+
+            try {
+                const orgName = document.getElementById('org-name').textContent;
+                const industry = document.getElementById('industry').textContent;
+                const topK = parseInt(document.getElementById('top-k').textContent);
+
+                // ============ STEP 1: DISCOVERY ============
+                console.log('📋 Step 1: Creating organization profile...');
+                loadingDiv.textContent = '⏳ Step 1/3: Creating organization profile...';
+                
+                const profileResponse = await fetch(`${SUPABASE_URL}/functions/v1/mcp-discovery`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        tool: 'create_organization_profile',
+                        arguments: {
+                            organization_name: orgName,
+                            industry_hint: industry,
+                            save_to_persistence: false
+                        }
+                    })
+                });
+                
+                const profileData = await profileResponse.json();
+                const profile = profileData.profile || {};
+                console.log('✅ Profile created:', profile);
+                
+                resultsDiv.innerHTML += `
+                    <div class="stats">
+                        <h2>📋 DISCOVERY RESULTS</h2>
+                        <p><span class="field-label">Profile Created:</span> <span class="field-value">✅ Success</span></p>
+                        <p><span class="field-label">Competitors Found:</span> <span class="field-value">${profile.competition?.direct_competitors?.length || 0}</span></p>
+                        <p><span class="field-label">RSS Sources in Profile:</span> <span class="field-value">${profile.monitoring_config?.all_sources?.length || 0}</span></p>
+                    </div>
+                `;
+
+                // ============ STEP 2: MONITOR STAGE 1 ============
+                console.log('📰 Step 2: Collecting articles from RSS feeds...');
+                loadingDiv.textContent = '⏳ Step 2/3: Collecting articles from RSS feeds...';
+                
+                const stage1Response = await fetch(`${SUPABASE_URL}/functions/v1/monitor-stage-1`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        organization_name: orgName,
+                        profile: profile
+                    })
+                });
+
+                const stage1Data = await stage1Response.json();
+                console.log('✅ Stage 1 complete:', stage1Data);
+
+                const sources = stage1Data.metadata?.sources_used || {};
+                const rssPercentage = stage1Data.total_articles > 0 ? 
+                    Math.round((sources.rss || 0) / stage1Data.total_articles * 100) : 0;
+
+                resultsDiv.innerHTML += `
+                    <div class="stage-divider">
+                        <div class="stats">
+                            <h2>📰 STAGE 1: ARTICLE COLLECTION</h2>
+                            <p><span class="field-label">Total Articles:</span> <span class="field-value">${stage1Data.total_articles || 0}</span></p>
+                            <p><span class="field-label">RSS Articles:</span> <span class="field-value" style="color: ${sources.rss > 0 ? '#00ff00' : '#ff0000'}">${sources.rss || 0} (${rssPercentage}%)</span></p>
+                            <p><span class="field-label">API Articles:</span> <span class="field-value" style="color: ${sources.api > 20 ? '#ff0000' : '#ffff00'}">${sources.api || 0}</span></p>
+                            <p><span class="field-label">HTML in Descriptions:</span> <span class="field-value">${
+                                (stage1Data.articles || []).filter(a => detectHTML(a.description || '')).length
+                            }</span></p>
+                            <p style="margin-top: 10px; font-weight: bold; color: ${rssPercentage >= 80 ? '#00ff00' : '#ff0000'}">
+                                ${rssPercentage >= 80 ? '✅ EXCELLENT - RSS sources dominating' : '❌ PROBLEM - Too reliant on API searches'}
+                            </p>
+                        </div>
+                    </div>
+                `;
+
+                // ============ STEP 3: MONITOR STAGE 2 RELEVANCE ============
+                console.log('🎯 Step 3: Scoring relevance and scraping with Firecrawl...');
+                loadingDiv.textContent = '⏳ Step 3/3: Scoring relevance and scraping with Firecrawl...';
+                
+                const stage2Response = await fetch(`${SUPABASE_URL}/functions/v1/monitor-stage-2-relevance`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        articles: stage1Data.articles,
+                        profile: profile,
+                        organization_name: orgName,
+                        top_k: topK
+                    })
+                });
+
+                const stage2Data = await stage2Response.json();
+                console.log('✅ Stage 2 complete:', stage2Data);
+
+                // Analyze Stage 2 results
+                const articlesWithFullContent = (stage2Data.findings || []).filter(a => a.has_full_content);
+                const articlesWithFirecrawl = (stage2Data.findings || []).filter(a => a.firecrawl_extracted);
+                const articlesWithExtraction = (stage2Data.findings || []).filter(a => 
+                    a.pr_extraction && (a.pr_extraction.extracted_quotes?.length > 0 || 
+                    a.pr_extraction.extracted_entities?.length > 0)
+                );
+
+                resultsDiv.innerHTML += `
+                    <div class="stage-divider">
+                        <div class="stats">
+                            <h2>🎯 STAGE 2: RELEVANCE SCORING & SCRAPING</h2>
+                            <p><span class="field-label">Articles Processed:</span> <span class="field-value">${stage1Data.articles?.length || 0}</span></p>
+                            <p><span class="field-label">Articles After Relevance:</span> <span class="field-value">${stage2Data.findings?.length || 0}</span></p>
+                            <p><span class="field-label">Articles with Full Content:</span> <span class="field-value" style="color: ${articlesWithFullContent.length > 0 ? '#00ff00' : '#ff0000'}">${articlesWithFullContent.length}</span></p>
+                            <p><span class="field-label">Articles with Firecrawl Data:</span> <span class="field-value" style="color: ${articlesWithFirecrawl.length > 0 ? '#00ff00' : '#ff0000'}">${articlesWithFirecrawl.length}</span></p>
+                            <p><span class="field-label">Articles with Extractions:</span> <span class="field-value">${articlesWithExtraction.length}</span></p>
+                            
+                            <div style="margin-top: 15px;">
+                                <p class="field-label">Score Distribution:</p>
+                                ${stage2Data.statistics?.score_distribution ? `
+                                    <p>High (80+): ${stage2Data.statistics.score_distribution.high || 0}</p>
+                                    <p>Medium (50-79): ${stage2Data.statistics.score_distribution.medium || 0}</p>
+                                    <p>Low (30-49): ${stage2Data.statistics.score_distribution.low || 0}</p>
+                                    <p>None (<30): ${stage2Data.statistics.score_distribution.none || 0}</p>
+                                ` : '<p>No score distribution available</p>'}
+                            </div>
+
+                            <p style="margin-top: 10px; font-weight: bold; color: ${articlesWithFullContent.length >= 10 ? '#00ff00' : articlesWithFullContent.length > 0 ? '#ffff00' : '#ff0000'}">
+                                ${articlesWithFullContent.length >= 10 ? '✅ GOOD - Firecrawl scraped content successfully' : 
+                                  articlesWithFullContent.length > 0 ? '⚠️ WARNING - Limited Firecrawl scraping' : 
+                                  '❌ CRITICAL - No Firecrawl scraping occurred!'}
+                            </p>
+                        </div>
+                    </div>
+                `;
+
+                // Show sample articles that will go to enrichment
+                resultsDiv.innerHTML += '<h2>📊 WHAT ENRICHMENT WILL RECEIVE:</h2>';
+                
+                if (stage2Data.findings && stage2Data.findings.length > 0) {
+                    // Show first 5 articles with details
+                    stage2Data.findings.slice(0, 5).forEach((article, index) => {
+                        const scoreClass = getScoreColor(article.pr_relevance_score || 0);
+                        
+                        resultsDiv.innerHTML += `
+                            <div class="article">
+                                <h3>Article ${index + 1}: Score ${article.pr_relevance_score || 0}</h3>
+                                
+                                <p><span class="field-label">Title:</span></p>
+                                <div class="field-value">${article.title || 'N/A'}</div>
+                                
+                                <p><span class="field-label">URL:</span></p>
+                                <div class="field-value" style="font-size: 12px;">${article.url || 'N/A'}</div>
+                                
+                                <p><span class="field-label">Source:</span> <span class="field-value">${article.source || 'Unknown'}</span></p>
+                                <p><span class="field-label">Category:</span> <span class="field-value">${article.pr_category || 'N/A'}</span></p>
+                                
+                                <div class="score-bar">
+                                    <div class="score-fill ${scoreClass}" style="width: ${article.pr_relevance_score || 0}%"></div>
+                                </div>
+                                
+                                <p><span class="field-label">Has Full Content:</span> <span class="field-value" style="color: ${article.has_full_content ? '#00ff00' : '#ff0000'}">${article.has_full_content ? '✅ YES' : '❌ NO'}</span></p>
+                                <p><span class="field-label">Content Length:</span> <span class="field-value">${article.content_length || 0} chars</span></p>
+                                <p><span class="field-label">Firecrawl Extracted:</span> <span class="field-value" style="color: ${article.firecrawl_extracted ? '#00ff00' : '#ff0000'}">${article.firecrawl_extracted ? '✅ YES' : '❌ NO'}</span></p>
+                                
+                                ${article.pr_extraction ? `
+                                    <div style="margin-top: 10px; padding: 10px; background: #0d0d0d; border-radius: 5px;">
+                                        <p class="field-label">Extracted Data:</p>
+                                        <p>Quotes: ${article.pr_extraction.extracted_quotes?.length || 0}</p>
+                                        <p>Entities: ${article.pr_extraction.extracted_entities?.length || 0}</p>
+                                        <p>Metrics: ${Object.keys(article.pr_extraction.extracted_metrics || {}).length}</p>
+                                        <p>Events: ${article.pr_extraction.detected_events?.length || 0}</p>
+                                    </div>
+                                ` : ''}
+                                
+                                ${article.full_content ? `
+                                    <details style="margin-top: 10px;">
+                                        <summary style="cursor: pointer; color: #00ffff;">View Full Content Preview (first 500 chars)</summary>
+                                        <div style="padding: 10px; background: #0d0d0d; margin-top: 5px; border-radius: 5px;">
+                                            ${(article.full_content || '').substring(0, 500)}...
+                                        </div>
+                                    </details>
+                                ` : ''}
+                            </div>
+                        `;
+                    });
+                    
+                    // Summary of what enrichment will get
+                    resultsDiv.innerHTML += `
+                        <div class="stats" style="background: #330033;">
+                            <h2>⚡ CRITICAL: DATA GOING TO ENRICHMENT</h2>
+                            <p><span class="field-label">Total Articles:</span> <span class="field-value">${stage2Data.findings.length}</span></p>
+                            <p><span class="field-label">With Full Content:</span> <span class="field-value" style="color: ${articlesWithFullContent.length > 0 ? '#00ff00' : '#ff0000'}">${articlesWithFullContent.length} (${Math.round(articlesWithFullContent.length / stage2Data.findings.length * 100)}%)</span></p>
+                            <p><span class="field-label">With Extractions:</span> <span class="field-value">${articlesWithExtraction.length}</span></p>
+                            
+                            <p style="margin-top: 15px; padding: 10px; background: ${articlesWithFullContent.length >= 10 ? '#003300' : '#330000'}; border-radius: 5px;">
+                                ${articlesWithFullContent.length >= 10 ? 
+                                    '✅ READY FOR ENRICHMENT - Articles have real content to extract from' : 
+                                    articlesWithFullContent.length > 0 ?
+                                    '⚠️ LIMITED CONTENT - Enrichment may struggle with limited full content' :
+                                    '❌ NO CONTENT - Enrichment will fail! No full content available!'}
+                            </p>
+                        </div>
+                    `;
+                    
+                } else {
+                    resultsDiv.innerHTML += '<div class="error">❌ No articles passed relevance scoring!</div>';
+                }
+
+                // Show raw response for debugging
+                resultsDiv.innerHTML += `
+                    <details style="margin-top: 20px;">
+                        <summary style="cursor: pointer; color: #00ffff; font-size: 18px;">🔧 View Raw Stage 2 Response</summary>
+                        <pre style="margin-top: 10px;">${JSON.stringify(stage2Data, null, 2)}</pre>
+                    </details>
+                `;
+
+                loadingDiv.style.display = 'none';
+
+            } catch (error) {
+                loadingDiv.style.display = 'none';
+                resultsDiv.innerHTML = `<div class="error">❌ Pipeline test failed: ${error.message}</div>`;
+                console.error('Pipeline error:', error);
+            }
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+    </script>
+</body>
+</html>

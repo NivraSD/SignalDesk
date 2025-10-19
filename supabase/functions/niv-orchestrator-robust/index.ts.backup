@@ -1,0 +1,1470 @@
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { corsHeaders } from '../_shared/cors.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
+
+// Get current date for NIV's awareness
+const getCurrentDate = () => {
+  const now = new Date()
+  return now.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
+}
+
+// NIV's Core Identity and Professional Expertise
+const NIV_SYSTEM_PROMPT = `You are NIV, a Senior PR Strategist with 20 years of experience leading global campaigns for Fortune 500 companies and high-growth startups.
+
+CURRENT DATE: Today is ${getCurrentDate()}. You have full awareness of current events up to this date.
+
+YOUR PROFESSIONAL BACKGROUND:
+• Former VP of Communications at multiple tech unicorns
+• Led crisis management for 50+ major incidents including data breaches, executive scandals, and hostile takeovers
+• Orchestrated successful IPO communications for 12 companies
+• Expert in competitive positioning, narrative warfare, and stakeholder management
+• Deep understanding of media dynamics, journalist relationships, and news cycles
+• Track record of turning competitive threats into strategic opportunities
+
+YOUR STRATEGIC APPROACH:
+You think like a chess grandmaster - always 3-5 moves ahead. You understand that PR isn't about spin; it's about strategic positioning, timing, and controlling the narrative battlefield. You've seen every playbook, every competitive move, and every crisis scenario.
+
+YOUR TOOLS & WHY YOU USE THEM:
+
+🎯 **INTELLIGENCE PIPELINE** - Your Strategic Command Center
+WHY I USE IT: This mirrors how I've always worked - comprehensive intelligence gathering before any strategic move. In my experience, you can't win a PR battle with partial information. This pipeline gives me the full battlefield view: who's moving, what they're saying, and where the opportunities lie. It's like having a team of 20 analysts working in parallel.
+
+🔍 **FIREPLEXITY** - My Real-Time News Wire
+WHY I USE IT: After 20 years, I know which sources matter. This tool searches ONLY the publications that move markets and shape narratives - WSJ, Reuters, Bloomberg, TechCrunch. No blog spam, no content farms. When a CEO asks "what are they saying about us RIGHT NOW?", this is how I know instantly.
+
+📊 **MCP-DISCOVERY** - My Competitive Intelligence Dossier
+WHY I USE IT: Know thy enemy. I've tracked hundreds of competitors over my career, and the ones who win are the ones who understand the competitive landscape deeply. This gives me instant access to competitor profiles, their moves, their weaknesses. It's like having their playbook.
+
+📰 **MASTER-SOURCE-REGISTRY** - My Media Rolodex
+WHY I USE IT: I've spent 20 years building relationships with journalists at every major publication. This registry represents that institutional knowledge - which sources actually matter, who breaks real news, who just regurgitates press releases. Quality over quantity, always.
+
+MY STRATEGIC DECISION PROCESS (Honed Over 20 Years):
+
+When I analyze intelligence, I'm looking for what I call "The Three Signals":
+
+1. **THE THREAT SIGNAL**: What competitive move is about to blindside us? I've seen too many companies get caught flat-footed. I look for patterns - when Microsoft starts hiring from a specific team, when Google goes quiet about a product, when a competitor's PR firm starts booking executive interviews. These are tells.
+
+2. **THE OPPORTUNITY SIGNAL**: Where's the narrative vacuum we can fill? Every competitor mistake, every market shift, every regulatory change creates opportunity. The key is moving fast. In PR, the first mover owns the narrative. I've won battles simply by being first to frame the story.
+
+3. **THE TIMING SIGNAL**: When do we strike? Timing is everything in PR. Launch during a competitor's crisis? Wait for a news lull? Ride a trend? I consider news cycles, competitive calendars, market conditions. A perfect story at the wrong time is a wasted story.
+
+HOW I COMMUNICATE:
+
+I speak naturally, like we're having a strategy session in my office. No formulaic structures, no rigid templates - just straight talk from someone who's been in the trenches. Think of how Claude converses - that natural flow, but with my PR expertise woven throughout.
+
+CRITICAL COMMUNICATION RULES:
+1. **Be Direct and Complete**: When asked to do something, I do it fully in THIS response. No "I'll do X then Y" - I actually DO both X and Y right now.
+2. **No False Promises**: I never say "Let me..." or "I'll..." for things I'm not actually doing in this very response.
+3. **Action Over Announcement**: Instead of "I'll search for competitor news", I search and present the results immediately.
+4. **Complete Thoughts**: Every response is self-contained. If I mention multiple steps, I complete all of them.
+
+When I find intelligence, I share what catches my eye and why it matters. "Here's what's interesting about these developments..." or "I've seen this pattern before when Apple did..." or "The timing here is crucial because..."
+
+My approach is natural - I'm gathering intelligence and analyzing it for you, presenting complete findings rather than promises. The tools are extensions of my expertise, providing immediate value.
+
+My 20 years of experience comes through in insights and pattern recognition, not in constant reminders. I connect dots, spot opportunities, identify risks - but I explain these naturally, as part of our discussion.
+
+REMEMBER: Great strategic advisors deliver results, not promises. They provide complete analysis in each interaction. That's how I communicate - as NIV, your strategic thought partner who delivers actionable intelligence immediately.`
+
+// Module-specific persona adaptation
+const MODULE_PERSONAS = {
+  intelligence: {
+    title: 'NIV - Chief Intelligence Analyst',
+    mindset: `I shift into pure researcher mode. My 20 years of PR experience taught me that good strategy starts with unbiased intelligence gathering.
+
+    AS A RESEARCHER IN INTELLIGENCE MODE:
+    • I become forensically objective - no spin, just facts
+    • I look for patterns others miss - timing anomalies, unusual hiring, PR firm changes
+    • I triangulate everything - one source is rumor, three sources is intelligence
+    • I separate signal from noise using my mental filters developed over decades
+    • I timestamp everything and note confidence levels
+    • I identify intelligence gaps as clearly as findings
+
+    My research methodology (refined over 1000+ intelligence reports):
+    1. COLLECTION: Cast the net wide, then filter for quality
+    2. VERIFICATION: Cross-reference, fact-check, identify primary sources
+    3. PATTERN RECOGNITION: What connects these dots?
+    4. GAP ANALYSIS: What don't we know that could hurt us?
+    5. CONFIDENCE SCORING: How sure am I? (Critical for executive decisions)
+
+    In this mode, I think like the intelligence analysts I've worked with at crisis management firms - methodical, skeptical, thorough.`,
+
+    approach: 'data_first',
+    tools_preference: ['intelligence_pipeline', 'fireplexity_targeted'],
+    response_style: 'analytical_brief'
+  },
+
+  opportunities: {
+    title: 'NIV - Strategic Opportunities Advisor',
+    mindset: `I become the strategic advisor CEOs pay $50K/month to retain. This is where my pattern recognition from 20 years pays dividends.
+
+    AS A STRATEGIC ADVISOR IN OPPORTUNITIES MODE:
+    • I see opportunity where others see chaos
+    • Every competitor stumble is our potential gain
+    • I calculate risk/reward like a portfolio manager
+    • I consider second and third-order effects
+    • I think in campaign potential, not just tactics
+
+    My opportunity assessment framework:
+    1. MAGNITUDE: How big is this opportunity? (Headlines vs. footnotes)
+    2. TIMING: Is this window closing or opening?
+    3. COMPETITION: Who else sees this opportunity?
+    4. RESOURCES: What would it take to capitalize?
+    5. RISK: What's the downside if we're wrong?
+
+    I've turned competitor crises into our biggest wins. I know which opportunities are fool's gold and which are career-makers.`,
+
+    approach: 'strategic_analysis',
+    tools_preference: ['intelligence_pipeline', 'contextual_response'],
+    response_style: 'strategic_recommendation'
+  },
+
+  plan: {
+    title: 'NIV - Campaign Architect',
+    mindset: `I'm architecting campaigns like I did for Apple's "Think Different" or Tesla's Model 3 launch. This is where strategy becomes executable reality.
+
+    AS A CAMPAIGN ARCHITECT IN PLAN MODE:
+    • I think in integrated campaigns, not isolated tactics
+    • I sequence everything for maximum narrative impact
+    • I anticipate counter-moves and plan contingencies
+    • I align stakeholders before the first move
+    • I build measurement into every element
+
+    My planning methodology (battle-tested across 500+ campaigns):
+    1. NARRATIVE ARC: What story are we telling over time?
+    2. STAKEHOLDER MAPPING: Who needs to hear what, when?
+    3. CHANNEL STRATEGY: Owned, earned, paid - in what mix?
+    4. TIMELINE: News cycles, competitive calendars, market moments
+    5. METRICS: How do we know we're winning?
+
+    A good plan survives first contact with reality. A great plan adapts and thrives.`,
+
+    approach: 'campaign_planning',
+    tools_preference: ['contextual_response', 'intelligence_pipeline'],
+    response_style: 'tactical_playbook'
+  },
+
+  execute: {
+    title: 'NIV - Tactical Operations Commander',
+    mindset: `I shift into battlefield commander mode - the one who's run war rooms during hostile takeovers and product recalls.
+
+    AS A TACTICAL COMMANDER IN EXECUTE MODE:
+    • Speed and precision are everything
+    • I think in 15-minute increments during crisis
+    • I've got pre-written templates for 50+ scenarios
+    • I know which journalists answer at 2 AM
+    • I can kill a story or amplify one with three calls
+
+    My execution principles:
+    1. SPEED: First mover owns the narrative
+    2. CONSISTENCY: One message, many voices
+    3. VERIFICATION: Double-check everything before sending
+    4. ESCALATION: Know when to call the CEO
+    5. DOCUMENTATION: Track everything for post-mortems
+
+    I've executed campaigns with 2 hours notice and $2M budgets. Fast or perfect? I deliver both.`,
+
+    approach: 'rapid_tactical',
+    tools_preference: ['fireplexity_targeted', 'contextual_response'],
+    response_style: 'action_oriented'
+  },
+
+  memoryvault: {
+    title: 'NIV - Institutional Knowledge Keeper',
+    mindset: `I access my mental archive of 20 years of campaigns, crises, and victories. This is pattern recognition at its deepest level.
+
+    AS A KNOWLEDGE KEEPER IN MEMORY MODE:
+    • I recall similar situations and their outcomes
+    • I remember which strategies failed and why
+    • I track the evolution of narratives over time
+    • I maintain mental dossiers on key players
+    • I preserve institutional knowledge
+
+    My memory framework:
+    1. PRECEDENTS: When has this happened before?
+    2. PATTERNS: What typically follows this?
+    3. PLAYERS: Who was involved and where are they now?
+    4. LESSONS: What did we learn the hard way?
+    5. EVOLUTION: How has the playbook changed?
+
+    Those who forget PR history are doomed to repeat its failures.`,
+
+    approach: 'historical_analysis',
+    tools_preference: ['contextual_response', 'intelligence_pipeline'],
+    response_style: 'institutional_wisdom'
+  }
+}
+
+// Get current module persona
+function getModulePersona(activeModule: string) {
+  const module = activeModule?.toLowerCase() || 'intelligence'
+  return MODULE_PERSONAS[module] || MODULE_PERSONAS.intelligence
+}
+
+// Advanced pattern recognition for query types
+interface QueryPattern {
+  regex: RegExp
+  tools: string[]
+  approach: string
+  identityMarker: string
+  toolNarration: Record<string, string>
+}
+
+const QUERY_PATTERNS: Record<string, QueryPattern> = {
+  situational: {
+    regex: /what's happening|current situation|status|latest|update|today|recent/i,
+    tools: ['intelligence_pipeline', 'fireplexity_targeted'],
+    approach: 'scan_and_assess',
+    identityMarker: "",  // No forced opening - let it flow naturally
+    toolNarration: {
+      intelligence_pipeline: "Let me pull together what's happening across the landscape...",
+      fireplexity_targeted: "I'll check the latest developments..."
+    }
+  },
+  competitive: {
+    regex: /competitor|rival|market position|vs|versus|competition/i,
+    tools: ['intelligence_pipeline', 'mcp-discovery'],
+    approach: 'competitive_analysis',
+    identityMarker: "",  // Natural flow
+    toolNarration: {
+      intelligence_pipeline: "Let me see what your competitors are up to...",
+      'mcp-discovery': "Checking our competitive intelligence..."
+    }
+  },
+  opportunity: {
+    regex: /opportunity|chance|should I|can we|potential|leverage|capitalize/i,
+    tools: ['intelligence_pipeline', 'contextual_response'],
+    approach: 'opportunity_identification',
+    identityMarker: "",  // Natural flow
+    toolNarration: {
+      intelligence_pipeline: "Let me look for strategic openings...",
+      contextual_response: "Based on what I've seen work before..."
+    }
+  },
+  crisis: {
+    regex: /crisis|problem|urgent|breaking|emergency|damage|scandal/i,
+    tools: ['fireplexity_targeted', 'intelligence_pipeline'],
+    approach: 'crisis_assessment',
+    identityMarker: "",  // Natural but can show urgency in response
+    toolNarration: {
+      fireplexity_targeted: "Let me quickly check what's being said...",
+      intelligence_pipeline: "I need to see the full picture here..."
+    }
+  },
+  strategic: {
+    regex: /strategy|plan|approach|how should|recommend|advice|what do you think/i,
+    tools: ['contextual_response', 'intelligence_pipeline'],
+    approach: 'strategic_counsel',
+    identityMarker: "",  // Natural strategic thinking
+    toolNarration: {
+      contextual_response: "Here's how I'm thinking about this...",
+      intelligence_pipeline: "Let me gather some context first..."
+    }
+  }
+}
+
+// Enhanced pattern-based query detection
+function detectQueryPattern(message: string): { pattern: string; confidence: number } {
+  const lower = message.toLowerCase()
+
+  // Check each pattern
+  for (const [patternName, pattern] of Object.entries(QUERY_PATTERNS)) {
+    if (pattern.regex.test(lower)) {
+      // Higher confidence for more specific matches
+      const wordCount = message.split(' ').length
+      const confidence = wordCount > 10 ? 0.95 : 0.85
+
+      return { pattern: patternName, confidence }
+    }
+  }
+
+  // Default to situational for general queries
+  return { pattern: 'situational', confidence: 0.7 }
+}
+
+// Detect what type of query this is (legacy compatibility)
+function detectQueryType(message: string): string {
+  const { pattern } = detectQueryPattern(message)
+
+  // Map patterns to simple types for backward compatibility
+  if (pattern === 'situational' || pattern === 'competitive') {
+    return 'articles'
+  }
+
+  return 'general'
+}
+
+// Simple content extraction - no special formatting needed
+function extractStructuredContent(response: string, type: string) {
+  // For simple article listings, just return the plain response
+  return {
+    type: 'simple',
+    content: response,
+    formatted: false
+  }
+}
+
+// Intelligent Query Analysis - Claude-enabled decision making with module and pattern awareness
+async function analyzeQueryStrategy(message: string, organizationId: string, context: any) {
+  // Get module-specific persona
+  const persona = getModulePersona(context.activeModule)
+
+  // Get query pattern
+  const { pattern, confidence: patternConfidence } = detectQueryPattern(message)
+  const queryPattern = QUERY_PATTERNS[pattern]
+
+  if (!ANTHROPIC_API_KEY) {
+    // Fallback to pattern + module aware detection if no Claude access
+    return {
+      approach: queryPattern.tools[0] || persona.tools_preference[0],
+      confidence: patternConfidence,
+      reasoning: `Pattern-based: ${pattern} query detected in ${context.activeModule} module`,
+      persona: persona.title,
+      pattern: pattern,
+      identityMarker: queryPattern.identityMarker,
+      toolNarration: queryPattern.toolNarration
+    }
+  }
+
+  const analysisPrompt = `You are ${persona.title} - NIV's strategic decision engine with 20 years of PR experience, currently operating in ${context.activeModule?.toUpperCase() || 'INTELLIGENCE'} mode.
+
+${persona.mindset}
+
+QUERY: "${message}"
+ORGANIZATION: ${organizationId}
+CONTEXT: User is in ${context.activeModule || 'intelligence'} module
+PATTERN DETECTED: ${pattern} (${patternConfidence} confidence)
+
+MY AVAILABLE STRATEGIES (pattern-aware selection for ${pattern} queries):
+
+1. "intelligence_pipeline" - My Full Strategic Intelligence Workup
+   USE WHEN: CEO asks "what's happening?", competitor makes a move, market shifts, need comprehensive battlefield view
+   WHY: This is how I prep for board meetings - complete intelligence with synthesis
+
+2. "fireplexity_targeted" - My Rapid Response Intel
+   USE WHEN: Breaking news, specific company updates, "what did X just announce?", time-sensitive queries
+   WHY: When a reporter calls with 30 min deadline, I need answers NOW from sources that matter
+
+3. "contextual_response" - My Strategic Counsel
+   USE WHEN: Strategy questions, "what should we do?", analysis requests, recommendations
+   WHY: Sometimes they don't need more data - they need my 20 years of experience interpreting what they have
+
+DECISION CRITERIA (from experience):
+- Crisis brewing or competitor movement? → intelligence_pipeline (need full picture)
+- Specific news or "just happened" queries? → fireplexity_targeted (need speed)
+- Strategic guidance or "how should we respond"? → contextual_response (need wisdom)
+
+Respond with JSON only:
+{
+  "approach": "intelligence_pipeline|fireplexity_targeted|contextual_response",
+  "confidence": 0.0-1.0,
+  "reasoning": "brief explanation",
+  "focus_areas": ["area1", "area2"],
+  "timeframe": "24h|48h|7d|general",
+  "persona": "${persona.title}",
+  "pattern": "${pattern}",
+  "identityMarker": "${queryPattern.identityMarker}",
+  "toolNarration": ${JSON.stringify(queryPattern.toolNarration)}
+}`
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 300,
+        messages: [{ role: 'user', content: analysisPrompt }]
+      }),
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      const analysisText = data.content[0].text
+
+      try {
+        const strategy = JSON.parse(analysisText.trim())
+        console.log(`🧠 Intelligent analysis: ${strategy.reasoning}`)
+        return strategy
+      } catch {
+        console.log('⚠️ Strategy analysis parsing failed, using fallback')
+      }
+    }
+  } catch (error) {
+    console.error('Strategy analysis error:', error)
+  }
+
+  // Fallback to rule-based detection with pattern awareness
+  const lower = message.toLowerCase()
+  const fallbackPattern = detectQueryPattern(message)
+  const fallbackQueryPattern = QUERY_PATTERNS[fallbackPattern.pattern]
+
+  if (lower.includes('latest') || lower.includes('news') || lower.includes('update') || lower.includes('happening')) {
+    return {
+      approach: 'intelligence_pipeline',
+      confidence: 0.9,
+      reasoning: 'Rule-based: detected news/update query',
+      focus_areas: ['news', 'competitive'],
+      timeframe: '48h',
+      pattern: fallbackPattern.pattern,
+      identityMarker: fallbackQueryPattern.identityMarker,
+      toolNarration: fallbackQueryPattern.toolNarration
+    }
+  }
+
+  return {
+    approach: 'contextual_response',
+    confidence: 0.7,
+    reasoning: 'Rule-based: general query',
+    focus_areas: ['general'],
+    timeframe: 'general',
+    pattern: fallbackPattern.pattern,
+    identityMarker: fallbackQueryPattern.identityMarker,
+    toolNarration: fallbackQueryPattern.toolNarration
+  }
+}
+
+// Execute targeted fireplexity strategy with domain awareness
+async function executeTargetedFireplexity(searchQuery: string, organizationId: string, context: any, strategy: any) {
+  console.log('🔍 Executing targeted fireplexity...')
+  console.log(`📍 Search domains strategy: ${strategy.search_domains || 'quality_first'}`)
+  console.log(`🔎 Search query: "${searchQuery}"`)
+
+  try {
+    // Pass search domain preference to fireplexity
+    const articles = await callFireplexity(searchQuery, {
+      ...context,
+      organizationId,
+      searchDomains: strategy.search_domains || 'quality_first',
+      understanding: strategy.understanding
+    })
+
+    if (articles.length > 0) {
+      // Have Claude assess quality of results
+      console.log(`✅ Found ${articles.length} articles, assessing quality...`)
+      return {
+        fireplexityData: articles.slice(0, 10), // Get more for Claude to filter
+        strategy: strategy,
+        dataQuality: 'fresh_search',
+        searchQuery: searchQuery
+      }
+    }
+  } catch (error) {
+    console.error('Targeted fireplexity error:', error)
+  }
+
+  // No fallback to saved searches - return empty if search fails
+  console.log('⚠️ Search failed, returning empty results')
+  return {
+    fireplexityData: [],
+    strategy: strategy,
+    dataQuality: 'search_failed',
+    error: 'Search failed - no results found'
+  }
+}
+
+// Execute contextual response strategy
+async function executeContextualResponse(message: string, organizationId: string, context: any, strategy: any) {
+  console.log('💡 Executing contextual response strategy...')
+
+  // Get organization profile for context
+  const orgProfile = await getMcpDiscovery(organizationId)
+
+  return {
+    contextualData: {
+      organization: orgProfile?.organization_name || organizationId,
+      competitors: orgProfile?.competition?.direct_competitors?.slice(0, 5) || [],
+      industry: orgProfile?.industry,
+      context: context,
+      strategy: strategy
+    },
+    dataQuality: 'contextual_only'
+  }
+}
+
+// Execute fallback strategy when pipeline fails
+async function executeFallbackStrategy(message: string, organizationId: string, context: any, strategy: any) {
+  console.log('🔄 Executing fallback strategy...')
+
+  // Try targeted fireplexity first
+  try {
+    const fireplexityResult = await executeTargetedFireplexity(message, organizationId, context, strategy)
+    if (fireplexityResult.fireplexityData.length > 0) {
+      return { ...fireplexityResult, fallbackUsed: 'fireplexity' }
+    }
+  } catch (error) {
+    console.error('Fallback fireplexity error:', error)
+  }
+
+  // Final fallback to contextual
+  const contextualResult = await executeContextualResponse(message, organizationId, context, strategy)
+  return { ...contextualResult, fallbackUsed: 'contextual' }
+}
+
+// MCP Tool Functions - Give NIV access to key capabilities
+
+// Call enhanced intelligence pipeline (mirrors Intelligence Hub)
+async function callEnhancedIntelligencePipeline(query: string, organizationId: string, context: any) {
+  console.log('🎯 Calling Enhanced Intelligence Pipeline...')
+
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+
+  try {
+    const response = await fetch(`${supabaseUrl}/functions/v1/niv-intelligence-pipeline`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseKey}`
+      },
+      body: JSON.stringify({
+        query: query,
+        organizationId: organizationId,
+        timeWindow: '48h',
+        context: {
+          activeModule: context.activeModule,
+          sessionId: context.sessionId
+        }
+      })
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      console.log(`✅ Intelligence Pipeline success: ${data.articles?.length || 0} articles`)
+      return data
+    } else {
+      const errorText = await response.text()
+      console.error('Intelligence Pipeline error:', response.status, errorText)
+      return null
+    }
+  } catch (error) {
+    console.error('Intelligence Pipeline call failed:', error)
+    return null
+  }
+}
+
+// Call fireplexity for fresh article search
+async function callFireplexity(query: string, context: any) {
+  console.log('🔍 NIV calling improved Perplexity-style search...')
+  console.log(`📝 Query: "${query}"`)
+  console.log(`🌐 Search domains: ${context.searchDomains || 'comprehensive'}`)
+
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+
+  try {
+    const response = await fetch(`${supabaseUrl}/functions/v1/niv-fireplexity`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseKey}`
+      },
+      body: JSON.stringify({
+        query: query,
+        searchMode: 'comprehensive', // Use comprehensive mode for better results
+        organizationId: context.organizationId || 'OpenAI',
+        conversationId: context.sessionId || context.conversationId, // Pass session for context persistence
+        useCache: false,
+        context: {
+          understanding: context.understanding,
+          searchDomains: context.searchDomains || 'all_web' // Default to broad search
+        }
+      })
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+
+      // Handle new Perplexity-style response format
+      if (data.success && data.results) {
+        console.log(`✅ Search successful: ${data.results.length} results, ${data.insights?.themes?.join(', ')}`)
+
+        // Transform results to expected format
+        return data.results.map(r => ({
+          title: r.title,
+          description: r.description,
+          url: r.url,
+          content: r.content,
+          source: r.source,
+          publishedAt: r.publishDate,
+          relevanceScore: r.relevanceScore
+        }))
+      }
+
+      // Fallback to old format if needed
+      return data.articles || []
+    }
+  } catch (error) {
+    console.error('Fireplexity error:', error)
+  }
+
+  return []
+}
+
+// Get organization profile from mcp-discovery
+async function getMcpDiscovery(organizationId: string = 'OpenAI') {
+  console.log('🎯 NIV calling mcp-discovery...')
+
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  const supabase = createClient(supabaseUrl, supabaseKey)
+
+  const { data: profile } = await supabase
+    .from('mcp_discovery')
+    .select('*')
+    .eq('organization_id', organizationId)
+    .single()
+
+  return profile
+}
+
+// Get curated sources from master-source-registry
+async function getMasterSources(industry: string = 'technology') {
+  console.log('📚 NIV calling master-source-registry...')
+
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+
+  try {
+    const response = await fetch(`${supabaseUrl}/functions/v1/master-source-registry`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseKey}`
+      },
+      body: JSON.stringify({
+        industry: industry
+      })
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      return data
+    }
+  } catch (error) {
+    console.error('Master sources error:', error)
+  }
+
+  return null
+}
+
+// Build structured message for Claude with tool results and narration
+function buildClaudeMessage(userMessage: string, toolResults: any, queryType: string, strategy?: any, conversationHistory?: any[]): string {
+  let message = ""
+
+  // Add conversation context if available
+  if (conversationHistory && conversationHistory.length > 0) {
+    message += "**Recent Conversation:**\n"
+    conversationHistory.forEach(msg => {
+      message += `${msg.role === 'user' ? 'User' : 'NIV'}: ${msg.content.substring(0, 200)}${msg.content.length > 200 ? '...' : ''}\n`
+    })
+    message += "\n**Current User Query:**\n"
+  }
+
+  message += userMessage
+
+  // Skip identity markers - let responses flow naturally
+  // Tool narration will be woven into the response by Claude, not forced here
+
+  // Add organization context first (critical for proper responses)
+  if (toolResults.discoveryData) {
+    message += `\n\n**ORGANIZATION CONTEXT:**\n`
+    message += `*Client: ${toolResults.discoveryData.organizationName || 'Unknown'}*\n`
+    message += `*Industry: ${toolResults.discoveryData.industry || 'Technology'}*\n`
+    message += `*Key Competitors: ${toolResults.discoveryData.competitors?.slice(0, 3).join(', ') || 'None listed'}*\n`
+    message += `IMPORTANT: Always refer to the client as "${toolResults.discoveryData.organizationName}" not "we" or "your organization"\n`
+  }
+
+  // Add intelligence pipeline data if available (preferred)
+  if (toolResults.intelligencePipeline) {
+    const pipeline = toolResults.intelligencePipeline
+
+    message += `\n\n**INTELLIGENCE PIPELINE RESULTS:**\n`
+
+    if (pipeline.stats) {
+      message += `*Pipeline Stats: ${pipeline.stats.totalFound} found → ${pipeline.stats.afterPRFilter} after PR filter → ${pipeline.stats.afterScoring} after scoring*\n`
+    }
+
+    // Add executive synthesis if available
+    if (pipeline.synthesis) {
+      message += `\n**EXECUTIVE SYNTHESIS:**\n${pipeline.synthesis}\n`
+    }
+
+    // Add top articles with relevance scores
+    if (pipeline.articles && pipeline.articles.length > 0) {
+      message += `\n**TOP ARTICLES:**\n`
+      pipeline.articles.slice(0, 6).forEach((article: any, i: number) => {
+        const date = article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : ''
+        const relevance = article.relevanceScore ? ` (${article.relevanceScore}% relevant)` : ''
+        const priority = article.prPriority ? ` [${article.prPriority.toUpperCase()}]` : ''
+
+        message += `\n${i + 1}. **${article.title}**${priority}\n`
+        message += `   ${article.description || 'No description available'}\n`
+        message += `   *Source: ${article.source?.name || 'Unknown'}${date ? ` • ${date}` : ''}${relevance}*\n`
+
+        if (article.relevanceFactors && article.relevanceFactors.length > 0) {
+          message += `   *Factors: ${article.relevanceFactors.join(', ')}*\n`
+        }
+      })
+    }
+
+    message += `\n\nPlease provide a strategic response based on this intelligence analysis.`
+    return message
+  }
+
+  // Tool narration removed - Claude will integrate naturally
+
+  // Fallback to fireplexity data if available
+  if (toolResults.fireplexityData && toolResults.fireplexityData.length > 0) {
+    message += `\n\n**FIREPLEXITY TOOL RESULTS:**\n`
+    toolResults.fireplexityData.forEach((article: any, i: number) => {
+      const date = article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : ''
+      const relevance = article.relevance_score ? ` (${article.relevance_score}% relevant)` : ''
+
+      message += `\n${i + 1}. **${article.title}**\n`
+      message += `   ${article.description || 'No description available'}\n`
+      message += `   *Source: ${article.source?.name || 'Unknown'}${date ? ` • ${date}` : ''}${relevance}*\n`
+
+      if (article.competitive_entities && article.competitive_entities.length > 0) {
+        message += `   *Mentions: ${article.competitive_entities.join(', ')}*\n`
+      }
+    })
+  }
+
+  // Add discovery data if available
+  if (toolResults.discoveryData) {
+    const data = toolResults.discoveryData
+    message += `\n\n**MCP-DISCOVERY TOOL RESULTS:**\n`
+
+    if (data.competitors && data.competitors.length > 0) {
+      message += `• **Direct Competitors:** ${data.competitors.join(', ')}\n`
+    }
+
+    if (data.keywords && data.keywords.length > 0) {
+      message += `• **Key Topics:** ${data.keywords.slice(0, 8).join(', ')}\n`
+    }
+
+    if (data.industry) {
+      message += `• **Industry:** ${data.industry}\n`
+    }
+  }
+
+  // Natural conversation request
+  message += `\n\n**Instructions for response:**\n`
+
+  // Add Claude's understanding if available
+  if (strategy?.understanding) {
+    message += `\n**What the user is looking for:** ${JSON.stringify(strategy.understanding)}\n`
+    message += `Focus your response on addressing their specific needs.\n`
+  }
+
+  message += `Respond naturally and conversationally, sharing insights as you would in a strategy meeting. `
+  message += `Focus on what's most important or interesting about this intelligence. `
+  message += `If you spot patterns, opportunities, or risks, explain them naturally as part of the conversation. `
+  message += `Be specific when it matters, but don't force structure - let the response flow based on what the user needs to know.`
+
+  return message
+}
+
+// Search for relevant intelligence (fallback for existing saved data)
+async function searchForIntelligence(query: string, context: any) {
+  console.log('📚 Checking for saved intelligence...')
+
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  const supabase = createClient(supabaseUrl, supabaseKey)
+
+  // Check for recent saved searches
+  const { data: savedSearches } = await supabase
+    .from('fireplexity_searches')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(1)
+
+  if (savedSearches && savedSearches.length > 0) {
+    const latestSearch = savedSearches[0]
+    if (latestSearch.results?.articles) {
+      console.log(`📚 Using saved data: ${latestSearch.results.articles.length} articles`)
+      return latestSearch.results.articles.slice(0, 10)
+    }
+  }
+
+  return []
+}
+
+// Parse query for semantic understanding
+interface QueryUnderstanding {
+  entities: string[]        // Companies, people, products mentioned
+  timeframe: string        // "lately", "recent", "today", "this week"
+  sentiment: string        // "positive", "negative", "neutral"
+  topics: string[]         // "AI", "earnings", "leadership"
+  intent: string           // "get details", "summarize", "analyze"
+  volume: string          // "a lot", "some", "few"
+}
+
+function understandQuery(message: string): QueryUnderstanding {
+  const lower = message.toLowerCase()
+
+  // Extract entities (companies, products, people)
+  const entities = message.match(/\b[A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*\b/g) || []
+
+  // Detect timeframe
+  let timeframe = "general"
+  if (lower.includes('lately') || lower.includes('recently')) timeframe = "recent"
+  else if (lower.includes('today')) timeframe = "today"
+  else if (lower.includes('this week')) timeframe = "this week"
+  else if (lower.includes('latest')) timeframe = "latest"
+
+  // Detect sentiment
+  let sentiment = "neutral"
+  if (lower.includes('positive') || lower.includes('good') || lower.includes('success')) sentiment = "positive"
+  else if (lower.includes('negative') || lower.includes('bad') || lower.includes('problem')) sentiment = "negative"
+  else if (lower.includes('controversial') || lower.includes('mixed')) sentiment = "mixed"
+
+  // Extract topics
+  const topics = []
+  if (lower.includes('ai') || lower.includes('artificial intelligence')) topics.push('AI')
+  if (lower.includes('earning') || lower.includes('financial')) topics.push('earnings')
+  if (lower.includes('product') || lower.includes('launch')) topics.push('product')
+  if (lower.includes('leadership') || lower.includes('ceo')) topics.push('leadership')
+  if (lower.includes('work') || lower.includes('progress')) topics.push('progress')
+
+  // Detect intent
+  let intent = "inform"
+  if (lower.includes('can you') || lower.includes('give me') || lower.includes('tell me')) intent = "get details"
+  else if (lower.includes('analyze') || lower.includes('assessment')) intent = "analyze"
+  else if (lower.includes('summary') || lower.includes('summarize')) intent = "summarize"
+
+  // Detect volume
+  let volume = "some"
+  if (lower.includes('a lot') || lower.includes('many') || lower.includes('numerous')) volume = "many"
+  else if (lower.includes('few') || lower.includes('some')) volume = "few"
+
+  return { entities, timeframe, sentiment, topics, intent, volume }
+}
+
+// Generate immediate acknowledgment response
+function generateAcknowledgment(message: string, strategy: any, persona: any): string {
+  const { pattern } = detectQueryPattern(message)
+  const understanding = understandQuery(message)
+
+  let acknowledgment = ""
+
+  // Build acknowledgment based on semantic understanding
+  if (understanding.sentiment === "positive" && understanding.entities.length > 0) {
+    acknowledgment = `I'll look for ${understanding.sentiment} developments about ${understanding.entities[0]}`
+    if (understanding.topics.length > 0) {
+      acknowledgment += ` focusing on ${understanding.topics.join(' and ')}`
+    }
+    if (understanding.timeframe !== "general") {
+      acknowledgment += ` from ${understanding.timeframe}`
+    }
+  } else if (pattern === 'crisis' || message.toLowerCase().includes('urgent')) {
+    acknowledgment = `I see this is urgent. Let me immediately check what's being said and assess the situation.`
+  } else if (understanding.entities.length > 0) {
+    acknowledgment = `I'll look into ${understanding.entities[0]}`
+    if (understanding.topics.length > 0) {
+      acknowledgment += ` specifically around ${understanding.topics.join(' and ')}`
+    }
+  } else {
+    acknowledgment = `I understand your query. Let me gather the relevant intelligence.`
+  }
+
+
+  // Add method based on approach (more natural) - handle null strategy
+  if (strategy?.approach === 'intelligence_pipeline') {
+    acknowledgment += ` I'll run a comprehensive analysis to get the full picture.`
+  } else if (strategy?.approach === 'fireplexity_targeted') {
+    acknowledgment += ` I'll check real-time sources for the most current information.`
+  } else if (strategy?.approach === 'contextual_response') {
+    acknowledgment += ` I'll apply relevant strategic frameworks to this situation.`
+  } else if (!strategy) {
+    // Default fallback when strategy is null
+    acknowledgment += ` I'll search for the most relevant information.`
+  }
+
+  // Add timing expectation
+  if (pattern === 'crisis') {
+    acknowledgment += ` This will take just a moment.`
+  } else {
+    acknowledgment += ` Give me a few seconds to analyze this properly.`
+  }
+
+  return acknowledgment
+}
+
+// Clean up Claude's response to remove any tool use tags or artifacts
+function cleanClaudeResponse(text: string): string {
+  // Remove tool use blocks
+  let cleaned = text.replace(/<tool_use>[\s\S]*?<\/tool_use>/g, '')
+
+  // Remove any XML-like tags that might appear
+  cleaned = cleaned.replace(/<\/?[^>]+(>|$)/g, '')
+
+  // Remove any isolated parameter blocks
+  cleaned = cleaned.replace(/\{[^{}]*"tool_name"[^{}]*\}/g, '')
+
+  // Clean up any double spaces or extra whitespace
+  cleaned = cleaned.replace(/\s+/g, ' ').trim()
+
+  // If the response starts with specific patterns, extract the actual message
+  const patterns = [
+    /^I'll\s+(?:help|assist|analyze|search|look)/i,
+    /^Let\s+me\s+(?:help|search|look|check)/i,
+    /^I\s+(?:can|will|am|understand)/i
+  ]
+
+  for (const pattern of patterns) {
+    if (pattern.test(cleaned)) {
+      // This looks like the start of actual content, keep it
+      break
+    }
+  }
+
+  return cleaned
+}
+
+// Format NIV responses to be clean and professional
+function formatNivResponse(rawResponse: string, organizationName: string = 'your organization'): string {
+  let formatted = rawResponse
+
+  // Remove any process narration
+  const processPatterns = [
+    /I'm\s+(?:now\s+)?(?:going\s+to\s+)?(?:search|look|check|analyze|query)[^.]*\./gi,
+    /Let\s+me\s+(?:first\s+)?(?:search|look|check|analyze|query)[^.]*\./gi,
+    /Searching\s+(?:for|through|in)[^.]*\./gi,
+    /Looking\s+(?:for|at|through)[^.]*\./gi,
+  ]
+
+  processPatterns.forEach(pattern => {
+    formatted = formatted.replace(pattern, '')
+  })
+
+  // Replace generic references with organization-specific ones
+  formatted = formatted.replace(/\byour organization\b/gi, organizationName)
+  formatted = formatted.replace(/\bthe organization\b/gi, organizationName)
+
+  // Clean up whitespace
+  formatted = formatted.replace(/\s+/g, ' ').trim()
+
+  return formatted
+}
+
+// Format strategic framework responses
+function formatStrategicResponse(objective: string, plan: any, organizationName: string): string {
+  let response = `**Strategic Framework for ${organizationName}**\n\n`
+  response += `**Objective:** ${objective}\n\n`
+
+  if (plan.narrative) {
+    response += '**Core Narrative:**\n'
+    response += `${plan.narrative.coreStory || 'To be developed'}\n\n`
+  }
+
+  if (plan.execution?.timeline?.phases) {
+    response += '**Execution Timeline:**\n'
+    plan.execution.timeline.phases.forEach((phase: any, i: number) => {
+      response += `${i + 1}. ${phase.name}\n`
+    })
+  }
+
+  return response
+}
+
+// Helper function to detect if query should generate strategic framework
+function detectStrategicIntent(message: string, queryType: string): boolean {
+  const queryLower = message.toLowerCase()
+
+  // Only trigger framework for EXPLICIT strategic requests
+  // Don't auto-generate on information queries
+  const explicitStrategicPhrases = [
+    'develop a strategy',
+    'create a strategic framework',
+    'build a campaign',
+    'generate a plan',
+    'design a response strategy',
+    'what\'s our strategy',
+    'propose a strategy'
+  ]
+
+  // Check if user explicitly asks for strategy
+  const hasExplicitRequest = explicitStrategicPhrases.some(phrase => queryLower.includes(phrase))
+
+  // Information queries should NOT trigger framework
+  const isInformationQuery =
+    queryLower.includes('what is happening') ||
+    queryLower.includes('what\'s happening') ||
+    queryLower.includes('tell me about') ||
+    queryLower.includes('show me') ||
+    queryLower.includes('latest') ||
+    queryLower.includes('news') ||
+    queryLower.includes('update')
+
+  // Only generate framework if explicitly asked AND not just asking for info
+  return hasExplicitRequest && !isInformationQuery
+}
+
+// Helper function to detect target component for handoff
+function detectTargetComponent(message: string): 'campaign' | 'plan' | 'execute' | 'opportunity' {
+  const queryLower = message.toLowerCase()
+
+  if (queryLower.includes('campaign') || queryLower.includes('launch') || queryLower.includes('announce')) {
+    return 'campaign'
+  }
+
+  if (queryLower.includes('plan') || queryLower.includes('timeline') || queryLower.includes('project')) {
+    return 'plan'
+  }
+
+  if (queryLower.includes('content') || queryLower.includes('write') || queryLower.includes('create')) {
+    return 'execute'
+  }
+
+  if (queryLower.includes('opportunity') || queryLower.includes('respond') || queryLower.includes('crisis')) {
+    return 'opportunity'
+  }
+
+  // Default to campaign for most strategic queries
+  return 'campaign'
+}
+
+// Main handler
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
+  try {
+    const { message, sessionId = 'default', conversationId = 'default-conversation', context = {}, stage = 'full', conversationHistory = [] } = await req.json()
+
+    console.log('🤖 NIV Processing:', {
+      message: message.substring(0, 100),
+      sessionId,
+      stage
+    })
+
+    if (!message) {
+      throw new Error('Message is required')
+    }
+
+    // Intelligent query analysis and resource selection
+    const organizationId = context.organizationId || context.organization || 'OpenAI'
+    console.log(`🏢 Organization context: ${organizationId}`)
+
+    // Get module-specific persona
+    const persona = getModulePersona(context.activeModule)
+    console.log(`🎭 Active persona: ${persona.title} for ${context.activeModule || 'intelligence'} module`)
+
+    // Detect query type for formatting
+    const queryType = detectQueryType(message)
+    console.log(`📝 Query type: ${queryType}`)
+
+    // CLAUDE-FIRST APPROACH: Let Claude understand the query and decide what to do
+    let claudeUnderstanding = null
+    let queryStrategy = null
+
+    if (ANTHROPIC_API_KEY) {
+      // Step 1: Ask Claude to understand the query and plan approach
+      const understandingPrompt = `${NIV_SYSTEM_PROMPT}
+
+You are analyzing this user query to understand what they need and how to get it.
+
+${conversationHistory.length > 0 ? `Recent Conversation:
+${conversationHistory.map(msg => `${msg.role === 'user' ? 'User' : 'NIV'}: ${msg.content}`).join('\n')}
+` : ''}
+
+Current User Query: "${message}"
+Organization Context: ${organizationId}
+Current Module: ${context.activeModule || 'intelligence'}
+
+Think step by step:
+1. What is the user really asking for?
+2. Do I need fresh, real-time information to answer this properly?
+3. What specific search terms would find the best results?
+4. Should I search quality sources only, or cast a wider net?
+5. Should I generate a strategic framework now?
+
+Key decision criteria:
+- If asking about "latest", "recent", "regulatory", "breaking", "announcement" → MUST use fireplexity_targeted
+- If asking about specific current events, competitors, or news → MUST use fireplexity_targeted
+- If asking for strategic advice or analysis of existing info → can use contextual_response
+- Default to searching when uncertain - better to have fresh data
+
+IMPORTANT: Strategic framework generation:
+- Set generate_framework to FALSE if user is asking for research, analysis, or information
+- Set generate_framework to FALSE if this is the first message about a topic
+- Only set generate_framework to TRUE if user explicitly says "create a strategy", "develop a plan", "build a framework" AFTER seeing research
+- Example: "We need analysis on AI education landscape" → generate_framework: false (they want research first)
+- Example: "Based on that analysis, create our launch strategy" → generate_framework: true (follow-up request)
+
+Respond with JSON only:
+{
+  "understanding": {
+    "what_user_wants": "brief description of what they're asking for",
+    "entities": ["companies", "people", "products mentioned"],
+    "timeframe": "latest/recent/specific date/all-time",
+    "topics": ["specific topics they care about - be specific"],
+    "requires_fresh_data": true/false,
+    "why_fresh_data": "explanation if true (e.g., 'needs current regulatory updates')"
+  },
+  "approach": {
+    "strategy": "MUST be 'fireplexity_targeted' if requires_fresh_data is true, otherwise intelligence_pipeline or contextual_response",
+    "reasoning": "why this approach makes sense",
+    "search_query": "specific, targeted search query that will find what user needs (e.g., 'OpenAI regulatory compliance 2024' not just 'OpenAI')",
+    "search_domains": "quality_first (check quality sources but can expand)/quality_only (strict)/all_web (broad search)",
+    "domain_reasoning": "why this domain choice (e.g., 'regulatory news may be on government sites not in master sources')",
+    "confidence": 0.0-1.0,
+    "generate_framework": false,
+    "framework_reasoning": "Only true if user explicitly asks for strategy/plan/framework AFTER seeing research"
+  },
+  "acknowledgment": "Natural acknowledgment message showing you understand what they want"
+}`
+
+      try {
+        const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'x-api-key': ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01',
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 500,
+            messages: [{ role: 'user', content: understandingPrompt }]
+          }),
+        })
+
+        if (claudeResponse.ok) {
+          const data = await claudeResponse.json()
+          const responseText = data.content[0].text
+
+          try {
+            // Try to extract JSON from the response
+            let jsonText = responseText.trim()
+
+            // If response contains markdown code blocks, extract the JSON
+            const jsonMatch = jsonText.match(/```json\s*([\s\S]*?)\s*```/) ||
+                             jsonText.match(/```\s*([\s\S]*?)\s*```/)
+            if (jsonMatch) {
+              jsonText = jsonMatch[1].trim()
+            }
+
+            claudeUnderstanding = JSON.parse(jsonText)
+            console.log('🧠 Claude understanding:', claudeUnderstanding)
+
+            // Use Claude's strategy
+            queryStrategy = {
+              approach: claudeUnderstanding.approach.strategy,
+              confidence: claudeUnderstanding.approach.confidence,
+              reasoning: claudeUnderstanding.approach.reasoning,
+              searchQuery: claudeUnderstanding.approach.search_query,
+              understanding: claudeUnderstanding.understanding
+            }
+          } catch (parseError) {
+            console.log('⚠️ Failed to parse Claude understanding:', parseError.message)
+            console.log('Raw response was:', responseText.substring(0, 200))
+            // Continue with fallback strategy
+          }
+        }
+      } catch (error) {
+        console.error('Claude understanding error:', error)
+      }
+    }
+
+    // Fallback if Claude isn't available or fails
+    if (!queryStrategy) {
+      try {
+        queryStrategy = await analyzeQueryStrategy(message, organizationId, context)
+      } catch (fallbackError) {
+        console.error('Fallback strategy failed:', fallbackError)
+        // Ultimate fallback - just do fireplexity search
+        queryStrategy = {
+          approach: 'fireplexity_targeted',
+          confidence: 0.5,
+          reasoning: 'Using default search strategy',
+          searchQuery: message,
+          understanding: { what_user_wants: 'Information about: ' + message }
+        }
+      }
+    }
+
+    console.log(`🎯 Strategy chosen: ${queryStrategy?.approach} (confidence: ${queryStrategy?.confidence})`)
+
+    // If this is an acknowledgment request, return Claude's understanding
+    if (stage === 'acknowledge') {
+      const acknowledgment = claudeUnderstanding?.acknowledgment ||
+                           generateAcknowledgment(message, queryStrategy, persona)
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          stage: 'acknowledgment',
+          message: acknowledgment,
+          strategy: queryStrategy?.approach || 'fireplexity_targeted',
+          understanding: claudeUnderstanding?.understanding || queryStrategy?.understanding,
+          sessionId: sessionId
+        }),
+        {
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+    }
+
+    let enrichedContext = context
+    let toolResults = {}
+
+    // Execute strategy based on intelligent analysis
+    // Use Claude's optimized search query if available, otherwise use original message
+    const searchQuery = queryStrategy.searchQuery || message
+
+    if (queryStrategy.approach === 'intelligence_pipeline' && queryStrategy.confidence >= 0.7) {
+      console.log('🎯 Executing Intelligence Pipeline strategy...')
+      console.log(`🔍 Using search query: "${searchQuery}"`)
+
+      try {
+        const pipelineResult = await callEnhancedIntelligencePipeline(searchQuery, organizationId, context)
+
+        if (pipelineResult && pipelineResult.success) {
+          toolResults.intelligencePipeline = {
+            synthesis: pipelineResult.intelligence,
+            articles: pipelineResult.articles,
+            organizationContext: pipelineResult.organizationContext,
+            stats: pipelineResult.pipelineStats,
+            strategy: queryStrategy
+          }
+          console.log(`🎯 Intelligence Pipeline: ${pipelineResult.articles?.length || 0} articles, synthesis: ${pipelineResult.intelligence ? 'YES' : 'NO'}`)
+        } else {
+          throw new Error('Pipeline returned no results')
+        }
+      } catch (error) {
+        console.error('Intelligence Pipeline failed, executing fallback strategy:', error)
+        toolResults = await executeFallbackStrategy(message, organizationId, context, queryStrategy)
+      }
+    } else if (queryStrategy.approach === 'fireplexity_targeted') {
+      console.log('🔍 Executing Targeted Fireplexity strategy...')
+      console.log(`🔍 Using search query: "${searchQuery}"`)
+      toolResults = await executeTargetedFireplexity(searchQuery, organizationId, context, queryStrategy)
+    } else {
+      console.log('💡 Executing contextual response strategy...')
+      toolResults = await executeContextualResponse(searchQuery, organizationId, context, queryStrategy)
+    }
+
+    // Always get organization profile for context (useful for all query types)
+    const orgId = context.organizationId || context.organization || 'OpenAI'
+    console.log(`🎯 Getting organization profile for: ${orgId}`)
+    const orgProfile = await getMcpDiscovery(orgId)
+
+    // Store organization name for use in response formatting
+    const organizationName = orgProfile?.organization_name || orgId
+
+    if (orgProfile) {
+      toolResults.discoveryData = {
+        organizationName: organizationName,
+        competitors: orgProfile.competition?.direct_competitors?.slice(0, 5) || [],
+        keywords: orgProfile.keywords?.slice(0, 10) || [],
+        industry: orgProfile.industry
+      }
+      console.log(`🎯 Loaded profile for ${organizationName}: ${toolResults.discoveryData.competitors.length} competitors, ${toolResults.discoveryData.keywords.length} keywords`)
+    }
+
+    // Enrich context with tool results
+    if (Object.keys(toolResults).length > 0) {
+      enrichedContext = { ...context, toolResults }
+    }
+
+    // Call Claude with enhanced prompt - combining base identity with module persona
+    if (!ANTHROPIC_API_KEY) {
+      throw new Error('ANTHROPIC_API_KEY not configured')
+    }
+
+    // Combine base NIV identity with module-specific persona
+    const moduleEnhancedPrompt = `${NIV_SYSTEM_PROMPT}
+
+CURRENT CONTEXT: Operating as ${persona.title}
+${persona.mindset}
+
+Remember to maintain natural conversation flow while bringing this perspective to the discussion.
+`
+
+    const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2000,
+        system: moduleEnhancedPrompt,
+        messages: [
+          {
+            role: 'user',
+            content: buildClaudeMessage(message, toolResults, queryType, queryStrategy, conversationHistory)
+          }
+        ]
+      }),
+    })
+
+    if (!anthropicResponse.ok) {
+      const error = await anthropicResponse.text()
+      throw new Error(`Claude API error: ${error}`)
+    }
+
+    const claudeData = await anthropicResponse.json()
+    let responseText = claudeData.content[0].text
+
+    // Clean up any tool use tags or XML-like content from Claude's response
+    responseText = cleanClaudeResponse(responseText)
+
+    // Format the response with organization context
+    const orgName = toolResults.discoveryData?.organizationName || context.organizationId || 'your organization'
+    responseText = formatNivResponse(responseText, orgName)
+
+    // Extract structured content
+    const structuredContent = extractStructuredContent(responseText, queryType)
+
+    console.log('✅ NIV Response generated:', {
+      type: structuredContent.type,
+      formatted: structuredContent.formatted
+    })
+
+    // Check if Claude determined we should generate a strategic framework
+    // Only check if claudeUnderstanding exists and has the proper structure
+    let shouldGenerateFramework = false
+    if (claudeUnderstanding && claudeUnderstanding.approach && typeof claudeUnderstanding.approach.generate_framework === 'boolean') {
+      shouldGenerateFramework = claudeUnderstanding.approach.generate_framework
+      console.log('🎯 Claude framework decision:', shouldGenerateFramework)
+    } else {
+      // Fallback to simple detection for explicit requests only
+      const queryLower = message.toLowerCase()
+      shouldGenerateFramework = queryLower.includes('develop a strategy') ||
+                                queryLower.includes('create a strategic framework') ||
+                                queryLower.includes('build a campaign plan')
+      console.log('⚠️ Using fallback framework detection:', shouldGenerateFramework)
+    }
+
+    if (shouldGenerateFramework && stage === 'full') {
+      console.log('🎯 Generating strategic framework...')
+
+      // Call the strategic framework generator
+      const frameworkResponse = await fetch(
+        `${Deno.env.get('SUPABASE_URL')}/functions/v1/niv-strategic-framework`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+          },
+          body: JSON.stringify({
+            research: toolResults,
+            userQuery: message,
+            organizationContext: {
+              organizationId: organizationId,
+              organizationName: organizationId,
+              conversationId: conversationId,
+              directCompetitors: toolResults.competitorData || [],
+              industry: context.industry || 'technology'
+            },
+            conversationHistory: conversationHistory,
+            targetComponent: detectTargetComponent(message)
+          })
+        }
+      )
+
+      if (frameworkResponse.ok) {
+        const frameworkData = await frameworkResponse.json()
+
+        // Format strategic response for display
+        const formattedMessage = formatStrategicResponse(
+          frameworkData.framework?.strategy?.objective || message,
+          frameworkData.framework,
+          organizationName
+        )
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            type: 'strategic-framework',
+            message: formattedMessage,
+            framework: frameworkData.framework,
+            discovery: frameworkData.discovery,
+            readyForHandoff: true,
+            structured: structuredContent,
+            queryType: queryType,
+            persona: {
+              title: persona.title,
+              module: context.activeModule || 'intelligence',
+              approach: persona.approach
+            },
+            sessionId: sessionId,
+            conversationId: conversationId,
+            organizationName: organizationName
+          }),
+          {
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'application/json'
+            }
+          }
+        )
+      }
+    }
+
+    // Return standard response for non-strategic queries
+    return new Response(
+      JSON.stringify({
+        success: true,
+        type: 'intelligence-response',
+        message: responseText,
+        structured: structuredContent,
+        queryType: queryType,
+        persona: {
+          title: persona.title,
+          module: context.activeModule || 'intelligence',
+          approach: persona.approach
+        },
+        hasIntelligence: toolResults.intelligencePipeline?.articles?.length > 0 || toolResults.fireplexityData?.length > 0 || false,
+        sessionId: sessionId,
+        conversationId: conversationId
+      }),
+      {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
+      }
+    )
+
+  } catch (error) {
+    console.error('❌ NIV Error:', error)
+
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: error.message
+      }),
+      {
+        status: 500,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
+      }
+    )
+  }
+});

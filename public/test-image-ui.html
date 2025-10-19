@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Image Generation UI</title>
+  <style>
+    body {
+      font-family: system-ui;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #1a1a1a;
+      color: #fff;
+    }
+    #messages {
+      border: 1px solid #333;
+      min-height: 400px;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      background: #0a0a0a;
+    }
+    .message {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .user {
+      background: #6b46c1;
+      text-align: right;
+    }
+    .niv {
+      background: #1a1a2e;
+      border: 1px solid #6b46c1;
+    }
+    img {
+      max-width: 100%;
+      border-radius: 8px;
+      margin-top: 10px;
+    }
+    button {
+      background: #6b46c1;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background: #7c3aed;
+    }
+    .type-indicator {
+      font-size: 12px;
+      color: #a78bfa;
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎨 Test Image Generation UI</h1>
+  <div id="messages"></div>
+  <button onclick="generateImage()">Generate Tesla Image</button>
+
+  <script>
+    const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co'
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8'
+
+    function addMessage(content, role, type = 'text') {
+      const messagesDiv = document.getElementById('messages')
+      const msgDiv = document.createElement('div')
+      msgDiv.className = `message ${role}`
+
+      if (type === 'image') {
+        msgDiv.innerHTML = `
+          <div class="type-indicator">🖼️ Image Generated</div>
+          <img src="${content}" alt="Generated image" />
+        `
+      } else {
+        msgDiv.innerHTML = `
+          <div class="type-indicator">${type}</div>
+          <div>${content}</div>
+        `
+      }
+
+      messagesDiv.appendChild(msgDiv)
+      messagesDiv.scrollTop = messagesDiv.scrollHeight
+    }
+
+    async function generateImage() {
+      const userMessage = 'Generate an image of a Tesla Cybertruck in a futuristic city'
+      addMessage(userMessage, 'user', '📝 User Request')
+
+      try {
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/niv-content-robust`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+          },
+          body: JSON.stringify({
+            userMessage: userMessage,
+            contentType: 'image',
+            sessionId: 'test-session-' + Date.now(),
+            organizationId: 'Tesla'
+          })
+        })
+
+        console.log('Response status:', response.status)
+        const data = await response.json()
+        console.log('Response data:', data)
+
+        // Handle messages array from backend
+        if (data.messages && Array.isArray(data.messages)) {
+          for (const msg of data.messages) {
+            if (msg.type === 'acknowledgment') {
+              addMessage(msg.message, 'niv', '🤔 Acknowledgment')
+            } else if (msg.type === 'content' && msg.content) {
+              // This is the image!
+              if (msg.content.startsWith('data:image')) {
+                addMessage(msg.content, 'niv', 'image')
+              } else {
+                addMessage(msg.content, 'niv', '✅ Content')
+              }
+            } else if (msg.message) {
+              addMessage(msg.message, 'niv', '💬 NIV')
+            }
+          }
+        } else if (data.message) {
+          addMessage(data.message, 'niv', '💬 NIV')
+        }
+
+      } catch (error) {
+        console.error('Error:', error)
+        addMessage('Error: ' + error.message, 'niv', '❌ Error')
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalDesk V3 - Intelligence Orchestrator V2 Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: white;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .card {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid;
+        }
+        .status.success {
+            background: rgba(40, 167, 69, 0.2);
+            border-color: #28a745;
+        }
+        .status.error {
+            background: rgba(220, 53, 69, 0.2);
+            border-color: #dc3545;
+        }
+        .status.info {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: #667eea;
+        }
+        .status.warning {
+            background: rgba(255, 193, 7, 0.2);
+            border-color: #ffc107;
+        }
+        .results {
+            background: #0a0a0a;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        pre {
+            color: #f8f8f2;
+            font-size: 12px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+        }
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .metric {
+            background: rgba(102, 126, 234, 0.1);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .metric-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .metric-label {
+            font-size: 11px;
+            opacity: 0.7;
+            text-transform: uppercase;
+            margin-top: 5px;
+        }
+        .coverage-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .coverage-card {
+            background: rgba(102, 126, 234, 0.05);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .coverage-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+        .entity-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            margin: 2px;
+            border-radius: 12px;
+            font-size: 11px;
+            background: rgba(102, 126, 234, 0.2);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+        }
+        .entity-badge.found {
+            background: rgba(40, 167, 69, 0.2);
+            border-color: #28a745;
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #333;
+        }
+        .tab {
+            padding: 10px 20px;
+            background: transparent;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .synthesis-section {
+            background: rgba(102, 126, 234, 0.05);
+            padding: 20px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .synthesis-section h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 SignalDesk V3 - Intelligence Orchestrator V2 Test</h1>
+        <p style="text-align: center; opacity: 0.8;">Testing the correct pipeline flow per ENHANCED_MCP_ARCHITECTURE.md</p>
+        
+        <div class="card">
+            <h2>Test Configuration</h2>
+            <div style="margin: 20px 0;">
+                <label>Organization: </label>
+                <input type="text" id="orgName" value="Tesla" style="padding: 8px; background: #333; border: 1px solid #666; color: white; border-radius: 4px;">
+                <label style="margin-left: 20px;">Industry: </label>
+                <select id="industry" style="padding: 8px; background: #333; border: 1px solid #666; color: white; border-radius: 4px;">
+                    <option value="automotive">Automotive</option>
+                    <option value="technology">Technology</option>
+                    <option value="finance">Finance</option>
+                    <option value="healthcare">Healthcare</option>
+                </select>
+            </div>
+            
+            <button onclick="runOrchestrator()">🎯 Run Intelligence Orchestrator V2</button>
+            <button onclick="runStagesManually()">📊 Run Stages Manually</button>
+            <button onclick="clearResults()">🗑️ Clear Results</button>
+        </div>
+        
+        <div class="card" id="progressCard" style="display: none;">
+            <h2>Pipeline Progress</h2>
+            <div id="progress"></div>
+        </div>
+        
+        <div class="card" id="metricsCard" style="display: none;">
+            <h2>Pipeline Metrics</h2>
+            <div id="metrics" class="metrics"></div>
+        </div>
+        
+        <div class="card" id="coverageCard" style="display: none;">
+            <h2>Discovery Coverage Analysis</h2>
+            <div id="coverage" class="coverage-grid"></div>
+        </div>
+        
+        <div class="card">
+            <h2>Results</h2>
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('summary')">Summary</button>
+                <button class="tab" onclick="showTab('synthesis')">Synthesis</button>
+                <button class="tab" onclick="showTab('opportunities')">Opportunities</button>
+                <button class="tab" onclick="showTab('raw')">Raw Data</button>
+            </div>
+            
+            <div id="summary-tab" class="tab-content active">
+                <div id="summary-content" class="results">
+                    <p style="text-align: center; opacity: 0.6;">Ready to test Intelligence Orchestrator V2...</p>
+                </div>
+            </div>
+            
+            <div id="synthesis-tab" class="tab-content">
+                <div id="synthesis-content" class="results"></div>
+            </div>
+            
+            <div id="opportunities-tab" class="tab-content">
+                <div id="opportunities-content" class="results"></div>
+            </div>
+            
+            <div id="raw-tab" class="tab-content">
+                <div id="raw-content" class="results"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Using production Supabase
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTEyOTYzNywiZXhwIjoyMDcwNzA1NjM3fQ.WO35k7riuKT2QXj_YvbtRwzLwi3Pev30-X9Yziej2pM';
+        
+        let testData = {};
+        
+        function showProgress(message, type = 'info') {
+            document.getElementById('progressCard').style.display = 'block';
+            const progress = document.getElementById('progress');
+            const status = document.createElement('div');
+            status.className = `status ${type}`;
+            status.innerHTML = `${new Date().toLocaleTimeString()}: ${message}`;
+            progress.appendChild(status);
+        }
+        
+        function showMetrics(metrics) {
+            document.getElementById('metricsCard').style.display = 'block';
+            const metricsDiv = document.getElementById('metrics');
+            metricsDiv.innerHTML = Object.entries(metrics).map(([label, value]) => `
+                <div class="metric">
+                    <div class="metric-value">${value}</div>
+                    <div class="metric-label">${label}</div>
+                </div>
+            `).join('');
+        }
+        
+        function showCoverage(profile, monitorData, enrichmentData) {
+            document.getElementById('coverageCard').style.display = 'block';
+            const coverageDiv = document.getElementById('coverage');
+            
+            // Extract what we're looking for vs what we found
+            const targets = {
+                competitors: profile?.competition?.direct_competitors || [],
+                stakeholders: profile?.stakeholders?.regulators || [],
+                topics: profile?.trending?.hot_topics || []
+            };
+            
+            const found = {
+                competitors: new Set(),
+                stakeholders: new Set(),
+                topics: new Set()
+            };
+            
+            // Check what was found in articles
+            const entityCoverage = monitorData?.metadata?.entity_coverage || {};
+            Object.keys(entityCoverage).forEach(entity => {
+                if (targets.competitors.includes(entity)) found.competitors.add(entity);
+                if (targets.stakeholders.includes(entity)) found.stakeholders.add(entity);
+            });
+            
+            // Check enrichment entities
+            const enrichedEntities = enrichmentData?.extracted_data?.entities || [];
+            enrichedEntities.forEach(entity => {
+                if (targets.competitors.some(c => entity.name?.includes(c))) found.competitors.add(entity.name);
+            });
+            
+            coverageDiv.innerHTML = `
+                <div class="coverage-card">
+                    <div class="coverage-title">Competitors (${found.competitors.size}/${targets.competitors.length})</div>
+                    ${targets.competitors.slice(0, 15).map(comp => `
+                        <span class="entity-badge ${found.competitors.has(comp) ? 'found' : ''}">
+                            ${comp}
+                        </span>
+                    `).join('')}
+                </div>
+                
+                <div class="coverage-card">
+                    <div class="coverage-title">Stakeholders (${found.stakeholders.size}/${targets.stakeholders.length})</div>
+                    ${targets.stakeholders.map(sh => `
+                        <span class="entity-badge ${found.stakeholders.has(sh) ? 'found' : ''}">
+                            ${sh}
+                        </span>
+                    `).join('')}
+                </div>
+                
+                <div class="coverage-card">
+                    <div class="coverage-title">Topics Coverage</div>
+                    ${targets.topics.slice(0, 10).map(topic => `
+                        <span class="entity-badge">${topic}</span>
+                    `).join('')}
+                </div>
+            `;
+        }
+        
+        function showTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+        }
+        
+        function clearResults() {
+            document.getElementById('progress').innerHTML = '';
+            document.getElementById('progressCard').style.display = 'none';
+            document.getElementById('metricsCard').style.display = 'none';
+            document.getElementById('coverageCard').style.display = 'none';
+            document.getElementById('summary-content').innerHTML = '<p style="text-align: center; opacity: 0.6;">Ready to test...</p>';
+            document.getElementById('synthesis-content').innerHTML = '';
+            document.getElementById('opportunities-content').innerHTML = '';
+            document.getElementById('raw-content').innerHTML = '';
+            testData = {};
+        }
+        
+        async function runOrchestrator() {
+            clearResults();
+            const orgName = document.getElementById('orgName').value;
+            const industry = document.getElementById('industry').value;
+            
+            try {
+                // Step 1: Get profile
+                showProgress('📋 Creating organization profile...', 'info');
+                const profile = await getProfile(orgName, industry);
+                testData.profile = profile;
+                showProgress(`✅ Profile created with ${profile.competition?.direct_competitors?.length || 0} competitors`, 'success');
+                
+                // Step 2: Get monitoring data
+                showProgress('📡 Collecting articles (Monitor Stage 1)...', 'info');
+                const monitorData = await getMonitoringData(orgName, profile);
+                testData.monitorData = monitorData;
+                showProgress(`✅ Collected ${monitorData.total_articles} articles`, 'success');
+                
+                // Step 3: Call Intelligence Orchestrator V2
+                showProgress('🎯 Calling Intelligence Orchestrator V2...', 'info');
+                showProgress('This orchestrates: Relevance → Firecrawl → Enrichment → Synthesis → Opportunities', 'info');
+                
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-orchestrator-v2`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization_name: orgName,
+                        profile: profile,
+                        monitoring_data: {
+                            findings: monitorData.articles || []
+                        },
+                        skip_enrichment: false,
+                        skip_opportunity_engine: false,
+                        articles_limit: 200
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.text();
+                    throw new Error(`Orchestrator failed: ${error}`);
+                }
+                
+                const result = await response.json();
+                testData.orchestratorResult = result;
+                
+                // Check what we got
+                const synthesis = result.synthesis || {};
+                const opportunities = result.opportunities || [];
+                const metadata = result.metadata || {};
+                
+                showProgress('✅ Intelligence Orchestrator V2 completed!', 'success');
+                
+                // Display metrics
+                showMetrics({
+                    'Articles Processed': metadata.monitoring_stats?.total_articles || 0,
+                    'Articles w/ Full Content': metadata.enrichment_stats?.articles_with_full_content || 0,
+                    'Events Extracted': metadata.enrichment_stats?.events_extracted || 0,
+                    'Entities Found': metadata.enrichment_stats?.entities_found || 0,
+                    'Opportunities': opportunities.length || 0,
+                    'Synthesis Sections': Object.keys(synthesis).length || 0
+                });
+                
+                // Show coverage
+                showCoverage(profile, monitorData, metadata.enrichment_stats);
+                
+                // Display results
+                displayResults(result);
+                
+            } catch (error) {
+                showProgress(`❌ Error: ${error.message}`, 'error');
+                console.error('Orchestrator error:', error);
+            }
+        }
+        
+        async function runStagesManually() {
+            clearResults();
+            const orgName = document.getElementById('orgName').value;
+            const industry = document.getElementById('industry').value;
+            
+            try {
+                // Step 1: Profile
+                showProgress('📋 Step 1: Creating profile...', 'info');
+                const profile = await getProfile(orgName, industry);
+                showProgress(`✅ Profile: ${profile.competition?.direct_competitors?.length} competitors`, 'success');
+                
+                // Step 2: Monitor Stage 1
+                showProgress('📡 Step 2: Monitor Stage 1...', 'info');
+                const monitorData = await getMonitoringData(orgName, profile);
+                showProgress(`✅ Monitor: ${monitorData.total_articles} articles collected`, 'success');
+                
+                // Step 3: Relevance + Firecrawl
+                showProgress('🎯 Step 3: Relevance scoring + Firecrawl (30 articles)...', 'info');
+                const relevanceResponse = await fetch(`${SUPABASE_URL}/functions/v1/monitor-stage-2-relevance`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        articles: monitorData.articles,
+                        profile: profile,
+                        organization_name: orgName,
+                        top_k: 60
+                    })
+                });
+                
+                const relevanceData = await relevanceResponse.json();
+                const articlesWithContent = relevanceData.findings?.filter(a => a.has_full_content) || [];
+                showProgress(`✅ Relevance: ${relevanceData.findings?.length} scored, ${articlesWithContent.length} with full content from Firecrawl`, 'success');
+                
+                // Step 4: Enrichment
+                showProgress('💎 Step 4: Enrichment (extracting events/entities)...', 'info');
+                const enrichmentResponse = await fetch(`${SUPABASE_URL}/functions/v1/monitoring-stage-2-enrichment`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        articles: relevanceData.findings || [],
+                        profile: profile,
+                        organization_name: orgName
+                    })
+                });
+                
+                const enrichmentData = await enrichmentResponse.json();
+                showProgress(`✅ Enrichment: ${enrichmentData.stats?.unique_events || 0} events, ${enrichmentData.stats?.unique_entities || 0} entities`, 'success');
+                
+                // Show if enrichment got nothing
+                if (!enrichmentData.stats?.unique_events && !enrichmentData.stats?.unique_entities) {
+                    showProgress('⚠️ WARNING: Enrichment extracted 0 events and 0 entities!', 'warning');
+                    showProgress('This usually means Firecrawl content didn\'t pass validation (>500 chars, >50 words, no HTML)', 'warning');
+                }
+                
+                // Step 5: Synthesis
+                showProgress('🧠 Step 5: Executive Synthesis...', 'info');
+                const synthesisResponse = await fetch(`${SUPABASE_URL}/functions/v1/mcp-executive-synthesis`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        method: 'tools/call',
+                        params: {
+                            name: 'synthesize_executive_intelligence',
+                            arguments: {
+                                enriched_data: enrichmentData,
+                                organization: { name: orgName },
+                                analysis_depth: 'comprehensive_consolidated'
+                            }
+                        }
+                    })
+                });
+                
+                const synthesisResult = await synthesisResponse.json();
+                let synthesis = synthesisResult;
+                if (synthesisResult.content?.[0]?.type === 'text') {
+                    synthesis = JSON.parse(synthesisResult.content[0].text);
+                }
+                showProgress('✅ Synthesis completed', 'success');
+                
+                // Display final metrics
+                showMetrics({
+                    'Articles': monitorData.total_articles,
+                    'Relevance Scored': relevanceData.findings?.length || 0,
+                    'Full Content': articlesWithContent.length,
+                    'Events': enrichmentData.stats?.unique_events || 0,
+                    'Entities': enrichmentData.stats?.unique_entities || 0
+                });
+                
+                // Show coverage
+                showCoverage(profile, monitorData, enrichmentData);
+                
+                // Display combined results
+                displayResults({
+                    synthesis: synthesis.synthesis || synthesis,
+                    metadata: {
+                        enrichment_stats: enrichmentData.stats,
+                        monitoring_stats: monitorData.metadata
+                    }
+                });
+                
+            } catch (error) {
+                showProgress(`❌ Error: ${error.message}`, 'error');
+                console.error('Manual stages error:', error);
+            }
+        }
+        
+        async function getProfile(orgName, industry) {
+            const response = await fetch(`${SUPABASE_URL}/functions/v1/mcp-discovery`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                },
+                body: JSON.stringify({
+                    tool: 'create_organization_profile',
+                    arguments: {
+                        organization_name: orgName,
+                        industry_hint: industry,
+                        save_to_persistence: false
+                    }
+                })
+            });
+            
+            if (!response.ok) throw new Error('Failed to create profile');
+            const result = await response.json();
+            return result.profile;
+        }
+        
+        async function getMonitoringData(orgName, profile) {
+            const response = await fetch(`${SUPABASE_URL}/functions/v1/monitor-stage-1`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                },
+                body: JSON.stringify({
+                    organization_name: orgName,
+                    profile: profile
+                })
+            });
+            
+            if (!response.ok) throw new Error('Failed to get monitoring data');
+            return await response.json();
+        }
+        
+        function displayResults(result) {
+            // Summary tab
+            const summaryContent = document.getElementById('summary-content');
+            summaryContent.innerHTML = `
+                <h3>Pipeline Summary</h3>
+                <div style="margin-top: 20px;">
+                    <h4>Key Metrics:</h4>
+                    <ul>
+                        <li>Articles with Full Content: ${result.metadata?.enrichment_stats?.articles_with_full_content || 0}</li>
+                        <li>Articles with Partial Content: ${result.metadata?.enrichment_stats?.articles_with_partial_content || 0}</li>
+                        <li>Events Extracted: ${result.metadata?.enrichment_stats?.unique_events || 0}</li>
+                        <li>Entities Found: ${result.metadata?.enrichment_stats?.unique_entities || 0}</li>
+                        <li>Synthesis Sections: ${Object.keys(result.synthesis || {}).length}</li>
+                        <li>Opportunities Generated: ${result.opportunities?.length || 0}</li>
+                    </ul>
+                </div>
+                
+                ${result.metadata?.enrichment_stats?.unique_events === 0 ? `
+                    <div class="status warning" style="margin-top: 20px;">
+                        ⚠️ No events were extracted. This typically means:
+                        <ul>
+                            <li>Firecrawl content didn't meet quality thresholds (>500 chars, >50 words, no HTML)</li>
+                            <li>Articles were blocked by paywalls or anti-scraping measures</li>
+                            <li>Content was too navigation-heavy (menus, footers, etc.)</li>
+                        </ul>
+                    </div>
+                ` : ''}
+            `;
+            
+            // Synthesis tab
+            const synthesisContent = document.getElementById('synthesis-content');
+            const synthesis = result.synthesis || {};
+            synthesisContent.innerHTML = `
+                <h3>Executive Synthesis</h3>
+                ${synthesis.executive_summary ? `
+                    <div class="synthesis-section">
+                        <h4>Executive Summary</h4>
+                        <p>${synthesis.executive_summary}</p>
+                    </div>
+                ` : ''}
+                
+                ${synthesis.top_insights ? `
+                    <div class="synthesis-section">
+                        <h4>Top Insights</h4>
+                        <ul>
+                            ${synthesis.top_insights.map(i => `<li>${i}</li>`).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+                
+                ${synthesis.competitor_moves ? `
+                    <div class="synthesis-section">
+                        <h4>Competitor Moves</h4>
+                        <ul>
+                            ${synthesis.competitor_moves.map(m => `<li>${m}</li>`).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+                
+                ${Object.keys(synthesis).length === 0 ? '<p style="opacity: 0.6;">No synthesis generated</p>' : ''}
+            `;
+            
+            // Opportunities tab
+            const opportunitiesContent = document.getElementById('opportunities-content');
+            const opportunities = result.opportunities || [];
+            opportunitiesContent.innerHTML = `
+                <h3>Opportunities (${opportunities.length})</h3>
+                ${opportunities.length > 0 ? opportunities.map(opp => `
+                    <div class="synthesis-section">
+                        <h4>${opp.title}</h4>
+                        <p>${opp.description}</p>
+                        <p><strong>Urgency:</strong> ${opp.urgency} | <strong>Score:</strong> ${opp.score}</p>
+                    </div>
+                `).join('') : '<p style="opacity: 0.6;">No opportunities generated</p>'}
+            `;
+            
+            // Raw data tab
+            document.getElementById('raw-content').innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,267 @@
+{
+  "sessionId": "a83b0c7a-ec50-419f-a42b-5ee0af4151b4",
+  "stage": "positioning",
+  "message": "# Campaign Research Complete\n\nI've analyzed your campaign across 6 key dimensions:\n\n## 1. Organization Context\n**Industry:** N/A\n**Competitors Identified:** 0\n**Key Stakeholders:** 0\n\n## 2. Stakeholder Intelligence\nAnalyzed **1 stakeholder groups** including:\n• Tech Early Adopters - Mixed - innovative but controversial leadership\n\n## 3. Narrative Environment\nFound **2 dominant narratives** in your industry:\n• [object Object]\n• [object Object]\n\n## 4. Channel Intelligence\n**Journalists:** 1 tier-1 contacts identified\n**Sources:** 0 industry outlets mapped\n**Channels Mapped:** LinkedIn, Twitter, Industry Publications\n\n## 5. Historical Patterns\n• [object Object]\n\n## 6. Competitive Movements\nTracked **0 competitors** with recent activity\n• Analysis complete\n\n---\n\n**Processing Time:** N/A\n\nBased on this research, I'll now present positioning options. Would you like me to proceed, or would you like to refine any area of research first?",
+  "data": {
+    "stakeholders": [
+      {
+        "name": "Tech Early Adopters",
+        "size": 2500000,
+        "psychology": {
+          "values": [
+            "innovation",
+            "technological progress",
+            "sustainability",
+            "status"
+          ],
+          "fears": [
+            "obsolescence",
+            "missing out",
+            "environmental impact"
+          ],
+          "aspirations": [
+            "being first",
+            "thought leadership",
+            "environmental stewardship"
+          ],
+          "biases": [
+            "optimism bias",
+            "pro-innovation bias",
+            "status-seeking bias"
+          ]
+        },
+        "informationDiet": {
+          "primarySources": [
+            "TechCrunch",
+            "Wired",
+            "Twitter/X",
+            "Reddit r/teslamotors"
+          ],
+          "trustedVoices": [
+            "Elon Musk",
+            "tech influencers",
+            "automotive reviewers"
+          ],
+          "consumptionPatterns": "Heavy digital consumption, multiple daily check-ins, active in online communities",
+          "shareDrivers": [
+            "exclusive access",
+            "technical specs",
+            "performance metrics",
+            "sustainability impact"
+          ]
+        },
+        "currentPerceptions": {
+          "ofOrganization": "Mixed - innovative but controversial leadership",
+          "ofIndustry": "Transitioning from traditional to tech-driven",
+          "ofTopic": "Excited but skeptical about real-world performance"
+        },
+        "decisionJourney": {
+          "currentStage": "awareness",
+          "movementTriggers": [
+            "technical validation",
+            "peer reviews",
+            "hands-on experience"
+          ],
+          "validationNeeds": [
+            "performance data",
+            "expert opinions",
+            "early user reviews"
+          ],
+          "socialProofRequirements": [
+            "influencer adoption",
+            "tech community acceptance"
+          ]
+        },
+        "influencePathways": {
+          "directInfluencers": [
+            "tech reviewers",
+            "automotive journalists",
+            "Tesla owners"
+          ],
+          "peerNetworks": [
+            "tech forums",
+            "EV communities",
+            "professional networks"
+          ],
+          "authorityFigures": [
+            "Elon Musk",
+            "automotive experts",
+            "environmental scientists"
+          ]
+        },
+        "decisionTriggers": [
+          "compelling performance data",
+          "early access opportunities",
+          "status signaling potential"
+        ],
+        "objectionPatterns": [
+          "price concerns",
+          "build quality doubts",
+          "delivery timeline skepticism"
+        ]
+      }
+    ],
+    "narrativeLandscape": {
+      "dominantNarratives": [
+        {
+          "narrative": "EV Revolution",
+          "source": "Industry media",
+          "resonance": "high"
+        },
+        {
+          "narrative": "Tesla Innovation Leadership",
+          "source": "Tech media",
+          "resonance": "medium"
+        }
+      ],
+      "narrativeVacuums": [
+        {
+          "opportunity": "Practical Utility",
+          "rationale": "Focus on real-world applications beyond specs",
+          "potential": "high"
+        },
+        {
+          "opportunity": "Community Pioneer Status",
+          "rationale": "Early adopter exclusive benefits",
+          "potential": "high"
+        }
+      ],
+      "competitivePositioning": [
+        {
+          "competitor": "Traditional Trucks",
+          "positioning": "Proven reliability",
+          "strengths": [
+            "established market",
+            "dealer network",
+            "track record"
+          ],
+          "vulnerabilities": [
+            "environmental impact",
+            "tech limitations",
+            "dated image"
+          ]
+        }
+      ],
+      "culturalContext": "Transition period between traditional automotive and tech-driven transportation future"
+    },
+    "channelIntelligence": {
+      "byStakeholder": [
+        {
+          "stakeholder": "Tech Early Adopters",
+          "channels": [
+            {
+              "name": "Twitter/X",
+              "type": "social",
+              "trustLevel": "high",
+              "reach": "extensive",
+              "engagement": "high"
+            },
+            {
+              "name": "Tech Blogs",
+              "type": "digital",
+              "trustLevel": "high",
+              "reach": "targeted",
+              "engagement": "medium"
+            }
+          ],
+          "optimalTiming": "Early morning and late evening PST",
+          "contentPreferences": [
+            "technical deep-dives",
+            "comparison videos",
+            "performance demonstrations"
+          ],
+          "amplificationOpportunities": [
+            "tech influencer partnerships",
+            "exclusive previews",
+            "community events"
+          ]
+        }
+      ],
+      "journalists": [
+        {
+          "name": "Tech Automotive Beat",
+          "outlet": "Various",
+          "beat": "EV Technology",
+          "tier": "tier1",
+          "relevance": "high"
+        }
+      ],
+      "publications": [
+        {
+          "name": "TechCrunch",
+          "type": "digital",
+          "audience": "tech professionals",
+          "trustLevel": "high"
+        }
+      ]
+    },
+    "historicalInsights": {
+      "successfulCampaigns": [
+        {
+          "campaign": "Tesla Model 3 Launch",
+          "context": "Mass market EV introduction",
+          "approach": "Reservation system with exclusive access",
+          "results": "High conversion, strong community building",
+          "keyLessons": [
+            "exclusivity drives demand",
+            "community engagement essential"
+          ]
+        }
+      ],
+      "successFactors": [
+        {
+          "factor": "Early Access Programs",
+          "why": "Creates urgency and exclusivity",
+          "application": "Limited release strategy"
+        }
+      ],
+      "patternRecommendations": [
+        {
+          "pattern": "Influencer Seeding",
+          "rationale": "Tech community trust building",
+          "implementation": "Targeted preview events"
+        }
+      ],
+      "riskFactors": [
+        {
+          "risk": "Production Delays",
+          "context": "Manufacturing challenges",
+          "mitigation": "Transparent communication strategy"
+        }
+      ]
+    },
+    "keyInsights": [
+      {
+        "insight": "Tech early adopters require extensive validation through trusted community sources",
+        "category": "stakeholder",
+        "significance": "critical",
+        "actionImplication": "Prioritize influencer and community engagement"
+      },
+      {
+        "insight": "Narrative vacuum exists around practical utility applications",
+        "category": "narrative",
+        "significance": "high",
+        "actionImplication": "Develop content focusing on real-world use cases"
+      },
+      {
+        "insight": "Twitter/X remains primary channel for tech community engagement",
+        "category": "channel",
+        "significance": "high",
+        "actionImplication": "Focus social strategy on Twitter/X"
+      }
+    ],
+    "synthesisQuality": {
+      "completeness": 0.85,
+      "confidence": 0.8,
+      "dataGaps": [
+        "Detailed competitor campaign data",
+        "Long-term customer satisfaction metrics"
+      ],
+      "recommendedAdditionalResearch": [
+        "Competitor launch analysis",
+        "Early adopter post-purchase behavior study"
+      ]
+    }
+  },
+  "requiresInput": true
+}

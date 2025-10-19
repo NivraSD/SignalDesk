@@ -1,0 +1,649 @@
+/**
+ * Monitoring Stage 2: Smart Pattern-Based Enrichment with Aggregation
+ * Extracts, deduplicates, and organizes data WITHOUT Claude
+ * Returns rich structured data that synthesis expects
+ */
+
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
+import { corsHeaders } from '../_shared/cors.ts';
+
+/**
+ * Extract and aggregate structured data from articles
+ */
+function extractAndAggregateData(articles: any[], profile: any, organization_name: string) {
+  console.log(`⚡ Smart extraction from ${articles.length} articles (NO CLAUDE)`);
+  
+  // Track all extracted data with deduplication
+  const eventMap = new Map(); // Key: event description, Value: event object with sources
+  const entityMap = new Map(); // Key: entity name, Value: entity object with context
+  const topicMap = new Map(); // Key: topic, Value: count and articles
+  const quotesList = [];
+  const metricsList = {
+    financial: new Set(),
+    percentages: new Set(),
+    dates: new Set()
+  };
+
+  // Event patterns for extraction
+  const eventPatterns = {
+    funding: /(?:raised?|secur\w+|clos\w+|fund\w+|invest\w+|valuation|Series [A-Z]|\$[\d.]+[MBK])/i,
+    acquisition: /(?:acquir\w+|merg\w+|buy\w+|bought|purchas\w+|deal|transaction)/i,
+    product_launch: /(?:launch\w+|releas\w+|unveil\w+|introduc\w+|announc\w+|debut\w+|roll\w+ out)/i,
+    partnership: /(?:partner\w+|collaborat\w+|team\w+ up|join\w+ forces|alliance|agreement)/i,
+    layoffs: /(?:layoff|lay off|cut\w+|eliminat\w+|reduc\w+ workforce|firing|downsize)/i,
+    expansion: /(?:expand\w+|grow\w+|open\w+|enter\w+|new market|international)/i,
+    regulatory: /(?:regulat\w+|complian\w+|fine\w+|lawsuit|investigation|probe|SEC|FTC|DOJ)/i,
+    leadership: /(?:CEO|CFO|CTO|executive|appoint\w+|resign\w+|step\w+ down|hire\w+|promot\w+)/i
+  };
+
+  // Process each article
+  articles.forEach((article, articleIndex) => {
+    const content = article.full_content || article.content || article.description || '';
+    const title = article.title || '';
+    const fullText = `${title} ${content}`;
+    
+    // FIRST: Use Firecrawl extracted data if available
+    if (article.firecrawl_extracted || article.pr_extraction) {
+      const extraction = article.firecrawl_extracted || article.pr_extraction || {};
+      
+      // Process quotes with source tracking
+      if (extraction.quotes) {
+        extraction.quotes.forEach(quote => {
+          if (quote && quote.length > 20) {
+            quotesList.push({
+              text: quote,
+              source: article.title,
+              url: article.url,
+              relevance_score: article.pr_relevance_score || 0
+            });
+          }
+        });
+      }
+      
+      // Process entities with deduplication
+      const entities = [
+        ...(extraction.entities?.companies || []),
+        ...(extraction.entities?.people || []),
+        ...(extraction.mentioned_entities || [])
+      ];
+      
+      entities.forEach(entity => {
+        if (!entity || entity.length < 2) return;
+        
+        if (!entityMap.has(entity)) {
+          entityMap.set(entity, {
+            name: entity,
+            type: extraction.entities?.people?.includes(entity) ? 'person' : 'company',
+            mentions: 0,
+            articles: [],
+            context: [],
+            sentiment: { positive: 0, negative: 0, neutral: 0 }
+          });
+        }
+        
+        const entityObj = entityMap.get(entity);
+        entityObj.mentions++;
+        entityObj.articles.push({
+          title: article.title,
+          url: article.url,
+          relevance: article.pr_relevance_score || 0
+        });
+        
+        // Add context snippet
+        const contextMatch = fullText.match(new RegExp(`.{0,50}${entity}.{0,50}`, 'i'));
+        if (contextMatch) {
+          entityObj.context.push(contextMatch[0]);
+        }
+      });
+      
+      // Process metrics
+      if (extraction.metrics?.financial) {
+        extraction.metrics.financial.forEach(m => metricsList.financial.add(m));
+      }
+      if (extraction.metrics?.percentages) {
+        extraction.metrics.percentages.forEach(m => metricsList.percentages.add(m));
+      }
+    }
+    
+    // SECOND: Extract events using patterns
+    Object.entries(eventPatterns).forEach(([eventType, pattern]) => {
+      const matches = fullText.matchAll(new RegExp(pattern, 'gi'));
+      for (const match of matches) {
+        if (!match[0]) continue;
+        
+        // Get surrounding context (50 chars before and after)
+        const startIdx = Math.max(0, match.index - 50);
+        const endIdx = Math.min(fullText.length, match.index + match[0].length + 50);
+        const context = fullText.substring(startIdx, endIdx).trim();
+        
+        // Create event key for deduplication
+        const eventKey = `${eventType}:${context.substring(0, 100)}`;
+        
+        if (!eventMap.has(eventKey)) {
+          eventMap.set(eventKey, {
+            type: eventType,
+            description: context,
+            sources: [],
+            entities_involved: new Set(),
+            first_seen: article.published_at || new Date().toISOString(),
+            importance: 0
+          });
+        }
+        
+        const event = eventMap.get(eventKey);
+        event.sources.push({
+          title: article.title,
+          url: article.url,
+          relevance: article.pr_relevance_score || 0
+        });
+        
+        // Extract entities mentioned near this event
+        const nearbyEntities = context.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\b/g);
+        if (nearbyEntities) {
+          nearbyEntities.forEach(e => {
+            if (e.length > 3 && !['The', 'This', 'That'].includes(e)) {
+              event.entities_involved.add(e);
+            }
+          });
+        }
+        
+        // Calculate importance based on sources and relevance
+        event.importance = event.sources.reduce((sum, s) => sum + s.relevance, 0) / event.sources.length;
+      }
+    });
+    
+    // Extract money amounts
+    const moneyPattern = /\$[\d,]+(?:\.[\d]+)?(?:\s*(?:billion|million|thousand|[BMK]))?/gi;
+    const moneyMatches = fullText.match(moneyPattern);
+    if (moneyMatches) {
+      moneyMatches.forEach(m => metricsList.financial.add(m));
+    }
+    
+    // Extract percentages
+    const percentPattern = /\d+(?:\.\d+)?%/g;
+    const percentMatches = fullText.match(percentPattern);
+    if (percentMatches) {
+      percentMatches.forEach(p => metricsList.percentages.add(p));
+    }
+    
+    // Extract trending topics
+    const topicPattern = /\b(AI|artificial intelligence|machine learning|blockchain|crypto|sustainability|ESG|climate|quantum|metaverse|5G|automation|cybersecurity|supply chain|inflation|recession)\b/gi;
+    const topicMatches = fullText.match(topicPattern);
+    if (topicMatches) {
+      topicMatches.forEach(topic => {
+        const normalizedTopic = topic.toLowerCase();
+        if (!topicMap.has(normalizedTopic)) {
+          topicMap.set(normalizedTopic, {
+            topic: normalizedTopic,
+            count: 0,
+            articles: []
+          });
+        }
+        const topicObj = topicMap.get(normalizedTopic);
+        topicObj.count++;
+        topicObj.articles.push(article.title);
+      });
+    }
+  });
+  
+  // Convert maps to sorted arrays
+  const events = Array.from(eventMap.values())
+    .map(e => ({
+      ...e,
+      entities_involved: Array.from(e.entities_involved),
+      source_count: e.sources.length
+    }))
+    .sort((a, b) => b.importance - a.importance)
+    .slice(0, 50);
+  
+  const entities = Array.from(entityMap.values())
+    .sort((a, b) => b.mentions - a.mentions)
+    .slice(0, 100);
+  
+  const topics = Array.from(topicMap.values())
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 30);
+  
+  // Group entities by type
+  const companies = entities.filter(e => e.type === 'company');
+  const people = entities.filter(e => e.type === 'person');
+  
+  // Create knowledge graph
+  const knowledgeGraph = {
+    entities: {
+      companies: companies.map(c => ({
+        name: c.name,
+        mentions: c.mentions,
+        articles: c.articles.slice(0, 5),
+        sentiment: c.sentiment,
+        events: events.filter(e => e.entities_involved.includes(c.name)).slice(0, 5),
+        opportunities: [],
+        risks: []
+      })),
+      people: people.map(p => ({
+        name: p.name,
+        mentions: p.mentions,
+        articles: p.articles.slice(0, 5),
+        roles: [],
+        companies: []
+      })),
+      products: [],
+      events: events.slice(0, 20)
+    },
+    relationships: createRelationships(entities, events),
+    clusters: createClusters(articles, events, topics)
+  };
+  
+  // Create executive summary
+  const executiveSummary = {
+    immediate_actions: identifyImmediateActions(events, entities, articles),
+    strategic_opportunities: identifyOpportunities(events, entities, topics),
+    competitive_threats: identifyThreats(events, entities, articles),
+    market_trends: topics.slice(0, 10).map(t => t.topic),
+    key_metrics: Array.from(metricsList.financial).slice(0, 20),
+    category_breakdown: categorizeArticles(articles),
+    competitive_positioning: analyzeCompetitivePosition(entities, events, organization_name),
+    market_direction: analyzeMarketDirection(topics, events)
+  };
+  
+  return {
+    knowledge_graph: knowledgeGraph,
+    executive_summary: executiveSummary,
+    extracted_quotes: quotesList.slice(0, 20),
+    metrics: {
+      financial: Array.from(metricsList.financial).slice(0, 20),
+      percentages: Array.from(metricsList.percentages).slice(0, 20)
+    },
+    statistics: {
+      total_articles: articles.length,
+      unique_events: events.length,
+      unique_entities: entities.length,
+      topics_identified: topics.length,
+      with_full_content: articles.filter(a => a.has_full_content).length,
+      with_extraction: articles.filter(a => a.firecrawl_extracted || a.pr_extraction).length
+    }
+  };
+}
+
+function createRelationships(entities, events) {
+  const relationships = [];
+  
+  // Create relationships based on co-occurrence in events
+  events.forEach(event => {
+    const involved = event.entities_involved || [];
+    for (let i = 0; i < involved.length - 1; i++) {
+      for (let j = i + 1; j < Math.min(involved.length, i + 3); j++) {
+        relationships.push({
+          source: involved[i],
+          target: involved[j],
+          type: event.type,
+          strength: event.importance
+        });
+      }
+    }
+  });
+  
+  return relationships.slice(0, 100);
+}
+
+function createClusters(articles, events, topics) {
+  const clusters = [];
+  
+  // Group by event types
+  const eventTypes = {};
+  events.forEach(event => {
+    if (!eventTypes[event.type]) {
+      eventTypes[event.type] = {
+        topic: event.type,
+        articles: [],
+        entities: new Set(),
+        opportunities: [],
+        risks: [],
+        key_themes: []
+      };
+    }
+    eventTypes[event.type].articles.push(...event.sources.map(s => s.url));
+    event.entities_involved.forEach(e => eventTypes[event.type].entities.add(e));
+  });
+  
+  // Convert to clusters
+  Object.entries(eventTypes).forEach(([type, cluster]) => {
+    clusters.push({
+      topic: type,
+      articles: [...new Set(cluster.articles)].slice(0, 10),
+      entities: Array.from(cluster.entities).slice(0, 20),
+      opportunities: [],
+      risks: [],
+      key_themes: topics.filter(t => cluster.articles.some(a => a.includes(t.topic))).map(t => t.topic).slice(0, 5)
+    });
+  });
+  
+  return clusters;
+}
+
+function identifyImmediateActions(events, entities, articles) {
+  const actions = [];
+  
+  // Crisis events need immediate action
+  const crisisEvents = events.filter(e => 
+    e.type === 'layoffs' || 
+    e.type === 'regulatory' ||
+    (e.description && /crisis|breach|hack|scandal/i.test(e.description))
+  );
+  
+  crisisEvents.slice(0, 5).forEach(event => {
+    actions.push({
+      title: `Response needed: ${event.type}`,
+      implication: event.description.substring(0, 200),
+      source: event.sources[0]?.title || 'Multiple sources',
+      url: event.sources[0]?.url || '#'
+    });
+  });
+  
+  // High-relevance articles with opportunity keywords
+  articles
+    .filter(a => a.pr_relevance_score > 70 && /opportunity|launch|partnership/i.test(a.title))
+    .slice(0, 5)
+    .forEach(article => {
+      actions.push({
+        title: article.title.substring(0, 100),
+        implication: 'High-relevance opportunity detected',
+        source: article.source,
+        url: article.url
+      });
+    });
+  
+  return actions.slice(0, 10);
+}
+
+function identifyOpportunities(events, entities, topics) {
+  const opportunities = [];
+  
+  // Partnership and expansion events
+  events
+    .filter(e => e.type === 'partnership' || e.type === 'expansion' || e.type === 'product_launch')
+    .slice(0, 10)
+    .forEach(event => {
+      opportunities.push({
+        opportunity: `Leverage ${event.type}: ${event.description.substring(0, 100)}`,
+        source: event.sources[0]?.title || 'Multiple sources',
+        category: 'strategic'
+      });
+    });
+  
+  // Trending topics
+  topics.slice(0, 5).forEach(topic => {
+    if (topic.count > 3) {
+      opportunities.push({
+        opportunity: `Capitalize on trending topic: ${topic.topic}`,
+        source: `${topic.count} articles`,
+        category: 'market'
+      });
+    }
+  });
+  
+  return opportunities.slice(0, 15);
+}
+
+function identifyThreats(events, entities, articles) {
+  const threats = [];
+  
+  // Competitive events
+  events
+    .filter(e => e.type === 'acquisition' || e.type === 'funding' || e.type === 'regulatory')
+    .slice(0, 10)
+    .forEach(event => {
+      threats.push({
+        threat: `Monitor ${event.type}: ${event.description.substring(0, 100)}`,
+        source: event.sources[0]?.title || 'Multiple sources',
+        category: 'competitive'
+      });
+    });
+  
+  // High-mention competitors
+  entities
+    .filter(e => e.type === 'company' && e.mentions > 3)
+    .slice(0, 5)
+    .forEach(company => {
+      threats.push({
+        threat: `Competitive activity from ${company.name}`,
+        source: `${company.mentions} mentions`,
+        category: 'competitive'
+      });
+    });
+  
+  return threats.slice(0, 15);
+}
+
+function categorizeArticles(articles) {
+  const categories = {};
+  
+  articles.forEach(article => {
+    const category = article.pr_category || 'general';
+    categories[category] = (categories[category] || 0) + 1;
+  });
+  
+  return Object.entries(categories).map(([category, count]) => ({
+    category,
+    count,
+    percentage: Math.round((count / articles.length) * 100)
+  }));
+}
+
+function analyzeCompetitivePosition(entities, events, organization_name) {
+  const orgMentions = entities.find(e => e.name === organization_name)?.mentions || 0;
+  const competitorMentions = entities.filter(e => e.type === 'company' && e.name !== organization_name);
+  const avgCompetitorMentions = competitorMentions.reduce((sum, c) => sum + c.mentions, 0) / Math.max(competitorMentions.length, 1);
+  
+  if (orgMentions > avgCompetitorMentions * 1.5) {
+    return 'Strong position - leading mindshare';
+  } else if (orgMentions > avgCompetitorMentions * 0.5) {
+    return 'Competitive position - maintaining presence';
+  } else {
+    return 'Needs attention - competitors gaining mindshare';
+  }
+}
+
+function analyzeMarketDirection(topics, events) {
+  const growthSignals = events.filter(e => 
+    e.type === 'funding' || e.type === 'expansion' || e.type === 'product_launch'
+  ).length;
+  
+  const contractionSignals = events.filter(e => 
+    e.type === 'layoffs' || e.type === 'regulatory'
+  ).length;
+  
+  if (growthSignals > contractionSignals * 2) {
+    return 'Market expanding - growth opportunities';
+  } else if (contractionSignals > growthSignals * 2) {
+    return 'Market contracting - defensive positioning needed';
+  } else {
+    return 'Market stable - selective opportunities';
+  }
+}
+
+serve(async (req) => {
+  // Handle CORS
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const startTime = Date.now();
+    const { articles, profile, organization_name } = await req.json();
+    
+    console.log('🚀 Smart Enrichment Starting:', {
+      organization: organization_name,
+      articlesReceived: articles?.length || 0,
+      timestamp: new Date().toISOString()
+    });
+
+    if (!articles || !articles.length) {
+      console.log('⚠️ No articles to enrich');
+      return new Response(JSON.stringify({
+        success: true,
+        enriched_articles: [],
+        knowledge_graph: { entities: { companies: [], people: [], products: [], events: [] }, relationships: [], clusters: [] },
+        executive_summary: {
+          immediate_actions: [],
+          strategic_opportunities: [],
+          competitive_threats: [],
+          market_trends: [],
+          key_metrics: []
+        },
+        statistics: { total_articles: 0 }
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    // Extract and aggregate data
+    const extractedData = extractAndAggregateData(articles, profile, organization_name);
+    
+    // Add enriched deep_analysis with actual extracted data
+    const enrichedArticles = articles.map((article, index) => {
+      // Find events related to this article
+      const articleEvents = extractedData.knowledge_graph.entities.events.filter(event => 
+        event.sources?.some(s => s.url === article.url || s.title === article.title)
+      );
+      
+      // Find entities mentioned in this article
+      const articleEntities = extractedData.knowledge_graph.entities.companies.filter(company =>
+        company.articles?.some(a => a.url === article.url || a.title === article.title)
+      );
+      
+      // Extract opportunities and risks based on content
+      const opportunities = [];
+      const risks = [];
+      const content = (article.full_content || article.content || article.title || '').toLowerCase();
+      
+      // Identify opportunities
+      if (/partnership|collaborat|team|alliance|deal/i.test(content)) {
+        opportunities.push('Partnership opportunity identified');
+      }
+      if (/launch|releas|unveil|introduc|announc/i.test(content) && article.pr_relevance_score > 60) {
+        opportunities.push('Product launch or market entry opportunity');
+      }
+      if (/expand|grow|enter|new market/i.test(content)) {
+        opportunities.push('Market expansion opportunity');
+      }
+      if (articleEvents.some(e => e.type === 'funding' || e.type === 'acquisition')) {
+        opportunities.push('Investment or acquisition opportunity');
+      }
+      
+      // Identify risks
+      if (/layoff|cut|eliminat|downsize/i.test(content)) {
+        risks.push('Industry contraction or instability risk');
+      }
+      if (/regulat|complian|fine|lawsuit|investigation/i.test(content)) {
+        risks.push('Regulatory or legal risk');
+      }
+      if (/competitor|rival|challenge/i.test(content) && article.pr_category === 'competitor') {
+        risks.push('Competitive threat identified');
+      }
+      if (articleEvents.some(e => e.type === 'layoffs' || e.type === 'regulatory')) {
+        risks.push('Market disruption risk');
+      }
+      
+      // Extract key data points from article
+      const dataPoints = [];
+      
+      // Add financial metrics
+      const moneyMatches = content.match(/\$[\d,]+(?:\.\d+)?(?:\s*(?:billion|million|thousand|[BMK]))?/gi);
+      if (moneyMatches) {
+        dataPoints.push(...moneyMatches.slice(0, 3));
+      }
+      
+      // Add percentage metrics
+      const percentMatches = content.match(/\d+(?:\.\d+)?%/g);
+      if (percentMatches) {
+        dataPoints.push(...percentMatches.slice(0, 3));
+      }
+      
+      // Add company names as data points
+      articleEntities.slice(0, 3).forEach(entity => {
+        dataPoints.push(entity.name);
+      });
+      
+      // Create meaningful strategic implications
+      let strategicImplications = 'Monitor for developments';
+      if (article.pr_relevance_score > 80) {
+        strategicImplications = `Critical: ${articleEvents[0]?.type || 'Major development'} requiring immediate attention`;
+      } else if (article.pr_relevance_score > 70) {
+        strategicImplications = `Important: ${articleEvents[0]?.type || 'Strategic development'} with potential impact on ${organization_name}`;
+      } else if (article.pr_relevance_score > 60) {
+        strategicImplications = `Relevant: Market activity involving ${articleEntities[0]?.name || 'key players'}`;
+      }
+      
+      // Create competitive impact statement
+      let competitiveImpact = 'Market context';
+      if (article.pr_category === 'competitor' && articleEvents.length > 0) {
+        competitiveImpact = `Direct competitive move: ${articleEvents[0].type} by ${articleEntities[0]?.name || 'competitor'}`;
+      } else if (article.pr_category === 'market_opportunity') {
+        competitiveImpact = 'Market opportunity to capture before competitors';
+      } else if (risks.length > 0) {
+        competitiveImpact = 'Defensive positioning may be required';
+      }
+      
+      return {
+        ...article,
+        deep_analysis: {
+          strategic_implications: strategicImplications,
+          competitive_impact: competitiveImpact,
+          key_events: articleEvents.map(e => `${e.type}: ${e.description.substring(0, 100)}`),
+          opportunities: opportunities,
+          risks: risks,
+          market_signals: extractedData.executive_summary.market_trends.filter(trend => 
+            content.includes(trend.toLowerCase())
+          ),
+          stakeholder_impact: articleEntities.length > 0 ? 
+            `Involves ${articleEntities.length} key entities` : '',
+          time_sensitivity: article.pr_relevance_score > 80 ? 'immediate' : 
+                           article.pr_relevance_score > 60 ? 'short-term' : 'medium-term',
+          data_points: dataPoints,
+          strategic_category: article.pr_category || 
+                             (opportunities.length > risks.length ? 'opportunity' : 
+                              risks.length > 0 ? 'risk' : 'general')
+        },
+        analysis_timestamp: new Date().toISOString(),
+        analysis_model: 'pattern-extraction-enriched'
+      };
+    });
+    
+    const processingTime = Date.now() - startTime;
+    console.log(`✅ Smart enrichment complete in ${processingTime}ms:`, {
+      events: extractedData.knowledge_graph.entities.events.length,
+      companies: extractedData.knowledge_graph.entities.companies.length,
+      immediate_actions: extractedData.executive_summary.immediate_actions.length,
+      opportunities: extractedData.executive_summary.strategic_opportunities.length
+    });
+
+    return new Response(JSON.stringify({
+      success: true,
+      enriched_articles: enrichedArticles,
+      knowledge_graph: extractedData.knowledge_graph,
+      executive_summary: extractedData.executive_summary,
+      extracted_quotes: extractedData.extracted_quotes,
+      metrics: extractedData.metrics,
+      statistics: {
+        ...extractedData.statistics,
+        processing_time_ms: processingTime,
+        total_events: extractedData.knowledge_graph.entities.events.length,
+        total_companies: extractedData.knowledge_graph.entities.companies.length,
+        articles_processed: articles.length
+      }
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+
+  } catch (error) {
+    console.error('❌ Enrichment error:', error);
+    return new Response(JSON.stringify({
+      error: error.message,
+      success: false
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+});

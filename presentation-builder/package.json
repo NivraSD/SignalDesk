@@ -1,0 +1,41 @@
+{
+  "name": "signaldesk-presentation-builder",
+  "version": "1.0.0",
+  "description": "AI-powered presentation generator for SignalDesk - cost-effective alternative to Gamma",
+  "main": "index.js",
+  "bin": {
+    "signaldesk-pres": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "demo": "node demo.js",
+    "test": "node index.js 'Test presentation about AI in strategic communications' --output test.pptx",
+    "install-html2pptx": "npm install -g /mnt/skills/public/pptx/html2pptx.tgz"
+  },
+  "keywords": [
+    "presentation",
+    "powerpoint",
+    "ai",
+    "claude",
+    "signaldesk",
+    "pptx"
+  ],
+  "author": "SignalDesk",
+  "license": "PROPRIETARY",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.20.0",
+    "pptxgenjs": "^3.12.0"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "internal"
+  },
+  "bugs": {
+    "url": "internal"
+  },
+  "homepage": "internal"
+}

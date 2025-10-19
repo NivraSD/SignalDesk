@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gamma Presentation Generator Test</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e1e1e 0%, #2a2a2a 100%);
+            color: #e0e0e0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #ffd700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .subtitle {
+            color: #888;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        h2 {
+            color: #ffd700;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #bbb;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            background: #1e1e1e;
+            border: 1px solid #444;
+            border-radius: 4px;
+            color: #e0e0e0;
+            font-family: inherit;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        button {
+            background: #ffd700;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #ffed00;
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        .status.info { background: #1e3a5f; border: 1px solid #2e5a8f; }
+        .status.success { background: #1e4f1e; border: 1px solid #2e7f2e; }
+        .status.error { background: #4f1e1e; border: 1px solid #7f2e2e; }
+        .status.warning { background: #4f4f1e; border: 1px solid #7f7f2e; }
+        .result-display {
+            margin-top: 20px;
+            display: none;
+        }
+        .result-display.active {
+            display: block;
+        }
+        .gamma-link {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #4a9eff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .gamma-link:hover {
+            background: #3a8eef;
+        }
+        .metadata {
+            background: #1e1e1e;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        .quick-options {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .quick-option {
+            background: #333;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .quick-option:hover {
+            background: #444;
+        }
+        .framework-display {
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Gamma Presentation Generator</h1>
+        <p class="subtitle">Create AI-powered presentations with Gamma API integration</p>
+
+        <!-- Quick Start Templates -->
+        <div class="test-section">
+            <h2>🚀 Quick Start Templates</h2>
+            <div class="quick-options">
+                <div class="quick-option" onclick="loadTemplate('investor')">
+                    💰 Investor Deck
+                </div>
+                <div class="quick-option" onclick="loadTemplate('product')">
+                    📱 Product Launch
+                </div>
+                <div class="quick-option" onclick="loadTemplate('team')">
+                    👥 Team Update
+                </div>
+                <div class="quick-option" onclick="loadTemplate('sales')">
+                    💼 Sales Pitch
+                </div>
+                <div class="quick-option" onclick="loadTemplate('report')">
+                    📈 Quarterly Report
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Presentation -->
+        <div class="test-section">
+            <h2>✨ Create Custom Presentation</h2>
+
+            <div class="form-group">
+                <label>Title/Topic:</label>
+                <input type="text" id="presentationTitle" placeholder="E.g., Q4 2024 Growth Strategy" value="AI-Powered Future: Transforming Business with Intelligence">
+            </div>
+
+            <div class="form-group">
+                <label>Content/Outline (Optional):</label>
+                <textarea id="presentationContent" placeholder="Leave empty to auto-generate from title, or provide your outline">
+# Executive Summary
+- Revolutionary AI platform transforming business operations
+- 300% growth in user adoption
+- $50M ARR milestone achieved
+
+# Market Opportunity
+- $200B addressable market
+- 45% CAGR in AI solutions
+- First-mover advantage in key verticals
+
+# Product Innovation
+- Patent-pending AI technology
+- 10x faster than competitors
+- 99.9% uptime guarantee
+
+# Go-to-Market Strategy
+- Enterprise-first approach
+- Strategic partnerships with Fortune 500
+- Global expansion roadmap
+
+# Financial Projections
+- Path to $500M ARR by 2026
+- 80% gross margins
+- EBITDA positive by Q2 2025
+                </textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Format:</label>
+                <select id="format">
+                    <option value="presentation" selected>Presentation (Slides)</option>
+                    <option value="document">Document (Report)</option>
+                    <option value="social">Social Media Posts</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Number of Slides:</label>
+                <input type="number" id="numCards" value="10" min="5" max="30">
+            </div>
+
+            <div class="form-group">
+                <label>Audience:</label>
+                <select id="audience">
+                    <option value="general">General</option>
+                    <option value="investors" selected>Investors</option>
+                    <option value="customers">Customers</option>
+                    <option value="team">Team/Employees</option>
+                    <option value="executives">Executives</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Tone:</label>
+                <select id="tone">
+                    <option value="professional" selected>Professional</option>
+                    <option value="casual">Casual</option>
+                    <option value="formal">Formal</option>
+                    <option value="enthusiastic">Enthusiastic</option>
+                    <option value="technical">Technical</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Image Source:</label>
+                <select id="imageSource">
+                    <option value="ai" selected>AI Generated</option>
+                    <option value="unsplash">Unsplash Photos</option>
+                    <option value="web">Web Search</option>
+                </select>
+            </div>
+
+            <button onclick="generatePresentation()">🎨 Generate Presentation</button>
+            <button onclick="generateFromFramework()">📋 Generate from Framework</button>
+
+            <div id="customStatus" class="status" style="display: none;"></div>
+            <div id="customResult" class="result-display"></div>
+        </div>
+
+        <!-- Framework-based Generation -->
+        <div class="test-section">
+            <h2>🎯 Generate from NIV Framework</h2>
+
+            <button onclick="loadTestFramework()">Load Test Framework</button>
+            <button onclick="generateFromLoadedFramework()">Generate Presentation</button>
+
+            <div id="frameworkDisplay" class="framework-display" style="display: none;"></div>
+            <div id="frameworkStatus" class="status" style="display: none;"></div>
+            <div id="frameworkResult" class="result-display"></div>
+        </div>
+
+        <!-- Status Check -->
+        <div class="test-section">
+            <h2>🔍 Check Generation Status</h2>
+
+            <div class="form-group">
+                <label>Generation ID:</label>
+                <input type="text" id="generationId" placeholder="Enter Gamma generation ID">
+            </div>
+
+            <button onclick="checkStatus()">Check Status</button>
+
+            <div id="statusCheckResult" class="status" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        // Test framework
+        const testFramework = {
+            strategy: {
+                objective: "Launch AI-Powered Analytics Platform for Enterprise Clients",
+                narrative: "Transform enterprise decision-making with real-time AI insights that deliver 10x faster analysis and 90% accuracy improvements",
+                rationale: "Enterprises struggle with data overload and slow decision-making. Our AI platform provides instant, actionable insights from complex data.",
+                proof_points: [
+                    "Reduces analysis time from days to minutes",
+                    "99.9% accuracy in predictive analytics",
+                    "ROI within 3 months for enterprise clients",
+                    "$50M in committed revenue from beta customers",
+                    "Patent-pending AI algorithms"
+                ],
+                keyMessages: [
+                    "The future of enterprise analytics is here",
+                    "Turn data into decisions in real-time",
+                    "Trusted by Fortune 500 leaders"
+                ]
+            },
+            tactics: {
+                content_creation: [
+                    "Executive briefing deck",
+                    "Product demo video",
+                    "ROI calculator",
+                    "Customer success stories"
+                ],
+                distribution: [
+                    "Direct enterprise sales",
+                    "Partner channel program",
+                    "Industry conferences",
+                    "Webinar series"
+                ],
+                next_steps: [
+                    "Schedule product demo",
+                    "Pilot program enrollment",
+                    "Partnership discussion",
+                    "Investment opportunity briefing"
+                ]
+            },
+            proofPoints: [
+                {
+                    title: "Market Leadership",
+                    description: "First AI platform to achieve real-time processing at enterprise scale",
+                    metrics: ["100TB+ daily processing", "Sub-second response time", "Zero downtime"]
+                },
+                {
+                    title: "Customer Success",
+                    description: "Proven results across multiple industries",
+                    metrics: ["300% ROI average", "45 enterprise clients", "98% retention rate"]
+                },
+                {
+                    title: "Technology Innovation",
+                    description: "Breakthrough AI capabilities setting new industry standards",
+                    metrics: ["5 patents pending", "10x faster than competitors", "99.9% accuracy"]
+                }
+            ]
+        };
+
+        // Template loader
+        function loadTemplate(type) {
+            const templates = {
+                investor: {
+                    title: "Series B Investment Opportunity: AI Analytics Platform",
+                    content: "Investment highlights, market opportunity, traction metrics, financial projections, use of funds",
+                    audience: "investors",
+                    numCards: 12,
+                    tone: "professional"
+                },
+                product: {
+                    title: "Introducing ProductName 2.0: The Next Generation",
+                    content: "Product vision, key features, customer benefits, pricing, launch timeline",
+                    audience: "customers",
+                    numCards: 10,
+                    tone: "enthusiastic"
+                },
+                team: {
+                    title: "Q4 2024 Team Update: Achievements and Goals",
+                    content: "Quarter highlights, team wins, upcoming projects, company updates",
+                    audience: "team",
+                    numCards: 8,
+                    tone: "casual"
+                },
+                sales: {
+                    title: "Transform Your Business with Our Solution",
+                    content: "Problem statement, our solution, benefits, case studies, pricing, next steps",
+                    audience: "customers",
+                    numCards: 10,
+                    tone: "professional"
+                },
+                report: {
+                    title: "Q4 2024 Business Review",
+                    content: "Executive summary, financial performance, key metrics, strategic initiatives, outlook",
+                    audience: "executives",
+                    numCards: 15,
+                    tone: "formal"
+                }
+            };
+
+            const template = templates[type];
+            if (template) {
+                document.getElementById('presentationTitle').value = template.title;
+                document.getElementById('presentationContent').value = template.content;
+                document.getElementById('audience').value = template.audience;
+                document.getElementById('numCards').value = template.numCards;
+                document.getElementById('tone').value = template.tone;
+
+                showStatus('customStatus', `Loaded ${type} template`, 'info');
+            }
+        }
+
+        function showStatus(elementId, message, type = 'info') {
+            const status = document.getElementById(elementId);
+            status.style.display = 'block';
+            status.className = `status ${type}`;
+            status.textContent = message;
+        }
+
+        async function generatePresentation() {
+            const title = document.getElementById('presentationTitle').value;
+            const content = document.getElementById('presentationContent').value;
+            const format = document.getElementById('format').value;
+            const numCards = parseInt(document.getElementById('numCards').value);
+            const audience = document.getElementById('audience').value;
+            const tone = document.getElementById('tone').value;
+            const imageSource = document.getElementById('imageSource').value;
+
+            if (!title && !content) {
+                showStatus('customStatus', 'Please provide a title or content', 'error');
+                return;
+            }
+
+            showStatus('customStatus', '🎨 Generating presentation with Gamma AI...', 'info');
+
+            try {
+                const response = await fetch('/api/supabase/functions/gamma-presentation', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title,
+                        content,
+                        format,
+                        options: {
+                            numCards,
+                            audience,
+                            tone,
+                            imageSource,
+                            // themeName removed - will use workspace default
+                        }
+                    })
+                });
+
+                const result = await response.json();
+                console.log('Gamma generation result:', result);
+
+                const resultDiv = document.getElementById('customResult');
+                resultDiv.className = 'result-display active';
+
+                if (result.success) {
+                    if (result.status === 'pending') {
+                        showStatus('customStatus', '⏳ Presentation is being generated...', 'info');
+
+                        resultDiv.innerHTML = `
+                            <h3>🎨 Generating your presentation...</h3>
+                            <div class="metadata">
+                                <strong>Generation ID:</strong> ${result.generationId}<br>
+                                <strong>Status:</strong> <span id="status-${result.generationId}">${result.status}</span><br>
+                                <strong>Message:</strong> ${result.message}<br>
+                                <strong>Credits Used:</strong> ${result.creditsUsed || 'N/A'}<br>
+                                <strong>Format:</strong> ${format}<br>
+                                <strong>Slides:</strong> ${numCards}<br>
+                                <strong>Estimated Time:</strong> ${result.estimatedTime}
+                            </div>
+                            <div id="gamma-link-${result.generationId}">
+                                <button onclick="checkGenerationStatus('${result.generationId}')" style="margin-top: 10px;">
+                                    🔄 Check Status
+                                </button>
+                            </div>
+                        `;
+
+                        // Auto-poll for status
+                        startPolling(result.generationId);
+                    } else {
+                        showStatus('customStatus', '✅ Presentation created successfully!', 'success');
+
+                        resultDiv.innerHTML = `
+                            <h3>🎉 Your presentation is ready!</h3>
+                            <div class="metadata">
+                                <strong>Generation ID:</strong> ${result.generationId}<br>
+                                <strong>Status:</strong> ${result.status}<br>
+                                <strong>Credits Used:</strong> ${result.creditsUsed || 'N/A'}<br>
+                                <strong>Format:</strong> ${format}<br>
+                                <strong>Slides:</strong> ${numCards}<br>
+                            </div>
+                            ${result.gammaUrl ? `
+                                <a href="${result.gammaUrl}" target="_blank" class="gamma-link">
+                                    🚀 Open in Gamma
+                                </a>
+                            ` : ''}
+                            <button onclick="checkGenerationStatus('${result.generationId}')" style="margin-left: 10px;">
+                                🔄 Check Status
+                            </button>
+                        `;
+                    }
+
+                    // Store generation ID for status checks
+                    document.getElementById('generationId').value = result.generationId;
+                } else {
+                    showStatus('customStatus', `Error: ${result.error || 'Generation failed'}`, 'error');
+
+                    if (result.fallback) {
+                        resultDiv.innerHTML = `
+                            <h3>Fallback: Manual Creation Required</h3>
+                            <div class="metadata">
+                                <strong>Instructions:</strong> ${result.fallback.instructions}<br>
+                                <strong>Suggestion:</strong> ${result.fallback.suggestion || 'Try using Google Slides or PowerPoint'}
+                            </div>
+                        `;
+                    }
+                }
+            } catch (error) {
+                showStatus('customStatus', `Error: ${error.message}`, 'error');
+                console.error('Generation error:', error);
+            }
+        }
+
+        async function generateFromFramework() {
+            showStatus('customStatus', '🎯 Generating presentation from framework...', 'info');
+
+            try {
+                const response = await fetch('/api/supabase/functions/gamma-presentation', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        framework: testFramework,
+                        format: 'presentation',
+                        options: {
+                            numCards: 12,
+                            audience: 'investors',
+                            tone: 'professional',
+                            imageSource: 'ai'
+                        }
+                    })
+                });
+
+                const result = await response.json();
+                console.log('Framework generation result:', result);
+
+                const resultDiv = document.getElementById('customResult');
+                resultDiv.className = 'result-display active';
+
+                if (result.success) {
+                    showStatus('customStatus', '✅ Framework presentation created!', 'success');
+
+                    resultDiv.innerHTML = `
+                        <h3>🎯 Framework-based presentation ready!</h3>
+                        <div class="metadata">
+                            <strong>Title:</strong> ${testFramework.strategy.objective}<br>
+                            <strong>Generation ID:</strong> ${result.generationId}<br>
+                            <strong>Gamma URL:</strong> <a href="${result.gammaUrl}" target="_blank">${result.gammaUrl}</a>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                showStatus('customStatus', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        function loadTestFramework() {
+            document.getElementById('frameworkDisplay').style.display = 'block';
+            document.getElementById('frameworkDisplay').textContent = JSON.stringify(testFramework, null, 2);
+            showStatus('frameworkStatus', 'Test framework loaded', 'info');
+        }
+
+        async function generateFromLoadedFramework() {
+            showStatus('frameworkStatus', '🎨 Generating from framework...', 'info');
+
+            try {
+                const response = await fetch('/api/supabase/functions/gamma-presentation', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        framework: testFramework,
+                        format: 'presentation',
+                        options: {
+                            numCards: 15,
+                            audience: 'investors',
+                            tone: 'professional',
+                            imageSource: 'ai',
+                            // themeName removed - will use workspace default
+                        }
+                    })
+                });
+
+                const result = await response.json();
+
+                const resultDiv = document.getElementById('frameworkResult');
+                resultDiv.className = 'result-display active';
+
+                if (result.success) {
+                    showStatus('frameworkStatus', '✅ Presentation generated from framework!', 'success');
+                    resultDiv.innerHTML = `
+                        <a href="${result.gammaUrl}" target="_blank" class="gamma-link">
+                            Open Presentation in Gamma
+                        </a>
+                    `;
+                }
+            } catch (error) {
+                showStatus('frameworkStatus', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkStatus() {
+            const generationId = document.getElementById('generationId').value;
+            if (!generationId) {
+                showStatus('statusCheckResult', 'Please enter a generation ID', 'error');
+                return;
+            }
+
+            showStatus('statusCheckResult', 'Checking status...', 'info');
+
+            try {
+                const response = await fetch(`/api/supabase/functions/gamma-presentation?id=${generationId}`);
+                const status = await response.json();
+
+                if (status.success) {
+                    showStatus('statusCheckResult',
+                        `Status: ${status.status}\n${status.gammaUrl ? `URL: ${status.gammaUrl}` : ''}`,
+                        status.status === 'completed' ? 'success' : 'info'
+                    );
+
+                    if (status.exportUrls) {
+                        document.getElementById('statusCheckResult').innerHTML += `
+                            <br><br>
+                            <strong>Export Options:</strong><br>
+                            <a href="${status.exportUrls.pdf}" target="_blank">📄 Download PDF</a> |
+                            <a href="${status.exportUrls.pptx}" target="_blank">📊 Download PPTX</a>
+                        `;
+                    }
+                } else {
+                    showStatus('statusCheckResult', 'Status check failed', 'error');
+                }
+            } catch (error) {
+                showStatus('statusCheckResult', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkGenerationStatus(generationId) {
+            document.getElementById('generationId').value = generationId;
+            await checkStatus();
+        }
+
+        // Auto-polling function
+        function startPolling(generationId, maxAttempts = 20) {
+            let attempts = 0;
+            const pollInterval = setInterval(async () => {
+                attempts++;
+                console.log(`Polling attempt ${attempts} for ${generationId}`);
+
+                try {
+                    const response = await fetch(`/api/supabase/functions/gamma-presentation?id=${generationId}`);
+                    const status = await response.json();
+
+                    if (status.success) {
+                        // Update status display
+                        const statusElement = document.getElementById(`status-${generationId}`);
+                        if (statusElement) {
+                            statusElement.textContent = status.status;
+                        }
+
+                        if (status.status === 'completed' || status.status === 'complete') {
+                            clearInterval(pollInterval);
+
+                            // Update the display with the Gamma URL
+                            const linkContainer = document.getElementById(`gamma-link-${generationId}`);
+                            if (linkContainer && status.gammaUrl) {
+                                linkContainer.innerHTML = `
+                                    <a href="${status.gammaUrl}" target="_blank" class="gamma-link">
+                                        🚀 Open in Gamma
+                                    </a>
+                                `;
+                                showStatus('customStatus', '✅ Presentation is ready!', 'success');
+                            }
+                        } else if (status.status === 'failed' || status.status === 'error') {
+                            clearInterval(pollInterval);
+                            showStatus('customStatus', '❌ Generation failed', 'error');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Polling error:', error);
+                }
+
+                // Stop polling after max attempts (about 5 minutes with 15-second intervals)
+                if (attempts >= maxAttempts) {
+                    clearInterval(pollInterval);
+                    showStatus('customStatus', 'Polling timeout. Check status manually.', 'warning');
+                }
+            }, 15000); // Poll every 15 seconds
+        }
+    </script>
+</body>
+</html>

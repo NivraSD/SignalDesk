@@ -1,0 +1,446 @@
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { corsHeaders } from '../_shared/cors.ts'
+
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
+const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+
+interface SignalDeckRequest {
+  approved_outline: {
+    topic: string
+    audience: string
+    purpose: string
+    key_messages: string[]
+    slide_count?: number
+    sections: Array<{
+      title: string
+      talking_points: string[]
+      visual_element?: {
+        type: 'chart' | 'timeline' | 'image' | 'diagram' | 'quote' | 'data_table' | 'none'
+        description?: string
+        chart_type?: 'bar' | 'line' | 'pie' | 'column' | 'area'
+        data?: any
+      }
+    }>
+  }
+  theme?: {
+    primary: string
+    secondary: string
+    accent: string
+  }
+  include_speaker_notes?: boolean
+  organization_id?: string
+}
+
+interface GenerationStatus {
+  generationId: string
+  status: 'pending' | 'processing' | 'completed' | 'error'
+  fileUrl?: string
+  error?: string
+  progress?: number
+}
+
+// In-memory storage for generation status (in production, use Redis or database)
+const generationStore = new Map<string, GenerationStatus>()
+
+// Generate presentation data using Claude (like orchestrator.js)
+async function generatePresentationData(outline: SignalDeckRequest['approved_outline']) {
+  console.log('📝 Generating presentation content with Claude')
+
+  const prompt = `Create detailed slide content for a presentation.
+
+Topic: ${outline.topic}
+Audience: ${outline.audience}
+Purpose: ${outline.purpose}
+
+Key Messages:
+${outline.key_messages.map((m, i) => `${i + 1}. ${m}`).join('\n')}
+
+Sections:
+${outline.sections.map((s, i) => `
+Slide ${i + 1}: ${s.title}
+Talking Points: ${s.talking_points.join('; ')}
+Visual Element: ${s.visual_element?.type || 'none'} ${s.visual_element?.description ? `(${s.visual_element.description})` : ''}
+`).join('\n')}
+
+For each section, generate:
+1. Slide title (concise, impactful)
+2. Body content (3-5 bullet points or 2-3 paragraphs)
+3. Speaker notes (what the presenter should say)
+
+Return JSON format:
+{
+  "title": "Presentation title",
+  "slides": [
+    {
+      "type": "title|content|visual|chart|timeline|quote|closing",
+      "title": "Slide title",
+      "body": ["Point 1", "Point 2", "Point 3"],
+      "notes": "Speaker notes for this slide",
+      "visual_element": { "type": "chart", "description": "...", "data": {...} }
+    }
+  ]
+}`
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4096,
+        messages: [{
+          role: 'user',
+          content: prompt
+        }]
+      })
+    })
+
+    if (!response.ok) {
+      throw new Error(`Claude API error: ${response.statusText}`)
+    }
+
+    const data = await response.json()
+    const content = data.content?.[0]?.text
+
+    // Parse JSON from Claude's response
+    const jsonMatch = content.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) {
+      throw new Error('Could not parse Claude response')
+    }
+
+    return JSON.parse(jsonMatch[0])
+  } catch (error) {
+    console.error('Error generating with Claude:', error)
+    throw error
+  }
+}
+
+// Build PowerPoint file by calling Next.js API
+async function buildPresentation(presentationData: any, theme: any, generationId: string, orgId: string) {
+  console.log('🏗️ Building PowerPoint presentation')
+
+  const fileName = `${generationId}.pptx`
+
+  try {
+    // Call the Next.js API endpoint to build the presentation
+    // In production, replace with your actual domain
+    const apiUrl = Deno.env.get('NEXTJS_API_URL') || 'http://localhost:3000'
+    const buildUrl = `${apiUrl}/api/build-presentation`
+
+    console.log('📤 Calling builder API:', buildUrl)
+
+    const response = await fetch(buildUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        presentationData,
+        theme,
+        organizationId: orgId
+      })
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Builder API error:', errorText)
+      throw new Error(`Builder API failed: ${response.status} ${errorText}`)
+    }
+
+    const result = await response.json()
+
+    if (!result.success) {
+      throw new Error(result.error || 'Builder failed')
+    }
+
+    console.log('✅ PowerPoint built:', result.fileName)
+
+    return {
+      fileName: result.fileName,
+      filePath: result.filePath,
+      fileSize: result.fileSize,
+      fileData: result.fileData // Base64 encoded
+    }
+  } catch (error) {
+    console.error('❌ Build presentation error:', error)
+    throw error
+  }
+}
+
+// Upload presentation to Supabase Storage
+async function uploadPresentation(fileData: string, fileName: string, orgId: string) {
+  console.log('📤 Uploading presentation to Supabase Storage')
+
+  const bucketName = 'presentations'
+  const storagePath = `${orgId}/${fileName}`
+
+  try {
+    // Decode base64 file data
+    const binaryData = Uint8Array.from(atob(fileData), c => c.charCodeAt(0))
+
+    // Upload to Supabase Storage
+    const { data, error } = await supabase.storage
+      .from(bucketName)
+      .upload(storagePath, binaryData, {
+        contentType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        upsert: true
+      })
+
+    if (error) {
+      console.error('Storage upload error:', error)
+      throw error
+    }
+
+    console.log('✅ Uploaded to storage:', storagePath)
+
+    // Get public URL
+    const { data: publicUrlData } = supabase.storage
+      .from(bucketName)
+      .getPublicUrl(storagePath)
+
+    return publicUrlData.publicUrl
+  } catch (error) {
+    console.error('❌ Upload error:', error)
+    throw error
+  }
+}
+
+// Save metadata to content_library
+async function saveToContentLibrary(
+  presentationData: any,
+  fileUrl: string,
+  outline: SignalDeckRequest['approved_outline'],
+  orgId: string
+) {
+  console.log('💾 Saving to content_library')
+
+  const { data, error } = await supabase
+    .from('content_library')
+    .insert({
+      organization_id: orgId,
+      content_type: 'signaldeck',
+      title: presentationData.title || outline.topic,
+      content: fileUrl,
+      metadata: {
+        outline,
+        slide_count: presentationData.slides?.length || outline.slide_count,
+        has_charts: outline.sections.some(s => s.visual_element?.type === 'chart'),
+        has_timelines: outline.sections.some(s => s.visual_element?.type === 'timeline'),
+        generated_at: new Date().toISOString()
+      },
+      tags: ['presentation', 'signaldeck', outline.topic],
+      status: 'completed',
+      folder: 'presentations',
+      created_by: 'niv'
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error saving to content_library:', error)
+    throw error
+  }
+
+  return data
+}
+
+// Main generation function (runs asynchronously)
+async function generatePresentation(generationId: string, request: SignalDeckRequest) {
+  try {
+    // Update status to processing
+    generationStore.set(generationId, {
+      generationId,
+      status: 'processing',
+      progress: 10
+    })
+
+    // Step 1: Generate content with Claude
+    console.log('Step 1: Generating content...')
+    const presentationData = await generatePresentationData(request.approved_outline)
+
+    generationStore.set(generationId, {
+      generationId,
+      status: 'processing',
+      progress: 50
+    })
+
+    // Step 2: Build PowerPoint
+    console.log('Step 2: Building PowerPoint...')
+    const theme = request.theme || {
+      primary: '1a1a2e',
+      secondary: '16213e',
+      accent: '0f3460'
+    }
+
+    const fileInfo = await buildPresentation(presentationData, theme, generationId, request.organization_id || 'default')
+
+    generationStore.set(generationId, {
+      generationId,
+      status: 'processing',
+      progress: 75
+    })
+
+    // Step 3: Upload to storage
+    console.log('Step 3: Uploading...')
+    const fileUrl = await uploadPresentation(
+      fileInfo.fileData,
+      fileInfo.fileName,
+      request.organization_id || 'default'
+    )
+
+    // Step 4: Save to content library
+    console.log('Step 4: Saving metadata...')
+    await saveToContentLibrary(
+      presentationData,
+      fileUrl,
+      request.approved_outline,
+      request.organization_id || 'default'
+    )
+
+    // Update status to completed
+    generationStore.set(generationId, {
+      generationId,
+      status: 'completed',
+      fileUrl,
+      progress: 100
+    })
+
+    console.log('✅ Presentation generation complete!')
+  } catch (error) {
+    console.error('❌ Generation error:', error)
+    generationStore.set(generationId, {
+      generationId,
+      status: 'error',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    })
+  }
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
+  try {
+    const url = new URL(req.url)
+    const pathParts = url.pathname.split('/')
+
+    // Check if this is a status check request
+    const generationIdFromPath = pathParts.length > 2 && pathParts[pathParts.length - 2] === 'status'
+      ? pathParts[pathParts.length - 1]
+      : null
+    const generationIdFromQuery = url.searchParams.get('generationId')
+    const generationId = generationIdFromPath || generationIdFromQuery
+
+    if (generationId) {
+      console.log('🔍 Status check for generation:', generationId)
+      const status = generationStore.get(generationId)
+
+      if (!status) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            status: 'not_found',
+            message: 'Generation ID not found'
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 404
+          }
+        )
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          ...status
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
+        }
+      )
+    }
+
+    // Regular generation request
+    const body = await req.json()
+    const request: SignalDeckRequest = body.parameters || body
+
+    console.log('✅ SignalDeck generation request:', {
+      topic: request.approved_outline?.topic,
+      slideCount: request.approved_outline?.slide_count
+    })
+
+    // Generate unique ID
+    const newGenerationId = crypto.randomUUID()
+
+    // Store initial status
+    generationStore.set(newGenerationId, {
+      generationId: newGenerationId,
+      status: 'pending',
+      progress: 0
+    })
+
+    // Start generation in background (fire and forget)
+    generatePresentation(newGenerationId, request).catch(error => {
+      console.error('Background generation error:', error)
+    })
+
+    // Return immediately with pending status
+    return new Response(
+      JSON.stringify({
+        success: true,
+        generationId: newGenerationId,
+        status: 'pending',
+        contentType: 'signaldeck',
+        estimatedTime: '15-30 seconds',
+        statusEndpoint: `${SUPABASE_URL}/functions/v1/signaldeck-presentation/status/${newGenerationId}`,
+        message: 'Presentation generation started'
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200
+      }
+    )
+  } catch (error) {
+    console.error('SignalDeck presentation error:', error)
+
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500
+      }
+    )
+  }
+})
+
+/*
+ * SIGNALDECK EDGE FUNCTION
+ *
+ * This function handles PowerPoint presentation generation using SignalDeck.
+ *
+ * Features:
+ * - AI-powered content generation (Claude)
+ * - Professional PowerPoint with charts, timelines, diagrams
+ * - Automatic MemoryVault storage
+ * - Status polling for async generation
+ *
+ * TODO for Production:
+ * 1. Implement actual PowerPoint generation (call Node.js builder or port to Deno)
+ * 2. Set up proper file storage in Supabase Storage
+ * 3. Add chart/timeline/diagram generation
+ * 4. Implement caching and cleanup for generation store
+ * 5. Add error recovery and retry logic
+ */

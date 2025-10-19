@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>NIV Chatbot Debug</title>
+</head>
+<body>
+    <h1>NIV Chatbot Debug Test</h1>
+    <button id="testAck">Test Acknowledge</button>
+    <button id="testResearch">Test Research</button>
+    <button id="testLocal">Test Local Route</button>
+    <pre id="output"></pre>
+
+    <script>
+        const output = document.getElementById('output');
+
+        function log(msg) {
+            output.textContent += msg + '\n';
+            console.log(msg);
+        }
+
+        document.getElementById('testAck').onclick = async () => {
+            output.textContent = '';
+            log('Testing acknowledge stage...');
+
+            try {
+                const start = Date.now();
+                const response = await fetch('/api/supabase/functions/niv-orchestrator-robust', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: 'hi',
+                        stage: 'acknowledge',
+                        sessionId: 'debug-test'
+                    })
+                });
+
+                const elapsed = Date.now() - start;
+                log(`Response time: ${elapsed}ms`);
+                log(`Status: ${response.status}`);
+
+                const data = await response.json();
+                log('Response data:');
+                log(JSON.stringify(data, null, 2));
+            } catch (err) {
+                log('ERROR: ' + err.message);
+                log(err.stack);
+            }
+        };
+
+        document.getElementById('testResearch').onclick = async () => {
+            output.textContent = '';
+            log('Testing research stage...');
+
+            try {
+                const start = Date.now();
+                const response = await fetch('/api/supabase/functions/niv-orchestrator-robust', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: 'hi',
+                        stage: 'research',
+                        sessionId: 'debug-test',
+                        context: { organizationId: 'OpenAI' }
+                    })
+                });
+
+                const elapsed = Date.now() - start;
+                log(`Response time: ${elapsed}ms`);
+                log(`Status: ${response.status}`);
+
+                const data = await response.json();
+                log('Response data:');
+                log(JSON.stringify(data, null, 2));
+            } catch (err) {
+                log('ERROR: ' + err.message);
+                log(err.stack);
+            }
+        };
+
+        document.getElementById('testLocal').onclick = async () => {
+            output.textContent = '';
+            log('Testing if route exists...');
+
+            try {
+                log('Checking /api/supabase/functions/niv-orchestrator-robust...');
+                const response = await fetch('/api/supabase/functions/niv-orchestrator-robust', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ test: true })
+                });
+
+                log(`Status: ${response.status}`);
+                const text = await response.text();
+                log('Response: ' + text);
+            } catch (err) {
+                log('ERROR: ' + err.message);
+            }
+        };
+    </script>
+</body>
+</html>

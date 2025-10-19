@@ -1,0 +1,248 @@
+{
+  "influenceStrategies": [
+    {
+      "stakeholder": "Enterprise IT Directors",
+      "psychologicalProfile": {
+        "primaryFear": "System downtime",
+        "primaryAspiration": "Be seen as innovation leader",
+        "decisionTrigger": "ROI proof with peer validation"
+      },
+      "positioningAlignment": {
+        "coreMessage": "The Reliability Revolution: Enterprise-grade reliability meets developer velocity - proving that innovation doesn't compromise stability",
+        "keyMessagesForThisStakeholder": [
+          "99.99% uptime with instant rollback (directly addresses downtime fears)",
+          "Built by former AWS engineers who understand scale (provides credibility)",
+          "Deploy 10x faster than traditional platforms (innovation leadership proof)"
+        ],
+        "differentiatorsThatResonateHere": [
+          "Only platform with sub-second rollback (unique risk mitigation)",
+          "Real-time debugging in production (operational excellence)"
+        ],
+        "opportunitiesForThisStakeholder": [
+          "Position developer velocity as the new reliability metric - be first to adopt this innovative approach"
+        ]
+      },
+      "influenceLevers": [
+        {
+          "lever": "Fear mitigation",
+          "positioningMessage": "99.99% uptime with instant rollback",
+          "approach": "Frame as insurance policy - show how sub-second rollback eliminates downtime risk",
+          "channels": [
+            "LinkedIn",
+            "CIO.com",
+            "Industry conferences"
+          ],
+          "trustedVoices": [
+            "Other CIOs",
+            "Industry analysts"
+          ],
+          "psychologicalMechanism": "Reduces anxiety about system failures by providing concrete safety net"
+        },
+        {
+          "lever": "Aspiration activation",
+          "positioningMessage": "Deploy 10x faster than traditional platforms",
+          "approach": "Position as competitive advantage - be the IT leader who delivers speed AND reliability",
+          "channels": [
+            "LinkedIn",
+            "Gartner reports",
+            "Industry conferences"
+          ],
+          "trustedVoices": [
+            "Technical thought leaders",
+            "Industry analysts"
+          ],
+          "psychologicalMechanism": "Taps into desire to be seen as innovative while maintaining enterprise standards"
+        },
+        {
+          "lever": "Social proof",
+          "positioningMessage": "Built by former AWS engineers who understand scale",
+          "approach": "Leverage peer validation through case studies and analyst endorsements",
+          "channels": [
+            "CIO.com",
+            "Gartner reports"
+          ],
+          "trustedVoices": [
+            "Other CIOs",
+            "Industry analysts"
+          ],
+          "psychologicalMechanism": "Reduces risk perception through credible team pedigree and peer adoption"
+        },
+        {
+          "lever": "Authority",
+          "positioningMessage": "Only platform with sub-second rollback",
+          "approach": "Establish technical leadership through unique capability demonstration",
+          "channels": [
+            "TechCrunch",
+            "Industry conferences"
+          ],
+          "trustedVoices": [
+            "Technical thought leaders"
+          ],
+          "psychologicalMechanism": "Creates confidence through demonstrable technical superiority"
+        }
+      ],
+      "touchpointStrategy": {
+        "phase1_awareness": {
+          "objective": "Recognize that developer velocity IS a reliability metric",
+          "channels": [
+            "LinkedIn",
+            "CIO.com",
+            "TechCrunch"
+          ],
+          "messageFraming": "The hidden cost of slow deployments: How deployment speed affects system reliability",
+          "decisionTriggerActivation": "Share early ROI data from pilot customers in similar industries"
+        },
+        "phase2_consideration": {
+          "objective": "Understand how our platform delivers both speed and reliability",
+          "channels": [
+            "Gartner reports",
+            "Industry conferences",
+            "CIO.com"
+          ],
+          "messageFraming": "Case study: How F500 company achieved 99.99% uptime while deploying 10x faster",
+          "decisionTriggerActivation": "Provide detailed ROI calculations and peer company testimonials"
+        },
+        "phase3_conversion": {
+          "objective": "Commit to pilot program with clear success metrics",
+          "channels": [
+            "Industry conferences",
+            "LinkedIn"
+          ],
+          "messageFraming": "Risk-free pilot: Prove 10x deployment speed with zero downtime in 30 days",
+          "decisionTriggerActivation": "Offer pilot with specific ROI guarantees and peer reference calls"
+        },
+        "phase4_advocacy": {
+          "objective": "Become reference customer and industry thought leader",
+          "channels": [
+            "Industry conferences",
+            "CIO.com",
+            "LinkedIn"
+          ],
+          "messageFraming": "How [Company] became the industry leader in reliable rapid deployment",
+          "decisionTriggerActivation": "Position them as innovation pioneer in speaking opportunities and case studies"
+        }
+      }
+    },
+    {
+      "stakeholder": "Engineering Team Leads",
+      "psychologicalProfile": {
+        "primaryFear": "Poor developer experience",
+        "primaryAspiration": "Ship faster",
+        "decisionTrigger": "Technical deep-dives that show architecture"
+      },
+      "positioningAlignment": {
+        "coreMessage": "The Reliability Revolution: Finally, a platform that doesn't make you choose between developer velocity and system reliability",
+        "keyMessagesForThisStakeholder": [
+          "Deploy 10x faster than traditional platforms (directly enables shipping faster)",
+          "Zero-config observability and debugging (improves developer experience)",
+          "Built by former AWS engineers who understand scale (technical credibility)"
+        ],
+        "differentiatorsThatResonateHere": [
+          "Real-time debugging in production (developer productivity)",
+          "Open-source core with enterprise features (avoids vendor lock-in fears)"
+        ],
+        "opportunitiesForThisStakeholder": [
+          "Pioneer the narrative that developer velocity IS a reliability metric - technical leadership opportunity"
+        ]
+      },
+      "influenceLevers": [
+        {
+          "lever": "Fear mitigation",
+          "positioningMessage": "Zero-config observability and debugging",
+          "approach": "Show how platform eliminates common developer pain points and debugging friction",
+          "channels": [
+            "HackerNews",
+            "Technical blogs",
+            "Reddit r/programming"
+          ],
+          "trustedVoices": [
+            "Open source maintainers",
+            "Technical bloggers"
+          ],
+          "psychologicalMechanism": "Reduces anxiety about complex tooling by demonstrating simplicity"
+        },
+        {
+          "lever": "Aspiration activation",
+          "positioningMessage": "Deploy 10x faster than traditional platforms",
+          "approach": "Frame as enabling engineering excellence and competitive advantage",
+          "channels": [
+            "HackerNews",
+            "Technical blogs"
+          ],
+          "trustedVoices": [
+            "Conference speakers",
+            "Technical bloggers"
+          ],
+          "psychologicalMechanism": "Activates desire to build cutting-edge systems and ship faster"
+        },
+        {
+          "lever": "Social proof",
+          "positioningMessage": "Open-source core with enterprise features",
+          "approach": "Leverage community contributions and technical community endorsements",
+          "channels": [
+            "HackerNews",
+            "Reddit r/programming"
+          ],
+          "trustedVoices": [
+            "Open source maintainers"
+          ],
+          "psychologicalMechanism": "Builds trust through community validation and transparency"
+        },
+        {
+          "lever": "Authority",
+          "positioningMessage": "Built by former AWS engineers who understand scale",
+          "approach": "Establish technical credibility through deep architecture discussions",
+          "channels": [
+            "Technical blogs",
+            "HackerNews"
+          ],
+          "trustedVoices": [
+            "Technical bloggers",
+            "Conference speakers"
+          ],
+          "psychologicalMechanism": "Creates confidence through proven technical expertise at scale"
+        }
+      ],
+      "touchpointStrategy": {
+        "phase1_awareness": {
+          "objective": "Recognize that current deployment tools create false choice between speed and reliability",
+          "channels": [
+            "HackerNews",
+            "Reddit r/programming",
+            "Technical blogs"
+          ],
+          "messageFraming": "The deployment paradox: Why faster deployments actually improve reliability",
+          "decisionTriggerActivation": "Share technical architecture posts showing how sub-second rollback works"
+        },
+        "phase2_consideration": {
+          "objective": "Understand technical architecture and evaluate against current solutions",
+          "channels": [
+            "Technical blogs",
+            "HackerNews"
+          ],
+          "messageFraming": "Deep dive: How we built sub-second rollback without sacrificing observability",
+          "decisionTriggerActivation": "Provide detailed technical documentation, architecture diagrams, and open source code"
+        },
+        "phase3_conversion": {
+          "objective": "Advocate internally for platform adoption",
+          "channels": [
+            "Technical blogs",
+            "HackerNews"
+          ],
+          "messageFraming": "Migration guide: From AWS to 10x faster deployments in 2 weeks",
+          "decisionTriggerActivation": "Offer technical proof-of-concept with their actual codebase and architecture review"
+        },
+        "phase4_advocacy": {
+          "objective": "Become technical advocate and contribute to open source community",
+          "channels": [
+            "HackerNews",
+            "Technical blogs",
+            "Reddit r/programming"
+          ],
+          "messageFraming": "How we achieved 10x deployment speed while improving reliability",
+          "decisionTriggerActivation": "Enable them to contribute to open source, speak at conferences, and publish technical case studies"
+        }
+      }
+    }
+  ]
+}

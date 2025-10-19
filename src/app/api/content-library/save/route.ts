@@ -1,0 +1,145 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+
+const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co'
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { content, metadata, folder } = body
+
+    console.log('Saving content:', { type: content.type, hasContent: !!content.content, folder })
+
+    // Try to save to content_library directly
+    const { data: savedContent, error: saveError } = await supabase
+      .from('content_library')
+      .insert({
+        organization_id: content.organization_id || metadata?.organizationId || null,
+        content_type: content.type || 'general',
+        title: content.title || metadata?.title || `Content - ${new Date().toLocaleDateString()}`,
+        content: typeof content.content === 'string' ? content.content : JSON.stringify(content.content),
+        metadata: {
+          ...metadata,
+          ...content.metadata,
+          framework_data: content.framework_data,
+          opportunity_data: content.opportunity_data,
+          generatedAt: content.timestamp || new Date().toISOString()
+        },
+        tags: [content.type].filter(Boolean),
+        status: 'saved',
+        created_by: 'niv',
+        folder: folder || null
+      })
+      .select()
+      .single()
+
+    if (saveError) {
+      console.error('Content library save error:', saveError)
+
+      // If table doesn't exist, return helpful error with SQL to create it
+      if (saveError.message?.includes('relation') || saveError.message?.includes('does not exist')) {
+        return NextResponse.json({
+          success: false,
+          error: 'Content library table does not exist. Please create it in Supabase SQL editor.',
+          createTableSQL: `
+            CREATE TABLE IF NOT EXISTS content_library (
+              id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+              organization_id UUID,
+              content_type VARCHAR(100),
+              title VARCHAR(500),
+              content TEXT,
+              metadata JSONB,
+              tags TEXT[],
+              status VARCHAR(50) DEFAULT 'draft',
+              created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+              updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+              created_by VARCHAR(100) DEFAULT 'niv'
+            );
+
+            ALTER TABLE content_library ENABLE ROW LEVEL SECURITY;
+
+            CREATE POLICY "Enable all operations" ON content_library
+              FOR ALL USING (true);
+
+            GRANT ALL ON content_library TO anon, authenticated, service_role;
+          `
+        }, { status: 400 })
+      }
+
+      // For other errors, just return the error
+      return NextResponse.json({
+        success: false,
+        error: saveError.message || 'Failed to save content',
+        details: saveError
+      }, { status: 500 })
+    }
+
+    return NextResponse.json({
+      success: true,
+      id: savedContent.id,
+      message: 'Content saved to Content Library',
+      location: 'content_library',
+      data: savedContent
+    })
+
+  } catch (error) {
+    console.error('Content save error:', error)
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to save content',
+      details: error
+    }, { status: 500 })
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const organizationId = searchParams.get('organization_id')
+    const contentType = searchParams.get('type')
+    const limit = parseInt(searchParams.get('limit') || '50')
+
+    let query = supabase
+      .from('content_library')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit)
+
+    if (organizationId) {
+      query = query.eq('organization_id', organizationId)
+    }
+
+    if (contentType) {
+      query = query.eq('content_type', contentType)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error('Content fetch error:', error)
+      // Return empty array instead of failing
+      return NextResponse.json({
+        success: true,
+        data: [],
+        location: 'content_library',
+        message: 'Content library not yet initialized'
+      })
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: data || [],
+      location: 'content_library'
+    })
+
+  } catch (error) {
+    console.error('Content library fetch error:', error)
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch content'
+    }, { status: 500 })
+  }
+}

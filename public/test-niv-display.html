@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NIV Content Display Test</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #1a1a1a;
+      color: #e0e0e0;
+    }
+    h1 { color: #4CAF50; }
+    .test-section {
+      background: #2a2a2a;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    .output {
+      background: #1a1a1a;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 10px 0;
+      font-family: monospace;
+      white-space: pre-wrap;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    .message {
+      background: #3a3a3a;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+      border-left: 4px solid #4CAF50;
+    }
+    .error {
+      border-left-color: #f44336;
+    }
+    .info {
+      border-left-color: #2196F3;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 NIV Content Display Test</h1>
+
+  <div class="test-section">
+    <h2>Test 1: Direct API Call</h2>
+    <p>This will call the niv-content-intelligent-v2 API directly and show the response.</p>
+    <button onclick="testDirectAPI()">Run Direct API Test</button>
+    <div id="direct-output" class="output"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 2: Simulated UI Response Handler</h2>
+    <p>This simulates what the frontend should do with the response.</p>
+    <button onclick="testUIHandler()">Run UI Handler Test</button>
+    <div id="ui-output"></div>
+  </div>
+
+  <script>
+    const log = (elementId, message, type = 'info') => {
+      const el = document.getElementById(elementId);
+      const div = document.createElement('div');
+      div.className = `message ${type}`;
+      div.textContent = message;
+      el.appendChild(div);
+      console.log(message);
+    };
+
+    async function testDirectAPI() {
+      const output = document.getElementById('direct-output');
+      output.innerHTML = '';
+
+      try {
+        log('direct-output', '🚀 Sending request to /api/supabase/functions/niv-content-intelligent-v2...');
+
+        const response = await fetch('/api/supabase/functions/niv-content-intelligent-v2', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: 'developer first approach',
+            conversationHistory: [
+              {
+                role: 'assistant',
+                content: 'Here are strategic approaches for your agent builder launch:\n\n**Option 1: Developer First Approach**\nFocus on technical capabilities...'
+              },
+              {
+                role: 'user',
+                content: 'i like option 1, but we should also be targeting developers and vibe coders'
+              }
+            ],
+            stage: 'full',
+            organizationContext: {
+              conversationId: 'test-session',
+              organizationId: '1',
+              name: 'Test Org',
+              industry: 'technology'
+            }
+          })
+        });
+
+        log('direct-output', `📥 Response status: ${response.status}`);
+
+        const data = await response.json();
+
+        log('direct-output', '📦 Response data:');
+        output.innerHTML += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+
+        log('direct-output', `✅ mode: ${data.mode}`);
+        log('direct-output', `✅ Has generatedContent: ${!!data.generatedContent}`);
+        log('direct-output', `✅ Content pieces: ${data.generatedContent?.length || 0}`);
+
+        if (data.generatedContent) {
+          data.generatedContent.forEach((item, i) => {
+            log('direct-output', `  ${i + 1}. ${item.type}: ${item.content.substring(0, 100)}...`);
+          });
+        }
+
+      } catch (error) {
+        log('direct-output', `❌ Error: ${error.message}`, 'error');
+        console.error(error);
+      }
+    }
+
+    async function testUIHandler() {
+      const output = document.getElementById('ui-output');
+      output.innerHTML = '';
+
+      // Simulate receiving the response
+      const mockData = {
+        success: true,
+        mode: 'generation_complete',
+        message: '✅ Complete media plan created with 7 pieces',
+        generatedContent: [
+          { type: 'press-release', content: 'Test press release content...' },
+          { type: 'media-pitch', content: 'Test media pitch content...' },
+          { type: 'media-list', content: 'Test media list content...' }
+        ]
+      };
+
+      log('ui-output', '📦 Simulating response:', 'info');
+      output.innerHTML += `<pre>${JSON.stringify(mockData, null, 2)}</pre>`;
+
+      // Simulate frontend handler
+      if (mockData.mode === 'generation_complete' && mockData.generatedContent) {
+        log('ui-output', '✅ ENTERING CONTENT DISPLAY HANDLER', 'info');
+        log('ui-output', `✅ Content Generated: ${mockData.generatedContent.length} pieces`);
+
+        // Display completion message
+        const completionDiv = document.createElement('div');
+        completionDiv.className = 'message';
+        completionDiv.textContent = mockData.message;
+        output.appendChild(completionDiv);
+
+        // Display each content piece
+        mockData.generatedContent.forEach((item, index) => {
+          log('ui-output', `🔍 Processing piece ${index + 1}: ${item.type}`);
+
+          const contentDiv = document.createElement('div');
+          contentDiv.className = 'message';
+          contentDiv.innerHTML = `<strong>${item.type.replace('-', ' ').toUpperCase()}</strong><br><br>${item.content}`;
+          output.appendChild(contentDiv);
+        });
+
+        log('ui-output', '✅ Finished displaying all content pieces');
+      } else {
+        log('ui-output', '❌ Did not enter content display handler', 'error');
+        log('ui-output', `   mode === 'generation_complete': ${mockData.mode === 'generation_complete'}`, 'error');
+        log('ui-output', `   Has generatedContent: ${!!mockData.generatedContent}`, 'error');
+      }
+    }
+  </script>
+</body>
+</html>

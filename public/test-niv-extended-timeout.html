@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test NIV Extended Timeout (140s)</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 20px;
+      background: #1a1a1a;
+      color: #e0e0e0;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #00FFCC;
+      border-bottom: 2px solid #00FFCC;
+      padding-bottom: 10px;
+    }
+    .test-section {
+      background: #2a2a2a;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+      border: 1px solid #333;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    button {
+      background: #00FFCC;
+      color: #000;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #00E5B5;
+    }
+    button:disabled {
+      background: #666;
+      cursor: not-allowed;
+    }
+    .status {
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 4px;
+      background: #333;
+      border-left: 3px solid #00FFCC;
+    }
+    .status.error {
+      border-left-color: #ff4444;
+      background: #3a2525;
+    }
+    .status.success {
+      border-left-color: #44ff44;
+      background: #253a25;
+    }
+    .status.processing {
+      border-left-color: #ffaa44;
+      background: #3a3525;
+    }
+    .timer {
+      display: inline-block;
+      padding: 5px 10px;
+      background: #444;
+      border-radius: 4px;
+      font-family: monospace;
+      margin-left: 10px;
+    }
+    .result-box {
+      background: #1a1a1a;
+      padding: 15px;
+      border-radius: 4px;
+      margin-top: 10px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 14px;
+      white-space: pre-wrap;
+    }
+    .test-case {
+      background: #333;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+    }
+    .test-case h3 {
+      margin: 0 0 10px 0;
+      color: #00FFCC;
+    }
+    .timeout-info {
+      background: #2a3a2a;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      border: 1px solid #44aa44;
+    }
+    .timeout-info h3 {
+      margin-top: 0;
+      color: #44ff44;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 NIV Extended Timeout Test (140 seconds)</h1>
+
+    <div class="timeout-info">
+      <h3>✅ Timeout Configuration Updated</h3>
+      <ul>
+        <li><strong>Supabase Edge Function Limit:</strong> 150 seconds</li>
+        <li><strong>API Route Timeout:</strong> 140 seconds</li>
+        <li><strong>Client Timeout:</strong> 135 seconds</li>
+        <li><strong>Safety Buffer:</strong> 10-15 seconds</li>
+      </ul>
+    </div>
+
+    <div class="test-section">
+      <h2>Test Cases</h2>
+
+      <div class="test-case">
+        <h3>1. Simple Query (Should Complete Quickly)</h3>
+        <button onclick="testSimpleQuery()">Run Simple Query</button>
+        <div id="simple-status"></div>
+      </div>
+
+      <div class="test-case">
+        <h3>2. Complex Strategic Analysis (May Take 60-90 seconds)</h3>
+        <button onclick="testComplexQuery()">Run Complex Analysis</button>
+        <div id="complex-status"></div>
+      </div>
+
+      <div class="test-case">
+        <h3>3. Ultra-Complex Multi-Domain Analysis (Test Full Timeout)</h3>
+        <button onclick="testUltraComplexQuery()">Run Ultra-Complex Analysis</button>
+        <div id="ultra-status"></div>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h2>Manual Test</h2>
+      <div class="controls">
+        <textarea id="query-input" rows="4" style="flex: 1; padding: 10px; background: #333; color: #e0e0e0; border: 1px solid #666; border-radius: 4px;" placeholder="Enter your query here...">How can a B2B SaaS company improve customer retention?</textarea>
+      </div>
+      <button onclick="runManualTest()">Run Manual Test</button>
+      <div id="manual-status"></div>
+    </div>
+  </div>
+
+  <script>
+    let startTime = null;
+    let timerInterval = null;
+
+    function startTimer(elementId) {
+      startTime = Date.now();
+      const timerElement = document.querySelector(`#${elementId} .timer`);
+      if (!timerElement) return;
+
+      timerInterval = setInterval(() => {
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+        timerElement.textContent = `${elapsed}s`;
+      }, 100);
+    }
+
+    function stopTimer() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+    }
+
+    async function makeNivRequest(query, statusElementId) {
+      const statusElement = document.getElementById(statusElementId);
+
+      try {
+        statusElement.className = 'status processing';
+        statusElement.innerHTML = `<strong>Processing...</strong> <span class="timer">0.0s</span><br>Query: "${query}"`;
+        startTimer(statusElementId);
+
+        const response = await fetch('/api/niv', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ query })
+        });
+
+        stopTimer();
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+
+        const data = await response.json();
+
+        statusElement.className = 'status success';
+        statusElement.innerHTML = `
+          <strong>✅ Success!</strong> Completed in ${elapsed}s
+          <div class="result-box">${JSON.stringify(data, null, 2)}</div>
+        `;
+
+        // Check if it was actually a long-running request
+        if (parseFloat(elapsed) > 60) {
+          statusElement.innerHTML = `
+            <strong>🎉 Extended Timeout Success!</strong>
+            <br>Completed in ${elapsed}s (over 60 seconds!)
+            <br><em>This confirms the extended timeout is working!</em>
+            <div class="result-box">${JSON.stringify(data, null, 2)}</div>
+          `;
+        }
+
+      } catch (error) {
+        stopTimer();
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+
+        statusElement.className = 'status error';
+        statusElement.innerHTML = `
+          <strong>❌ Error after ${elapsed}s</strong>
+          <br>Error: ${error.message}
+        `;
+
+        // Check if it's a timeout error
+        if (error.message.includes('408') || error.message.includes('timeout') || error.message.includes('Timeout')) {
+          statusElement.innerHTML += `
+            <br><br><strong>⚠️ This appears to be a timeout error.</strong>
+            <br>The request took ${elapsed}s before timing out.
+            <br>Current timeout limit: 140 seconds
+          `;
+        }
+      }
+    }
+
+    async function testSimpleQuery() {
+      await makeNivRequest(
+        "What are the key benefits of cloud computing?",
+        "simple-status"
+      );
+    }
+
+    async function testComplexQuery() {
+      await makeNivRequest(
+        "Analyze the competitive landscape for AI-powered B2B SaaS companies in the healthcare sector. Include market trends, key players, emerging technologies, regulatory considerations, and provide a comprehensive strategic framework for market entry with specific tactics, timelines, and success metrics.",
+        "complex-status"
+      );
+    }
+
+    async function testUltraComplexQuery() {
+      await makeNivRequest(
+        "Create an exhaustive strategic analysis for a global enterprise planning to undergo complete digital transformation across all business units. Include: 1) Detailed assessment of current state across technology, processes, and culture, 2) Comprehensive future state architecture with cloud migration strategy, 3) Analysis of all major vendors and platforms, 4) Risk assessment covering cybersecurity, compliance, and operational risks, 5) Change management framework with stakeholder analysis, 6) Phased implementation roadmap spanning 3 years, 7) Budget estimates and ROI projections, 8) Success metrics and KPIs for each phase, 9) Contingency plans for common failure scenarios, 10) Post-implementation optimization strategies. Provide specific recommendations for each business function including sales, marketing, operations, finance, HR, and IT.",
+        "ultra-status"
+      );
+    }
+
+    async function runManualTest() {
+      const query = document.getElementById('query-input').value;
+      if (!query.trim()) {
+        alert('Please enter a query');
+        return;
+      }
+      await makeNivRequest(query, "manual-status");
+    }
+  </script>
+</body>
+</html>

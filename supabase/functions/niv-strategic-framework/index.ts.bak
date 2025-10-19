@@ -1,0 +1,679 @@
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
+import { corsHeaders } from '../_shared/cors.ts'
+import { generateDefaultFramework } from './default-framework.ts'
+
+const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
+
+console.log("NIV Strategic Framework Generator starting...")
+
+// Strategic Framework Generation System Prompt
+const STRATEGIC_FRAMEWORK_PROMPT = `You are NIV's Strategic Framework Generator, responsible for transforming research and intelligence into actionable strategic frameworks.
+
+Your role is to:
+1. Analyze research findings and user intent
+2. Identify strategic opportunities and risks
+3. Craft compelling narratives and messages
+4. Design execution blueprints with clear timelines
+5. Prepare structured handoffs to other components
+
+You output JSON-structured strategic frameworks that can be executed by downstream systems.
+
+Focus on:
+- Clear, measurable objectives
+- Evidence-based rationale
+- Actionable execution plans
+- Specific timelines and milestones
+- Component-ready handoff instructions`
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
+  try {
+    const {
+      research,
+      userQuery,
+      organizationContext,
+      conversationHistory,
+      targetComponent
+    } = await req.json()
+
+    if (!research || !userQuery) {
+      return new Response(
+        JSON.stringify({ error: 'Research and user query are required' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      )
+    }
+
+    console.log(`🎯 Generating strategic framework for: ${userQuery.substring(0, 100)}...`)
+    console.log(`🏢 Organization: ${organizationContext?.organizationName || 'Unknown'}`)
+    console.log(`🎯 Target component: ${targetComponent || 'auto-detect'}`)
+
+    // Generate Discovery Context
+    const discoveryContext = await generateDiscoveryContext(
+      organizationContext,
+      research,
+      conversationHistory
+    )
+
+    // Generate Strategic Framework
+    const framework = await generateStrategicFramework(
+      research,
+      userQuery,
+      discoveryContext,
+      targetComponent
+    )
+
+    // Validate and enhance framework
+    const validatedFramework = validateAndEnhanceFramework(framework, discoveryContext)
+
+    console.log(`✅ Strategic framework generated successfully`)
+    console.log(`📋 Objective: ${validatedFramework.strategy.objective}`)
+    console.log(`🎯 Target: ${validatedFramework.handoff.targetComponent}`)
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        framework: validatedFramework,
+        discovery: discoveryContext,
+        readyForHandoff: true
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+
+  } catch (error) {
+    console.error('❌ Strategic Framework Generation error:', error)
+    return new Response(
+      JSON.stringify({
+        error: error.message,
+        success: false
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+    )
+  }
+})
+
+// Generate Discovery Context from research and organization data
+async function generateDiscoveryContext(
+  organizationContext: any,
+  research: any,
+  conversationHistory: any[]
+): Promise<any> {
+  console.log('📋 Generating discovery context...')
+
+  // Extract organization profile
+  const organization = {
+    id: organizationContext?.organizationId || 'default',
+    name: organizationContext?.organizationName || 'Organization',
+    industry: organizationContext?.industry || 'technology',
+    positioning: organizationContext?.positioning || 'Industry leader',
+    strengths: organizationContext?.strengths || [],
+    vulnerabilities: organizationContext?.vulnerabilities || [],
+    currentNarratives: organizationContext?.narratives || []
+  }
+
+  // Extract competitive landscape from research
+  const competitors = extractCompetitors(research)
+
+  // Extract market environment
+  const market = extractMarketEnvironment(research)
+
+  // Build strategic assets
+  const assets = {
+    narratives: organization.currentNarratives,
+    keyMessages: organizationContext?.keyMessages || [],
+    channels: organizationContext?.channels || [],
+    stakeholders: organizationContext?.stakeholders || [],
+    mediaRelationships: []
+  }
+
+  // Extract history and patterns
+  const history = {
+    recentCampaigns: [],
+    successPatterns: [],
+    lessonsLearned: []
+  }
+
+  // Session context with full conversation history
+  const session = {
+    conversationId: organizationContext?.conversationId || generateId(),
+    userIntent: extractUserIntent(conversationHistory),
+    previousDecisions: extractDecisions(conversationHistory),
+    constraints: extractConstraints(conversationHistory),
+    conversationHistory: conversationHistory || [],
+    userPreferences: {
+      wants: organizationContext?.conceptState?.userPreferences?.wants || [],
+      doesNotWant: organizationContext?.conceptState?.userPreferences?.doesNotWant || [],
+      constraints: organizationContext?.conceptState?.userPreferences?.constraints || [],
+      examples: organizationContext?.conceptState?.userPreferences?.examples || []
+    },
+    timestamp: new Date().toISOString()
+  }
+
+  return {
+    organization,
+    competitors,
+    market,
+    assets,
+    history,
+    session
+  }
+}
+
+// Generate Strategic Framework using Claude
+async function generateStrategicFramework(
+  research: any,
+  userQuery: string,
+  discoveryContext: any,
+  targetComponent?: string
+): Promise<any> {
+  console.log('🧠 Generating strategic framework with Claude...')
+
+  if (!ANTHROPIC_API_KEY) {
+    // Return a structured default framework
+    return generateDefaultFramework(userQuery, discoveryContext, targetComponent, research)
+  }
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: 4096,
+        system: STRATEGIC_FRAMEWORK_PROMPT,
+        messages: [{
+          role: 'user',
+          content: `Based on this research and context, create a strategic framework.
+
+USER QUERY: ${userQuery}
+
+RESEARCH FINDINGS:
+${JSON.stringify(research, null, 2).substring(0, 3000)}
+
+DISCOVERY CONTEXT:
+${JSON.stringify(discoveryContext, null, 2).substring(0, 2000)}
+
+TARGET COMPONENT: ${targetComponent || 'auto-detect'}
+
+Generate a complete strategic framework in JSON format with:
+1. Clear strategic objective and rationale
+2. Compelling narrative and key messages
+3. Detailed execution plan with timeline
+4. Supporting intelligence and market signals
+5. Specific handoff instructions for ${targetComponent || 'the appropriate component'}
+
+Format the response as valid JSON matching the NivStrategicFramework interface.`
+        }]
+      })
+    })
+
+    if (!response.ok) {
+      console.error('Claude API error:', response.status)
+      return generateDefaultFramework(userQuery, discoveryContext, targetComponent)
+    }
+
+    const data = await response.json()
+    const content = data.content[0].text
+
+    // Parse Claude's response
+    try {
+      const framework = JSON.parse(content)
+      return framework
+    } catch (parseError) {
+      // Extract JSON from response if wrapped in text
+      const jsonMatch = content.match(/\{[\s\S]*\}/)
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0])
+      }
+      throw parseError
+    }
+
+  } catch (error) {
+    console.error('Framework generation error:', error)
+    return generateDefaultFramework(userQuery, discoveryContext, targetComponent)
+  }
+}
+
+// Generate a default framework when Claude is unavailable
+function generateDefaultFramework(
+  userQuery: string,
+  discoveryContext: any,
+  targetComponent?: string,
+  research?: any
+): any {
+  const objective = extractObjectiveFromQuery(userQuery)
+  const competitors = discoveryContext.competitors?.direct || []
+
+  // Extract articles and key findings from research
+  const articles = research?.articles || []
+  const keyFindings = research?.keyFindings || []
+  const synthesis = research?.synthesis || []
+
+  return {
+    id: generateId(),
+    sessionId: discoveryContext.session?.conversationId || 'default',
+    organizationId: discoveryContext.organization?.name || 'Organization',
+    created_at: new Date(),
+
+    // Core Strategy
+    strategy: {
+      executive_summary: `${discoveryContext.organization?.name || 'Organization'} needs to ${objective} through strategic positioning and targeted campaigns.`,
+      objective: objective,
+      narrative: `Position as industry leader through innovation and customer focus`,
+      rationale: `Strategic opportunity identified based on market analysis and competitive positioning`,
+      urgency: 'high' as const,
+      successMetrics: [
+        {
+          id: '1',
+          name: 'Media Coverage',
+          target: '50 articles',
+          unit: 'articles',
+          trackingMethod: 'Media monitoring'
+        },
+        {
+          id: '2',
+          name: 'Stakeholder Engagement',
+          target: '80%',
+          unit: 'percentage',
+          trackingMethod: 'Survey'
+        }
+      ],
+      risks: [
+        {
+          id: '1',
+          description: 'Competitor counter-narrative',
+          probability: 'medium',
+          impact: 'moderate',
+          mitigation: 'Prepare defensive messaging'
+        }
+      ],
+      assumptions: ['Market conditions remain stable', 'No major competitive announcements'],
+      timeHorizon: determineTimeHorizon(userQuery)
+    },
+    narrative: {
+      coreStory: `${discoveryContext.organization.name} leads the industry through innovation and customer focus`,
+      supportingMessages: [
+        {
+          id: '1',
+          text: 'Industry leadership through innovation',
+          audience: ['customers', 'investors'],
+          priority: 1,
+          supportingEvidence: ['Product launches', 'Market share data']
+        },
+        {
+          id: '2',
+          text: 'Commitment to customer success',
+          audience: ['customers', 'partners'],
+          priority: 2,
+          supportingEvidence: ['Customer testimonials', 'Case studies']
+        }
+      ],
+      proofPoints: [
+        {
+          id: '1',
+          claim: 'Market leader in innovation',
+          evidence: 'First to market with key features',
+          source: 'Industry reports',
+          strength: 'strong'
+        }
+      ],
+      positioning: {
+        statement: 'The trusted leader in our industry',
+        differentiators: ['Innovation', 'Customer focus', 'Scale'],
+        comparison: `Unlike ${competitors[0]?.name || 'competitors'}, we deliver comprehensive solutions`
+      },
+      toneAndVoice: {
+        overall: 'Confident, authoritative, customer-centric',
+        doList: ['Use data', 'Be specific', 'Show empathy'],
+        dontList: ['Make unsubstantiated claims', 'Attack competitors directly']
+      }
+    },
+    execution: {
+      channels: {
+        primary: [
+          {
+            channel: 'Media Relations',
+            purpose: 'Reach key stakeholders',
+            content: ['Press release', 'Executive interviews'],
+            frequency: 'Weekly',
+            owner: 'PR Team'
+          },
+          {
+            channel: 'Social Media',
+            purpose: 'Engage community',
+            content: ['Thought leadership posts', 'Updates'],
+            frequency: 'Daily',
+            owner: 'Social Team'
+          }
+        ],
+        secondary: [
+          {
+            channel: 'Email',
+            purpose: 'Direct stakeholder communication',
+            content: ['Newsletter', 'Updates'],
+            frequency: 'Bi-weekly',
+            owner: 'Marketing'
+          }
+        ]
+      },
+      timeline: {
+        phases: [
+          {
+            id: 'phase-1',
+            name: 'Launch',
+            startDate: getDateOffset(0),
+            endDate: getDateOffset(7),
+            objectives: ['Generate awareness', 'Set narrative'],
+            deliverables: ['Press release', 'Social campaign']
+          },
+          {
+            id: 'phase-2',
+            name: 'Amplification',
+            startDate: getDateOffset(7),
+            endDate: getDateOffset(30),
+            objectives: ['Build momentum', 'Engage stakeholders'],
+            deliverables: ['Media interviews', 'Content series']
+          },
+          {
+            id: 'phase-3',
+            name: 'Sustain',
+            startDate: getDateOffset(30),
+            endDate: getDateOffset(90),
+            objectives: ['Maintain visibility', 'Drive conversion'],
+            deliverables: ['Ongoing content', 'Case studies']
+          }
+        ],
+        milestones: [
+          {
+            id: 'm1',
+            name: 'Campaign Launch',
+            date: getDateOffset(0),
+            criteria: ['All materials ready', 'Stakeholders briefed']
+          },
+          {
+            id: 'm2',
+            name: 'Media Coverage Target',
+            date: getDateOffset(30),
+            criteria: ['25 articles published', 'Key outlets covered']
+          }
+        ],
+        dependencies: []
+      },
+      resources: {
+        required: [
+          {
+            id: 'r1',
+            type: 'human',
+            name: 'PR Team',
+            quantity: '3 people',
+            availability: 'Full-time'
+          },
+          {
+            id: 'r2',
+            type: 'financial',
+            name: 'Campaign Budget',
+            quantity: '$50,000',
+            availability: 'Approved'
+          }
+        ],
+        optional: [
+          {
+            id: 'r3',
+            type: 'vendor',
+            name: 'PR Agency',
+            quantity: '1',
+            availability: 'On retainer'
+          }
+        ]
+      }
+    },
+    intelligence: {
+      competitorMoves: competitors.map((comp, i) => ({
+        competitorId: comp.id,
+        competitorName: comp.name,
+        action: comp.recentMoves?.[0] || 'Monitoring for activity',
+        date: 'Recent',
+        significance: 'moderate',
+        response: 'Monitor and assess'
+      })),
+      marketSignals: [
+        {
+          signal: 'Increased market interest',
+          source: 'Industry reports',
+          strength: 'strong',
+          interpretation: 'Opportunity for leadership positioning',
+          actionRequired: true
+        }
+      ],
+      timingConsiderations: [
+        {
+          factor: 'Market momentum',
+          optimal: 'Next 2 weeks',
+          avoid: 'Major holidays',
+          rationale: 'Maximize media attention'
+        }
+      ],
+      opportunities: [
+        {
+          opportunity: 'First-mover advantage',
+          openDate: getDateOffset(0),
+          closeDate: getDateOffset(14),
+          requirements: ['Ready materials', 'Executive availability'],
+          potentialReturn: 'High visibility and thought leadership'
+        }
+      ]
+    },
+    handoff: {
+      targetComponent: targetComponent || detectTargetComponent(userQuery),
+      executionType: detectExecutionType(userQuery),
+      priority: detectPriority(userQuery),
+      specialInstructions: [
+        'Ensure all materials align with brand guidelines',
+        'Coordinate with legal for approval',
+        'Brief executives on key messages'
+      ],
+      expectedOutcomes: [
+        'Increased media coverage',
+        'Improved stakeholder sentiment',
+        'Competitive differentiation'
+      ]
+    }
+  }
+}
+
+// Validate and enhance the generated framework
+function validateAndEnhanceFramework(framework: any, discoveryContext: any): any {
+  // Ensure all required fields are present
+  if (!framework.discoveryContext) {
+    framework.discoveryContext = discoveryContext
+  }
+
+  // Validate strategy section
+  if (!framework.strategy?.objective) {
+    framework.strategy = {
+      ...framework.strategy,
+      objective: 'Strategic objective to be defined',
+      rationale: 'Based on market analysis and opportunities'
+    }
+  }
+
+  // Ensure metrics exist
+  if (!framework.strategy.successMetrics || framework.strategy.successMetrics.length === 0) {
+    framework.strategy.successMetrics = [
+      {
+        id: 'default-1',
+        name: 'Campaign Success',
+        target: 'To be defined',
+        unit: 'TBD',
+        trackingMethod: 'TBD'
+      }
+    ]
+  }
+
+  // Validate narrative
+  if (!framework.narrative?.coreStory) {
+    framework.narrative = {
+      ...framework.narrative,
+      coreStory: 'Core narrative to be developed',
+      supportingMessages: []
+    }
+  }
+
+  // Validate execution
+  if (!framework.execution?.timeline?.phases || framework.execution.timeline.phases.length === 0) {
+    framework.execution = {
+      ...framework.execution,
+      timeline: {
+        phases: [
+          {
+            id: 'default-phase',
+            name: 'Execution Phase',
+            startDate: getDateOffset(0),
+            endDate: getDateOffset(30),
+            objectives: ['Execute strategy'],
+            deliverables: ['To be defined']
+          }
+        ],
+        milestones: [],
+        dependencies: []
+      }
+    }
+  }
+
+  // Validate handoff
+  if (!framework.handoff?.targetComponent) {
+    framework.handoff = {
+      ...framework.handoff,
+      targetComponent: 'campaign',
+      executionType: 'strategic-initiative',
+      priority: 'normal',
+      specialInstructions: [],
+      expectedOutcomes: []
+    }
+  }
+
+  return framework
+}
+
+// Helper functions
+function extractCompetitors(research: any): any {
+  const competitors = research?.competitors || research?.competitorData || []
+
+  return {
+    direct: competitors.filter((c: any) => c.type === 'direct' || !c.type).slice(0, 5),
+    indirect: competitors.filter((c: any) => c.type === 'indirect').slice(0, 3),
+    emerging: competitors.filter((c: any) => c.type === 'emerging').slice(0, 3)
+  }
+}
+
+function extractMarketEnvironment(research: any): any {
+  return {
+    trends: research?.trends || [],
+    opportunities: research?.opportunities || [],
+    threats: research?.threats || [],
+    regulatory: research?.regulatory || []
+  }
+}
+
+function extractUserIntent(history: any[]): string {
+  if (!history || history.length === 0) return 'General strategic planning'
+
+  const lastMessage = history[history.length - 1]
+  return lastMessage?.content?.substring(0, 200) || 'Strategic planning'
+}
+
+function extractDecisions(history: any[]): any[] {
+  return []
+}
+
+function extractConstraints(history: any[]): any[] {
+  return []
+}
+
+function extractObjectiveFromQuery(query: string): string {
+  const queryLower = query.toLowerCase()
+
+  if (queryLower.includes('launch')) return 'Successfully launch new product/initiative'
+  if (queryLower.includes('crisis')) return 'Manage crisis and protect reputation'
+  if (queryLower.includes('compete')) return 'Strengthen competitive position'
+  if (queryLower.includes('announce')) return 'Generate maximum impact from announcement'
+  if (queryLower.includes('respond')) return 'Craft effective response strategy'
+
+  return 'Achieve strategic communication objectives'
+}
+
+function determineTimeHorizon(query: string): 'immediate' | 'short-term' | 'long-term' {
+  const queryLower = query.toLowerCase()
+
+  if (queryLower.includes('urgent') || queryLower.includes('immediately') || queryLower.includes('now')) {
+    return 'immediate'
+  }
+  if (queryLower.includes('quarter') || queryLower.includes('month')) {
+    return 'short-term'
+  }
+  if (queryLower.includes('year') || queryLower.includes('long')) {
+    return 'long-term'
+  }
+
+  return 'short-term'
+}
+
+function detectTargetComponent(query: string): 'campaign' | 'plan' | 'execute' | 'opportunity' {
+  const queryLower = query.toLowerCase()
+
+  if (queryLower.includes('campaign') || queryLower.includes('launch') || queryLower.includes('announce')) {
+    return 'campaign'
+  }
+  if (queryLower.includes('plan') || queryLower.includes('timeline') || queryLower.includes('project')) {
+    return 'plan'
+  }
+  if (queryLower.includes('content') || queryLower.includes('write') || queryLower.includes('create')) {
+    return 'execute'
+  }
+  if (queryLower.includes('opportunity') || queryLower.includes('respond')) {
+    return 'opportunity'
+  }
+
+  return 'campaign'
+}
+
+function detectExecutionType(query: string): string {
+  const queryLower = query.toLowerCase()
+
+  if (queryLower.includes('product launch')) return 'product-launch'
+  if (queryLower.includes('crisis')) return 'crisis-response'
+  if (queryLower.includes('announcement')) return 'announcement'
+  if (queryLower.includes('competitive')) return 'competitive-response'
+  if (queryLower.includes('thought leadership')) return 'thought-leadership'
+
+  return 'strategic-initiative'
+}
+
+function detectPriority(query: string): 'urgent' | 'high' | 'normal' | 'low' {
+  const queryLower = query.toLowerCase()
+
+  if (queryLower.includes('urgent') || queryLower.includes('asap') || queryLower.includes('immediately')) {
+    return 'urgent'
+  }
+  if (queryLower.includes('important') || queryLower.includes('priority') || queryLower.includes('critical')) {
+    return 'high'
+  }
+
+  return 'normal'
+}
+
+function getDateOffset(days: number): string {
+  const date = new Date()
+  date.setDate(date.getDate() + days)
+  return date.toISOString().split('T')[0]
+}
+
+function generateId(): string {
+  return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+}

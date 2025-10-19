@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalDesk V3 - Integrated Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 2.5em;
+        }
+        
+        .test-panel {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .status-message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 4px solid;
+        }
+        
+        .status-message.success {
+            background: rgba(40, 167, 69, 0.1);
+            border-color: #28a745;
+            color: #28a745;
+        }
+        
+        .status-message.error {
+            background: rgba(220, 53, 69, 0.1);
+            border-color: #dc3545;
+            color: #dc3545;
+        }
+        
+        .status-message.info {
+            background: rgba(102, 126, 234, 0.1);
+            border-color: #667eea;
+            color: #667eea;
+        }
+        
+        .results {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        pre {
+            background: #0a0a0a;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #f8f8f2;
+        }
+        
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .metric-card {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            padding: 20px;
+            border-radius: 8px;
+        }
+        
+        .metric-label {
+            font-size: 12px;
+            opacity: 0.7;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        
+        .metric-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        iframe {
+            width: 100%;
+            height: 800px;
+            border: 1px solid #333;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .spinner {
+            border: 3px solid rgba(102, 126, 234, 0.2);
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 SignalDesk V3 - Integrated Pipeline Test</h1>
+        
+        <div class="test-panel">
+            <h2>Test Controls</h2>
+            <p style="margin-bottom: 20px; opacity: 0.8;">
+                This test runs against the local Supabase instance and the Next.js app
+            </p>
+            
+            <div class="button-group">
+                <button onclick="testLocalAPI()">🔌 Test Local API</button>
+                <button onclick="testSupabaseFunctions()">⚡ Test Supabase Functions</button>
+                <button onclick="testFullPipeline()">🔄 Test Full Pipeline</button>
+                <button onclick="openApp()">🌐 Open App</button>
+            </div>
+            
+            <div id="status"></div>
+        </div>
+        
+        <div id="results-container" style="display: none;">
+            <div class="test-panel">
+                <h2>Test Results</h2>
+                <div id="metrics" class="metric-grid"></div>
+                <div id="results" class="results"></div>
+            </div>
+        </div>
+        
+        <div id="app-frame" style="display: none;">
+            <div class="test-panel">
+                <h2>SignalDesk App</h2>
+                <iframe id="appFrame" src="http://localhost:3000"></iframe>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Configuration for local testing
+        const LOCAL_SUPABASE_URL = 'http://localhost:54321';
+        const LOCAL_APP_URL = 'http://localhost:3000';
+        const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTEyOTYzNywiZXhwIjoyMDcwNzA1NjM3fQ.WO35k7riuKT2QXj_YvbtRwzLwi3Pev30-X9Yziej2pM';
+        
+        function showStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.innerHTML = `<div class="status-message ${type}">${message}</div>`;
+        }
+        
+        function showResults(data) {
+            document.getElementById('results-container').style.display = 'block';
+            document.getElementById('results').innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+        }
+        
+        function showMetrics(metrics) {
+            const metricsContainer = document.getElementById('metrics');
+            metricsContainer.innerHTML = Object.entries(metrics).map(([label, value]) => `
+                <div class="metric-card">
+                    <div class="metric-label">${label}</div>
+                    <div class="metric-value">${value}</div>
+                </div>
+            `).join('');
+        }
+        
+        async function testLocalAPI() {
+            showStatus('Testing local API connection...', 'info');
+            
+            try {
+                // Test the Next.js API route
+                const response = await fetch(`${LOCAL_APP_URL}/api/test`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    showStatus('✅ Local API is running', 'success');
+                    const data = await response.json();
+                    showResults(data);
+                } else {
+                    // If test endpoint doesn't exist, try intelligence endpoint
+                    const intelligenceResponse = await fetch(`${LOCAL_APP_URL}/api/intelligence`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (intelligenceResponse.ok) {
+                        showStatus('✅ Intelligence API is accessible', 'success');
+                    } else {
+                        showStatus('⚠️ API endpoints not responding. Make sure Next.js is running on port 3000', 'error');
+                    }
+                }
+            } catch (error) {
+                showStatus(`❌ Failed to connect to local API: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testSupabaseFunctions() {
+            showStatus('Testing Supabase Edge Functions...', 'info');
+            
+            try {
+                // Test discovery function
+                const response = await fetch(`${LOCAL_SUPABASE_URL}/functions/v1/mcp-discovery`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        tool: 'create_organization_profile',
+                        arguments: {
+                            organization_name: 'Tesla',
+                            industry_hint: 'automotive',
+                            save_to_persistence: false
+                        }
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    showStatus('✅ Supabase functions are working', 'success');
+                    
+                    // Show metrics
+                    const profile = result.profile;
+                    showMetrics({
+                        'Competitors Found': profile?.competition?.direct_competitors?.length || 0,
+                        'Stakeholders': profile?.stakeholders?.regulators?.length || 0,
+                        'Topics': profile?.trending?.hot_topics?.length || 0,
+                        'Keywords': profile?.monitoring_config?.keywords?.length || 0
+                    });
+                    
+                    showResults(result);
+                } else {
+                    const error = await response.text();
+                    showStatus(`❌ Supabase functions error: ${error}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`❌ Failed to connect to Supabase: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testFullPipeline() {
+            showStatus('Running full pipeline test...', 'info');
+            document.getElementById('results-container').style.display = 'block';
+            document.getElementById('results').innerHTML = '<div class="loading"><div class="spinner"></div><p>Running pipeline stages...</p></div>';
+            
+            try {
+                const stages = [];
+                
+                // Stage 1: Discovery
+                showStatus('📋 Stage 1/5: Creating organization profile...', 'info');
+                const discoveryResponse = await fetch(`${LOCAL_SUPABASE_URL}/functions/v1/mcp-discovery`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        tool: 'create_organization_profile',
+                        arguments: {
+                            organization_name: 'Tesla',
+                            industry_hint: 'automotive',
+                            save_to_persistence: false
+                        }
+                    })
+                });
+                
+                if (!discoveryResponse.ok) throw new Error('Discovery failed');
+                const discoveryResult = await discoveryResponse.json();
+                const profile = discoveryResult.profile;
+                stages.push({ stage: 'Discovery', success: true });
+                
+                // Stage 2: Monitor
+                showStatus('📡 Stage 2/5: Collecting articles...', 'info');
+                const monitorResponse = await fetch(`${LOCAL_SUPABASE_URL}/functions/v1/monitor-stage-1`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        organization_name: 'Tesla',
+                        profile: profile
+                    })
+                });
+                
+                if (!monitorResponse.ok) throw new Error('Monitor failed');
+                const monitorResult = await monitorResponse.json();
+                stages.push({ stage: 'Monitor', success: true, articles: monitorResult.total_articles });
+                
+                // Stage 3: Relevance
+                showStatus('🎯 Stage 3/5: Scoring relevance and running Firecrawl...', 'info');
+                const relevanceResponse = await fetch(`${LOCAL_SUPABASE_URL}/functions/v1/monitor-stage-2-relevance`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        articles: monitorResult.articles,
+                        profile: profile,
+                        organization_name: 'Tesla',
+                        top_k: 60
+                    })
+                });
+                
+                if (!relevanceResponse.ok) throw new Error('Relevance failed');
+                const relevanceResult = await relevanceResponse.json();
+                const articlesWithContent = relevanceResult.findings?.filter(a => a.has_full_content) || [];
+                stages.push({ stage: 'Relevance + Firecrawl', success: true, scraped: articlesWithContent.length });
+                
+                // Stage 4: Enrichment
+                showStatus('💎 Stage 4/5: Extracting intelligence...', 'info');
+                const enrichmentResponse = await fetch(`${LOCAL_SUPABASE_URL}/functions/v1/monitoring-stage-2-enrichment`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        articles: relevanceResult.findings || [],
+                        profile: profile,
+                        organization_name: 'Tesla'
+                    })
+                });
+                
+                if (!enrichmentResponse.ok) throw new Error('Enrichment failed');
+                const enrichmentResult = await enrichmentResponse.json();
+                stages.push({ 
+                    stage: 'Enrichment', 
+                    success: true, 
+                    events: enrichmentResult.stats?.unique_events || 0,
+                    entities: enrichmentResult.stats?.unique_entities || 0
+                });
+                
+                // Stage 5: Synthesis
+                showStatus('🧠 Stage 5/5: Creating synthesis...', 'info');
+                const synthesisResponse = await fetch(`${LOCAL_SUPABASE_URL}/functions/v1/mcp-executive-synthesis`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        method: 'tools/call',
+                        params: {
+                            name: 'synthesize_executive_intelligence',
+                            arguments: {
+                                enriched_data: {
+                                    extracted_data: enrichmentResult.extracted_data || enrichmentResult,
+                                    statistics: enrichmentResult.stats,
+                                    profile: profile
+                                },
+                                organization: { name: 'Tesla' },
+                                analysis_depth: 'comprehensive_consolidated'
+                            }
+                        }
+                    })
+                });
+                
+                if (!synthesisResponse.ok) throw new Error('Synthesis failed');
+                const synthesisResult = await synthesisResponse.json();
+                stages.push({ stage: 'Synthesis', success: true });
+                
+                // Show final results
+                showStatus('✅ Pipeline test complete!', 'success');
+                
+                // Show metrics
+                showMetrics({
+                    'Articles Collected': monitorResult.total_articles || 0,
+                    'Articles Scraped': articlesWithContent.length || 0,
+                    'Events Extracted': enrichmentResult.stats?.unique_events || 0,
+                    'Entities Found': enrichmentResult.stats?.unique_entities || 0,
+                    'Full Content': enrichmentResult.stats?.articles_with_full_content || 0,
+                    'Partial Content': enrichmentResult.stats?.articles_with_partial_content || 0
+                });
+                
+                // Parse synthesis if it's in MCP format
+                let synthesis = synthesisResult;
+                if (synthesisResult.content?.[0]?.type === 'text') {
+                    synthesis = JSON.parse(synthesisResult.content[0].text);
+                }
+                
+                showResults({
+                    stages: stages,
+                    synthesis: synthesis.synthesis || synthesis,
+                    coverage: {
+                        competitors_found: monitorResult.metadata?.entity_coverage || {},
+                        discovery_coverage: monitorResult.metadata?.discovery_coverage || {}
+                    }
+                });
+                
+            } catch (error) {
+                showStatus(`❌ Pipeline test failed: ${error.message}`, 'error');
+                showResults({ error: error.message });
+            }
+        }
+        
+        function openApp() {
+            document.getElementById('app-frame').style.display = 'block';
+            showStatus('📱 Opening SignalDesk app in iframe...', 'info');
+        }
+        
+        // Check if services are running on page load
+        window.addEventListener('load', async () => {
+            // Check if Next.js is running
+            try {
+                const response = await fetch(`${LOCAL_APP_URL}`, { method: 'HEAD' });
+                if (response.ok || response.status === 200 || response.status === 304) {
+                    showStatus('✅ Next.js app detected at localhost:3000', 'success');
+                }
+            } catch (error) {
+                showStatus('⚠️ Next.js app not detected. Run: npm run dev', 'error');
+            }
+            
+            // Check if Supabase is running
+            try {
+                const response = await fetch(`${LOCAL_SUPABASE_URL}/functions/v1`, { method: 'HEAD' });
+                showStatus('✅ Services ready. Click a test button to begin.', 'success');
+            } catch (error) {
+                showStatus('⚠️ Supabase not detected. Run: npx supabase start', 'error');
+            }
+        });
+    </script>
+</body>
+</html>

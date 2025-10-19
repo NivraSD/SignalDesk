@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Campaign Builder Test</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #000;
+      color: #fff;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      color: #3b82f6;
+    }
+
+    .test-section {
+      background: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      margin-bottom: 10px;
+      font-size: 18px;
+      color: #a1a1aa;
+    }
+
+    button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-right: 10px;
+      margin-bottom: 10px;
+    }
+
+    button:hover {
+      background: #2563eb;
+    }
+
+    button:disabled {
+      background: #52525b;
+      cursor: not-allowed;
+    }
+
+    textarea {
+      width: 100%;
+      background: #09090b;
+      border: 1px solid #27272a;
+      border-radius: 6px;
+      padding: 10px;
+      color: white;
+      font-size: 14px;
+      margin-bottom: 10px;
+      resize: vertical;
+    }
+
+    .output {
+      background: #09090b;
+      border: 1px solid #27272a;
+      border-radius: 6px;
+      padding: 15px;
+      margin-top: 10px;
+      max-height: 500px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .success {
+      color: #10b981;
+    }
+
+    .error {
+      color: #ef4444;
+    }
+
+    .loading {
+      color: #fbbf24;
+    }
+
+    .stage-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding: 15px;
+      background: #09090b;
+      border: 1px solid #27272a;
+      border-radius: 6px;
+    }
+
+    .stage {
+      padding: 8px 12px;
+      border-radius: 4px;
+      background: #27272a;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .stage.active {
+      background: #3b82f6;
+    }
+
+    .stage.complete {
+      background: #10b981;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎯 Campaign Builder Test</h1>
+
+    <!-- Stage Indicator -->
+    <div class="stage-indicator">
+      <div class="stage" id="stage-intent">Intent</div>
+      <div class="stage" id="stage-research">Research</div>
+      <div class="stage" id="stage-positioning">Positioning</div>
+      <div class="stage" id="stage-approach">Approach</div>
+      <div class="stage" id="stage-blueprint">Blueprint</div>
+      <div class="stage" id="stage-execution">Execute</div>
+    </div>
+
+    <!-- Test 1: Start Session -->
+    <div class="test-section">
+      <h2>Test 1: Start Campaign Session</h2>
+      <textarea id="goalInput" rows="3" placeholder="Enter campaign goal...">Launch our new AI-powered customer service platform and establish thought leadership in the enterprise software space</textarea>
+      <button onclick="startSession()" id="startBtn">Start Session</button>
+      <div class="output" id="output1"></div>
+    </div>
+
+    <!-- Test 2: Confirm Research -->
+    <div class="test-section">
+      <h2>Test 2: Confirm Research</h2>
+      <button onclick="confirmResearch()" id="researchBtn" disabled>Proceed with Research</button>
+      <div class="output" id="output2"></div>
+    </div>
+
+    <!-- Test 3: Refine Research -->
+    <div class="test-section">
+      <h2>Test 3: Refine Research</h2>
+      <textarea id="refinementInput" rows="2" placeholder="What to refine...">Can you focus more on the competitive landscape in the AI customer service space?</textarea>
+      <button onclick="refineResearch()" id="refineBtn" disabled>Refine Research</button>
+      <div class="output" id="output3"></div>
+    </div>
+
+    <!-- Test 4: Select Positioning -->
+    <div class="test-section">
+      <h2>Test 4: Select Positioning</h2>
+      <button onclick="selectPositioning(1)" id="pos1Btn" disabled>Option 1</button>
+      <button onclick="selectPositioning(2)" id="pos2Btn" disabled>Option 2</button>
+      <button onclick="selectPositioning(3)" id="pos3Btn" disabled>Option 3</button>
+      <div class="output" id="output4"></div>
+    </div>
+
+    <!-- Test 5: Select Approach -->
+    <div class="test-section">
+      <h2>Test 5: Select Campaign Approach</h2>
+      <button onclick="selectApproach('PR')" id="prBtn" disabled>PR Campaign</button>
+      <button onclick="selectApproach('VECTOR')" id="vectorBtn" disabled>VECTOR Campaign</button>
+      <div class="output" id="output5"></div>
+    </div>
+  </div>
+
+  <script>
+    let sessionId = null;
+    let currentStage = 'intent';
+    const orgId = '2'; // OpenAI
+
+    function updateStageIndicator(stage) {
+      const stages = ['intent', 'research', 'positioning', 'approach', 'blueprint', 'execution'];
+      const currentIndex = stages.indexOf(stage);
+
+      stages.forEach((s, i) => {
+        const el = document.getElementById(`stage-${s}`);
+        el.classList.remove('active', 'complete');
+        if (i < currentIndex) {
+          el.classList.add('complete');
+        } else if (i === currentIndex) {
+          el.classList.add('active');
+        }
+      });
+
+      currentStage = stage;
+    }
+
+    async function callOrchestrator(message) {
+      const response = await fetch('/api/campaign-builder-orchestrator', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          orgId,
+          message,
+          currentStage
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      return await response.json();
+    }
+
+    async function startSession() {
+      const goal = document.getElementById('goalInput').value;
+      const output = document.getElementById('output1');
+      const btn = document.getElementById('startBtn');
+
+      btn.disabled = true;
+      output.innerHTML = '<span class="loading">Starting session...</span>';
+
+      try {
+        const result = await callOrchestrator(goal);
+
+        sessionId = result.sessionId;
+        updateStageIndicator(result.stage);
+
+        output.innerHTML = `<span class="success">✓ Session started!</span>\n\n` +
+          `Session ID: ${result.sessionId}\n` +
+          `Stage: ${result.stage}\n\n` +
+          `Response:\n${result.message}\n\n` +
+          JSON.stringify(result, null, 2);
+
+        // Enable next buttons
+        document.getElementById('researchBtn').disabled = false;
+
+      } catch (error) {
+        output.innerHTML = `<span class="error">✗ Error: ${error.message}</span>`;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function confirmResearch() {
+      const output = document.getElementById('output2');
+      const btn = document.getElementById('researchBtn');
+
+      btn.disabled = true;
+      output.innerHTML = '<span class="loading">Running research (this may take 30-60 seconds)...</span>';
+
+      try {
+        const result = await callOrchestrator('yes, proceed with research');
+
+        updateStageIndicator(result.stage);
+
+        output.innerHTML = `<span class="success">✓ Research complete!</span>\n\n` +
+          `Stage: ${result.stage}\n\n` +
+          `Response:\n${result.message}\n\n` +
+          JSON.stringify(result.data || result, null, 2);
+
+        // Enable refinement and positioning buttons
+        document.getElementById('refineBtn').disabled = false;
+        document.getElementById('pos1Btn').disabled = false;
+        document.getElementById('pos2Btn').disabled = false;
+        document.getElementById('pos3Btn').disabled = false;
+
+      } catch (error) {
+        output.innerHTML = `<span class="error">✗ Error: ${error.message}</span>`;
+        btn.disabled = false;
+      }
+    }
+
+    async function refineResearch() {
+      const refinement = document.getElementById('refinementInput').value;
+      const output = document.getElementById('output3');
+      const btn = document.getElementById('refineBtn');
+
+      btn.disabled = true;
+      output.innerHTML = '<span class="loading">Refining research...</span>';
+
+      try {
+        const result = await callOrchestrator(refinement);
+
+        output.innerHTML = `<span class="success">✓ Research refined!</span>\n\n` +
+          `Response:\n${result.message}\n\n` +
+          JSON.stringify(result.data || result, null, 2);
+
+      } catch (error) {
+        output.innerHTML = `<span class="error">✗ Error: ${error.message}</span>`;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function selectPositioning(option) {
+      const output = document.getElementById('output4');
+      const btns = [
+        document.getElementById('pos1Btn'),
+        document.getElementById('pos2Btn'),
+        document.getElementById('pos3Btn')
+      ];
+
+      btns.forEach(b => b.disabled = true);
+      output.innerHTML = '<span class="loading">Processing positioning selection...</span>';
+
+      try {
+        const result = await callOrchestrator(`I'd like to go with option ${option}`);
+
+        updateStageIndicator(result.stage);
+
+        output.innerHTML = `<span class="success">✓ Positioning selected!</span>\n\n` +
+          `Option: ${option}\n` +
+          `Stage: ${result.stage}\n\n` +
+          `Response:\n${result.message}\n\n` +
+          JSON.stringify(result, null, 2);
+
+        // Enable approach selection
+        document.getElementById('prBtn').disabled = false;
+        document.getElementById('vectorBtn').disabled = false;
+
+      } catch (error) {
+        output.innerHTML = `<span class="error">✗ Error: ${error.message}</span>`;
+        btns.forEach(b => b.disabled = false);
+      }
+    }
+
+    async function selectApproach(approach) {
+      const output = document.getElementById('output5');
+      const prBtn = document.getElementById('prBtn');
+      const vectorBtn = document.getElementById('vectorBtn');
+
+      prBtn.disabled = true;
+      vectorBtn.disabled = true;
+      output.innerHTML = '<span class="loading">Processing approach selection...</span>';
+
+      try {
+        const result = await callOrchestrator(`I'd like to create a ${approach} campaign`);
+
+        updateStageIndicator(result.stage);
+
+        output.innerHTML = `<span class="success">✓ Approach selected!</span>\n\n` +
+          `Approach: ${approach}\n` +
+          `Stage: ${result.stage}\n\n` +
+          `Response:\n${result.message}\n\n` +
+          JSON.stringify(result, null, 2);
+
+      } catch (error) {
+        output.innerHTML = `<span class="error">✗ Error: ${error.message}</span>`;
+        prBtn.disabled = false;
+        vectorBtn.disabled = false;
+      }
+    }
+
+    // Initialize
+    updateStageIndicator('intent');
+  </script>
+</body>
+</html>

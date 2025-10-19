@@ -1,0 +1,282 @@
+/**
+ * Monitoring Stage 2: Fast Pattern-Based Enrichment (NO AI)
+ * Extracts events, entities, and topics using patterns and Firecrawl data
+ * NO CLAUDE CALLS - Just data extraction
+ */
+
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
+import { corsHeaders } from '../_shared/cors.ts';
+
+/**
+ * Extract structured data from articles WITHOUT AI
+ */
+function extractStructuredData(articles: any[], profile: any, organization_name: string) {
+  console.log(`⚡ Fast extraction from ${articles.length} articles (NO CLAUDE)`);
+  
+  const extractedData = {
+    events: [],
+    entities: new Set(),
+    topics: new Set(),
+    quotes: [],
+    metrics: {
+      financial: [],
+      percentages: [],
+      dates: []
+    },
+    sentiment_signals: {
+      positive: [],
+      negative: [],
+      crisis: [],
+      opportunity: []
+    }
+  };
+
+  // Event patterns
+  const eventPatterns = {
+    funding: /(?:raised?|secur\w+|clos\w+|fund\w+|invest\w+|valuation|Series [A-Z]|\$[\d.]+[MBK])/i,
+    acquisition: /(?:acquir\w+|merg\w+|buy\w+|bought|purchas\w+|deal|transaction)/i,
+    product_launch: /(?:launch\w+|releas\w+|unveil\w+|introduc\w+|announc\w+|debut\w+|roll\w+ out)/i,
+    partnership: /(?:partner\w+|collaborat\w+|team\w+ up|join\w+ forces|alliance|agreement)/i,
+    layoffs: /(?:layoff|lay off|cut\w+|eliminat\w+|reduc\w+ workforce|firing|downsize)/i,
+    expansion: /(?:expand\w+|grow\w+|open\w+|enter\w+|new market|international)/i,
+    regulatory: /(?:regulat\w+|complian\w+|fine\w+|lawsuit|investigation|probe|SEC|FTC|DOJ)/i,
+    leadership: /(?:CEO|CFO|CTO|executive|appoint\w+|resign\w+|step\w+ down|hire\w+|promot\w+)/i
+  };
+
+  // Process each article
+  articles.forEach(article => {
+    // First, use Firecrawl extracted data if available
+    if (article.firecrawl_extracted || article.pr_extraction) {
+      const extraction = article.firecrawl_extracted || article.pr_extraction || {};
+      
+      // Add quotes
+      if (extraction.quotes) {
+        extractedData.quotes.push(...extraction.quotes.slice(0, 3));
+      }
+      if (extraction.extracted_quotes) {
+        extractedData.quotes.push(...extraction.extracted_quotes.slice(0, 3));
+      }
+      
+      // Add entities
+      if (extraction.entities?.companies) {
+        extraction.entities.companies.forEach(c => extractedData.entities.add(c));
+      }
+      if (extraction.entities?.people) {
+        extraction.entities.people.forEach(p => extractedData.entities.add(p));
+      }
+      if (extraction.mentioned_entities) {
+        extraction.mentioned_entities.forEach(e => extractedData.entities.add(e));
+      }
+      
+      // Add metrics
+      if (extraction.metrics?.financial) {
+        extractedData.metrics.financial.push(...extraction.metrics.financial);
+      }
+      if (extraction.metrics?.percentages) {
+        extractedData.metrics.percentages.push(...extraction.metrics.percentages);
+      }
+      
+      // Add key points as topics
+      if (extraction.key_points) {
+        extraction.key_points.forEach(kp => {
+          // Extract topic-like phrases (3-5 words)
+          const topicMatch = kp.match(/\b(\w+\s+\w+(?:\s+\w+)?)\b/g);
+          if (topicMatch) {
+            topicMatch.slice(0, 2).forEach(t => extractedData.topics.add(t));
+          }
+        });
+      }
+    }
+    
+    // Then extract from content using patterns
+    const content = article.full_content || article.content || article.description || '';
+    const title = article.title || '';
+    const fullText = `${title} ${content}`;
+    
+    // Extract events
+    Object.entries(eventPatterns).forEach(([eventType, pattern]) => {
+      if (pattern.test(fullText)) {
+        // Find specific matches
+        const matches = fullText.match(pattern);
+        if (matches) {
+          extractedData.events.push({
+            type: eventType,
+            description: matches[0].substring(0, 100),
+            source: article.title,
+            url: article.url,
+            date: article.published_at || new Date().toISOString()
+          });
+        }
+      }
+    });
+    
+    // Extract companies (capitalized multi-word phrases)
+    const companyPattern = /\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\b/g;
+    const companyMatches = fullText.match(companyPattern);
+    if (companyMatches) {
+      companyMatches.slice(0, 10).forEach(company => {
+        // Filter out common words and short matches
+        if (company.length > 3 && !['The', 'This', 'That', 'These', 'Those'].includes(company)) {
+          extractedData.entities.add(company);
+        }
+      });
+    }
+    
+    // Extract money amounts
+    const moneyPattern = /\$[\d,]+(?:\.[\d]+)?(?:\s*(?:billion|million|thousand|[BMK]))?/gi;
+    const moneyMatches = fullText.match(moneyPattern);
+    if (moneyMatches) {
+      extractedData.metrics.financial.push(...moneyMatches.slice(0, 5));
+    }
+    
+    // Extract percentages
+    const percentPattern = /\d+(?:\.\d+)?%/g;
+    const percentMatches = fullText.match(percentPattern);
+    if (percentMatches) {
+      extractedData.metrics.percentages.push(...percentMatches.slice(0, 5));
+    }
+    
+    // Extract sentiment signals
+    if (/crisis|scandal|problem|issue|failure|crash|breach|hack/i.test(fullText)) {
+      extractedData.sentiment_signals.crisis.push(article.title);
+    }
+    if (/opportunity|growth|success|win|breakthrough|innovation/i.test(fullText)) {
+      extractedData.sentiment_signals.opportunity.push(article.title);
+    }
+    if (/positive|improve|gain|rise|surge|boost|strength/i.test(fullText)) {
+      extractedData.sentiment_signals.positive.push(article.title);
+    }
+    if (/negative|decline|fall|drop|weak|loss|deficit/i.test(fullText)) {
+      extractedData.sentiment_signals.negative.push(article.title);
+    }
+    
+    // Extract trending topics (frequently mentioned phrases)
+    const topicPattern = /\b(AI|artificial intelligence|machine learning|blockchain|crypto|sustainability|ESG|climate|quantum|metaverse|5G|automation|cybersecurity|supply chain|inflation|recession)\b/gi;
+    const topicMatches = fullText.match(topicPattern);
+    if (topicMatches) {
+      topicMatches.forEach(topic => extractedData.topics.add(topic.toLowerCase()));
+    }
+  });
+  
+  // Convert sets to arrays and deduplicate
+  const result = {
+    events: extractedData.events.slice(0, 50), // Limit events
+    entities: Array.from(extractedData.entities).slice(0, 100), // Limit entities
+    topics: Array.from(extractedData.topics).slice(0, 50), // Limit topics
+    quotes: [...new Set(extractedData.quotes)].slice(0, 20), // Dedupe and limit quotes
+    metrics: {
+      financial: [...new Set(extractedData.metrics.financial)].slice(0, 20),
+      percentages: [...new Set(extractedData.metrics.percentages)].slice(0, 20),
+      dates: extractedData.metrics.dates.slice(0, 20)
+    },
+    sentiment_signals: extractedData.sentiment_signals,
+    statistics: {
+      total_articles: articles.length,
+      with_full_content: articles.filter(a => a.has_full_content).length,
+      with_extraction: articles.filter(a => a.firecrawl_extracted || a.pr_extraction).length,
+      events_found: extractedData.events.length,
+      entities_found: Array.from(extractedData.entities).length,
+      topics_found: Array.from(extractedData.topics).length,
+      quotes_found: extractedData.quotes.length
+    }
+  };
+  
+  console.log('✅ Fast extraction complete:', {
+    events: result.events.length,
+    entities: result.entities.length,
+    topics: result.topics.length,
+    quotes: result.quotes.length,
+    processing_time: 'instant'
+  });
+  
+  return result;
+}
+
+serve(async (req) => {
+  // Handle CORS
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const startTime = Date.now();
+    const { organization, profile, monitoring_data, articles_limit = 200 } = await req.json();
+    
+    console.log('🚀 Fast Enrichment Stage Starting:', {
+      organization: organization?.name,
+      articlesReceived: monitoring_data?.findings?.length || 0,
+      articlesLimit: articles_limit,
+      timestamp: new Date().toISOString()
+    });
+
+    // Get articles from monitoring data
+    const articles = monitoring_data?.findings || [];
+    
+    if (!articles.length) {
+      console.log('⚠️ No articles to enrich');
+      return new Response(JSON.stringify({
+        success: true,
+        extracted_data: {
+          events: [],
+          entities: [],
+          topics: [],
+          quotes: [],
+          metrics: { financial: [], percentages: [], dates: [] }
+        },
+        statistics: {
+          total_articles: 0,
+          processing_time_ms: Date.now() - startTime
+        }
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Limit articles if needed
+    const articlesToProcess = articles.slice(0, articles_limit);
+    console.log(`📊 Processing ${articlesToProcess.length} of ${articles.length} articles`);
+    
+    // Extract structured data WITHOUT AI
+    const extractedData = extractStructuredData(
+      articlesToProcess, 
+      profile, 
+      organization?.name || 'Unknown'
+    );
+    
+    const processingTime = Date.now() - startTime;
+    console.log(`✅ Enrichment complete in ${processingTime}ms:`, {
+      success: true,
+      articles_processed: articlesToProcess.length,
+      events_extracted: extractedData.events.length,
+      entities_found: extractedData.entities.length,
+      topics_identified: extractedData.topics.length
+    });
+
+    return new Response(JSON.stringify({
+      success: true,
+      organization,
+      profile,
+      monitoring_data: {
+        ...monitoring_data,
+        findings: articlesToProcess // Return processed articles
+      },
+      extracted_data: extractedData,
+      statistics: {
+        ...extractedData.statistics,
+        processing_time_ms: processingTime
+      }
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+
+  } catch (error) {
+    console.error('❌ Enrichment error:', error);
+    return new Response(JSON.stringify({
+      error: error.message,
+      success: false
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+});

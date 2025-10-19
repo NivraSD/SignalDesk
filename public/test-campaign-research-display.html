@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Campaign Research Display Test</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: #000;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+  </style>
+</head>
+<body class="p-8">
+  <div class="max-w-7xl mx-auto">
+    <h1 class="text-3xl font-bold mb-2">Campaign Research Display Test</h1>
+    <p class="text-gray-400 mb-8">Testing the research synthesis display component</p>
+
+    <div class="mb-8">
+      <button
+        onclick="testCampaignBuilderPipeline()"
+        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium"
+      >
+        🚀 Run Campaign Builder Research
+      </button>
+      <button
+        onclick="loadSavedResult()"
+        class="ml-4 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium"
+      >
+        📄 Load Saved Test Result
+      </button>
+    </div>
+
+    <div id="status" class="mb-4 p-4 rounded-lg bg-zinc-900 border border-zinc-800"></div>
+    <div id="research-output" class="space-y-6"></div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://zskaxjtyuaqazydouifp.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTEyOTYzNywiZXhwIjoyMDcwNzA1NjM3fQ.WO35k7riuKT2QXj_YvbtRwzLwi3Pev30-X9Yziej2pM";
+
+    function updateStatus(message, type = 'info') {
+      const statusEl = document.getElementById('status');
+      const colors = {
+        info: 'border-blue-500 bg-blue-950',
+        success: 'border-green-500 bg-green-950',
+        error: 'border-red-500 bg-red-950'
+      };
+      statusEl.className = `mb-4 p-4 rounded-lg border ${colors[type]}`;
+      statusEl.innerHTML = message;
+    }
+
+    async function testCampaignBuilderPipeline() {
+      updateStatus('🚀 Starting Campaign Builder research pipeline...', 'info');
+      document.getElementById('research-output').innerHTML = '';
+
+      const testPayload = {
+        orgId: 'test-org',
+        message: 'Launch campaign for Tesla Cybertruck targeting tech enthusiasts and early adopters',
+        organizationContext: {
+          name: 'Tesla',
+          industry: 'Automotive/Electric Vehicles'
+        }
+      };
+
+      const startTime = Date.now();
+
+      try {
+        const response = await fetch(
+          `${SUPABASE_URL}/functions/v1/niv-campaign-builder-orchestrator`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${SUPABASE_KEY}`
+            },
+            body: JSON.stringify(testPayload)
+          }
+        );
+
+        const elapsedTime = Date.now() - startTime;
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          updateStatus(`❌ Error: ${response.status} - ${errorText}`, 'error');
+          return;
+        }
+
+        const result = await response.json();
+        updateStatus(`✅ Research complete in ${(elapsedTime / 1000).toFixed(1)}s`, 'success');
+        displayResearch(result.data);
+
+      } catch (error) {
+        updateStatus(`❌ Error: ${error.message}`, 'error');
+        console.error(error);
+      }
+    }
+
+    async function loadSavedResult() {
+      updateStatus('📄 Loading saved test result...', 'info');
+      try {
+        const response = await fetch('/campaign-builder-test-result.json');
+        const result = await response.json();
+        updateStatus('✅ Loaded saved test result', 'success');
+        displayResearch(result.data);
+      } catch (error) {
+        updateStatus(`❌ Error loading saved result: ${error.message}`, 'error');
+      }
+    }
+
+    function displayResearch(research) {
+      const output = document.getElementById('research-output');
+
+      let html = '';
+
+      // Synthesis Quality
+      if (research.synthesisQuality) {
+        const sq = research.synthesisQuality;
+        html += `
+          <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-6">
+            <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+              <span>📊</span> Synthesis Quality
+            </h2>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <div class="text-sm text-gray-400 mb-1">Completeness</div>
+                <div class="text-2xl font-bold text-green-400">${(sq.completeness * 100).toFixed(0)}%</div>
+              </div>
+              <div>
+                <div class="text-sm text-gray-400 mb-1">Confidence</div>
+                <div class="text-2xl font-bold text-blue-400">${(sq.confidence * 100).toFixed(0)}%</div>
+              </div>
+            </div>
+            ${sq.dataGaps && sq.dataGaps.length > 0 ? `
+              <div class="mt-4">
+                <div class="text-sm text-gray-400 mb-2">Data Gaps:</div>
+                <ul class="text-sm text-amber-400 space-y-1">
+                  ${sq.dataGaps.map(gap => `<li>• ${gap}</li>`).join('')}
+                </ul>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }
+
+      // Key Insights
+      if (research.keyInsights && research.keyInsights.length > 0) {
+        html += `
+          <div class="bg-gradient-to-r from-blue-900/20 to-purple-900/20 border border-blue-500/30 rounded-lg p-6">
+            <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+              <span>💡</span> Key Strategic Insights
+            </h2>
+            <div class="space-y-4">
+              ${research.keyInsights.map(insight => {
+                const color = insight.significance === 'critical' ? 'red' :
+                             insight.significance === 'high' ? 'amber' : 'blue';
+                return `
+                  <div class="flex gap-3">
+                    <div class="flex-shrink-0 w-2 h-2 rounded-full mt-2 bg-${color}-500"></div>
+                    <div class="flex-1">
+                      <p class="text-white text-sm mb-1">${insight.insight}</p>
+                      <p class="text-gray-400 text-xs">
+                        <span class="text-blue-400">Category:</span> ${insight.category} •
+                        <span class="text-purple-400">Action:</span> ${insight.actionImplication}
+                      </p>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      // Stakeholders
+      if (research.stakeholders && research.stakeholders.length > 0) {
+        html += `
+          <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-6">
+            <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+              <span>👥</span> Stakeholder Intelligence
+            </h2>
+            <div class="space-y-4">
+              ${research.stakeholders.map(s => `
+                <div class="border border-zinc-800 rounded-lg p-4">
+                  <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-lg font-semibold text-white">${s.name}</h3>
+                    ${s.size ? `<span class="text-sm text-gray-400">${s.size.toLocaleString()} people</span>` : ''}
+                  </div>
+
+                  ${s.psychology ? `
+                    <div class="grid grid-cols-2 gap-4 mb-3">
+                      <div>
+                        <div class="text-xs text-green-400 font-medium mb-1">VALUES</div>
+                        <div class="text-xs text-gray-300 space-y-0.5">
+                          ${s.psychology.values.map(v => `<div>• ${v}</div>`).join('')}
+                        </div>
+                      </div>
+                      <div>
+                        <div class="text-xs text-red-400 font-medium mb-1">FEARS</div>
+                        <div class="text-xs text-gray-300 space-y-0.5">
+                          ${s.psychology.fears.map(f => `<div>• ${f}</div>`).join('')}
+                        </div>
+                      </div>
+                    </div>
+                  ` : ''}
+
+                  ${s.currentPerceptions ? `
+                    <div class="text-xs text-gray-400 space-y-1 border-t border-zinc-800 pt-3">
+                      <div><span class="text-blue-400">Organization:</span> ${s.currentPerceptions.ofOrganization}</div>
+                      <div><span class="text-blue-400">Industry:</span> ${s.currentPerceptions.ofIndustry}</div>
+                    </div>
+                  ` : ''}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      // Narrative Landscape
+      if (research.narrativeLandscape) {
+        const nl = research.narrativeLandscape;
+        html += `
+          <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-6">
+            <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+              <span>📖</span> Narrative Landscape
+            </h2>
+
+            ${nl.dominantNarratives && nl.dominantNarratives.length > 0 ? `
+              <div class="mb-4">
+                <h3 class="text-sm font-semibold text-gray-400 mb-2">DOMINANT NARRATIVES</h3>
+                <div class="space-y-2">
+                  ${nl.dominantNarratives.map(n => `
+                    <div class="border border-zinc-800 rounded p-3">
+                      <div class="text-white font-medium mb-1">${n.narrative}</div>
+                      <div class="text-xs text-gray-400">
+                        <span class="text-blue-400">Source:</span> ${n.source} •
+                        <span class="text-purple-400">Resonance:</span> ${n.resonance}
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            ` : ''}
+
+            ${nl.narrativeVacuums && nl.narrativeVacuums.length > 0 ? `
+              <div>
+                <h3 class="text-sm font-semibold text-green-400 mb-2">NARRATIVE OPPORTUNITIES</h3>
+                <div class="space-y-2">
+                  ${nl.narrativeVacuums.map(v => `
+                    <div class="border border-green-800/30 bg-green-950/20 rounded p-3">
+                      <div class="text-green-300 font-medium mb-1">${v.opportunity}</div>
+                      <div class="text-xs text-gray-400">${v.rationale}</div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }
+
+      // Channel Intelligence
+      if (research.channelIntelligence) {
+        const ci = research.channelIntelligence;
+        html += `
+          <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-6">
+            <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+              <span>📡</span> Channel Intelligence
+            </h2>
+
+            ${ci.journalists && ci.journalists.length > 0 ? `
+              <div class="mb-4">
+                <h3 class="text-sm font-semibold text-gray-400 mb-2">JOURNALISTS</h3>
+                <div class="space-y-2">
+                  ${ci.journalists.map(j => `
+                    <div class="flex items-center justify-between border border-zinc-800 rounded p-3">
+                      <div>
+                        <div class="text-white font-medium">${j.name}</div>
+                        <div class="text-xs text-gray-400">${j.beat || j.outlet}</div>
+                      </div>
+                      <span class="px-2 py-1 rounded text-xs font-medium ${
+                        j.tier === 'tier1' ? 'bg-green-900 text-green-300' : 'bg-blue-900 text-blue-300'
+                      }">${j.tier || 'relevant'}</span>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            ` : ''}
+
+            ${ci.publications && ci.publications.length > 0 ? `
+              <div>
+                <h3 class="text-sm font-semibold text-gray-400 mb-2">PUBLICATIONS</h3>
+                <div class="flex flex-wrap gap-2">
+                  ${ci.publications.map(p => `
+                    <span class="px-3 py-1 bg-blue-900/30 border border-blue-800/50 rounded-full text-xs text-blue-300">
+                      ${p.name}
+                    </span>
+                  `).join('')}
+                </div>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }
+
+      // Historical Insights
+      if (research.historicalInsights) {
+        const hi = research.historicalInsights;
+        html += `
+          <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-6">
+            <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+              <span>📚</span> Historical Insights
+            </h2>
+
+            ${hi.successfulCampaigns && hi.successfulCampaigns.length > 0 ? `
+              <div class="mb-4">
+                <h3 class="text-sm font-semibold text-gray-400 mb-2">SUCCESSFUL CAMPAIGNS</h3>
+                <div class="space-y-3">
+                  ${hi.successfulCampaigns.map(c => `
+                    <div class="border border-zinc-800 rounded p-3">
+                      <div class="text-white font-medium mb-1">${c.campaign}</div>
+                      <div class="text-xs text-gray-400 mb-2">${c.approach}</div>
+                      ${c.keyLessons && c.keyLessons.length > 0 ? `
+                        <div class="text-xs text-green-400 space-y-0.5">
+                          ${c.keyLessons.map(l => `<div>✓ ${l}</div>`).join('')}
+                        </div>
+                      ` : ''}
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            ` : ''}
+
+            ${hi.patternRecommendations && hi.patternRecommendations.length > 0 ? `
+              <div>
+                <h3 class="text-sm font-semibold text-amber-400 mb-2">PATTERN RECOMMENDATIONS</h3>
+                <div class="space-y-2">
+                  ${hi.patternRecommendations.map(p => `
+                    <div class="border border-amber-800/30 bg-amber-950/20 rounded p-3">
+                      <div class="text-amber-300 font-medium mb-1">${p.pattern}</div>
+                      <div class="text-xs text-gray-400">${p.rationale}</div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }
+
+      output.innerHTML = html;
+    }
+  </script>
+</body>
+</html>

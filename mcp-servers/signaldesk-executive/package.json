@@ -1,0 +1,19 @@
+{
+  "name": "@signaldesk/mcp-executive",
+  "version": "1.0.0",
+  "description": "Executive Summary MCP with synthesis and rich rendering",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "marked": "^11.0.0",
+    "chart.js": "^4.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3"
+  }
+}

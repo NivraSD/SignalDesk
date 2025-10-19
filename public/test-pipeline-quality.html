@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pipeline Quality Test - Real Intelligence Check</title>
+    <style>
+        body {
+            font-family: 'SF Mono', Monaco, monospace;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .container {
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #333;
+        }
+        h1 {
+            color: #4CAF50;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #2196F3;
+            margin-top: 30px;
+        }
+        h3 {
+            color: #FF9800;
+            margin-top: 20px;
+        }
+        .stage {
+            background: #252525;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #2196F3;
+        }
+        .success {
+            color: #4CAF50;
+        }
+        .error {
+            color: #f44336;
+        }
+        .warning {
+            color: #FF9800;
+        }
+        .metric {
+            display: inline-block;
+            background: #333;
+            padding: 5px 10px;
+            border-radius: 3px;
+            margin: 5px;
+        }
+        .quality-score {
+            font-size: 24px;
+            font-weight: bold;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .good { background: #1b5e20; }
+        .fair { background: #f57c00; }
+        .poor { background: #b71c1c; }
+        .intelligence-item {
+            background: #2a2a2a;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #444;
+        }
+        .real-intel { border-color: #4CAF50; }
+        .garbage-intel { border-color: #f44336; }
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #1976D2;
+        }
+        .loading {
+            color: #FFC107;
+            font-style: italic;
+        }
+        pre {
+            background: #0d0d0d;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Pipeline Quality Test - Real Intelligence vs Garbage Detection</h1>
+    
+    <div class="container">
+        <h2>Test Controls</h2>
+        <button onclick="runQualityTest()">🚀 Run Full Quality Test</button>
+        <button onclick="clearResults()">🗑️ Clear Results</button>
+        <div id="status" class="loading"></div>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTEyOTYzNywiZXhwIjoyMDcwNzA1NjM3fQ.WO35k7riuKT2QXj_YvbtRwzLwi3Pev30-X9Yziej2pM';
+        
+        function updateStatus(message, type = 'loading') {
+            const status = document.getElementById('status');
+            status.className = type;
+            status.textContent = message;
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            updateStatus('Ready to test', 'success');
+        }
+        
+        async function runQualityTest() {
+            updateStatus('Starting quality test...', 'loading');
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+            
+            try {
+                // Step 1: Get profile
+                updateStatus('Getting organization profile...', 'loading');
+                const profileResponse = await fetch(`${SUPABASE_URL}/functions/v1/mcp-discovery`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        method: 'tools/call',
+                        params: {
+                            name: 'create_organization_profile',
+                            arguments: { organization_name: 'Tesla' }
+                        }
+                    })
+                });
+                
+                const profileData = await profileResponse.json();
+                const profile = JSON.parse(profileData.content[0].text);
+                
+                // Step 2: Get articles
+                updateStatus('Gathering articles from Stage 1...', 'loading');
+                const stage1Response = await fetch(`${SUPABASE_URL}/functions/v1/monitor-stage-1`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        profile: profile,
+                        organization_name: 'Tesla'
+                    })
+                });
+                
+                const stage1Data = await stage1Response.json();
+                
+                // Step 3: Run relevance scoring
+                updateStatus('Running enhanced relevance scoring...', 'loading');
+                const relevanceResponse = await fetch(`${SUPABASE_URL}/functions/v1/monitor-stage-2-relevance`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        articles: stage1Data.articles || [],
+                        profile: profile,
+                        organization_name: 'Tesla',
+                        top_k: 25
+                    })
+                });
+                
+                const relevanceData = await relevanceResponse.json();
+                
+                // Step 4: Run enrichment
+                updateStatus('Running enrichment with Firecrawl...', 'loading');
+                const enrichmentResponse = await fetch(`${SUPABASE_URL}/functions/v1/monitoring-stage-2-enrichment`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        articles: relevanceData.findings || [],
+                        profile: profile,
+                        organization_name: 'Tesla'
+                    })
+                });
+                
+                const enrichmentData = await enrichmentResponse.json();
+                
+                // Analyze quality
+                analyzeQuality(stage1Data, relevanceData, enrichmentData, resultsDiv);
+                
+                updateStatus('Quality test complete!', 'success');
+                
+            } catch (error) {
+                updateStatus(`Error: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+        
+        function analyzeQuality(stage1, relevance, enrichment, resultsDiv) {
+            let html = '<div class="container">';
+            html += '<h2>📊 Quality Analysis Results</h2>';
+            
+            // Overall metrics
+            const totalArticles = stage1.articles?.length || 0;
+            const relevantArticles = relevance.findings?.length || 0;
+            const enrichedArticles = enrichment.extracted_data?.events?.length || 0;
+            
+            html += '<div class="stage">';
+            html += '<h3>Pipeline Flow</h3>';
+            html += `<div class="metric">Stage 1: ${totalArticles} articles</div>`;
+            html += `<div class="metric">Relevance: ${relevantArticles} selected</div>`;
+            html += `<div class="metric">Enriched: ${enrichedArticles} events extracted</div>`;
+            html += '</div>';
+            
+            // Relevance Quality Check
+            html += '<div class="stage">';
+            html += '<h3>🎯 Relevance Quality</h3>';
+            
+            const actionableCount = (relevance.findings || []).filter(a => 
+                a.pr_extraction?.has_actionable_intel
+            ).length;
+            const avgScore = Math.round((relevance.findings || []).reduce((sum, a) => 
+                sum + (a.pr_relevance_score || 0), 0
+            ) / relevantArticles);
+            
+            html += `<div class="metric">Actionable Intel: ${actionableCount}/${relevantArticles}</div>`;
+            html += `<div class="metric">Avg Score: ${avgScore}</div>`;
+            
+            // Intelligence type breakdown
+            const intelTypes = {};
+            (relevance.findings || []).forEach(a => {
+                const type = a.pr_extraction?.intelligence_type || 'none';
+                intelTypes[type] = (intelTypes[type] || 0) + 1;
+            });
+            
+            html += '<h4>Intelligence Types:</h4>';
+            Object.entries(intelTypes).forEach(([type, count]) => {
+                const color = type === 'none' ? 'error' : 'success';
+                html += `<div class="metric ${color}">${type}: ${count}</div>`;
+            });
+            html += '</div>';
+            
+            // Enrichment Quality Check
+            html += '<div class="stage">';
+            html += '<h3>🔍 Enrichment Quality Check</h3>';
+            
+            const events = enrichment.extracted_data?.events || [];
+            let realIntelCount = 0;
+            let garbageCount = 0;
+            let navigationPatterns = 0;
+            
+            events.forEach(event => {
+                const desc = event.description || '';
+                // Check for navigation/garbage patterns
+                if (desc.match(/\[.*\].*\[.*\]|\(https:\/\/|Stock Lists|IBD \d+|Rising Profit|Your Weekly/)) {
+                    garbageCount++;
+                    navigationPatterns++;
+                } else if (desc.length > 50 && event.validated) {
+                    realIntelCount++;
+                } else {
+                    garbageCount++;
+                }
+            });
+            
+            const qualityScore = realIntelCount / (realIntelCount + garbageCount) * 100;
+            const qualityClass = qualityScore > 70 ? 'good' : qualityScore > 40 ? 'fair' : 'poor';
+            
+            html += `<div class="quality-score ${qualityClass}">`;
+            html += `Quality Score: ${Math.round(qualityScore)}%`;
+            html += '</div>';
+            
+            html += `<div class="metric ${realIntelCount > garbageCount ? 'success' : 'error'}">`;
+            html += `Real Intelligence: ${realIntelCount}`;
+            html += '</div>';
+            html += `<div class="metric error">Garbage/Navigation: ${garbageCount}</div>`;
+            html += `<div class="metric warning">Navigation Patterns: ${navigationPatterns}</div>`;
+            
+            // Show examples
+            html += '<h4>Sample Events (First 5):</h4>';
+            events.slice(0, 5).forEach((event, idx) => {
+                const isGarbage = (event.description || '').match(/\[.*\].*\[.*\]|\(https:\/\/|Stock Lists/);
+                const className = isGarbage ? 'garbage-intel' : 'real-intel';
+                
+                html += `<div class="intelligence-item ${className}">`;
+                html += `<strong>Event ${idx + 1}:</strong> ${event.type || 'unknown'}<br>`;
+                html += `<strong>Description:</strong> ${(event.description || '').substring(0, 200)}...<br>`;
+                html += `<strong>Articles:</strong> ${event.articles?.length || 0}<br>`;
+                html += `<strong>Validated:</strong> ${event.validated ? '✅' : '❌'}`;
+                html += '</div>';
+            });
+            html += '</div>';
+            
+            // Final verdict
+            html += '<div class="stage">';
+            html += '<h3>🎬 Final Verdict</h3>';
+            
+            const pipelineHealth = qualityScore > 70 && actionableCount > 10;
+            html += `<div class="quality-score ${pipelineHealth ? 'good' : 'poor'}">`;
+            html += pipelineHealth ? 
+                '✅ Pipeline is producing REAL intelligence' : 
+                '❌ Pipeline still has quality issues';
+            html += '</div>';
+            
+            if (!pipelineHealth) {
+                html += '<h4>Issues Found:</h4>';
+                if (qualityScore <= 70) {
+                    html += '<div class="metric error">Too much navigation/garbage in events</div>';
+                }
+                if (actionableCount <= 10) {
+                    html += '<div class="metric error">Not enough actionable intelligence</div>';
+                }
+                if (navigationPatterns > 3) {
+                    html += '<div class="metric error">Firecrawl extracting website chrome</div>';
+                }
+            }
+            
+            html += '</div>';
+            html += '</div>';
+            
+            resultsDiv.innerHTML = html;
+        }
+    </script>
+</body>
+</html>

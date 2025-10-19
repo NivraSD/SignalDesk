@@ -1,0 +1,118 @@
+/* Multi-Stage Intelligence Module Styles */
+
+.intelligence-module {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #0a0a0a;
+  color: #e0e0e0;
+}
+
+.intelligence-header {
+  padding: 1rem;
+  border-bottom: 1px solid rgba(0, 255, 204, 0.2);
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.intelligence-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.stage-progress {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.stage-indicator {
+  flex: 1;
+  height: 4px;
+  background: #1a1a1a;
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+}
+
+.stage-indicator.active {
+  background: linear-gradient(90deg, #00ffcc 0%, #00ff88 100%);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.stage-indicator.completed {
+  background: #00ffcc;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.analysis-section {
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  border: 1px solid rgba(0, 255, 204, 0.1);
+}
+
+.analysis-section h3 {
+  color: #00ffcc;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.analysis-content {
+  line-height: 1.6;
+  color: #c0c0c0;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(0, 255, 204, 0.3);
+  border-radius: 50%;
+  border-top-color: #00ffcc;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.error-message {
+  background: rgba(255, 0, 0, 0.1);
+  border: 1px solid rgba(255, 0, 0, 0.3);
+  color: #ff6b6b;
+  padding: 1rem;
+  border-radius: 4px;
+  margin: 1rem 0;
+}
+
+.control-buttons {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.control-button {
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #00ffcc 0%, #00ff88 100%);
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: transform 0.2s;
+}
+
+.control-button:hover {
+  transform: translateY(-2px);
+}
+
+.control-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

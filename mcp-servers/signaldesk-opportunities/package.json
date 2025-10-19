@@ -1,0 +1,27 @@
+{
+  "name": "signaldesk-opportunities",
+  "version": "1.0.0",
+  "description": "MCP server for SignalDesk PR opportunity discovery",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "start:mcp": "node dist/index.js --mcp",
+    "start:api": "NODE_ENV=development node api/index.js",
+    "start:local": "npm run build && npm run start:api",
+    "deploy": "vercel --prod",
+    "deploy:preview": "vercel"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.6.0",
+    "express": "^5.1.0",
+    "pg": "^8.11.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "@types/pg": "^8.10.9",
+    "typescript": "^5.3.3"
+  }
+}
