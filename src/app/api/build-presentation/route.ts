@@ -47,9 +47,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    if (!presentationData.slides || !Array.isArray(presentationData.slides)) {
+      console.error('Invalid presentation data - slides missing or not an array:', presentationData)
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Invalid presentation data: slides array is required',
+          received: presentationData
+        },
+        { status: 400 }
+      )
+    }
+
+    if (presentationData.slides.length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'No slides provided in presentation data' },
+        { status: 400 }
+      )
+    }
+
     console.log('📝 Presentation data:', {
       title: presentationData.title,
-      slideCount: presentationData.slides?.length
+      slideCount: presentationData.slides.length
     })
 
     // Create presentation

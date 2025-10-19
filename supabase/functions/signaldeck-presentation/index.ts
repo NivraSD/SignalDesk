@@ -176,7 +176,7 @@ async function generateAIImage(prompt: string, organizationId: string): Promise<
 async function generatePresentationData(outline: SignalDeckRequest['approved_outline']) {
   console.log('📝 Generating presentation content with Claude')
 
-  const prompt = `Create detailed slide content for a presentation.
+  const prompt = `Transform this presentation outline into detailed slide content.
 
 Topic: ${outline.topic}
 Audience: ${outline.audience}
@@ -185,39 +185,57 @@ Purpose: ${outline.purpose}
 Key Messages:
 ${outline.key_messages.map((m, i) => `${i + 1}. ${m}`).join('\n')}
 
-Sections:
+Approved Outline (use these exact sections as your slides):
 ${outline.sections.map((s, i) => `
-Slide ${i + 1}: ${s.title}
+Slide ${i + 2}: ${s.title}
 Talking Points: ${s.talking_points.join('; ')}
-Visual Suggestion: ${s.visual_suggestion || 'content only'}
+Visual: ${s.visual_suggestion || 'content only'}
 `).join('\n')}
 
-For each section, generate:
-1. Slide title (concise, impactful)
-2. Body content (3-5 bullet points or 2-3 paragraphs)
-3. Speaker notes (what the presenter should say)
-4. For charts: include realistic sample data with labels and values
-5. For timelines: include events with dates
-6. For diagrams: include steps/nodes in the process
+Instructions:
+1. Create a title slide (slide 1) with the topic and a subtitle summarizing the purpose
+2. For each section in the outline, create one slide using:
+   - The section title as the slide title (keep it exactly as provided)
+   - Transform the talking points into polished bullet points (3-5 points)
+   - Generate speaker notes that expand on the talking points
+   - Parse the visual suggestion to create the visual_element:
+     * If it mentions "chart" or "graph": create chart with realistic sample data
+     * If it mentions "timeline": create timeline with events and dates
+     * If it mentions "image", "photo", "illustration": mark as image type
+     * Otherwise: set type to "content"
+3. Add a closing slide thanking the audience
 
-Return JSON format:
+Return JSON format (IMPORTANT: return ONLY this JSON, no other text):
 {
-  "title": "Presentation title",
+  "title": "${outline.topic}",
   "slides": [
     {
-      "type": "title|content|visual|chart|timeline|diagram|quote|closing",
-      "title": "Slide title",
-      "body": ["Point 1", "Point 2", "Point 3"],
-      "notes": "Speaker notes for this slide",
-      "visual_element": {
-        "type": "chart|timeline|diagram|image|quote|data_table|none",
-        "description": "Brief description",
-        "chart_type": "bar|line|pie|column|area",
-        "data": { "labels": ["Q1", "Q2"], "values": [100, 120] }
-      }
+      "type": "title",
+      "title": "${outline.topic}",
+      "body": ["${outline.purpose}"],
+      "notes": "Opening slide - introduce yourself and the topic"
+    },
+${outline.sections.map((s, i) => `    {
+      "type": "content",
+      "title": "${s.title}",
+      "body": [${s.talking_points.map(p => `"${p.replace(/"/g, '\\"')}"`).join(', ')}],
+      "notes": "Expand on these points: ${s.talking_points.join('; ')}",
+      "visual_element": ${s.visual_suggestion ? `{ "type": "to_be_determined", "description": "${s.visual_suggestion.replace(/"/g, '\\"')}" }` : 'null'}
+    }`).join(',\n')},
+    {
+      "type": "closing",
+      "title": "Thank You",
+      "body": ["Questions?", "Contact information"],
+      "notes": "Wrap up and invite questions"
     }
   ]
-}`
+}
+
+CRITICAL:
+- For visual_element, if description contains "chart"/"graph", add: "chart_type": "bar", "data": {"labels": ["Q1","Q2","Q3","Q4"], "values": [100,120,150,180]}
+- If description contains "timeline", add realistic events with dates
+- If description contains "image"/"photo"/"illustration", set type to "image"
+- Return ONLY valid JSON, no markdown code blocks, no extra text`
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -304,7 +322,17 @@ Return JSON format:
     }
 
     console.log('📝 Parsing JSON response...')
-    return JSON.parse(content)
+    const parsed = JSON.parse(content)
+
+    // Validate the parsed data has the required structure
+    if (!parsed.slides || !Array.isArray(parsed.slides)) {
+      console.error('❌ Invalid presentation data structure - missing slides array')
+      console.error('Parsed data:', JSON.stringify(parsed, null, 2).substring(0, 1000))
+      throw new Error('Claude response missing slides array')
+    }
+
+    console.log('✅ Valid presentation data with', parsed.slides.length, 'slides')
+    return parsed
   } catch (error) {
     console.error('Error generating with Claude:', error)
     if (error instanceof SyntaxError) {
