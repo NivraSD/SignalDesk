@@ -38,8 +38,47 @@ interface GenerationStatus {
   progress?: number
 }
 
-// In-memory storage for generation status (in production, use Redis or database)
-const generationStore = new Map<string, GenerationStatus>()
+// Database-backed status storage (replaces in-memory Map)
+async function getGenerationStatus(generationId: string): Promise<GenerationStatus | null> {
+  const { data, error } = await supabase
+    .from('presentation_generations')
+    .select('*')
+    .eq('id', generationId)
+    .single()
+
+  if (error || !data) {
+    return null
+  }
+
+  return {
+    generationId: data.id,
+    status: data.status,
+    fileUrl: data.file_url || data.download_url,
+    error: data.error,
+    progress: data.progress
+  }
+}
+
+async function setGenerationStatus(status: GenerationStatus, organizationId: string, metadata?: any): Promise<void> {
+  const { error } = await supabase
+    .from('presentation_generations')
+    .upsert({
+      id: status.generationId,
+      organization_id: organizationId,
+      status: status.status,
+      progress: status.progress || 0,
+      file_url: status.fileUrl,
+      download_url: status.fileUrl,
+      error: status.error,
+      metadata: metadata || {},
+      updated_at: new Date().toISOString()
+    })
+
+  if (error) {
+    console.error('Error saving generation status:', error)
+    throw error
+  }
+}
 
 // Parse visual suggestion to determine type and details
 function parseVisualSuggestion(suggestion: string) {
@@ -407,23 +446,25 @@ async function saveToContentLibrary(
 
 // Main generation function (runs asynchronously)
 async function generatePresentation(generationId: string, request: SignalDeckRequest) {
+  const orgId = request.organization_id || 'default'
+
   try {
     // Update status to processing
-    generationStore.set(generationId, {
+    await setGenerationStatus({
       generationId,
       status: 'processing',
       progress: 10
-    })
+    }, orgId, { outline: request.approved_outline })
 
     // Step 1: Generate content with Claude
     console.log('Step 1: Generating content...')
     const presentationData = await generatePresentationData(request.approved_outline)
 
-    generationStore.set(generationId, {
+    await setGenerationStatus({
       generationId,
       status: 'processing',
       progress: 40
-    })
+    }, orgId)
 
     // Step 1.5: Generate AI images with Vertex AI for visual slides
     console.log('Step 1.5: Processing visual suggestions...')
@@ -452,11 +493,11 @@ async function generatePresentation(generationId: string, request: SignalDeckReq
       }
     }
 
-    generationStore.set(generationId, {
+    await setGenerationStatus({
       generationId,
       status: 'processing',
       progress: 60
-    })
+    }, orgId)
 
     // Step 2: Build PowerPoint
     console.log('Step 2: Building PowerPoint...')
@@ -466,20 +507,20 @@ async function generatePresentation(generationId: string, request: SignalDeckReq
       accent: '0f3460'
     }
 
-    const fileInfo = await buildPresentation(presentationData, theme, generationId, request.organization_id || 'default')
+    const fileInfo = await buildPresentation(presentationData, theme, generationId, orgId)
 
-    generationStore.set(generationId, {
+    await setGenerationStatus({
       generationId,
       status: 'processing',
       progress: 75
-    })
+    }, orgId)
 
     // Step 3: Upload to storage
     console.log('Step 3: Uploading...')
     const fileUrl = await uploadPresentation(
       fileInfo.fileData,
       fileInfo.fileName,
-      request.organization_id || 'default'
+      orgId
     )
 
     // Step 4: Save to content library
@@ -488,25 +529,25 @@ async function generatePresentation(generationId: string, request: SignalDeckReq
       presentationData,
       fileUrl,
       request.approved_outline,
-      request.organization_id || 'default'
+      orgId
     )
 
     // Update status to completed
-    generationStore.set(generationId, {
+    await setGenerationStatus({
       generationId,
       status: 'completed',
       fileUrl,
       progress: 100
-    })
+    }, orgId)
 
     console.log('✅ Presentation generation complete!')
   } catch (error) {
     console.error('❌ Generation error:', error)
-    generationStore.set(generationId, {
+    await setGenerationStatus({
       generationId,
       status: 'error',
       error: error instanceof Error ? error.message : 'Unknown error'
-    })
+    }, orgId)
   }
 }
 
@@ -528,7 +569,7 @@ serve(async (req) => {
 
     if (generationId) {
       console.log('🔍 Status check for generation:', generationId)
-      const status = generationStore.get(generationId)
+      const status = await getGenerationStatus(generationId)
 
       if (!status) {
         return new Response(
@@ -547,7 +588,8 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: true,
-          ...status
+          ...status,
+          downloadUrl: status.fileUrl  // Add downloadUrl for frontend compatibility
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -568,12 +610,12 @@ serve(async (req) => {
     // Generate unique ID
     const newGenerationId = crypto.randomUUID()
 
-    // Store initial status
-    generationStore.set(newGenerationId, {
+    // Store initial status in database
+    await setGenerationStatus({
       generationId: newGenerationId,
       status: 'pending',
       progress: 0
-    })
+    }, request.organization_id || 'default', { outline: request.approved_outline })
 
     // Start generation in background (fire and forget)
     generatePresentation(newGenerationId, request).catch(error => {
