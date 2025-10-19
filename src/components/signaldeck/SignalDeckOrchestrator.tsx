@@ -48,19 +48,23 @@ export function SignalDeckOrchestrator({
 
     const pollStatus = async () => {
       try {
-        const response = await fetch(`/api/supabase/functions/signaldeck-presentation/status/${generationId}`)
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co'
+        const response = await fetch(`${supabaseUrl}/functions/v1/signaldeck-presentation?generationId=${generationId}`)
         const data = await response.json()
+
+        console.log('📊 Poll response:', data)
 
         if (data.status === 'completed') {
           setStatus('complete')
-          setFileUrl(data.fileUrl)
+          setFileUrl(data.fileUrl || data.downloadUrl)
           setProgress(100)
 
           // Auto-save to MemoryVault
-          if (outline && data.fileUrl) {
+          const downloadUrl = data.fileUrl || data.downloadUrl
+          if (outline && downloadUrl) {
             await saveContent({
               title: outline.topic,
-              content: data.fileUrl,
+              content: downloadUrl,
               content_type: 'signaldeck',
               folder: 'presentations',
               metadata: {

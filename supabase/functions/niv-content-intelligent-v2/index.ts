@@ -794,6 +794,7 @@ function updateConversationState(
 }
 
 serve(async (req) => {
+  // ALWAYS return CORS headers, even on crashes
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }

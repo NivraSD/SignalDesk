@@ -1,802 +1,802 @@
 [
 {
-"event_message": "🔍 Status check for generation: e29be37c-154f-44a4-94f1-f2cfb6df49d8\n",
+"event_message": "✅ Presentation generation complete!\n",
 "event_type": "Log",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "7e6e1eb9-adba-472b-967b-c7805a5da37e",
+"id": "7f7dee78-c9ac-4908-8bc7-07c18476983a",
 "level": "info",
-"timestamp": 1760901398490000
+"timestamp": 1760903523057000
+},
+{
+"event_message": "🔍 Status check for generation: 92a8040c-3683-4501-87f6-59193f69fab4\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "5cfcdef7-2dd8-4e60-a5f0-4eae9477ab0f",
+"level": "info",
+"timestamp": 1760903523007000
 },
 {
 "event_message": "Listening on http://localhost:9999/\n",
 "event_type": "Log",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "9510a4e6-3b36-4517-83a8-254be84d473d",
+"id": "3429aa0b-e3cb-483b-8d4a-9f68f61209d7",
 "level": "info",
-"timestamp": 1760901398487000
+"timestamp": 1760903523004000
 },
 {
 "event_message": "booted (time: 29ms)",
 "event_type": "Boot",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "22715994-0396-4ad6-a952-1a75c8a3fa1f",
+"id": "0a197aee-2a0a-46b9-8254-632e798258b1",
 "level": "log",
-"timestamp": 1760901398481000
+"timestamp": 1760903522999000
 },
 {
-"event_message": "Builder API error: {\"success\":false,\"error\":\"Cannot read properties of undefined (reading 'length')\",\"details\":\"TypeError: Cannot read properties of undefined (reading 'length')\\n at /var/task/.next/server/app/api/build-presentation/route.js:38:18856\\n at new Promise (<anonymous>)\\n at /var/task/.next/server/app/api/build-presentation/route.js:38:1935\\n at Generator.next (<anonymous>)\\n at /var/task/.next/server/app/api/build-presentation/route.js:1:82567\\n at new Promise (<anonymous>)\\n at M (/var/task/.next/server/app/api/build-presentation/route.js:1:82316)\\n at /var/task/.next/server/app/api/build-presentation/route.js:38:1876\\n at /var/task/.next/server/app/api/build-presentation/route.js:38:29676\\n at Array.forEach (<anonymous>)\"}\n",
+"event_message": "✅ Uploaded to storage: 7a2835cb-11ee-4512-acc3-b6caf8eb03ff/presentation-7a2835cb-11ee-4512-acc3-b6caf8eb03ff-1760903522480.pptx\n",
 "event_type": "Log",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "14a13824-22f3-4004-84b9-02750b7469d2",
-"level": "error",
-"timestamp": 1760901396126000
-},
-{
-"event_message": "❌ Build presentation error: Error: Builder API failed: 500 {\"success\":false,\"error\":\"Cannot read properties of undefined (reading 'length')\",\"details\":\"TypeError: Cannot read properties of undefined (reading 'length')\\n at /var/task/.next/server/app/api/build-presentation/route.js:38:18856\\n at new Promise (<anonymous>)\\n at /var/task/.next/server/app/api/build-presentation/route.js:38:1935\\n at Generator.next (<anonymous>)\\n at /var/task/.next/server/app/api/build-presentation/route.js:1:82567\\n at new Promise (<anonymous>)\\n at M (/var/task/.next/server/app/api/build-presentation/route.js:1:82316)\\n at /var/task/.next/server/app/api/build-presentation/route.js:38:1876\\n at /var/task/.next/server/app/api/build-presentation/route.js:38:29676\\n at Array.forEach (<anonymous>)\"}\n at buildPresentation (file:///Users/jonathanliebowitz/Desktop/signaldesk-v3/supabase/functions/signaldeck-presentation/index.ts:301:13)\n at eventLoopTick (ext:core/01_core.js:175:7)\n at async generatePresentation (file:///Users/jonathanliebowitz/Desktop/signaldesk-v3/supabase/functions/signaldeck-presentation/index.ts:428:22)\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "caa085b6-ecb1-4906-9acb-e1dcf7badb0a",
-"level": "error",
-"timestamp": 1760901396126000
-},
-{
-"event_message": "❌ Generation error: Error: Builder API failed: 500 {\"success\":false,\"error\":\"Cannot read properties of undefined (reading 'length')\",\"details\":\"TypeError: Cannot read properties of undefined (reading 'length')\\n at /var/task/.next/server/app/api/build-presentation/route.js:38:18856\\n at new Promise (<anonymous>)\\n at /var/task/.next/server/app/api/build-presentation/route.js:38:1935\\n at Generator.next (<anonymous>)\\n at /var/task/.next/server/app/api/build-presentation/route.js:1:82567\\n at new Promise (<anonymous>)\\n at M (/var/task/.next/server/app/api/build-presentation/route.js:1:82316)\\n at /var/task/.next/server/app/api/build-presentation/route.js:38:1876\\n at /var/task/.next/server/app/api/build-presentation/route.js:38:29676\\n at Array.forEach (<anonymous>)\"}\n at buildPresentation (file:///Users/jonathanliebowitz/Desktop/signaldesk-v3/supabase/functions/signaldeck-presentation/index.ts:301:13)\n at eventLoopTick (ext:core/01_core.js:175:7)\n at async generatePresentation (file:///Users/jonathanliebowitz/Desktop/signaldesk-v3/supabase/functions/signaldeck-presentation/index.ts:428:22)\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "de7212e6-68c3-4586-ba20-de1db6e514ad",
-"level": "error",
-"timestamp": 1760901396126000
-},
-{
-"event_message": "🏗️ Building PowerPoint presentation\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "8c3eff83-9ec6-4a63-ada2-e7a70f7ff027",
+"id": "f0fa772e-542f-4fa8-a21a-27dc400f9c78",
 "level": "info",
-"timestamp": 1760901396020000
+"timestamp": 1760903522864000
 },
 {
-"event_message": "📤 Calling builder API: https://signaldesk-v3.vercel.app/api/build-presentation\n",
+"event_message": "💾 Saving to content_library\n",
 "event_type": "Log",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "8d378757-7158-48c9-8769-57ff7cc3441a",
+"id": "041c4e8c-b902-419c-baf8-a48aaa7b20a2",
 "level": "info",
-"timestamp": 1760901396020000
+"timestamp": 1760903522864000
+},
+{
+"event_message": "Step 4: Saving metadata...\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "1e9619ba-e9bc-45e2-b85e-2d529e1cb42e",
+"level": "info",
+"timestamp": 1760903522864000
+},
+{
+"event_message": "Step 3: Uploading...\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "f94ad3bb-cc77-4679-bfab-5cc634e75afe",
+"level": "info",
+"timestamp": 1760903522577000
+},
+{
+"event_message": "📤 Uploading presentation to Supabase Storage\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "b2bc3d93-4191-4f46-90bd-6015638f370a",
+"level": "info",
+"timestamp": 1760903522577000
+},
+{
+"event_message": "✅ PowerPoint built: presentation-7a2835cb-11ee-4512-acc3-b6caf8eb03ff-1760903522480.pptx\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "6533cb7f-88fe-44a7-9bc2-be125a341d61",
+"level": "info",
+"timestamp": 1760903522496000
 },
 {
 "event_message": "Step 2: Building PowerPoint...\n",
 "event_type": "Log",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "4bc86823-9eb5-40dd-a06b-97ac519cec8c",
+"id": "71a9eebb-879d-4da8-bb2e-cda2edaed40a",
 "level": "info",
-"timestamp": 1760901396020000
-},
-{
-"event_message": "Step 1.5: Processing visual suggestions...\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "aebc47de-2c40-4283-a4ed-469da7a065e5",
-"level": "info",
-"timestamp": 1760901395978000
-},
-{
-"event_message": "✅ Valid presentation data with 14 slides\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "7f856731-6e69-4690-9f10-9c09ffc98eda",
-"level": "info",
-"timestamp": 1760901395929000
-},
-{
-"event_message": "📝 Parsing JSON response...\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "a0964917-d6ff-4c72-8e2b-7aeae8c66af1",
-"level": "info",
-"timestamp": 1760901395928000
-},
-{
-"event_message": "🔍 Status check for generation: e29be37c-154f-44a4-94f1-f2cfb6df49d8\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "21503e4f-64fc-485f-b34e-266118849e46",
-"level": "info",
-"timestamp": 1760901395474000
-},
-{
-"event_message": "🔍 Status check for generation: e29be37c-154f-44a4-94f1-f2cfb6df49d8\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "3c5fa339-e045-473e-a0ba-ef38c84a898f",
-"level": "info",
-"timestamp": 1760901395474000
-},
-{
-"event_message": "🔍 Status check for generation: e29be37c-154f-44a4-94f1-f2cfb6df49d8\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "9de87aea-fc32-47b2-ad63-ee247342b03d",
-"level": "info",
-"timestamp": 1760901395474000
-},
-{
-"event_message": "Listening on http://localhost:9999/\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "f8d16236-7128-4e0a-8d05-61c7e366e0c6",
-"level": "info",
-"timestamp": 1760901395470000
-},
-{
-"event_message": "Listening on http://localhost:9999/\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "c4e4c3df-4b3d-4240-be88-baaafaf5b5b9",
-"level": "info",
-"timestamp": 1760901395470000
-},
-{
-"event_message": "Listening on http://localhost:9999/\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "8af35bd5-2209-45cc-ab75-429820185cc3",
-"level": "info",
-"timestamp": 1760901395470000
-},
-{
-"event_message": "booted (time: 29ms)",
-"event_type": "Boot",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "03010948-58a6-4988-9428-8e0a674df658",
-"level": "log",
-"timestamp": 1760901395465000
-},
-{
-"event_message": "booted (time: 29ms)",
-"event_type": "Boot",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "cd99fc02-3fc3-4783-b256-b7b38d878698",
-"level": "log",
-"timestamp": 1760901395465000
-},
-{
-"event_message": "booted (time: 29ms)",
-"event_type": "Boot",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "737eda23-fb9e-4cf9-93c6-e6ec7b6460a2",
-"level": "log",
-"timestamp": 1760901395465000
-},
-{
-"event_message": "🔍 Status check for generation: e29be37c-154f-44a4-94f1-f2cfb6df49d8\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "20aff81f-45a4-415b-b4b7-0bb4d3753b8f",
-"level": "info",
-"timestamp": 1760901392488000
-},
-{
-"event_message": "Listening on http://localhost:9999/\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "eb24984d-e298-46fd-b068-e8327bb92a9b",
-"level": "info",
-"timestamp": 1760901392478000
-},
-{
-"event_message": "booted (time: 30ms)",
-"event_type": "Boot",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "6345435c-022e-4ce8-b61c-b395bb51810d",
-"level": "log",
-"timestamp": 1760901392472000
-},
-{
-"event_message": "🔍 Status check for generation: e29be37c-154f-44a4-94f1-f2cfb6df49d8\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "341c590c-aa9f-4b6e-b1b3-c428885098af",
-"level": "info",
-"timestamp": 1760901389438000
-},
-{
-"event_message": "🔍 Status check for generation: e29be37c-154f-44a4-94f1-f2cfb6df49d8\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "c03bd548-cb77-4a28-acb2-e4b0c3eebddf",
-"level": "info",
-"timestamp": 1760901386519000
-},
-{
-"event_message": "Listening on http://localhost:9999/\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "aaf942ae-036d-42f6-b9f9-f356670136de",
-"level": "info",
-"timestamp": 1760901386516000
-},
-{
-"event_message": "booted (time: 29ms)",
-"event_type": "Boot",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "06653580-aba9-4fc2-80d4-a45a07042751",
-"level": "log",
-"timestamp": 1760901386510000
-},
-{
-"event_message": "🔍 Status check for generation: e29be37c-154f-44a4-94f1-f2cfb6df49d8\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "ef3a2909-910a-437e-b20a-ba1a35dedf27",
-"level": "info",
-"timestamp": 1760901383450000
-},
-{
-"event_message": "🔍 Status check for generation: e29be37c-154f-44a4-94f1-f2cfb6df49d8\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "4d0fc29c-2d30-4477-b64c-b0046cda70c4",
-"level": "info",
-"timestamp": 1760901380459000
-},
-{
-"event_message": "🔍 Status check for generation: e29be37c-154f-44a4-94f1-f2cfb6df49d8\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "02d88551-8b8c-4f45-a4db-d424f23a74df",
-"level": "info",
-"timestamp": 1760901377515000
-},
-{
-"event_message": "Listening on http://localhost:9999/\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "453606fe-0034-4681-9193-cf38cc35b69a",
-"level": "info",
-"timestamp": 1760901377506000
-},
-{
-"event_message": "booted (time: 30ms)",
-"event_type": "Boot",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "f8faa84a-17c9-49c9-9d70-10a19797ae8e",
-"level": "log",
-"timestamp": 1760901377500000
-},
-{
-"event_message": "🔍 Status check for generation: e29be37c-154f-44a4-94f1-f2cfb6df49d8\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "e9729693-e1a4-4bea-ad41-7fe235f31c88",
-"level": "info",
-"timestamp": 1760901374487000
-},
-{
-"event_message": "Listening on http://localhost:9999/\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "d9403071-c61d-498c-b00c-e301774abbcf",
-"level": "info",
-"timestamp": 1760901374483000
-},
-{
-"event_message": "booted (time: 42ms)",
-"event_type": "Boot",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "e8742185-4c12-4171-b6f2-83a8ee015813",
-"level": "log",
-"timestamp": 1760901374474000
-},
-{
-"event_message": "🔍 Status check for generation: e29be37c-154f-44a4-94f1-f2cfb6df49d8\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "849d6ca4-f16c-464d-b1b9-71bbd18385eb",
-"level": "info",
-"timestamp": 1760901371466000
-},
-{
-"event_message": "Listening on http://localhost:9999/\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "6048773e-512f-4771-97fc-3da56cc0f911",
-"level": "info",
-"timestamp": 1760901371463000
-},
-{
-"event_message": "booted (time: 28ms)",
-"event_type": "Boot",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "d84c2daa-fb22-400d-8dc9-94f49c72c51d",
-"level": "log",
-"timestamp": 1760901371458000
-},
-{
-"event_message": "🔍 Status check for generation: e29be37c-154f-44a4-94f1-f2cfb6df49d8\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "1b3f9a63-f28d-4217-9e1c-51534b73a30b",
-"level": "info",
-"timestamp": 1760901368482000
-},
-{
-"event_message": "Listening on http://localhost:9999/\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "bf1e9fec-df9c-443e-9621-be2cd7459269",
-"level": "info",
-"timestamp": 1760901368479000
-},
-{
-"event_message": "booted (time: 28ms)",
-"event_type": "Boot",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "1e1fc1f9-9120-473d-845e-c3cfd50cc07c",
-"level": "log",
-"timestamp": 1760901368474000
-},
-{
-"event_message": "❌ Build presentation error: Error: Builder API failed: 500 {\"success\":false,\"error\":\"Cannot read properties of undefined (reading 'length')\",\"details\":\"TypeError: Cannot read properties of undefined (reading 'length')\\n at /var/task/.next/server/app/api/build-presentation/route.js:38:18856\\n at new Promise (<anonymous>)\\n at /var/task/.next/server/app/api/build-presentation/route.js:38:1935\\n at Generator.next (<anonymous>)\\n at /var/task/.next/server/app/api/build-presentation/route.js:1:82567\\n at new Promise (<anonymous>)\\n at M (/var/task/.next/server/app/api/build-presentation/route.js:1:82316)\\n at /var/task/.next/server/app/api/build-presentation/route.js:38:1876\\n at /var/task/.next/server/app/api/build-presentation/route.js:38:29676\\n at Array.forEach (<anonymous>)\"}\n at buildPresentation (file:///Users/jonathanliebowitz/Desktop/signaldesk-v3/supabase/functions/signaldeck-presentation/index.ts:301:13)\n at eventLoopTick (ext:core/01_core.js:175:7)\n at async generatePresentation (file:///Users/jonathanliebowitz/Desktop/signaldesk-v3/supabase/functions/signaldeck-presentation/index.ts:428:22)\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "6d6f7d6c-4263-4c13-a828-9a07385267fd",
-"level": "error",
-"timestamp": 1760901367849000
-},
-{
-"event_message": "❌ Generation error: Error: Builder API failed: 500 {\"success\":false,\"error\":\"Cannot read properties of undefined (reading 'length')\",\"details\":\"TypeError: Cannot read properties of undefined (reading 'length')\\n at /var/task/.next/server/app/api/build-presentation/route.js:38:18856\\n at new Promise (<anonymous>)\\n at /var/task/.next/server/app/api/build-presentation/route.js:38:1935\\n at Generator.next (<anonymous>)\\n at /var/task/.next/server/app/api/build-presentation/route.js:1:82567\\n at new Promise (<anonymous>)\\n at M (/var/task/.next/server/app/api/build-presentation/route.js:1:82316)\\n at /var/task/.next/server/app/api/build-presentation/route.js:38:1876\\n at /var/task/.next/server/app/api/build-presentation/route.js:38:29676\\n at Array.forEach (<anonymous>)\"}\n at buildPresentation (file:///Users/jonathanliebowitz/Desktop/signaldesk-v3/supabase/functions/signaldeck-presentation/index.ts:301:13)\n at eventLoopTick (ext:core/01_core.js:175:7)\n at async generatePresentation (file:///Users/jonathanliebowitz/Desktop/signaldesk-v3/supabase/functions/signaldeck-presentation/index.ts:428:22)\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "ff51f3e2-54df-454c-9cd4-3b092e1c78fb",
-"level": "error",
-"timestamp": 1760901367849000
-},
-{
-"event_message": "Builder API error: {\"success\":false,\"error\":\"Cannot read properties of undefined (reading 'length')\",\"details\":\"TypeError: Cannot read properties of undefined (reading 'length')\\n at /var/task/.next/server/app/api/build-presentation/route.js:38:18856\\n at new Promise (<anonymous>)\\n at /var/task/.next/server/app/api/build-presentation/route.js:38:1935\\n at Generator.next (<anonymous>)\\n at /var/task/.next/server/app/api/build-presentation/route.js:1:82567\\n at new Promise (<anonymous>)\\n at M (/var/task/.next/server/app/api/build-presentation/route.js:1:82316)\\n at /var/task/.next/server/app/api/build-presentation/route.js:38:1876\\n at /var/task/.next/server/app/api/build-presentation/route.js:38:29676\\n at Array.forEach (<anonymous>)\"}\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "a106b12c-7441-4ff4-99fc-f6769a5d5bd8",
-"level": "error",
-"timestamp": 1760901367847000
+"timestamp": 1760903522377000
 },
 {
 "event_message": "📤 Calling builder API: https://signaldesk-v3.vercel.app/api/build-presentation\n",
 "event_type": "Log",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "8949883f-3f21-49ca-b29e-60c56e1675cb",
+"id": "edcb022f-78d1-4496-9629-f257e13a5e94",
 "level": "info",
-"timestamp": 1760901367741000
-},
-{
-"event_message": "Step 2: Building PowerPoint...\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "a3645efc-0adc-492f-b837-809de03589f8",
-"level": "info",
-"timestamp": 1760901367741000
+"timestamp": 1760903522377000
 },
 {
 "event_message": "🏗️ Building PowerPoint presentation\n",
 "event_type": "Log",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "8c6aba18-d4c8-47c7-a517-50a017c9ff9e",
+"id": "a675170a-4a59-4767-a2ee-12c06306a089",
 "level": "info",
-"timestamp": 1760901367741000
+"timestamp": 1760903522377000
+},
+{
+"event_message": "⚠️ AI image generation skipped (Vertex AI unavailable)\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "8d05e4b4-94a3-47c0-bc57-4cbaf9527562",
+"level": "info",
+"timestamp": 1760903522293000
+},
+{
+"event_message": "Vertex AI error: Internal Server Error\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "96f69344-e5ad-42b1-a522-54ecc29c0a97",
+"level": "error",
+"timestamp": 1760903522293000
+},
+{
+"event_message": "Vertex AI error: Internal Server Error\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "29eaca97-ed76-40bd-ba96-cea3c7c47148",
+"level": "error",
+"timestamp": 1760903522158000
+},
+{
+"event_message": "⚠️ AI image generation skipped (Vertex AI unavailable)\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "ae90c08f-29d3-4365-a1d7-fdee7457a4ab",
+"level": "info",
+"timestamp": 1760903522158000
+},
+{
+"event_message": "🎨 Generating AI image for: Success Metrics & KPIs\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "b0b63347-c644-4d36-91a6-42f4a7242546",
+"level": "info",
+"timestamp": 1760903522158000
+},
+{
+"event_message": "🎨 Generating AI image with Vertex AI: Dashboard mockup showing key creator metrics and targets\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "afe4522f-bc69-4af1-822b-3e33fbf7400d",
+"level": "info",
+"timestamp": 1760903522158000
+},
+{
+"event_message": "Vertex AI error: Internal Server Error\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "ced7b6dc-7d6a-46dc-b9d9-25a4010f407c",
+"level": "error",
+"timestamp": 1760903521972000
+},
+{
+"event_message": "⚠️ AI image generation skipped (Vertex AI unavailable)\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "4530be8c-b556-449d-8a3f-a9ba9a7affa4",
+"level": "info",
+"timestamp": 1760903521972000
+},
+{
+"event_message": "🎨 Generating AI image with Vertex AI: Mockup of creator community platform interface\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "86e8b0f9-e0bf-45b9-9213-1d3be1f063f2",
+"level": "info",
+"timestamp": 1760903521972000
+},
+{
+"event_message": "🎨 Generating AI image for: Phase 2: Community & Features\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "9460d4ef-2a90-4753-b28d-cb21d702200d",
+"level": "info",
+"timestamp": 1760903521972000
 },
 {
 "event_message": "Step 1.5: Processing visual suggestions...\n",
 "event_type": "Log",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "c1dd6840-77bc-45cc-aa01-39790a0faf3f",
+"id": "c75854f6-9d4b-4829-a431-eeb3d6705503",
 "level": "info",
-"timestamp": 1760901367665000
+"timestamp": 1760903521821000
 },
 {
-"event_message": "✅ Valid presentation data with 14 slides\n",
+"event_message": "🎨 Generating AI image for: Sora 2: Our Competitive Advantage\n",
 "event_type": "Log",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "571d8361-e3f2-46a2-b892-1704c23e813d",
+"id": "32c78c12-a517-43cc-8299-a417836e66a0",
 "level": "info",
-"timestamp": 1760901367576000
+"timestamp": 1760903521821000
+},
+{
+"event_message": "🎨 Generating AI image with Vertex AI: Side-by-side comparison of Sora 2 output quality vs competitors\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "ddccf534-1aec-41c9-827a-eb889716cce1",
+"level": "info",
+"timestamp": 1760903521821000
 },
 {
 "event_message": "📝 Parsing JSON response...\n",
 "event_type": "Log",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "2c0bd48a-4add-4a36-8e0f-2bed08cbad2e",
+"id": "ab676adc-e5f4-48ce-b5bd-cc3fa07a7d2e",
 "level": "info",
-"timestamp": 1760901367576000
+"timestamp": 1760903521740000
 },
 {
-"event_message": "🔍 Status check for generation: e29be37c-154f-44a4-94f1-f2cfb6df49d8\n",
+"event_message": "✅ Valid presentation data with 14 slides\n",
 "event_type": "Log",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "ac69eb82-4f46-4208-b7a3-3d3103187905",
+"id": "658f1495-1653-483e-a6d0-46d8d2427cc7",
 "level": "info",
-"timestamp": 1760901365472000
+"timestamp": 1760903521740000
+},
+{
+"event_message": "🔍 Status check for generation: 92a8040c-3683-4501-87f6-59193f69fab4\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "88529fa1-240b-4c44-a8d2-c2228636c44f",
+"level": "info",
+"timestamp": 1760903519954000
 },
 {
 "event_message": "Listening on http://localhost:9999/\n",
 "event_type": "Log",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "7f8a55e8-6a2c-40bd-a3ec-aaf5eae09682",
+"id": "b31d073d-ad59-4672-b5ad-3e1ee1eae720",
 "level": "info",
-"timestamp": 1760901365469000
+"timestamp": 1760903519952000
 },
 {
 "event_message": "booted (time: 29ms)",
 "event_type": "Boot",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "d950d3b9-88b6-4360-9441-28aa0d7e557f",
+"id": "fda5f735-fc2c-4222-ba51-62d7a67a258d",
 "level": "log",
-"timestamp": 1760901365463000
+"timestamp": 1760903519946000
 },
 {
-"event_message": "🔍 Status check for generation: e29be37c-154f-44a4-94f1-f2cfb6df49d8\n",
+"event_message": "🔍 Status check for generation: 92a8040c-3683-4501-87f6-59193f69fab4\n",
 "event_type": "Log",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "35b06111-c8c0-43e4-bed1-45864de1a49d",
+"id": "8f54a2e5-20b4-4a2d-8894-6f737dd63d1b",
 "level": "info",
-"timestamp": 1760901362483000
+"timestamp": 1760903516957000
 },
 {
 "event_message": "Listening on http://localhost:9999/\n",
 "event_type": "Log",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "5ce4b16d-479f-4aff-b0f0-ac4d10b694ff",
+"id": "9758cba8-1c60-435c-a434-51ef5166fb76",
 "level": "info",
-"timestamp": 1760901362480000
+"timestamp": 1760903516953000
+},
+{
+"event_message": "booted (time: 30ms)",
+"event_type": "Boot",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "a3e8082a-e68c-4f1d-a2bb-15e4cbb555ec",
+"level": "log",
+"timestamp": 1760903516948000
+},
+{
+"event_message": "✅ Presentation generation complete!\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "dfc064d9-bf89-4a96-88d6-34b35fc2265f",
+"level": "info",
+"timestamp": 1760903513712000
+},
+{
+"event_message": "🔍 Status check for generation: 92a8040c-3683-4501-87f6-59193f69fab4\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "785a4aea-b2f8-4876-b694-d0eb328f3ee6",
+"level": "info",
+"timestamp": 1760903513656000
+},
+{
+"event_message": "Step 4: Saving metadata...\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "5e0b9117-e4a9-424d-bea0-f970525752eb",
+"level": "info",
+"timestamp": 1760903513414000
+},
+{
+"event_message": "💾 Saving to content_library\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "30e9794e-5711-456a-97d6-84a5eb4edd08",
+"level": "info",
+"timestamp": 1760903513414000
+},
+{
+"event_message": "✅ Uploaded to storage: OpenAI/presentation-OpenAI-1760903512659.pptx\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "b3ffc912-f2bf-4b1d-849f-c54f47fa9607",
+"level": "info",
+"timestamp": 1760903513413000
+},
+{
+"event_message": "Step 3: Uploading...\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "85f3c12e-a2ef-47ba-8ee5-47b24ee176af",
+"level": "info",
+"timestamp": 1760903512779000
+},
+{
+"event_message": "📤 Uploading presentation to Supabase Storage\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "380fd3f5-1e96-4772-9058-244202d32ba2",
+"level": "info",
+"timestamp": 1760903512779000
+},
+{
+"event_message": "✅ PowerPoint built: presentation-OpenAI-1760903512659.pptx\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "f64088e5-1637-4e79-9e71-ed9a645247f9",
+"level": "info",
+"timestamp": 1760903512680000
+},
+{
+"event_message": "🏗️ Building PowerPoint presentation\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "dfb866b7-a8f3-48e6-8880-fff5a7853f00",
+"level": "info",
+"timestamp": 1760903511776000
+},
+{
+"event_message": "📤 Calling builder API: https://signaldesk-v3.vercel.app/api/build-presentation\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "8af68e89-eee5-4e71-b818-c07e80992ec5",
+"level": "info",
+"timestamp": 1760903511776000
+},
+{
+"event_message": "Step 2: Building PowerPoint...\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "520a6f36-0101-41bb-96c9-88a2ddb68786",
+"level": "info",
+"timestamp": 1760903511776000
+},
+{
+"event_message": "⚠️ AI image generation skipped (Vertex AI unavailable)\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "ae66cc23-6877-4056-b699-61b09ddf6fb4",
+"level": "info",
+"timestamp": 1760903511637000
+},
+{
+"event_message": "Vertex AI error: Internal Server Error\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "613620a5-f8da-4c64-a5a1-1a97fa8e9083",
+"level": "error",
+"timestamp": 1760903511637000
+},
+{
+"event_message": "⚠️ AI image generation skipped (Vertex AI unavailable)\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "9530c375-1321-489b-aa7d-67e91ca6b7d4",
+"level": "info",
+"timestamp": 1760903511493000
+},
+{
+"event_message": "🎨 Generating AI image with Vertex AI: Dashboard mockup showing key creator metrics and targets\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "805a06ec-29e1-4e88-a896-67703e934fb9",
+"level": "info",
+"timestamp": 1760903511493000
+},
+{
+"event_message": "Vertex AI error: Internal Server Error\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "a92263c8-193c-4ba1-9dea-06f34bb2ece3",
+"level": "error",
+"timestamp": 1760903511493000
+},
+{
+"event_message": "🎨 Generating AI image for: Success Metrics & KPIs\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "700085cc-92be-4f76-9087-9daa1070e725",
+"level": "info",
+"timestamp": 1760903511493000
+},
+{
+"event_message": "Step 1.5: Processing visual suggestions...\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "c2701e88-218e-47d0-8f8a-af53dac8b7a5",
+"level": "info",
+"timestamp": 1760903511362000
+},
+{
+"event_message": "🎨 Generating AI image for: Phase 2: Community & Features\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "221ca115-848a-4671-9fa3-527e683df6b8",
+"level": "info",
+"timestamp": 1760903511362000
+},
+{
+"event_message": "🎨 Generating AI image with Vertex AI: Mockup of creator community platform interface\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "53f2f58d-0c65-4d80-a662-77a4719a0d23",
+"level": "info",
+"timestamp": 1760903511362000
+},
+{
+"event_message": "✅ Valid presentation data with 14 slides\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "d39ad5e4-d780-4ef7-acb9-6cecfa88ed8b",
+"level": "info",
+"timestamp": 1760903511236000
+},
+{
+"event_message": "📝 Parsing JSON response...\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "e72bd2c2-d7da-4c3f-8b27-c8e1cf463e60",
+"level": "info",
+"timestamp": 1760903511236000
+},
+{
+"event_message": "🔍 Status check for generation: 92a8040c-3683-4501-87f6-59193f69fab4\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "8a90cd61-aa5a-40a4-ad4f-bdfd15dc0b3b",
+"level": "info",
+"timestamp": 1760903510705000
+},
+{
+"event_message": "Listening on http://localhost:9999/\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "7cd8afed-9d6f-45a3-933b-902e7910bdad",
+"level": "info",
+"timestamp": 1760903510702000
 },
 {
 "event_message": "booted (time: 29ms)",
 "event_type": "Boot",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "1db52ad4-b12c-4179-a22f-c024270e90bc",
+"id": "821e0471-9f84-4377-9be2-0756d099ef9f",
 "level": "log",
-"timestamp": 1760901362474000
+"timestamp": 1760903510696000
 },
 {
-"event_message": "🔍 Status check for generation: e29be37c-154f-44a4-94f1-f2cfb6df49d8\n",
+"event_message": "🔍 Status check for generation: 92a8040c-3683-4501-87f6-59193f69fab4\n",
 "event_type": "Log",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "e302acba-84f4-4a29-9f2b-45e77d146237",
+"id": "a27a8275-ff0e-4448-b01a-747ed9cdcd24",
 "level": "info",
-"timestamp": 1760901359486000
+"timestamp": 1760903507884000
 },
 {
 "event_message": "Listening on http://localhost:9999/\n",
 "event_type": "Log",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "03d63e57-6103-4488-8358-8cef2d626eaf",
+"id": "e2117fb8-29da-422e-84e2-04a2444cb093",
 "level": "info",
-"timestamp": 1760901359481000
+"timestamp": 1760903507881000
 },
 {
-"event_message": "booted (time: 40ms)",
+"event_message": "booted (time: 30ms)",
 "event_type": "Boot",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "13a1a5f7-8c5c-46c8-9597-60a8c379d89d",
+"id": "5b8f6259-97f4-46c5-95c5-5ea2a44c19bc",
 "level": "log",
-"timestamp": 1760901359473000
+"timestamp": 1760903507875000
 },
 {
-"event_message": "🔍 Status check for generation: e29be37c-154f-44a4-94f1-f2cfb6df49d8\n",
+"event_message": "🔍 Status check for generation: 92a8040c-3683-4501-87f6-59193f69fab4\n",
 "event_type": "Log",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "b4b7980a-3002-4696-b791-4b843de9e065",
+"id": "f6880559-7a52-4c32-a5ca-e8940e553013",
 "level": "info",
-"timestamp": 1760901356452000
-},
-{
-"event_message": "🔍 Status check for generation: e29be37c-154f-44a4-94f1-f2cfb6df49d8\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "049cac09-ed5b-4f87-b970-34f5cf1084ba",
-"level": "info",
-"timestamp": 1760901353467000
+"timestamp": 1760903504737000
 },
 {
 "event_message": "Listening on http://localhost:9999/\n",
 "event_type": "Log",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "e3438a51-d0b6-4d51-b709-c2386237c512",
+"id": "03b2b8b5-ceb4-4ed5-8bba-f2b8fa92d1ea",
 "level": "info",
-"timestamp": 1760901353464000
-},
-{
-"event_message": "booted (time: 29ms)",
-"event_type": "Boot",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "567ef027-05da-43b9-b755-541661cbac11",
-"level": "log",
-"timestamp": 1760901353459000
-},
-{
-"event_message": "🔍 Status check for generation: e29be37c-154f-44a4-94f1-f2cfb6df49d8\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "5f5bed9f-5a35-4608-8ded-769046984353",
-"level": "info",
-"timestamp": 1760901350469000
-},
-{
-"event_message": "Listening on http://localhost:9999/\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "ce19d249-8caf-46b4-8612-8ce891a803e3",
-"level": "info",
-"timestamp": 1760901350466000
-},
-{
-"event_message": "booted (time: 28ms)",
-"event_type": "Boot",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "f859c037-be80-456f-930b-f1148d266b5c",
-"level": "log",
-"timestamp": 1760901350460000
-},
-{
-"event_message": "🔍 Status check for generation: e29be37c-154f-44a4-94f1-f2cfb6df49d8\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "8b1217f1-2705-4a68-bf75-bca7a8ee6e3c",
-"level": "info",
-"timestamp": 1760901347483000
-},
-{
-"event_message": "Listening on http://localhost:9999/\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "97074127-3855-42d7-9c85-e1a87f7089fa",
-"level": "info",
-"timestamp": 1760901347479000
-},
-{
-"event_message": "booted (time: 37ms)",
-"event_type": "Boot",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "8fa0ffa5-b739-4591-97cb-375ab1c9caab",
-"level": "log",
-"timestamp": 1760901347472000
-},
-{
-"event_message": "🔍 Status check for generation: e29be37c-154f-44a4-94f1-f2cfb6df49d8\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "f8a8da3d-4e96-452d-8935-dd631fa6240d",
-"level": "info",
-"timestamp": 1760901344490000
-},
-{
-"event_message": "Listening on http://localhost:9999/\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "c76c23c8-3d66-4e85-b55e-f24e4403e09b",
-"level": "info",
-"timestamp": 1760901344486000
+"timestamp": 1760903504734000
 },
 {
 "event_message": "booted (time: 38ms)",
 "event_type": "Boot",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "a2a1b029-0b5f-4eae-9edd-a22b1b12869b",
+"id": "b712ee76-64b6-4938-b6ef-11741279f616",
 "level": "log",
-"timestamp": 1760901344478000
+"timestamp": 1760903504727000
 },
 {
-"event_message": "🔍 Status check for generation: e29be37c-154f-44a4-94f1-f2cfb6df49d8\n",
+"event_message": "🔍 Status check for generation: 92a8040c-3683-4501-87f6-59193f69fab4\n",
 "event_type": "Log",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "65043800-b726-461f-8ca4-1aafe6a59bb1",
+"id": "abc2235a-b608-4503-a3be-db2c61411183",
 "level": "info",
-"timestamp": 1760901341467000
+"timestamp": 1760903501667000
+},
+{
+"event_message": "🔍 Status check for generation: 92a8040c-3683-4501-87f6-59193f69fab4\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "aa4f4483-97e1-40e1-b1e9-e28af0a9dac5",
+"level": "info",
+"timestamp": 1760903498687000
 },
 {
 "event_message": "Listening on http://localhost:9999/\n",
 "event_type": "Log",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "9f67d555-7245-4d30-8d3f-8fe2e4707acc",
+"id": "a968295e-5f4e-4b26-ac97-e272e8cdc418",
 "level": "info",
-"timestamp": 1760901341463000
+"timestamp": 1760903498684000
 },
 {
 "event_message": "booted (time: 29ms)",
 "event_type": "Boot",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "894e6d1e-a55b-4e61-909c-2fbd19728506",
+"id": "1a13cfd9-0fc5-4b30-8afc-a958e05336f3",
 "level": "log",
-"timestamp": 1760901341457000
+"timestamp": 1760903498679000
 },
 {
-"event_message": "🔍 Status check for generation: e29be37c-154f-44a4-94f1-f2cfb6df49d8\n",
+"event_message": "🔍 Status check for generation: 92a8040c-3683-4501-87f6-59193f69fab4\n",
 "event_type": "Log",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "822e7ccc-494f-45ca-a3b2-7c1e9f056035",
+"id": "db8d96be-6333-40c7-b3d0-f20bf124a800",
 "level": "info",
-"timestamp": 1760901338473000
+"timestamp": 1760903495700000
 },
 {
 "event_message": "Listening on http://localhost:9999/\n",
 "event_type": "Log",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "b19c26e6-99bd-4f5d-8618-d3f8fdae3c30",
+"id": "f8785fcb-0d7c-4a2b-ba17-89836701120c",
 "level": "info",
-"timestamp": 1760901338470000
+"timestamp": 1760903495698000
+},
+{
+"event_message": "booted (time: 28ms)",
+"event_type": "Boot",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "677d6c27-0120-4c4d-b825-2aacb2a616c6",
+"level": "log",
+"timestamp": 1760903495692000
+},
+{
+"event_message": "🔍 Status check for generation: 92a8040c-3683-4501-87f6-59193f69fab4\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "01373109-00dc-4fc6-8ecc-cc1612000e36",
+"level": "info",
+"timestamp": 1760903492697000
+},
+{
+"event_message": "Listening on http://localhost:9999/\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "732ea223-72c1-485a-b856-ee198a51f05f",
+"level": "info",
+"timestamp": 1760903492694000
 },
 {
 "event_message": "booted (time: 29ms)",
 "event_type": "Boot",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "7742fc72-842e-4996-8847-871c9278fcdf",
+"id": "337e9d28-4a8a-4388-81cf-73b762feb153",
 "level": "log",
-"timestamp": 1760901338465000
+"timestamp": 1760903492689000
 },
 {
-"event_message": "🔍 Status check for generation: e29be37c-154f-44a4-94f1-f2cfb6df49d8\n",
+"event_message": "🔍 Status check for generation: 92a8040c-3683-4501-87f6-59193f69fab4\n",
 "event_type": "Log",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "f0c2f2e6-2eef-4d09-bef2-be59fb228bae",
+"id": "fdaceda3-86c5-45e1-817c-bb1fd5fc02e6",
 "level": "info",
-"timestamp": 1760901335480000
+"timestamp": 1760903489725000
 },
 {
 "event_message": "Listening on http://localhost:9999/\n",
 "event_type": "Log",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "7d28f273-841f-43fa-9f65-b61b2d7587e7",
+"id": "02085020-0531-472d-9475-87185e80d300",
 "level": "info",
-"timestamp": 1760901335476000
-},
-{
-"event_message": "booted (time: 29ms)",
-"event_type": "Boot",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "5ba44786-afd2-4ccf-b9d7-d888b856e46f",
-"level": "log",
-"timestamp": 1760901335470000
-},
-{
-"event_message": "🔍 Status check for generation: e29be37c-154f-44a4-94f1-f2cfb6df49d8\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "5224d99b-df56-4725-8307-a14183eddd3f",
-"level": "info",
-"timestamp": 1760901332508000
-},
-{
-"event_message": "Listening on http://localhost:9999/\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "8d7f82be-4779-4f21-a44a-b96671d69f16",
-"level": "info",
-"timestamp": 1760901332505000
-},
-{
-"event_message": "booted (time: 37ms)",
-"event_type": "Boot",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "1e2b16d9-6bfa-4ef2-aa1f-830b3fc0ebcb",
-"level": "log",
-"timestamp": 1760901332497000
-},
-{
-"event_message": "🔍 Status check for generation: e29be37c-154f-44a4-94f1-f2cfb6df49d8\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "0a5a38a0-313a-43dd-9589-5d0cf40df964",
-"level": "info",
-"timestamp": 1760901329630000
-},
-{
-"event_message": "Listening on http://localhost:9999/\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "0fed6133-416b-4b51-ad3b-362647e567a9",
-"level": "info",
-"timestamp": 1760901329626000
+"timestamp": 1760903489721000
 },
 {
 "event_message": "booted (time: 38ms)",
 "event_type": "Boot",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "595be9ca-5a0c-4e00-875c-409f69212fb6",
+"id": "e1aa7674-88a5-4e3e-a375-f11a349f6feb",
 "level": "log",
-"timestamp": 1760901329618000
+"timestamp": 1760903489714000
+},
+{
+"event_message": "🔍 Status check for generation: 92a8040c-3683-4501-87f6-59193f69fab4\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "3025e885-84a1-482a-b3a7-afad905f6db2",
+"level": "info",
+"timestamp": 1760903486703000
 },
 {
 "event_message": "Listening on http://localhost:9999/\n",
 "event_type": "Log",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "826d58de-c42f-428e-9a40-42b7a73b1edb",
+"id": "15947d93-eb74-4fb5-ad73-47c3fa45d4b6",
 "level": "info",
-"timestamp": 1760901329481000
+"timestamp": 1760903486699000
 },
 {
 "event_message": "booted (time: 29ms)",
 "event_type": "Boot",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "0f980a42-4c16-4e56-97ca-631a594a87ad",
+"id": "b76584e3-72be-4cb9-9565-8b989f9cd9a6",
 "level": "log",
-"timestamp": 1760901329475000
+"timestamp": 1760903486694000
 },
 {
-"event_message": "📝 Generating presentation content with Claude\n",
+"event_message": "🔍 Status check for generation: 92a8040c-3683-4501-87f6-59193f69fab4\n",
 "event_type": "Log",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "742ff094-0283-4791-a9ae-b8864ce0282d",
+"id": "bbc90799-a95f-410a-9d79-ba49408ac549",
 "level": "info",
-"timestamp": 1760901326428000
-},
-{
-"event_message": "Step 1: Generating content...\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "e59a1b04-7e55-4348-9e62-c67b515a7da2",
-"level": "info",
-"timestamp": 1760901326428000
-},
-{
-"event_message": "✅ SignalDeck generation request: {\n topic: \"Adult Content Policy Clarification Strategy\",\n slideCount: undefined\n}\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "4a21f975-b4c1-4576-9d0a-5e0fa97c43e9",
-"level": "info",
-"timestamp": 1760901325802000
+"timestamp": 1760903483728000
 },
 {
 "event_message": "Listening on http://localhost:9999/\n",
 "event_type": "Log",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "1a1ef8f0-d96c-42cc-adec-5b9ce8e23e5f",
+"id": "273595b9-9ba0-4c1c-954d-3fef4029ce7e",
 "level": "info",
-"timestamp": 1760901325655000
+"timestamp": 1760903483723000
 },
 {
-"event_message": "booted (time: 28ms)",
+"event_message": "booted (time: 46ms)",
 "event_type": "Boot",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "944fc351-a665-43b3-96c0-6808e183d9d5",
+"id": "baeed104-1bf6-4c29-9856-2702c917e04d",
 "level": "log",
-"timestamp": 1760901310460000
+"timestamp": 1760903483716000
 },
 {
-"event_message": "Step 1: Generating content...\n",
+"event_message": "🔍 Status check for generation: 92a8040c-3683-4501-87f6-59193f69fab4\n",
 "event_type": "Log",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "6f55f112-3ada-4595-bd42-798086e24b5e",
+"id": "691d23ce-2d19-4ae0-976b-5ae505e454e5",
 "level": "info",
-"timestamp": 1760901295910000
-},
-{
-"event_message": "📝 Generating presentation content with Claude\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "8c3923c6-35be-4b5b-bbe3-60e3af3f7c7f",
-"level": "info",
-"timestamp": 1760901295910000
-},
-{
-"event_message": "✅ SignalDeck generation request: {\n topic: \"Adult Content Policy Clarification Strategy\",\n slideCount: undefined\n}\n",
-"event_type": "Log",
-"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "ae4c7c4e-add4-48df-b80b-c5b1fc92658e",
-"level": "info",
-"timestamp": 1760901294031000
+"timestamp": 1760903480702000
 },
 {
 "event_message": "Listening on http://localhost:9999/\n",
 "event_type": "Log",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "65225877-b095-47b1-8f65-16a1e5d8ad98",
+"id": "91a76938-8c66-4666-98ab-bd9e900edb0d",
 "level": "info",
-"timestamp": 1760901294026000
+"timestamp": 1760903480698000
+},
+{
+"event_message": "booted (time: 30ms)",
+"event_type": "Boot",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "ce2af9cd-e5a3-48b7-82f2-ccfeb79c1908",
+"level": "log",
+"timestamp": 1760903480692000
+},
+{
+"event_message": "🔍 Status check for generation: 92a8040c-3683-4501-87f6-59193f69fab4\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "e76a31b9-dedb-4c0e-bdee-17bac009948b",
+"level": "info",
+"timestamp": 1760903477847000
+},
+{
+"event_message": "Listening on http://localhost:9999/\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "10ec3b75-ee0f-48b1-a9bc-0e998b4fb2bd",
+"level": "info",
+"timestamp": 1760903477845000
 },
 {
 "event_message": "booted (time: 28ms)",
 "event_type": "Boot",
 "function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
-"id": "4b8d0ab0-dbc9-4b13-982a-dd24376a2407",
+"id": "df470bff-2ff7-4442-96eb-ab9f32b30331",
 "level": "log",
-"timestamp": 1760901294020000
+"timestamp": 1760903477839000
+},
+{
+"event_message": "Listening on http://localhost:9999/\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "77daa8d5-7f99-4c24-a004-2130b747ac7e",
+"level": "info",
+"timestamp": 1760903477711000
+},
+{
+"event_message": "booted (time: 29ms)",
+"event_type": "Boot",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "0e1043cf-3396-4f13-9ced-93762f188aa4",
+"level": "log",
+"timestamp": 1760903477705000
+},
+{
+"event_message": "📝 Generating presentation content with Claude\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "dc7b3961-6523-4334-a43e-47bfd58a7af6",
+"level": "info",
+"timestamp": 1760903474591000
+},
+{
+"event_message": "Step 1: Generating content...\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "d5058ceb-27db-41ba-a987-37545f903343",
+"level": "info",
+"timestamp": 1760903474591000
+},
+{
+"event_message": "✅ SignalDeck generation request: {\n topic: \"Leveraging Sora 2 to Attract More Creators to OpenAI Platform\",\n slideCount: undefined\n}\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "4855f36c-6112-4254-b1e1-88692549ffd3",
+"level": "info",
+"timestamp": 1760903474454000
+},
+{
+"event_message": "Listening on http://localhost:9999/\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "8848fd7c-17dc-47db-a012-407c10de107c",
+"level": "info",
+"timestamp": 1760903474449000
+},
+{
+"event_message": "booted (time: 31ms)",
+"event_type": "Boot",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "814668f9-3e28-4106-b781-bb18d3f2461d",
+"level": "log",
+"timestamp": 1760903474443000
+},
+{
+"event_message": "Step 1: Generating content...\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "965dd5ca-34a4-4c5d-82e4-caeed302442b",
+"level": "info",
+"timestamp": 1760903463795000
+},
+{
+"event_message": "📝 Generating presentation content with Claude\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "ca79ce17-19ff-4d3c-a144-f92351755427",
+"level": "info",
+"timestamp": 1760903463795000
+},
+{
+"event_message": "✅ SignalDeck generation request: {\n topic: \"Leveraging Sora 2 to Attract More Creators to OpenAI Platform\",\n slideCount: undefined\n}\n",
+"event_type": "Log",
+"function_id": "8eeaa3f5-e899-4918-895b-80b5551fe7fc",
+"id": "4519afe0-4a47-4474-81fd-f9158cd48137",
+"level": "info",
+"timestamp": 1760903463598000
 }
 ]
