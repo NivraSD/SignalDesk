@@ -26,7 +26,6 @@ verify-*.js
 .eslintrc*
 .prettierrc*
 jest.config.*
-tsconfig.json
 
 # Dependencies
 node_modules/
