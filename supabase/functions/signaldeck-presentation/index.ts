@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
+import { generateDesignBrief, type DesignBrief } from './creative-director.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -141,10 +142,20 @@ function parseVisualSuggestion(suggestion: string) {
   }
 }
 
-// Generate AI image using Vertex AI
-async function generateAIImage(prompt: string, organizationId: string): Promise<string | null> {
+// Generate AI image using Vertex AI with design brief styling
+async function generateAIImage(
+  prompt: string,
+  organizationId: string,
+  imageStyle?: DesignBrief['imageStyle']
+): Promise<string | null> {
   try {
-    console.log('🎨 Generating AI image with Vertex AI:', prompt)
+    // Enhance prompt with design brief style
+    let enhancedPrompt = prompt
+    if (imageStyle) {
+      enhancedPrompt = `${prompt}. Style: ${imageStyle.type}, mood: ${imageStyle.mood.join(', ')}, subjects: ${imageStyle.subjects.join(', ')}`
+    }
+
+    console.log('🎨 Generating AI image with Vertex AI:', enhancedPrompt.substring(0, 100))
 
     const response = await fetch(`${SUPABASE_URL}/functions/v1/vertex-ai-visual`, {
       method: 'POST',
@@ -153,7 +164,9 @@ async function generateAIImage(prompt: string, organizationId: string): Promise<
         'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
       },
       body: JSON.stringify({
-        prompt,
+        type: 'image',  // Required by vertex-ai-visual function
+        prompt: enhancedPrompt,
+        style: imageStyle?.type === 'photorealistic' ? 'photorealistic' : 'digital_art',
         organizationId,
         aspectRatio: '16:9' // Standard presentation aspect ratio
       })
@@ -165,7 +178,16 @@ async function generateAIImage(prompt: string, organizationId: string): Promise<
     }
 
     const data = await response.json()
-    return data.imageUrl || data.url || null
+
+    // Handle both success and fallback responses
+    if (data.success && data.images && data.images.length > 0) {
+      return data.images[0].url || data.imageUrl
+    } else if (data.imageUrl) {
+      return data.imageUrl
+    }
+
+    console.warn('⚠️ Vertex AI returned no image URL')
+    return null
   } catch (error) {
     console.error('Error generating AI image:', error)
     return null
@@ -362,8 +384,14 @@ Return ONLY valid JSON, no markdown code blocks, no extra text`
 }
 
 // Build PowerPoint file by calling Next.js API
-async function buildPresentation(presentationData: any, theme: any, generationId: string, orgId: string) {
-  console.log('🏗️ Building PowerPoint presentation')
+async function buildPresentation(
+  presentationData: any,
+  designBrief: DesignBrief,
+  slideImages: Map<number, string>,
+  generationId: string,
+  orgId: string
+) {
+  console.log('🏗️ Building PowerPoint presentation with design brief')
 
   const fileName = `${generationId}.pptx`
 
@@ -375,6 +403,9 @@ async function buildPresentation(presentationData: any, theme: any, generationId
 
     console.log('📤 Calling builder API:', buildUrl)
 
+    // Convert Map to object for JSON serialization
+    const slideImagesObj = Object.fromEntries(slideImages)
+
     const response = await fetch(buildUrl, {
       method: 'POST',
       headers: {
@@ -382,7 +413,8 @@ async function buildPresentation(presentationData: any, theme: any, generationId
       },
       body: JSON.stringify({
         presentationData,
-        theme,
+        designBrief,
+        slideImages: slideImagesObj,
         organizationId: orgId
       })
     })
@@ -499,22 +531,71 @@ async function generatePresentation(generationId: string, request: SignalDeckReq
     await setGenerationStatus({
       generationId,
       status: 'processing',
-      progress: 10
+      progress: 5
     }, orgId, { outline: request.approved_outline })
 
+    // Step 0: Creative Director - Generate Design Brief
+    console.log('🎨 Step 0: Creative Director generating design brief...')
+    const designBrief = await generateDesignBrief(request.approved_outline, ANTHROPIC_API_KEY)
+
+    console.log('✅ Design Brief:', {
+      style: designBrief.visualStyle,
+      colors: `${designBrief.colorPalette.primary} / ${designBrief.colorPalette.accent}`,
+      imageSlides: designBrief.slideVisuals.filter(s =>
+        s.visualType === 'hero_image' || s.visualType === 'split_visual' || s.visualType === 'layered'
+      ).length
+    })
+
+    await setGenerationStatus({
+      generationId,
+      status: 'processing',
+      progress: 15
+    }, orgId, { designBrief })
+
     // Step 1: Generate content with Claude
-    console.log('Step 1: Generating content...')
+    console.log('📝 Step 1: Generating presentation content...')
     const presentationData = await generatePresentationData(request.approved_outline)
 
     await setGenerationStatus({
       generationId,
       status: 'processing',
-      progress: 40
+      progress: 30
     }, orgId)
 
-    // Step 1.5: Process visual elements (skip AI image generation for now)
-    console.log('Step 1.5: Processing visual suggestions...')
-    console.log('⚠️ AI image generation disabled - focusing on charts and data visualizations')
+    // Step 2: Generate AI images in parallel
+    console.log('🖼️ Step 2: Generating AI images with Vertex AI...')
+    const imageSlides = designBrief.slideVisuals.filter(sv =>
+      sv.visualType === 'hero_image' || sv.visualType === 'split_visual' || sv.visualType === 'layered'
+    )
+
+    console.log(`  → Generating ${imageSlides.length} images in parallel...`)
+
+    const imagePromises = imageSlides.map(async (slideVisual) => {
+      if (!slideVisual.imagePrompt) return null
+
+      const imageUrl = await generateAIImage(
+        slideVisual.imagePrompt,
+        orgId,
+        designBrief.imageStyle
+      )
+
+      return {
+        slideNumber: slideVisual.slideNumber,
+        imageUrl
+      }
+    })
+
+    const imageResults = await Promise.all(imagePromises)
+
+    // Create map of slide numbers to image URLs
+    const slideImages = new Map<number, string>()
+    imageResults.forEach(result => {
+      if (result && result.imageUrl) {
+        slideImages.set(result.slideNumber, result.imageUrl)
+      }
+    })
+
+    console.log(`✅ Generated ${slideImages.size}/${imageSlides.length} images successfully`)
 
     await setGenerationStatus({
       generationId,
@@ -522,15 +603,15 @@ async function generatePresentation(generationId: string, request: SignalDeckReq
       progress: 60
     }, orgId)
 
-    // Step 2: Build PowerPoint
-    console.log('Step 2: Building PowerPoint...')
-    const theme = request.theme || {
-      primary: '1a1a2e',
-      secondary: '16213e',
-      accent: '0f3460'
-    }
-
-    const fileInfo = await buildPresentation(presentationData, theme, generationId, orgId)
+    // Step 3: Build PowerPoint with design brief and images
+    console.log('🏗️ Step 3: Building PowerPoint with creative design...')
+    const fileInfo = await buildPresentation(
+      presentationData,
+      designBrief,
+      slideImages,
+      generationId,
+      orgId
+    )
 
     await setGenerationStatus({
       generationId,
@@ -538,16 +619,16 @@ async function generatePresentation(generationId: string, request: SignalDeckReq
       progress: 75
     }, orgId)
 
-    // Step 3: Upload to storage
-    console.log('Step 3: Uploading...')
+    // Step 4: Upload to storage
+    console.log('📤 Step 4: Uploading to storage...')
     const fileUrl = await uploadPresentation(
       fileInfo.fileData,
       fileInfo.fileName,
       orgId
     )
 
-    // Step 4: Save to content library
-    console.log('Step 4: Saving metadata...')
+    // Step 5: Save to content library
+    console.log('💾 Step 5: Saving metadata to content library...')
     await saveToContentLibrary(
       presentationData,
       fileUrl,
