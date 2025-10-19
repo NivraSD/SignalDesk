@@ -1,0 +1,37 @@
+# Standard Node.js dockerignore - only exclude what we don't need
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
+.cache/
+*.log
+
+# Environment files
+.env
+.env.*
+*.env
+
+# Development files
+.git/
+.gitignore
+.vscode/
+.vercel/
+.claude/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Testing and coverage
+coverage/
+.nyc_output/
+
+# Misc
+*.tgz
+*.tar.gz

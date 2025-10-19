@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Clean SignalDesk Storage</title>
+</head>
+<body>
+  <h1>SignalDesk Storage Cleaner</h1>
+  <button onclick="cleanStorage()">Clean All SignalDesk Storage</button>
+  <button onclick="showStorage()">Show Current Storage</button>
+  <button onclick="setAmazonCorrectly()">Set Amazon as Technology Company</button>
+  
+  <div id="output"></div>
+  
+  <script>
+    function cleanStorage() {
+      const keys = [
+        'signaldesk_unified_profile',
+        'signaldesk_organization', 
+        'opportunity_profile',
+        'signaldesk_onboarding'
+      ];
+      
+      keys.forEach(key => {
+        localStorage.removeItem(key);
+      });
+      
+      document.getElementById('output').innerHTML = '<h2>✅ Cleaned all SignalDesk storage</h2>';
+    }
+    
+    function showStorage() {
+      const output = document.getElementById('output');
+      output.innerHTML = '<h2>Current Storage:</h2>';
+      
+      const keys = [
+        'signaldesk_unified_profile',
+        'signaldesk_organization', 
+        'opportunity_profile',
+        'signaldesk_onboarding'
+      ];
+      
+      keys.forEach(key => {
+        const value = localStorage.getItem(key);
+        if (value) {
+          output.innerHTML += `<h3>${key}</h3><pre>${JSON.stringify(JSON.parse(value), null, 2)}</pre><hr>`;
+        } else {
+          output.innerHTML += `<h3>${key}</h3><p>Not found</p><hr>`;
+        }
+      });
+    }
+    
+    function setAmazonCorrectly() {
+      const amazonOrg = {
+        name: 'Amazon',
+        industry: 'technology',
+        description: 'E-commerce and cloud computing giant'
+      };
+      
+      // Set in all storage locations
+      localStorage.setItem('signaldesk_organization', JSON.stringify(amazonOrg));
+      
+      const unifiedProfile = {
+        organization: amazonOrg,
+        opportunities: {
+          minimum_confidence: 70,
+          types: {
+            competitor_weakness: true,
+            narrative_vacuum: true,
+            cascade_effect: true,
+            crisis_prevention: true,
+            viral_moment: false
+          }
+        }
+      };
+      localStorage.setItem('signaldesk_unified_profile', JSON.stringify(unifiedProfile));
+      
+      document.getElementById('output').innerHTML = '<h2>✅ Set Amazon as Technology company in all storage</h2>';
+    }
+  </script>
+</body>
+</html>

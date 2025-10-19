@@ -4,6 +4,38 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 
 interface BlueprintV3Data {
+  // NEW backend structure
+  part1_goalFramework?: {
+    primaryObjective?: string
+    behavioralGoals?: string[]
+    kpis?: any[]
+    successCriteria?: string
+    riskAssessment?: any[]
+  }
+  part2_stakeholderMapping?: {
+    groups?: any[]
+    stakeholderRelationships?: string
+    priorityOrder?: string[]
+  }
+  part5_executionRequirements?: {
+    teamBandwidth?: any
+    budgetRequirements?: any
+    toolsAndPlatforms?: any
+    weeklyExecutionRhythm?: any
+    systemLevelSuccessMetrics?: any
+  }
+  overview?: {
+    campaignName?: string
+    pattern?: string
+    patternRationale?: string
+    duration?: string
+    complexity?: string
+  }
+  messageArchitecture?: {
+    coreMessage?: string
+    messageRationale?: string
+  }
+  // OLD frontend structure (kept for backwards compat)
   part1_strategicFoundation?: {
     campaignGoal?: string
     positioning?: {
@@ -295,7 +327,66 @@ export function BlueprintV3Presentation({
       color: 'blue',
       render: () => (
         <div className="space-y-4">
-          {/* Campaign Goal */}
+          {/* NEW: Overview Section */}
+          {blueprint.overview && (
+            <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded">
+              <h3 className="text-xl font-bold text-blue-300 mb-2">{blueprint.overview.campaignName}</h3>
+              {blueprint.overview.pattern && (
+                <div className="mb-2">
+                  <span className="text-sm text-gray-400">Pattern: </span>
+                  <span className="text-blue-300 font-semibold">{blueprint.overview.pattern}</span>
+                </div>
+              )}
+              {blueprint.overview.patternRationale && (
+                <p className="text-sm text-gray-300 mb-2">{blueprint.overview.patternRationale}</p>
+              )}
+              {blueprint.overview.duration && (
+                <div>
+                  <span className="text-sm text-gray-400">Duration: </span>
+                  <span className="text-white">{blueprint.overview.duration}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* NEW: Goal Framework */}
+          {blueprint.part1_goalFramework && (
+            <div>
+              <p className="text-sm text-gray-400 mb-2">Primary Objective</p>
+              <p className="text-white mb-3">{blueprint.part1_goalFramework.primaryObjective}</p>
+
+              {blueprint.part1_goalFramework.behavioralGoals && blueprint.part1_goalFramework.behavioralGoals.length > 0 && (
+                <div className="mb-3">
+                  <p className="text-sm text-gray-400 mb-1">Behavioral Goals</p>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-gray-300">
+                    {blueprint.part1_goalFramework.behavioralGoals.map((goal, i) => (
+                      <li key={i}>{goal}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {blueprint.part1_goalFramework.successCriteria && (
+                <div className="p-3 bg-emerald-900/20 border border-emerald-500/30 rounded">
+                  <p className="text-sm text-emerald-200 mb-1">Success Criteria</p>
+                  <p className="text-sm text-gray-300">{blueprint.part1_goalFramework.successCriteria}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Message Architecture */}
+          {blueprint.messageArchitecture?.coreMessage && (
+            <div className="p-3 bg-purple-900/20 border border-purple-500/30 rounded">
+              <p className="text-sm text-purple-200 mb-1">Core Message</p>
+              <p className="text-white">{blueprint.messageArchitecture.coreMessage}</p>
+              {blueprint.messageArchitecture.messageRationale && (
+                <p className="text-xs text-gray-400 mt-2 italic">{blueprint.messageArchitecture.messageRationale}</p>
+              )}
+            </div>
+          )}
+
+          {/* OLD: Campaign Goal */}
           {blueprint.part1_strategicFoundation?.campaignGoal && (
             <div>
               <p className="text-sm text-gray-400 mb-1">Campaign Goal</p>
@@ -435,12 +526,59 @@ export function BlueprintV3Presentation({
     },
     {
       id: 'psychology',
-      title: 'Psychological Influence Strategy',
+      title: 'Stakeholder Mapping',
       icon: '🧠',
       color: 'purple',
       render: () => (
         <div className="space-y-4">
-          {blueprint.part2_psychologicalInfluence?.influenceStrategies &&
+          {/* NEW: Stakeholder Groups from part2_stakeholderMapping */}
+          {blueprint.part2_stakeholderMapping?.groups &&
+           blueprint.part2_stakeholderMapping.groups.length > 0 ? (
+            <div>
+              <p className="text-sm text-gray-400 mb-3">Target Stakeholder Groups ({blueprint.part2_stakeholderMapping.groups.length})</p>
+              <div className="space-y-3">
+                {blueprint.part2_stakeholderMapping.groups.map((group: any, i: number) => (
+                  <div key={i} className="p-4 bg-purple-900/20 border border-purple-500/30 rounded">
+                    <div className="flex items-start justify-between mb-2">
+                      <p className="text-lg font-semibold text-purple-300">{group.name}</p>
+                      {group.priority && (
+                        <span className="px-2 py-0.5 bg-purple-900/50 text-purple-300 text-xs rounded">
+                          Priority {group.priority}
+                        </span>
+                      )}
+                    </div>
+                    {group.psychologicalProfile && (
+                      <div className="space-y-1 text-sm mt-2">
+                        {group.psychologicalProfile.primaryFear && (
+                          <p className="text-red-300">
+                            <span className="text-gray-400">Fear:</span> {group.psychologicalProfile.primaryFear}
+                          </p>
+                        )}
+                        {group.psychologicalProfile.primaryAspiration && (
+                          <p className="text-emerald-300">
+                            <span className="text-gray-400">Aspiration:</span> {group.psychologicalProfile.primaryAspiration}
+                          </p>
+                        )}
+                        {group.psychologicalProfile.decisionTrigger && (
+                          <p className="text-blue-300">
+                            <span className="text-gray-400">Decision Trigger:</span> {group.psychologicalProfile.decisionTrigger}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Stakeholder Relationships */}
+              {blueprint.part2_stakeholderMapping.stakeholderRelationships && (
+                <div className="mt-4 p-3 bg-zinc-900/50 rounded">
+                  <p className="text-sm text-gray-400 mb-1">Stakeholder Relationships</p>
+                  <p className="text-sm text-gray-300">{blueprint.part2_stakeholderMapping.stakeholderRelationships}</p>
+                </div>
+              )}
+            </div>
+          ) : blueprint.part2_psychologicalInfluence?.influenceStrategies &&
            blueprint.part2_psychologicalInfluence.influenceStrategies.length > 0 ? (
             blueprint.part2_psychologicalInfluence.influenceStrategies.map((strategy, i) => (
               <div key={i} className="p-4 bg-purple-900/20 border border-purple-500/30 rounded">
@@ -983,11 +1121,61 @@ export function BlueprintV3Presentation({
     },
     {
       id: 'execution',
-      title: 'Content Inventory & Execution',
+      title: 'Execution Requirements',
       icon: '⚡',
       color: 'emerald',
       render: () => (
         <div className="space-y-4">
+          {/* NEW: Execution Requirements from part5_executionRequirements */}
+          {blueprint.part5_executionRequirements && (
+            <div className="space-y-4">
+              {/* Team Bandwidth */}
+              {blueprint.part5_executionRequirements.teamBandwidth && (
+                <div className="p-4 bg-emerald-900/20 border border-emerald-500/30 rounded">
+                  <p className="text-lg font-semibold text-emerald-300 mb-3">Team Bandwidth</p>
+                  {blueprint.part5_executionRequirements.teamBandwidth.totalHoursPerWeek && (
+                    <p className="text-white mb-2">
+                      Total: {blueprint.part5_executionRequirements.teamBandwidth.totalHoursPerWeek} hours/week
+                    </p>
+                  )}
+                  {blueprint.part5_executionRequirements.teamBandwidth.roles && (
+                    <div className="space-y-2">
+                      {blueprint.part5_executionRequirements.teamBandwidth.roles.slice(0, 3).map((role: any, i: number) => (
+                        <div key={i} className="p-2 bg-zinc-900/50 rounded text-sm">
+                          <p className="text-white font-medium">{role.role}</p>
+                          <p className="text-gray-400 text-xs">{role.hoursPerWeek} hours/week</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Budget Requirements */}
+              {blueprint.part5_executionRequirements.budgetRequirements && (
+                <div className="p-4 bg-amber-900/20 border border-amber-500/30 rounded">
+                  <p className="text-lg font-semibold text-amber-300 mb-3">Budget Requirements</p>
+                  {blueprint.part5_executionRequirements.budgetRequirements.totalMinimumMonthly && (
+                    <div className="mb-2">
+                      <p className="text-sm text-gray-400">Minimum Monthly</p>
+                      <p className="text-2xl font-bold text-amber-300">
+                        ${blueprint.part5_executionRequirements.budgetRequirements.totalMinimumMonthly}
+                      </p>
+                    </div>
+                  )}
+                  {blueprint.part5_executionRequirements.budgetRequirements.totalRecommendedMonthly && (
+                    <div>
+                      <p className="text-sm text-gray-400">Recommended Monthly</p>
+                      <p className="text-xl font-semibold text-white">
+                        ${blueprint.part5_executionRequirements.budgetRequirements.totalRecommendedMonthly}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Pending Status */}
           {blueprint.part6_contentInventory?.status === 'pending' && (
             <div className="p-4 bg-amber-900/20 border border-amber-500/30 rounded">
@@ -1100,11 +1288,13 @@ export function BlueprintV3Presentation({
             <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <h2 className="text-3xl font-bold text-white">
-            {blueprint.part1_strategicFoundation?.positioning?.name || 'VECTOR Campaign Blueprint'}
+            {blueprint.overview?.campaignName || blueprint.part1_strategicFoundation?.positioning?.name || 'VECTOR Campaign Blueprint'}
           </h2>
         </div>
-        {blueprint.part1_strategicFoundation?.positioning?.tagline && (
-          <p className="text-lg text-gray-300 italic">{blueprint.part1_strategicFoundation.positioning.tagline}</p>
+        {(blueprint.messageArchitecture?.coreMessage || blueprint.part1_strategicFoundation?.positioning?.tagline) && (
+          <p className="text-lg text-gray-300 italic">
+            {blueprint.messageArchitecture?.coreMessage || blueprint.part1_strategicFoundation.positioning.tagline}
+          </p>
         )}
         <div className="flex items-center justify-center gap-3">
           <div className="inline-block px-3 py-1 bg-blue-600/20 border border-blue-500/50 rounded-full">

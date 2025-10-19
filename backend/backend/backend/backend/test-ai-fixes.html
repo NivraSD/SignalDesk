@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test AI Content Generation Fixes</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: #1a1a2e;
+            color: #eee;
+        }
+        h1 { color: #8b5cf6; margin-bottom: 10px; }
+        h2 { color: #60a5fa; margin-top: 30px; }
+        .test-section {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #3a3a5a;
+        }
+        .test-case {
+            background: #0f1729;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border-left: 3px solid #8b5cf6;
+        }
+        .expected {
+            background: #0d2818;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 3px solid #10b981;
+        }
+        .instruction {
+            background: #2d1810;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 3px solid #f59e0b;
+        }
+        button {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        button:hover { background: #7c3aed; }
+        code {
+            background: #2a2a4a;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+        .success { color: #10b981; }
+        .warning { color: #f59e0b; }
+        .error { color: #ef4444; }
+    </style>
+</head>
+<body>
+    <h1>🧪 SignalDesk AI Assistant Fix Verification</h1>
+    <p>Test suite to verify the AI assistant improvements and content generation fixes.</p>
+
+    <div class="test-section">
+        <h2>📋 Summary of Changes</h2>
+        <ul>
+            <li class="success">✅ AI is now more conversational and helpful (like Claude)</li>
+            <li class="success">✅ Reduced interrogative questioning behavior</li>
+            <li class="success">✅ Better intent detection for content generation</li>
+            <li class="success">✅ Content appears in ContentGenerator feature space</li>
+            <li class="success">✅ Responsive panel sizing based on viewport</li>
+            <li class="success">✅ Improved resize handles (32x32px)</li>
+            <li class="success">✅ Better scroll containment</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>🔍 Test 1: Conversational AI Behavior</h2>
+        
+        <div class="test-case">
+            <h3>Test Natural Requests</h3>
+            <div class="instruction">
+                <strong>Try these prompts in the AI Assistant:</strong>
+            </div>
+            <ul>
+                <li><code>I need to write a press release</code></li>
+                <li><code>Create a social media post about our new product</code></li>
+                <li><code>Draft an announcement for our funding round</code></li>
+            </ul>
+            <div class="expected">
+                <strong>Expected:</strong> AI should respond helpfully and offer to generate content quickly, not ask endless questions.
+            </div>
+        </div>
+
+        <div class="test-case">
+            <h3>Test Quick Generation</h3>
+            <div class="instruction">
+                <strong>After providing basic context, try:</strong>
+            </div>
+            <ul>
+                <li><code>Yes</code></li>
+                <li><code>Go ahead</code></li>
+                <li><code>Create it</code></li>
+            </ul>
+            <div class="expected">
+                <strong>Expected:</strong> AI should immediately generate content, not ask more questions.
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🎯 Test 2: Content Appears in Feature Space</h2>
+        
+        <div class="test-case">
+            <h3>Automatic Feature Opening</h3>
+            <div class="instruction">
+                <strong>Steps:</strong>
+            </div>
+            <ol>
+                <li>Start with AI Assistant panel open</li>
+                <li>Ask: <code>Write a press release about our Series A funding</code></li>
+                <li>When AI responds, say: <code>Yes, create it</code></li>
+            </ol>
+            <div class="expected">
+                <strong>Expected:</strong> 
+                <ul>
+                    <li>Content Generator panel should auto-open</li>
+                    <li>Generated content should appear in the ContentGenerator</li>
+                    <li>Success message in chat: "✨ Content generated successfully!"</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>📐 Test 3: UI Sizing & Responsiveness</h2>
+        
+        <div class="test-case">
+            <h3>Panel Sizing</h3>
+            <div class="instruction">
+                <strong>Check these aspects:</strong>
+            </div>
+            <ul>
+                <li>Panels should have responsive default sizes (not fixed 400x400)</li>
+                <li>Resize handles should be 32x32px (easier to grab)</li>
+                <li>Panels shouldn't extend beyond viewport edges</li>
+                <li>Minimum sizes should be responsive (clamp values)</li>
+            </ul>
+        </div>
+
+        <div class="test-case">
+            <h3>Scroll Behavior</h3>
+            <div class="instruction">
+                <strong>Test scrolling:</strong>
+            </div>
+            <ul>
+                <li>Panel content should scroll independently</li>
+                <li>Page shouldn't scroll when panel content scrolls</li>
+                <li>Long text should wrap, not cause horizontal scroll</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🚀 Quick Test Workflow</h2>
+        <button onclick="window.open('http://localhost:3000', '_blank')">
+            Open SignalDesk Frontend
+        </button>
+        
+        <div class="test-case">
+            <h3>Complete Test Flow:</h3>
+            <ol>
+                <li>Login with demo@signaldesk.com / demo123</li>
+                <li>Click on AI Assistant panel</li>
+                <li>Type: <strong>"I need to write a press release about our new AI product launch"</strong></li>
+                <li>AI should respond helpfully and ask minimal questions</li>
+                <li>Say: <strong>"Yes, create it"</strong> or <strong>"Go ahead"</strong></li>
+                <li>Content Generator should open with the generated press release</li>
+                <li>Test resizing panels - handles should be easy to grab</li>
+                <li>Test scrolling - should be contained within panels</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>⚠️ Known Issues to Watch For</h2>
+        <ul>
+            <li class="warning">If AI still asks too many questions, the backend prompt may need adjustment</li>
+            <li class="warning">If content doesn't appear in ContentGenerator, check browser console for errors</li>
+            <li class="warning">Panel positions are saved in localStorage - clear if testing defaults</li>
+        </ul>
+    </div>
+
+    <script>
+        console.log('Test page loaded. Backend should be on port 3001, Frontend on port 3000');
+        
+        // Check if servers are running
+        fetch('http://localhost:3001/api/health')
+            .then(r => r.json())
+            .then(data => console.log('✅ Backend is running:', data))
+            .catch(err => console.error('❌ Backend not accessible:', err));
+            
+        console.log('To test: Open http://localhost:3000 and follow the test cases above');
+    </script>
+</body>
+</html>

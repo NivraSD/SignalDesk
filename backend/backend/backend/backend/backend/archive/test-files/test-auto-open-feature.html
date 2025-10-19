@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto-Open Content Generator Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        h1 {
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+        h2 {
+            color: #fbbf24;
+            margin-bottom: 20px;
+        }
+        .step {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .expected {
+            color: #10b981;
+            font-weight: 600;
+        }
+        .action {
+            color: #60a5fa;
+            font-weight: 600;
+        }
+        code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Monaco', monospace;
+        }
+        .console-check {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        .bug-fix {
+            background: rgba(239, 68, 68, 0.2);
+            border-left: 4px solid #ef4444;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .success-criteria {
+            background: rgba(16, 185, 129, 0.2);
+            border-left: 4px solid #10b981;
+            padding: 10px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 Auto-Open Content Generator Test</h1>
+    
+    <div class="test-card">
+        <h2>Fixed Issue</h2>
+        <div class="bug-fix">
+            <strong>Previous Bug:</strong> Content Generator integration only worked if the feature was already open
+        </div>
+        <div class="success-criteria">
+            <strong>New Behavior:</strong> Content Generator auto-opens when content is requested, even from the main dashboard
+        </div>
+    </div>
+
+    <div class="test-card">
+        <h2>Test Scenario 1: From Dashboard</h2>
+        
+        <div class="step">
+            <div class="action">ACTION:</div>
+            <p>1. Go to <a href="http://localhost:3000" target="_blank" style="color: #fbbf24;">http://localhost:3000</a></p>
+            <p>2. Do NOT click on any feature</p>
+            <p>3. In AI Assistant, type: <code>I need a press release</code></p>
+        </div>
+        
+        <div class="step">
+            <div class="expected">EXPECTED RESULTS:</div>
+            <p>✅ Content Generator automatically opens</p>
+            <p>✅ "Press Release" is pre-selected in the content type</p>
+            <p>✅ AI gives tips and asks ONE question (in chat only)</p>
+            <p>✅ NO content appears in the Content Generator yet</p>
+        </div>
+        
+        <div class="console-check">
+            <strong>Console Output Should Show:</strong><br>
+            Active folder: null Is content request: true<br>
+            Auto-opening Content Generator for content request<br>
+            Setting content type to press-release<br>
+            ContentGeneratorModule received currentContentType: press-release
+        </div>
+    </div>
+
+    <div class="test-card">
+        <h2>Test Scenario 2: Already in Content Generator</h2>
+        
+        <div class="step">
+            <div class="action">ACTION:</div>
+            <p>1. Click on "Content Generator" to open it manually</p>
+            <p>2. Type: <code>I need a Q&A document</code></p>
+        </div>
+        
+        <div class="step">
+            <div class="expected">EXPECTED RESULTS:</div>
+            <p>✅ Content Generator stays open (no flicker)</p>
+            <p>✅ "Q&A Document" becomes selected</p>
+            <p>✅ Previous selections are cleared</p>
+            <p>✅ AI responds conversationally</p>
+        </div>
+    </div>
+
+    <div class="test-card">
+        <h2>Test Scenario 3: Content Type Auto-Detection</h2>
+        
+        <div class="step">
+            <div class="action">TEST EACH PHRASE:</div>
+            <ul>
+                <li><code>I need a press release</code> → Should select "Press Release"</li>
+                <li><code>Create a Q&A document</code> → Should select "Q&A Document"</li>
+                <li><code>Write a social media post</code> → Should select "Social Media Post"</li>
+                <li><code>Draft a crisis response</code> → Should select "Crisis Response"</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="test-card">
+        <h2>Test Scenario 4: Content Generation</h2>
+        
+        <div class="step">
+            <div class="action">ACTION:</div>
+            <p>After the AI asks questions and you provide details:</p>
+            <p>1. Click "Generate Content" button in Content Generator</p>
+        </div>
+        
+        <div class="step">
+            <div class="expected">EXPECTED RESULTS:</div>
+            <p>✅ Actual content appears (starts with "FOR IMMEDIATE RELEASE" etc.)</p>
+            <p>✅ Content fully replaces the selection interface</p>
+            <p>✅ AI panel expands slightly (450px → 500px)</p>
+        </div>
+    </div>
+
+    <div class="test-card">
+        <h2>Implementation Details</h2>
+        <div class="step">
+            <strong>Key Changes:</strong>
+            <ul>
+                <li>Detection of content requests happens before checking activeFolder</li>
+                <li>Auto-sets activeProject to 'demo-project' if none selected</li>
+                <li>Auto-opens Content Generator for content requests</li>
+                <li>Integration runs regardless of initial feature state</li>
+            </ul>
+        </div>
+        <div class="step">
+            <strong>Files Modified:</strong>
+            <ul>
+                <li><code>UnifiedPlatform.js</code> - Lines 407-437: Auto-open logic</li>
+                <li><code>UnifiedPlatform.js</code> - Lines 425-472: Content type detection</li>
+                <li><code>ContentGeneratorModule.js</code> - Lines 39-57: Content validation</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="test-card">
+        <h2>Verification Checklist</h2>
+        <div class="step">
+            ☐ Content Generator auto-opens from any state<br>
+            ☐ Content type auto-populates correctly<br>
+            ☐ Conversational responses stay in chat only<br>
+            ☐ Generated content appears only when actually generated<br>
+            ☐ Layout adjusts properly (no scrolling issues)<br>
+            ☐ AI panel expands with content<br>
+            ☐ Feature module size is appropriate
+        </div>
+    </div>
+</body>
+</html>

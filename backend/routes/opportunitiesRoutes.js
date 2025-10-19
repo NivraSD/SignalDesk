@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+<<<<<<< HEAD
 const intelligenceMonitoringController = require('../controllers/intelligenceMonitoringController');
 const pool = require('../config/db');
 
@@ -157,5 +158,11 @@ router.get('/trends', async (req, res) => {
     res.status(500).json({ error: 'Failed to get trends' });
   }
 });
+=======
+const intelligenceMonitoringController = require('../src/controllers/intelligenceMonitoringController');
+
+// Get opportunities for an organization
+router.get('/organization/:organizationId', intelligenceMonitoringController.getOpportunities);
+>>>>>>> cb4c36f5bcebe01f9c38384c2055b4bc392323bb
 
 module.exports = router;

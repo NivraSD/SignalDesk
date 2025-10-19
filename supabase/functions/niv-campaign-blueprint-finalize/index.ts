@@ -36,20 +36,20 @@ serve(async (req) => {
 
     const { data: sessionData } = await supabase
       .from('campaign_builder_sessions')
-      .select('part3_stakeholderOrchestration')
+      .select('part3_stakeholderorchestration')
       .eq('id', payload.sessionId)
       .single()
 
-    if (!sessionData?.part3_stakeholderOrchestration) {
+    if (!sessionData?.part3_stakeholderorchestration) {
       throw new Error('Stakeholder orchestration not found in session')
     }
 
     const orchestrationStrategy = {
-      part3_stakeholderOrchestration: sessionData.part3_stakeholderOrchestration,
+      part3_stakeholderOrchestration: sessionData.part3_stakeholderorchestration,
       metadata: {
-        totalStakeholders: sessionData.part3_stakeholderOrchestration.stakeholderOrchestrationPlans?.length || 0,
-        totalLevers: sessionData.part3_stakeholderOrchestration.stakeholderOrchestrationPlans?.reduce((sum: number, p: any) => sum + (p.influenceLevers?.length || 0), 0) || 0,
-        totalTactics: sessionData.part3_stakeholderOrchestration.stakeholderOrchestrationPlans?.reduce((sum: number, plan: any) => {
+        totalStakeholders: sessionData.part3_stakeholderorchestration.stakeholderOrchestrationPlans?.length || 0,
+        totalLevers: sessionData.part3_stakeholderorchestration.stakeholderOrchestrationPlans?.reduce((sum: number, p: any) => sum + (p.influenceLevers?.length || 0), 0) || 0,
+        totalTactics: sessionData.part3_stakeholderorchestration.stakeholderOrchestrationPlans?.reduce((sum: number, plan: any) => {
           return sum + (plan.influenceLevers || []).reduce((leverSum: number, lever: any) => {
             const campaign = lever.campaign || {}
             return leverSum +

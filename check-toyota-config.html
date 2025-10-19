@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Check Toyota Config</title>
+</head>
+<body>
+    <h1>Toyota Configuration Check</h1>
+    <button onclick="checkConfig()">Check Toyota Config</button>
+    <pre id="output"></pre>
+    
+    <script>
+        function checkConfig() {
+            const org = localStorage.getItem('signaldesk_organization');
+            const onboarding = localStorage.getItem('signaldesk_onboarding');
+            
+            const output = {
+                organization: org ? JSON.parse(org) : null,
+                onboarding: onboarding ? JSON.parse(onboarding) : null
+            };
+            
+            document.getElementById('output').textContent = JSON.stringify(output, null, 2);
+            console.log('Current config:', output);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SignalDesk Project Creation Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .success { color: green; background: #e8f5e9; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .error { color: red; background: #ffebee; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .info { background: #f0f0f0; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; background: #2196F3; color: white; border: none; border-radius: 5px; }
+        input { padding: 10px; margin: 5px; width: 300px; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🚀 SignalDesk Project Creation Test</h1>
+    
+    <div class="info">
+        <h3>Test Project Creation with UUID Support</h3>
+        <p>This page tests the complete project creation flow with the UUID-based database schema.</p>
+    </div>
+
+    <h2>Step 1: Login</h2>
+    <button onclick="testLogin()">Login as Demo User</button>
+    <div id="loginResult"></div>
+
+    <h2>Step 2: Create Project</h2>
+    <div>
+        <input type="text" id="projectName" placeholder="Project Name" value="My New Project">
+        <input type="text" id="projectDesc" placeholder="Project Description" value="Created from test page">
+        <button onclick="createProject()">Create Project</button>
+    </div>
+    <div id="projectResult"></div>
+
+    <h2>Step 3: List Projects</h2>
+    <button onclick="listProjects()">List All Projects</button>
+    <div id="projectsList"></div>
+
+    <script>
+        const BACKEND_URL = 'https://signaldesk-production.up.railway.app';
+        let authToken = null;
+
+        async function testLogin() {
+            const resultDiv = document.getElementById('loginResult');
+            resultDiv.innerHTML = '<p>Logging in...</p>';
+            
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'demo@signaldesk.com',
+                        password: 'demo123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    authToken = data.token;
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ Login successful!<br>
+                            User ID (UUID): ${data.user.id}<br>
+                            Email: ${data.user.email}<br>
+                            Organization: ${data.user.organization_id}
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Login failed: ${data.message}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function createProject() {
+            if (!authToken) {
+                alert('Please login first!');
+                return;
+            }
+
+            const resultDiv = document.getElementById('projectResult');
+            const name = document.getElementById('projectName').value;
+            const description = document.getElementById('projectDesc').value;
+            
+            resultDiv.innerHTML = '<p>Creating project...</p>';
+            
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/projects`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ name, description })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.id) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ Project created successfully!
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            ❌ Failed to create project
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function listProjects() {
+            if (!authToken) {
+                alert('Please login first!');
+                return;
+            }
+
+            const resultDiv = document.getElementById('projectsList');
+            resultDiv.innerHTML = '<p>Loading projects...</p>';
+            
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/projects`, {
+                    headers: { 
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const projects = await response.json();
+                
+                if (Array.isArray(projects)) {
+                    let html = '<div class="success">✅ Projects loaded:</div>';
+                    html += '<div class="info">';
+                    projects.forEach(project => {
+                        html += `
+                            <div style="margin: 10px 0; padding: 10px; background: white; border-radius: 5px;">
+                                <strong>${project.name}</strong><br>
+                                ${project.description || 'No description'}<br>
+                                <small>ID: ${project.id}</small><br>
+                                <small>Created: ${new Date(project.created_at).toLocaleString()}</small>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    resultDiv.innerHTML = html;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Unexpected response format</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        // Auto-login on page load
+        window.onload = () => {
+            testLogin();
+        };
+    </script>
+</body>
+</html>

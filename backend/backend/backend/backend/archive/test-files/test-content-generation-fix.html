@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Content Generation Fix</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #0d0d1e;
+            color: #e8e8e8;
+        }
+        h1 {
+            color: #8b5cf6;
+            border-bottom: 2px solid #8b5cf6;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            background: #1a1a2e;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .test-step {
+            background: rgba(139, 92, 246, 0.1);
+            border-left: 4px solid #8b5cf6;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .expected {
+            background: rgba(16, 185, 129, 0.1);
+            border-left: 4px solid #10b981;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .warning {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid #ef4444;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        button {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        button:hover {
+            background: #7c3aed;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        .pass {
+            background: #10b981;
+            color: white;
+        }
+        .fail {
+            background: #ef4444;
+            color: white;
+        }
+        pre {
+            background: #000;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            color: #10b981;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Content Generation Fix Verification</h1>
+
+    <div class="test-section">
+        <h2>📋 Test Workflow</h2>
+        <p>Follow these steps to verify the content generation is fixed:</p>
+
+        <div class="test-step">
+            <h3>Step 1: Access the Platform</h3>
+            <button onclick="window.open('http://localhost:3000/projects/demo-project/unified-platform', '_blank')">
+                Open SignalDesk Unified Platform
+            </button>
+            <p>Login if needed (demo@signaldesk.ai / demo123)</p>
+        </div>
+
+        <div class="test-step">
+            <h3>Step 2: Select Content Generator</h3>
+            <p>1. Click "Content Generator" in the right panel (Feature List)</p>
+            <p>2. The center panel should show content type options</p>
+        </div>
+
+        <div class="test-step">
+            <h3>Step 3: Choose Thought Leadership</h3>
+            <p>Click on "Thought Leadership" content type</p>
+            <div class="expected">
+                <strong>✅ Expected Response:</strong>
+                <ul>
+                    <li>AI provides 2-3 tips for creating thought leadership</li>
+                    <li>AI asks ONE specific question (e.g., "What topic or trend would you like to address?")</li>
+                    <li><strong>NO CONTENT GENERATED YET</strong></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="test-step">
+            <h3>Step 4: Answer the Question</h3>
+            <p>Type an answer like: "I want to write about the future of AI in customer service"</p>
+            <div class="expected">
+                <strong>✅ Expected Response:</strong>
+                <ul>
+                    <li>AI asks another specific question to gather more details</li>
+                    <li>Still conversational, no content generated</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="test-step">
+            <h3>Step 5: Continue Conversation</h3>
+            <p>Answer 2-3 more questions from the AI</p>
+            <div class="expected">
+                <strong>✅ Expected Response:</strong>
+                <ul>
+                    <li>After gathering enough info, AI asks: "I think I have enough information to create a great Thought Leadership for you. Would you like me to generate it?"</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="test-step">
+            <h3>Step 6: Request Generation</h3>
+            <p>Type: "Yes" or "Yes, generate it" or "Go ahead"</p>
+            <div class="expected">
+                <strong>✅ Expected Response:</strong>
+                <ul>
+                    <li>AI generates the actual thought leadership content</li>
+                    <li><strong>Content appears in the CENTER panel (Content Generator workspace)</strong></li>
+                    <li>Content does NOT appear as a chat message</li>
+                    <li>You can edit, copy, save the content in the workspace</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>❌ What NOT to expect (Previous Bugs)</h2>
+        <div class="warning">
+            <h3>Bug 1: Immediate Generation</h3>
+            <p>❌ Content should NOT generate immediately after selecting content type</p>
+        </div>
+        <div class="warning">
+            <h3>Bug 2: Content in Chat</h3>
+            <p>❌ Generated content should NOT appear as a chat message</p>
+        </div>
+        <div class="warning">
+            <h3>Bug 3: Wrong Content Type</h3>
+            <p>❌ Should generate the type you selected (not press release when you chose thought leadership)</p>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔍 Debug Console</h2>
+        <p>Open browser console (F12) to see backend logs:</p>
+        <pre>
+Look for these logs:
+- "Flow detection: { isInitialContentTypeSelection: true, isExplicitGenerationRequest: false }"
+- "activeContentTypeId: thought-leadership"
+- "isGeneratedContent: true" (only when you say "yes, generate")
+        </pre>
+    </div>
+
+    <div class="test-section">
+        <h2>✅ Test Other Content Types</h2>
+        <p>Repeat the test with:</p>
+        <ul>
+            <li>Press Release</li>
+            <li>Social Media Post</li>
+            <li>Media Pitch</li>
+            <li>Q&A Document</li>
+            <li>Crisis Response</li>
+            <li>Corporate Messaging</li>
+        </ul>
+        <p>Each should follow the same conversational flow before generating.</p>
+    </div>
+
+    <script>
+        console.log('Test page loaded. Ready to verify content generation fixes.');
+        console.log('Backend should be running on http://localhost:3001');
+        console.log('Frontend should be running on http://localhost:3000');
+    </script>
+</body>
+</html>

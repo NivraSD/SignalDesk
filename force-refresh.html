@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Force Refresh SignalDesk</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 40px;
+            background: #f5f5f5;
+            text-align: center;
+        }
+        button {
+            padding: 16px 32px;
+            margin: 20px;
+            background: #6366F1;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+        button:hover {
+            background: #5558E0;
+        }
+        .info {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px auto;
+            max-width: 600px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <h1>🔄 Force Refresh SignalDesk</h1>
+    
+    <div class="info">
+        <h2>Step 5 has been updated to:</h2>
+        <ul style="text-align: left;">
+            <li><strong>Intelligence Hub Setup</strong> (not MCP Systems)</li>
+            <li>Stakeholders to Track</li>
+            <li>Strategic Topics & Trends</li>
+            <li>Priority Media Outlets</li>
+            <li>Critical Keywords</li>
+            <li>Alert Frequency</li>
+        </ul>
+    </div>
+    
+    <button onclick="clearAndRefresh()">Clear Cache & Restart Onboarding</button>
+    
+    <script>
+        function clearAndRefresh() {
+            // Clear all localStorage
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Clear cache and hard reload
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => {
+                        caches.delete(name);
+                    });
+                });
+            }
+            
+            alert('Cache cleared! Opening fresh app...');
+            
+            // Force reload with cache bypass
+            window.location.href = 'http://localhost:3000?' + Date.now();
+        }
+    </script>
+</body>
+</html>

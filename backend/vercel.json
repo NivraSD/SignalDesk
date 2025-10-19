@@ -1,0 +1,116 @@
+{
+  "buildCommand": "cd frontend && npm ci && npm run build",
+  "outputDirectory": "frontend/build",
+  "framework": "create-react-app",
+  "installCommand": "cd frontend && npm ci",
+  "build": {
+    "env": {
+      "REACT_APP_API_URL": "https://backend-orchestrator.vercel.app/api",
+      "CI": "false",
+      "GENERATE_SOURCEMAP": "false",
+      "REACT_APP_BUILD_ID": "v3.3-optimized",
+      "REACT_APP_ENVIRONMENT": "production"
+    }
+  },
+  "headers": [
+    {
+      "source": "/static/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/(.*\\.(js|css))",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, s-maxage=31536000"
+        }
+      ]
+    },
+    {
+      "source": "/(.*\\.(png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot))",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=2592000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/index.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate, max-age=0"
+        }
+      ]
+    },
+    {
+      "source": "/manifest.json",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600"
+        },
+        {
+          "key": "Content-Type",
+          "value": "application/manifest+json"
+        }
+      ]
+    },
+    {
+      "source": "/version.json",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        },
+        {
+          "key": "Content-Type",
+          "value": "application/json"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://backend-orchestrator.vercel.app https://zskaxjtyuaqazydouifp.supabase.co"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/((?!api|_next|static|favicon.ico|manifest.json|version.json|.*\\.).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "regions": ["iad1"],
+  "github": {
+    "silent": false
+  },
+  "cleanUrls": false,
+  "trailingSlash": false
+}

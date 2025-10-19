@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalDesk API Direct Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            border-left: 4px solid #2196F3;
+        }
+        .success {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        .error {
+            color: #f44336;
+            font-weight: bold;
+        }
+        .warning {
+            color: #ff9800;
+            font-weight: bold;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .api-url {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SignalDesk API Direct Test</h1>
+        
+        <div class="api-url">
+            <strong>API URL:</strong> https://signaldesk-production.up.railway.app/api
+        </div>
+
+        <div class="test-section">
+            <h2>1. Test API Health</h2>
+            <button onclick="testHealth()">Test Health Endpoint</button>
+            <div id="health-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. Test Login</h2>
+            <p>Credentials: demo@signaldesk.com / demo123</p>
+            <button onclick="testLogin()">Test Login</button>
+            <div id="login-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>3. Test Authenticated Request</h2>
+            <p>First login, then test an authenticated endpoint</p>
+            <button onclick="testAuthenticatedRequest()">Test Auth Request</button>
+            <div id="auth-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Summary</h2>
+            <div id="summary" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://signaldesk-production.up.railway.app/api';
+        let authToken = null;
+
+        function updateSummary(message, type = 'info') {
+            const summary = document.getElementById('summary');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'success' ? 'success' : type === 'error' ? 'error' : 'warning';
+            summary.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+        }
+
+        async function testHealth() {
+            const resultDiv = document.getElementById('health-result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                const response = await fetch(`${API_URL}/health`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.text();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<span class="success">✅ Health Check Passed!</span>\nStatus: ${response.status}\nResponse: ${data}`;
+                    updateSummary('Health check successful', 'success');
+                } else {
+                    resultDiv.innerHTML = `<span class="warning">⚠️ Health Check Response:</span>\nStatus: ${response.status}\nResponse: ${data}`;
+                    updateSummary(`Health check returned status ${response.status}`, 'warning');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">❌ Health Check Failed!</span>\nError: ${error.message}`;
+                updateSummary('Health check failed: ' + error.message, 'error');
+            }
+        }
+
+        async function testLogin() {
+            const resultDiv = document.getElementById('login-result');
+            resultDiv.innerHTML = 'Testing login...';
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'demo@signaldesk.com',
+                        password: 'demo123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.token) {
+                    authToken = data.token;
+                    resultDiv.innerHTML = `<span class="success">✅ Login Successful!</span>\nUser: ${data.user.email}\nToken: ${data.token.substring(0, 20)}...`;
+                    updateSummary('Login successful', 'success');
+                    localStorage.setItem('token', data.token);
+                } else {
+                    resultDiv.innerHTML = `<span class="error">❌ Login Failed!</span>\nStatus: ${response.status}\nError: ${JSON.stringify(data, null, 2)}`;
+                    updateSummary('Login failed: ' + (data.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">❌ Login Request Failed!</span>\nError: ${error.message}`;
+                updateSummary('Login request failed: ' + error.message, 'error');
+            }
+        }
+
+        async function testAuthenticatedRequest() {
+            const resultDiv = document.getElementById('auth-result');
+            
+            if (!authToken) {
+                resultDiv.innerHTML = '<span class="warning">⚠️ Please login first!</span>';
+                updateSummary('Auth test skipped - no token', 'warning');
+                return;
+            }
+            
+            resultDiv.innerHTML = 'Testing authenticated request...';
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/verify`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<span class="success">✅ Authenticated Request Successful!</span>\nUser verified: ${data.user.email}`;
+                    updateSummary('Authenticated request successful', 'success');
+                } else {
+                    resultDiv.innerHTML = `<span class="error">❌ Authentication Failed!</span>\nStatus: ${response.status}\nError: ${JSON.stringify(data, null, 2)}`;
+                    updateSummary('Authentication failed', 'error');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">❌ Authenticated Request Failed!</span>\nError: ${error.message}`;
+                updateSummary('Authenticated request failed: ' + error.message, 'error');
+            }
+        }
+
+        // Run health check on load
+        window.onload = () => {
+            updateSummary('Page loaded - API URL: ' + API_URL, 'info');
+            testHealth();
+        };
+    </script>
+</body>
+</html>

@@ -491,7 +491,7 @@ export function CampaignBuilderWizard() {
     // Start polling for progress updates
     const progressPollInterval = setInterval(async () => {
       try {
-        const { data } = await CampaignBuilderService.getSession(session.sessionId)
+        const data = await CampaignBuilderService.getSession(session.sessionId)
         if (data?.blueprint_progress) {
           const progress = data.blueprint_progress
           setBlueprintProgress({
@@ -552,8 +552,17 @@ export function CampaignBuilderWizard() {
       while (!orchestrationComplete && attempts < maxAttempts) {
         await new Promise(resolve => setTimeout(resolve, 2000))
 
-        const { data } = await CampaignBuilderService.getSession(session.sessionId)
-        if (data?.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans) {
+        const data = await CampaignBuilderService.getSession(session.sessionId)
+
+        // Debug logging
+        console.log(`📊 Polling attempt ${attempts + 1}/${maxAttempts}:`, {
+          hasData: !!data,
+          hasPart3: !!data?.part3_stakeholderorchestration,
+          hasPlans: !!data?.part3_stakeholderorchestration?.stakeholderOrchestrationPlans,
+          plansCount: data?.part3_stakeholderorchestration?.stakeholderOrchestrationPlans?.length
+        })
+
+        if (data?.part3_stakeholderorchestration?.stakeholderOrchestrationPlans) {
           orchestrationComplete = true
           console.log('✅ Stakeholder orchestration complete!')
         }
@@ -590,6 +599,25 @@ export function CampaignBuilderWizard() {
 
       const result = await finalizeResponse.json()
       console.log('✅ Complete blueprint generated:', result)
+      console.log('📊 Blueprint structure:', {
+        hasOverview: !!result.overview,
+        hasPart1: !!result.part1_goalFramework,
+        hasPart2: !!result.part2_stakeholderMapping,
+        hasPart3: !!result.part3_stakeholderOrchestration,
+        hasPart5: !!result.part5_executionRequirements,
+        part3Plans: result.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans?.length || 0
+      })
+
+      // Save blueprint to database
+      try {
+        await CampaignBuilderService.updateSession(session.sessionId, {
+          blueprint: result
+        })
+        console.log('✅ Blueprint saved to database')
+      } catch (err) {
+        console.error('❌ Failed to save blueprint to database:', err)
+        // Continue anyway - we have it in state
+      }
 
       // Clear progress polling
       clearInterval(progressPollInterval)

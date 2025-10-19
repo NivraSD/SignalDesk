@@ -1194,19 +1194,26 @@ export default function NIVContentOrchestratorProduction({
         }])
       }
       else if (response.mode === 'signaldeck_generating') {
-        console.log('⏳ SIGNALDECK GENERATING')
+        console.log('⏳ SIGNALDECK GENERATING - Starting to poll')
 
+        // Show initial message
+        const pollingMessageId = `msg-${Date.now()}`
         setMessages(prev => [...prev, {
-          id: `msg-${Date.now()}`,
+          id: pollingMessageId,
           role: 'assistant',
           content: response.message,
           timestamp: new Date(),
           metadata: {
-            type: 'signaldeck_generating',
+            type: 'signaldeck',
+            status: 'generating',
             generationId: response.generationId,
             pollUrl: response.pollUrl
           }
         }])
+
+        // Start polling for completion
+        const topic = response.metadata?.topic || 'your presentation'
+        pollSignalDeckStatus(response.generationId, pollingMessageId, topic)
       }
       else if (response.mode === 'generation_complete') {
         console.log('✅ GENERATION COMPLETE - Displaying content pieces:', response.generatedContent?.length)
@@ -1954,6 +1961,84 @@ IMPORTANT:
         }
       } catch (error) {
         console.error('Polling error:', error)
+      }
+    }, 3000) // Poll every 3 seconds
+  }
+
+  // Poll SignalDeck PowerPoint status
+  const pollSignalDeckStatus = async (generationId: string, messageId: string, topic: string) => {
+    let attempts = 0
+    const maxAttempts = 40 // 40 attempts * 3 seconds = 2 minutes max
+
+    const pollInterval = setInterval(async () => {
+      attempts++
+
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/signaldeck-presentation/status/${generationId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`
+            }
+          }
+        )
+
+        if (response.ok) {
+          const data = await response.json()
+          console.log(`📊 SignalDeck Poll ${attempts}/${maxAttempts}:`, data.status)
+
+          if (data.status === 'completed' && data.downloadUrl) {
+            clearInterval(pollInterval)
+
+            // Update the message with download link
+            setMessages(prev => prev.map(msg =>
+              msg.id === messageId
+                ? {
+                    ...msg,
+                    content: `✅ Your PowerPoint presentation "${topic}" is ready!\n\n[Download PowerPoint](${data.downloadUrl})`,
+                    metadata: {
+                      ...msg.metadata,
+                      status: 'completed',
+                      downloadUrl: data.downloadUrl,
+                      presentationTopic: topic
+                    }
+                  }
+                : msg
+            ))
+
+            console.log('🎯 SignalDeck PowerPoint complete!')
+          } else if (data.status === 'failed' || data.status === 'error') {
+            clearInterval(pollInterval)
+
+            setMessages(prev => prev.map(msg =>
+              msg.id === messageId
+                ? {
+                    ...msg,
+                    content: `❌ PowerPoint generation failed: ${data.message || data.error || 'Unknown error'}`,
+                    error: true
+                  }
+                : msg
+            ))
+          }
+        }
+
+        if (attempts >= maxAttempts) {
+          clearInterval(pollInterval)
+          setMessages(prev => prev.map(msg =>
+            msg.id === messageId
+              ? {
+                  ...msg,
+                  content: `⏱️ PowerPoint is still generating. This may take a few more moments for complex presentations with many slides.`,
+                  metadata: {
+                    ...msg.metadata,
+                    status: 'timeout'
+                  }
+                }
+              : msg
+          ))
+        }
+      } catch (error) {
+        console.error('SignalDeck polling error:', error)
       }
     }, 3000) // Poll every 3 seconds
   }

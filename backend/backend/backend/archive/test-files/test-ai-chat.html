@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test AI Chat</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #1a1a1a; color: white; }
+        .container { max-width: 600px; margin: 0 auto; }
+        button { padding: 10px 20px; margin: 10px; cursor: pointer; }
+        .success { color: #4ade80; }
+        .error { color: #f87171; }
+        .response { background: #333; padding: 15px; margin: 10px 0; border-radius: 8px; }
+        textarea { width: 100%; padding: 10px; background: #333; color: white; border: 1px solid #555; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test SignalDesk AI Chat</h1>
+        
+        <button onclick="testLogin()">1. Login as Demo User</button>
+        <div id="loginResult"></div>
+        
+        <button onclick="testAIChat()">2. Test AI Chat Endpoint</button>
+        <div id="chatResult"></div>
+        
+        <h3>Manual Test:</h3>
+        <textarea id="message" rows="3" placeholder="Enter your message...">I need to write a press release</textarea>
+        <button onclick="sendMessage()">Send to AI</button>
+        <div id="aiResponse"></div>
+    </div>
+
+    <script>
+        let authToken = null;
+        
+        async function testLogin() {
+            try {
+                const response = await fetch('http://localhost:5001/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'demo@signaldesk.com',
+                        password: 'demo123'
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    authToken = data.token;
+                    document.getElementById('loginResult').innerHTML = 
+                        '<div class="success">✅ Login successful! Token saved.</div>';
+                } else {
+                    document.getElementById('loginResult').innerHTML = 
+                        '<div class="error">❌ Login failed: ' + data.message + '</div>';
+                }
+            } catch (error) {
+                document.getElementById('loginResult').innerHTML = 
+                    '<div class="error">❌ Error: ' + error.message + '</div>';
+            }
+        }
+        
+        async function testAIChat() {
+            if (!authToken) {
+                document.getElementById('chatResult').innerHTML = 
+                    '<div class="error">❌ Please login first!</div>';
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:5001/api/ai/unified-chat', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        message: 'Hello, can you help me?',
+                        mode: 'content',
+                        context: {
+                            folder: 'content-generator',
+                            projectId: 'demo-project'
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('chatResult').innerHTML = 
+                        '<div class="success">✅ AI Chat working!</div>' +
+                        '<div class="response"><strong>Response:</strong><br>' + 
+                        data.response + '</div>';
+                } else {
+                    document.getElementById('chatResult').innerHTML = 
+                        '<div class="error">❌ Chat failed: ' + data.message + '</div>';
+                }
+            } catch (error) {
+                document.getElementById('chatResult').innerHTML = 
+                    '<div class="error">❌ Error: ' + error.message + '</div>';
+            }
+        }
+        
+        async function sendMessage() {
+            if (!authToken) {
+                alert('Please login first!');
+                return;
+            }
+            
+            const message = document.getElementById('message').value;
+            
+            try {
+                const response = await fetch('http://localhost:5001/api/ai/unified-chat', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        mode: 'content',
+                        context: {
+                            folder: 'content-generator',
+                            projectId: 'demo-project'
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('aiResponse').innerHTML = 
+                        '<div class="success">✅ Response received:</div>' +
+                        '<div class="response">' + data.response + '</div>';
+                    
+                    if (data.suggestions && data.suggestions.length > 0) {
+                        document.getElementById('aiResponse').innerHTML += 
+                            '<div><strong>Suggestions:</strong><br>' + 
+                            data.suggestions.join('<br>') + '</div>';
+                    }
+                } else {
+                    document.getElementById('aiResponse').innerHTML = 
+                        '<div class="error">❌ Error: ' + data.message + '</div>';
+                }
+            } catch (error) {
+                document.getElementById('aiResponse').innerHTML = 
+                    '<div class="error">❌ Error: ' + error.message + '</div>';
+            }
+        }
+    </script>
+</body>
+</html>

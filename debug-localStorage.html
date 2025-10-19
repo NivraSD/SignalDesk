@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug LocalStorage</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #0F172A;
+            color: #E2E8F0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #6366F1;
+        }
+        .storage-item {
+            background: #1F2937;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 12px;
+            border: 1px solid #374151;
+        }
+        .key {
+            color: #10B981;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .value {
+            color: #D1D5DB;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background: #111827;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        button {
+            background: #6366F1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #4F46E5;
+        }
+        .danger {
+            background: #EF4444;
+        }
+        .danger:hover {
+            background: #DC2626;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 SignalDesk LocalStorage Debug</h1>
+        
+        <div>
+            <button onclick="refreshData()">🔄 Refresh</button>
+            <button onclick="clearAll()" class="danger">🗑️ Clear All SignalDesk Data</button>
+            <button onclick="setTestData()">📝 Set Test Data</button>
+        </div>
+
+        <div id="storage-content"></div>
+    </div>
+
+    <script>
+        function displayStorage() {
+            const content = document.getElementById('storage-content');
+            content.innerHTML = '';
+            
+            const signalDeskKeys = [
+                'signaldesk_onboarding',
+                'signaldesk_organization', 
+                'signaldesk_completed',
+                'signaldesk_initialized',
+                'signaldesk_initial_opportunities'
+            ];
+            
+            signalDeskKeys.forEach(key => {
+                const value = localStorage.getItem(key);
+                
+                const item = document.createElement('div');
+                item.className = 'storage-item';
+                
+                const keyDiv = document.createElement('div');
+                keyDiv.className = 'key';
+                keyDiv.textContent = key + ':';
+                
+                const valueDiv = document.createElement('div');
+                valueDiv.className = 'value';
+                
+                if (value) {
+                    try {
+                        const parsed = JSON.parse(value);
+                        valueDiv.textContent = JSON.stringify(parsed, null, 2);
+                    } catch {
+                        valueDiv.textContent = value;
+                    }
+                } else {
+                    valueDiv.textContent = '(not set)';
+                    valueDiv.style.color = '#6B7280';
+                }
+                
+                item.appendChild(keyDiv);
+                item.appendChild(valueDiv);
+                content.appendChild(item);
+            });
+            
+            // Show all localStorage keys
+            const allKeys = Object.keys(localStorage).filter(k => k.includes('signaldesk'));
+            const otherDiv = document.createElement('div');
+            otherDiv.className = 'storage-item';
+            otherDiv.innerHTML = `<div class="key">All SignalDesk Keys Found:</div><div class="value">${allKeys.join('\n') || '(none)'}</div>`;
+            content.appendChild(otherDiv);
+        }
+        
+        function refreshData() {
+            displayStorage();
+        }
+        
+        function clearAll() {
+            if (confirm('Clear all SignalDesk localStorage data?')) {
+                const keys = Object.keys(localStorage).filter(k => k.includes('signaldesk'));
+                keys.forEach(key => localStorage.removeItem(key));
+                displayStorage();
+            }
+        }
+        
+        function setTestData() {
+            const testConfig = {
+                organization: {
+                    name: 'Test Company',
+                    domain: 'test.com',
+                    industry: 'technology',
+                    size: 'medium'
+                },
+                goals: {
+                    thought_leadership: true,
+                    media_coverage: true,
+                    competitive_positioning: true
+                },
+                stakeholders: ['tech_journalists', 'industry_analysts', 'investors', 'competitors']
+            };
+            
+            localStorage.setItem('signaldesk_onboarding', JSON.stringify(testConfig));
+            localStorage.setItem('signaldesk_organization', JSON.stringify(testConfig.organization));
+            localStorage.setItem('signaldesk_completed', 'true');
+            
+            alert('Test data set! Refresh the SignalDesk app to see it.');
+            displayStorage();
+        }
+        
+        // Initial display
+        displayStorage();
+        
+        // Auto-refresh every 2 seconds
+        setInterval(displayStorage, 2000);
+    </script>
+</body>
+</html>

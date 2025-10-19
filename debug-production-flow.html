@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Debug Production Flow</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        button { background: #0066cc; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0052cc; }
+        .log { margin: 10px 0; padding: 10px; background: #f9f9f9; border-left: 3px solid #0066cc; font-family: monospace; font-size: 12px; }
+        .error { border-left-color: #cc0000; background: #fff5f5; }
+        .success { border-left-color: #00cc00; background: #f5fff5; }
+        .warning { border-left-color: #ff9900; background: #fffbf5; }
+        pre { white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Debug Production Flow</h1>
+        <p>This mimics EXACTLY what happens in your production React app</p>
+        
+        <button onclick="simulateProductionFlow()">Simulate Production Flow</button>
+        <button onclick="clearLogs()">Clear Logs</button>
+        
+        <div id="logs"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+        
+        function log(message, data, type = 'log') {
+            const logs = document.getElementById('logs');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log ${type}`;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            let content = `[${timestamp}] ${message}`;
+            if (data) {
+                content += `\n${JSON.stringify(data, null, 2)}`;
+            }
+            
+            logEntry.innerHTML = `<pre>${content}</pre>`;
+            logs.insertBefore(logEntry, logs.firstChild);
+            
+            // Also log to console
+            console.log(`[${type.toUpperCase()}] ${message}`, data || '');
+        }
+        
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+        
+        // This simulates EXACTLY what MultiStageIntelligence.js does
+        async function simulateProductionFlow() {
+            log('🚀 Starting production flow simulation', null, 'success');
+            
+            // Step 1: Initial organization (from props or wherever)
+            const organizationProp = {
+                name: 'Test Company',
+                industry: 'Technology'
+            };
+            log('1️⃣ Initial organization from props', organizationProp);
+            
+            // Step 2: Create stage config (exactly like createStageConfig in MultiStageIntelligence.js)
+            const stageIndex = 1; // Stage 2 = competitive
+            const INTELLIGENCE_STAGES = [
+                { id: 'extraction', name: 'Organization Data Extraction', focus: 'organization' },
+                { id: 'competitive', name: 'Competitive Intelligence', focus: 'competitors' },
+                { id: 'media', name: 'Media Landscape', focus: 'media' },
+                { id: 'regulatory', name: 'Regulatory Environment', focus: 'regulatory' },
+                { id: 'trends', name: 'Market Trends', focus: 'trends' },
+                { id: 'synthesis', name: 'Strategic Synthesis', focus: 'synthesis' }
+            ];
+            
+            const stage = INTELLIGENCE_STAGES[stageIndex];
+            
+            // This is EXACTLY what createStageConfig does
+            const safeOrganization = {
+                ...organizationProp,
+                name: organizationProp?.name || 'Default Organization'
+            };
+            
+            const baseConfig = {
+                organization: safeOrganization,
+                competitors: [],
+                regulators: [],
+                activists: [],
+                media_outlets: [],
+                investors: [],
+                analysts: [],
+                monitoring_topics: []
+            };
+            
+            const stageConfig = {
+                ...baseConfig,
+                stageConfig: {
+                    stageId: stage.id,
+                    stageName: stage.name,
+                    focus: stage.focus,
+                    isElaboratePipeline: true,
+                    previousStageResults: null
+                }
+            };
+            
+            log('2️⃣ Stage config created', stageConfig);
+            
+            // Step 3: Call orchestrate (exactly like intelligenceOrchestratorV4.orchestrate)
+            log('3️⃣ Calling orchestrate method', null);
+            
+            // This is what orchestrate does
+            const config = stageConfig;
+            const organization = config.organization || config;
+            const innerStageConfig = config.stageConfig || {};
+            
+            log('4️⃣ Orchestrate extracted', {
+                organization,
+                hasName: !!organization?.name,
+                organizationName: organization?.name,
+                innerStageConfig
+            });
+            
+            // Step 4: Since it's elaborate pipeline, it calls runElaborateStage
+            if (innerStageConfig.isElaboratePipeline && innerStageConfig.stageId) {
+                log('5️⃣ Routing to runElaborateStage', null);
+                
+                // This is what runElaborateStage does for competitive
+                if (innerStageConfig.stageId === 'competitive') {
+                    await simulateRunCompetitiveStage(organization, config);
+                }
+            }
+        }
+        
+        async function simulateRunCompetitiveStage(organization, config) {
+            log('6️⃣ In runCompetitiveStage', { 
+                organizationReceived: organization,
+                configReceived: config 
+            });
+            
+            // This is EXACTLY what runCompetitiveStage does
+            const orgName = organization?.name || config?.organization?.name || 'Default Organization';
+            const safeOrganization = {
+                ...organization,
+                name: orgName
+            };
+            
+            log('7️⃣ Safe organization created', {
+                orgName,
+                safeOrganization
+            });
+            
+            // Try to load profile
+            let savedProfile = null;
+            
+            try {
+                log('8️⃣ Loading profile from persistence', { orgName });
+                
+                const persistResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-persistence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        action: 'getProfile',
+                        organization_name: orgName
+                    })
+                });
+                
+                if (persistResponse.ok) {
+                    const result = await persistResponse.json();
+                    log('9️⃣ Profile response', result, result.success ? 'success' : 'warning');
+                    
+                    if (result.success && result.profile) {
+                        savedProfile = result.profile;
+                    }
+                }
+            } catch (e) {
+                log('❌ Error loading profile', e.message, 'error');
+            }
+            
+            // Build request body
+            const requestBody = {
+                organization: {
+                    ...(savedProfile || safeOrganization),
+                    name: orgName // Always ensure name is present
+                },
+                competitors: savedProfile?.competitors || config.competitors || [],
+                savedProfile: savedProfile
+            };
+            
+            log('🔟 Request body for competitor stage', requestBody, 'warning');
+            
+            try {
+                log('1️⃣1️⃣ Calling intelligence-stage-1-competitors', null);
+                
+                const competitorResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-1-competitors`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                if (!competitorResponse.ok) {
+                    const errorText = await competitorResponse.text();
+                    log(`❌ Competitor stage failed: ${competitorResponse.status}`, errorText, 'error');
+                } else {
+                    const data = await competitorResponse.json();
+                    log('✅ Competitor stage succeeded!', data, 'success');
+                }
+            } catch (error) {
+                log('❌ Request failed', error.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

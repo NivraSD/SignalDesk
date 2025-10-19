@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Supabase User</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #0a0a0a;
+            color: #e5e5e5;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        button {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        .success { color: #10b981; }
+        .error { color: #ef4444; }
+        .info { color: #60a5fa; }
+        .result {
+            background: #171717;
+            border: 1px solid #262626;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+        }
+        input {
+            background: #171717;
+            border: 1px solid #404040;
+            color: #e5e5e5;
+            padding: 8px;
+            margin: 5px;
+            border-radius: 4px;
+            width: 250px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔐 Create Supabase Auth User</h1>
+    
+    <div class="result">
+        <h3>Create New User</h3>
+        <div>
+            <input type="email" id="email" placeholder="Email" value="admin@signaldesk.com" />
+            <input type="password" id="password" placeholder="Password" value="admin123" />
+            <button onclick="createUser()">Create User</button>
+        </div>
+    </div>
+
+    <div class="result">
+        <h3>Test Login</h3>
+        <button onclick="testLogin()">Test Login with Created User</button>
+    </div>
+
+    <div id="status"></div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+        const supabaseUrl = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+        
+        const supabase = createClient(supabaseUrl, supabaseAnonKey);
+        
+        window.createUser = async function() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const statusDiv = document.getElementById('status');
+            
+            statusDiv.innerHTML = '<div class="info">Creating user...</div>';
+            
+            try {
+                // Sign up the user
+                const { data: authData, error: authError } = await supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: {
+                            name: 'Admin User'
+                        }
+                    }
+                });
+                
+                if (authError) throw authError;
+                
+                statusDiv.innerHTML = `
+                    <div class="success">✅ Auth user created successfully!</div>
+                    <div class="result">
+                        User ID: ${authData.user?.id}
+                        Email: ${authData.user?.email}
+                        
+                        Note: User might need email confirmation depending on your Supabase settings.
+                        If email confirmation is required, check your email or disable it in Supabase dashboard.
+                    </div>
+                `;
+                
+                // Now create the user profile in the users table
+                if (authData.user) {
+                    const { error: profileError } = await supabase
+                        .from('users')
+                        .upsert({
+                            id: authData.user.id,
+                            email: authData.user.email,
+                            name: 'Admin User',
+                            organization_id: 'demo-org',
+                            role: 'admin',
+                            created_at: new Date().toISOString()
+                        });
+                    
+                    if (profileError) {
+                        statusDiv.innerHTML += `<div class="error">Warning: Could not create user profile: ${profileError.message}</div>`;
+                    } else {
+                        statusDiv.innerHTML += `<div class="success">✅ User profile created in database!</div>`;
+                    }
+                }
+                
+            } catch (error) {
+                statusDiv.innerHTML = `
+                    <div class="error">❌ Error creating user: ${error.message}</div>
+                    <div class="info">
+                        If user already exists, try logging in instead.
+                        Or go to Supabase dashboard > Authentication > Users to manage users.
+                    </div>
+                `;
+            }
+        };
+        
+        window.testLogin = async function() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const statusDiv = document.getElementById('status');
+            
+            statusDiv.innerHTML = '<div class="info">Testing login...</div>';
+            
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
+                });
+                
+                if (error) throw error;
+                
+                statusDiv.innerHTML = `
+                    <div class="success">✅ Login successful!</div>
+                    <div class="result">
+                        User: ${data.user.email}
+                        Session: ${data.session ? 'Active' : 'None'}
+                        Token: ${data.session?.access_token?.substring(0, 50)}...
+                        
+                        You can now login to the app with these credentials!
+                    </div>
+                `;
+                
+                // Sign out after test
+                await supabase.auth.signOut();
+                
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="error">❌ Login failed: ${error.message}</div>`;
+            }
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Pipeline Request</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #00ff00;
+        }
+        button {
+            background: #333;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        pre {
+            background: #0a0a0a;
+            padding: 15px;
+            border: 1px solid #00ff00;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        .error {
+            color: #ff0000;
+        }
+        .success {
+            color: #00ff00;
+        }
+        .warning {
+            color: #ffaa00;
+        }
+    </style>
+</head>
+<body>
+    <h1>Debug Pipeline Request</h1>
+    
+    <button onclick="testActualPipelineRequest()">Test Actual Pipeline Request</button>
+    <button onclick="testWithFixedOrganization()">Test With Fixed Organization</button>
+    <button onclick="testEdgeFunctionDirectly()">Test Edge Function Directly</button>
+    
+    <h2>Request Being Sent:</h2>
+    <pre id="request-data"></pre>
+    
+    <h2>Response:</h2>
+    <pre id="response-data"></pre>
+    
+    <h2>Console Logs:</h2>
+    <pre id="console-logs"></pre>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3Nzk5MjgsImV4cCI6MjA1MTM1NTkyOH0.MJgH4j8wXJhZgfvMOpViiCyxT-BlLCIIqVMJsE_lXG0';
+        
+        // Override console.log to capture logs
+        const originalLog = console.log;
+        const logs = [];
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            logs.push(args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : arg
+            ).join(' '));
+            document.getElementById('console-logs').textContent = logs.join('\n');
+        };
+        
+        async function testActualPipelineRequest() {
+            const requestEl = document.getElementById('request-data');
+            const responseEl = document.getElementById('response-data');
+            
+            // This mimics what the pipeline sends for Stage 2 (competitive)
+            const organization = {
+                // Note: name might be missing here!
+                competitors: [],
+                stakeholders: {}
+            };
+            
+            const config = {
+                competitors: [],
+                regulators: [],
+                activists: [],
+                media_outlets: [],
+                investors: [],
+                analysts: [],
+                monitoring_topics: []
+            };
+            
+            // This is what runCompetitiveStage does
+            const orgName = organization?.name || config?.organization?.name || 'Default Organization';
+            const safeOrganization = {
+                ...organization,
+                name: orgName
+            };
+            
+            console.log('📊 Organization being sent:', safeOrganization);
+            
+            // First try to get profile
+            let savedProfile = null;
+            try {
+                const persistResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-persistence`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        action: 'getProfile',
+                        organization_name: orgName
+                    })
+                });
+                
+                if (persistResponse.ok) {
+                    const result = await persistResponse.json();
+                    if (result.success && result.profile) {
+                        savedProfile = result.profile;
+                        console.log('✅ Got profile:', savedProfile);
+                    }
+                }
+            } catch (e) {
+                console.log('❌ Error getting profile:', e);
+            }
+            
+            // Now send to competitor stage
+            const requestBody = {
+                organization: savedProfile || safeOrganization,
+                competitors: savedProfile?.competitors || config.competitors || [],
+                savedProfile: savedProfile
+            };
+            
+            requestEl.textContent = 'Request body:\n' + JSON.stringify(requestBody, null, 2);
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-1-competitors`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                const responseText = await response.text();
+                responseEl.textContent = `Status: ${response.status} ${response.statusText}\n\n${responseText}`;
+                
+                if (!response.ok) {
+                    responseEl.className = 'error';
+                } else {
+                    responseEl.className = 'success';
+                }
+            } catch (error) {
+                responseEl.textContent = `Error: ${error.message}`;
+                responseEl.className = 'error';
+            }
+        }
+        
+        async function testWithFixedOrganization() {
+            const requestEl = document.getElementById('request-data');
+            const responseEl = document.getElementById('response-data');
+            
+            // Force a proper organization structure
+            const requestBody = {
+                organization: {
+                    name: 'Test Company Fixed',
+                    industry: 'Technology'
+                },
+                competitors: [],
+                monitoring_data: [],
+                fullProfile: {}
+            };
+            
+            requestEl.textContent = 'Request body:\n' + JSON.stringify(requestBody, null, 2);
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-1-competitors`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                const responseText = await response.text();
+                responseEl.textContent = `Status: ${response.status} ${response.statusText}\n\n${responseText}`;
+                
+                if (!response.ok) {
+                    responseEl.className = 'error';
+                } else {
+                    responseEl.className = 'success';
+                    const data = JSON.parse(responseText);
+                    responseEl.textContent = `✅ SUCCESS!\n\n${JSON.stringify(data, null, 2)}`;
+                }
+            } catch (error) {
+                responseEl.textContent = `Error: ${error.message}`;
+                responseEl.className = 'error';
+            }
+        }
+        
+        async function testEdgeFunctionDirectly() {
+            const requestEl = document.getElementById('request-data');
+            const responseEl = document.getElementById('response-data');
+            
+            // Test with minimal valid request
+            const requestBody = {
+                organization: {
+                    name: 'Direct Test Company'
+                }
+            };
+            
+            requestEl.textContent = 'Minimal request body:\n' + JSON.stringify(requestBody, null, 2);
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-stage-1-competitors`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                const responseText = await response.text();
+                
+                if (!response.ok) {
+                    responseEl.textContent = `❌ Status: ${response.status}\n\nError: ${responseText}`;
+                    responseEl.className = 'error';
+                    
+                    // Try to parse error message
+                    try {
+                        const error = JSON.parse(responseText);
+                        responseEl.textContent += `\n\nParsed error: ${error.error || error.message || 'Unknown error'}`;
+                    } catch (e) {
+                        // Not JSON
+                    }
+                } else {
+                    responseEl.className = 'success';
+                    responseEl.textContent = `✅ SUCCESS!\n\nStatus: ${response.status}`;
+                }
+            } catch (error) {
+                responseEl.textContent = `Network Error: ${error.message}`;
+                responseEl.className = 'error';
+            }
+        }
+    </script>
+</body>
+</html>

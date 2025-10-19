@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SignalDesk AI Flow Test - Complete</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #0a0a0a;
+            color: #fff;
+        }
+        h1 {
+            color: #3b82f6;
+            border-bottom: 2px solid #1e293b;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        .response {
+            background: #000;
+            border: 1px solid #333;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-family: 'Monaco', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .chat-container {
+            display: flex;
+            gap: 20px;
+        }
+        .chat-box {
+            flex: 1;
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .messages {
+            height: 300px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #000;
+            border-radius: 4px;
+        }
+        .message {
+            margin: 10px 0;
+            padding: 8px;
+            border-radius: 4px;
+        }
+        .user-message {
+            background: #1e40af;
+            text-align: right;
+        }
+        .ai-message {
+            background: #1e293b;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+        input {
+            flex: 1;
+            padding: 10px;
+            background: #000;
+            border: 1px solid #333;
+            color: #fff;
+            border-radius: 4px;
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-size: 12px;
+        }
+        .status.success {
+            background: #065f46;
+            color: #10b981;
+        }
+        .status.error {
+            background: #7f1d1d;
+            color: #ef4444;
+        }
+        .status.info {
+            background: #1e3a8a;
+            color: #60a5fa;
+        }
+        .content-display {
+            background: #000;
+            border: 2px solid #3b82f6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            min-height: 200px;
+        }
+        .content-display h3 {
+            color: #3b82f6;
+            margin-top: 0;
+        }
+        .highlight {
+            background: #fbbf24;
+            color: #000;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 SignalDesk AI Assistant Complete Flow Test</h1>
+    
+    <div class="test-section">
+        <h2>Test Setup</h2>
+        <div class="status info">Backend: http://localhost:3001</div>
+        <button onclick="login()">1. Login First</button>
+        <div id="auth-status"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>AI Assistant Chat Test</h2>
+        <p>This simulates the LEFT panel (AI Assistant)</p>
+        
+        <div class="chat-container">
+            <div class="chat-box">
+                <h3>Conversation</h3>
+                <div id="messages" class="messages"></div>
+                <div class="input-group">
+                    <input type="text" id="chat-input" placeholder="Type your message..." onkeypress="if(event.key==='Enter') sendMessage()">
+                    <button onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+            
+            <div class="chat-box">
+                <h3>Debug Info</h3>
+                <div id="debug-info" class="response"></div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <h3>Quick Test Scenarios:</h3>
+            <button onclick="testScenario('greeting')">Test 1: Greeting (Should NOT generate)</button>
+            <button onclick="testScenario('immediate')">Test 2: Immediate Request (Should have conversation)</button>
+            <button onclick="testScenario('conversation')">Test 3: Full Conversation Flow</button>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Content Display Area</h2>
+        <p>This simulates the CENTER panel (Content Creator Workspace)</p>
+        <div id="content-display" class="content-display">
+            <h3>Generated Content Will Appear Here</h3>
+            <div id="generated-content">No content generated yet...</div>
+        </div>
+    </div>
+
+    <script>
+        let authToken = null;
+        let conversationHistory = [];
+        let messageCount = 0;
+
+        async function login() {
+            try {
+                const response = await fetch('http://localhost:3001/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'demo@signaldesk.com',
+                        password: 'demo123'
+                    })
+                });
+
+                const data = await response.json();
+                if (data.token) {
+                    authToken = data.token;
+                    document.getElementById('auth-status').innerHTML = 
+                        '<div class="status success">✅ Logged in successfully!</div>';
+                } else {
+                    throw new Error('Login failed');
+                }
+            } catch (error) {
+                document.getElementById('auth-status').innerHTML = 
+                    `<div class="status error">❌ Login failed: ${error.message}</div>`;
+            }
+        }
+
+        function addMessage(content, isUser = false) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user-message' : 'ai-message'}`;
+            messageDiv.textContent = content;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        async function sendMessage(message = null) {
+            if (!authToken) {
+                alert('Please login first!');
+                return;
+            }
+
+            const input = document.getElementById('chat-input');
+            const messageToSend = message || input.value.trim();
+            
+            if (!messageToSend) return;
+            
+            if (!message) {
+                input.value = '';
+            }
+            
+            addMessage(messageToSend, true);
+            messageCount++;
+            
+            try {
+                const response = await fetch('http://localhost:3001/api/ai/unified-chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        message: messageToSend,
+                        mode: 'unified',
+                        context: {
+                            previousMessages: conversationHistory,
+                            messageCount: messageCount,
+                            contentTypeId: 'thought-leadership',
+                            contentTypeLabel: 'Thought Leadership'
+                        }
+                    })
+                });
+
+                const data = await response.json();
+                
+                // Update debug info
+                document.getElementById('debug-info').textContent = JSON.stringify({
+                    messageCount: messageCount,
+                    isGeneratedContent: data.isGeneratedContent,
+                    responseLength: data.response?.length,
+                    mode: data.mode,
+                    hasContent: !!data.response
+                }, null, 2);
+                
+                // Add to conversation history
+                conversationHistory.push({
+                    role: 'user',
+                    content: messageToSend
+                });
+                conversationHistory.push({
+                    role: 'assistant',
+                    content: data.response
+                });
+                
+                // Display response
+                if (data.isGeneratedContent) {
+                    // Content should go to workspace
+                    document.getElementById('generated-content').innerHTML = 
+                        `<div class="highlight">CONTENT GENERATED!</div>\n\n${data.response}`;
+                    addMessage("✨ I've generated your content! Check the Content Creator workspace.", false);
+                } else {
+                    // Regular chat message
+                    addMessage(data.response, false);
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                addMessage(`Error: ${error.message}`, false);
+            }
+        }
+
+        async function testScenario(scenario) {
+            // Clear previous conversation
+            conversationHistory = [];
+            messageCount = 0;
+            document.getElementById('messages').innerHTML = '';
+            document.getElementById('generated-content').innerHTML = 'No content generated yet...';
+            
+            switch(scenario) {
+                case 'greeting':
+                    await sendMessage("I'm working on thought leadership content");
+                    break;
+                    
+                case 'immediate':
+                    await sendMessage("Create a thought leadership article about AI");
+                    break;
+                    
+                case 'conversation':
+                    // Simulate a full conversation
+                    await sendMessage("I need help with thought leadership content");
+                    setTimeout(async () => {
+                        await sendMessage("It's about AI and the future of work");
+                        setTimeout(async () => {
+                            await sendMessage("Our audience is business executives");
+                            setTimeout(async () => {
+                                await sendMessage("yes, generate it please");
+                            }, 2000);
+                        }, 2000);
+                    }, 2000);
+                    break;
+            }
+        }
+
+        // Auto-login on load
+        window.onload = () => {
+            setTimeout(login, 500);
+        };
+    </script>
+</body>
+</html>

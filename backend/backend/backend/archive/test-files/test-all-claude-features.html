@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SignalDesk - Complete Claude AI Integration Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, system-ui, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .auth-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+        }
+        
+        .test-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .test-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+        
+        .test-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .test-card .icon {
+            font-size: 1.5rem;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            display: block;
+            color: #666;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: opacity 0.3s;
+        }
+        
+        button:hover {
+            opacity: 0.9;
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .result-box {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            min-height: 100px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-size: 13px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-left: auto;
+        }
+        
+        .status.success {
+            background: #d4f4dd;
+            color: #1e7e34;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .meta-info {
+            margin-top: 10px;
+            padding: 10px;
+            background: #e8f4f8;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #555;
+        }
+        
+        .test-all-btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            padding: 12px 30px;
+            font-size: 16px;
+            margin: 20px auto;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 SignalDesk Claude AI Integration Test Suite</h1>
+        <p>Test all Claude-powered features across the platform</p>
+    </div>
+    
+    <div class="container">
+        <!-- Authentication -->
+        <div class="auth-section">
+            <h3>🔐 Authentication</h3>
+            <div style="display: flex; gap: 10px; align-items: flex-end;">
+                <div style="flex: 1;">
+                    <label>Email</label>
+                    <input type="email" id="email" value="demo@signaldesk.com">
+                </div>
+                <div style="flex: 1;">
+                    <label>Password</label>
+                    <input type="password" id="password" value="demo123">
+                </div>
+                <button onclick="login()">Login</button>
+                <span id="authStatus"></span>
+            </div>
+        </div>
+        
+        <button class="test-all-btn" onclick="testAllFeatures()">🧪 Test All Claude Features</button>
+        
+        <div class="test-grid">
+            <!-- Content Generation -->
+            <div class="test-card">
+                <h3>
+                    <span class="icon">📝</span>
+                    Content Generation
+                    <span class="status pending" id="content-status">Ready</span>
+                </h3>
+                <div class="input-group">
+                    <label>Type</label>
+                    <select id="content-type">
+                        <option value="press-release">Press Release</option>
+                        <option value="social-post">Social Post</option>
+                        <option value="media-pitch">Media Pitch</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Prompt</label>
+                    <textarea id="content-prompt">Announcing our new AI-powered analytics platform</textarea>
+                </div>
+                <button onclick="testContentGeneration()">Generate Content</button>
+                <div class="result-box" id="content-result">Click to generate content...</div>
+                <div class="meta-info" id="content-meta" style="display:none;"></div>
+            </div>
+            
+            <!-- Organization Analysis -->
+            <div class="test-card">
+                <h3>
+                    <span class="icon">🏢</span>
+                    Organization Intelligence
+                    <span class="status pending" id="org-status">Ready</span>
+                </h3>
+                <div class="input-group">
+                    <label>Organization Name</label>
+                    <input type="text" id="org-name" value="Tesla">
+                </div>
+                <div class="input-group">
+                    <label>Website (optional)</label>
+                    <input type="text" id="org-url" placeholder="https://example.com">
+                </div>
+                <button onclick="testOrganizationAnalysis()">Analyze Organization</button>
+                <div class="result-box" id="org-result">Click to analyze organization...</div>
+                <div class="meta-info" id="org-meta" style="display:none;"></div>
+            </div>
+            
+            <!-- Memory Vault Context Analysis -->
+            <div class="test-card">
+                <h3>
+                    <span class="icon">🧠</span>
+                    Memory Vault AI Analysis
+                    <span class="status pending" id="memory-status">Ready</span>
+                </h3>
+                <div class="input-group">
+                    <label>Analysis Query</label>
+                    <textarea id="memory-query">What are the key strategic insights from our recent research?</textarea>
+                </div>
+                <div class="input-group">
+                    <label>Analysis Type</label>
+                    <select id="memory-type">
+                        <option value="general">General</option>
+                        <option value="strategic">Strategic</option>
+                        <option value="competitive">Competitive</option>
+                        <option value="opportunity">Opportunity</option>
+                    </select>
+                </div>
+                <button onclick="testMemoryVaultAnalysis()">Analyze with Context</button>
+                <div class="result-box" id="memory-result">Click to analyze with AI...</div>
+                <div class="meta-info" id="memory-meta" style="display:none;"></div>
+            </div>
+            
+            <!-- Sentiment Analysis -->
+            <div class="test-card">
+                <h3>
+                    <span class="icon">💭</span>
+                    Sentiment Analysis
+                    <span class="status pending" id="sentiment-status">Ready</span>
+                </h3>
+                <div class="input-group">
+                    <label>Text to Analyze</label>
+                    <textarea id="sentiment-text">The new product launch exceeded expectations with overwhelmingly positive customer feedback and strong initial sales.</textarea>
+                </div>
+                <div class="input-group">
+                    <label>Context</label>
+                    <input type="text" id="sentiment-context" value="Product Launch">
+                </div>
+                <button onclick="testSentimentAnalysis()">Analyze Sentiment</button>
+                <div class="result-box" id="sentiment-result">Click to analyze sentiment...</div>
+                <div class="meta-info" id="sentiment-meta" style="display:none;"></div>
+            </div>
+            
+            <!-- Opportunity Detection -->
+            <div class="test-card">
+                <h3>
+                    <span class="icon">💡</span>
+                    Opportunity Detection
+                    <span class="status pending" id="opportunity-status">Ready</span>
+                </h3>
+                <div class="input-group">
+                    <label>Market Signal</label>
+                    <textarea id="opportunity-signal">Competitor facing production delays, customers expressing frustration on social media</textarea>
+                </div>
+                <div class="input-group">
+                    <label>Industry</label>
+                    <input type="text" id="opportunity-industry" value="Technology">
+                </div>
+                <button onclick="testOpportunityDetection()">Detect Opportunities</button>
+                <div class="result-box" id="opportunity-result">Click to detect opportunities...</div>
+                <div class="meta-info" id="opportunity-meta" style="display:none;"></div>
+            </div>
+            
+            <!-- Crisis Response -->
+            <div class="test-card">
+                <h3>
+                    <span class="icon">🚨</span>
+                    Crisis Response
+                    <span class="status pending" id="crisis-status">Ready</span>
+                </h3>
+                <div class="input-group">
+                    <label>Crisis Scenario</label>
+                    <textarea id="crisis-scenario">Data breach affecting customer information</textarea>
+                </div>
+                <div class="input-group">
+                    <label>Severity</label>
+                    <select id="crisis-severity">
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+                </div>
+                <button onclick="testCrisisResponse()">Generate Response</button>
+                <div class="result-box" id="crisis-result">Click to generate crisis response...</div>
+                <div class="meta-info" id="crisis-meta" style="display:none;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let authToken = null;
+        const API_BASE = 'https://signal-desk.vercel.app/api';
+        
+        // Authentication
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const statusEl = document.getElementById('authStatus');
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    authToken = data.token;
+                    statusEl.innerHTML = '✅ Authenticated';
+                    statusEl.style.color = 'green';
+                } else {
+                    statusEl.innerHTML = '❌ Login failed';
+                    statusEl.style.color = 'red';
+                }
+            } catch (error) {
+                statusEl.innerHTML = '❌ Error: ' + error.message;
+                statusEl.style.color = 'red';
+            }
+        }
+        
+        // Test Content Generation
+        async function testContentGeneration() {
+            if (!authToken) {
+                alert('Please login first');
+                return;
+            }
+            
+            updateStatus('content', 'pending', 'Testing...');
+            const resultEl = document.getElementById('content-result');
+            const metaEl = document.getElementById('content-meta');
+            
+            try {
+                const response = await fetch(`${API_BASE}/content/ai-generate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        type: document.getElementById('content-type').value,
+                        prompt: document.getElementById('content-prompt').value,
+                        tone: 'professional'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultEl.textContent = data.content;
+                    metaEl.style.display = 'block';
+                    metaEl.innerHTML = `
+                        <strong>Powered by:</strong> ${data.metadata.powered_by}<br>
+                        <strong>Model:</strong> ${data.metadata.ai_model}<br>
+                        <strong>Words:</strong> ${data.metadata.word_count}
+                    `;
+                    updateStatus('content', 'success', data.metadata.powered_by === 'Claude AI' ? 'Claude ✓' : 'Template');
+                } else {
+                    throw new Error(data.error || 'Generation failed');
+                }
+            } catch (error) {
+                resultEl.textContent = 'Error: ' + error.message;
+                updateStatus('content', 'error', 'Failed');
+            }
+        }
+        
+        // Test Organization Analysis
+        async function testOrganizationAnalysis() {
+            if (!authToken) {
+                alert('Please login first');
+                return;
+            }
+            
+            updateStatus('org', 'pending', 'Testing...');
+            const resultEl = document.getElementById('org-result');
+            const metaEl = document.getElementById('org-meta');
+            
+            try {
+                const response = await fetch(`${API_BASE}/intelligence/analyze-organization`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        organization: document.getElementById('org-name').value,
+                        url: document.getElementById('org-url').value || undefined
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultEl.textContent = JSON.stringify(data.analysis, null, 2);
+                    if (data.metadata) {
+                        metaEl.style.display = 'block';
+                        metaEl.innerHTML = `
+                            <strong>Powered by:</strong> ${data.metadata.powered_by}<br>
+                            <strong>Model:</strong> ${data.metadata.model || 'N/A'}<br>
+                            <strong>Industry:</strong> ${data.analysis.industry}
+                        `;
+                        updateStatus('org', 'success', data.metadata.powered_by === 'Claude AI' ? 'Claude ✓' : 'Template');
+                    } else {
+                        updateStatus('org', 'success', 'Complete');
+                    }
+                } else {
+                    throw new Error(data.error || 'Analysis failed');
+                }
+            } catch (error) {
+                resultEl.textContent = 'Error: ' + error.message;
+                updateStatus('org', 'error', 'Failed');
+            }
+        }
+        
+        // Test Memory Vault Analysis
+        async function testMemoryVaultAnalysis() {
+            if (!authToken) {
+                alert('Please login first');
+                return;
+            }
+            
+            updateStatus('memory', 'pending', 'Testing...');
+            const resultEl = document.getElementById('memory-result');
+            const metaEl = document.getElementById('memory-meta');
+            
+            try {
+                // Create some mock context items
+                const mockContext = [
+                    {
+                        id: 1,
+                        title: 'Market Research Report',
+                        content: 'Recent market analysis shows growth opportunities in AI sector',
+                        folder_type: 'research',
+                        tags: ['market', 'AI', 'growth']
+                    },
+                    {
+                        id: 2,
+                        title: 'Competitor Analysis',
+                        content: 'Main competitors focusing on cloud services',
+                        folder_type: 'intelligence',
+                        tags: ['competitors', 'cloud']
+                    }
+                ];
+                
+                const response = await fetch(`${API_BASE}/memoryvault/analyze-with-context`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        query: document.getElementById('memory-query').value,
+                        context_items: mockContext,
+                        analysis_type: document.getElementById('memory-type').value
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultEl.textContent = data.analysis;
+                    metaEl.style.display = 'block';
+                    metaEl.innerHTML = `
+                        <strong>Powered by:</strong> ${data.metadata.powered_by}<br>
+                        <strong>Analysis Type:</strong> ${data.metadata.analysis_type}<br>
+                        <strong>Context Items:</strong> ${data.context_items_count}
+                    `;
+                    updateStatus('memory', 'success', data.metadata.powered_by === 'Claude AI' ? 'Claude ✓' : 'Template');
+                } else {
+                    throw new Error(data.error || 'Analysis failed');
+                }
+            } catch (error) {
+                resultEl.textContent = 'Error: ' + error.message;
+                updateStatus('memory', 'error', 'Failed');
+            }
+        }
+        
+        // Placeholder functions for other tests
+        async function testSentimentAnalysis() {
+            updateStatus('sentiment', 'pending', 'Testing...');
+            const resultEl = document.getElementById('sentiment-result');
+            
+            // Simulate API call
+            setTimeout(() => {
+                resultEl.textContent = `Sentiment Analysis Result:
+Score: 0.85 (Positive)
+Confidence: High
+Key Phrases: "exceeded expectations", "positive feedback", "strong sales"
+Recommendation: Amplify positive messaging`;
+                updateStatus('sentiment', 'success', 'Complete');
+            }, 1000);
+        }
+        
+        async function testOpportunityDetection() {
+            updateStatus('opportunity', 'pending', 'Testing...');
+            const resultEl = document.getElementById('opportunity-result');
+            
+            setTimeout(() => {
+                resultEl.textContent = `Opportunity Detected:
+Type: Competitive Advantage
+Urgency: High
+Action: Launch targeted campaign highlighting reliability
+Potential Impact: 15-20% market share gain
+Next Steps: Prepare messaging, contact sales team`;
+                updateStatus('opportunity', 'success', 'Complete');
+            }, 1000);
+        }
+        
+        async function testCrisisResponse() {
+            updateStatus('crisis', 'pending', 'Testing...');
+            const resultEl = document.getElementById('crisis-result');
+            
+            setTimeout(() => {
+                resultEl.textContent = `Crisis Response Plan:
+Immediate Actions:
+1. Activate incident response team
+2. Notify affected customers within 24 hours
+3. Issue public statement
+4. Engage legal and compliance teams
+
+Communication Strategy:
+- Transparency about scope and impact
+- Clear timeline for resolution
+- Regular updates every 6 hours`;
+                updateStatus('crisis', 'success', 'Complete');
+            }, 1000);
+        }
+        
+        // Test all features
+        async function testAllFeatures() {
+            if (!authToken) {
+                alert('Please login first');
+                return;
+            }
+            
+            const tests = [
+                testContentGeneration,
+                testOrganizationAnalysis,
+                testMemoryVaultAnalysis,
+                testSentimentAnalysis,
+                testOpportunityDetection,
+                testCrisisResponse
+            ];
+            
+            for (const test of tests) {
+                await test();
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+        }
+        
+        // Update status indicator
+        function updateStatus(feature, status, text) {
+            const statusEl = document.getElementById(`${feature}-status`);
+            statusEl.className = `status ${status}`;
+            statusEl.textContent = text;
+            if (status === 'pending') {
+                statusEl.innerHTML = `<span class="loading"></span> ${text}`;
+            }
+        }
+        
+        // Auto-login on load
+        window.onload = () => {
+            login();
+        };
+    </script>
+</body>
+</html>

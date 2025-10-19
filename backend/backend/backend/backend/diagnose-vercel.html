@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnose Vercel Deployment</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .container {
+            background: #2a2a2a;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        h1 {
+            color: #fff;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .diagnostic {
+            background: #333;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .success { background: #28a745; }
+        .error { background: #dc3545; }
+        .warning { background: #ffc107; color: #000; }
+        .pending { background: #6c757d; }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { opacity: 0.9; }
+        .code-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .result {
+            background: #1e1e1e;
+            border: 1px solid #444;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .highlight { color: #4ecdc4; font-weight: bold; }
+        .error-text { color: #ff6b6b; }
+        .success-text { color: #51cf66; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Vercel Deployment Diagnostic</h1>
+        
+        <div class="diagnostic">
+            <h3>Step 1: Check JavaScript Bundle</h3>
+            <p>This checks if MediaIntelligence is in the deployed JavaScript</p>
+            <button onclick="checkJSBundle()">Check JS Bundle</button>
+            <div id="jsResult" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="diagnostic">
+            <h3>Step 2: Check React Components</h3>
+            <p>This verifies what components are loaded in the app</p>
+            <button onclick="checkComponents()">Check Components</button>
+            <div id="componentResult" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="diagnostic">
+            <h3>Step 3: Direct Route Test</h3>
+            <p>Test accessing the Media Intelligence route directly</p>
+            <button onclick="testDirectRoute()">Test Media Route</button>
+            <div id="routeResult" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="diagnostic">
+            <h3>Step 4: Check Build Info</h3>
+            <p>Get deployment metadata and build information</p>
+            <button onclick="checkBuildInfo()">Check Build Info</button>
+            <div id="buildResult" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="diagnostic">
+            <h3>Step 5: Live Code Inspection</h3>
+            <p>Directly inspect what's running in production</p>
+            <button onclick="inspectLiveCode()">Inspect Live Code</button>
+            <div id="liveResult" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="diagnostic">
+            <h3>📋 Manual Verification Steps</h3>
+            <div class="code-block">
+1. Open DevTools Console at: https://signaldesk-frontend-23tc8mlwq-nivra-sd.vercel.app
+2. Run this command:
+   <span class="highlight">console.log(window.React ? 'React loaded' : 'No React')</span>
+
+3. Check for MediaIntelligence:
+   <span class="highlight">document.querySelector('[href*="media-list"]')</span>
+
+4. Check routing:
+   <span class="highlight">window.location.href = window.location.origin + '/projects/1/media-list'</span>
+
+5. Inspect bundle:
+   Open Network tab → Refresh → Look for main.*.js → Search for "MediaIntelligence"
+            </div>
+        </div>
+
+        <div class="diagnostic">
+            <h3>🚨 Common Issues & Fixes</h3>
+            <div style="margin: 15px 0;">
+                <strong>Issue: Old build cached</strong>
+                <div class="code-block">
+# Fix: Force rebuild without cache
+git commit --allow-empty -m "Force rebuild"
+git push origin main
+
+# Or in Vercel Dashboard:
+Settings → Functions → Clear Cache → Redeploy
+                </div>
+            </div>
+            <div style="margin: 15px 0;">
+                <strong>Issue: Build not detecting changes</strong>
+                <div class="code-block">
+# Fix: Update package.json to bust cache
+npm version patch --no-git-tag-version
+git add package.json package-lock.json
+git commit -m "Bump version"
+git push
+                </div>
+            </div>
+            <div style="margin: 15px 0;">
+                <strong>Issue: Wrong build directory</strong>
+                <div class="code-block">
+# Check vercel.json has:
+"outputDirectory": "frontend/build"
+"buildCommand": "cd frontend && npm install && npm run build"
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DEPLOYMENT_URL = 'https://signaldesk-frontend-23tc8mlwq-nivra-sd.vercel.app';
+
+        async function checkJSBundle() {
+            const resultEl = document.getElementById('jsResult');
+            resultEl.style.display = 'block';
+            resultEl.innerHTML = 'Checking JavaScript bundle...';
+            
+            try {
+                const response = await fetch(DEPLOYMENT_URL);
+                const html = await response.text();
+                
+                // Extract main.js URL
+                const jsMatch = html.match(/static\/js\/main\.[a-f0-9]+\.js/);
+                if (jsMatch) {
+                    resultEl.innerHTML = `Found JS bundle: ${jsMatch[0]}\n`;
+                    
+                    // Fetch the JS bundle
+                    const jsResponse = await fetch(`${DEPLOYMENT_URL}/${jsMatch[0]}`);
+                    const jsContent = await jsResponse.text();
+                    
+                    // Check for MediaIntelligence
+                    const hasMediaIntel = jsContent.includes('MediaIntelligence');
+                    const hasMediaPlatform = jsContent.includes('Media Intelligence Platform');
+                    const hasSmartSearch = jsContent.includes('Smart Search Builder');
+                    
+                    resultEl.innerHTML += `\n<span class="${hasMediaIntel ? 'success-text' : 'error-text'}">MediaIntelligence component: ${hasMediaIntel ? '✅ FOUND' : '❌ NOT FOUND'}</span>\n`;
+                    resultEl.innerHTML += `<span class="${hasMediaPlatform ? 'success-text' : 'error-text'}">Media Intelligence Platform: ${hasMediaPlatform ? '✅ FOUND' : '❌ NOT FOUND'}</span>\n`;
+                    resultEl.innerHTML += `<span class="${hasSmartSearch ? 'success-text' : 'error-text'}">Smart Search Builder: ${hasSmartSearch ? '✅ FOUND' : '❌ NOT FOUND'}</span>\n`;
+                    
+                    if (!hasMediaIntel) {
+                        resultEl.innerHTML += '\n<span class="error-text">⚠️ The MediaIntelligence component is not in the deployed bundle!</span>\n';
+                        resultEl.innerHTML += '<span class="error-text">This means Vercel is not building with the latest code.</span>';
+                    }
+                } else {
+                    resultEl.innerHTML = '<span class="error-text">Could not find JavaScript bundle URL</span>';
+                }
+            } catch (error) {
+                resultEl.innerHTML = `<span class="error-text">Error: ${error.message}</span>`;
+            }
+        }
+
+        async function checkComponents() {
+            const resultEl = document.getElementById('componentResult');
+            resultEl.style.display = 'block';
+            resultEl.innerHTML = 'Checking React components...';
+            
+            try {
+                const response = await fetch(DEPLOYMENT_URL);
+                const html = await response.text();
+                
+                // Check for component references
+                const components = [
+                    'MediaIntelligence',
+                    'MediaListBuilder',
+                    'CrisisCommandCenter',
+                    'ContentGenerator',
+                    'Dashboard'
+                ];
+                
+                resultEl.innerHTML = 'Component presence in HTML:\n\n';
+                components.forEach(comp => {
+                    const found = html.includes(comp);
+                    resultEl.innerHTML += `${comp}: ${found ? '✅' : '❌'}\n`;
+                });
+                
+            } catch (error) {
+                resultEl.innerHTML = `<span class="error-text">Error: ${error.message}</span>`;
+            }
+        }
+
+        async function testDirectRoute() {
+            const resultEl = document.getElementById('routeResult');
+            resultEl.style.display = 'block';
+            resultEl.innerHTML = 'Testing direct route access...';
+            
+            const testUrl = `${DEPLOYMENT_URL}/projects/1/media-list`;
+            resultEl.innerHTML = `Testing: ${testUrl}\n\n`;
+            
+            try {
+                const response = await fetch(testUrl);
+                const html = await response.text();
+                
+                resultEl.innerHTML += `Response Status: ${response.status}\n`;
+                resultEl.innerHTML += `Content-Type: ${response.headers.get('content-type')}\n\n`;
+                
+                if (html.includes('MediaIntelligence')) {
+                    resultEl.innerHTML += '<span class="success-text">✅ MediaIntelligence found in route response!</span>';
+                } else if (html.includes('media-list')) {
+                    resultEl.innerHTML += '<span class="warning">⚠️ Route exists but MediaIntelligence component not found</span>';
+                } else {
+                    resultEl.innerHTML += '<span class="error-text">❌ MediaIntelligence not found in response</span>';
+                }
+                
+            } catch (error) {
+                resultEl.innerHTML += `<span class="error-text">Error: ${error.message}</span>`;
+            }
+        }
+
+        async function checkBuildInfo() {
+            const resultEl = document.getElementById('buildResult');
+            resultEl.style.display = 'block';
+            resultEl.innerHTML = 'Checking build information...';
+            
+            try {
+                // Check package.json
+                const pkgResponse = await fetch(`${DEPLOYMENT_URL}/package.json`).catch(() => null);
+                if (pkgResponse && pkgResponse.ok) {
+                    const pkg = await pkgResponse.json();
+                    resultEl.innerHTML = `Package version: ${pkg.version || 'unknown'}\n`;
+                }
+                
+                // Check manifest
+                const manifestResponse = await fetch(`${DEPLOYMENT_URL}/manifest.json`);
+                if (manifestResponse.ok) {
+                    const manifest = await manifestResponse.json();
+                    resultEl.innerHTML += `\nApp name: ${manifest.name}\n`;
+                    resultEl.innerHTML += `Short name: ${manifest.short_name}\n`;
+                }
+                
+                // Get deployment time (from headers)
+                const response = await fetch(DEPLOYMENT_URL);
+                const date = response.headers.get('date');
+                const age = response.headers.get('age');
+                
+                resultEl.innerHTML += `\nResponse Date: ${date}\n`;
+                if (age) {
+                    resultEl.innerHTML += `Cache Age: ${age} seconds\n`;
+                }
+                
+            } catch (error) {
+                resultEl.innerHTML = `<span class="error-text">Error: ${error.message}</span>`;
+            }
+        }
+
+        async function inspectLiveCode() {
+            const resultEl = document.getElementById('liveResult');
+            resultEl.style.display = 'block';
+            resultEl.innerHTML = 'Inspecting live deployment...\n\n';
+            
+            resultEl.innerHTML += 'To manually verify:\n';
+            resultEl.innerHTML += '1. Open: ' + DEPLOYMENT_URL + '\n';
+            resultEl.innerHTML += '2. Login with demo@signaldesk.com / demo123\n';
+            resultEl.innerHTML += '3. Navigate to any project\n';
+            resultEl.innerHTML += '4. Click "Media List" in sidebar\n';
+            resultEl.innerHTML += '5. You should see:\n';
+            resultEl.innerHTML += '   - "Media Intelligence Platform" header\n';
+            resultEl.innerHTML += '   - Smart Search / Traditional / Competitive Intel / Opportunity Finder tabs\n';
+            resultEl.innerHTML += '   - Step-by-step search builder\n\n';
+            
+            resultEl.innerHTML += '<span class="highlight">If you see "Media List Builder" instead, the old code is still deployed.</span>\n';
+            resultEl.innerHTML += '<span class="highlight">If you see "Media Intelligence Platform", the new code is deployed!</span>';
+        }
+
+        // Auto-run first check
+        window.onload = () => {
+            checkJSBundle();
+        };
+    </script>
+</body>
+</html>

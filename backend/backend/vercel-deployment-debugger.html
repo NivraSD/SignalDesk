@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vercel Deployment Debugger - SignalDesk</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 30px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .status-card {
+            background: #f7f7f7;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+        .status-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .info-item {
+            background: white;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+        }
+        .info-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+        .info-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            word-break: break-all;
+        }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .warning { color: #FF9800; }
+        .pending { color: #2196F3; }
+        
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+        button:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .code-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .log-container {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #f5f5f5;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            background: white;
+            border-radius: 3px;
+        }
+        .critical-action {
+            background: #f44336;
+        }
+        .critical-action:hover {
+            background: #da190b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>
+            <span>🔍</span>
+            Vercel Deployment Debugger - SignalDesk
+        </h1>
+
+        <div class="status-card">
+            <h3>Deployment Information</h3>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Production URL</div>
+                    <div class="info-value" id="prodUrl">https://signaldesk-frontend-23tc8mlwq-nivra-sd.vercel.app</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Expected Component</div>
+                    <div class="info-value">MediaIntelligence.js</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Old Component</div>
+                    <div class="info-value" style="text-decoration: line-through;">MediaListBuilder.js</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Status</div>
+                    <div class="info-value" id="deployStatus">Checking...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button onclick="checkDeployment()">🔄 Check Deployment Status</button>
+            <button onclick="fetchVersion()">📊 Fetch Version Info</button>
+            <button onclick="checkBuildFiles()">📦 Check Build Files</button>
+            <button onclick="forceCacheClear()">🧹 Force Cache Clear</button>
+            <button onclick="testMediaRoute()">🎯 Test Media Route</button>
+            <button class="critical-action" onclick="emergencyBypass()">⚠️ Emergency Cache Bypass</button>
+        </div>
+
+        <div class="status-card">
+            <h3>Cache Control Headers</h3>
+            <div id="cacheHeaders" class="code-block">
+                Waiting for check...
+            </div>
+        </div>
+
+        <div class="status-card">
+            <h3>Vercel CLI Commands</h3>
+            <div class="code-block">
+# Force redeploy with cache bypass
+vercel --prod --force --no-cache
+
+# Check deployment status
+vercel ls
+
+# Get deployment details
+vercel inspect [deployment-url]
+
+# Remove and redeploy
+vercel rm signaldesk-frontend --yes
+vercel --prod
+
+# Direct build and deploy
+cd frontend && npm run build && cd .. && vercel --prod --prebuilt ./frontend/build
+            </div>
+        </div>
+
+        <div class="status-card">
+            <h3>Manual Cache Clearing Steps</h3>
+            <ol style="margin-left: 20px; line-height: 1.8;">
+                <li>Open Chrome DevTools (F12)</li>
+                <li>Go to Network tab</li>
+                <li>Check "Disable cache"</li>
+                <li>Right-click refresh button → "Empty Cache and Hard Reload"</li>
+                <li>Test in Incognito/Private mode</li>
+                <li>Clear all site data: DevTools → Application → Storage → Clear site data</li>
+                <li>Add timestamp to URLs: <code>?v=${Date.now()}</code></li>
+            </ol>
+        </div>
+
+        <div class="status-card">
+            <h3>Activity Log</h3>
+            <div id="activityLog" class="log-container">
+                <div class="log-entry">System initialized...</div>
+            </div>
+        </div>
+
+        <div class="status-card">
+            <h3>Environment Variables to Set in Vercel</h3>
+            <div class="code-block">
+VERCEL_FORCE_NO_BUILD_CACHE=1
+BUILD_TIMESTAMP=${new Date().getTime()}
+REACT_APP_VERSION=MediaIntelligence-Active
+NEXT_PUBLIC_DEPLOYMENT_ID=${Math.random().toString(36).substr(2, 9)}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const PROD_URL = 'https://signaldesk-frontend-23tc8mlwq-nivra-sd.vercel.app';
+        
+        function addLog(message, type = 'info') {
+            const log = document.getElementById('activityLog');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            const timestamp = new Date().toLocaleTimeString();
+            entry.innerHTML = `<span class="${type}">[${timestamp}]</span> ${message}`;
+            log.insertBefore(entry, log.firstChild);
+        }
+
+        async function checkDeployment() {
+            addLog('Checking deployment status...', 'pending');
+            const status = document.getElementById('deployStatus');
+            status.innerHTML = 'Checking... <span class="loader"></span>';
+            
+            try {
+                // Check main site
+                const response = await fetch(PROD_URL, {
+                    method: 'GET',
+                    cache: 'no-store',
+                    headers: {
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                });
+                
+                const html = await response.text();
+                
+                // Check for MediaIntelligence in the built JS
+                const hasMediaIntelligence = html.includes('MediaIntelligence') || 
+                                           html.includes('media-intelligence');
+                const hasOldBuilder = html.includes('MediaListBuilder') || 
+                                    html.includes('media-list-builder');
+                
+                if (hasMediaIntelligence && !hasOldBuilder) {
+                    status.innerHTML = '<span class="success">✅ New version detected!</span>';
+                    addLog('SUCCESS: MediaIntelligence component found!', 'success');
+                } else if (hasOldBuilder) {
+                    status.innerHTML = '<span class="error">❌ Old version still cached</span>';
+                    addLog('ERROR: Old MediaListBuilder still present', 'error');
+                } else {
+                    status.innerHTML = '<span class="warning">⚠️ Unable to determine version</span>';
+                    addLog('WARNING: Could not detect component version', 'warning');
+                }
+                
+                // Check headers
+                const headers = {};
+                response.headers.forEach((value, key) => {
+                    headers[key] = value;
+                });
+                
+                document.getElementById('cacheHeaders').textContent = JSON.stringify(headers, null, 2);
+                
+            } catch (error) {
+                status.innerHTML = '<span class="error">❌ Check failed</span>';
+                addLog(`ERROR: ${error.message}`, 'error');
+            }
+        }
+
+        async function fetchVersion() {
+            addLog('Fetching version info...', 'pending');
+            try {
+                const response = await fetch(`${PROD_URL}/version.json?t=${Date.now()}`, {
+                    cache: 'no-store'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addLog(`Version: ${JSON.stringify(data)}`, 'success');
+                    alert('Version Info:\n' + JSON.stringify(data, null, 2));
+                } else {
+                    addLog('Version file not found (404)', 'warning');
+                }
+            } catch (error) {
+                addLog(`Version fetch failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkBuildFiles() {
+            addLog('Checking build files...', 'pending');
+            const endpoints = [
+                '/static/js/main.js',
+                '/static/js/bundle.js',
+                '/asset-manifest.json',
+                '/manifest.json'
+            ];
+            
+            for (const endpoint of endpoints) {
+                try {
+                    const response = await fetch(`${PROD_URL}${endpoint}?t=${Date.now()}`, {
+                        method: 'HEAD',
+                        cache: 'no-store'
+                    });
+                    
+                    if (response.ok) {
+                        addLog(`✅ Found: ${endpoint}`, 'success');
+                    } else {
+                        addLog(`❌ Missing: ${endpoint}`, 'error');
+                    }
+                } catch (error) {
+                    addLog(`❌ Error checking ${endpoint}`, 'error');
+                }
+            }
+        }
+
+        function forceCacheClear() {
+            addLog('Initiating cache clear...', 'pending');
+            
+            // Open multiple cache-busting requests
+            const timestamp = Date.now();
+            const urls = [
+                `${PROD_URL}/?cachebust=${timestamp}`,
+                `${PROD_URL}/index.html?v=${timestamp}`,
+                `${PROD_URL}/projects/test/media-list?refresh=${timestamp}`
+            ];
+            
+            urls.forEach(url => {
+                window.open(url, '_blank');
+                addLog(`Opened cache-busting URL: ${url}`, 'success');
+            });
+            
+            addLog('Cache clear initiated. Check opened tabs.', 'success');
+        }
+
+        async function testMediaRoute() {
+            addLog('Testing media route directly...', 'pending');
+            const testUrl = `${PROD_URL}/projects/test/media-list`;
+            
+            try {
+                const response = await fetch(testUrl, {
+                    cache: 'no-store',
+                    redirect: 'follow'
+                });
+                
+                const html = await response.text();
+                
+                if (html.includes('MediaIntelligence')) {
+                    addLog('✅ MediaIntelligence component confirmed on route!', 'success');
+                    window.open(testUrl, '_blank');
+                } else if (html.includes('MediaListBuilder')) {
+                    addLog('❌ Old MediaListBuilder still showing on route', 'error');
+                    window.open(testUrl, '_blank');
+                } else {
+                    addLog('⚠️ Could not determine component on route', 'warning');
+                    window.open(testUrl, '_blank');
+                }
+            } catch (error) {
+                addLog(`Route test failed: ${error.message}`, 'error');
+            }
+        }
+
+        function emergencyBypass() {
+            if (!confirm('This will open multiple tabs and force refresh. Continue?')) {
+                return;
+            }
+            
+            addLog('EMERGENCY BYPASS INITIATED', 'error');
+            
+            // Generate unique cache-busting parameters
+            const uuid = Math.random().toString(36).substring(2, 15);
+            const timestamp = Date.now();
+            
+            // Open with various cache-busting techniques
+            const strategies = [
+                `${PROD_URL}/?nocache=${uuid}&t=${timestamp}`,
+                `${PROD_URL}/index.html#${uuid}`,
+                `${PROD_URL}/?purge=true&v=${timestamp}`,
+                `${PROD_URL}/projects/demo/media-list?force=${uuid}`
+            ];
+            
+            strategies.forEach((url, index) => {
+                setTimeout(() => {
+                    window.open(url, `vercel_${index}`);
+                    addLog(`Emergency bypass ${index + 1}: ${url}`, 'error');
+                }, index * 500);
+            });
+            
+            // Copy emergency CLI commands to clipboard
+            const emergencyCommands = `
+# EMERGENCY VERCEL FIX COMMANDS
+# Run these in your terminal:
+
+# 1. Force rebuild and deploy
+vercel --prod --force --no-cache
+
+# 2. Remove all deployments and redeploy
+vercel rm signaldesk-frontend --yes && vercel --prod
+
+# 3. Direct deployment bypass
+cd frontend && npm run build && vercel deploy ./build --prod --no-cache
+
+# 4. Nuclear option - delete and recreate project
+vercel project rm signaldesk-frontend
+vercel --prod
+            `.trim();
+            
+            navigator.clipboard.writeText(emergencyCommands);
+            addLog('Emergency CLI commands copied to clipboard!', 'success');
+        }
+
+        // Auto-check on load
+        window.onload = () => {
+            addLog('Page loaded. Ready for debugging.', 'success');
+            checkDeployment();
+        };
+    </script>
+</body>
+</html>

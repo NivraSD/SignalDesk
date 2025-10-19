@@ -4,6 +4,7 @@
 
 ### Your Single Source of Truth
 
+<<<<<<< HEAD
 **Version:** 3.1 (Updated with Phase 0 Completion)  
 **Start Date:** February 1, 2025  
 **Launch Date:** April 1, 2025  
@@ -16,6 +17,12 @@
 - **Edge Functions:** ✅ CONSOLIDATED (97 → 71 functions)
 - **Database:** ✅ V3 SCHEMA COMPLETE (12 tables with RLS)
 - **Next Step:** Begin Phase 1 - Foundation & UI (Week 1)
+=======
+**Version:** 3.0 Master  
+**Start Date:** February 1, 2025  
+**Launch Date:** April 1, 2025  
+**Status:** Ready for Implementation
+>>>>>>> cb4c36f5bcebe01f9c38384c2055b4bc392323bb
 
 ---
 
@@ -74,6 +81,7 @@ DATA LAYER (Postgres + Vector DB)
 
 ### ✅ WHAT YOU ALREADY HAVE
 
+<<<<<<< HEAD
 #### Intelligence Pipeline (FULLY WORKING)
 - **7-Stage Pipeline:** intelligence-discovery-v3 → stage-5-synthesis
 - **Timing:** 2-3 minutes execution (confirmed)
@@ -101,6 +109,13 @@ DATA LAYER (Postgres + Vector DB)
   - RLS permissions configured
   - CORS handling implemented
   - Service role authentication working
+=======
+#### Intelligence Pipeline (WORKING)
+- **7-Stage Pipeline:** intelligence-discovery-v3 → stage-5-synthesis
+- **Timing:** 2-3 minutes execution (confirmed)
+- **Status:** Backend functional, UI rendering issue needs fix
+- **Integration:** Ready for V3
+>>>>>>> cb4c36f5bcebe01f9c38384c2055b4bc392323bb
 
 #### MCP Servers (17 Total)
 **Complete (4):**
@@ -110,7 +125,11 @@ DATA LAYER (Postgres + Vector DB)
 - signaldesk-narratives (7 tools)
 
 **Functional (11):**
+<<<<<<< HEAD
 - signaldesk-opportunities (integrated with pipeline)
+=======
+- signaldesk-opportunities
+>>>>>>> cb4c36f5bcebe01f9c38384c2055b4bc392323bb
 - signaldesk-content
 - signaldesk-media
 - signaldesk-campaigns
@@ -126,6 +145,7 @@ DATA LAYER (Postgres + Vector DB)
 - signaldesk-regulatory (needs 7 tools)
 - signaldesk-orchestrator (needs coordination logic)
 
+<<<<<<< HEAD
 #### Edge Functions (71 after Phase 0 cleanup)
 - **Phase 0 Cleanup:** Reduced from 97 to 71 functions (26% reduction)
 - **Archived:** 15 Niv versions, 5 Claude synthesizer versions, 6 intelligence versions
@@ -134,6 +154,11 @@ DATA LAYER (Postgres + Vector DB)
   - Niv System (1): niv-orchestrator-robust (selected as production)
   - Opportunity System (5): orchestrator, detector-v3, enhancer, executor
   - Content & Media (4): content, media, campaigns, social intelligence
+=======
+#### Edge Functions (100+)
+- **Issue:** Too many variants (17 Niv versions!)
+- **Action:** Consolidate to core set
+>>>>>>> cb4c36f5bcebe01f9c38384c2055b4bc392323bb
 - **DECISION:** Use `niv-orchestrator-robust` as production version
 
 #### Selected Niv: niv-orchestrator-robust
@@ -144,7 +169,11 @@ DATA LAYER (Postgres + Vector DB)
 
 ### ❌ WHAT'S MISSING FOR V3
 
+<<<<<<< HEAD
 #### Critical Gaps (Remaining)
+=======
+#### Critical Gaps
+>>>>>>> cb4c36f5bcebe01f9c38384c2055b4bc392323bb
 1. **Visual Content Generation**
    - DALL-E 3 integration
    - Synthesia video API
@@ -152,6 +181,7 @@ DATA LAYER (Postgres + Vector DB)
 
 2. **Export System (LIABILITY CRITICAL)**
    - PDF/Word/Social export
+<<<<<<< HEAD
    - Audit trail (exports_log table ready)
    - No direct posting implementation
 
@@ -174,6 +204,24 @@ DATA LAYER (Postgres + Vector DB)
    - Draggable/resizable components
    - State persistence (canvas_states table ready)
    - Tab-based focus system
+=======
+   - Audit trail
+   - No direct posting
+
+3. **Onboarding Intelligence**
+   - Live extraction during setup
+   - Asset analysis
+   - Goal integration
+
+4. **Alert Manager**
+   - Opportunities/Crisis/Deadlines only
+   - Multi-channel delivery
+
+5. **Context-Aware Niv**
+   - Module awareness
+   - Overlay assistant
+   - Proactive suggestions
+>>>>>>> cb4c36f5bcebe01f9c38384c2055b4bc392323bb
 
 ## Directory Structure
 
@@ -210,6 +258,7 @@ signaldesk-v3/
 └── tests/                       # All tests
 ```
 
+<<<<<<< HEAD
 ## Database Schema (COMPLETE - Phase 0)
 
 ```sql
@@ -230,6 +279,23 @@ niv_interactions               -- Context-aware assistant history
 -- All with RLS enabled and proper indexes
 -- Vector support configured for semantic search
 -- Update triggers for timestamp management
+=======
+## Database Schema
+
+```sql
+-- Core Tables
+organizations
+profiles
+intelligence_runs
+opportunities
+campaigns
+memoryvault (with vector embeddings)
+memoryvault_attachments (user uploads from onboarding)
+visual_assets
+monitoring_alerts (opportunities, crisis, deadlines only)
+
+-- All with RLS enabled
+>>>>>>> cb4c36f5bcebe01f9c38384c2055b4bc392323bb
 ```
 
 ## State Management
@@ -563,6 +629,7 @@ onboardingMemoryVault = {
 
 # PART 4: IMPLEMENTATION WORKPLAN
 
+<<<<<<< HEAD
 ## PHASE 0: PREPARATION & CONSOLIDATION ✅ COMPLETE
 
 ### Phase 0 Achievements (Completed January 2025)
@@ -586,6 +653,32 @@ onboardingMemoryVault = {
 - **Vector Support:** Configured for semantic search (1536 dimensions)
 - **Verification Script:** verify-database-schema.js created
 - **Ready for V3:** All tables, triggers, and functions in place
+=======
+## PHASE 0: PREPARATION & CONSOLIDATION
+
+### Before February 1 - CRITICAL CLEANUP
+
+#### Technical Debt Resolution
+```bash
+# MUST DO FIRST: Consolidate 100+ edge functions
+# Current: 17 Niv versions, multiple duplicates
+# Target: Single production set
+
+# 1. Choose production functions
+PRODUCTION_NIV="niv-orchestrator-robust"
+PRODUCTION_INTELLIGENCE="intelligence-discovery-v3 through stage-5"
+PRODUCTION_OPPORTUNITY="opportunity-orchestrator"
+
+# 2. Archive duplicates
+mkdir supabase/functions/_archive
+mv supabase/functions/niv-* _archive/ # Keep only chosen one
+mv supabase/functions/intelligence-*-v[1-2] _archive/
+mv supabase/functions/claude-intelligence-synthesizer-v[1-6] _archive/
+
+# 3. Document function mapping
+echo "See SIGNALDESK_V3_TECHNICAL_INTEGRATION.md for component mapping"
+```
+>>>>>>> cb4c36f5bcebe01f9c38384c2055b4bc392323bb
 
 ### Before February 1 - Standard Setup
 
@@ -709,19 +802,34 @@ ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
 
 ## WEEK 2: INTELLIGENCE PIPELINE (Feb 8-14)
 
+<<<<<<< HEAD
 ### Day 1: Integrate Existing Pipeline
 
 ```typescript
 // Pipeline FULLY WORKS - backend and UI (fixed in Phase 0)
 // Just need to integrate into V3 UI
 // 7 stages complete in 2-3 minutes
+=======
+### Day 1: Fix Existing Pipeline UI
+
+```typescript
+// Fix MultiStageIntelligence.js rendering issue
+// Pipeline backend ALREADY WORKS (2-3 minutes)
+// Just need to fix completion handler
+>>>>>>> cb4c36f5bcebe01f9c38384c2055b4bc392323bb
 ```
 
 **Deliverables:**
 
+<<<<<<< HEAD
 - [ ] Port MultiStageIntelligence.js to V3
 - [ ] Connect to new Zustand store
 - [ ] Test full 7-stage flow in new UI
+=======
+- [ ] Fix UI rendering bug in MultiStageIntelligence.js
+- [ ] Ensure pipeline results display properly
+- [ ] Test full 7-stage flow (already exists)
+>>>>>>> cb4c36f5bcebe01f9c38384c2055b4bc392323bb
 - [ ] Verify 2-3 minute execution time
 
 ### Day 2: Consolidate Niv Functions
@@ -766,6 +874,7 @@ ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
 
 ## WEEK 3: OPPORTUNITY ENGINE (Feb 15-21)
 
+<<<<<<< HEAD
 ### Day 1-2: Integrate Working Opportunity System
 
 ```typescript
@@ -775,14 +884,31 @@ ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
 // - 5 analyst personas creating opportunities
 // - Integrated with Intelligence Orchestrator V2
 // Just need V3 UI integration!
+=======
+### Day 1-2: Integrate Existing Opportunity System
+
+```typescript
+// Already have:
+// - opportunity-orchestrator (real detection, no fallbacks)
+// - signaldesk-opportunities MCP (6 tools)
+// - assess-opportunities-simple (scoring)
+// Just need integration!
+>>>>>>> cb4c36f5bcebe01f9c38384c2055b4bc392323bb
 ```
 
 **Deliverables:**
 
+<<<<<<< HEAD
 - [ ] Port opportunity components to V3 UI
 - [ ] Connect to Zustand store
 - [ ] Test opportunity generation from pipeline
 - [ ] Verify database storage
+=======
+- [ ] Connect opportunity-orchestrator to UI
+- [ ] Wire signaldesk-opportunities MCP
+- [ ] Test scoring system (already exists)
+- [ ] Verify real-time detection
+>>>>>>> cb4c36f5bcebe01f9c38384c2055b4bc392323bb
 
 ### Day 3-4: One-Click Execution Integration
 

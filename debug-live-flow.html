@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Live Flow</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #00ff88;
+            padding: 20px;
+        }
+        .section {
+            background: rgba(0, 255, 136, 0.05);
+            border: 1px solid #00ff88;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: linear-gradient(135deg, #00ff88, #00ffcc);
+            color: #0a0a0a;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .result {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #00ff88;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug Live Flow - What's Actually in localStorage?</h1>
+    
+    <div class="section">
+        <h2>Step 1: Check Current localStorage Data</h2>
+        <button onclick="checkLocalStorage()">Check localStorage</button>
+        <div id="localStorage-result" class="result"></div>
+    </div>
+
+    <div class="section">
+        <h2>Step 2: Test Discovery Directly</h2>
+        <button onclick="testDiscovery()">Test Discovery with Current Data</button>
+        <div id="discovery-result" class="result"></div>
+    </div>
+
+    <div class="section">
+        <h2>Step 3: Test Full Pipeline</h2>
+        <button onclick="testFullPipeline()">Run Full Pipeline Test</button>
+        <div id="pipeline-result" class="result"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://zskaxjtyuaqazydouifp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMjk2MzcsImV4cCI6MjA3MDcwNTYzN30.5PhMVptHk3n-1dTSwGF-GvTwrVM0loovkHGUBDtBOe8';
+
+        function checkLocalStorage() {
+            const result = document.getElementById('localStorage-result');
+            
+            // Get all SignalDesk related keys
+            const keys = Object.keys(localStorage).filter(k => 
+                k.includes('signaldesk') || 
+                k.includes('organization') || 
+                k.includes('opportunity')
+            );
+            
+            let output = 'Found localStorage keys:\n\n';
+            
+            keys.forEach(key => {
+                const value = localStorage.getItem(key);
+                try {
+                    const parsed = JSON.parse(value);
+                    output += `📦 ${key}:\n`;
+                    
+                    // Check for stakeholders
+                    if (parsed.regulators) {
+                        output += `  - regulators: ${JSON.stringify(parsed.regulators)}\n`;
+                    }
+                    if (parsed.activists) {
+                        output += `  - activists: ${JSON.stringify(parsed.activists)}\n`;
+                    }
+                    if (parsed.media_outlets) {
+                        output += `  - media_outlets: ${JSON.stringify(parsed.media_outlets)}\n`;
+                    }
+                    if (parsed.investors) {
+                        output += `  - investors: ${JSON.stringify(parsed.investors)}\n`;
+                    }
+                    if (parsed.analysts) {
+                        output += `  - analysts: ${JSON.stringify(parsed.analysts)}\n`;
+                    }
+                    if (parsed.competitors) {
+                        output += `  - competitors: ${JSON.stringify(parsed.competitors)}\n`;
+                    }
+                    if (parsed.stakeholders) {
+                        output += `  - stakeholders (nested): ${JSON.stringify(parsed.stakeholders)}\n`;
+                    }
+                    if (parsed.organization) {
+                        output += `  - organization: ${parsed.organization.name} (${parsed.organization.industry})\n`;
+                    }
+                    output += '\n';
+                } catch (e) {
+                    output += `${key}: [non-JSON value]\n\n`;
+                }
+            });
+            
+            result.textContent = output;
+        }
+
+        async function testDiscovery() {
+            const result = document.getElementById('discovery-result');
+            result.textContent = 'Testing discovery...\n';
+            
+            // Get profile from localStorage
+            const profileStr = localStorage.getItem('signaldesk_unified_profile');
+            if (!profileStr) {
+                result.textContent = '❌ No unified profile found in localStorage';
+                return;
+            }
+            
+            const profile = JSON.parse(profileStr);
+            result.textContent += `\n📦 Profile loaded:\n`;
+            result.textContent += `Organization: ${profile.organization?.name}\n`;
+            result.textContent += `Competitors: ${profile.competitors?.length || 0}\n`;
+            result.textContent += `Regulators: ${profile.regulators?.length || 0}\n`;
+            result.textContent += `Media outlets: ${profile.media_outlets?.length || 0}\n`;
+            result.textContent += `Activists: ${profile.activists?.length || 0}\n\n`;
+            
+            // Build discovery request
+            const discoveryRequest = {
+                organization: profile.organization,
+                stakeholders: {
+                    competitors: profile.competitors || [],
+                    regulators: profile.regulators || [],
+                    activists: profile.activists || [],
+                    media: profile.media_outlets || [],
+                    investors: profile.investors || [],
+                    analysts: profile.analysts || []
+                },
+                monitoring_topics: profile.monitoring_topics || []
+            };
+            
+            result.textContent += `📡 Sending to discovery:\n${JSON.stringify(discoveryRequest, null, 2)}\n\n`;
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-discovery-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify(discoveryRequest)
+                });
+                
+                const data = await response.json();
+                result.textContent += `📥 Discovery response:\n${JSON.stringify(data, null, 2)}`;
+            } catch (error) {
+                result.textContent += `❌ Error: ${error.message}`;
+            }
+        }
+
+        async function testFullPipeline() {
+            const result = document.getElementById('pipeline-result');
+            result.textContent = 'Running full pipeline test...\n\n';
+            
+            // Get profile
+            const profileStr = localStorage.getItem('signaldesk_unified_profile');
+            if (!profileStr) {
+                result.textContent = '❌ No unified profile found';
+                return;
+            }
+            
+            const profile = JSON.parse(profileStr);
+            
+            try {
+                // 1. Discovery
+                result.textContent += '1️⃣ DISCOVERY PHASE\n';
+                const discoveryRequest = {
+                    organization: profile.organization,
+                    stakeholders: {
+                        competitors: profile.competitors || [],
+                        regulators: profile.regulators || [],
+                        activists: profile.activists || [],
+                        media: profile.media_outlets || [],
+                        investors: profile.investors || [],
+                        analysts: profile.analysts || []
+                    },
+                    monitoring_topics: profile.monitoring_topics || []
+                };
+                
+                const discoveryResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-discovery-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify(discoveryRequest)
+                });
+                
+                const discoveryData = await discoveryResponse.json();
+                result.textContent += `✅ Discovery: ${discoveryData.success ? 'SUCCESS' : 'FAILED'}\n`;
+                result.textContent += `   Entities: ${JSON.stringify(Object.keys(discoveryData.entities || {}))}\n\n`;
+                
+                // 2. Gathering
+                result.textContent += '2️⃣ GATHERING PHASE\n';
+                const gatheringResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-gathering-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        entities: discoveryData.entities || {},
+                        organization: profile.organization
+                    })
+                });
+                
+                const gatheringData = await gatheringResponse.json();
+                result.textContent += `✅ Gathering: ${gatheringData.success ? 'SUCCESS' : 'FAILED'}\n`;
+                result.textContent += `   Actions: ${gatheringData.entity_actions?.all?.length || 0}\n`;
+                result.textContent += `   Trends: ${gatheringData.topic_trends?.all?.length || 0}\n\n`;
+                
+                // 3. Synthesis
+                result.textContent += '3️⃣ SYNTHESIS PHASE\n';
+                const synthesisResponse = await fetch(`${SUPABASE_URL}/functions/v1/intelligence-synthesis-v3`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        intelligence: {
+                            entity_actions: gatheringData.entity_actions || { all: [] },
+                            topic_trends: gatheringData.topic_trends || { all: [] }
+                        },
+                        organization: profile.organization
+                    })
+                });
+                
+                const synthesisData = await synthesisResponse.json();
+                result.textContent += `✅ Synthesis: ${synthesisData.success ? 'SUCCESS' : 'FAILED'}\n`;
+                result.textContent += `   Tabs: ${synthesisData.tabs ? Object.keys(synthesisData.tabs).join(', ') : 'NONE'}\n`;
+                result.textContent += `   Has Executive Content: ${!!synthesisData.tabs?.executive?.overview}\n`;
+                result.textContent += `   Has Positioning Content: ${!!synthesisData.tabs?.positioning?.competitor_moves}\n\n`;
+                
+                result.textContent += '📊 FINAL CHECK:\n';
+                result.textContent += `Executive headline: ${synthesisData.tabs?.executive?.headline || 'MISSING'}\n`;
+                result.textContent += `Positioning data: ${synthesisData.tabs?.positioning ? 'PRESENT' : 'MISSING'}\n`;
+                result.textContent += `Between data: ${synthesisData.tabs?.between ? 'PRESENT' : 'MISSING'}\n`;
+                
+            } catch (error) {
+                result.textContent += `\n❌ Pipeline error: ${error.message}`;
+            }
+        }
+
+        // Auto-check on load
+        window.addEventListener('load', () => {
+            checkLocalStorage();
+        });
+    </script>
+</body>
+</html>

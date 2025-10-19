@@ -1,0 +1,36 @@
+  
+  // Claude AI Configuration State
+  const [claudeConfig, setClaudeConfig] = useState({
+    enabled: true,
+    brandContext: {
+      companyName: '',
+      industry: '',
+      productServices: '',
+      targetAudience: '',
+      brandValues: ''
+    },
+    sentimentContext: {
+      positiveScenarios: '',
+      negativeScenarios: '',
+      criticalConcerns: ''
+    },
+    processingSettings: {
+      autoAnalyze: true,
+      fallbackToKeywords: true
+    }
+  });
+
+  // Alert Configuration State
+  const [alertConfig, setAlertConfig] = useState({
+    sentimentThreshold: {
+      enabled: true,
+      value: -20
+    },
+    criticalTopics: {
+      enabled: true,
+      topics: ['data breach', 'security issue', 'lawsuit', 'crisis', 'outage']
+    }
+  });
+
+  const [alerts, setAlerts] = useState([]);
+  const [configSaved, setConfigSaved] = useState(false);

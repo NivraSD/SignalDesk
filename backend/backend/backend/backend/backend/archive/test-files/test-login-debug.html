@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login Test</title>
+</head>
+<body>
+    <h1>SignalDesk Login Test</h1>
+    <div>
+        <input type="email" id="email" value="demo@signaldesk.com" placeholder="Email">
+        <input type="password" id="password" value="demo123" placeholder="Password">
+        <button onclick="testLogin()">Test Login</button>
+    </div>
+    <div id="result"></div>
+    <div id="error" style="color: red;"></div>
+
+    <script>
+        async function testLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('result');
+            const errorDiv = document.getElementById('error');
+            
+            resultDiv.innerHTML = 'Testing login...';
+            errorDiv.innerHTML = '';
+            
+            try {
+                console.log('Attempting login to:', 'https://signal-desk.vercel.app/api/auth/login');
+                console.log('With credentials:', { email, password });
+                
+                const response = await fetch('https://signal-desk.vercel.app/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                
+                const data = await response.json();
+                console.log('Response data:', data);
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <h3 style="color: green;">✅ Login Successful!</h3>
+                        <p>Token: ${data.token}</p>
+                        <p>User: ${data.user.email}</p>
+                        <p>The backend is working correctly.</p>
+                    `;
+                } else {
+                    errorDiv.innerHTML = `Login failed: ${data.error || 'Unknown error'}`;
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                errorDiv.innerHTML = `Error: ${error.message}`;
+            }
+        }
+        
+        // Auto-test on load
+        window.onload = () => {
+            testLogin();
+        };
+    </script>
+</body>
+</html>

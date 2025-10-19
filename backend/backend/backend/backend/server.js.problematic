@@ -1,0 +1,60 @@
+// backend/server.js
+const express = require('express');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const path = require('path');
+
+// Load environment variables
+dotenv.config({ path: path.join(__dirname, '.env') });
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// Middleware
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true
+}));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Import routes from src/routes
+const assistantRoutes = require('./src/routes/assistantRoutes');
+const authRoutes = require('./src/routes/authRoutes');
+const projectRoutes = require('./src/routes/projectRoutes');
+const apiRoutes = require('./src/routes/apiRoutes');
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    message: 'SignalDesk API is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/assistant', assistantRoutes);
+app.use('/api', projectRoutes); 
+app.use('/api/assistant', assistantRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/projects', projectRoutes);
+// app.use("/api", apiRoutes); // General API routes
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ 
+    error: 'Something went wrong!',
+    message: err.message 
+  });
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`SignalDesk Backend running on http://localhost:${PORT}`);
+  console.log(`Frontend expected at http://localhost:3000`);
+});
+
+module.exports = app;

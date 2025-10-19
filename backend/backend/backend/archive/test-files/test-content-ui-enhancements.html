@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Generator UI Enhancements Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        h1 {
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+        h2 {
+            color: #fbbf24;
+            margin-bottom: 20px;
+        }
+        .feature {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .new-badge {
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        .test-step {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Monaco', monospace;
+        }
+        ul {
+            margin: 10px 0;
+        }
+        li {
+            margin: 5px 0;
+        }
+        .highlight {
+            color: #fbbf24;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎨 Content Generator UI Enhancements</h1>
+    
+    <div class="test-card">
+        <h2>New Interactive Features</h2>
+        
+        <div class="feature">
+            <h3>Quick Start Templates <span class="new-badge">NEW</span></h3>
+            <p>When you select a content type, quick prompt buttons appear for common scenarios:</p>
+            <ul>
+                <li>Press Release → Product launch, Partnership, Award, etc.</li>
+                <li>Crisis Response → Service outage, Data breach, Product recall, etc.</li>
+                <li>Social Post → Feature highlight, Milestone, Event promo, etc.</li>
+                <li>Thought Leadership → Industry trends, Innovation insights, etc.</li>
+                <li>Corporate Messaging → Mission refresh, Culture transformation, etc.</li>
+            </ul>
+            <p class="highlight">Test: Select a content type and click any quick prompt button</p>
+        </div>
+        
+        <div class="feature">
+            <h3>Interactive Question Fields <span class="new-badge">NEW</span></h3>
+            <p>After selecting both content type and tone, input fields appear for key questions:</p>
+            <ul>
+                <li>Type your answers directly in the fields</li>
+                <li>Press Enter or click Send to submit to AI</li>
+                <li>Each answer helps improve the generated content</li>
+            </ul>
+            <p class="highlight">Test: Select type + tone, then answer questions in the purple box</p>
+        </div>
+        
+        <div class="feature">
+            <h3>New Content Types <span class="new-badge">NEW</span></h3>
+            <ul>
+                <li><strong>Thought Leadership:</strong> Industry insights and expert perspectives</li>
+                <li><strong>Corporate Messaging:</strong> Company values and strategic communications</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="test-card">
+        <h2>Test Scenarios</h2>
+        
+        <div class="test-step">
+            <h3>Scenario 1: Quick Templates</h3>
+            <ol>
+                <li>Open Content Generator</li>
+                <li>Select "Press Release"</li>
+                <li>Quick templates should appear: "Product launch", "Partnership", etc.</li>
+                <li>Click "Product launch announcement"</li>
+                <li>AI should respond with: "I need a press release for product launch announcement"</li>
+            </ol>
+        </div>
+        
+        <div class="test-step">
+            <h3>Scenario 2: Interactive Questions</h3>
+            <ol>
+                <li>Select "Media Pitch" content type</li>
+                <li>Select "Conversational" tone</li>
+                <li>Purple box appears with 3 input fields</li>
+                <li>Type answers and press Enter or click Send</li>
+                <li>Each answer appears in AI chat</li>
+            </ol>
+        </div>
+        
+        <div class="test-step">
+            <h3>Scenario 3: Thought Leadership</h3>
+            <ol>
+                <li>Select "Thought Leadership" (pink sparkles icon)</li>
+                <li>See quick templates like "Industry trends analysis"</li>
+                <li>Select a tone</li>
+                <li>Answer questions about unique perspective</li>
+                <li>Generate content</li>
+            </ol>
+        </div>
+        
+        <div class="test-step">
+            <h3>Scenario 4: Corporate Messaging</h3>
+            <ol>
+                <li>Select "Corporate Messaging" (teal robot icon)</li>
+                <li>See templates like "Mission & values refresh"</li>
+                <li>Select tone</li>
+                <li>Answer questions about corporate initiatives</li>
+                <li>Generate content</li>
+            </ol>
+        </div>
+    </div>
+    
+    <div class="test-card">
+        <h2>Visual Indicators</h2>
+        <ul>
+            <li>✅ Selected content type has colored background and glow</li>
+            <li>✅ Selected tone has purple gradient background</li>
+            <li>✅ Quick templates have purple borders and hover effects</li>
+            <li>✅ Question input fields in purple-tinted box</li>
+            <li>✅ Generate button appears only when ready</li>
+            <li>✅ "AI Assisted" badge in top-right corner</li>
+        </ul>
+    </div>
+    
+    <div class="test-card">
+        <h2>Expected Flow</h2>
+        <ol>
+            <li><strong>Select Content Type:</strong> 8 options including new ones</li>
+            <li><strong>Quick Templates Appear:</strong> 5 relevant prompts per type</li>
+            <li><strong>Select Tone:</strong> 4 tone options</li>
+            <li><strong>Interactive Questions:</strong> 3 input fields with placeholders</li>
+            <li><strong>Generate or Chat:</strong> Button or conversational approach</li>
+            <li><strong>Content Display:</strong> Full screen with edit/copy/download</li>
+        </ol>
+    </div>
+    
+    <div class="test-card">
+        <h2>Access the App</h2>
+        <p>Test at: <a href="http://localhost:3000" target="_blank" style="color: #fbbf24;">http://localhost:3000</a></p>
+        <p>Alternative: <a href="http://localhost:3002" target="_blank" style="color: #fbbf24;">http://localhost:3002</a></p>
+    </div>
+</body>
+</html>

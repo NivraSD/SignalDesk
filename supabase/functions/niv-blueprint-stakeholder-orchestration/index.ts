@@ -125,9 +125,9 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 16000,  // Increased from 8000 to handle large orchestration plans
+        max_tokens: 12000,  // Reduced from 16000 to speed up generation
         temperature: 0.5,
-        system: 'You are a JSON generator. Return ONLY valid JSON with no markdown code blocks, no explanations, no preamble. Start with { and end with }.',
+        system: 'You are a JSON generator. Return ONLY valid JSON with no markdown code blocks, no explanations, no preamble. Start with { and end with }. Be concise and efficient.',
         messages: [{
           role: 'user',
           content: prompt
@@ -202,7 +202,7 @@ serve(async (req) => {
       await supabase
         .from('campaign_builder_sessions')
         .update({
-          part3_stakeholderOrchestration: {
+          part3_stakeholderorchestration: {
             stakeholderOrchestrationPlans: plansWithProgress
           },
           updated_at: new Date().toISOString()
@@ -308,7 +308,7 @@ For EACH stakeholder's psychological influence levers (from Part 2), create a MU
 
 1. **Use Part 2 Levers**: Each stakeholder in Part 2 has ~4 influence levers. Use those EXACT levers as your foundation.
 
-2. **Multi-Channel for Each Lever**: Every lever gets 2-3 media pitches, 2-4 social posts, 1-2 thought leadership pieces, and 1-2 additional tactics.
+2. **Multi-Channel for Each Lever**: Every lever gets 2 media pitches, 2-3 social posts, 1 thought leadership piece, and 1 additional tactic. Keep it focused and efficient.
 
 3. **Align Content to Signaldesk Capabilities**: Only include content Signaldesk can actually generate:
    - Media pitches ✅
@@ -361,14 +361,14 @@ Return ONLY valid JSON with this EXACT structure:
                 "who": "Kyle Wiggers",
                 "outlet": "TechCrunch",
                 "beat": "AI and developer tools",
-                "what": "How Fortune 500 companies are de-risking AI coding adoption with enterprise-grade tools",
+                "what": "How Fortune 500 companies are de-risking AI coding adoption",
                 "when": "Week 1"
               },
               {
                 "who": "Ron Miller",
                 "outlet": "TechCrunch",
                 "beat": "Enterprise technology",
-                "what": "Case study: How [Fortune 500 Company] successfully deployed AI coding across 500+ developers",
+                "what": "Case study: Successful AI coding deployment at scale",
                 "when": "Week 2"
               }
             ],
@@ -376,47 +376,32 @@ Return ONLY valid JSON with this EXACT structure:
               {
                 "who": "CEO",
                 "platform": "LinkedIn",
-                "what": "Post about enterprise AI coding adoption best practices",
+                "what": "Enterprise AI coding adoption best practices",
                 "keyMessages": [
                   "Security and compliance are non-negotiable",
-                  "Phased rollout reduces risk",
-                  "Developer productivity gains visible in 30 days"
+                  "Phased rollout reduces risk"
                 ],
                 "when": "Week 1"
               },
               {
                 "who": "Head of Engineering",
                 "platform": "LinkedIn",
-                "what": "Thread on lessons learned from deploying AI coding tools at scale",
+                "what": "Lessons from deploying AI coding at scale",
                 "keyMessages": [
-                  "Start with pilot team of 10-20 developers",
-                  "Measure productivity metrics baseline first",
-                  "Executive buy-in critical for success"
+                  "Start with pilot team",
+                  "Measure baseline metrics first"
                 ],
                 "when": "Week 2"
-              },
-              {
-                "who": "Brand account",
-                "platform": "Twitter",
-                "what": "Customer success story highlighting security + productivity wins",
-                "keyMessages": [
-                  "Enterprise-grade security built-in",
-                  "40% reduction in code review time",
-                  "Trusted by Fortune 500"
-                ],
-                "when": "Week 1-4 (weekly)"
               }
             ],
             "thoughtLeadership": [
               {
                 "who": "CTO",
-                "what": "The Technical Leader's Guide to De-risking AI Coding Adoption",
-                "where": "Harvard Business Review or company blog",
+                "what": "De-risking AI Coding Adoption: A Technical Leader's Guide",
+                "where": "Harvard Business Review",
                 "keyPoints": [
-                  "Framework for evaluating AI coding tools",
-                  "Security considerations for enterprise deployment",
-                  "ROI measurement methodology",
-                  "Change management strategies for engineering teams"
+                  "Framework for evaluating AI tools",
+                  "Security and ROI considerations"
                 ],
                 "when": "Week 3"
               }
@@ -424,91 +409,19 @@ Return ONLY valid JSON with this EXACT structure:
             "additionalTactics": [
               {
                 "type": "webinar",
-                "who": "CTO + Customer Engineering Leader",
-                "what": "Live webinar: Enterprise AI Coding Deployment Playbook",
+                "who": "CTO + Customer",
+                "what": "Enterprise AI Coding Deployment Playbook",
                 "where": "Company webinar platform",
                 "when": "Week 4",
-                "estimatedEffort": "8 hours (prep + hosting + followup)",
-                "resources": ["Webinar platform", "Customer partner"]
-              },
-              {
-                "type": "case study",
-                "who": "Customer success team",
-                "what": "Detailed written case study with Fortune 500 customer",
-                "where": "Website + sales materials",
-                "when": "Week 2-3",
-                "estimatedEffort": "16 hours (interviews + writing + approvals)",
-                "resources": ["Customer partner", "Legal review"]
+                "estimatedEffort": "8 hours",
+                "resources": ["Webinar platform"]
               }
             ]
           },
           "completionCriteria": [
-            "2+ tier-1 media placements on enterprise AI coding",
-            "CTO thought leadership published in tier-1 publication",
-            "Webinar with 100+ registrations",
-            "Published Fortune 500 case study"
-          ]
-        },
-        {
-          "leverName": "Aspiration Activation: Technical Visionary Recognition",
-          "leverType": "Aspiration Activation",
-          "priority": 2,
-          "objective": "Position CTOs as forward-thinking leaders by associating with Codex adoption",
-          "campaign": {
-            "leverName": "Aspiration Activation: Technical Visionary Recognition",
-            "leverType": "Aspiration Activation",
-            "objective": "Position CTOs as forward-thinking leaders by associating with Codex adoption",
-            "mediaPitches": [
-              {
-                "who": "Sarah Perez",
-                "outlet": "TechCrunch",
-                "beat": "AI and automation",
-                "what": "How technical leaders are gaining competitive advantage with AI coding tools",
-                "when": "Week 3"
-              }
-            ],
-            "socialPosts": [
-              {
-                "who": "CEO",
-                "platform": "LinkedIn",
-                "what": "Spotlight on CTOs leading AI transformation in their organizations",
-                "keyMessages": [
-                  "Early adopters gain lasting competitive advantage",
-                  "Technical leadership means staying ahead of curve",
-                  "AI coding is the new competitive moat"
-                ],
-                "when": "Week 3-6 (bi-weekly)"
-              }
-            ],
-            "thoughtLeadership": [
-              {
-                "who": "CEO",
-                "what": "The New CTO Playbook: Leading Through AI-First Development",
-                "where": "Forbes or VentureBeat",
-                "keyPoints": [
-                  "AI coding as strategic advantage",
-                  "How top tech leaders are positioning themselves",
-                  "Future of engineering leadership"
-                ],
-                "when": "Week 5"
-              }
-            ],
-            "additionalTactics": [
-              {
-                "type": "awards",
-                "who": "Marketing team",
-                "what": "Nominate early-adopter CTOs for industry innovation awards",
-                "where": "CIO Magazine, DevOps Awards, etc.",
-                "when": "Week 6",
-                "estimatedEffort": "4 hours per nomination",
-                "resources": ["Customer partnerships"]
-              }
-            ]
-          },
-          "completionCriteria": [
-            "CEO thought leadership in tier-1 business publication",
-            "3+ customer CTOs featured in media",
-            "Industry award nomination for customer CTO"
+            "2+ tier-1 media placements",
+            "CTO thought leadership published",
+            "Webinar completed"
           ]
         }
       ]
@@ -527,7 +440,7 @@ Return ONLY valid JSON with this EXACT structure:
    - Thought leadership: WHO = author, WHAT = article title, WHERE = publication
    - Other tactics: WHO = person executing, WHAT = description, WHERE = venue/platform
 
-3. **Multi-Channel by Default**: Each lever should have 2-3 media pitches, 2-4 social posts, 1-2 thought leadership pieces, and 1-2 additional tactics.
+3. **Multi-Channel by Default**: Each lever should have 2 media pitches, 2-3 social posts, 1 thought leadership piece, and 1 additional tactic. Quality over quantity.
 
 4. **Align to Signaldesk Capabilities**:
    - Signaldesk AUTO-EXECUTES: media pitches, social posts, thought leadership, blog posts, case studies

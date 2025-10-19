@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Storage and Test Niv</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 40px;
+            max-width: 600px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover { background: #5a67d8; }
+        .success { color: #10b981; font-weight: bold; }
+        .info { color: #667eea; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Fix Niv Interface</h1>
+        
+        <p>This will clear all saved preferences and open the new unified Niv interface.</p>
+        
+        <button onclick="clearAndGo()">Clear Storage & Open Niv</button>
+        
+        <div id="status"></div>
+        
+        <div class="info">
+            <h3>What this does:</h3>
+            <ul>
+                <li>Clears localStorage (removes saved platform mode)</li>
+                <li>Opens the Niv-First interface (the best one)</li>
+                <li>No more mode switcher - just one interface</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        function clearAndGo() {
+            // Clear all localStorage
+            localStorage.clear();
+            document.getElementById('status').innerHTML = '<p class="success">✅ Storage cleared!</p>';
+            
+            // Wait a moment then redirect
+            setTimeout(() => {
+                document.getElementById('status').innerHTML += '<p>Opening Niv interface...</p>';
+                window.location.href = 'http://localhost:3000';
+            }, 1000);
+        }
+    </script>
+</body>
+</html>

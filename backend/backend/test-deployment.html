@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalDesk Deployment Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+        h1 { color: #8b5cf6; }
+        .test-section {
+            background: #2a2a2a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #3a3a3a;
+        }
+        .status { 
+            padding: 5px 10px;
+            border-radius: 4px;
+            display: inline-block;
+            font-weight: bold;
+        }
+        .success { background: #10b981; color: white; }
+        .warning { background: #f59e0b; color: white; }
+        .error { background: #ef4444; color: white; }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 2px solid #8b5cf6;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        button {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #7c3aed; }
+        .log {
+            background: black;
+            color: #10b981;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>SignalDesk Deployment Test</h1>
+    
+    <div class="test-section">
+        <h2>Quick Actions</h2>
+        <button onclick="clearCache()">Clear Cache & Reload</button>
+        <button onclick="testFeatures()">Test All Features</button>
+        <button onclick="checkVersion()">Check Version</button>
+        <button onclick="openInNewTab()">Open in New Tab (No Cache)</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Deployment Status</h2>
+        <div id="status"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Feature Tests</h2>
+        <div id="tests"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Console Log</h2>
+        <div id="log" class="log"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Live Preview</h2>
+        <p>Login: demo@signaldesk.com / demo123</p>
+        <iframe id="preview" src="https://signaldesk-frontend.vercel.app/login"></iframe>
+    </div>
+    
+    <script>
+        const log = (msg) => {
+            const logEl = document.getElementById('log');
+            logEl.textContent += new Date().toISOString() + ' - ' + msg + '\n';
+            logEl.scrollTop = logEl.scrollHeight;
+        };
+        
+        const clearCache = () => {
+            log('Clearing cache and reloading...');
+            const iframe = document.getElementById('preview');
+            const url = iframe.src;
+            iframe.src = url + '?cachebust=' + Date.now();
+            log('Iframe reloaded with cache buster');
+        };
+        
+        const openInNewTab = () => {
+            const url = 'https://signaldesk-frontend.vercel.app/login?cachebust=' + Date.now();
+            window.open(url, '_blank');
+            log('Opened in new tab: ' + url);
+        };
+        
+        const checkVersion = async () => {
+            log('Checking deployed version...');
+            try {
+                const response = await fetch('https://signaldesk-frontend.vercel.app/static/js/main.67f08877.js');
+                const text = await response.text();
+                
+                const hasV31 = text.includes('v3.1');
+                const has400px = text.includes('400px');
+                const hasAnalysis = text.includes('Strategic Analysis');
+                const hasRefreshCw = text.includes('RefreshCw');
+                
+                const statusEl = document.getElementById('status');
+                statusEl.innerHTML = `
+                    <p>Version v3.1: <span class="status ${hasV31 ? 'success' : 'error'}">${hasV31 ? 'FOUND' : 'NOT FOUND'}</span></p>
+                    <p>400px Height: <span class="status ${has400px ? 'success' : 'error'}">${has400px ? 'FOUND' : 'NOT FOUND'}</span></p>
+                    <p>Strategic Analysis: <span class="status ${hasAnalysis ? 'success' : 'error'}">${hasAnalysis ? 'FOUND' : 'NOT FOUND'}</span></p>
+                    <p>Refresh Button: <span class="status ${hasRefreshCw ? 'success' : 'error'}">${hasRefreshCw ? 'FOUND' : 'NOT FOUND'}</span></p>
+                `;
+                
+                log(`Version check complete: v3.1=${hasV31}, 400px=${has400px}, Analysis=${hasAnalysis}, Refresh=${hasRefreshCw}`);
+            } catch (error) {
+                log('Error checking version: ' + error.message);
+            }
+        };
+        
+        const testFeatures = () => {
+            const testsEl = document.getElementById('tests');
+            testsEl.innerHTML = `
+                <h3>Manual Test Checklist:</h3>
+                <ol>
+                    <li>Login with demo@signaldesk.com / demo123</li>
+                    <li>Look for "v3.1" next to SignalDesk logo</li>
+                    <li>Check activity list height (should be ~400px)</li>
+                    <li>Click Opportunity Engine</li>
+                    <li>Click "Analyze" on any opportunity</li>
+                    <li>Verify analysis shows in the panel</li>
+                    <li>Check project dropdown for refresh button (↻ icon)</li>
+                </ol>
+                <p><strong>Note:</strong> If features don't appear, use the "Clear Cache & Reload" button above.</p>
+            `;
+            log('Test checklist displayed');
+        };
+        
+        // Run initial check
+        window.onload = () => {
+            checkVersion();
+            testFeatures();
+            log('Page loaded, initial checks complete');
+        };
+    </script>
+</body>
+</html>

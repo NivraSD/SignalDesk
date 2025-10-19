@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Media Intelligence - LIVE</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+        .status {
+            text-align: center;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .success {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+            color: #0a4f3c;
+        }
+        .error {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+        .pending {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: #333;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+            display: block;
+            margin: 20px auto;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: transform 0.3s ease;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+        .test-frame {
+            width: 100%;
+            height: 600px;
+            border: 3px solid #667eea;
+            border-radius: 12px;
+            margin: 20px 0;
+            background: white;
+        }
+        .result-box {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .instruction {
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0 5px;
+        }
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .badge-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Media Intelligence Platform - Live Test</h1>
+        
+        <div id="status" class="status pending">
+            Initializing test...
+        </div>
+
+        <div class="instruction">
+            <h3>📋 Manual Test Instructions:</h3>
+            <ol>
+                <li>Click <strong>"Open Media Intelligence"</strong> below</li>
+                <li>Login with: <strong>demo@signaldesk.com / demo123</strong></li>
+                <li>Select or create a project</li>
+                <li>Click <strong>"Media Intelligence"</strong> in the sidebar</li>
+                <li>You should see: <strong>"🧠 MEDIA INTELLIGENCE PLATFORM v2.0"</strong></li>
+            </ol>
+        </div>
+
+        <button onclick="openMediaIntelligence()">🔗 Open Media Intelligence</button>
+        <button onclick="checkDeployment()">🔍 Check Deployment Status</button>
+        <button onclick="testDirectRoute()">🎯 Test Direct Route</button>
+
+        <div id="result" class="result-box" style="display:none;"></div>
+
+        <h3 style="text-align:center; margin-top:40px;">🖼️ Live Preview:</h3>
+        <iframe 
+            id="testFrame"
+            class="test-frame"
+            src="https://signaldesk-frontend-23tc8mlwq-nivra-sd.vercel.app"
+            title="Media Intelligence Test"
+        ></iframe>
+
+        <div class="instruction" style="margin-top:40px;">
+            <h3>✅ Success Indicators:</h3>
+            <ul>
+                <li><span class="badge badge-success">GOOD</span> See "MEDIA INTELLIGENCE PLATFORM v2.0"</li>
+                <li><span class="badge badge-success">GOOD</span> Version number shows: 2.0-FORCE-UPDATE-[timestamp]</li>
+                <li><span class="badge badge-success">GOOD</span> Shows "New Features Active" list</li>
+            </ul>
+            <h3>❌ Failure Indicators:</h3>
+            <ul>
+                <li><span class="badge badge-error">BAD</span> See "Media List Builder"</li>
+                <li><span class="badge badge-error">BAD</span> See journalist search interface</li>
+                <li><span class="badge badge-error">BAD</span> Old interface with filters</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const DEPLOYMENT_URL = 'https://signaldesk-frontend-23tc8mlwq-nivra-sd.vercel.app';
+
+        function updateStatus(message, type = 'pending') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+        }
+
+        function showResult(content) {
+            const resultEl = document.getElementById('result');
+            resultEl.textContent = typeof content === 'object' ? JSON.stringify(content, null, 2) : content;
+            resultEl.style.display = 'block';
+        }
+
+        async function checkDeployment() {
+            updateStatus('Checking deployment...', 'pending');
+            
+            try {
+                const response = await fetch(DEPLOYMENT_URL);
+                const html = await response.text();
+                
+                let result = `Deployment Check Results:\n`;
+                result += `Status: ${response.status}\n`;
+                result += `URL: ${DEPLOYMENT_URL}\n\n`;
+                
+                // Check for MediaIntelligence
+                if (html.includes('MediaIntelligence')) {
+                    result += '✅ MediaIntelligence component found in bundle\n';
+                    updateStatus('MediaIntelligence detected!', 'success');
+                } else {
+                    result += '❌ MediaIntelligence not found in HTML\n';
+                }
+                
+                // Check for MediaListBuilder
+                if (html.includes('MediaListBuilder')) {
+                    result += '⚠️ WARNING: MediaListBuilder still present\n';
+                    updateStatus('Old component still present!', 'error');
+                } else {
+                    result += '✅ MediaListBuilder not found (good!)\n';
+                }
+                
+                // Check for test version
+                if (html.includes('MEDIA INTELLIGENCE PLATFORM')) {
+                    result += '✅ Test version markers found\n';
+                    updateStatus('New Media Intelligence is LIVE!', 'success');
+                }
+                
+                showResult(result);
+                
+            } catch (error) {
+                updateStatus('Check failed: ' + error.message, 'error');
+                showResult('Error: ' + error.message);
+            }
+        }
+
+        function openMediaIntelligence() {
+            window.open(DEPLOYMENT_URL, '_blank');
+            updateStatus('Opened in new tab. Login and navigate to Media Intelligence.', 'pending');
+        }
+
+        function testDirectRoute() {
+            // Try to load media-list route directly
+            const testUrl = `${DEPLOYMENT_URL}/projects/1/media-list`;
+            window.open(testUrl, '_blank');
+            updateStatus('Opened media route directly. Check if Media Intelligence loads.', 'pending');
+        }
+
+        // Auto-check on load
+        window.onload = () => {
+            updateStatus('Ready to test. Site is now accessible (no auth required).', 'success');
+            // Optionally auto-check
+            // checkDeployment();
+        };
+    </script>
+</body>
+</html>

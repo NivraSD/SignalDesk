@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
@@ -39,3 +40,19 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+=======
+.vercel
+.env
+.env.local
+*.env.local
+frontend/.env.local
+frontend/frontend/.env.local
+mcp-servers/.env
+
+# Build directories - NEVER commit these
+build/
+dist/
+out/
+node_modules
+setup-real-data-sources.sql
+>>>>>>> cb4c36f5bcebe01f9c38384c2055b4bc392323bb

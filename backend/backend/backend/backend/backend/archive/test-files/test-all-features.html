@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalDesk - Complete Frontend/Backend Test Suite</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .config-info {
+            background: #f7f9fc;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+        
+        .test-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .test-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .test-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .test-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .status-testing {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .status-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .test-button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.3s ease;
+            margin-bottom: 15px;
+        }
+        
+        .test-button:hover {
+            opacity: 0.9;
+        }
+        
+        .test-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .result-box {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 12px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        
+        .result-success {
+            background: #f0fdf4;
+            border-color: #86efac;
+        }
+        
+        .result-error {
+            background: #fef2f2;
+            border-color: #fca5a5;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #4b5563;
+            font-size: 14px;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .summary-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-top: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .summary-item {
+            text-align: center;
+            padding: 15px;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+        
+        .summary-number {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .summary-label {
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #667eea;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-left: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 SignalDesk Complete Test Suite</h1>
+            <p style="color: #6b7280; margin-top: 10px;">Comprehensive frontend-backend connectivity and feature testing</p>
+            
+            <div class="config-info">
+                <h3 style="margin-bottom: 10px;">Current Configuration</h3>
+                <div id="config-display">
+                    <p><strong>Frontend URL:</strong> <span id="frontend-url">Loading...</span></p>
+                    <p><strong>Backend API:</strong> <span id="backend-url">https://signaldesk-production.up.railway.app/api</span></p>
+                    <p><strong>Environment:</strong> <span id="environment">Production</span></p>
+                    <p><strong>Test Started:</strong> <span id="test-time"></span></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-grid">
+            <!-- Backend Health Check -->
+            <div class="test-card">
+                <div class="test-header">
+                    <span class="test-title">🏥 Backend Health Check</span>
+                    <span class="status-badge status-pending" id="health-status">Pending</span>
+                </div>
+                <button class="test-button" onclick="testBackendHealth()">Test Backend Health</button>
+                <div class="result-box" id="health-result">Click to test backend connectivity</div>
+            </div>
+
+            <!-- CORS Test -->
+            <div class="test-card">
+                <div class="test-header">
+                    <span class="test-title">🔐 CORS Configuration</span>
+                    <span class="status-badge status-pending" id="cors-status">Pending</span>
+                </div>
+                <button class="test-button" onclick="testCORS()">Test CORS Headers</button>
+                <div class="result-box" id="cors-result">Click to verify CORS configuration</div>
+            </div>
+
+            <!-- Login Test -->
+            <div class="test-card">
+                <div class="test-header">
+                    <span class="test-title">🔑 Authentication (Demo User)</span>
+                    <span class="status-badge status-pending" id="auth-status">Pending</span>
+                </div>
+                <div class="input-group">
+                    <label>Email</label>
+                    <input type="email" id="demo-email" value="demo@signaldesk.com" />
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="demo-password" value="demo123" />
+                </div>
+                <button class="test-button" onclick="testLogin()">Test Login</button>
+                <div class="result-box" id="auth-result">Click to test authentication</div>
+            </div>
+
+            <!-- Token Verification -->
+            <div class="test-card">
+                <div class="test-header">
+                    <span class="test-title">🎫 Token Verification</span>
+                    <span class="status-badge status-pending" id="token-status">Pending</span>
+                </div>
+                <button class="test-button" onclick="testTokenVerification()" id="token-test-btn" disabled>Login First</button>
+                <div class="result-box" id="token-result">Complete login test first</div>
+            </div>
+
+            <!-- Protected Endpoints -->
+            <div class="test-card">
+                <div class="test-header">
+                    <span class="test-title">🛡️ Protected Endpoints</span>
+                    <span class="status-badge status-pending" id="protected-status">Pending</span>
+                </div>
+                <button class="test-button" onclick="testProtectedEndpoints()" id="protected-test-btn" disabled>Login First</button>
+                <div class="result-box" id="protected-result">Complete login test first</div>
+            </div>
+
+            <!-- AI Services -->
+            <div class="test-card">
+                <div class="test-header">
+                    <span class="test-title">🤖 AI Services (Claude)</span>
+                    <span class="status-badge status-pending" id="ai-status">Pending</span>
+                </div>
+                <button class="test-button" onclick="testAIServices()" id="ai-test-btn" disabled>Login First</button>
+                <div class="result-box" id="ai-result">Complete login test first</div>
+            </div>
+
+            <!-- Manifest Test -->
+            <div class="test-card">
+                <div class="test-header">
+                    <span class="test-title">📄 Manifest.json</span>
+                    <span class="status-badge status-pending" id="manifest-status">Pending</span>
+                </div>
+                <button class="test-button" onclick="testManifest()">Test Manifest File</button>
+                <div class="result-box" id="manifest-result">Click to test manifest.json access</div>
+            </div>
+
+            <!-- Environment Variables -->
+            <div class="test-card">
+                <div class="test-header">
+                    <span class="test-title">⚙️ Environment Variables</span>
+                    <span class="status-badge status-pending" id="env-status">Pending</span>
+                </div>
+                <button class="test-button" onclick="testEnvironmentVariables()">Check Env Variables</button>
+                <div class="result-box" id="env-result">Click to verify environment configuration</div>
+            </div>
+        </div>
+
+        <div class="summary-card">
+            <h2 style="margin-bottom: 10px;">📊 Test Summary</h2>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="summary-number" id="total-tests" style="color: #6b7280;">0</div>
+                    <div class="summary-label">Total Tests</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-number" id="passed-tests" style="color: #10b981;">0</div>
+                    <div class="summary-label">Passed</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-number" id="failed-tests" style="color: #ef4444;">0</div>
+                    <div class="summary-label">Failed</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-number" id="pending-tests" style="color: #f59e0b;">8</div>
+                    <div class="summary-label">Pending</div>
+                </div>
+            </div>
+            <div style="margin-top: 20px;">
+                <button class="test-button" onclick="runAllTests()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                    🚀 Run All Tests
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE_URL = 'https://signaldesk-production.up.railway.app/api';
+        let authToken = null;
+        let testResults = {
+            total: 8,
+            passed: 0,
+            failed: 0,
+            pending: 8
+        };
+
+        // Initialize page
+        window.onload = function() {
+            document.getElementById('frontend-url').textContent = window.location.origin;
+            document.getElementById('test-time').textContent = new Date().toLocaleString();
+            updateSummary();
+        };
+
+        // Update test summary
+        function updateSummary() {
+            document.getElementById('total-tests').textContent = testResults.total;
+            document.getElementById('passed-tests').textContent = testResults.passed;
+            document.getElementById('failed-tests').textContent = testResults.failed;
+            document.getElementById('pending-tests').textContent = testResults.pending;
+        }
+
+        // Update test status
+        function updateTestStatus(testId, status, result) {
+            const statusElement = document.getElementById(`${testId}-status`);
+            const resultElement = document.getElementById(`${testId}-result`);
+            
+            // Remove all status classes
+            statusElement.classList.remove('status-pending', 'status-testing', 'status-success', 'status-error');
+            
+            if (status === 'testing') {
+                statusElement.classList.add('status-testing');
+                statusElement.textContent = 'Testing';
+                statusElement.innerHTML = 'Testing<span class="loader"></span>';
+            } else if (status === 'success') {
+                statusElement.classList.add('status-success');
+                statusElement.textContent = 'Passed';
+                resultElement.classList.add('result-success');
+                testResults.passed++;
+                testResults.pending--;
+            } else if (status === 'error') {
+                statusElement.classList.add('status-error');
+                statusElement.textContent = 'Failed';
+                resultElement.classList.add('result-error');
+                testResults.failed++;
+                testResults.pending--;
+            }
+            
+            if (result) {
+                resultElement.textContent = typeof result === 'object' ? JSON.stringify(result, null, 2) : result;
+            }
+            
+            updateSummary();
+        }
+
+        // Test Backend Health
+        async function testBackendHealth() {
+            updateTestStatus('health', 'testing');
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    updateTestStatus('health', 'success', `✅ Backend is healthy!\n\nResponse:\n${JSON.stringify(data, null, 2)}`);
+                } else {
+                    updateTestStatus('health', 'error', `❌ Backend returned status ${response.status}\n\n${JSON.stringify(data, null, 2)}`);
+                }
+            } catch (error) {
+                updateTestStatus('health', 'error', `❌ Failed to connect to backend\n\nError: ${error.message}\n\nMake sure the backend is running at:\n${API_BASE_URL}`);
+            }
+        }
+
+        // Test CORS
+        async function testCORS() {
+            updateTestStatus('cors', 'testing');
+            try {
+                const response = await fetch(`${API_BASE_URL}/test`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': window.location.origin,
+                        'Access-Control-Request-Method': 'POST',
+                        'Access-Control-Request-Headers': 'Content-Type'
+                    }
+                });
+                
+                const corsHeaders = {
+                    'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
+                    'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
+                    'Access-Control-Allow-Headers': response.headers.get('Access-Control-Allow-Headers'),
+                    'Access-Control-Allow-Credentials': response.headers.get('Access-Control-Allow-Credentials')
+                };
+                
+                if (corsHeaders['Access-Control-Allow-Origin']) {
+                    updateTestStatus('cors', 'success', `✅ CORS is properly configured!\n\nHeaders:\n${JSON.stringify(corsHeaders, null, 2)}`);
+                } else {
+                    updateTestStatus('cors', 'error', `⚠️ CORS headers not found\n\nReceived headers:\n${JSON.stringify(corsHeaders, null, 2)}`);
+                }
+            } catch (error) {
+                updateTestStatus('cors', 'error', `❌ CORS test failed\n\nError: ${error.message}`);
+            }
+        }
+
+        // Test Login
+        async function testLogin() {
+            updateTestStatus('auth', 'testing');
+            const email = document.getElementById('demo-email').value;
+            const password = document.getElementById('demo-password').value;
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.token) {
+                    authToken = data.token;
+                    localStorage.setItem('test-token', authToken);
+                    
+                    // Enable other tests
+                    document.getElementById('token-test-btn').disabled = false;
+                    document.getElementById('token-test-btn').textContent = 'Test Token';
+                    document.getElementById('protected-test-btn').disabled = false;
+                    document.getElementById('protected-test-btn').textContent = 'Test Endpoints';
+                    document.getElementById('ai-test-btn').disabled = false;
+                    document.getElementById('ai-test-btn').textContent = 'Test AI';
+                    
+                    updateTestStatus('auth', 'success', `✅ Login successful!\n\nUser: ${data.user.email}\nToken: ${data.token.substring(0, 20)}...`);
+                } else {
+                    updateTestStatus('auth', 'error', `❌ Login failed\n\nStatus: ${response.status}\nError: ${data.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                updateTestStatus('auth', 'error', `❌ Login request failed\n\nError: ${error.message}`);
+            }
+        }
+
+        // Test Token Verification
+        async function testTokenVerification() {
+            if (!authToken) {
+                updateTestStatus('token', 'error', '❌ No auth token available. Please login first.');
+                return;
+            }
+            
+            updateTestStatus('token', 'testing');
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/verify`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    updateTestStatus('token', 'success', `✅ Token verified successfully!\n\nUser: ${JSON.stringify(data.user, null, 2)}`);
+                } else {
+                    updateTestStatus('token', 'error', `❌ Token verification failed\n\nStatus: ${response.status}\nError: ${data.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                updateTestStatus('token', 'error', `❌ Token verification request failed\n\nError: ${error.message}`);
+            }
+        }
+
+        // Test Protected Endpoints
+        async function testProtectedEndpoints() {
+            if (!authToken) {
+                updateTestStatus('protected', 'error', '❌ No auth token available. Please login first.');
+                return;
+            }
+            
+            updateTestStatus('protected', 'testing');
+            let results = [];
+            
+            const endpoints = [
+                { name: 'Projects', url: '/projects' },
+                { name: 'Todos', url: '/todos' },
+                { name: 'Monitoring', url: '/monitoring/status' }
+            ];
+            
+            for (const endpoint of endpoints) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}${endpoint.url}`, {
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    results.push(`${endpoint.name}: ${response.ok ? '✅' : '❌'} (${response.status})`);
+                } catch (error) {
+                    results.push(`${endpoint.name}: ❌ (Error: ${error.message})`);
+                }
+            }
+            
+            const allPassed = results.every(r => r.includes('✅'));
+            updateTestStatus('protected', allPassed ? 'success' : 'error', 
+                `${allPassed ? '✅' : '⚠️'} Protected endpoints test\n\n${results.join('\n')}`);
+        }
+
+        // Test AI Services
+        async function testAIServices() {
+            if (!authToken) {
+                updateTestStatus('ai', 'error', '❌ No auth token available. Please login first.');
+                return;
+            }
+            
+            updateTestStatus('ai', 'testing');
+            try {
+                const response = await fetch(`${API_BASE_URL}/content/ai-generate`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        prompt: 'Test: Write a one-sentence description of SignalDesk',
+                        type: 'text'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.content) {
+                    updateTestStatus('ai', 'success', `✅ AI Service (Claude) is working!\n\nGenerated content:\n"${data.content}"`);
+                } else {
+                    updateTestStatus('ai', 'error', `⚠️ AI Service returned status ${response.status}\n\n${JSON.stringify(data, null, 2)}`);
+                }
+            } catch (error) {
+                updateTestStatus('ai', 'error', `❌ AI Service test failed\n\nError: ${error.message}`);
+            }
+        }
+
+        // Test Manifest
+        async function testManifest() {
+            updateTestStatus('manifest', 'testing');
+            try {
+                const response = await fetch('/manifest.json');
+                
+                if (response.ok) {
+                    const manifest = await response.json();
+                    updateTestStatus('manifest', 'success', `✅ Manifest.json loaded successfully!\n\n${JSON.stringify(manifest, null, 2)}`);
+                } else {
+                    updateTestStatus('manifest', 'error', `❌ Failed to load manifest.json\n\nStatus: ${response.status}`);
+                }
+            } catch (error) {
+                updateTestStatus('manifest', 'error', `❌ Manifest test failed\n\nError: ${error.message}`);
+            }
+        }
+
+        // Test Environment Variables
+        async function testEnvironmentVariables() {
+            updateTestStatus('env', 'testing');
+            
+            // Check if we're in a React environment
+            const envVars = {
+                'REACT_APP_API_URL': typeof process !== 'undefined' && process.env ? process.env.REACT_APP_API_URL : 'Not accessible from browser',
+                'Configured API URL': API_BASE_URL,
+                'Window Location': window.location.origin,
+                'Protocol': window.location.protocol,
+                'Hostname': window.location.hostname
+            };
+            
+            updateTestStatus('env', 'success', `✅ Environment configuration:\n\n${JSON.stringify(envVars, null, 2)}`);
+        }
+
+        // Run all tests
+        async function runAllTests() {
+            // Reset counters
+            testResults = {
+                total: 8,
+                passed: 0,
+                failed: 0,
+                pending: 8
+            };
+            updateSummary();
+            
+            // Run tests in sequence
+            await testBackendHealth();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testCORS();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testLogin();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            if (authToken) {
+                await testTokenVerification();
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                await testProtectedEndpoints();
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                await testAIServices();
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            await testManifest();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testEnvironmentVariables();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Claude Content Generator Test</title>
+    <style>
+        body {
+            font-family: -apple-system, system-ui, sans-serif;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            min-height: 100px;
+            white-space: pre-wrap;
+        }
+        .error {
+            color: #dc3545;
+            padding: 10px;
+            background: #fee;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .success {
+            color: #28a745;
+            padding: 10px;
+            background: #efe;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .metadata {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .tone-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .tone-option {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        .tone-option:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        .tone-option.selected {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Claude Content Generator Test</h1>
+        <p class="subtitle">Test the Claude AI integration for content generation</p>
+        
+        <!-- Login Section -->
+        <div class="test-section">
+            <h3>Step 1: Login</h3>
+            <input type="email" id="email" value="demo@signaldesk.com" placeholder="Email">
+            <input type="password" id="password" value="demo123" placeholder="Password">
+            <button onclick="login()">Login</button>
+            <div id="loginStatus"></div>
+        </div>
+
+        <!-- Content Generation Test -->
+        <div class="test-section">
+            <h3>Step 2: Test Claude Content Generation</h3>
+            
+            <label>Content Type:</label>
+            <select id="contentType">
+                <option value="press-release">Press Release</option>
+                <option value="social-post">Social Media Post</option>
+                <option value="media-pitch">Media Pitch</option>
+                <option value="crisis-response">Crisis Response</option>
+                <option value="exec-statement">Executive Statement</option>
+                <option value="qa-doc">Q&A Document</option>
+                <option value="thought-leadership">Thought Leadership</option>
+            </select>
+
+            <label>Tone:</label>
+            <div class="tone-selector" id="toneSelector">
+                <div class="tone-option" data-tone="professional">Professional</div>
+                <div class="tone-option selected" data-tone="bold">Bold</div>
+                <div class="tone-option" data-tone="conversational">Conversational</div>
+                <div class="tone-option" data-tone="analytical">Analytical</div>
+                <div class="tone-option" data-tone="inspirational">Inspirational</div>
+                <div class="tone-option" data-tone="urgent">Urgent</div>
+            </div>
+
+            <label>Prompt:</label>
+            <textarea id="prompt" rows="4" placeholder="Describe what content you need...">
+We're launching a revolutionary AI-powered analytics platform that reduces data processing time by 75% and helps businesses make faster decisions. The platform uses advanced machine learning to identify patterns and anomalies in real-time.
+            </textarea>
+
+            <label>Additional Form Data (optional):</label>
+            <input type="text" id="headline" placeholder="Headline (for press releases)">
+            <input type="text" id="location" placeholder="Location (e.g., NEW YORK)">
+
+            <button onclick="testClaudeGeneration()" id="generateBtn">
+                Generate with Claude AI
+            </button>
+            <button onclick="clearResults()">Clear</button>
+
+            <div id="result" class="result"></div>
+            <div id="metadata" class="metadata" style="display:none;"></div>
+        </div>
+    </div>
+
+    <script>
+        let authToken = null;
+        let selectedTone = 'bold';
+
+        // Setup tone selector
+        document.querySelectorAll('.tone-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.tone-option').forEach(o => o.classList.remove('selected'));
+                this.classList.add('selected');
+                selectedTone = this.dataset.tone;
+            });
+        });
+
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const statusDiv = document.getElementById('loginStatus');
+            
+            try {
+                const response = await fetch('https://signal-desk.vercel.app/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    authToken = data.token;
+                    statusDiv.innerHTML = '<div class="success">✅ Logged in successfully!</div>';
+                } else {
+                    statusDiv.innerHTML = `<div class="error">Login failed: ${data.error}</div>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testClaudeGeneration() {
+            if (!authToken) {
+                alert('Please login first');
+                return;
+            }
+
+            const resultDiv = document.getElementById('result');
+            const metadataDiv = document.getElementById('metadata');
+            const generateBtn = document.getElementById('generateBtn');
+            const type = document.getElementById('contentType').value;
+            const prompt = document.getElementById('prompt').value;
+            const headline = document.getElementById('headline').value;
+            const location = document.getElementById('location').value;
+
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = 'Generating with Claude AI... <div class="loading"></div>';
+            resultDiv.innerHTML = 'Calling Claude AI...';
+            metadataDiv.style.display = 'none';
+
+            try {
+                console.log('Sending request to Claude endpoint...');
+                
+                const formData = {};
+                if (headline) formData.headline = headline;
+                if (location) formData.location = location;
+
+                const requestBody = {
+                    type,
+                    prompt,
+                    tone: selectedTone,
+                    formData: Object.keys(formData).length > 0 ? formData : undefined
+                };
+
+                console.log('Request body:', requestBody);
+
+                const response = await fetch('https://signal-desk.vercel.app/api/content/ai-generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                console.log('Response status:', response.status);
+                const data = await response.json();
+                console.log('Response data:', data);
+
+                if (data.success) {
+                    resultDiv.innerHTML = `<strong>Generated Content:</strong>\n\n${data.content}`;
+                    
+                    if (data.metadata) {
+                        metadataDiv.style.display = 'block';
+                        metadataDiv.innerHTML = `
+                            <strong>Metadata:</strong><br>
+                            📊 Word Count: ${data.metadata.word_count}<br>
+                            📝 Characters: ${data.metadata.character_count}<br>
+                            🤖 AI Model: ${data.metadata.ai_model}<br>
+                            ⚡ Powered by: ${data.metadata.powered_by}<br>
+                            🎯 Tone: ${data.tone}<br>
+                            📅 Generated: ${new Date(data.metadata.generated_at).toLocaleString()}
+                        `;
+                        
+                        if (data.metadata.powered_by === 'Claude AI') {
+                            metadataDiv.innerHTML += '<br><strong style="color: green;">✅ Claude AI is working!</strong>';
+                        } else {
+                            metadataDiv.innerHTML += '<br><strong style="color: orange;">⚠️ Using fallback template generation</strong>';
+                        }
+                    }
+                } else {
+                    resultDiv.innerHTML = `<div class="error">Generation failed: ${data.error || 'Unknown error'}</div>`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = 'Generate with Claude AI';
+            }
+        }
+
+        function clearResults() {
+            document.getElementById('result').innerHTML = '';
+            document.getElementById('metadata').style.display = 'none';
+            document.getElementById('prompt').value = '';
+            document.getElementById('headline').value = '';
+            document.getElementById('location').value = '';
+        }
+
+        // Auto-login on load
+        window.onload = () => {
+            login();
+        };
+    </script>
+</body>
+</html>

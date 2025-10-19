@@ -1,0 +1,20 @@
+const express = require('express');
+const router = express.Router();
+const monitoringController = require('../controllers/monitoringController');
+const authMiddleware = require('../middleware/auth');
+
+// Apply auth middleware to all routes
+router.use(authMiddleware);
+
+// Configuration endpoints
+router.post('/config', monitoringController.saveConfig);
+router.get('/config', monitoringController.getConfig);
+
+// Analysis endpoints
+router.post('/analyze-sentiment', monitoringController.analyzeSentiment);
+router.post('/analyze-batch', monitoringController.analyzeBatch);
+
+// RSS feed endpoint
+router.post('/fetch-rss', monitoringController.fetchRSSFeeds);
+
+module.exports = router;
