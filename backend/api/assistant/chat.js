@@ -66,7 +66,7 @@ User Message: ${message}
 Provide a helpful response that addresses the user's query.`;
       
       const aiMessage = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 1500,
         temperature: 0.7,
         system: systemPrompt,

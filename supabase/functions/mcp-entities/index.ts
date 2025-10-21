@@ -185,7 +185,7 @@ async function extractEntities(args: any) {
   - position: character position in text`;
   
   const completion = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 1000,
     temperature: 0.2,
     messages: [{ role: 'user', content: prompt }]
@@ -226,7 +226,7 @@ async function identifyKeyPeople(args: any) {
   Return comprehensive profiles for each person.`;
   
   const completion = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 800,
     temperature: 0.3,
     messages: [{ role: 'user', content: prompt }]
@@ -307,7 +307,7 @@ async function extractEvents(args: any) {
   Return structured event data.`;
   
   const completion = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 800,
     temperature: 0.3,
     messages: [{ role: 'user', content: prompt }]

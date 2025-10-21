@@ -12,7 +12,7 @@ console.log('1. Environment Variables Check:');
 console.log('   ANTHROPIC_API_KEY exists:', !!process.env.ANTHROPIC_API_KEY);
 console.log('   CLAUDE_API_KEY exists:', !!process.env.CLAUDE_API_KEY);
 console.log('   API Key length:', (process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY || '').length);
-console.log('   Claude Model:', process.env.CLAUDE_MODEL || 'claude-sonnet-4-20250514');
+console.log('   Claude Model:', process.env.CLAUDE_MODEL || 'claude-haiku-4-5-20251001');
 
 // Test Claude service initialization
 console.log('\n2. Testing Claude Service Initialization:');

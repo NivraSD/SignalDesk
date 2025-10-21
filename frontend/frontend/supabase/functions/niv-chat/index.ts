@@ -56,7 +56,7 @@ async function callClaude(messages: any[], userMessage: string) {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-haiku-4-5-20251001',
         system: NIV_SYSTEM_PROMPT,
         messages: claudeMessages,
         max_tokens: 500, // Shorter responses

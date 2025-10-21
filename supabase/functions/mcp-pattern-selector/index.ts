@@ -178,7 +178,7 @@ Output valid JSON with your selection, rationale using research evidence, and al
 
     // Use tool calling to force valid JSON schema
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 2000,
       temperature: 0.3,
       system: systemPrompt,

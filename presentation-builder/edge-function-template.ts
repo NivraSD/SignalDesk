@@ -40,7 +40,7 @@ serve(async (req) => {
     // Step 1: Generate outline
     console.log("Generating presentation outline...");
     const outlineMessage = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-haiku-4-5-20251001",
       max_tokens: 4000,
       messages: [{
         role: "user",
@@ -93,7 +93,7 @@ Respond ONLY with valid JSON in this exact format:
       const slideOutline = outline.slides[i];
       
       const contentMessage = await anthropic.messages.create({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-haiku-4-5-20251001",
         max_tokens: 2000,
         messages: [{
           role: "user",
@@ -149,7 +149,7 @@ Respond ONLY with valid JSON:
       metadata: {
         createdAt: new Date().toISOString(),
         generator: "SignalDesk AI",
-        model: "claude-sonnet-4-20250514",
+        model: "claude-haiku-4-5-20251001",
       },
     };
 

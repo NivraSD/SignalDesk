@@ -10,7 +10,7 @@ async function testClaude() {
     console.log('Testing Claude with API key:', process.env.CLAUDE_API_KEY?.substring(0, 20) + '...');
     
     const response = await anthropic.messages.create({
-      model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-20250514',
+      model: process.env.CLAUDE_MODEL || 'claude-haiku-4-5-20251001',
       max_tokens: 100,
       messages: [{ role: 'user', content: 'Say hello' }]
     });

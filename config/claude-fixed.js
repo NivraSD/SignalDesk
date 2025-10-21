@@ -5,7 +5,7 @@ class ClaudeService {
     this.client = new Anthropic({
       apiKey: process.env.CLAUDE_API_KEY,
     });
-    this.model = process.env.CLAUDE_MODEL || 'claude-sonnet-4-20250514';
+    this.model = process.env.CLAUDE_MODEL || 'claude-haiku-4-5-20251001';
   }
 
   async sendMessage(prompt, conversationHistory = []) {

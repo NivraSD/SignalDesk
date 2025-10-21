@@ -290,7 +290,7 @@ CRITICAL: Use intelligence to create strategic guidance, NOT detailed content sp
 Generate HIGH-LEVEL strategic framework only.`
 
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 4000, // High-level framework only (2 phases × 4 pillars × ~250 tokens)
       temperature: 0.7,
       system: systemPrompt,

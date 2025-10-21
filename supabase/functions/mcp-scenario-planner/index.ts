@@ -122,7 +122,7 @@ Generate 3 scenarios ONLY. Use the EXACT JSON structure above.
 - Ensure all braces and brackets are properly closed`
 
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 2000, // Reduced - simpler tactical structure
       temperature: 0.7,
       system: systemPrompt,

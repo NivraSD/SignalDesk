@@ -195,7 +195,7 @@ Return as JSON:
           'anthropic-dangerous-direct-browser-access': 'true'
         },
         body: JSON.stringify({
-          model: 'claude-3-5-sonnet-20241022',
+          model: 'claude-haiku-4-5-20251001',
           max_tokens: 1000,
           temperature: 0.8, // Higher for creativity
           messages: [
@@ -300,7 +300,7 @@ Return as JSON array.`;
           'anthropic-dangerous-direct-browser-access': 'true'
         },
         body: JSON.stringify({
-          model: 'claude-3-5-sonnet-20241022',
+          model: 'claude-haiku-4-5-20251001',
           max_tokens: 2000,
           temperature: 0.9, // High creativity
           messages: [

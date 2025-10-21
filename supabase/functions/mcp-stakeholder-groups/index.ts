@@ -212,7 +212,7 @@ async function identifyStakeholderGroups(args: any) {
   Return as JSON.`;
   
   const completion = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 1000,
     temperature: 0.3,
     messages: [{ role: 'user', content: prompt }]
@@ -318,7 +318,7 @@ async function createStakeholderMessaging(args: any) {
     Tailor the message to address their specific concerns while maintaining the core message.`;
     
     const completion = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 400,
       temperature: 0.3,
       messages: [{ role: 'user', content: prompt }]
@@ -386,7 +386,7 @@ async function generateEngagementPlan(args: any) {
   Be specific and actionable.`;
   
   const completion = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 800,
     temperature: 0.5,
     messages: [{ role: 'user', content: prompt }]

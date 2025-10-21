@@ -814,7 +814,7 @@ Provide the complete revised version incorporating the user's requested changes.
     
     // Call Claude API
     const completion = await anthropic.messages.create({
-      model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-20250514',
+      model: process.env.CLAUDE_MODEL || 'claude-haiku-4-5-20251001',
       max_tokens: 2048,
       temperature: 0.7,
       system: systemPrompt,

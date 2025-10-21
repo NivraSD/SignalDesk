@@ -144,7 +144,7 @@ router.get("/ai/claude/health", async (req, res) => {
     status: isConfigured && hasApiKey ? "operational" : "degraded",
     configured: isConfigured,
     hasValidApiKey: hasApiKey,
-    model: process.env.CLAUDE_MODEL || "claude-sonnet-4-20250514",
+    model: process.env.CLAUDE_MODEL || "claude-haiku-4-5-20251001",
     message: isConfigured && hasApiKey 
       ? "Claude service is operational" 
       : "Claude service needs configuration - set ANTHROPIC_API_KEY"

@@ -432,7 +432,7 @@ ${contentType === 'qa-document' ? 'Generate 15 Q&A pairs addressing key concerns
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 3000,
         messages: [{ role: 'user', content: prompt }]
       })
@@ -485,7 +485,7 @@ Format your response in markdown with clear sections.`
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 2000,
         messages: [{
           role: 'user',
@@ -724,7 +724,7 @@ serve(async (req) => {
           'anthropic-version': '2023-06-01'
         },
         body: JSON.stringify({
-          model: 'claude-3-5-sonnet-20241022',
+          model: 'claude-haiku-4-5-20251001',
           max_tokens: 512,
           messages: [{
             role: 'user',
@@ -767,7 +767,7 @@ Format: "I understand you want [what they want]. Let me [what you'll do first]. 
           'anthropic-version': '2023-06-01'
         },
         body: JSON.stringify({
-          model: 'claude-3-5-sonnet-20241022',
+          model: 'claude-haiku-4-5-20251001',
           max_tokens: 1024,
           messages: [{
             role: 'user',
@@ -831,7 +831,7 @@ Be specific and extract ALL details from their request AND conversation history.
           'anthropic-version': '2023-06-01'
         },
         body: JSON.stringify({
-          model: 'claude-3-5-sonnet-20241022',
+          model: 'claude-haiku-4-5-20251001',
           max_tokens: 512,
           messages: [{
             role: 'user',
@@ -907,7 +907,7 @@ Only ask if truly necessary. Respond with either the question OR "READY".`
           'anthropic-version': '2023-06-01'
         },
         body: JSON.stringify({
-          model: 'claude-3-5-sonnet-20241022',
+          model: 'claude-haiku-4-5-20251001',
           max_tokens: 1024,
           messages: [{
             role: 'user',

@@ -210,7 +210,7 @@ async function monitorSocialMentions(args: any) {
   Return as JSON.`;
   
   const completion = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 1000,
     temperature: 0.7,
     messages: [{ role: 'user', content: prompt }]
@@ -251,7 +251,7 @@ async function analyzeSocialTrends(args: any) {
   Return as JSON.`;
   
   const completion = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 800,
     temperature: 0.7,
     messages: [{ role: 'user', content: prompt }]
@@ -319,7 +319,7 @@ async function generateSocialContent(args: any) {
     Optimize for ${platform} best practices (character limits, format, etc.)`;
     
     const completion = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 300,
       temperature: 0.7,
       messages: [{ role: 'user', content: prompt }]

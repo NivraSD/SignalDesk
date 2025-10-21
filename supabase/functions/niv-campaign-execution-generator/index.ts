@@ -451,7 +451,7 @@ Create execution plan and system-level measurement framework:
 Generate comprehensive execution plan with system-level measurement framework.`
 
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 6000,
       temperature: 0.7,
       system: systemPrompt,

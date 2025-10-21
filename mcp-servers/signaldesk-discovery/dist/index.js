@@ -222,7 +222,7 @@ ${industry_hint ? `Consider that this organization is in the ${industry_hint} in
 Focus on factual, current information. Be specific with competitor names and real executives.
 `;
         const message = await anthropic.messages.create({
-            model: 'claude-3-5-sonnet-20241022',
+            model: 'claude-haiku-4-5-20251001',
             max_tokens: 4000,
             messages: [{
                     role: 'user',

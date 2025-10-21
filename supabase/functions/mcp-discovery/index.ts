@@ -22,7 +22,7 @@ const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') || Deno.env.get('CLA
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 // Helper function to call Anthropic API directly (matching working edge functions)
-async function callAnthropic(messages: any[], maxTokens: number = 4000, model: string = 'claude-sonnet-4-20250514') {
+async function callAnthropic(messages: any[], maxTokens: number = 4000, model: string = 'claude-haiku-4-5-20251001') {
   // Check API key when actually making the call
   const apiKey = ANTHROPIC_API_KEY || Deno.env.get('ANTHROPIC_API_KEY') || Deno.env.get('CLAUDE_API_KEY');
 
@@ -178,7 +178,7 @@ async function gatherIndustryData(organization_name: string, industry_hint?: str
     const detection = await callAnthropic([{
       role: 'user',
       content: `What industry is ${organization_name} in? Answer with just the industry name (e.g., "automotive", "technology", "healthcare").`
-    }], 100, 'claude-sonnet-4-20250514');
+    }], 100, 'claude-haiku-4-5-20251001');
     
     industry = detection.content[0].type === 'text' ? detection.content[0].text.trim() : 'technology';
   }
@@ -397,7 +397,7 @@ BE SPECIFIC with names. Real companies, real regulators, real people. This is fo
   const message = await callAnthropic([{
     role: 'user',
     content: analysisPrompt
-  }], 4000, 'claude-sonnet-4-20250514');
+  }], 4000, 'claude-haiku-4-5-20251001');
 
   const claudeResponse = message.content[0];
   if (claudeResponse.type !== 'text') {

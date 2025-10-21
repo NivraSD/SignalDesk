@@ -233,7 +233,7 @@ async function detectEmergingNarratives(args: any) {
   Return as JSON with narrative details.`;
   
   const completion = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 1000,
     temperature: 0.5,
     messages: [{ role: 'user', content: prompt }]
@@ -390,7 +390,7 @@ async function shapeNarrativeStrategy(args: any) {
   - Success metrics`;
   
   const completion = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 1000,
     temperature: 0.5,
     messages: [{ role: 'user', content: prompt }]
@@ -476,7 +476,7 @@ async function createCounterNarrative(args: any) {
   - Timeline`;
   
   const completion = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 800,
     temperature: 0.4,
     messages: [{ role: 'user', content: prompt }]

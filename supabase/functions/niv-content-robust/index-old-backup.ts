@@ -397,7 +397,7 @@ ${contentType === 'qa-document' ? 'Generate 15 Q&A pairs addressing key concerns
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 3000,
         messages: [{ role: 'user', content: prompt }]
       })
@@ -450,7 +450,7 @@ Format your response in markdown with clear sections.`
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 2000,
         messages: [{
           role: 'user',

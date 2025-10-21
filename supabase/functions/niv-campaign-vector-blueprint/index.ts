@@ -514,7 +514,7 @@ Output valid JSON only.`
         console.log(`Attempt ${retries + 1}/${maxRetries + 1} to generate blueprint...`)
 
         message = await anthropic.messages.create({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-haiku-4-5-20251001',
           max_tokens: 10000, // Sufficient for full blueprint with all phases (prevents mid-JSON cutoff)
           temperature: 0.7,
           system: systemPrompt,

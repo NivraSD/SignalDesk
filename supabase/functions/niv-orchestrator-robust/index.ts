@@ -805,7 +805,7 @@ Respond with JSON only:
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 300,
         messages: [{ role: 'user', content: analysisPrompt }]
       }),
@@ -1464,7 +1464,7 @@ Return ONLY the JSON object, no other text.`
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 4000,
         messages: [{
           role: 'user',
@@ -2906,7 +2906,7 @@ Respond with JSON only:
             'content-type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'claude-sonnet-4-20250514',
+            model: 'claude-haiku-4-5-20251001',
             max_tokens: 500,
             messages: [{ role: 'user', content: understandingPrompt }]
           }),
@@ -3341,7 +3341,7 @@ Remember to maintain natural conversation flow while bringing this perspective t
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 2000,
         system: moduleEnhancedPrompt,
         messages: [

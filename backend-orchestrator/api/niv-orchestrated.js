@@ -107,7 +107,7 @@ export default async function handler(req, res) {
       ];
 
       const response = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 2000,
         temperature: 0.7,
         system: systemPrompt,
@@ -165,7 +165,7 @@ export default async function handler(req, res) {
       mcpsTriggered: triggeredMCPs.map(m => m.id),
       mcpInsights,
       orchestrationMetadata: {
-        claudeModel: 'claude-sonnet-4-20250514',
+        claudeModel: 'claude-haiku-4-5-20251001',
         mcpsActive: triggeredMCPs.length,
         artifactCreated: !!artifact,
         responseType: artifactAnalysis.type || 'chat'

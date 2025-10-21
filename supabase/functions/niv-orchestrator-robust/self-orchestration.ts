@@ -64,7 +64,7 @@ Return a structured plan with specific queries for each step.`
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-3-sonnet-20241022',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 1000,
         messages: [{
           role: 'user',
@@ -173,7 +173,7 @@ For each gap, provide a specific follow-up query to fill it.`
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-3-sonnet-20241022',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 800,
         messages: [{
           role: 'user',

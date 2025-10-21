@@ -239,7 +239,7 @@ async function detectCrisisSignals(args: any) {
   Return as JSON.`;
   
   const completion = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 800,
     temperature: 0.3,
     messages: [{ role: 'user', content: prompt }]
@@ -281,7 +281,7 @@ async function assessCrisisSeverity(args: any) {
   Return as JSON.`;
   
   const completion = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 600,
     temperature: 0.3,
     messages: [{ role: 'user', content: prompt }]
@@ -323,7 +323,7 @@ async function generateCrisisResponse(args: any) {
   Be specific and actionable.`;
   
   const completion = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 1000,
     temperature: 0.3,
     messages: [{ role: 'user', content: prompt }]
@@ -354,7 +354,7 @@ async function createStakeholderMessaging(args: any) {
     Create tailored message addressing their specific concerns.`;
     
     const completion = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 400,
       temperature: 0.3,
       messages: [{ role: 'user', content: prompt }]
@@ -427,7 +427,7 @@ async function simulateCrisisScenarios(args: any) {
   Make it realistic and detailed.`;
   
   const completion = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 1200,
     temperature: 0.5,
     messages: [{ role: 'user', content: prompt }]
@@ -532,7 +532,7 @@ Return ONLY a valid JSON object in this format:
 }`;
 
   const scenariosCompletion = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 1500,
     temperature: 0.7,
     messages: [{ role: 'user', content: scenariosPrompt }]
@@ -598,7 +598,7 @@ Return ONLY a valid JSON object:
 }`;
 
   const stakeholdersCompletion = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 1200,
     temperature: 0.7,
     messages: [{ role: 'user', content: stakeholdersPrompt }]
@@ -641,7 +641,7 @@ Return ONLY valid JSON:
 }`;
 
   const commPlansCompletion = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 1200,
     temperature: 0.7,
     messages: [{ role: 'user', content: commPlansPrompt }]

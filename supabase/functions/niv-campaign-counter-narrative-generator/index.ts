@@ -291,7 +291,7 @@ Create defensive playbooks for 3-4 threat scenarios (not 5 - keep it focused):
 Generate STRATEGIC counter-narrative framework. Detailed response content generated later by NIV Content.`
 
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 3000, // Reduced - just map research fears to threat scenarios
       temperature: 0.7,
       system: systemPrompt,

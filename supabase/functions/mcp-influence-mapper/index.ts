@@ -251,7 +251,7 @@ Output comprehensive influence strategies for ALL ${topStakeholders.length} stak
 
     // Use tool calling to force valid JSON schema
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 16000, // Increased from 4000 to handle 4 complete stakeholder strategies
       temperature: 0.3,
       system: systemPrompt,

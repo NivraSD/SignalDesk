@@ -126,7 +126,7 @@ Return as JSON with keys: executive_summary, strategic_pillars, media_strategy, 
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 5000,
         temperature: 0.8,
         system: `You are Niv, a Senior PR Strategist with 20 years of agency experience. You create strategic plans that actually work - not corporate fluff, but actionable strategies that get coverage and drive business results. Think strategically, write naturally, and focus on what actually matters in PR.`,

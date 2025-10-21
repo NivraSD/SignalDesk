@@ -350,7 +350,7 @@ For EACH phase, provide ALL 4 pillars with:
 Generate comprehensive orchestration strategy with full strategic depth.`
 
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 10000, // Reduced to fit within 2-minute timeout (4 phases × 4 pillars)
       temperature: 0.7,
       system: systemPrompt,

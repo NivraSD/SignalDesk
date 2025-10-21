@@ -193,7 +193,7 @@ Output comprehensive influence strategies for ALL stakeholders in valid JSON for
         console.log(`Attempt ${attempts}/${maxAttempts} to generate influence strategies...`)
 
         const message = await anthropic.messages.create({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-haiku-4-5-20251001',
           max_tokens: 3500, // Reduced from 4096 to improve speed
           temperature: 0.7,
           system: systemPrompt,

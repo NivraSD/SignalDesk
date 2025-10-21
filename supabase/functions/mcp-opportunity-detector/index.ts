@@ -171,7 +171,7 @@ async function detectOpportunitiesWithClaude(
   const topEvents = [...competitorEvents, ...orgEvents];
 
   console.log(`🤖 Calling Claude with ${topEvents.length} events for opportunity detection`);
-  console.log('Using model:', 'claude-sonnet-4-20250514');
+  console.log('Using model:', 'claude-haiku-4-5-20251001');
   console.log('API Key present:', !!ANTHROPIC_API_KEY);
   console.log('API Key length:', ANTHROPIC_API_KEY?.length || 0);
   console.log('API Key prefix:', ANTHROPIC_API_KEY?.substring(0, 10) || 'N/A');
@@ -292,7 +292,7 @@ Example format: [{"title": "...", "description": "...", ...}]`;
         'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 6000,
         temperature: 0.7,
         system: `You are a PR opportunity detection system analyzing real-time intelligence data.
@@ -697,7 +697,7 @@ serve(async (req) => {
         opportunities: opportunities,
         metadata: {
           total_detected: opportunities.length,
-          detection_method: 'claude-sonnet-4-20250514',
+          detection_method: 'claude-haiku-4-5-20251001',
           timestamp: new Date().toISOString()
         }
       }),

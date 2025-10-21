@@ -211,7 +211,7 @@ async function monitorRegulatoryChanges(args: any) {
   Return as structured JSON.`;
   
   const completion = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 1000,
     temperature: 0.3,
     messages: [{ role: 'user', content: prompt }]
@@ -480,7 +480,7 @@ async function prepareRegulatoryResponse(args: any) {
   - Contact information`;
   
   const completion = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 1000,
     temperature: 0.3,
     messages: [{ role: 'user', content: prompt }]

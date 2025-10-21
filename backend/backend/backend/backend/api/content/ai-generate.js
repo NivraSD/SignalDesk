@@ -47,10 +47,10 @@ module.exports = async function handler(req, res) {
       const systemPrompt = getSystemPrompt(type, tone);
       const userPrompt = buildUserPrompt(type, prompt, formData, tone);
       
-      console.log('Calling Claude API with model: claude-sonnet-4-20250514');
+      console.log('Calling Claude API with model: claude-haiku-4-5-20251001');
       
       const message = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 2000,
         temperature: 0.7,
         system: systemPrompt,

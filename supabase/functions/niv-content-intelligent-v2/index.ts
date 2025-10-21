@@ -2863,7 +2863,7 @@ Respond with JSON only:
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 500,
         messages: [{ role: 'user', content: understandingPrompt }]
       })
@@ -3110,7 +3110,7 @@ ${context}`
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 2000,
       system: enhancedSystemPrompt,
       messages: messages,
@@ -3572,7 +3572,7 @@ Write ONLY the brief, nothing else. Make it compelling and strategic.`
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 300,
         temperature: 0.7,
         messages: [{
@@ -3891,7 +3891,7 @@ Write ONLY the thought leadership content.`
       },
       signal: controller.signal,
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 16000,
         temperature: 0.7,
         messages: [{

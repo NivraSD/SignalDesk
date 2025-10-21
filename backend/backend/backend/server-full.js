@@ -203,7 +203,7 @@ app.post('/api/content/ai-generate', async (req, res) => {
     
     try {
       const response = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 1000,
         system: systemPrompt,
         messages: [
@@ -239,7 +239,7 @@ app.post('/api/crisis/analyze', async (req, res) => {
     
     try {
       const response = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 1500,
         system: systemPrompt,
         messages: [
@@ -279,7 +279,7 @@ app.post('/api/campaigns/analyze', async (req, res) => {
     
     try {
       const response = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 1500,
         system: 'You are a marketing strategist. Provide campaign insights and recommendations.',
         messages: [

@@ -216,7 +216,7 @@ Return JSON:
 }`;
 
     const assessmentResponse = await anthropic.messages.create({
-      model: 'claude-3-5-haiku-20241022',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 2000,
       messages: [{
         role: 'user',
@@ -346,7 +346,7 @@ Create a CONCISE real-time intelligence brief focused on actionable insights:
 }`;
 
     const synthesisResponse = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 3000,
       messages: [{
         role: 'user',

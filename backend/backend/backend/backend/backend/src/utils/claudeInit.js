@@ -33,7 +33,7 @@ const initializeClaude = () => {
   console.log('✅ Claude API key found');
   console.log(`   Length: ${apiKey.length} characters`);
   console.log(`   Prefix: ${apiKey.substring(0, 10)}...`);
-  console.log(`   Model: ${process.env.CLAUDE_MODEL || 'claude-sonnet-4-20250514'}`);
+  console.log(`   Model: ${process.env.CLAUDE_MODEL || 'claude-haiku-4-5-20251001'}`);
   
   // Set global flag
   global.CLAUDE_INITIALIZED = true;

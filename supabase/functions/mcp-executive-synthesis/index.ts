@@ -544,7 +544,7 @@ Provide a concise executive synthesis focusing on:
         'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 4000,
         temperature: 0.3,  // Lower temperature for more focused, strategic output
         system: `You are a senior PR strategist receiving ENRICHED INTELLIGENCE DATA for ${organization?.name || 'a major corporation'}.
@@ -854,7 +854,7 @@ Remember: You're not gathering intelligence - you're SYNTHESIZING already-gather
           opportunities_found: context.strategicInsights.opportunities.length,
           threats_identified: context.strategicInsights.threats.length,
           synthesis_focus: synthesis_focus || 'standard',
-          model: 'claude-sonnet-4-20250514'
+          model: 'claude-haiku-4-5-20251001'
         },
         key_insights: {
           immediate: context.strategicInsights.immediate.slice(0, 3),

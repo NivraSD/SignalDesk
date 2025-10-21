@@ -124,7 +124,7 @@ serve(async (req) => {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 12000,  // Reduced from 16000 to speed up generation
         temperature: 0.5,
         system: 'You are a JSON generator. Return ONLY valid JSON with no markdown code blocks, no explanations, no preamble. Start with { and end with }. Be concise and efficient.',
