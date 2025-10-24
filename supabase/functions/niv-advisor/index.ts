@@ -3156,11 +3156,11 @@ function formatStructuredSectionsResponse(sections: any, organizationName: strin
 }
 
 // Helper function to detect if query should generate strategic framework
-function detectStrategicIntent(message: string, queryType: string): boolean {
+// Based on orchestrator-robust's research/strategy separation
+function detectStrategicIntent(message: string, conversationHistory?: any[]): boolean {
   const queryLower = message.toLowerCase()
 
   // Only trigger framework for EXPLICIT strategic requests
-  // Don't auto-generate on information queries
   const explicitStrategicPhrases = [
     'develop a strategy',
     'create a strategic framework',
@@ -3168,7 +3168,12 @@ function detectStrategicIntent(message: string, queryType: string): boolean {
     'generate a plan',
     'design a response strategy',
     'what\'s our strategy',
-    'propose a strategy'
+    'propose a strategy',
+    'what should we do',
+    'how should we respond',
+    'create a pr strategy',
+    'build our approach',
+    'strategic recommendations'
   ]
 
   // Check if user explicitly asks for strategy
@@ -3184,8 +3189,68 @@ function detectStrategicIntent(message: string, queryType: string): boolean {
     queryLower.includes('news') ||
     queryLower.includes('update')
 
-  // Only generate framework if explicitly asked AND not just asking for info
-  return hasExplicitRequest && !isInformationQuery
+  // CRITICAL: Check if this is a follow-up to research
+  let hasResearchContext = false
+  if (conversationHistory && conversationHistory.length > 0) {
+    // Check if we've already provided research in this conversation
+    hasResearchContext = conversationHistory.some(msg =>
+      msg.role === 'assistant' &&
+      (msg.content.includes('Research Findings') ||
+       msg.content.includes('Key findings') ||
+       msg.content.includes('analysis shows') ||
+       msg.content.includes('recent developments') ||
+       msg.content.includes('competitor') ||
+       msg.content.includes('market'))
+    )
+  }
+
+  // Only generate framework if:
+  // 1. User explicitly asks for strategy AND
+  // 2. We have research context OR it's a "based on" request AND
+  // 3. NOT just asking for information
+  return hasExplicitRequest && (hasResearchContext || queryLower.includes('based on')) && !isInformationQuery
+}
+
+// Helper function to detect if message is a command (not a research query)
+function detectCommandIntent(message: string): { isCommand: boolean; commandType?: string } {
+  const queryLower = message.toLowerCase()
+
+  // Detect routing/execution commands
+  const routingCommands = [
+    /send.*to (gamma|campaign builder|content generator)/i,
+    /create.*in (gamma|campaign builder)/i,
+    /open.*in/i,
+    /take.*to/i,
+    /route.*to/i,
+    /use (gamma|campaign builder|content generator)/i,
+    /generate.*deck/i,
+    /make.*presentation/i,
+    /build.*in/i
+  ]
+
+  for (const regex of routingCommands) {
+    if (regex.test(message)) {
+      return { isCommand: true, commandType: 'routing' }
+    }
+  }
+
+  // Detect system/UI commands
+  const systemCommands = [
+    /show me (the|my)/i,
+    /navigate to/i,
+    /go to/i,
+    /switch to/i,
+    /refresh/i,
+    /reload/i
+  ]
+
+  for (const regex of systemCommands) {
+    if (regex.test(message)) {
+      return { isCommand: true, commandType: 'system' }
+    }
+  }
+
+  return { isCommand: false }
 }
 
 // Helper function to detect target component for handoff
@@ -3432,6 +3497,32 @@ serve(async (req) => {
       throw new Error('Message or query is required')
     }
 
+    // CRITICAL: Detect if this is a command (not a research query)
+    const commandDetection = detectCommandIntent(userMessage)
+    if (commandDetection.isCommand) {
+      console.log(`🎯 Command detected (${commandDetection.commandType}): Not a research query`)
+
+      if (commandDetection.commandType === 'routing') {
+        // User wants to route to an execution component
+        return new Response(
+          JSON.stringify({
+            success: true,
+            type: 'routing_command',
+            message: 'I understand you want to create content or take action. Let me help you route to the right tool.',
+            command: commandDetection.commandType,
+            sessionId: sessionId,
+            conversationId: conversationId
+          }),
+          {
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'application/json'
+            }
+          }
+        )
+      }
+    }
+
     // Initialize shouldGenerateFramework early to avoid reference errors
     let shouldGenerateFramework = false
 
@@ -3492,12 +3583,14 @@ Current Module: ${context.activeModule || 'intelligence'}
 
 Think step by step:
 1. What is the user really asking for?
-2. Do I need fresh, real-time information to answer this properly?
-3. What specific search terms would find the best results? **INCLUDE ${new Date().getFullYear()} IN SEARCH QUERIES FOR CURRENT INFO**
-4. Should I search quality sources only, or cast a wider net?
-5. Should I generate a strategic framework now?
+2. **IS THIS A COMMAND OR A RESEARCH QUERY?** Commands like "send this to gamma", "create in campaign builder" should NOT trigger research
+3. Do I need fresh, real-time information to answer this properly?
+4. What specific search terms would find the best results? **INCLUDE ${new Date().getFullYear()} IN SEARCH QUERIES FOR CURRENT INFO**
+5. Should I search quality sources only, or cast a wider net?
+6. Should I generate a strategic framework now?
 
 Key decision criteria:
+- If this is a ROUTING/EXECUTION command (e.g., "send to gamma", "create deck") → use contextual_response (no research needed)
 - If asking about "latest", "recent", "regulatory", "breaking", "announcement" → MUST use fireplexity_targeted
 - If asking about specific current events, competitors, or news → MUST use fireplexity_targeted
 - If asking for strategic advice or analysis of existing info → can use contextual_response
@@ -4009,29 +4102,47 @@ Remember to maintain natural conversation flow while bringing this perspective t
         queryLower.includes('pull it together') ||
         queryLower.includes('ready to execute')))
 
+    // CRITICAL: Check if we have research context before generating framework
+    // Use orchestrator-robust's detectStrategicIntent with conversation history check
+    const hasStrategicIntent = detectStrategicIntent(userMessage, conversationHistory)
+
+    // Check if we have research history in the conceptState
+    const hasResearchInConversation = conceptState.researchHistory.length > 0 ||
+                                      conceptState.fullConversation.some(msg =>
+                                        msg.role === 'assistant' &&
+                                        (msg.content.includes('Research Findings') ||
+                                         msg.content.includes('Key findings') ||
+                                         msg.content.includes('analysis shows')))
+
     // Check Claude's understanding if available
-    if (claudeUnderstanding?.approach?.generate_framework === true) {
+    if (claudeUnderstanding?.approach?.generate_framework === true && hasResearchInConversation) {
       shouldGenerateFramework = true
-      console.log('🤖 Claude detected framework request')
+      console.log('🤖 Claude detected framework request AND research context exists')
+    } else if (hasStrategicIntent && hasResearchInConversation) {
+      shouldGenerateFramework = true
+      console.log('🎯 Strategic intent detected with research context')
     } else if (frameworkConfirmation && previousMessageAskedForConfirmation) {
       // User confirmed after seeing structured answers
       shouldGenerateFramework = true
       console.log('✅ User confirmed framework execution after reviewing answers')
-    } else if (explicitFrameworkRequest) {
+    } else if (explicitFrameworkRequest && hasResearchInConversation) {
       shouldGenerateFramework = true
-      console.log('🎯 Explicit framework request detected:', queryLower.substring(0, 100))
-    } else if (afterDiscussionRequest) {
+      console.log('🎯 Explicit framework request detected with research context:', queryLower.substring(0, 100))
+    } else if (afterDiscussionRequest && hasResearchInConversation) {
       shouldGenerateFramework = true
-      console.log('📝 Framework requested after discussion')
-    } else if (conceptState.stage === 'ready' && conceptState.confidence >= 80) {
-      // Only auto-trigger if user seems to want closure
+      console.log('📝 Framework requested after discussion with research')
+    } else if (conceptState.stage === 'ready' && conceptState.confidence >= 80 && hasResearchInConversation) {
+      // Only auto-trigger if user seems to want closure AND we have research
       if (queryLower.includes('what\'s next') || queryLower.includes('ready')) {
         shouldGenerateFramework = true
-        console.log('🚀 Concept ready - auto-triggering framework')
+        console.log('🚀 Concept ready with research - auto-triggering framework')
       }
+    } else if (explicitFrameworkRequest && !hasResearchInConversation) {
+      console.log('⚠️ Framework requested but no research context - will do research first')
+      shouldGenerateFramework = false
     }
 
-    console.log(`🎯 Framework generation decision: ${shouldGenerateFramework}`)
+    console.log(`🎯 Framework generation decision: ${shouldGenerateFramework} (hasResearch: ${hasResearchInConversation})`)
 
     // Build the message and validate token count before API call
     const claudeMessage = buildClaudeMessage(userMessage, toolResults, queryType, queryStrategy, conversationHistory, shouldGenerateFramework, conceptState)
