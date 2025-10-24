@@ -44,18 +44,32 @@ export function generateQueryVariations(baseQuery: string): string[] {
     }
   }
 
-  // News/Update queries
-  if (queryLower.includes('news') || queryLower.includes('latest') || queryLower.includes('update')) {
+  // News/Update queries - ENHANCED for AI companies
+  if (queryLower.includes('news') || queryLower.includes('latest') || queryLower.includes('update') ||
+      queryLower.includes('recent') || queryLower.includes('development')) {
     entities.forEach(entity => {
       variations.push(
         `"${entity}" latest news announcement 2024 2025`,
-        `${entity} breaking news today yesterday`,
-        `"${entity}" recent developments updates`
+        `${entity} breaking news recent developments`,
+        `"${entity}" recent updates 2024 2025`,
+        `${entity} announcement october november december 2024`,
+        `"${entity}" new product release 2024 2025`
       )
+
+      // Special handling for AI companies - add model release variations
+      if (queryLower.match(/openai|anthropic|google|deepmind|meta/i)) {
+        variations.push(
+          `${entity} new model release 2024`,
+          `${entity} latest AI model announcement`,
+          `"${entity}" GPT Sonnet Claude Gemini version`,
+          `${entity} model launch october november 2024`,
+          `${entity} AI capabilities update 2024`
+        )
+      }
     })
   }
 
-  // AI/Tech specific queries
+  // AI/Tech specific queries - ENHANCED with model names
   if (queryLower.includes('ai') || queryLower.includes('artificial intelligence')) {
     if (queryLower.includes('regulation')) {
       variations.push(
@@ -73,6 +87,36 @@ export function generateQueryVariations(baseQuery: string): string[] {
           `${entity} machine learning LLM chatbot`,
           `"${entity}" generative AI deployment`
         )
+
+        // Add model-specific variations based on company
+        const entityLower = entity.toLowerCase()
+        if (entityLower.includes('openai')) {
+          variations.push(
+            'OpenAI GPT-5 GPT-4.5 o1 o3 announcement',
+            'OpenAI Sora video model release',
+            '"OpenAI" latest model "GPT-5" announcement'
+          )
+        }
+        if (entityLower.includes('anthropic')) {
+          variations.push(
+            'Anthropic Claude Sonnet 4 3.7 4.5 Opus release',
+            '"Anthropic" "Claude 4" "Sonnet 4" announcement',
+            'Anthropic new Claude model 2024 2025'
+          )
+        }
+        if (entityLower.includes('google') || entityLower.includes('deepmind')) {
+          variations.push(
+            'Google Gemini 2.0 Ultra Pro announcement',
+            'DeepMind AI model release breakthrough',
+            '"Google" "Gemini 2" launch announcement'
+          )
+        }
+        if (entityLower.includes('meta')) {
+          variations.push(
+            'Meta Llama 4 Llama-4 announcement release',
+            '"Meta AI" latest model launch'
+          )
+        }
       })
     }
   }
@@ -118,6 +162,37 @@ export function generateQueryVariations(baseQuery: string): string[] {
     })
   }
 
+  // CRITICAL: AI company developments - catch queries without perfect entity detection
+  const aiCompanies = ['openai', 'anthropic', 'google', 'deepmind', 'meta', 'microsoft', 'amazon']
+  const matchedCompany = aiCompanies.find(company => queryLower.includes(company))
+
+  if (matchedCompany && (queryLower.includes('development') || queryLower.includes('recent') ||
+      queryLower.includes('latest') || queryLower.includes('news') || queryLower.includes('announcement'))) {
+    const companyCapitalized = matchedCompany.charAt(0).toUpperCase() + matchedCompany.slice(1)
+
+    variations.push(
+      `${companyCapitalized} announcement 2024 2025`,
+      `${companyCapitalized} model release october november december 2024`,
+      `"${companyCapitalized}" product launch 2024`,
+      `${companyCapitalized} latest AI announcement`,
+      `${companyCapitalized} new model capabilities 2024`
+    )
+
+    // Company-specific model searches
+    if (matchedCompany === 'openai') {
+      variations.push(
+        'OpenAI GPT-5 o3 Sora 2.0 announcement 2024',
+        '"OpenAI" ChatGPT update october november 2024'
+      )
+    }
+    if (matchedCompany === 'anthropic') {
+      variations.push(
+        'Anthropic Claude Sonnet 4 3.7 4.5 5 announcement 2024',
+        '"Anthropic" Claude Opus 4 release 2024'
+      )
+    }
+  }
+
   return [...new Set(variations)] // Remove duplicates
 }
 
@@ -161,23 +236,26 @@ function extractTimeRange(queryLower: string): string | null {
     return 'qdr:h'  // Breaking news = past hour
   }
   if (queryLower.includes('recent') || queryLower.includes('recently')) {
-    return 'qdr:d3'  // Recent = past 3 days (more aggressive)
+    return 'qdr:m3'  // Recent = past 3 months (comprehensive for AI/tech developments)
   }
   if (queryLower.includes('latest')) {
-    return 'qdr:d3'  // Latest = past 3 days (more aggressive for breaking news)
+    return 'qdr:m'  // Latest = past month (catch all recent announcements)
   }
   if (queryLower.includes('current')) {
-    return 'qdr:w'  // Current = past week
+    return 'qdr:m'  // Current = past month
   }
   if (queryLower.includes('launch') || queryLower.includes('announce') || queryLower.includes('release')) {
-    return 'qdr:d3'  // Product launches need very recent results (3 days)
+    return 'qdr:m3'  // Product launches - search 3 months back (AI products launch infrequently)
   }
   if (queryLower.includes('news') || queryLower.includes('announcement') || queryLower.includes('update')) {
-    return 'qdr:d3'  // Default news to past 3 days (was too conservative at 7 days)
+    return 'qdr:m'  // News/announcements = past month for comprehensive coverage
+  }
+  if (queryLower.includes('development') || queryLower.includes('developments')) {
+    return 'qdr:m3'  // Developments = past 3 months (captures major strategic shifts)
   }
 
-  // Default for most queries - search past 2 weeks to catch recent developments
-  return 'qdr:w2'  // Past 2 weeks as intelligent default
+  // Default for most queries - search past month for good coverage without noise
+  return 'qdr:m'  // Past month as intelligent default (was too restrictive at 2 weeks)
 }
 
 // Create a comprehensive search strategy
@@ -308,15 +386,20 @@ export function scoreRelevance(
     }
   }
 
-  // Recency bonus (if URL contains date)
+  // Recency bonus (if URL contains recent date - 2024/2025)
+  const currentYear = new Date().getFullYear()
+  const currentMonth = new Date().getMonth() + 1 // 1-12
+
   const datePatterns = [
-    /2024-09-\d{2}/,
-    /2024\/09\/\d{2}/,
-    /september-\d{1,2}-2024/i
+    new RegExp(`${currentYear}-(\\d{2})-(\\d{2})`), // 2024-XX-XX or 2025-XX-XX
+    new RegExp(`${currentYear}/(\\d{2})/(\\d{2})`), // 2024/XX/XX or 2025/XX/XX
+    new RegExp(`${currentYear}-${currentMonth.toString().padStart(2, '0')}`), // Current year-month
+    /202[4-5]-\d{2}-\d{2}/, // Any 2024 or 2025 date
+    /202[4-5]\/\d{2}\/\d{2}/ // Any 2024 or 2025 date with slashes
   ]
 
   if (datePatterns.some(pattern => url.match(pattern))) {
-    score += 0.1
+    score += 0.15 // Increased bonus for recent dated content
   }
 
   // Check for must-include terms
