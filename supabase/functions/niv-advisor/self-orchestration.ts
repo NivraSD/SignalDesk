@@ -216,6 +216,7 @@ If no gaps exist, return an empty array: []`
 export async function executeResearchStep(
   step: ResearchStep,
   tools: {
+    firesearch?: (query: string) => Promise<any>
     fireplexity?: (query: string) => Promise<any>
     intelligencePipeline?: (query: string) => Promise<any>
     mcpDiscovery?: (org: string) => Promise<any>
@@ -232,7 +233,12 @@ export async function executeResearchStep(
     switch (step.type) {
       case 'initial-scan':
       case 'deep-dive':
-        if (tools.fireplexity) {
+        // Prefer FireSearch for validated, cited research
+        if (tools.firesearch) {
+          console.log(`🔬 Using FireSearch for ${step.type}`)
+          results = await tools.firesearch(step.query)
+        } else if (tools.fireplexity) {
+          console.log(`🔍 Fallback to fireplexity for ${step.type}`)
           results = await tools.fireplexity(step.query)
         }
         break
@@ -244,8 +250,12 @@ export async function executeResearchStep(
         break
 
       case 'validation':
-        // Use multiple sources for validation
-        if (tools.fireplexity) {
+        // Use multiple sources for validation - prefer FireSearch
+        if (tools.firesearch) {
+          const source1 = await tools.firesearch(step.query)
+          const source2 = await tools.intelligencePipeline?.(step.query)
+          results = { source1, source2 }
+        } else if (tools.fireplexity) {
           const source1 = await tools.fireplexity(step.query)
           const source2 = await tools.intelligencePipeline?.(step.query)
           results = { source1, source2 }
@@ -292,11 +302,14 @@ function extractKeyInsights(results: any): string[] {
     insights.push(results.synthesis.substring(0, 200))
   }
 
-  // Extract from fireplexity data
+  // Extract from research data (FireSearch or fireplexity)
   if (results.data && Array.isArray(results.data)) {
     results.data.slice(0, 2).forEach((item: any) => {
       if (item.snippet) {
         insights.push(item.snippet.substring(0, 150))
+      }
+      if (item.content) {
+        insights.push(item.content.substring(0, 150))
       }
     })
   }

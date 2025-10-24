@@ -366,7 +366,7 @@ I use this knowledge TACTICALLY - not to lecture, but to ground my advice in wha
 • "Centola's research proves you need 25% adoption before reaching tipping point..."
 
 I DON'T call knowledge library for:
-• Simple research questions (use niv-fireplexity for current news)
+• Simple research questions (use niv-firesearch for validated, cited answers)
 • Single content requests (just execute)
 • Casual strategy conversations (give advice from experience first)
 
@@ -554,7 +554,7 @@ CRITICAL COMMUNICATION RULES:
 3. **Build Progressively**: Each response should add substance to the campaign concept
 4. **Track Concept Elements**: Know what's been discussed, confirmed, and what's still needed
 5. **Drive to Completion**: Help users reach a finalized concept that triggers orchestration
-6. **NEVER mention internal tools**: Don't mention "fireplexity", "pipeline", "MCP", or any technical tool names
+6. **NEVER mention internal tools**: Don't mention "firesearch", "fireplexity", "pipeline", "MCP", or any technical tool names
 7. **Present as expertise**: "Based on my experience..." not "I ran a search..."
 8. **Focus on outcomes**: Every conversation should build toward an actionable campaign
 
@@ -590,7 +590,7 @@ const MODULE_PERSONAS = {
     In this mode, I think like the intelligence analysts I've worked with at crisis management firms - methodical, skeptical, thorough.`,
 
     approach: 'data_first',
-    tools_preference: ['intelligence_pipeline', 'fireplexity_targeted'],
+    tools_preference: ['intelligence_pipeline', 'firesearch_targeted'],
     response_style: 'analytical_brief'
   },
 
@@ -665,7 +665,7 @@ const MODULE_PERSONAS = {
     I've executed campaigns with 2 hours notice and $2M budgets. Fast or perfect? I deliver both.`,
 
     approach: 'rapid_tactical',
-    tools_preference: ['fireplexity_targeted', 'contextual_response'],
+    tools_preference: ['firesearch_targeted', 'contextual_response'],
     response_style: 'action_oriented'
   },
 
@@ -736,22 +736,22 @@ const QUERY_PATTERNS: Record<string, QueryPattern> = {
   },
   campaign_proposal: {
     regex: /campaign|proposal|strategy|approach|create.*plan|develop.*message|need.*journalist|amplify|get.*message.*out/i,
-    tools: ['intelligence_pipeline', 'fireplexity_targeted'],
+    tools: ['intelligence_pipeline', 'firesearch_targeted'],
     approach: 'generate_proposals',
     identityMarker: "",
     toolNarration: {
       intelligence_pipeline: "Let me research the landscape and develop strategic options...",
-      fireplexity_targeted: "I'll analyze the current environment to build proposals..."
+      firesearch_targeted: "I'll analyze the current environment to build proposals..."
     }
   },
   situational: {
     regex: /what's happening|current situation|status|latest|update|today|recent/i,
-    tools: ['intelligence_pipeline', 'fireplexity_targeted'],
+    tools: ['intelligence_pipeline', 'firesearch_targeted'],
     approach: 'scan_and_assess',
     identityMarker: "",  // No forced opening - let it flow naturally
     toolNarration: {
       intelligence_pipeline: "Let me pull together what's happening across the landscape...",
-      fireplexity_targeted: "I'll check the latest developments..."
+      firesearch_targeted: "I'll check the latest developments..."
     }
   },
   competitive: {
@@ -776,11 +776,11 @@ const QUERY_PATTERNS: Record<string, QueryPattern> = {
   },
   crisis: {
     regex: /crisis|problem|urgent|breaking|emergency|damage|scandal/i,
-    tools: ['fireplexity_targeted', 'intelligence_pipeline'],
+    tools: ['firesearch_targeted', 'intelligence_pipeline'],
     approach: 'crisis_assessment',
     identityMarker: "",  // Natural but can show urgency in response
     toolNarration: {
-      fireplexity_targeted: "Let me quickly check what's being said...",
+      firesearch_targeted: "Let me quickly check what's being said...",
       intelligence_pipeline: "I need to see the full picture here..."
     }
   },
@@ -874,7 +874,7 @@ MY AVAILABLE STRATEGIES (pattern-aware selection for ${pattern} queries):
    USE WHEN: CEO asks "what's happening?", competitor makes a move, market shifts, need comprehensive battlefield view
    WHY: This is how I prep for board meetings - complete intelligence with synthesis
 
-2. "fireplexity_targeted" - My Rapid Response Intel
+2. "firesearch_targeted" - My Elite Research Engine (FireSearch)
    USE WHEN: Breaking news, specific company updates, "what did X just announce?", time-sensitive queries
    WHY: When a reporter calls with 30 min deadline, I need answers NOW from sources that matter
 
@@ -884,12 +884,12 @@ MY AVAILABLE STRATEGIES (pattern-aware selection for ${pattern} queries):
 
 DECISION CRITERIA (from experience):
 - Crisis brewing or competitor movement? → intelligence_pipeline (need full picture)
-- Specific news or "just happened" queries? → fireplexity_targeted (need speed)
+- Specific news or "just happened" queries? → firesearch_targeted (need validated answers)
 - Strategic guidance or "how should we respond"? → contextual_response (need wisdom)
 
 Respond with JSON only:
 {
-  "approach": "intelligence_pipeline|fireplexity_targeted|contextual_response",
+  "approach": "intelligence_pipeline|firesearch_targeted|contextual_response",
   "confidence": 0.0-1.0,
   "reasoning": "brief explanation",
   "focus_areas": ["area1", "area2"],
@@ -961,14 +961,14 @@ Respond with JSON only:
   }
 }
 
-// Execute targeted fireplexity strategy with domain awareness
+// Execute targeted FireSearch strategy with domain awareness
 async function executeTargetedFireplexity(searchQuery: string, organizationId: string, context: any, strategy: any) {
-  console.log('🔍 Executing targeted fireplexity...')
+  console.log('🔬 Executing targeted FireSearch...')
   console.log(`📍 Search domains strategy: ${strategy.search_domains || 'quality_first'}`)
   console.log(`🔎 Search query: "${searchQuery}"`)
 
   try {
-    // Pass search domain preference to fireplexity
+    // Pass search domain preference to FireSearch
     const articles = await callFireplexity(searchQuery, {
       ...context,
       organizationId,
@@ -989,7 +989,7 @@ async function executeTargetedFireplexity(searchQuery: string, organizationId: s
       })
 
       return {
-        fireplexityData: articles.slice(0, 10), // Get more for Claude to filter
+        firesearchData: articles.slice(0, 10), // Get more for Claude to filter
         keyFindings: keyFindings,
         strategy: strategy,
         dataQuality: 'fresh_search',
@@ -997,13 +997,13 @@ async function executeTargetedFireplexity(searchQuery: string, organizationId: s
       }
     }
   } catch (error) {
-    console.error('Targeted fireplexity error:', error)
+    console.error('Targeted FireSearch error:', error)
   }
 
   // No fallback to saved searches - return empty if search fails
   console.log('⚠️ Search failed, returning empty results')
   return {
-    fireplexityData: [],
+    firesearchData: [],
     strategy: strategy,
     dataQuality: 'search_failed',
     error: 'Search failed - no results found'
@@ -1033,14 +1033,14 @@ async function executeContextualResponse(message: string, organizationId: string
 async function executeFallbackStrategy(message: string, organizationId: string, context: any, strategy: any) {
   console.log('🔄 Executing fallback strategy...')
 
-  // Try targeted fireplexity first
+  // Try targeted FireSearch first
   try {
-    const fireplexityResult = await executeTargetedFireplexity(message, organizationId, context, strategy)
-    if (fireplexityResult.fireplexityData.length > 0) {
-      return { ...fireplexityResult, fallbackUsed: 'fireplexity' }
+    const firesearchResult = await executeTargetedFireplexity(message, organizationId, context, strategy)
+    if (firesearchResult.firesearchData.length > 0) {
+      return { ...firesearchResult, fallbackUsed: 'firesearch' }
     }
   } catch (error) {
-    console.error('Fallback fireplexity error:', error)
+    console.error('Fallback FireSearch error:', error)
   }
 
   // Final fallback to contextual
@@ -1090,17 +1090,33 @@ async function callEnhancedIntelligencePipeline(query: string, organizationId: s
   }
 }
 
-// Call fireplexity for fresh article search
+// Call FireSearch for elite research with answer validation
 async function callFireplexity(query: string, context: any) {
-  console.log('🔍 NIV calling Fireplexity research...')
+  console.log('🔬 NIV calling FireSearch (elite research engine)...')
   console.log(`📝 Query: "${query}"`)
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
   const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
   try {
-    // Use niv-fireplexity for web research
-    const response = await fetch(`${supabaseUrl}/functions/v1/niv-fireplexity`, {
+    // Determine timeframe based on query intent
+    let timeframe = 'recent' // default: past 3 days
+
+    const queryLower = query.toLowerCase()
+    if (queryLower.match(/breaking|just|today|current|right now|this morning/i)) {
+      timeframe = 'current' // past 24 hours
+    } else if (queryLower.match(/latest|recent|new|this week/i)) {
+      timeframe = 'week' // past 7 days
+    } else if (queryLower.match(/this month|past month/i)) {
+      timeframe = 'month'
+    } else if (queryLower.match(/this year|2025|2024/i)) {
+      timeframe = 'year'
+    }
+
+    console.log(`⏰ Timeframe detected: ${timeframe}`)
+
+    // Use niv-firesearch for intelligent research with answer validation
+    const response = await fetch(`${supabaseUrl}/functions/v1/niv-firesearch`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1109,40 +1125,85 @@ async function callFireplexity(query: string, context: any) {
       body: JSON.stringify({
         query: query,
         organizationId: context.organizationId || 'OpenAI',
-        maxIterations: 3 // Allow up to 3 rounds of iterative searching
+        conversationId: context.conversationId,
+        timeframe: timeframe,
+        maxIterations: 1 // 1 retry round (reduced from 2 to avoid timeouts)
       })
     })
 
     if (response.ok) {
       const data = await response.json()
 
-      if (data.success && data.results) {
-        console.log(`✅ Intelligent Research complete:`)
-        console.log(`   - Iterations: ${data.iterations}`)
-        console.log(`   - Results: ${data.results.length}`)
-        console.log(`   - Quality: ${data.quality}`)
-        console.log(`   - Key findings: ${data.keyFindings?.length || 0}`)
+      if (data.success && data.validatedAnswers) {
+        console.log(`✅ FireSearch complete:`)
+        console.log(`   - Sub-questions: ${data.subQuestions.length}`)
+        console.log(`   - Validated answers: ${data.validatedAnswers.length}`)
+        console.log(`   - Total sources: ${data.totalSources}`)
+        console.log(`   - Synthesis length: ${data.synthesis.length} chars`)
 
-        // Transform results to expected format
-        return data.results.map(r => ({
-          title: r.title,
-          description: r.description,
-          url: r.url,
-          content: r.content,
-          source: r.source,
-          publishedAt: r.publishDate,
-          relevanceScore: r.relevanceScore
-        }))
+        // Transform FireSearch results to article format for NIV Advisor
+        const articles = []
+
+        // Add synthesis as a primary "article"
+        articles.push({
+          title: `Research Synthesis: ${query}`,
+          description: data.synthesis.substring(0, 200),
+          url: 'firesearch://synthesis',
+          content: data.synthesis,
+          source: { name: 'FireSearch', domain: 'internal' },
+          publishedAt: new Date().toISOString(),
+          relevanceScore: 1.0,
+          type: 'synthesis'
+        })
+
+        // Add validated sources
+        data.validatedAnswers.forEach((va, idx) => {
+          va.sources.forEach((source, sIdx) => {
+            articles.push({
+              title: source.title,
+              description: source.excerpt,
+              url: source.url,
+              content: source.excerpt,
+              source: { name: extractSourceName(source.url), domain: extractDomain(source.url) },
+              publishedAt: source.publishDate || new Date().toISOString(),
+              relevanceScore: source.relevance || 0.8,
+              subQuestion: va.subQuestion,
+              confidence: va.confidence,
+              type: 'validated_source'
+            })
+          })
+        })
+
+        return articles
       }
-
-      // Fallback to old format if needed
-      return data.results || []
     }
   } catch (error) {
-    console.error('Fireplexity error:', error)
+    console.error('FireSearch error:', error)
   }
 
   return []
+}
+
+// Helper: Extract source name from URL
+function extractSourceName(url: string): string {
+  try {
+    const urlObj = new URL(url)
+    const domain = urlObj.hostname.replace('www.', '')
+    const parts = domain.split('.')
+    return parts[0].charAt(0).toUpperCase() + parts[0].slice(1)
+  } catch {
+    return 'Unknown'
+  }
+}
+
+// Helper: Extract domain from URL
+function extractDomain(url: string): string {
+  try {
+    const urlObj = new URL(url)
+    return urlObj.hostname.replace('www.', '')
+  } catch {
+    return ''
+  }
 }
 
 // Get organization profile from mcp-discovery
@@ -1225,7 +1286,7 @@ async function getMcpDiscovery(organizationInput: string = '7a2835cb-11ee-4512-a
           direct_competitors: [],
           indirect_competitors: []
         },
-        keywords: [organizationName],
+        keywords: [organizationInput],
         created_at: new Date().toISOString()
       }
 
@@ -1240,7 +1301,7 @@ async function getMcpDiscovery(organizationInput: string = '7a2835cb-11ee-4512-a
       if (insertError) {
         console.error('❌ Database error creating discovery profile:', insertError)
         console.log('📋 Returning default profile due to insert error')
-        return createDefaultProfile(organizationName)
+        return createDefaultProfile(organizationInput)
       }
 
       console.log(`✅ Created new profile: ${newProfile.organization_name}`)
@@ -1249,13 +1310,13 @@ async function getMcpDiscovery(organizationInput: string = '7a2835cb-11ee-4512-a
     } catch (insertException) {
       console.error('❌ Exception creating discovery profile:', insertException)
       console.log('📋 Returning default profile due to exception')
-      return createDefaultProfile(organizationName)
+      return createDefaultProfile(organizationInput)
     }
 
   } catch (error) {
     console.error('❌ Critical error in getMcpDiscovery:', error)
     console.log('📋 Returning default profile due to critical error')
-    return createDefaultProfile(organizationName)
+    return createDefaultProfile(organizationInput)
   }
 }
 
@@ -1800,8 +1861,8 @@ function truncateResearchHistory(researchHistory: any[], maxTokens: number = 200
       // Truncate synthesis to 200 chars to keep it manageable
       researchText += `Synthesis: ${research.results.intelligencePipeline.synthesis.substring(0, 200)}... `
     }
-    if (research.results.fireplexityData) {
-      researchText += `Fireplexity found ${research.results.fireplexityData.length} sources. `
+    if (research.results.firesearchData) {
+      researchText += `FireSearch found ${research.results.firesearchData.length} validated sources. `
     }
 
     const researchTokens = estimateTokenCount(researchText)
@@ -2120,10 +2181,10 @@ Save strategic recommendations for when explicitly requested.\n`
 
   // Tool narration removed - Claude will integrate naturally
 
-  // Fallback to fireplexity data if available
-  if (toolResults.fireplexityData && toolResults.fireplexityData.length > 0) {
-    message += `\n\n**FIREPLEXITY TOOL RESULTS:**\n`
-    toolResults.fireplexityData.forEach((article: any, i: number) => {
+  // Fallback to FireSearch data if available
+  if (toolResults.firesearchData && toolResults.firesearchData.length > 0) {
+    message += `\n\n**FIRESEARCH TOOL RESULTS (Validated Sources):**\n`
+    toolResults.firesearchData.forEach((article: any, i: number) => {
       const date = article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : ''
       const relevance = article.relevance_score ? ` (${article.relevance_score}% relevant)` : ''
 
@@ -3328,13 +3389,77 @@ Respond with JSON only:
 
       // Create tools for self-orchestration
       const orchestrationTools = {
-        fireplexity: async (query: string) => {
-          const result = await callFireplexity(query, {
-            ...context,
-            organizationId,
-            searchDomains: 'quality_first'
-          })
-          return { data: result, success: result.length > 0 }
+        firesearch: async (query: string) => {
+          // Use the NEW FireSearch for validated, cited research
+          console.log(`🔬 Orchestration calling FireSearch for: "${query.substring(0, 50)}..."`)
+
+          const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+          const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+
+          // Determine timeframe
+          let timeframe = 'recent'
+          const queryLower = query.toLowerCase()
+          if (queryLower.match(/breaking|just|today|current|right now/i)) {
+            timeframe = 'current'
+          } else if (queryLower.match(/latest|recent|new|this week/i)) {
+            timeframe = 'week'
+          }
+
+          try {
+            const response = await fetch(`${supabaseUrl}/functions/v1/niv-firesearch`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${supabaseKey}`
+              },
+              body: JSON.stringify({
+                query: query,
+                organizationId: organizationId,
+                conversationId: conversationId,
+                timeframe: timeframe,
+                maxIterations: 1
+              })
+            })
+
+            if (response.ok) {
+              const data = await response.json()
+
+              if (data.success && data.validatedAnswers) {
+                // Transform to articles format
+                const articles = []
+
+                // Add synthesis
+                articles.push({
+                  title: `Research: ${query.substring(0, 50)}...`,
+                  content: data.synthesis,
+                  type: 'synthesis',
+                  validatedAnswers: data.validatedAnswers.length,
+                  totalSources: data.totalSources
+                })
+
+                // Add validated sources
+                data.validatedAnswers.forEach(va => {
+                  va.sources.forEach(source => {
+                    articles.push({
+                      title: source.title,
+                      description: source.excerpt,
+                      url: source.url,
+                      content: source.excerpt,
+                      confidence: va.confidence
+                    })
+                  })
+                })
+
+                console.log(`✅ FireSearch returned ${articles.length} validated results`)
+                return { data: articles, success: true }
+              }
+            }
+          } catch (error) {
+            console.error(`⚠️ FireSearch failed in orchestration:`, error.message)
+          }
+
+          // Fallback to empty results
+          return { data: [], success: false }
         },
         intelligencePipeline: async (query: string) => {
           const result = await callEnhancedIntelligencePipeline(query, organizationId, context)
