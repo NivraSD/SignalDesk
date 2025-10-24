@@ -55,7 +55,7 @@ serve(async (req) => {
       organizationId = 'OpenAI',
       conversationId,
       timeframe = 'recent', // recent|current|week|month|year|all
-      maxIterations = 1, // How many retries per sub-question (reduced from 2 to avoid timeout)
+      maxIterations = 0, // Skip retries entirely - with 0.3 threshold we should get answers on first pass
       streamProgress = false
     } = await req.json()
 
@@ -496,10 +496,11 @@ ${resultsContext}
 
 TASK: For EACH source, determine:
 1. Does it contain information that answers the sub-question? (yes/no)
-2. Confidence that it answers the question (0.0-1.0, where 0.5+ is acceptable)
+2. Confidence that it answers the question (0.0-1.0, where 0.3+ is acceptable)
 3. Extract the specific excerpt that answers the question (1-2 sentences)
 
-ONLY include sources with confidence >= 0.5
+IMPORTANT: Be GENEROUS with confidence scores. If a source has ANY relevant information, give it at least 0.3-0.5.
+Include sources with confidence >= 0.3
 
 Return ONLY valid JSON in this format:
 {
@@ -541,9 +542,9 @@ Return ONLY valid JSON in this format:
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0])
 
-        // Filter only moderate+ confidence sources (lowered from 0.7 to 0.5 to get more results)
+        // Filter only low+ confidence sources (lowered to 0.3 for speed and to avoid 0 results)
         const validSources = parsed.sources
-          .filter(s => s.confidence >= 0.5)
+          .filter(s => s.confidence >= 0.3)
           .map(s => {
             const originalResult = relevantResults[s.sourceNumber - 1]
             return {

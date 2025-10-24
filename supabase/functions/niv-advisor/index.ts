@@ -1373,7 +1373,8 @@ async function callFireplexity(query: string, context: any) {
     console.log(`⏰ Timeframe detected: ${timeframe}`)
 
     // Use niv-firesearch for intelligent research with answer validation
-    const response = await fetch(`${supabaseUrl}/functions/v1/niv-firesearch`, {
+    // Add 120-second timeout to prevent 504 errors
+    const fetchPromise = fetch(`${supabaseUrl}/functions/v1/niv-firesearch`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1384,9 +1385,15 @@ async function callFireplexity(query: string, context: any) {
         organizationId: context.organizationId || 'OpenAI',
         conversationId: context.conversationId,
         timeframe: timeframe,
-        maxIterations: 1 // 1 retry round (reduced from 2 to avoid timeouts)
+        maxIterations: 0 // Skip retries - with 0.3 confidence threshold we get answers on first pass
       })
     })
+
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('FireSearch timeout after 120s')), 120000)
+    )
+
+    const response = await Promise.race([fetchPromise, timeoutPromise])
 
     if (response.ok) {
       const data = await response.json()
@@ -3678,7 +3685,8 @@ Respond with JSON only:
           }
 
           try {
-            const response = await fetch(`${supabaseUrl}/functions/v1/niv-firesearch`, {
+            // Add 120-second timeout to prevent 504 errors
+            const fetchPromise = fetch(`${supabaseUrl}/functions/v1/niv-firesearch`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -3689,9 +3697,15 @@ Respond with JSON only:
                 organizationId: organizationId,
                 conversationId: conversationId,
                 timeframe: timeframe,
-                maxIterations: 1
+                maxIterations: 0 // Skip retries - with 0.3 confidence threshold we get answers on first pass
               })
             })
+
+            const timeoutPromise = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('FireSearch timeout after 120s')), 120000)
+            )
+
+            const response = await Promise.race([fetchPromise, timeoutPromise])
 
             if (response.ok) {
               const data = await response.json()
