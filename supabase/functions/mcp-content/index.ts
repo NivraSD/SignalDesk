@@ -99,7 +99,7 @@ const TOOLS = [
   },
   {
     name: "generate_social_posts",
-    description: "Generate platform-optimized social media posts",
+    description: "Generate platform-optimized social media posts (use generate_twitter_post or generate_instagram_post for those specific platforms)",
     inputSchema: {
       type: "object",
       properties: {
@@ -116,6 +116,38 @@ const TOOLS = [
         thread: { type: "boolean", description: "Create thread for Twitter", default: false }
       },
       required: ["message", "platforms"]
+    }
+  },
+  {
+    name: "generate_twitter_post",
+    description: "Generate Twitter/X posts with proper character limits and formatting",
+    inputSchema: {
+      type: "object",
+      properties: {
+        message: { type: "string", description: "Core message or topic" },
+        keyMessages: { type: "array", items: { type: "string" }, description: "Key points to include" },
+        tone: { type: "string", enum: ["professional", "casual", "bold", "witty"], default: "professional" },
+        includeHashtags: { type: "boolean", default: true },
+        thread: { type: "boolean", description: "Create as a thread (3-5 tweets)", default: false },
+        variations: { type: "number", description: "Number of variations", default: 3 }
+      },
+      required: ["message"]
+    }
+  },
+  {
+    name: "generate_instagram_post",
+    description: "Generate Instagram post captions with optimal formatting and hashtags",
+    inputSchema: {
+      type: "object",
+      properties: {
+        message: { type: "string", description: "Core message or topic" },
+        keyMessages: { type: "array", items: { type: "string" }, description: "Key points to include" },
+        tone: { type: "string", enum: ["engaging", "professional", "inspirational", "educational"], default: "engaging" },
+        includeHashtags: { type: "boolean", default: true },
+        carousel: { type: "boolean", description: "Format as carousel post (5-7 slides)", default: false },
+        variations: { type: "number", description: "Number of variations", default: 3 }
+      },
+      required: ["message"]
     }
   },
   {
@@ -437,27 +469,53 @@ async function generatePressRelease(args: any) {
   const quotes = args.quotes || [];
   const boilerplate = args.boilerplate || `About ${args.company || 'the company'}`;
   const tone = args.tone || 'formal';
+  const company = args.company || args.organization || 'Company';
+  const city = args.city || 'City';
+  const state = args.state || 'STATE';
+  const date = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
-  const prompt = `Generate a ${tone} press release:
-  Headline: ${headline}
-  Subheadline: ${subheadline}
-  Key Points: ${Array.isArray(keyPoints) ? keyPoints.join(', ') : keyPoints}
-  ${quotes.length > 0 ? `Quotes: ${JSON.stringify(quotes)}` : ''}
-  ${boilerplate ? `Boilerplate: ${boilerplate}` : ''}
-  
-  Create a professional press release following standard format:
-  - Compelling lead paragraph
-  - Supporting details
-  - Quotes integrated naturally
-  - Contact information placeholder
-  
-  Make it newsworthy and engaging.`;
-  
+  const prompt = `Write a professional press release in AP Style format:
+
+HEADLINE (ALL CAPS, BOLD): ${headline.toUpperCase()}
+
+CITY, STATE – ${date} – ${company}
+
+KEY FACTS TO INCLUDE:
+${Array.isArray(keyPoints) ? keyPoints.map((kp, i) => `${i+1}. ${kp}`).join('\n') : keyPoints}
+
+${quotes.length > 0 ? `REQUIRED QUOTES TO INTEGRATE:\n${quotes.map((q: any) => `- "${q.quote}" - ${q.speaker}, ${q.title}`).join('\n')}` : ''}
+
+BOILERPLATE:
+${boilerplate}
+
+CRITICAL FORMATTING REQUIREMENTS:
+1. Start with dateline: ${city.toUpperCase()}, ${state} – ${date} –
+2. Lead paragraph (lede): Answer who, what, when, where, why in first 2 sentences
+3. Second paragraph: Expand on most newsworthy detail
+4. Third paragraph: Include executive quote naturally (if provided)
+5. Fourth paragraph: Additional context and supporting details
+6. Fifth paragraph: Second quote or customer testimonial (if provided)
+7. Boilerplate: "About [Company]" section
+8. Media contact: "For media inquiries, contact: [MEDIA CONTACT]"
+
+STYLE REQUIREMENTS:
+- Use AP Style (avoid Oxford comma, spell out numbers under 10, etc.)
+- Third-person only (no "we", "our", "I")
+- Strong, active verbs
+- No marketing fluff or superlatives without attribution
+- Quote marks for all quotes
+- Short paragraphs (2-3 sentences max)
+- Inverted pyramid structure (most important info first)
+
+TONE: Professional, factual, ${tone}
+
+Do NOT include the word "FOR IMMEDIATE RELEASE" or "###" - just the press release content.`;
+
   const pressRelease = await callAnthropic(
     [{ role: 'user', content: prompt }],
-    1500
+    2000
   );
-  
+
   return {
     headline,
     subheadline,
@@ -628,6 +686,126 @@ Make each post genuinely different - not just slight word changes.`;
     posts,
     variations,
     totalGenerated: platforms.length * variations
+  };
+}
+
+async function generateTwitterPost(args: any) {
+  const message = args.message || args.topic || args.subject || '';
+  const keyMessages = args.keyMessages || args.key_messages || [];
+  const tone = args.tone || 'professional';
+  const includeHashtags = args.includeHashtags !== undefined ? args.includeHashtags : true;
+  const thread = args.thread || false;
+  const variations = args.variations || 3;
+
+  const prompt = `Create ${variations} DISTINCT Twitter/X posts (${thread ? 'as a thread' : 'standalone tweets'}):
+
+TOPIC: ${message}
+${keyMessages.length > 0 ? `KEY MESSAGES: ${Array.isArray(keyMessages) ? keyMessages.join(', ') : keyMessages}` : ''}
+TONE: ${tone}
+
+REQUIREMENTS:
+- Maximum 280 characters per tweet
+- ${thread ? 'Create 3-5 tweet thread with strong hook in first tweet' : 'Single impactful tweet'}
+- ${includeHashtags ? 'Include 2-3 relevant hashtags' : 'No hashtags'}
+- Use line breaks for readability
+- Strong opening hook
+- Clear value proposition
+- ${thread ? 'Each tweet should flow naturally to the next' : 'Complete thought in one tweet'}
+
+Generate ${variations} unique versions that are GENUINELY DIFFERENT:
+Version 1: Data-driven approach (lead with statistics/facts)
+Version 2: Storytelling approach (narrative hook)
+Version 3: Question/engagement approach (provocative question)
+
+Format as:
+POST 1:
+[tweet content${thread ? ' / THREAD:\nTweet 1:\n...\nTweet 2:\n...' : ''}]
+
+POST 2:
+[tweet content]
+
+POST 3:
+[tweet content]`;
+
+  const twitterPosts = await callAnthropic(
+    [{ role: 'user', content: prompt }],
+    1000
+  );
+
+  const postMatches = twitterPosts.match(/POST \d+:\s*\n([\s\S]*?)(?=\nPOST \d+:|$)/g);
+  const posts = postMatches
+    ? postMatches.map(p => p.replace(/POST \d+:\s*\n/, '').trim())
+    : [twitterPosts];
+
+  return {
+    content: posts.map((p, i) => `**Version ${i + 1}:**\n${p}`).join('\n\n---\n\n'),
+    platform: 'twitter',
+    posts,
+    variations: posts.length,
+    thread,
+    characterCount: posts.map(p => p.length)
+  };
+}
+
+async function generateInstagramPost(args: any) {
+  const message = args.message || args.topic || args.subject || '';
+  const keyMessages = args.keyMessages || args.key_messages || [];
+  const tone = args.tone || 'engaging';
+  const includeHashtags = args.includeHashtags !== undefined ? args.includeHashtags : true;
+  const variations = args.variations || 3;
+  const carousel = args.carousel || false;
+
+  const prompt = `Create ${variations} DISTINCT Instagram ${carousel ? 'carousel' : 'post'} captions:
+
+TOPIC: ${message}
+${keyMessages.length > 0 ? `KEY MESSAGES: ${Array.isArray(keyMessages) ? keyMessages.join(', ') : keyMessages}` : ''}
+TONE: ${tone}
+
+REQUIREMENTS:
+- 125-150 words (Instagram sweet spot for engagement)
+- ${carousel ? 'Describe content for 5-7 carousel slides with slide-by-slide breakdown' : 'Single compelling post'}
+- ${includeHashtags ? 'Include 8-12 relevant hashtags at the end' : 'No hashtags'}
+- Use emojis strategically (2-4 per post)
+- Strong hook in first line (pre-"...more")
+- Line breaks for readability
+- Call-to-action at the end
+- Visual suggestions in [brackets]
+
+Generate ${variations} unique versions with DIFFERENT approaches:
+Version 1: Educational/Tutorial style (teach something valuable)
+Version 2: Behind-the-scenes/Personal story (connect emotionally)
+Version 3: Bold statement/Hot take (spark conversation)
+
+${carousel ? 'For carousel posts, include:\nSLIDE 1: [Cover image description] + Hook\nSLIDE 2-6: [Content for each slide]\nSLIDE 7: CTA + [closing image]' : ''}
+
+Format as:
+POST 1:
+[caption with emojis and structure]
+${includeHashtags ? '\n#hashtag1 #hashtag2 #hashtag3...' : ''}
+
+POST 2:
+[caption]
+
+POST 3:
+[caption]`;
+
+  const instagramPosts = await callAnthropic(
+    [{ role: 'user', content: prompt }],
+    1200
+  );
+
+  const postMatches = instagramPosts.match(/POST \d+:\s*\n([\s\S]*?)(?=\nPOST \d+:|$)/g);
+  const posts = postMatches
+    ? postMatches.map(p => p.replace(/POST \d+:\s*\n/, '').trim())
+    : [instagramPosts];
+
+  return {
+    content: posts.map((p, i) => `**Version ${i + 1}:**\n${p}`).join('\n\n---\n\n'),
+    platform: 'instagram',
+    posts,
+    variations: posts.length,
+    carousel,
+    wordCount: posts.map(p => p.split(' ').length)
   };
 }
 
@@ -1420,6 +1598,11 @@ serve(async (req) => {
       'blog-post': 'generate_blog_post',
       'social-post': 'generate_social_posts',
       'social-media-post': 'generate_social_posts',
+      'twitter-post': 'generate_twitter_post',
+      'twitter': 'generate_twitter_post',
+      'tweet': 'generate_twitter_post',
+      'instagram-post': 'generate_instagram_post',
+      'instagram': 'generate_instagram_post',
       'email-campaign': 'generate_email_campaign',
       'talking-points': 'generate_executive_talking_points',
       'thought-leadership': 'generate_thought_leadership',
@@ -1468,6 +1651,12 @@ serve(async (req) => {
           }
         }
         result = await generateSocialPosts(args);
+        break;
+      case 'generate_twitter_post':
+        result = await generateTwitterPost(args);
+        break;
+      case 'generate_instagram_post':
+        result = await generateInstagramPost(args);
         break;
       case 'generate_email_campaign':
         result = await generateEmailCampaign(args);

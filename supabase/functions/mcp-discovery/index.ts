@@ -55,6 +55,47 @@ async function callAnthropic(messages: any[], maxTokens: number = 4000, model: s
   return data;
 }
 
+/**
+ * Format sources for Claude with full context
+ * Shows: name, priority, and includes search query examples
+ */
+function formatSourcesForClaude(
+  sources: any[],
+  searchQueries: string[] = [],
+  limit: number = 15
+): string {
+  if (!sources || sources.length === 0) {
+    return '  (No sources in this category)';
+  }
+
+  const sourcesList = sources.slice(0, limit).map(s =>
+    `  • ${s.name} [${s.priority}] - ${s.type.toUpperCase()} feed`
+  ).join('\n');
+
+  let result = sourcesList;
+
+  // Add typical search queries if available
+  if (searchQueries && searchQueries.length > 0) {
+    result += `\n  Typical coverage: ${searchQueries.slice(0, 3).join(', ')}`;
+  }
+
+  return result;
+}
+
+/**
+ * Extract category metadata (search queries, journalists, etc.)
+ */
+function extractCategoryMetadata(categoryData: any): any {
+  return {
+    searchQueries: categoryData.search_queries || [],
+    trackUrls: categoryData.track_urls || [],
+    keyJournalists: categoryData.key_journalists || [],
+    podcasts: categoryData.podcasts || [],
+    agencies: categoryData.agencies || [],
+    complianceAreas: categoryData.compliance_areas || []
+  };
+}
+
 // Available MCP tools
 const TOOLS = [
   {
@@ -250,28 +291,40 @@ async function gatherSourcesData(industry: string) {
         });
       }
     });
-    
+
+    // Extract metadata for each category
+    const competitiveMetadata = extractCategoryMetadata(sources.competitive || {});
+    const mediaMetadata = extractCategoryMetadata(sources.media || {});
+    const regulatoryMetadata = extractCategoryMetadata(sources.regulatory || {});
+    const marketMetadata = extractCategoryMetadata(sources.market || {});
+
     return {
-      competitive: extractSourceDetails(sources.competitive || []),
-      media: extractSourceDetails(sources.media || []),
-      regulatory: extractSourceDetails(sources.regulatory || []),
-      market: extractSourceDetails(sources.market || []),
-      forward: extractSourceDetails(sources.forward || []),
-      specialized: extractSourceDetails(sources.specialized || []),
-      
+      competitive: extractSourceDetails(sources.competitive?.rss || []),
+      media: extractSourceDetails(sources.media?.rss || []),
+      regulatory: extractSourceDetails(sources.regulatory?.rss || []),
+      market: extractSourceDetails(sources.market?.rss || []),
+      forward: extractSourceDetails(sources.forward?.rss || []),
+      specialized: extractSourceDetails(sources.specialized?.rss || []),
+
+      // NEW: Include category metadata
+      competitiveMetadata,
+      mediaMetadata,
+      regulatoryMetadata,
+      marketMetadata,
+
       // New: Source prioritization for monitoring
       source_priorities: {
         critical: criticalSources,
         high: highPrioritySources,
         total_sources: criticalSources.length + highPrioritySources.length
       },
-      
+
       // New: Key journalists/outlets to track
       key_outlets: {
         must_monitor: criticalSources.slice(0, 10),
         should_monitor: highPrioritySources.slice(0, 10)
       },
-      
+
       hasSources: Object.values(sources).some(s => Array.isArray(s) && s.length > 0)
     };
   } catch (error) {
@@ -283,6 +336,10 @@ async function gatherSourcesData(industry: string) {
       market: [],
       forward: [],
       specialized: [],
+      competitiveMetadata: { searchQueries: [], trackUrls: [], keyJournalists: [], podcasts: [], agencies: [], complianceAreas: [] },
+      mediaMetadata: { searchQueries: [], trackUrls: [], keyJournalists: [], podcasts: [], agencies: [], complianceAreas: [] },
+      regulatoryMetadata: { searchQueries: [], trackUrls: [], keyJournalists: [], podcasts: [], agencies: [], complianceAreas: [] },
+      marketMetadata: { searchQueries: [], trackUrls: [], keyJournalists: [], podcasts: [], agencies: [], complianceAreas: [] },
       source_priorities: { critical: [], high: [], total_sources: 0 },
       key_outlets: { must_monitor: [], should_monitor: [] },
       hasSources: false
@@ -300,21 +357,85 @@ async function analyzeAndEnhanceProfile(
   const analysisPrompt = `
 You are creating a COMPREHENSIVE intelligence monitoring profile for ${organization_name}.
 
-WHAT WE ALREADY HAVE:
+CONTEXT:
 - Industry: ${industryData.industry} ${industryData.subCategory ? `(${industryData.subCategory})` : ''}
-- Competitors from registry: ${industryData.competitors.slice(0, 10).join(', ')}
-- Sources available: 
-  - Competitive sources: ${sourcesData.competitive.length}
-  - Media sources: ${sourcesData.media.length}
-  - Regulatory sources: ${sourcesData.regulatory.length}
-  - Market sources: ${sourcesData.market.length}
+- Known Competitors: ${industryData.competitors.slice(0, 10).join(', ')}
 
-YOUR TASK:
-1. Identify what's MISSING for comprehensive intelligence monitoring
-2. Fill gaps with specific names and entities
-3. Focus on ACTIONABLE intelligence needs
+═══════════════════════════════════════════════════════════
+🔍 AVAILABLE INTELLIGENCE SOURCES (Your Monitoring Tools)
+═══════════════════════════════════════════════════════════
 
-Provide a COMPREHENSIVE profile with:
+These are the ACTUAL RSS feeds, publications, and sources you have access to.
+Your keywords and monitoring strategies MUST be optimized for these specific sources.
+
+📰 COMPETITIVE INTELLIGENCE SOURCES (${sourcesData.competitive.length} feeds):
+${formatSourcesForClaude(sourcesData.competitive, sourcesData.competitiveMetadata?.searchQueries, 20)}
+
+📺 MEDIA SOURCES (${sourcesData.media.length} feeds):
+${formatSourcesForClaude(sourcesData.media, sourcesData.mediaMetadata?.searchQueries, 20)}
+
+⚖️ REGULATORY SOURCES (${sourcesData.regulatory.length} feeds):
+${formatSourcesForClaude(sourcesData.regulatory, sourcesData.regulatoryMetadata?.searchQueries, 10)}
+
+📊 MARKET ANALYSIS SOURCES (${sourcesData.market.length} feeds):
+${formatSourcesForClaude(sourcesData.market, sourcesData.marketMetadata?.searchQueries, 10)}
+
+🎯 CRITICAL PRIORITY SOURCES (Monitor these first):
+${sourcesData.source_priorities.critical.slice(0, 15).join(', ')}
+
+${sourcesData.competitiveMetadata?.keyJournalists?.length > 0 ? `
+👤 KEY JOURNALISTS TO TRACK:
+${sourcesData.competitiveMetadata.keyJournalists.slice(0, 10).join(', ')}
+` : ''}
+
+${sourcesData.regulatoryMetadata?.agencies?.length > 0 ? `
+🏛️ REGULATORY AGENCIES:
+${sourcesData.regulatoryMetadata.agencies.join(', ')}
+` : ''}
+
+═══════════════════════════════════════════════════════════
+📋 YOUR MISSION
+═══════════════════════════════════════════════════════════
+
+Generate a monitoring profile with keywords that will ACTUALLY MATCH articles from these specific sources.
+
+CRITICAL INSTRUCTIONS:
+
+1. STUDY THE SOURCES ABOVE
+   - Look at what each publication covers
+   - Note the search queries that work for each category
+   - Understand priority levels (critical = check first)
+
+2. OPTIMIZE FOR SOURCE VOCABULARY
+   Examples based on actual sources:
+
+   ✅ For TechCrunch (covers: startup funding, product launches):
+      Keywords: "${organization_name} raises", "${organization_name} Series",
+                "${organization_name} launches", "${organization_name} unveils"
+
+   ✅ For The Verge (covers: consumer tech, product reviews):
+      Keywords: "${organization_name} review", "${organization_name} hands-on",
+                "${organization_name} first look", "${organization_name} features"
+
+   ✅ For Bloomberg/Reuters (covers: financial news, corporate):
+      Keywords: "${organization_name} earnings", "${organization_name} revenue",
+                "${organization_name} quarterly", "${organization_name} CEO"
+
+   ❌ BAD (generic, won't match):
+      Keywords: "company news", "business update", "market information"
+
+3. CREATE SOURCE-SPECIFIC MONITORING
+   - Critical sources get more keyword variations
+   - Match the language each publication uses
+   - Consider what makes headlines in each outlet
+
+4. USE CATEGORY SEARCH PATTERNS
+   The "Typical coverage" examples show what language these sources use.
+   Mirror that language in your keywords.
+
+═══════════════════════════════════════════════════════════
+
+NOW, provide your COMPREHENSIVE profile in this JSON format:
 
 {
   "industry": "Primary industry classification",
@@ -362,36 +483,50 @@ Provide a COMPREHENSIVE profile with:
   },
   
   "monitoring_config": {
-    "keywords": ["15-20 specific keywords to monitor"],
+    "keywords": [
+      "20-30 SPECIFIC keywords optimized for the sources above",
+      "Use action verbs that match source headlines: 'launches', 'raises', 'unveils', 'announces'",
+      "Include product-specific terms for consumer tech sources",
+      "Include financial terms for business sources",
+      "Include regulatory terms for compliance sources"
+    ],
+
+    "source_optimized_keywords": {
+      "TechCrunch_style": ["List keywords that match TechCrunch headlines"],
+      "Bloomberg_style": ["List keywords that match Bloomberg headlines"],
+      "The_Verge_style": ["List keywords that match The Verge headlines"]
+    },
+
     "crisis_indicators": ["Warning signs of problems"],
     "opportunity_indicators": ["Signs of opportunities"],
     "categories": ["Key news categories to track"],
     "priority_entities": ["Most important entities to track closely"],
-    
+
     "search_queries": {
       "competitor_queries": ["Specific search queries for each competitor"],
       "regulatory_queries": ["Queries for regulatory monitoring"],
       "crisis_queries": ["Queries to detect crises early"],
       "opportunity_queries": ["Queries to find opportunities"]
     },
-    
+
     "content_patterns": {
       "high_value_patterns": ["Patterns that indicate important news"],
       "noise_patterns": ["Patterns to filter out"],
       "crisis_patterns": ["Patterns indicating problems"],
       "opportunity_patterns": ["Patterns indicating opportunities"]
     },
-    
+
     "competitor_priorities": {
-      "For each competitor": ["What specific aspects to monitor"]
+      "Top_Competitor_Name": ["What specific aspects to monitor"]
     }
   }
 }
 
-${industry_hint ? `Industry context: ${industry_hint}` : ''}
-${industryData.competitors.length > 0 ? `Known competitors: ${industryData.competitors.join(', ')}` : ''}
+${industry_hint ? `\nIndustry context: ${industry_hint}` : ''}
+${industryData.competitors.length > 0 ? `\nKnown competitors: ${industryData.competitors.join(', ')}` : ''}
 
-BE SPECIFIC with names. Real companies, real regulators, real people. This is for actual intelligence monitoring.
+REMEMBER: Your keywords must match what these sources actually publish, not what you think they should publish.
+BE SPECIFIC with names. Real companies, real regulators, real people.
 `;
 
   const message = await callAnthropic([{
@@ -575,6 +710,14 @@ BE SPECIFIC with names. Real companies, real regulators, real people. This is fo
     };
   };
   
+  // NEW: Expand keywords for sources
+  const baseKeywords = enhancedData.monitoring_config?.keywords || [];
+  const expandedKeywords = expandKeywordsForSources(
+    baseKeywords,
+    organization_name,
+    sourcesData
+  );
+
   // Merge with existing data and add enhanced monitoring config
   return {
     ...enhancedData,
@@ -590,6 +733,9 @@ BE SPECIFIC with names. Real companies, real regulators, real people. This is fo
     // Enhanced monitoring configuration
     monitoring_config: {
       ...enhancedData.monitoring_config,
+      keywords: expandedKeywords.all,  // NEW: Use expanded keywords
+      keywords_by_source: expandedKeywords.bySourceType,  // NEW
+      keywords_by_priority: expandedKeywords.byPriority,  // NEW
       search_queries: generateSearchQueries(enhancedData.competition.direct_competitors || []),
       content_patterns: generateContentPatterns(),
       competitor_priorities: generateCompetitorPriorities(),
@@ -610,6 +756,79 @@ BE SPECIFIC with names. Real companies, real regulators, real people. This is fo
       monitoring_strategy: 'Use search queries and content patterns to filter signal from noise'
     }
   };
+}
+
+/**
+ * Expand keywords based on source characteristics
+ * Different sources require different keyword styles
+ */
+function expandKeywordsForSources(
+  baseKeywords: string[],
+  organizationName: string,
+  sourcesData: any
+): any {
+  const expanded = {
+    all: [...baseKeywords],
+    bySourceType: {},
+    byPriority: {
+      critical: [],
+      high: [],
+      medium: []
+    }
+  };
+
+  // Source-type specific expansions
+  const sourceTypePatterns = {
+    startup_tech: ['raises', 'Series', 'funding', 'launches', 'announces', 'unveils'],
+    consumer_tech: ['review', 'hands-on', 'first look', 'features', 'vs', 'comparison'],
+    financial_news: ['earnings', 'revenue', 'quarterly', 'Q1', 'Q2', 'Q3', 'Q4', 'guidance'],
+    regulatory: ['investigation', 'settlement', 'fine', 'compliance', 'violation', 'approval'],
+    market_analysis: ['market share', 'growth', 'forecast', 'trends', 'outlook']
+  };
+
+  // Categorize sources and generate appropriate keywords
+  const allSources = [
+    ...sourcesData.competitive,
+    ...sourcesData.media,
+    ...sourcesData.regulatory,
+    ...sourcesData.market
+  ];
+
+  allSources.forEach(source => {
+    const sourceKeywords = [];
+
+    // Determine source type from name
+    let sourceType = 'general';
+    if (['TechCrunch', 'VentureBeat', 'Crunchbase'].includes(source.name)) {
+      sourceType = 'startup_tech';
+    } else if (['The Verge', 'Engadget', 'Ars Technica'].includes(source.name)) {
+      sourceType = 'consumer_tech';
+    } else if (['Bloomberg', 'Reuters', 'Wall Street Journal'].includes(source.name)) {
+      sourceType = 'financial_news';
+    } else if (source.name.includes('Regulatory') || source.name.includes('SEC') || source.name.includes('FDA')) {
+      sourceType = 'regulatory';
+    }
+
+    // Generate keywords for this source type
+    const patterns = sourceTypePatterns[sourceType] || [];
+    patterns.forEach(pattern => {
+      sourceKeywords.push(`${organizationName} ${pattern}`);
+    });
+
+    // Also add base keywords
+    sourceKeywords.push(...baseKeywords);
+
+    // Store by source name and priority
+    expanded.bySourceType[source.name] = [...new Set(sourceKeywords)];
+    expanded.byPriority[source.priority].push(...sourceKeywords);
+  });
+
+  // Deduplicate priority keywords
+  Object.keys(expanded.byPriority).forEach(priority => {
+    expanded.byPriority[priority] = [...new Set(expanded.byPriority[priority])];
+  });
+
+  return expanded;
 }
 
 // Fill any remaining gaps with web search

@@ -258,9 +258,8 @@ export default function OpportunitiesModule() {
           } else if (simulatedProgress < 80) {
             // Otherwise simulate progress
             simulatedProgress += 2
-            const piecesEstimate = Math.floor((simulatedProgress - 20) / 60 * totalPieces)
             setGenerationProgress({
-              current: `Generating content... (~${piecesEstimate}/${totalPieces} pieces)`,
+              current: `Generating content...`,
               progress: simulatedProgress
             })
           }
@@ -327,7 +326,7 @@ export default function OpportunitiesModule() {
       }
 
       // Generate Gamma presentation
-      setGenerationProgress({ current: 'Generating Gamma presentation...', progress: 90 })
+      setGenerationProgress({ current: 'Finalizing Presentation...', progress: 90 })
 
       let presentationUrl = null
       try {
@@ -345,7 +344,7 @@ export default function OpportunitiesModule() {
           const maxAttempts = 24
           for (let i = 0; i < maxAttempts; i++) {
             setGenerationProgress({
-              current: `Gamma generating... (${i * 5}s / ${maxAttempts * 5}s)`,
+              current: `Finalizing Presentation... (${i * 5}s / ${maxAttempts * 5}s)`,
               progress: 90 + (i / maxAttempts) * 8 // 90-98%
             })
 
@@ -358,13 +357,13 @@ export default function OpportunitiesModule() {
             if (!statusError && statusData?.status === 'completed' && statusData.gammaUrl) {
               presentationUrl = statusData.gammaUrl
               console.log('✅ Gamma completed:', presentationUrl)
-              setGenerationProgress({ current: '✅ Gamma presentation ready!', progress: 98 })
+              setGenerationProgress({ current: '✅ Presentation ready!', progress: 98 })
               break
             }
 
             if (statusData?.status === 'error') {
               console.error('Gamma generation error:', statusData)
-              setGenerationProgress({ current: '⚠️ Gamma generation failed', progress: 90 })
+              setGenerationProgress({ current: '⚠️ Presentation failed', progress: 90 })
               break
             }
           }
@@ -372,12 +371,12 @@ export default function OpportunitiesModule() {
           // If we exhausted attempts, still save the URL for manual checking
           if (!presentationUrl) {
             console.warn('Gamma polling timed out - check Gamma dashboard manually')
-            setGenerationProgress({ current: '⚠️ Gamma still generating (check dashboard)', progress: 90 })
+            setGenerationProgress({ current: '⚠️ Still finalizing (check dashboard)', progress: 90 })
           }
         }
       } catch (gammaError) {
         console.error('Gamma generation failed:', gammaError)
-        setGenerationProgress({ current: '⚠️ Gamma generation failed', progress: 90 })
+        setGenerationProgress({ current: '⚠️ Presentation failed', progress: 90 })
       }
 
       // Final content fetch to ensure we have everything

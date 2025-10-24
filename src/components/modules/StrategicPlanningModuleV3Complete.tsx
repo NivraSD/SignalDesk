@@ -108,7 +108,7 @@ export default function StrategicPlanningModuleV3Complete({
     const { data, error } = await supabase
       .from('campaign_builder_sessions')
       .select('id, campaign_goal, created_at, blueprint')
-      .eq('organization_id', initialOrgId)
+      .eq('org_id', initialOrgId)
       .not('blueprint', 'is', null)
       .order('created_at', { ascending: false })
       .limit(10)
@@ -129,12 +129,13 @@ export default function StrategicPlanningModuleV3Complete({
 
   // Load items from database or parse blueprint
   // Reload whenever sessionId changes or component mounts
+  // NOTE: We don't include blueprint in dependencies to prevent duplicate initialization
   useEffect(() => {
     console.log('📋 Loading execution items for session:', sessionId)
     setLoading(true)
     setError(null)
     loadOrInitializeItems()
-  }, [sessionId, blueprint])
+  }, [sessionId])
 
   const loadOrInitializeItems = async () => {
     // Try to load existing items from database
@@ -177,6 +178,43 @@ export default function StrategicPlanningModuleV3Complete({
 
   const initializeItemsFromBlueprint = async () => {
     const items = parseBlueprint(blueprint)
+
+    // Double-check that items don't already exist before inserting
+    const { data: existingCheck } = await supabase
+      .from('campaign_execution_items')
+      .select('id')
+      .eq('session_id', sessionId)
+      .limit(1)
+
+    if (existingCheck && existingCheck.length > 0) {
+      console.log('⚠️ Items already exist, skipping initialization')
+      // Items were created by another request, reload them
+      const { data: existing } = await supabase
+        .from('campaign_execution_items')
+        .select('*')
+        .eq('session_id', sessionId)
+
+      if (existing) {
+        const items = existing.map(dbItem => ({
+          id: dbItem.id,
+          type: dbItem.content_type as ContentItem['type'],
+          stakeholder: dbItem.stakeholder_name,
+          stakeholderPriority: dbItem.stakeholder_priority,
+          leverName: dbItem.lever_name,
+          leverPriority: dbItem.lever_priority,
+          topic: dbItem.topic,
+          target: dbItem.target,
+          details: dbItem.details,
+          status: dbItem.status as ContentItem['status'],
+          generatedContent: dbItem.generated_content,
+          generationError: dbItem.generation_error,
+          generatedAt: dbItem.generated_at ? new Date(dbItem.generated_at) : undefined
+        }))
+        setContentItems(items)
+      }
+      setLoading(false)
+      return
+    }
 
     // Save to database
     const dbItems = items.map(item => ({

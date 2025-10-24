@@ -60,18 +60,20 @@ export async function POST(request: NextRequest) {
     console.log('✅ Real-Time Monitor Complete:', {
       total_time: `${(executionTime / 1000).toFixed(1)}s`,
       articles: data.articles_analyzed || 0,
-      alerts: data.critical_alerts?.length || 0,
-      opportunities: data.opportunities_count || 0,
-      crises: data.crises_count || 0,
-      predictions: data.predictions_count || 0
+      detectors_running: data.detectors_running || 0,
+      message: data.message || 'Processing in background'
     })
 
     // Return the data from the edge function
-    // The edge function already saved to the database
+    // Detectors are running in background and saving to database
     return NextResponse.json({
       success: true,
       ...data,
-      execution_time_ms: executionTime
+      execution_time_ms: executionTime,
+      // Set counts to 0 since detectors are running in background
+      opportunities_count: 0,
+      crises_count: 0,
+      predictions_count: 0
     })
 
   } catch (error: any) {

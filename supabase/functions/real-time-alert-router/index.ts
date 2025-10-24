@@ -60,7 +60,11 @@ serve(async (req) => {
       .eq('name', organization_name)
       .single();
 
-    const organizationUuid = organization_id || orgData?.id || organization_name;
+    // CRITICAL: Always use UUID, never fall back to name string
+    const organizationUuid = organization_id || orgData?.id;
+    if (!organizationUuid) {
+      throw new Error(`Organization '${organization_name}' not found in database`);
+    }
 
     // Get organization profile for detectors
     let { data: profileData } = await supabase
@@ -375,25 +379,17 @@ serve(async (req) => {
       );
     }
 
-    // WAIT for detectors to complete so we can return actual results
-    console.log(`\n🚀 Running ${detectionPromises.length} detectors in parallel...`);
+    // Fire detectors in background - they save to DB themselves
+    console.log(`\n🚀 Running ${detectionPromises.length} detectors in parallel (fire-and-forget)...`);
 
-    let detectorResults = [];
-    try {
-      detectorResults = await Promise.all(detectionPromises);
-      console.log(`✅ All detectors completed`);
-    } catch (err) {
-      console.error('⚠️ Detector error:', err);
-    }
-
-    // Extract results from detector responses
-    const opportunityResult = detectorResults.find(r => r.type === 'opportunities')?.data || { opportunities: [] };
-    const crisisResult = detectorResults.find(r => r.type === 'crises')?.data || { crises: [], crises_count: 0 };
-    const predictionResult = detectorResults.find(r => r.type === 'predictions')?.data || { predictions: [], predictions_generated: 0 };
+    // Don't wait for detectors - let them run in background
+    Promise.all(detectionPromises)
+      .then(() => console.log(`✅ All detectors completed`))
+      .catch(err => console.error('⚠️ Detector error:', err));
 
     const totalTime = Date.now() - startTime;
     console.log(`\n✅ Real-time alert routing complete in ${totalTime}ms`);
-    console.log(`   📊 Results: ${opportunityResult.opportunities?.length || 0} opportunities, ${crisisResult.crises_count || 0} crises, ${predictionResult.predictions_generated || 0} predictions`);
+    console.log(`   📊 Detectors running in background. Results will be saved to database.`);
 
     return new Response(JSON.stringify({
       success: true,
@@ -404,18 +400,9 @@ serve(async (req) => {
       articles_analyzed: topResults.length,
       total_articles_found: searchResults.length,
 
-      // Results
-      opportunities: opportunityResult.opportunities || [],
-      opportunities_count: opportunityResult.opportunities?.length || 0,
-
-      crises: crisisResult.crises || [],
-      crises_count: crisisResult.crises_count || 0,
-      critical_crises_count: crisisResult.crises?.filter(c =>
-        c.severity === 'critical' || c.severity === 'high'
-      ).length || 0,
-
-      predictions: predictionResult.predictions || [],
-      predictions_count: predictionResult.predictions_generated || 0,
+      // Detectors are running in background
+      detectors_running: detectionPromises.length,
+      message: 'Detectors running in background. Results will be saved to database.',
 
       // Metadata
       source: use_firecrawl_observer ? 'firecrawl-observer' : 'niv-fireplexity-monitor (RSS)'

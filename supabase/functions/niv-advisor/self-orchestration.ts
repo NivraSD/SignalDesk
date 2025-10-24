@@ -70,11 +70,14 @@ Consider:
 - What competitive intelligence would be valuable?
 
 **IMPORTANT - TEMPORAL CONTEXT IN SEARCH QUERIES:**
-- ALWAYS include "${currentYear}" in search queries for current/recent information
-- For "latest" or "recent" queries, use "${currentMonth} ${currentYear}" or "Q4 ${currentYear}"
-- Avoid outdated years (2024, 2023) unless specifically asking for historical data
-- Example: "Google Gemini 3 launch ${currentMonth} ${currentYear}" NOT "Gemini 3 launch"
-- Example: "OpenAI regulatory compliance ${currentYear}" NOT "OpenAI compliance"
+- For "recent" information: Use "last 2 weeks" or "last month" for specificity
+- For "latest" queries: Include timeframe like "past 14 days" or "Q4 ${currentYear}"
+- ALWAYS include "${currentYear}" to avoid old results from 2024/2023
+- DON'T just search for "announcements" - tech news breaks via leaks, rumors, previews, API changes
+- Example GOOD: "Gemini 3 leak rumor development last 2 weeks ${currentYear}"
+- Example GOOD: "OpenAI regulatory changes past 30 days ${currentYear}"
+- Example BAD: "Gemini 3 announcement ${currentMonth} ${currentYear}" (too formal, misses leaks)
+- Example BAD: "OpenAI compliance ${currentYear}" (too broad, not specific timeframe)
 
 Return a structured plan with specific queries for each step.`
 

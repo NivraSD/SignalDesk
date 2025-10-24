@@ -7,13 +7,15 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now()
+
   try {
     const body = await request.json()
     const { content, metadata, folder } = body
 
-    console.log('Saving content:', { type: content.type, hasContent: !!content.content, folder })
+    console.log('💾 Saving content:', { type: content.type, hasContent: !!content.content, folder })
 
-    // Try to save to content_library directly
+    // CRITICAL: Save immediately (target < 100ms)
     const { data: savedContent, error: saveError } = await supabase
       .from('content_library')
       .insert({
@@ -30,14 +32,15 @@ export async function POST(request: NextRequest) {
         },
         tags: [content.type].filter(Boolean),
         status: 'saved',
+        intelligence_status: 'pending', // NEW: Will be processed async
         created_by: 'niv',
-        folder: folder || null
+        folder: folder || 'Unsorted' // Default to Unsorted until intelligence assigns better folder
       })
       .select()
       .single()
 
     if (saveError) {
-      console.error('Content library save error:', saveError)
+      console.error('❌ Content library save error:', saveError)
 
       // If table doesn't exist, return helpful error with SQL to create it
       if (saveError.message?.includes('relation') || saveError.message?.includes('does not exist')) {
@@ -77,21 +80,75 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
 
+    const saveTime = Date.now() - startTime
+    console.log(`✅ Content saved in ${saveTime}ms: ${savedContent.id}`)
+
+    // CRITICAL: Queue background intelligence job (fire-and-forget)
+    // This MUST NOT block the response
+    queueIntelligenceJob(savedContent.id).catch((err) => {
+      console.error('Failed to queue intelligence job:', err)
+      // Don't fail the save if queueing fails
+    })
+
+    // Log performance metric
+    logPerformanceMetric('save_time', saveTime).catch(() => {})
+
+    // Return success IMMEDIATELY (target < 200ms total)
     return NextResponse.json({
       success: true,
       id: savedContent.id,
       message: 'Content saved to Content Library',
       location: 'content_library',
+      intelligenceStatus: 'pending',
+      saveTime: `${saveTime}ms`,
       data: savedContent
     })
 
   } catch (error) {
-    console.error('Content save error:', error)
+    console.error('❌ Content save error:', error)
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Failed to save content',
       details: error
     }, { status: 500 })
+  }
+}
+
+// Queue background intelligence job
+async function queueIntelligenceJob(contentId: string): Promise<void> {
+  try {
+    await supabase
+      .from('job_queue')
+      .insert({
+        job_type: 'analyze-content',
+        payload: { contentId },
+        priority: 5, // Medium priority
+        status: 'pending'
+      })
+
+    console.log(`📋 Queued intelligence job for content: ${contentId}`)
+  } catch (error) {
+    console.error('Failed to queue job:', error)
+    throw error
+  }
+}
+
+// Log performance metrics for monitoring
+async function logPerformanceMetric(
+  metricType: string,
+  metricValue: number
+): Promise<void> {
+  try {
+    await supabase
+      .from('performance_metrics')
+      .insert({
+        metric_type: metricType,
+        metric_value: metricValue,
+        metadata: {},
+        created_at: new Date().toISOString()
+      })
+  } catch (error) {
+    // Don't log errors for metrics (not critical)
   }
 }
 

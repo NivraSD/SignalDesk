@@ -187,6 +187,23 @@ function extractTimeMarkers(text: string): string[] {
   return [...new Set(markers)].slice(0, 5);
 }
 
+// Helper function to find source profile
+function findSourceProfile(sourceName: string, profile: any): any {
+  if (!profile?.sources) return null;
+
+  const allSources = [
+    ...(profile.sources.competitive || []),
+    ...(profile.sources.media || []),
+    ...(profile.sources.regulatory || []),
+    ...(profile.sources.market || [])
+  ];
+
+  return allSources.find(s =>
+    s.name.toLowerCase() === sourceName.toLowerCase() ||
+    sourceName.toLowerCase().includes(s.name.toLowerCase())
+  );
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -310,7 +327,33 @@ serve(async (req) => {
       const hasCrisisEvent = /recall|lawsuit|investigation|breach|scandal|violation|fine|penalty|sue|complaint|regulatory/i.test(text);
       const hasStrategicMove = /acquire|merger|partnership|collaborate|expand|enter.*market|exit|divest|restructure|pivot/i.test(text);
       const hasTechnologyUpdate = /ai|autonomous|battery|software|patent|innovation|breakthrough|research|development|upgrade/i.test(text);
-      
+
+      // NEW: Source-aware scoring boost
+      const articleSource = article.source || article.feed_name || 'unknown';
+      const sourceProfile = findSourceProfile(articleSource, profile);
+
+      if (sourceProfile) {
+        // Check if article uses this source's typical patterns
+        const sourceKeywords = profile?.monitoring_config?.keywords_by_source?.[articleSource] || [];
+        const matchedSourceKeywords = sourceKeywords.filter(kw =>
+          text.includes(kw.toLowerCase())
+        );
+
+        if (matchedSourceKeywords.length > 0) {
+          score += 25 * matchedSourceKeywords.length;
+          factors.push(`SOURCE_OPTIMIZED: ${articleSource} (${matchedSourceKeywords.length} matches)`);
+        }
+
+        // Critical sources get priority
+        if (sourceProfile.priority === 'critical') {
+          score += 20;
+          factors.push('CRITICAL_SOURCE');
+        } else if (sourceProfile.priority === 'high') {
+          score += 10;
+          factors.push('HIGH_PRIORITY_SOURCE');
+        }
+      }
+
       // PRIORITY 1: Direct competitive intelligence (HIGHEST VALUE)
       // Check both exact and partial matches
       const competitorInTitle = targetEntities.competitors.find(comp =>

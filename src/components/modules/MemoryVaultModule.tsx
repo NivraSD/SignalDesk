@@ -1,1325 +1,1709 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { Database, Search, Calendar, Tag, Download, Trash2, Eye, FolderOpen, FileText, Image, Video, Hash, BookOpen, Upload, Edit, FolderPlus, Folder } from 'lucide-react'
-import { useNivStrategyV2 } from '@/hooks/useNivStrategyV2'
-import type { StoredStrategy } from '@/types/niv-strategy'
-import { CampaignOrchestrator } from '@/components/orchestration/CampaignOrchestrator'
-import { CampaignItems } from '@/components/orchestration/CampaignItems'
+import React, { useState, useEffect, useRef } from 'react'
+import {
+  Database, Search, Sparkles, Upload, FileText, Image,
+  Brain, Tag, Clock, Folder, TrendingUp, Activity,
+  Filter, X, ChevronRight, ChevronDown, Download, Trash2, Eye,
+  BarChart3, Zap, CheckCircle, AlertCircle, Loader, Edit,
+  FolderPlus, MoreVertical, Move, Copy, FolderOpen, File
+} from 'lucide-react'
 import { useAppStore } from '@/stores/useAppStore'
+import { createClient } from '@supabase/supabase-js'
 
-interface ContentLibraryItem {
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+
+type TabType = 'library' | 'assets' | 'analytics'
+
+interface ContentItem {
   id: string
   title: string
   content_type: string
   content: any
-  metadata?: any
-  created_at: string
-  updated_at?: string
-  organization_id?: string
-  framework_data?: any
-  opportunity_data?: any
   folder?: string
+  themes?: string[]
+  topics?: string[]
+  entities?: any
+  intelligence_status: 'pending' | 'processing' | 'complete' | 'failed'
+  content_signature?: string
+  created_at: string
+  organization_id: string
 }
 
-type ContentTab = 'all' | 'strategies' | 'media-plans' | 'uploads' | 'folders'
+interface BrandAsset {
+  id: string
+  name: string
+  asset_type: string
+  status: 'uploading' | 'analyzing' | 'active' | 'failed'
+  file_url?: string
+  extracted_guidelines?: any
+  brand_voice_profile?: any
+  usage_count: number
+  created_at: string
+}
+
+interface AnalyticsData {
+  avgSaveTime: number
+  pendingJobs: number
+  completionRate: number
+  workerActive: boolean
+  totalContent: number
+  contentByType: Record<string, number>
+}
+
+interface FolderNode {
+  name: string
+  path: string
+  children: FolderNode[]
+  items: ContentItem[]
+  expanded: boolean
+}
+
+// Smart folder templates
+const FOLDER_TEMPLATES = [
+  { name: 'Campaigns', icon: '📢', color: 'text-blue-400' },
+  { name: 'Media Plans', icon: '📰', color: 'text-purple-400' },
+  { name: 'Strategies', icon: '🎯', color: 'text-green-400' },
+  { name: 'Press Releases', icon: '📝', color: 'text-orange-400' },
+  { name: 'Social Content', icon: '💬', color: 'text-pink-400' },
+  { name: 'Brand Assets', icon: '✨', color: 'text-yellow-400' },
+  { name: 'Research', icon: '🔬', color: 'text-cyan-400' },
+  { name: 'Drafts', icon: '📄', color: 'text-gray-400' }
+]
 
 export default function MemoryVaultModule() {
   const { organization } = useAppStore()
-  const {
-    strategies,
-    loadStrategy,
-    refresh,
-    deleteStrategy,
-    exportStrategies,
-    getRecentStrategies,
-    useDatabase
-  } = useNivStrategyV2()
-
-  const [selectedStrategy, setSelectedStrategy] = useState<StoredStrategy | null>(null)
-  const [selectedContent, setSelectedContent] = useState<ContentLibraryItem | null>(null)
+  const [activeTab, setActiveTab] = useState<TabType>('library')
   const [searchQuery, setSearchQuery] = useState('')
-  const [filterTag, setFilterTag] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<ContentTab>('all')
-  const [allContent, setAllContent] = useState<ContentLibraryItem[]>([])
-  const [loading, setLoading] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const [showFolderDialog, setShowFolderDialog] = useState(false)
-  const [newFolderName, setNewFolderName] = useState('')
-  const [selectedFolder, setSelectedFolder] = useState<string | null>(null)
-  const [showSaveToFolderDialog, setShowSaveToFolderDialog] = useState(false)
-  const [contentToMove, setContentToMove] = useState<ContentLibraryItem | null>(null)
-  const [showNewDocDialog, setShowNewDocDialog] = useState(false)
-  const [newDocTitle, setNewDocTitle] = useState('')
-  const [newDocContent, setNewDocContent] = useState('')
-  const [newDocFolder, setNewDocFolder] = useState('')
-  const fileInputRef = React.useRef<HTMLInputElement>(null)
 
-  // Function to fetch content from library
+  // Content Library State
+  const [contentItems, setContentItems] = useState<ContentItem[]>([])
+  const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null)
+  const [loadingContent, setLoadingContent] = useState(false)
+  const [folderTree, setFolderTree] = useState<FolderNode[]>([])
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['root']))
+  const [selectedFolder, setSelectedFolder] = useState<string | null>(null)
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; item: ContentItem } | null>(null)
+  const [showMoveDialog, setShowMoveDialog] = useState(false)
+  const [itemToMove, setItemToMove] = useState<ContentItem | null>(null)
+  const [showNewFolderDialog, setShowNewFolderDialog] = useState(false)
+  const [newFolderName, setNewFolderName] = useState('')
+  const [newFolderParent, setNewFolderParent] = useState<string>('')
+  const [showExportDialog, setShowExportDialog] = useState(false)
+  const [itemToExport, setItemToExport] = useState<ContentItem | null>(null)
+  const [exportMode, setExportMode] = useState<'basic' | 'template'>('basic')
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('')
+  const [mergingTemplate, setMergingTemplate] = useState(false)
+
+  // Brand Assets State
+  const [brandAssets, setBrandAssets] = useState<BrandAsset[]>([])
+  const [selectedAsset, setSelectedAsset] = useState<BrandAsset | null>(null)
+  const [uploadingAsset, setUploadingAsset] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Analytics State
+  const [analytics, setAnalytics] = useState<AnalyticsData>({
+    avgSaveTime: 0,
+    pendingJobs: 0,
+    completionRate: 0,
+    workerActive: false,
+    totalContent: 0,
+    contentByType: {}
+  })
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false)
+
+  // Build folder tree from flat list
+  const buildFolderTree = (items: ContentItem[]): FolderNode[] => {
+    const tree: FolderNode[] = []
+    const folderMap = new Map<string, FolderNode>()
+
+    // Create root folders
+    FOLDER_TEMPLATES.forEach(template => {
+      const node: FolderNode = {
+        name: template.name,
+        path: template.name,
+        children: [],
+        items: [],
+        expanded: expandedFolders.has(template.name)
+      }
+      folderMap.set(template.name, node)
+      tree.push(node)
+    })
+
+    // Add uncategorized folder
+    const uncategorized: FolderNode = {
+      name: 'Uncategorized',
+      path: 'Uncategorized',
+      children: [],
+      items: [],
+      expanded: expandedFolders.has('Uncategorized')
+    }
+    folderMap.set('Uncategorized', uncategorized)
+    tree.push(uncategorized)
+
+    // Distribute items into folders
+    items.forEach(item => {
+      if (!item.folder || item.folder === '') {
+        uncategorized.items.push(item)
+      } else {
+        // Find matching template folder or create custom
+        const folderParts = item.folder.split('/')
+        const rootFolder = folderParts[0]
+
+        let targetNode = folderMap.get(rootFolder)
+        if (!targetNode) {
+          // Create custom folder
+          targetNode = {
+            name: rootFolder,
+            path: rootFolder,
+            children: [],
+            items: [],
+            expanded: expandedFolders.has(rootFolder)
+          }
+          folderMap.set(rootFolder, targetNode)
+          tree.push(targetNode)
+        }
+
+        // Handle nested folders
+        if (folderParts.length > 1) {
+          let currentNode = targetNode
+          for (let i = 1; i < folderParts.length; i++) {
+            const part = folderParts[i]
+            let childNode = currentNode.children.find(c => c.name === part)
+            if (!childNode) {
+              childNode = {
+                name: part,
+                path: folderParts.slice(0, i + 1).join('/'),
+                children: [],
+                items: [],
+                expanded: expandedFolders.has(folderParts.slice(0, i + 1).join('/'))
+              }
+              currentNode.children.push(childNode)
+            }
+            currentNode = childNode
+          }
+          currentNode.items.push(item)
+        } else {
+          targetNode.items.push(item)
+        }
+      }
+    })
+
+    // Sort tree: template folders first, then custom, then uncategorized
+    return tree.sort((a, b) => {
+      const aIsTemplate = FOLDER_TEMPLATES.some(t => t.name === a.name)
+      const bIsTemplate = FOLDER_TEMPLATES.some(t => t.name === b.name)
+      if (aIsTemplate && !bIsTemplate) return -1
+      if (!aIsTemplate && bIsTemplate) return 1
+      if (a.name === 'Uncategorized') return 1
+      if (b.name === 'Uncategorized') return -1
+      return a.name.localeCompare(b.name)
+    })
+  }
+
+  // Fetch Content Library
   const fetchContent = async () => {
+    if (!organization?.id) return
+
+    setLoadingContent(true)
     try {
-      setLoading(true)
-      const response = await fetch('/api/content-library/save?limit=500', {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
+      const { data, error } = await supabase
+        .from('content_library')
+        .select('*')
+        .eq('organization_id', organization.id)
+        .order('created_at', { ascending: false })
+        .limit(500)
+
+      if (error) throw error
+      setContentItems(data || [])
+      setFolderTree(buildFolderTree(data || []))
+    } catch (error) {
+      console.error('Error fetching content:', error)
+    } finally {
+      setLoadingContent(false)
+    }
+  }
+
+  // Fetch Brand Assets
+  const fetchBrandAssets = async () => {
+    if (!organization?.id) return
+
+    try {
+      const { data, error } = await supabase
+        .from('brand_assets')
+        .select('*')
+        .eq('organization_id', organization.id)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('❌ Error fetching brand assets:', error)
+        // Set empty array if table doesn't exist yet or has RLS issues
+        setBrandAssets([])
+        return
+      }
+
+      console.log('✅ Fetched brand assets:', data?.length || 0)
+      setBrandAssets(data || [])
+    } catch (error) {
+      console.error('❌ Unexpected error fetching brand assets:', error)
+      setBrandAssets([])
+    }
+  }
+
+  // Fetch Analytics
+  const fetchAnalytics = async () => {
+    if (!organization?.id) return
+
+    setLoadingAnalytics(true)
+    try {
+      const { data: perfData } = await supabase
+        .from('performance_metrics')
+        .select('*')
+        .eq('metric_type', 'save_time')
+        .gte('created_at', new Date(Date.now() - 3600000).toISOString())
+
+      const avgSaveTime = perfData?.length
+        ? perfData.reduce((sum, m) => sum + m.metric_value, 0) / perfData.length
+        : 0
+
+      const { data: jobData } = await supabase
+        .from('job_queue')
+        .select('status')
+        .eq('status', 'pending')
+
+      const { data: contentData } = await supabase
+        .from('content_library')
+        .select('content_type, intelligence_status')
+        .eq('organization_id', organization.id)
+
+      const contentByType: Record<string, number> = {}
+      let completeCount = 0
+
+      contentData?.forEach(item => {
+        contentByType[item.content_type] = (contentByType[item.content_type] || 0) + 1
+        if (item.intelligence_status === 'complete') completeCount++
       })
+
+      const completionRate = contentData?.length
+        ? (completeCount / contentData.length) * 100
+        : 0
+
+      const { data: workerData } = await supabase
+        .from('job_queue')
+        .select('completed_at')
+        .eq('status', 'completed')
+        .order('completed_at', { ascending: false })
+        .limit(1)
+
+      const workerActive = workerData?.[0]?.completed_at
+        ? new Date(workerData[0].completed_at) > new Date(Date.now() - 300000)
+        : false
+
+      setAnalytics({
+        avgSaveTime: Math.round(avgSaveTime),
+        pendingJobs: jobData?.length || 0,
+        completionRate: Math.round(completionRate),
+        workerActive,
+        totalContent: contentData?.length || 0,
+        contentByType
+      })
+    } catch (error) {
+      console.error('Error fetching analytics:', error)
+    } finally {
+      setLoadingAnalytics(false)
+    }
+  }
+
+  // Subscribe to real-time updates
+  useEffect(() => {
+    if (!organization?.id) return
+
+    const contentChannel = supabase
+      .channel('content-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'content_library',
+          filter: `organization_id=eq.${organization.id}`
+        },
+        (payload) => {
+          console.log('🔄 Content updated:', payload.new)
+          setContentItems(prev => {
+            const updated = prev.map(item => item.id === payload.new.id ? payload.new as ContentItem : item)
+            setFolderTree(buildFolderTree(updated))
+            return updated
+          })
+        }
+      )
+      .subscribe()
+
+    const assetChannel = supabase
+      .channel('asset-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'brand_assets',
+          filter: `organization_id=eq.${organization.id}`
+        },
+        (payload) => {
+          console.log('🔄 Asset updated:', payload.new)
+          fetchBrandAssets()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(contentChannel)
+      supabase.removeChannel(assetChannel)
+    }
+  }, [organization?.id])
+
+  // Initial data fetch
+  useEffect(() => {
+    if (organization?.id) {
+      fetchContent()
+      fetchBrandAssets()
+      fetchAnalytics()
+    }
+  }, [organization?.id, activeTab])
+
+  // Rebuild tree when expanded folders change
+  useEffect(() => {
+    setFolderTree(buildFolderTree(contentItems))
+  }, [expandedFolders, contentItems])
+
+  // Auto-refresh analytics
+  useEffect(() => {
+    if (activeTab === 'analytics') {
+      const interval = setInterval(fetchAnalytics, 5000)
+      return () => clearInterval(interval)
+    }
+  }, [activeTab, organization?.id])
+
+  // Handle file upload for brand assets
+  const handleAssetUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !organization?.id) return
+
+    setUploadingAsset(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('organizationId', organization.id) // camelCase to match API
+
+      let assetType = 'document'
+      if (file.type.includes('pdf')) assetType = 'guidelines-brand'
+      else if (file.name.match(/\.(docx|pptx)$/)) assetType = 'template-' + (file.name.includes('ppt') ? 'presentation' : 'document')
+      else if (file.type.startsWith('image/')) assetType = 'logo'
+
+      formData.append('assetType', assetType) // camelCase to match API
+      formData.append('name', file.name)
+
+      console.log('📤 Uploading:', file.name, assetType)
+
+      const response = await fetch('/api/brand-assets/upload', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Upload failed')
+      }
 
       const result = await response.json()
-      if (result.success && result.data) {
-        setAllContent(result.data)
-      }
+      console.log('✅ Upload success:', result)
+
+      await fetchBrandAssets()
+      setActiveTab('assets')
     } catch (error) {
-      console.error('Error fetching content library:', error)
+      console.error('Upload error:', error)
+      alert(`Failed to upload: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
-      setLoading(false)
+      setUploadingAsset(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
 
-  // Load strategies and all content on mount
-  useEffect(() => {
-    const fetchData = async () => {
-      console.log('🔄 Memory Vault: Fetching data...')
-      // Fetch strategies
-      await refresh('*')
-      // Fetch all content from content_library
-      await fetchContent()
-      console.log('✅ Memory Vault: Data loaded', {
-        strategiesCount: strategies.length,
-        contentCount: allContent.length
-      })
-    }
-    fetchData()
-  }, [refresh])
-
-  // Add periodic refresh to catch new content
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      console.log('🔄 Memory Vault: Auto-refreshing...')
-      fetchContent()
-      refresh('*')
-    }, 5000) // Refresh every 5 seconds
-
-    return () => clearInterval(intervalId)
-  }, [])
-
-  // Filter content based on tab, search and tags
-  const getFilteredContent = () => {
-    if (activeTab === 'strategies') {
-      return strategies.filter(strategy => {
-        const matchesSearch = !searchQuery ||
-          strategy.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          strategy.objective?.toLowerCase().includes(searchQuery.toLowerCase())
-
-        const matchesTag = !filterTag ||
-          strategy.metadata?.tags?.includes(filterTag)
-
-        return matchesSearch && matchesTag
-      })
-    }
-
-    // Filter all content
-    let filtered = allContent
-
-    // Apply tab filter
-    if (activeTab === 'media-plans') {
-      filtered = filtered.filter(item =>
-        item.metadata?.mediaPlan === true || item.folder?.startsWith('media-plans/')
-      )
-    } else if (activeTab === 'uploads') {
-      filtered = filtered.filter(item =>
-        item.metadata?.uploaded === true || item.folder?.startsWith('uploads/')
-      )
-    } else if (activeTab === 'folders') {
-      // Only show content that has a folder assigned
-      filtered = filtered.filter(item => item.folder && item.folder.length > 0)
-    }
-
-    // Apply search filter
-    if (searchQuery) {
-      filtered = filtered.filter(item =>
-        item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.content_type?.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    }
-
-    return filtered
-  }
-
-  const filteredContent = getFilteredContent()
-  const filteredStrategies = activeTab === 'strategies' ? filteredContent as StoredStrategy[] : []
-
-  // Get all unique tags
-  const allTags = Array.from(new Set(
-    strategies.flatMap(s => s.metadata?.tags || [])
-  ))
-
-  const handleViewStrategy = async (strategyId: string) => {
-    const strategy = await loadStrategy(strategyId)
-    if (strategy) {
-      setSelectedStrategy(strategy)
-    }
-  }
-
-  const handleDeleteStrategy = async (strategyId: string) => {
-    if (confirm('Are you sure you want to delete this strategy?')) {
-      await deleteStrategy(strategyId)
-    }
-  }
-
-  const handleDeleteContent = async (contentId: string) => {
-    if (confirm('Are you sure you want to delete this content?')) {
-      try {
-        const response = await fetch('/api/content-library', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: contentId })
-        })
-
-        if (response.ok) {
-          // Refresh content list
-          await fetchContent()
-          // Clear selection if deleted item was selected
-          if (selectedContent?.id === contentId) {
-            setSelectedContent(null)
-          }
-        } else {
-          alert('Failed to delete content')
-        }
-      } catch (error) {
-        console.error('Error deleting content:', error)
-        alert('Error deleting content')
-      }
-    }
-  }
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files
-    if (!files || files.length === 0) return
-
-    setUploading(true)
+  // Delete content
+  const handleDeleteContent = async (id: string) => {
+    if (!confirm('Delete this content?')) return
 
     try {
-      const uploadPromises = Array.from(files).map(file => {
-        return new Promise<void>((resolve, reject) => {
-          const reader = new FileReader()
+      const { error } = await supabase
+        .from('content_library')
+        .delete()
+        .eq('id', id)
 
-          reader.onload = async (e) => {
-            try {
-              const content = e.target?.result as string
-
-              // Determine content type
-              let contentType = 'document'
-              if (file.type.startsWith('image/')) contentType = 'image'
-              else if (file.type.includes('pdf')) contentType = 'pdf'
-              else if (file.type.startsWith('video/')) contentType = 'video'
-              else if (file.name.endsWith('.md')) contentType = 'markdown'
-              else if (file.name.endsWith('.txt')) contentType = 'text'
-
-              // Save to content library
-              const response = await fetch('/api/content-library/save', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  content: {
-                    type: contentType,
-                    title: file.name,
-                    content: content,
-                    timestamp: new Date().toISOString(),
-                    organization_id: organization?.id
-                  },
-                  metadata: {
-                    uploaded: true,
-                    filename: file.name,
-                    fileSize: file.size,
-                    fileType: file.type,
-                    uploadedAt: new Date().toISOString()
-                  }
-                })
-              })
-
-              if (!response.ok) {
-                const errorData = await response.json()
-                throw new Error(errorData.error || 'Failed to upload file')
-              }
-
-              resolve()
-            } catch (error) {
-              reject(error)
-            }
-          }
-
-          reader.onerror = () => reject(new Error('Failed to read file'))
-
-          // Read file based on type
-          if (file.type.startsWith('image/') || file.type.includes('pdf')) {
-            reader.readAsDataURL(file)
-          } else {
-            reader.readAsText(file)
-          }
-        })
-      })
-
-      // Wait for all uploads to complete
-      await Promise.all(uploadPromises)
-
-      // Refresh content after all uploads
-      await fetchContent()
-      setActiveTab('uploads')
-      alert(`${files.length} file(s) uploaded successfully!`)
-
+      if (error) throw error
+      const updated = contentItems.filter(item => item.id !== id)
+      setContentItems(updated)
+      setFolderTree(buildFolderTree(updated))
+      if (selectedContent?.id === id) setSelectedContent(null)
     } catch (error) {
-      console.error('Error uploading files:', error)
-      alert(`Error uploading files: ${error instanceof Error ? error.message : 'Unknown error'}`)
-    } finally {
-      setUploading(false)
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
+      console.error('Delete error:', error)
+      alert('Failed to delete content')
     }
   }
 
-  const handleOpenInExecute = (item: ContentLibraryItem) => {
-    console.log('📤 Opening content in Execute:', item.title)
+  // Move content to folder
+  const handleMoveToFolder = async (item: ContentItem, newFolder: string) => {
+    try {
+      const { error } = await supabase
+        .from('content_library')
+        .update({ folder: newFolder })
+        .eq('id', item.id)
 
-    // First, ensure Execute module is open on the canvas
-    const openExecuteEvent = new CustomEvent('addComponentToCanvas', {
-      detail: { moduleId: 'execute', action: 'window' }
+      if (error) throw error
+
+      const updated = contentItems.map(i => i.id === item.id ? { ...i, folder: newFolder } : i)
+      setContentItems(updated)
+      setFolderTree(buildFolderTree(updated))
+      setShowMoveDialog(false)
+      setItemToMove(null)
+    } catch (error) {
+      console.error('Move error:', error)
+      alert('Failed to move content')
+    }
+  }
+
+  // Open in workspace
+  const handleOpenInWorkspace = (item: ContentItem) => {
+    // Dispatch event to open in workspace
+    const event = new CustomEvent('addComponentToCanvas', {
+      detail: { moduleId: 'workspace', action: 'window' }
     })
-    window.dispatchEvent(openExecuteEvent)
+    window.dispatchEvent(event)
 
-    // Wait a bit for Execute to mount, then send the content
     setTimeout(() => {
-      const contentEvent = new CustomEvent('openInExecute', {
+      const contentEvent = new CustomEvent('openInWorkspace', {
         detail: {
           id: item.id,
           type: item.content_type,
           title: item.title,
           content: typeof item.content === 'string' ? item.content : JSON.stringify(item.content, null, 2),
-          metadata: item.metadata,
-          saved: true,
-          timestamp: new Date(item.created_at).getTime()
+          metadata: { folder: item.folder }
         }
       })
       window.dispatchEvent(contentEvent)
-      console.log('✅ Content event dispatched to Execute')
     }, 300)
   }
 
-  const handleCreateFolder = () => {
-    setShowFolderDialog(true)
+  // Export content
+  const handleExport = (item: ContentItem, format: 'txt' | 'md' | 'json') => {
+    try {
+      let content = ''
+      let mimeType = 'text/plain'
+      let extension = 'txt'
+
+      const textContent = typeof item.content === 'string'
+        ? item.content
+        : JSON.stringify(item.content, null, 2)
+
+      if (format === 'txt') {
+        content = `${item.title}\n${'='.repeat(item.title.length)}\n\n${textContent}`
+        mimeType = 'text/plain'
+        extension = 'txt'
+      } else if (format === 'md') {
+        content = `# ${item.title}\n\n${textContent}`
+        mimeType = 'text/markdown'
+        extension = 'md'
+      } else if (format === 'json') {
+        content = JSON.stringify({
+          id: item.id,
+          title: item.title,
+          content_type: item.content_type,
+          content: item.content,
+          folder: item.folder,
+          themes: item.themes,
+          topics: item.topics,
+          entities: item.entities,
+          created_at: item.created_at
+        }, null, 2)
+        mimeType = 'application/json'
+        extension = 'json'
+      }
+
+      // Create blob and download
+      const blob = new Blob([content], { type: mimeType })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${item.title.replace(/[^a-z0-9]/gi, '_')}.${extension}`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+
+      console.log(`✅ Exported: ${item.title}.${extension}`)
+    } catch (error) {
+      console.error('Export error:', error)
+      alert('Failed to export content')
+    }
   }
 
-  const handleSaveFolderName = async () => {
+  // Merge content with template
+  const handleMergeTemplate = async (item: ContentItem, templateId: string) => {
+    if (!templateId) {
+      alert('Please select a template')
+      return
+    }
+
+    setMergingTemplate(true)
+    try {
+      const response = await fetch('/api/content-library/merge-template', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contentId: item.id,
+          templateId
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Merge failed')
+      }
+
+      // Download the merged file
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+
+      // Get filename from response headers or use default
+      const contentDisposition = response.headers.get('Content-Disposition')
+      const filename = contentDisposition
+        ? contentDisposition.split('filename=')[1].replace(/"/g, '')
+        : `${item.title.replace(/[^a-z0-9]/gi, '_')}_merged.txt`
+
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+
+      console.log(`✅ Merged with template: ${filename}`)
+
+      // Update template usage count
+      await supabase
+        .from('brand_assets')
+        .update({
+          usage_count: supabase.raw('usage_count + 1'),
+          last_used_at: new Date().toISOString()
+        })
+        .eq('id', templateId)
+
+      await fetchBrandAssets()
+    } catch (error) {
+      console.error('❌ Template merge error:', error)
+      alert(`Failed to merge template: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setMergingTemplate(false)
+    }
+  }
+
+  // Create new folder
+  const handleCreateFolder = async () => {
     if (!newFolderName.trim()) {
       alert('Please enter a folder name')
       return
     }
 
-    try {
-      // Create a placeholder document to initialize the folder
-      const response = await fetch('/api/content-library/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: {
-            type: 'document',
-            title: newFolderName.trim(),
-            content: '',
-            timestamp: new Date().toISOString(),
-            organization_id: organization?.id
-          },
-          metadata: {
-            isPlaceholder: true,
-            folderName: newFolderName.trim()
-          },
-          folder: `custom-folders/${newFolderName.trim()}`
-        })
-      })
+    const folderPath = newFolderParent
+      ? `${newFolderParent}/${newFolderName.trim()}`
+      : newFolderName.trim()
 
-      if (response.ok) {
-        await fetchContent()
-        setShowFolderDialog(false)
-        setNewFolderName('')
-        setActiveTab('folders')
-        alert(`Folder "${newFolderName.trim()}" created successfully!`)
-      } else {
-        const errorData = await response.json()
-        alert(`Failed to create folder: ${errorData.error || 'Unknown error'}`)
-      }
+    // Create a placeholder item to initialize the folder
+    try {
+      const { error } = await supabase
+        .from('content_library')
+        .insert({
+          title: `.folder_${newFolderName.trim()}`,
+          content_type: 'folder-marker',
+          content: '',
+          folder: folderPath,
+          organization_id: organization?.id,
+          intelligence_status: 'complete'
+        })
+
+      if (error) throw error
+
+      await fetchContent()
+      setShowNewFolderDialog(false)
+      setNewFolderName('')
+      setNewFolderParent('')
     } catch (error) {
       console.error('Error creating folder:', error)
-      alert(`Error creating folder: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      alert('Failed to create folder')
     }
   }
 
-  const handleMoveToFolder = (item: ContentLibraryItem) => {
-    setContentToMove(item)
-    setShowSaveToFolderDialog(true)
-  }
-
-  const handleSaveToFolder = async (folderName: string) => {
-    if (!contentToMove) return
-
-    try {
-      // Update the content with folder path
-      const response = await fetch('/api/content-library', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: contentToMove.id,
-          folder: `custom-folders/${folderName}`
-        })
-      })
-
-      if (response.ok) {
-        await fetchContent()
-        setShowSaveToFolderDialog(false)
-        setContentToMove(null)
-        alert(`Moved to folder: ${folderName}`)
+  // Toggle folder expansion
+  const toggleFolder = (path: string) => {
+    setExpandedFolders(prev => {
+      const next = new Set(prev)
+      if (next.has(path)) {
+        next.delete(path)
       } else {
-        alert('Failed to move content to folder')
+        next.add(path)
       }
-    } catch (error) {
-      console.error('Error moving content to folder:', error)
-      alert('Error moving content to folder')
-    }
-  }
-
-  // Get unique folder names from content
-  const getFolders = () => {
-    const folders = new Set<string>()
-    allContent.forEach(item => {
-      if (item.folder) {
-        // Extract folder name from path
-        const folderName = item.folder.replace('custom-folders/', '').replace('media-plans/', '')
-        folders.add(folderName)
-      }
-    })
-    return Array.from(folders).sort()
-  }
-
-  // Handle creating a new document
-  const handleCreateDocument = async () => {
-    if (!newDocTitle.trim()) {
-      alert('Please enter a document title')
-      return
-    }
-
-    try {
-      const folderPath = newDocFolder.trim()
-        ? `custom-folders/${newDocFolder.trim()}`
-        : undefined
-
-      const response = await fetch('/api/content-library/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: {
-            type: 'document',
-            title: newDocTitle,
-            content: newDocContent,
-            timestamp: new Date().toISOString(),
-            organization_id: organization?.id
-          },
-          metadata: {
-            createdManually: true,
-            createdAt: new Date().toISOString()
-          },
-          folder: folderPath
-        })
-      })
-
-      if (response.ok) {
-        await fetchContent()
-        setShowNewDocDialog(false)
-        setNewDocTitle('')
-        setNewDocContent('')
-        setNewDocFolder('')
-        setActiveTab('folders')
-        alert('Document created successfully!')
-      } else {
-        const errorData = await response.json()
-        alert(`Failed to create document: ${errorData.error || 'Unknown error'}`)
-      }
-    } catch (error) {
-      console.error('Error creating document:', error)
-      alert(`Error creating document: ${error instanceof Error ? error.message : 'Unknown error'}`)
-    }
-  }
-
-  const handleExport = async () => {
-    const exported = await exportStrategies()
-    const blob = new Blob([JSON.stringify(exported, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `memory-vault-export-${new Date().toISOString().split('T')[0]}.json`
-    a.click()
-  }
-
-  // Orchestration handlers
-  const handleExecuteWorkflow = async (workflowType: string) => {
-    if (!selectedStrategy) return
-
-    console.log(`Executing ${workflowType} for strategy:`, selectedStrategy.id)
-
-    // Special handling for strategic planning workflow
-    if (workflowType === 'strategic_planning') {
-      // Dispatch event to open Strategic Planning with the framework
-      const event = new CustomEvent('addComponentToCanvas', {
-        detail: {
-          moduleId: 'plan',
-          action: 'window',
-          framework: selectedStrategy // Pass the framework data
-        }
-      })
-      window.dispatchEvent(event)
-      return
-    }
-
-    // Here we'll call the appropriate service based on workflow type
-    // For now, we'll simulate the execution
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        console.log(`${workflowType} completed`)
-        resolve()
-      }, 2000)
+      return next
     })
   }
 
-  const handleExecuteAllWorkflows = async () => {
-    if (!selectedStrategy) return
+  return (
+    <div className="h-full flex flex-col bg-gray-950">
+      {/* Header */}
+      <div className="flex-shrink-0 border-b border-gray-800 bg-gray-900/50 backdrop-blur-sm">
+        <div className="p-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-orange-500 to-pink-500">
+                <Database className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">Memory Vault V2</h2>
+                <p className="text-xs text-gray-400">Intelligent Content & Brand Management</p>
+              </div>
+            </div>
 
-    console.log('Executing all workflows for strategy:', selectedStrategy.id)
+            <div className="flex gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                onChange={handleAssetUpload}
+                className="hidden"
+                accept=".pdf,.doc,.docx,.ppt,.pptx,.png,.jpg,.jpeg,.svg"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingAsset}
+                className="flex items-center gap-2 px-4 py-2 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 rounded-lg transition-colors border border-orange-500/20 disabled:opacity-50"
+              >
+                <Upload className="w-4 h-4" />
+                {uploadingAsset ? 'Uploading...' : 'Upload Asset'}
+              </button>
+              <button
+                onClick={fetchContent}
+                className="p-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
+                title="Refresh"
+              >
+                <Activity className="w-4 h-4 text-gray-400" />
+              </button>
+            </div>
+          </div>
 
-    // Execute all workflows in parallel or sequence
-    const workflows = [
-      'content_generation',
-      'media_outreach',
-      'intelligence_gathering',
-      'strategic_planning'
-    ]
+          {/* Tabs */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setActiveTab('library')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                activeTab === 'library'
+                  ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                  : 'bg-gray-800/50 text-gray-400 hover:bg-gray-800 hover:text-gray-300'
+              }`}
+            >
+              <FileText className="w-4 h-4" />
+              Content Library
+              <span className="px-2 py-0.5 rounded-full bg-gray-900 text-xs">
+                {contentItems.length}
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab('assets')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                activeTab === 'assets'
+                  ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                  : 'bg-gray-800/50 text-gray-400 hover:bg-gray-800 hover:text-gray-300'
+              }`}
+            >
+              <Sparkles className="w-4 h-4" />
+              Brand Assets
+              <span className="px-2 py-0.5 rounded-full bg-gray-900 text-xs">
+                {brandAssets.length}
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                activeTab === 'analytics'
+                  ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                  : 'bg-gray-800/50 text-gray-400 hover:bg-gray-800 hover:text-gray-300'
+              }`}
+            >
+              <BarChart3 className="w-4 h-4" />
+              Analytics
+            </button>
+          </div>
+        </div>
+      </div>
 
-    await Promise.all(
-      workflows.map(workflow => handleExecuteWorkflow(workflow))
+      {/* Content Area */}
+      <div className="flex-1 overflow-hidden">
+        {activeTab === 'library' && (
+          <ContentLibraryTab
+            folderTree={folderTree}
+            selectedContent={selectedContent}
+            onSelectContent={setSelectedContent}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            onToggleFolder={toggleFolder}
+            onDeleteContent={handleDeleteContent}
+            onMoveContent={(item) => {
+              setItemToMove(item)
+              setShowMoveDialog(true)
+            }}
+            onOpenInWorkspace={handleOpenInWorkspace}
+            onExport={(item) => {
+              setItemToExport(item)
+              setShowExportDialog(true)
+            }}
+            onCreateFolder={() => setShowNewFolderDialog(true)}
+            loading={loadingContent}
+            onContextMenu={(e, item) => {
+              e.preventDefault()
+              setContextMenu({ x: e.clientX, y: e.clientY, item })
+            }}
+          />
+        )}
+
+        {activeTab === 'assets' && (
+          <BrandAssetsTab
+            assets={brandAssets}
+            selectedAsset={selectedAsset}
+            onSelectAsset={setSelectedAsset}
+            onUpload={() => fileInputRef.current?.click()}
+            uploading={uploadingAsset}
+          />
+        )}
+
+        {activeTab === 'analytics' && (
+          <AnalyticsTab
+            data={analytics}
+            loading={loadingAnalytics}
+            onRefresh={fetchAnalytics}
+          />
+        )}
+      </div>
+
+      {/* Move Dialog */}
+      {showMoveDialog && itemToMove && (
+        <MoveDialog
+          item={itemToMove}
+          folderTree={folderTree}
+          onMove={handleMoveToFolder}
+          onClose={() => {
+            setShowMoveDialog(false)
+            setItemToMove(null)
+          }}
+        />
+      )}
+
+      {/* New Folder Dialog */}
+      {showNewFolderDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-gray-900 rounded-lg p-6 w-96 border border-gray-800">
+            <h3 className="text-lg font-bold mb-4 text-white">Create New Folder</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm text-gray-400 mb-2 block">Folder Name</label>
+                <input
+                  type="text"
+                  value={newFolderName}
+                  onChange={(e) => setNewFolderName(e.target.value)}
+                  placeholder="Enter folder name"
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="text-sm text-gray-400 mb-2 block">Quick Create</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {FOLDER_TEMPLATES.map(template => (
+                    <button
+                      key={template.name}
+                      onClick={() => setNewFolderName(template.name)}
+                      className="px-3 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-left transition-colors flex items-center gap-2"
+                    >
+                      <span className="text-lg">{template.icon}</span>
+                      <span className={`text-sm ${template.color}`}>{template.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end mt-6">
+              <button
+                onClick={() => {
+                  setShowNewFolderDialog(false)
+                  setNewFolderName('')
+                }}
+                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateFolder}
+                disabled={!newFolderName.trim()}
+                className="px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 rounded-lg transition-colors disabled:opacity-50 border border-orange-500/30"
+              >
+                Create Folder
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <div
+          className="fixed z-50 bg-gray-900 border border-gray-700 rounded-lg shadow-xl py-1 min-w-[180px]"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+          onMouseLeave={() => setContextMenu(null)}
+        >
+          <button
+            onClick={() => {
+              handleOpenInWorkspace(contextMenu.item)
+              setContextMenu(null)
+            }}
+            className="w-full px-4 py-2 hover:bg-gray-800 text-left flex items-center gap-2 text-sm text-gray-300"
+          >
+            <Edit className="w-4 h-4" />
+            Open in Workspace
+          </button>
+          <button
+            onClick={() => {
+              setItemToMove(contextMenu.item)
+              setShowMoveDialog(true)
+              setContextMenu(null)
+            }}
+            className="w-full px-4 py-2 hover:bg-gray-800 text-left flex items-center gap-2 text-sm text-gray-300"
+          >
+            <Move className="w-4 h-4" />
+            Move to Folder
+          </button>
+          <button
+            onClick={() => {
+              setItemToExport(contextMenu.item)
+              setShowExportDialog(true)
+              setContextMenu(null)
+            }}
+            className="w-full px-4 py-2 hover:bg-gray-800 text-left flex items-center gap-2 text-sm text-gray-300"
+          >
+            <Download className="w-4 h-4" />
+            Export
+          </button>
+          <div className="border-t border-gray-800 my-1" />
+          <button
+            onClick={() => {
+              handleDeleteContent(contextMenu.item.id)
+              setContextMenu(null)
+            }}
+            className="w-full px-4 py-2 hover:bg-red-500/10 text-left flex items-center gap-2 text-sm text-red-400"
+          >
+            <Trash2 className="w-4 h-4" />
+            Delete
+          </button>
+        </div>
+      )}
+
+      {/* Export Dialog */}
+      {showExportDialog && itemToExport && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-gray-900 rounded-lg p-6 w-[480px] max-h-[80vh] overflow-y-auto border border-gray-800">
+            <h3 className="text-lg font-bold mb-2 text-white">Export Content</h3>
+            <p className="text-sm text-gray-400 mb-4">Exporting: {itemToExport.title}</p>
+
+            {/* Mode Tabs */}
+            <div className="flex gap-2 mb-4">
+              <button
+                onClick={() => setExportMode('basic')}
+                className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${
+                  exportMode === 'basic'
+                    ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                    : 'bg-gray-800/50 text-gray-400 hover:bg-gray-800'
+                }`}
+              >
+                Basic Export
+              </button>
+              <button
+                onClick={() => setExportMode('template')}
+                className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${
+                  exportMode === 'template'
+                    ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                    : 'bg-gray-800/50 text-gray-400 hover:bg-gray-800'
+                }`}
+              >
+                Merge Template
+              </button>
+            </div>
+
+            {/* Basic Export Options */}
+            {exportMode === 'basic' && (
+              <div className="space-y-2 mb-6">
+                <button
+                  onClick={() => {
+                    handleExport(itemToExport, 'txt')
+                    setShowExportDialog(false)
+                    setItemToExport(null)
+                    setExportMode('basic')
+                  }}
+                  className="w-full px-4 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-left"
+                >
+                  <div className="font-medium text-white">Plain Text (.txt)</div>
+                  <div className="text-xs text-gray-400">Simple text format</div>
+                </button>
+                <button
+                  onClick={() => {
+                    handleExport(itemToExport, 'md')
+                    setShowExportDialog(false)
+                    setItemToExport(null)
+                    setExportMode('basic')
+                  }}
+                  className="w-full px-4 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-left"
+                >
+                  <div className="font-medium text-white">Markdown (.md)</div>
+                  <div className="text-xs text-gray-400">Formatted markdown</div>
+                </button>
+                <button
+                  onClick={() => {
+                    handleExport(itemToExport, 'json')
+                    setShowExportDialog(false)
+                    setItemToExport(null)
+                    setExportMode('basic')
+                  }}
+                  className="w-full px-4 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-left"
+                >
+                  <div className="font-medium text-white">JSON (.json)</div>
+                  <div className="text-xs text-gray-400">Structured data with metadata</div>
+                </button>
+              </div>
+            )}
+
+            {/* Template Merge Options */}
+            {exportMode === 'template' && (
+              <div className="space-y-4 mb-6">
+                <div>
+                  <label className="text-sm text-gray-400 mb-2 block">Select Brand Template</label>
+                  {brandAssets.filter(a => a.asset_type.startsWith('template-')).length === 0 ? (
+                    <div className="text-center py-8 bg-gray-800/30 rounded-lg border border-gray-800">
+                      <FileText className="w-8 h-8 mx-auto mb-2 text-gray-600" />
+                      <p className="text-gray-500 text-sm mb-2">No templates available</p>
+                      <p className="text-xs text-gray-600">Upload .docx or .pptx templates to Brand Assets</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-64 overflow-y-auto border border-gray-800 rounded-lg p-2">
+                      {brandAssets
+                        .filter(a => a.asset_type.startsWith('template-') && a.status === 'active')
+                        .map(template => (
+                          <button
+                            key={template.id}
+                            onClick={() => setSelectedTemplateId(template.id)}
+                            className={`w-full px-3 py-2 rounded-lg transition-all text-left ${
+                              selectedTemplateId === template.id
+                                ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                                : 'bg-gray-800/50 hover:bg-gray-800 text-gray-300 border border-transparent'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 mb-1">
+                              <FileText className="w-4 h-4" />
+                              <span className="font-medium text-sm">{template.name}</span>
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {template.asset_type} • Used {template.usage_count}x
+                            </div>
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  onClick={async () => {
+                    await handleMergeTemplate(itemToExport, selectedTemplateId)
+                    setShowExportDialog(false)
+                    setItemToExport(null)
+                    setSelectedTemplateId('')
+                    setExportMode('basic')
+                  }}
+                  disabled={!selectedTemplateId || mergingTemplate}
+                  className="w-full px-4 py-3 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-orange-500/30 font-medium"
+                >
+                  {mergingTemplate ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <Loader className="w-4 h-4 animate-spin" />
+                      Merging...
+                    </span>
+                  ) : (
+                    'Merge & Download'
+                  )}
+                </button>
+              </div>
+            )}
+
+            <button
+              onClick={() => {
+                setShowExportDialog(false)
+                setItemToExport(null)
+                setSelectedTemplateId('')
+                setExportMode('basic')
+              }}
+              className="w-full px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-gray-300"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Content Library Tab Component
+function ContentLibraryTab({
+  folderTree,
+  selectedContent,
+  onSelectContent,
+  searchQuery,
+  onSearchChange,
+  onToggleFolder,
+  onDeleteContent,
+  onMoveContent,
+  onOpenInWorkspace,
+  onExport,
+  onCreateFolder,
+  loading,
+  onContextMenu
+}: {
+  folderTree: FolderNode[]
+  selectedContent: ContentItem | null
+  onSelectContent: (item: ContentItem | null) => void
+  searchQuery: string
+  onSearchChange: (query: string) => void
+  onToggleFolder: (path: string) => void
+  onDeleteContent: (id: string) => void
+  onMoveContent: (item: ContentItem) => void
+  onOpenInWorkspace: (item: ContentItem) => void
+  onExport: (item: ContentItem) => void
+  onCreateFolder: () => void
+  loading: boolean
+  onContextMenu: (e: React.MouseEvent, item: ContentItem) => void
+}) {
+  // Filter items by search
+  const filterItems = (items: ContentItem[]): ContentItem[] => {
+    if (!searchQuery) return items
+    return items.filter(item =>
+      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.content_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.themes?.some(t => t.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      item.topics?.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
+    )
+  }
+
+  const renderFolderNode = (node: FolderNode, depth: number = 0) => {
+    const template = FOLDER_TEMPLATES.find(t => t.name === node.name)
+    const filteredItems = filterItems(node.items)
+    const hasVisibleItems = filteredItems.length > 0
+    const hasVisibleChildren = node.children.some(child =>
+      filterItems(child.items).length > 0 || child.children.length > 0
+    )
+
+    if (!hasVisibleItems && !hasVisibleChildren && searchQuery) return null
+
+    return (
+      <div key={node.path}>
+        {/* Folder Header */}
+        <button
+          onClick={() => onToggleFolder(node.path)}
+          className="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-800/50 rounded-lg transition-colors group"
+          style={{ paddingLeft: `${depth * 12 + 12}px` }}
+        >
+          <ChevronRight
+            className={`w-4 h-4 text-gray-500 transition-transform ${
+              node.expanded ? 'rotate-90' : ''
+            }`}
+          />
+          {node.expanded ? (
+            <FolderOpen className={`w-4 h-4 ${template?.color || 'text-gray-400'}`} />
+          ) : (
+            <Folder className={`w-4 h-4 ${template?.color || 'text-gray-400'}`} />
+          )}
+          <span className="flex-1 text-left text-sm font-medium text-gray-300">
+            {template?.icon && <span className="mr-1">{template.icon}</span>}
+            {node.name}
+          </span>
+          <span className="text-xs text-gray-500">
+            {node.items.length + node.children.reduce((sum, c) => sum + c.items.length, 0)}
+          </span>
+        </button>
+
+        {/* Folder Contents */}
+        {node.expanded && (
+          <div>
+            {/* Child folders */}
+            {node.children.map(child => renderFolderNode(child, depth + 1))}
+
+            {/* Files */}
+            {filteredItems.map(item => (
+              <button
+                key={item.id}
+                onClick={() => onSelectContent(item)}
+                onContextMenu={(e) => onContextMenu(e, item)}
+                className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-800/50 rounded-lg transition-colors group ${
+                  selectedContent?.id === item.id ? 'bg-orange-500/10 border-l-2 border-orange-500' : ''
+                }`}
+                style={{ paddingLeft: `${(depth + 1) * 12 + 24}px` }}
+              >
+                <File className="w-3.5 h-3.5 text-gray-500" />
+                <span className="flex-1 text-left text-sm text-gray-300 truncate">
+                  {item.title}
+                </span>
+                <StatusBadge status={item.intelligence_status} size="xs" />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     )
   }
 
   return (
-    <div className="h-full flex flex-col bg-gray-900">
-      {/* Header */}
-      <div className="p-4 border-b border-gray-800">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Database className="w-6 h-6" style={{ color: '#ffaa00' }} />
-            <h2 className="text-xl font-bold">Memory Vault</h2>
-            <div className={`px-2 py-1 rounded text-xs ${useDatabase ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
-              {useDatabase ? 'Database' : 'Local'}
-            </div>
-            <span className="text-xs text-gray-500 ml-2">
-              {allContent.length + strategies.length} items
-            </span>
-          </div>
-          <div className="flex gap-2">
+    <div className="h-full flex">
+      {/* Folder Tree Sidebar */}
+      <div className="w-80 border-r border-gray-800 bg-gray-900/30 flex flex-col">
+        {/* Search & Actions */}
+        <div className="p-3 border-b border-gray-800 space-y-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
             <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              onChange={handleFileUpload}
-              className="hidden"
-              accept="image/*,.pdf,.doc,.docx,.txt,.md"
+              type="text"
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              placeholder="Search content..."
+              className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500"
             />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="flex items-center gap-2 px-3 py-1 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg transition-colors disabled:opacity-50"
-            >
-              <Upload className="w-4 h-4" />
-              {uploading ? 'Uploading...' : 'Upload'}
-            </button>
-            <button
-              onClick={() => setShowNewDocDialog(true)}
-              className="flex items-center gap-2 px-3 py-1 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg transition-colors"
-            >
-              <FileText className="w-4 h-4" />
-              New Document
-            </button>
-            <button
-              onClick={handleCreateFolder}
-              className="flex items-center gap-2 px-3 py-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg transition-colors"
-            >
-              <FolderPlus className="w-4 h-4" />
-              New Folder
-            </button>
-            <button
-              onClick={handleExport}
-              className="flex items-center gap-2 px-3 py-1 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              <Download className="w-4 h-4" />
-              Export
-            </button>
           </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-2 mb-4">
           <button
-            onClick={() => setActiveTab('all')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-              activeTab === 'all'
-                ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
-                : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
-            }`}
+            onClick={onCreateFolder}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 rounded-lg transition-colors border border-orange-500/20 text-sm font-medium"
           >
-            <FolderOpen className="w-4 h-4" />
-            All Content
-          </button>
-          <button
-            onClick={() => setActiveTab('strategies')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-              activeTab === 'strategies'
-                ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
-                : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
-            }`}
-          >
-            <BookOpen className="w-4 h-4" />
-            NIV Strategies
-          </button>
-          <button
-            onClick={() => setActiveTab('media-plans')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-              activeTab === 'media-plans'
-                ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
-                : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
-            }`}
-          >
-            <FolderOpen className="w-4 h-4" />
-            Media Plans
-          </button>
-          <button
-            onClick={() => setActiveTab('uploads')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-              activeTab === 'uploads'
-                ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
-                : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
-            }`}
-          >
-            <FileText className="w-4 h-4" />
-            Uploads
-          </button>
-          <button
-            onClick={() => setActiveTab('folders')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-              activeTab === 'folders'
-                ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
-                : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
-            }`}
-          >
-            <Folder className="w-4 h-4" />
-            Folders
+            <FolderPlus className="w-4 h-4" />
+            New Folder
           </button>
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Content List */}
-        <div className="w-1/3 border-r border-gray-800 overflow-y-auto">
-          <div className="p-2">
-            <div className="text-xs text-gray-500 px-2 py-1">
-              {filteredContent.length} {activeTab === 'all' ? 'items' : activeTab}
-            </div>
-            <div className="space-y-1">
-              {activeTab === 'strategies' ? (
-                // Show strategies
-                filteredStrategies.map(strategy => (
-                <div
-                  key={strategy.id}
-                  className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                    selectedStrategy?.id === strategy.id
-                      ? 'bg-yellow-500/10 border border-yellow-500/30'
-                      : 'bg-gray-800/50 hover:bg-gray-800'
-                  }`}
-                  onClick={() => handleViewStrategy(strategy.id)}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-medium text-sm line-clamp-1">{strategy.title}</h3>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {new Date(strategy.created).toLocaleDateString()}
-                      </p>
-                      {strategy.metadata?.tags && strategy.metadata.tags.length > 0 && (
-                        <div className="flex gap-1 mt-2">
-                          {strategy.metadata.tags.slice(0, 3).map(tag => (
-                            <span key={tag} className="px-1.5 py-0.5 bg-gray-700 rounded text-xs">
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex gap-1 ml-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleViewStrategy(strategy.id)
-                        }}
-                        className="p-1 hover:bg-gray-700 rounded"
-                      >
-                        <Eye className="w-3 h-3" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDeleteStrategy(strategy.id)
-                        }}
-                        className="p-1 hover:bg-red-500/20 rounded text-red-400"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))
-              ) : activeTab === 'media-plans' || activeTab === 'folders' ? (
-                // Show media plans or folders grouped by folder
-                (() => {
-                  const grouped = (filteredContent as ContentLibraryItem[]).reduce((acc, item) => {
-                    const folder = item.folder || 'uncategorized'
-                    if (!acc[folder]) acc[folder] = []
-                    acc[folder].push(item)
-                    return acc
-                  }, {} as Record<string, ContentLibraryItem[]>)
-
-                  return Object.entries(grouped).map(([folder, items]) => (
-                    <div key={folder} className="mb-4">
-                      <div className="flex items-center gap-2 px-2 py-1 mb-2">
-                        <FolderOpen className="w-4 h-4 text-yellow-500" />
-                        <h3 className="font-medium text-sm text-yellow-500">
-                          {folder.replace('media-plans/', '').replace('custom-folders/', '').replace('uploads/', '')}
-                        </h3>
-                        <span className="text-xs text-gray-500">({items.length} items)</span>
-                      </div>
-                      {items.map(item => (
-                        <div
-                          key={item.id}
-                          className={`p-3 rounded-lg cursor-pointer transition-colors ml-4 mb-1 ${
-                            selectedContent?.id === item.id
-                              ? 'bg-yellow-500/10 border border-yellow-500/30'
-                              : 'bg-gray-800/50 hover:bg-gray-800'
-                          }`}
-                          onClick={() => setSelectedContent(item)}
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <FileText className="w-3.5 h-3.5 text-gray-400" />
-                                <h3 className="font-medium text-sm line-clamp-1">{item.title}</h3>
-                              </div>
-                              <p className="text-xs text-gray-500 mt-1">
-                                {item.content_type}
-                              </p>
-                            </div>
-                            <div className="flex gap-1 ml-2">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  setSelectedContent(item)
-                                }}
-                                className="p-1 hover:bg-gray-700 rounded"
-                                title="View"
-                              >
-                                <Eye className="w-3 h-3" />
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleOpenInExecute(item)
-                                }}
-                                className="p-1 hover:bg-yellow-500/20 rounded text-yellow-400"
-                                title="Open in Execute"
-                              >
-                                <Edit className="w-3 h-3" />
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleDeleteContent(item.id)
-                                }}
-                                className="p-1 hover:bg-red-500/20 rounded text-red-400"
-                                title="Delete"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ))
-                })()
-              ) : (
-                // Show other content
-                (filteredContent as ContentLibraryItem[]).map(item => (
-                  <div
-                    key={item.id}
-                    className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                      selectedContent?.id === item.id
-                        ? 'bg-yellow-500/10 border border-yellow-500/30'
-                        : 'bg-gray-800/50 hover:bg-gray-800'
-                    }`}
-                    onClick={() => setSelectedContent(item)}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          {item.content_type === 'image' && <Image className="w-4 h-4 text-blue-400" />}
-                          {item.content_type === 'video' && <Video className="w-4 h-4 text-purple-400" />}
-                          {item.content_type === 'social-post' && <Hash className="w-4 h-4 text-green-400" />}
-                          {!['image', 'video', 'social-post'].includes(item.content_type) && <FileText className="w-4 h-4 text-gray-400" />}
-                          <h3 className="font-medium text-sm line-clamp-1">{item.title}</h3>
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {item.content_type} • {new Date(item.created_at).toLocaleDateString()}
-                        </p>
-                        {item.metadata?.tags && item.metadata.tags.length > 0 && (
-                          <div className="flex gap-1 mt-2">
-                            {item.metadata.tags.slice(0, 3).map((tag: string) => (
-                              <span key={tag} className="px-1.5 py-0.5 bg-gray-700 rounded text-xs">
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex gap-1 ml-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setSelectedContent(item)
-                          }}
-                          className="p-1 hover:bg-gray-700 rounded"
-                          title="View"
-                        >
-                          <Eye className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleOpenInExecute(item)
-                          }}
-                          className="p-1 hover:bg-yellow-500/20 rounded text-yellow-400"
-                          title="Open in Execute"
-                        >
-                          <Edit className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleMoveToFolder(item)
-                          }}
-                          className="p-1 hover:bg-blue-500/20 rounded text-blue-400"
-                          title="Move to Folder"
-                        >
-                          <Folder className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleDeleteContent(item.id)
-                          }}
-                          className="p-1 hover:bg-red-500/20 rounded text-red-400"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Content Details */}
-        <div className="flex-1 overflow-y-auto">
-          {selectedContent ? (
-            // Show selected content
-            <div className="p-6 space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold mb-2">{selectedContent.title}</h2>
-                <div className="flex items-center gap-4 text-sm text-gray-500">
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
-                    {new Date(selectedContent.created_at).toLocaleString()}
-                  </span>
-                  <span className="px-2 py-1 bg-gray-800 rounded text-xs">
-                    {selectedContent.content_type}
-                  </span>
-                </div>
-              </div>
-
-              {/* Content Display */}
-              <div className="bg-gray-800/50 rounded-lg p-4">
-                <h3 className="text-lg font-semibold mb-2" style={{ color: '#ffaa00' }}>Content</h3>
-                {typeof selectedContent.content === 'string' ? (
-                  <pre className="whitespace-pre-wrap text-gray-200 font-sans">
-                    {selectedContent.content}
-                  </pre>
-                ) : (
-                  <div className="space-y-4">
-                    {Object.entries(selectedContent.content || {}).map(([key, value]) => (
-                      <div key={key}>
-                        <h4 className="text-sm font-medium text-gray-400 mb-1 capitalize">
-                          {key.replace(/_/g, ' ')}
-                        </h4>
-                        <p className="text-gray-200">
-                          {typeof value === 'string' ? value : JSON.stringify(value, null, 2)}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Framework Data */}
-              {selectedContent.framework_data && (
-                <div className="bg-gray-800/50 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold mb-2" style={{ color: '#ffaa00' }}>Framework</h3>
-                  <pre className="text-xs text-gray-400 overflow-auto">
-                    {JSON.stringify(selectedContent.framework_data, null, 2)}
-                  </pre>
-                </div>
-              )}
-            </div>
-          ) : selectedStrategy ? (
-            <div className="p-6 space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold mb-2">{selectedStrategy.title}</h2>
-                <div className="flex items-center gap-4 text-sm text-gray-500">
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
-                    {new Date(selectedStrategy.created).toLocaleString()}
-                  </span>
-                  {selectedStrategy.metadata?.organizationName && (
-                    <span>{selectedStrategy.metadata.organizationName}</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Strategic Framework */}
-              {selectedStrategy.strategy && (
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-lg font-semibold mb-2" style={{ color: '#ffaa00' }}>
-                      Strategic Framework
-                    </h3>
-
-                    {/* Primary Fields - Used by ALL components */}
-                    <div className="bg-gray-800/50 rounded-lg p-4 mb-4">
-                      <h4 className="text-sm font-medium text-yellow-400 mb-3">Core Strategy (All Components)</h4>
-
-                      {(selectedStrategy.strategy.objective || selectedStrategy.objective) && (
-                        <div className="mb-3">
-                          <h5 className="text-xs font-medium text-gray-400 mb-1">🎯 Objective</h5>
-                          <p className="text-gray-200">{selectedStrategy.strategy.objective || selectedStrategy.objective}</p>
-                        </div>
-                      )}
-
-                      {(selectedStrategy.strategy as any).narrative && (
-                        <div className="mb-3">
-                          <h5 className="text-xs font-medium text-gray-400 mb-1">📖 Narrative</h5>
-                          <p className="text-gray-200">{(selectedStrategy.strategy as any).narrative}</p>
-                        </div>
-                      )}
-
-                      {(selectedStrategy.strategy as any).proof_points && (selectedStrategy.strategy as any).proof_points.length > 0 && (
-                        <div className="mb-3">
-                          <h5 className="text-xs font-medium text-gray-400 mb-1">✅ Proof Points</h5>
-                          <ul className="space-y-1">
-                            {(selectedStrategy.strategy as any).proof_points.map((point: string, i: number) => (
-                              <li key={i} className="text-gray-200 flex items-start">
-                                <span className="text-green-500 mr-2">•</span>
-                                <span className="text-sm">{point}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Component-Specific Fields */}
-                    {(selectedStrategy.strategy as any).content_needs && (
-                      <div className="bg-gray-800/50 rounded-lg p-4 mb-4">
-                        <h4 className="text-sm font-medium text-blue-400 mb-3">📝 Content Needs (Content Generator)</h4>
-                        {(selectedStrategy.strategy as any).content_needs.priority_content && (
-                          <div className="mb-2">
-                            <h5 className="text-xs font-medium text-gray-400 mb-1">Priority Content</h5>
-                            <ul className="space-y-1">
-                              {(selectedStrategy.strategy as any).content_needs.priority_content.map((content: string, i: number) => (
-                                <li key={i} className="text-gray-200 text-sm">• {content}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {(selectedStrategy.strategy as any).media_targets && (
-                      <div className="bg-gray-800/50 rounded-lg p-4 mb-4">
-                        <h4 className="text-sm font-medium text-purple-400 mb-3">📰 Media Targets (Media Outreach)</h4>
-                        {(selectedStrategy.strategy as any).media_targets.tier_1_targets && (
-                          <div className="mb-2">
-                            <h5 className="text-xs font-medium text-gray-400 mb-1">Tier 1 Outlets</h5>
-                            <ul className="space-y-1">
-                              {(selectedStrategy.strategy as any).media_targets.tier_1_targets.map((target: string, i: number) => (
-                                <li key={i} className="text-gray-200 text-sm">• {target}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {(selectedStrategy.strategy as any).timeline_execution && (
-                      <div className="bg-gray-800/50 rounded-lg p-4 mb-4">
-                        <h4 className="text-sm font-medium text-orange-400 mb-3">⏱️ Timeline (Strategic Planning)</h4>
-                        {(selectedStrategy.strategy as any).timeline_execution.immediate && (
-                          <div className="mb-2">
-                            <h5 className="text-xs font-medium text-gray-400 mb-1">Immediate (24-48 hours)</h5>
-                            <ul className="space-y-1">
-                              {(selectedStrategy.strategy as any).timeline_execution.immediate.map((action: string, i: number) => (
-                                <li key={i} className="text-gray-200 text-sm">• {action}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                        {(selectedStrategy.strategy as any).timeline_execution.week_1 && (
-                          <div className="mb-2">
-                            <h5 className="text-xs font-medium text-gray-400 mb-1">Week 1</h5>
-                            <ul className="space-y-1">
-                              {(selectedStrategy.strategy as any).timeline_execution.week_1.map((action: string, i: number) => (
-                                <li key={i} className="text-gray-200 text-sm">• {action}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Legacy fields */}
-                    {selectedStrategy.strategy.approach && (
-                      <div className="mb-4">
-                        <h4 className="text-sm font-medium text-gray-400 mb-1">Approach</h4>
-                        <p className="text-gray-200">{selectedStrategy.strategy.approach}</p>
-                      </div>
-                    )}
-
-                    {selectedStrategy.strategy.keyMessages && selectedStrategy.strategy.keyMessages.length > 0 && (
-                      <div className="mb-4">
-                        <h4 className="text-sm font-medium text-gray-400 mb-1">Key Messages</h4>
-                        <ul className="space-y-1">
-                          {selectedStrategy.strategy.keyMessages.map((msg, i) => (
-                            <li key={i} className="text-gray-200 flex items-start">
-                              <span className="text-yellow-500 mr-2">•</span>
-                              <span>{msg}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Research Findings */}
-              {selectedStrategy.research && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-2" style={{ color: '#ffaa00' }}>
-                    Research Insights
-                  </h3>
-
-                  {selectedStrategy.research.keyFindings && selectedStrategy.research.keyFindings.length > 0 && (
-                    <div className="mb-4">
-                      <h4 className="text-sm font-medium text-gray-400 mb-1">Key Findings</h4>
-                      <ul className="space-y-1">
-                        {selectedStrategy.research.keyFindings.map((finding, i) => (
-                          <li key={i} className="text-gray-200 flex items-start">
-                            <span className="text-green-500 mr-2">✓</span>
-                            <span>{finding}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {selectedStrategy.research.gaps && selectedStrategy.research.gaps.length > 0 && (
-                    <div className="mb-4">
-                      <h4 className="text-sm font-medium text-gray-400 mb-1">Risk Factors / Gaps</h4>
-                      <ul className="space-y-1">
-                        {selectedStrategy.research.gaps.map((gap, i) => (
-                          <li key={i} className="text-gray-200 flex items-start">
-                            <span className="text-orange-500 mr-2">⚠️</span>
-                            <span>{gap}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {selectedStrategy.research.sources && selectedStrategy.research.sources.length > 0 && (
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-400 mb-1">Research Sources ({selectedStrategy.research.sources.length})</h4>
-                      <div className="space-y-2 max-h-60 overflow-y-auto">
-                        {selectedStrategy.research.sources.slice(0, 10).map((source: any, i) => (
-                          <div key={i} className="text-xs bg-gray-800/30 rounded p-2">
-                            <div className="font-medium text-gray-300">
-                              {source.title || source.headline || `Source ${i + 1}`}
-                            </div>
-                            {source.url && (
-                              <div className="text-gray-500 truncate">
-                                {source.url}
-                              </div>
-                            )}
-                            {source.excerpt && (
-                              <div className="text-gray-400 mt-1 line-clamp-2">
-                                {source.excerpt}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Campaign Orchestration - Execute Workflows */}
-              <CampaignOrchestrator
-                strategy={selectedStrategy}
-                onExecuteWorkflow={handleExecuteWorkflow}
-                onExecuteAll={handleExecuteAllWorkflows}
-              />
-
-              {/* Campaign Items */}
-              <CampaignItems
-                strategyId={selectedStrategy.id}
-                items={[]} // TODO: Fetch actual items from database
-                onOpenItem={(item) => {
-                  console.log('Opening item:', item)
-                  // TODO: Open in appropriate component
-                }}
-              />
-
-              {/* Workflow Status */}
-              {selectedStrategy.workflows && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-2" style={{ color: '#ffaa00' }}>
-                    Workflow Configuration
-                  </h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    {Object.entries(selectedStrategy.workflows).map(([key, value]) => (
-                      <div
-                        key={key}
-                        className="p-3 bg-gray-800/50 rounded-lg flex items-center justify-between"
-                      >
-                        <span className="text-sm capitalize">
-                          {key.replace(/([A-Z])/g, ' $1').trim()}
-                        </span>
-                        <span className={`px-2 py-1 rounded text-xs ${
-                          value.enabled ? 'bg-green-500/20 text-green-400' : 'bg-gray-700 text-gray-500'
-                        }`}>
-                          {value.enabled ? 'Enabled' : 'Disabled'}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+        {/* Folder Tree */}
+        <div className="flex-1 overflow-y-auto p-2">
+          {loading ? (
+            <div className="flex items-center justify-center h-32">
+              <Loader className="w-5 h-5 animate-spin text-gray-500" />
             </div>
           ) : (
-            <div className="h-full flex items-center justify-center text-gray-500">
-              <div className="text-center">
-                <Database className="w-12 h-12 mx-auto mb-2" style={{ color: '#ffaa00' }} />
-                <p>Select {activeTab === 'strategies' ? 'a strategy' : 'content'} to view details</p>
-                {loading && <p className="text-xs mt-2">Loading content library...</p>}
-              </div>
+            <div className="space-y-1">
+              {folderTree.map(node => renderFolderNode(node, 0))}
             </div>
           )}
         </div>
       </div>
 
-      {/* Folder Creation Dialog */}
-      {showFolderDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-lg p-6 w-96 border border-gray-800">
-            <h3 className="text-lg font-bold mb-4">Create New Folder</h3>
-            <input
-              type="text"
-              value={newFolderName}
-              onChange={(e) => setNewFolderName(e.target.value)}
-              placeholder="Folder name"
-              className="w-full px-3 py-2 bg-gray-800 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              autoFocus
-            />
-            <div className="flex gap-2 justify-end">
-              <button
-                onClick={() => {
-                  setShowFolderDialog(false)
-                  setNewFolderName('')
-                }}
-                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveFolderName}
-                className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg transition-colors"
-              >
-                Create
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Move to Folder Dialog */}
-      {showSaveToFolderDialog && contentToMove && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-lg p-6 w-96 border border-gray-800">
-            <h3 className="text-lg font-bold mb-4">Move to Folder</h3>
-            <p className="text-sm text-gray-400 mb-4">Select or create a folder for: {contentToMove.title}</p>
-
-            <div className="space-y-2 mb-4 max-h-60 overflow-y-auto">
-              {getFolders().map(folder => (
-                <button
-                  key={folder}
-                  onClick={() => handleSaveToFolder(folder)}
-                  className="w-full px-3 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-left transition-colors flex items-center gap-2"
-                >
-                  <Folder className="w-4 h-4 text-blue-400" />
-                  {folder}
-                </button>
-              ))}
-            </div>
-
-            <div className="mb-4">
-              <input
-                type="text"
-                value={newFolderName}
-                onChange={(e) => setNewFolderName(e.target.value)}
-                placeholder="Or create new folder"
-                className="w-full px-3 py-2 bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div className="flex gap-2 justify-end">
-              <button
-                onClick={() => {
-                  setShowSaveToFolderDialog(false)
-                  setContentToMove(null)
-                  setNewFolderName('')
-                }}
-                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  if (newFolderName.trim()) {
-                    handleSaveToFolder(newFolderName.trim())
-                    setNewFolderName('')
-                  }
-                }}
-                disabled={!newFolderName.trim()}
-                className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg transition-colors disabled:opacity-50"
-              >
-                Move
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* New Document Dialog */}
-      {showNewDocDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-lg p-6 w-[600px] border border-gray-800">
-            <h3 className="text-lg font-bold mb-4">Create New Document</h3>
-
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm text-gray-400 mb-2 block">Title</label>
-                <input
-                  type="text"
-                  value={newDocTitle}
-                  onChange={(e) => setNewDocTitle(e.target.value)}
-                  placeholder="Document title"
-                  className="w-full px-3 py-2 bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  autoFocus
-                />
+      {/* Detail View */}
+      <div className="flex-1 overflow-y-auto">
+        {selectedContent ? (
+          <div className="p-6 max-w-4xl mx-auto">
+            {/* Header */}
+            <div className="mb-6">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
+                  <h2 className="text-2xl font-bold text-white mb-2">{selectedContent.title}</h2>
+                  <div className="flex items-center gap-3 text-sm text-gray-400">
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5" />
+                      {new Date(selectedContent.created_at).toLocaleString()}
+                    </span>
+                    <span className="px-2 py-1 bg-gray-800 rounded text-xs font-medium">
+                      {selectedContent.content_type}
+                    </span>
+                    {selectedContent.folder && (
+                      <span className="flex items-center gap-1 text-xs">
+                        <Folder className="w-3.5 h-3.5" />
+                        {selectedContent.folder}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => onOpenInWorkspace(selectedContent)}
+                    className="flex items-center gap-2 px-3 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg transition-colors border border-blue-500/20"
+                    title="Open in Workspace"
+                  >
+                    <Edit className="w-4 h-4" />
+                    <span className="text-sm font-medium">Edit</span>
+                  </button>
+                  <button
+                    onClick={() => onExport(selectedContent)}
+                    className="flex items-center gap-2 px-3 py-2 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded-lg transition-colors border border-green-500/20"
+                    title="Export"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span className="text-sm font-medium">Export</span>
+                  </button>
+                  <button
+                    onClick={() => onMoveContent(selectedContent)}
+                    className="p-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 rounded-lg transition-colors"
+                    title="Move to Folder"
+                  >
+                    <Move className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => onDeleteContent(selectedContent.id)}
+                    className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
-              <div>
-                <label className="text-sm text-gray-400 mb-2 block">Content</label>
-                <textarea
-                  value={newDocContent}
-                  onChange={(e) => setNewDocContent(e.target.value)}
-                  placeholder="Document content (optional)"
-                  className="w-full px-3 py-2 bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 min-h-[200px]"
-                />
-              </div>
+              <StatusBadge status={selectedContent.intelligence_status} size="lg" />
+            </div>
 
-              <div>
-                <label className="text-sm text-gray-400 mb-2 block">Folder (optional)</label>
-                <input
-                  type="text"
-                  value={newDocFolder}
-                  onChange={(e) => setNewDocFolder(e.target.value)}
-                  placeholder="Enter folder name or leave empty"
-                  className="w-full px-3 py-2 bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-                {getFolders().length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {getFolders().map(folder => (
-                      <button
-                        key={folder}
-                        onClick={() => setNewDocFolder(folder)}
-                        className="px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-xs transition-colors flex items-center gap-1"
-                      >
-                        <Folder className="w-3 h-3 text-blue-400" />
-                        {folder}
-                      </button>
-                    ))}
+            {/* Intelligence Section */}
+            {selectedContent.intelligence_status === 'complete' && (
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                {selectedContent.themes && selectedContent.themes.length > 0 && (
+                  <div className="p-4 bg-gradient-to-br from-blue-500/5 to-blue-500/10 border border-blue-500/20 rounded-lg">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Brain className="w-4 h-4 text-blue-400" />
+                      <h3 className="font-semibold text-blue-400">Themes</h3>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedContent.themes.map((theme, i) => (
+                        <span
+                          key={i}
+                          className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded text-sm border border-blue-500/30"
+                        >
+                          {theme}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {selectedContent.topics && selectedContent.topics.length > 0 && (
+                  <div className="p-4 bg-gradient-to-br from-purple-500/5 to-purple-500/10 border border-purple-500/20 rounded-lg">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Tag className="w-4 h-4 text-purple-400" />
+                      <h3 className="font-semibold text-purple-400">Topics</h3>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedContent.topics.map((topic, i) => (
+                        <span
+                          key={i}
+                          className="px-2 py-1 bg-purple-500/20 text-purple-300 rounded text-sm border border-purple-500/30"
+                        >
+                          {topic}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {selectedContent.entities && Object.keys(selectedContent.entities).length > 0 && (
+                  <div className="col-span-2 p-4 bg-gradient-to-br from-green-500/5 to-green-500/10 border border-green-500/20 rounded-lg">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Sparkles className="w-4 h-4 text-green-400" />
+                      <h3 className="font-semibold text-green-400">Entities</h3>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      {Object.entries(selectedContent.entities).map(([key, value]) => (
+                        <div key={key}>
+                          <div className="text-xs text-gray-500 mb-1 capitalize">{key}</div>
+                          <div className="text-sm text-gray-300">
+                            {Array.isArray(value) ? value.join(', ') : String(value)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
-            </div>
+            )}
 
-            <div className="flex gap-2 justify-end mt-6">
-              <button
-                onClick={() => {
-                  setShowNewDocDialog(false)
-                  setNewDocTitle('')
-                  setNewDocContent('')
-                  setNewDocFolder('')
-                }}
-                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateDocument}
-                disabled={!newDocTitle.trim()}
-                className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg transition-colors disabled:opacity-50"
-              >
-                Create Document
-              </button>
+            {/* Content */}
+            <div className="p-4 bg-gray-900/50 border border-gray-800 rounded-lg">
+              <h3 className="font-semibold text-gray-300 mb-3 flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                Content
+              </h3>
+              <div className="text-gray-300 whitespace-pre-wrap text-sm leading-relaxed">
+                {typeof selectedContent.content === 'string'
+                  ? selectedContent.content
+                  : JSON.stringify(selectedContent.content, null, 2)}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="h-full flex items-center justify-center text-gray-500">
+            <div className="text-center">
+              <FileText className="w-16 h-16 mx-auto mb-4 opacity-30" />
+              <p className="text-lg font-medium">Select a file to view details</p>
+              <p className="text-sm text-gray-600 mt-1">Or right-click for actions</p>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
+  )
+}
+
+// Move Dialog Component
+function MoveDialog({
+  item,
+  folderTree,
+  onMove,
+  onClose
+}: {
+  item: ContentItem
+  folderTree: FolderNode[]
+  onMove: (item: ContentItem, folder: string) => void
+  onClose: () => void
+}) {
+  const [selectedPath, setSelectedPath] = useState<string>('')
+
+  const renderFolderOption = (node: FolderNode, depth: number = 0) => (
+    <div key={node.path}>
+      <button
+        onClick={() => setSelectedPath(node.path)}
+        className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-800/50 rounded-lg transition-colors text-left ${
+          selectedPath === node.path ? 'bg-orange-500/20 text-orange-400' : 'text-gray-300'
+        }`}
+        style={{ paddingLeft: `${depth * 16 + 12}px` }}
+      >
+        <Folder className="w-4 h-4" />
+        <span className="text-sm">{node.name}</span>
+      </button>
+      {node.children.map(child => renderFolderOption(child, depth + 1))}
+    </div>
+  )
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-gray-900 rounded-lg p-6 w-[480px] max-h-[600px] border border-gray-800 flex flex-col">
+        <h3 className="text-lg font-bold mb-2 text-white">Move to Folder</h3>
+        <p className="text-sm text-gray-400 mb-4">Moving: {item.title}</p>
+
+        <div className="flex-1 overflow-y-auto border border-gray-800 rounded-lg p-2 mb-4">
+          {folderTree.map(node => renderFolderOption(node, 0))}
+        </div>
+
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-gray-300"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => onMove(item, selectedPath)}
+            disabled={!selectedPath}
+            className="px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 rounded-lg transition-colors disabled:opacity-50 border border-orange-500/30"
+          >
+            Move Here
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Brand Assets Tab Component (keeping existing)
+function BrandAssetsTab({
+  assets,
+  selectedAsset,
+  onSelectAsset,
+  onUpload,
+  uploading
+}: {
+  assets: BrandAsset[]
+  selectedAsset: BrandAsset | null
+  onSelectAsset: (asset: BrandAsset | null) => void
+  onUpload: () => void
+  uploading: boolean
+}) {
+  return (
+    <div className="h-full flex">
+      <div className="w-80 border-r border-gray-800 bg-gray-900/30 overflow-y-auto p-4">
+        <div className="space-y-2">
+          {assets.length === 0 ? (
+            <div className="text-center py-8">
+              <Sparkles className="w-8 h-8 mx-auto mb-2 text-gray-600" />
+              <p className="text-gray-500 text-sm mb-4">No brand assets yet</p>
+              <button
+                onClick={onUpload}
+                disabled={uploading}
+                className="px-4 py-2 bg-orange-500/20 text-orange-400 rounded-lg hover:bg-orange-500/30 transition-colors text-sm disabled:opacity-50"
+              >
+                Upload Your First Asset
+              </button>
+            </div>
+          ) : (
+            assets.map(asset => (
+              <button
+                key={asset.id}
+                onClick={() => onSelectAsset(asset)}
+                className={`w-full text-left p-3 rounded-lg transition-all ${
+                  selectedAsset?.id === asset.id
+                    ? 'bg-orange-500/20 border border-orange-500/30'
+                    : 'bg-gray-800/30 hover:bg-gray-800/50 border border-transparent'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2 mb-1">
+                  <div className="flex items-center gap-2">
+                    {asset.asset_type.startsWith('template') && <FileText className="w-4 h-4 text-blue-400" />}
+                    {asset.asset_type.startsWith('guidelines') && <Brain className="w-4 h-4 text-purple-400" />}
+                    {asset.asset_type === 'logo' && <Image className="w-4 h-4 text-green-400" />}
+                    <h4 className="font-medium text-sm text-white line-clamp-1">
+                      {asset.name}
+                    </h4>
+                  </div>
+                  <StatusBadge status={asset.status} size="sm" />
+                </div>
+                <p className="text-xs text-gray-500">
+                  {asset.asset_type} • Used {asset.usage_count}x
+                </p>
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
+        {selectedAsset ? (
+          <div className="p-6 max-w-4xl mx-auto">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-white mb-2">{selectedAsset.name}</h2>
+              <div className="flex items-center gap-3 text-sm text-gray-400">
+                <span className="px-2 py-0.5 bg-gray-800 rounded">
+                  {selectedAsset.asset_type}
+                </span>
+                <span>Used {selectedAsset.usage_count} times</span>
+                <span>{new Date(selectedAsset.created_at).toLocaleDateString()}</span>
+              </div>
+            </div>
+
+            {selectedAsset.status === 'active' && (
+              <>
+                {selectedAsset.brand_voice_profile && (
+                  <div className="mb-6 p-4 bg-gradient-to-br from-purple-500/5 to-purple-500/10 border border-purple-500/20 rounded-lg">
+                    <h3 className="font-semibold text-purple-400 mb-3">Brand Voice Profile</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      {Object.entries(selectedAsset.brand_voice_profile).map(([key, value]) => (
+                        <div key={key}>
+                          <div className="text-xs text-gray-500 mb-1 capitalize">
+                            {key.replace(/_/g, ' ')}
+                          </div>
+                          <div className="text-sm text-gray-300">{String(value)}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {selectedAsset.extracted_guidelines && (
+                  <div className="p-4 bg-gradient-to-br from-blue-500/5 to-blue-500/10 border border-blue-500/20 rounded-lg">
+                    <h3 className="font-semibold text-blue-400 mb-3">Extracted Guidelines</h3>
+                    <pre className="text-sm text-gray-300 whitespace-pre-wrap">
+                      {JSON.stringify(selectedAsset.extracted_guidelines, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </>
+            )}
+
+            {selectedAsset.status === 'analyzing' && (
+              <div className="flex items-center justify-center h-32">
+                <div className="text-center">
+                  <Loader className="w-8 h-8 mx-auto mb-2 animate-spin text-orange-500" />
+                  <p className="text-gray-400">Analyzing asset with Claude...</p>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="h-full flex items-center justify-center text-gray-500">
+            <div className="text-center">
+              <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p>Select an asset to view details</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Analytics Tab Component (keeping existing)
+function AnalyticsTab({
+  data,
+  loading,
+  onRefresh
+}: {
+  data: AnalyticsData
+  loading: boolean
+  onRefresh: () => void
+}) {
+  return (
+    <div className="h-full overflow-y-auto p-6">
+      <div className="max-w-6xl mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-white">System Analytics</h2>
+          <button
+            onClick={onRefresh}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
+          >
+            <Activity className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
+
+        <div className="grid grid-cols-4 gap-4 mb-6">
+          <MetricCard
+            title="Avg Save Time"
+            value={`${data.avgSaveTime}ms`}
+            status={data.avgSaveTime < 200 ? 'success' : data.avgSaveTime < 500 ? 'warning' : 'error'}
+            target="< 200ms"
+            icon={<Zap className="w-5 h-5" />}
+          />
+          <MetricCard
+            title="Pending Jobs"
+            value={data.pendingJobs}
+            status={data.pendingJobs < 50 ? 'success' : data.pendingJobs < 100 ? 'warning' : 'error'}
+            target="< 100"
+            icon={<TrendingUp className="w-5 h-5" />}
+          />
+          <MetricCard
+            title="Completion Rate"
+            value={`${data.completionRate}%`}
+            status={data.completionRate > 90 ? 'success' : data.completionRate > 70 ? 'warning' : 'error'}
+            target="> 90%"
+            icon={<CheckCircle className="w-5 h-5" />}
+          />
+          <MetricCard
+            title="Worker Status"
+            value={data.workerActive ? 'Active' : 'Inactive'}
+            status={data.workerActive ? 'success' : 'error'}
+            target="Active"
+            icon={<Activity className="w-5 h-5" />}
+          />
+        </div>
+
+        <div className="p-6 bg-gray-900/50 border border-gray-800 rounded-lg">
+          <h3 className="font-semibold text-white mb-4">Content by Type</h3>
+          <div className="space-y-3">
+            {Object.entries(data.contentByType).map(([type, count]) => (
+              <div key={type} className="flex items-center justify-between">
+                <span className="text-gray-300 capitalize">{type.replace(/-/g, ' ')}</span>
+                <div className="flex items-center gap-3">
+                  <div className="w-32 h-2 bg-gray-800 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-orange-500 to-pink-500"
+                      style={{
+                        width: `${(count / data.totalContent) * 100}%`
+                      }}
+                    />
+                  </div>
+                  <span className="text-white font-medium w-12 text-right">{count}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Metric Card Component
+function MetricCard({
+  title,
+  value,
+  status,
+  target,
+  icon
+}: {
+  title: string
+  value: string | number
+  status: 'success' | 'warning' | 'error'
+  target: string
+  icon: React.ReactNode
+}) {
+  const colors = {
+    success: 'from-green-500/10 to-green-500/5 border-green-500/20',
+    warning: 'from-yellow-500/10 to-yellow-500/5 border-yellow-500/20',
+    error: 'from-red-500/10 to-red-500/5 border-red-500/20'
+  }
+
+  const iconColors = {
+    success: 'text-green-400',
+    warning: 'text-yellow-400',
+    error: 'text-red-400'
+  }
+
+  return (
+    <div className={`p-4 bg-gradient-to-br ${colors[status]} border rounded-lg`}>
+      <div className="flex items-start justify-between mb-2">
+        <div className={iconColors[status]}>{icon}</div>
+        {status === 'success' ? (
+          <CheckCircle className="w-4 h-4 text-green-400" />
+        ) : status === 'warning' ? (
+          <AlertCircle className="w-4 h-4 text-yellow-400" />
+        ) : (
+          <AlertCircle className="w-4 h-4 text-red-400" />
+        )}
+      </div>
+      <div className="text-2xl font-bold text-white mb-1">{value}</div>
+      <div className="text-xs text-gray-400">{title}</div>
+      <div className="text-xs text-gray-500 mt-1">Target: {target}</div>
+    </div>
+  )
+}
+
+// Status Badge Component
+function StatusBadge({ status, size = 'sm' }: { status: string; size?: 'xs' | 'sm' | 'lg' }) {
+  const config: Record<string, { color: string; label: string; icon?: React.ReactNode }> = {
+    complete: { color: 'bg-green-500/20 text-green-400 border-green-500/30', label: 'Complete', icon: <CheckCircle className="w-3 h-3" /> },
+    active: { color: 'bg-green-500/20 text-green-400 border-green-500/30', label: 'Active', icon: <CheckCircle className="w-3 h-3" /> },
+    pending: { color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', label: 'Pending', icon: <Clock className="w-3 h-3" /> },
+    processing: { color: 'bg-blue-500/20 text-blue-400 border-blue-500/30', label: 'Processing', icon: <Loader className="w-3 h-3 animate-spin" /> },
+    analyzing: { color: 'bg-blue-500/20 text-blue-400 border-blue-500/30', label: 'Analyzing', icon: <Loader className="w-3 h-3 animate-spin" /> },
+    failed: { color: 'bg-red-500/20 text-red-400 border-red-500/30', label: 'Failed', icon: <AlertCircle className="w-3 h-3" /> },
+    uploading: { color: 'bg-blue-500/20 text-blue-400 border-blue-500/30', label: 'Uploading', icon: <Upload className="w-3 h-3" /> }
+  }
+
+  const { color, label, icon } = config[status] || config.pending
+
+  const sizeClasses = {
+    xs: 'text-[10px] px-1.5 py-0.5',
+    sm: 'text-xs px-2 py-0.5',
+    lg: 'text-sm px-3 py-1'
+  }
+
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full font-medium border ${color} ${sizeClasses[size]}`}>
+      {size !== 'xs' && icon}
+      {label}
+    </span>
   )
 }

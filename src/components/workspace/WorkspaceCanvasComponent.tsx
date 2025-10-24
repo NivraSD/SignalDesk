@@ -46,6 +46,31 @@ export default function WorkspaceCanvasComponent({
     }
   }, [initialContentId, memoryVaultContent]);
 
+  // Listen for openInWorkspace events from Memory Vault
+  useEffect(() => {
+    const handleOpenInWorkspace = (event: any) => {
+      console.log('📝 Workspace received content:', event.detail);
+      const contentData = event.detail;
+
+      // Create a content object compatible with loadContentFromMemoryVault
+      const content = {
+        id: contentData.id,
+        title: contentData.title,
+        content_type: contentData.type,
+        content: contentData.content,
+        metadata: contentData.metadata
+      };
+
+      loadContentFromMemoryVault(content);
+    };
+
+    window.addEventListener('openInWorkspace', handleOpenInWorkspace);
+
+    return () => {
+      window.removeEventListener('openInWorkspace', handleOpenInWorkspace);
+    };
+  }, []);
+
   const loadContentFromMemoryVault = (content: any) => {
     setCurrentContent(content);
     setContentTitle(content.title || 'Untitled');

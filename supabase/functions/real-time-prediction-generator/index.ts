@@ -113,6 +113,11 @@ serve(async (req) => {
 
     const prompt = `You are a PATTERN-RECOGNITION STRATEGIST who sees second-order effects and non-obvious connections that others miss.
 
+# IMPORTANT CONTEXT
+- **Current Date**: ${new Date().toISOString().split('T')[0]}
+- **Your Knowledge Cutoff**: January 2025
+- **Critical**: DO NOT assume current office holders, executives, or leadership positions without evidence in the provided articles. If you reference a person, use ONLY information from the current articles, not your training data.
+
 # YOUR MISSION
 Generate 3-5 SPECULATIVE, PATTERN-BASED predictions about future developments. Think like a strategic futurist, not a conservative analyst.
 
@@ -189,7 +194,7 @@ ${JSON.stringify({
 # OUTPUT FORMAT
 Return ONLY a JSON array of predictions. Each prediction MUST:
 {
-  "stakeholder": "Specific entity (company/person/regulator) - e.g. 'Microsoft Gaming Division', 'Sam Altman', 'FTC Chair'",
+  "stakeholder": "Specific entity - ONLY use names/titles explicitly mentioned in the provided articles. Use organizational names (e.g. 'FTC', 'Microsoft Gaming Division') rather than assuming specific people in roles unless they are named in the articles.",
   "title": "Bold, specific prediction - start with stakeholder's action - e.g. 'Microsoft will divest Xbox to focus capital on AI infrastructure'",
   "description": "2-3 sentences on: (1) WHAT will happen, (2) WHY (the pattern/logic), (3) WHEN approximately",
   "category": "competitive|regulatory|market|technology|partnership|crisis",
@@ -300,14 +305,18 @@ Return ONLY the JSON array, no other text.`
         created_at: new Date().toISOString()
       }))
 
-      const { error: insertError } = await supabase
+      const { error: insertError, data: insertedData } = await supabase
         .from('predictions')
         .insert(predictionRecords)
+        .select()
 
       if (insertError) {
-        console.error('Error saving predictions:', insertError)
+        console.error('❌ ERROR saving predictions:', JSON.stringify(insertError, null, 2))
+        console.error('   organization_id value:', organization_id)
+        console.error('   organization_id type:', typeof organization_id)
       } else {
-        console.log(`✅ Saved ${predictionRecords.length} predictions`)
+        console.log(`✅ Saved ${insertedData?.length || predictionRecords.length} predictions`)
+        console.log(`   organization_id: ${organization_id}`)
       }
     }
 

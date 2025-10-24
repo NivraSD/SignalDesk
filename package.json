@@ -6,7 +6,9 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "worker": "tsx scripts/run-job-worker.ts",
+    "deploy-memory-vault": "bash scripts/deploy-memory-vault-v2.sh"
   },
   "dependencies": {
     "@ai-sdk-tools/artifacts": "^0.3.0",
@@ -37,6 +39,8 @@
     "eslint": "^9",
     "eslint-config-next": "15.5.2",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.20.6",
     "typescript": "^5"
   }
 }

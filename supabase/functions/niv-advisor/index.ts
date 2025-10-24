@@ -1398,7 +1398,6 @@ async function callFireplexity(query: string, context: any) {
       },
       body: JSON.stringify({
         query: query,
-        sources: ['web', 'news'],
         limit: 10, // Get top 10 results
         tbs, // Time-based filter
         scrapeOptions: {
@@ -3952,7 +3951,11 @@ serve(async (req) => {
 
 You are analyzing this user query to understand what they need and how to get it.
 
-**REMEMBER:** Today is ${getCurrentDate()}. We're in ${new Date().getFullYear()}.
+**CRITICAL - CURRENT DATE & YEAR AWARENESS:**
+- TODAY IS: ${getCurrentDate()}
+- CURRENT YEAR: ${new Date().getFullYear()}
+- **YOU MUST INCLUDE "${new Date().getFullYear()}" IN EVERY SEARCH QUERY** (prevents old 2024/2023 results)
+- Example: NOT "OpenAI education market" → CORRECT: "OpenAI education market ${new Date().getFullYear()}"
 
 ${conversationHistory.length > 0 ? `Recent Conversation:
 ${conversationHistory.map(msg => `${msg.role === 'user' ? 'User' : 'NIV'}: ${msg.content}`).join('\n')}
@@ -3966,7 +3969,7 @@ Think step by step:
 1. What is the user really asking for?
 2. **IS THIS A COMMAND OR A RESEARCH QUERY?** Commands like "send this to gamma", "create in campaign builder" should NOT trigger research
 3. Do I need fresh, real-time information to answer this properly?
-4. What specific search terms would find the best results? **INCLUDE ${new Date().getFullYear()} IN SEARCH QUERIES FOR CURRENT INFO**
+4. What specific search terms + **${new Date().getFullYear()}** would find the best current results?
 5. Should I search quality sources only, or cast a wider net?
 6. Should I generate a strategic framework now?
 
@@ -4181,7 +4184,6 @@ Respond with JSON only:
               },
               body: JSON.stringify({
                 query: query,
-                sources: ['web', 'news'],
                 limit: 10,
                 tbs,
                 scrapeOptions: {

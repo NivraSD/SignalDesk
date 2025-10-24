@@ -57,6 +57,27 @@ interface ExecutableOpportunity {
     deadline: string
   }>
 
+  // User Actions (like Campaign Builder additionalTactics)
+  user_actions?: Array<{
+    type: string           // e.g., "executive-coffee", "analyst-briefing"
+    who: string            // Person/role executing
+    what: string           // Description of action
+    where: string          // Channel (LinkedIn, email, in-person)
+    when: string           // Timing relative to campaign
+    estimatedEffort: string // Time required
+    resources: string[]    // Supporting materials needed
+  }>
+
+  // Media Targets
+  media_targets?: Array<{
+    outlet: string
+    tier: number
+    journalist?: string
+    beat?: string
+    angle: string
+    timing: string
+  }>
+
   // Measurement
   success_metrics: string[]  // How we measure success
   expected_impact: string    // What we expect to achieve
@@ -328,6 +349,36 @@ function buildPlaybook(category: OpportunityCategory, insight: any, orgName: str
       target_audience: 'Analysts, investors, customers',
       channels: ['Analyst briefing', 'Press release', 'Website update'],
       assets_needed: ['Position paper', 'Market data', 'Executive talking points']
+    },
+    CASCADE_READY: {
+      key_messages: ['Multi-vector narrative seeding'],
+      target_audience: 'Multi-stakeholder',
+      channels: ['Various channels'],
+      assets_needed: ['NIV campaign blueprint']
+    },
+    VOID_WINDOW: {
+      key_messages: ['Strategic positioning'],
+      target_audience: 'Market observers',
+      channels: ['Monitored silence'],
+      assets_needed: ['Response readiness plan']
+    },
+    MIRROR_CRISIS: {
+      key_messages: ['Preemptive solution positioning'],
+      target_audience: 'Industry stakeholders',
+      channels: ['Pre-positioning content'],
+      assets_needed: ['Solution proof points']
+    },
+    TROJAN_VEHICLE: {
+      key_messages: ['Message embedding'],
+      target_audience: 'Target audience',
+      channels: ['High-performing formats'],
+      assets_needed: ['Content format analysis']
+    },
+    NETWORK_PATH: {
+      key_messages: ['Indirect influence'],
+      target_audience: 'Influencer network',
+      channels: ['Relationship channels'],
+      assets_needed: ['Network map']
     }
   }
 
@@ -516,6 +567,46 @@ function generateActionItems(category: OpportunityCategory, urgency: string, ins
         owner: 'Marketing',
         deadline: new Date(baseDeadline.getTime() + 72 * 60 * 60 * 1000).toISOString() // +72 hours
       }
+    ],
+    CASCADE_READY: [
+      {
+        step: 1,
+        action: 'Consult NIV to generate campaign blueprint',
+        owner: 'Strategy Team',
+        deadline: new Date(baseDeadline.getTime() + 48 * 60 * 60 * 1000).toISOString()
+      }
+    ],
+    VOID_WINDOW: [
+      {
+        step: 1,
+        action: 'Monitor competitor activity',
+        owner: 'Intelligence Team',
+        deadline: new Date(baseDeadline.getTime() + 24 * 60 * 60 * 1000).toISOString()
+      }
+    ],
+    MIRROR_CRISIS: [
+      {
+        step: 1,
+        action: 'Prepare preemptive content',
+        owner: 'Communications',
+        deadline: new Date(baseDeadline.getTime() + 72 * 60 * 60 * 1000).toISOString()
+      }
+    ],
+    TROJAN_VEHICLE: [
+      {
+        step: 1,
+        action: 'Analyze high-performing formats',
+        owner: 'Content Strategy',
+        deadline: new Date(baseDeadline.getTime() + 48 * 60 * 60 * 1000).toISOString()
+      }
+    ],
+    NETWORK_PATH: [
+      {
+        step: 1,
+        action: 'Map influence chains',
+        owner: 'Research Team',
+        deadline: new Date(baseDeadline.getTime() + 72 * 60 * 60 * 1000).toISOString()
+      }
     ]
   }
 
@@ -545,7 +636,12 @@ function generateTitle(category: OpportunityCategory, insight: any, orgName: str
     CONTENT_CREATION: `Content: ${insight.topic || 'Thought Leadership Opportunity'}`,
     PARTNERSHIP_PLAY: `Partnership: ${insight.partner || 'Strategic Alliance'}`,
     TALENT_MOVE: `Talent: ${insight.role || 'Strategic Hire Opportunity'}`,
-    MARKET_POSITION: `Position: ${insight.stance || 'Market Leadership Statement'}`
+    MARKET_POSITION: `Position: ${insight.stance || 'Market Leadership Statement'}`,
+    CASCADE_READY: `Cascade Ready: ${insight.action || 'Multi-vector Seeding Opportunity'}`,
+    VOID_WINDOW: `Void Window: ${insight.action || 'Strategic Silence Opportunity'}`,
+    MIRROR_CRISIS: `Mirror Crisis: ${insight.action || 'Preemptive Positioning'}`,
+    TROJAN_VEHICLE: `Trojan Vehicle: ${insight.action || 'Message Embedding'}`,
+    NETWORK_PATH: `Network Path: ${insight.action || 'Indirect Influence'}`
   }
 
   return templates[category]
@@ -573,7 +669,12 @@ function generateSuccessMetrics(category: OpportunityCategory): string[] {
     CONTENT_CREATION: ['Views/reads', 'Engagement', 'Lead generation'],
     PARTNERSHIP_PLAY: ['LOI signed', 'Terms agreed', 'Announcement made'],
     TALENT_MOVE: ['Candidate engaged', 'Interview completed', 'Offer accepted'],
-    MARKET_POSITION: ['Analyst mentions', 'Media coverage', 'Competitor response']
+    MARKET_POSITION: ['Analyst mentions', 'Media coverage', 'Competitor response'],
+    CASCADE_READY: ['Narrative convergence', 'Stakeholder adoption', 'Message penetration'],
+    VOID_WINDOW: ['Speculation generated', 'Competitor response tracked', 'Position strengthened'],
+    MIRROR_CRISIS: ['Preemptive positioning achieved', 'Crisis avoided', 'Leadership established'],
+    TROJAN_VEHICLE: ['Message embedding success', 'Audience reach', 'Organic amplification'],
+    NETWORK_PATH: ['Influencer engagement', 'Network activation', 'Message reach']
   }
 
   return metrics[category]
@@ -588,7 +689,12 @@ function generateExpectedImpact(category: OpportunityCategory, insight: any): st
     CONTENT_CREATION: 'Establish thought leadership and generate leads',
     PARTNERSHIP_PLAY: 'Expand market reach and capabilities',
     TALENT_MOVE: 'Strengthen team and competitive advantage',
-    MARKET_POSITION: 'Clarify differentiation and market leadership'
+    MARKET_POSITION: 'Clarify differentiation and market leadership',
+    CASCADE_READY: 'Create multi-vector narrative cascade effect',
+    VOID_WINDOW: 'Generate strategic speculation and position strength',
+    MIRROR_CRISIS: 'Preemptively establish crisis leadership position',
+    TROJAN_VEHICLE: 'Embed message in high-performing content formats',
+    NETWORK_PATH: 'Activate indirect influence pathways'
   }
 
   return insight.expected_impact || impacts[category]
@@ -653,6 +759,8 @@ async function storeOpportunities(opportunities: ExecutableOpportunity[], orgId:
         execution_type: opp.execution_type,
         playbook: opp.playbook,
         action_items: opp.action_items,
+        user_actions: opp.user_actions,
+        media_targets: opp.media_targets,
         success_metrics: opp.success_metrics,
         expected_impact: opp.expected_impact,
         trigger_event: opp.trigger_event,
@@ -930,6 +1038,355 @@ function generateCreativeApproach(opp: any, orgName: string): string {
   return categoryApproaches[hash % categoryApproaches.length]
 }
 
+// Generate user actions (similar to Campaign Builder additionalTactics)
+function generateUserActions(category: OpportunityCategory, orgName: string): Array<{
+  type: string
+  who: string
+  what: string
+  where: string
+  when: string
+  estimatedEffort: string
+  resources: string[]
+}> {
+  const actionsByCategory: Record<OpportunityCategory, Array<{
+    type: string
+    who: string
+    what: string
+    where: string
+    when: string
+    estimatedEffort: string
+    resources: string[]
+  }>> = {
+    PRESS_RELEASE: [
+      {
+        type: 'journalist-outreach',
+        who: 'PR Lead',
+        what: 'Personalized outreach to tier 1 journalists with exclusive angles',
+        where: 'Email + LinkedIn',
+        when: '24 hours before release',
+        estimatedEffort: '2-3 hours',
+        resources: ['Media list', 'Pitch templates', 'Executive availability']
+      },
+      {
+        type: 'analyst-briefing',
+        who: 'Analyst Relations',
+        what: 'Brief key industry analysts on news and implications',
+        where: 'Video call',
+        when: 'Same day as release',
+        estimatedEffort: '1-2 hours',
+        resources: ['Analyst briefing deck', 'Data sheets']
+      }
+    ],
+    SOCIAL_CAMPAIGN: [
+      {
+        type: 'influencer-engagement',
+        who: 'Social Media Manager',
+        what: 'Engage with industry influencers to amplify campaign',
+        where: 'Twitter/LinkedIn',
+        when: 'Launch day',
+        estimatedEffort: '3-4 hours',
+        resources: ['Influencer list', 'Engagement templates']
+      },
+      {
+        type: 'community-activation',
+        who: 'Community Manager',
+        what: 'Mobilize brand advocates and employees to share content',
+        where: 'Slack + Social',
+        when: 'Throughout campaign',
+        estimatedEffort: '2-3 hours',
+        resources: ['Employee toolkit', 'Social graphics']
+      }
+    ],
+    EXECUTIVE_OUTREACH: [
+      {
+        type: 'executive-coffee',
+        who: 'CEO',
+        what: 'Schedule informal coffee chats with 3-5 target executives',
+        where: 'In-person/Virtual',
+        when: 'This week',
+        estimatedEffort: '4-6 hours',
+        resources: ['Executive brief', 'Calendar coordination']
+      },
+      {
+        type: 'linkedin-engagement',
+        who: 'CEO/Executives',
+        what: 'Comment on and engage with target executive\'s LinkedIn content',
+        where: 'LinkedIn',
+        when: 'Daily',
+        estimatedEffort: '15-30 min/day',
+        resources: ['LinkedIn monitoring', 'Talking points']
+      }
+    ],
+    CRISIS_RESPONSE: [
+      {
+        type: 'stakeholder-calls',
+        who: 'Executive Team',
+        what: 'Direct calls to top customers, partners, and stakeholders',
+        where: 'Phone',
+        when: 'Immediately',
+        estimatedEffort: '4-8 hours',
+        resources: ['Stakeholder list', 'Talking points', 'FAQ']
+      }
+    ],
+    CONTENT_CREATION: [
+      {
+        type: 'expert-interviews',
+        who: 'Content Team',
+        what: 'Interview internal experts for authentic perspectives',
+        where: 'Video/Audio',
+        when: 'This week',
+        estimatedEffort: '3-4 hours',
+        resources: ['Interview guide', 'Recording equipment']
+      },
+      {
+        type: 'syndication-outreach',
+        who: 'Content Manager',
+        what: 'Pitch content for republication to industry publications',
+        where: 'Email',
+        when: 'After publish',
+        estimatedEffort: '1-2 hours',
+        resources: ['Publication list', 'Pitch template']
+      }
+    ],
+    PARTNERSHIP_PLAY: [
+      {
+        type: 'partner-meeting',
+        who: 'Business Development',
+        what: 'Schedule exploratory meeting with potential partner',
+        where: 'Video call',
+        when: 'This week',
+        estimatedEffort: '2-3 hours',
+        resources: ['Partnership deck', 'Value proposition']
+      }
+    ],
+    TALENT_MOVE: [
+      {
+        type: 'linkedin-research',
+        who: 'Recruiting',
+        what: 'Research and identify target candidates on LinkedIn',
+        where: 'LinkedIn',
+        when: 'This week',
+        estimatedEffort: '3-4 hours',
+        resources: ['Candidate profile', 'Boolean searches']
+      },
+      {
+        type: 'warm-intro',
+        who: 'Hiring Manager',
+        what: 'Leverage network for warm introductions to candidates',
+        where: 'Email + LinkedIn',
+        when: 'This week',
+        estimatedEffort: '2-3 hours',
+        resources: ['Network map', 'Intro templates']
+      }
+    ],
+    MARKET_POSITION: [
+      {
+        type: 'analyst-briefing',
+        who: 'Analyst Relations',
+        what: 'Brief top 5 analysts on new market positioning',
+        where: 'Video call',
+        when: 'This week',
+        estimatedEffort: '3-4 hours',
+        resources: ['Positioning deck', 'Market data']
+      },
+      {
+        type: 'customer-advisory',
+        who: 'Customer Success',
+        what: 'Present positioning to customer advisory board for feedback',
+        where: 'Virtual meeting',
+        when: 'This week',
+        estimatedEffort: '2 hours',
+        resources: ['CAB deck', 'Feedback survey']
+      }
+    ],
+    // V4 Pattern opportunities - general relationship-building actions
+    CASCADE_READY: [
+      {
+        type: 'stakeholder-mapping',
+        who: 'Strategy Team',
+        what: 'Map key stakeholders across narrative conversation spaces',
+        where: 'Internal research',
+        when: 'This week',
+        estimatedEffort: '4-6 hours',
+        resources: ['Stakeholder database', 'Network analysis tools']
+      }
+    ],
+    VOID_WINDOW: [
+      {
+        type: 'competitive-monitoring',
+        who: 'Competitive Intelligence',
+        what: 'Monitor competitor announcement for optimal response timing',
+        where: 'Media monitoring',
+        when: 'Real-time',
+        estimatedEffort: '2-3 hours',
+        resources: ['Monitoring tools', 'Alert system']
+      }
+    ],
+    MIRROR_CRISIS: [
+      {
+        type: 'preemptive-positioning',
+        who: 'Communications Team',
+        what: 'Draft preemptive content showing how you\'ve solved the problem',
+        where: 'Internal prep',
+        when: 'This week',
+        estimatedEffort: '3-4 hours',
+        resources: ['Case studies', 'Solution framework']
+      }
+    ],
+    TROJAN_VEHICLE: [
+      {
+        type: 'content-analysis',
+        who: 'Content Strategy',
+        what: 'Analyze top-performing content formats for message embedding',
+        where: 'Analytics review',
+        when: 'This week',
+        estimatedEffort: '2-3 hours',
+        resources: ['Analytics access', 'Content audit']
+      }
+    ],
+    NETWORK_PATH: [
+      {
+        type: 'influencer-research',
+        who: 'Research Team',
+        what: 'Map influence chains and identify indirect pathways',
+        where: 'Network analysis',
+        when: 'This week',
+        estimatedEffort: '4-5 hours',
+        resources: ['Network tools', 'Influence maps']
+      }
+    ]
+  }
+
+  return actionsByCategory[category] || actionsByCategory.CONTENT_CREATION
+}
+
+// Generate media targets based on opportunity category
+function generateMediaTargets(category: OpportunityCategory, insight: any): Array<{
+  outlet: string
+  tier: number
+  journalist?: string
+  beat?: string
+  angle: string
+  timing: string
+}> {
+  const targetsByCategory: Record<OpportunityCategory, Array<{
+    outlet: string
+    tier: number
+    journalist?: string
+    beat?: string
+    angle: string
+    timing: string
+  }>> = {
+    PRESS_RELEASE: [
+      {
+        outlet: 'TechCrunch',
+        tier: 1,
+        beat: 'Enterprise Tech',
+        angle: 'Exclusive: Breaking news on market development',
+        timing: 'Same day embargo lift'
+      },
+      {
+        outlet: 'The Wall Street Journal',
+        tier: 1,
+        beat: 'Technology',
+        angle: 'Industry implications and executive perspective',
+        timing: 'Same day'
+      },
+      {
+        outlet: 'VentureBeat',
+        tier: 2,
+        beat: 'AI & Enterprise',
+        angle: 'Technical deep-dive and innovation angle',
+        timing: 'Day 1-2'
+      }
+    ],
+    SOCIAL_CAMPAIGN: [
+      {
+        outlet: 'Social Media Today',
+        tier: 2,
+        beat: 'Digital Marketing',
+        angle: 'Case study on viral campaign mechanics',
+        timing: 'During campaign peak'
+      }
+    ],
+    CRISIS_RESPONSE: [
+      {
+        outlet: 'Reuters',
+        tier: 1,
+        beat: 'Breaking News',
+        angle: 'Official statement and factual response',
+        timing: 'Immediate'
+      },
+      {
+        outlet: 'Bloomberg',
+        tier: 1,
+        beat: 'Business News',
+        angle: 'Business impact and stakeholder perspective',
+        timing: 'Within 2 hours'
+      }
+    ],
+    CONTENT_CREATION: [
+      {
+        outlet: 'Harvard Business Review',
+        tier: 1,
+        beat: 'Management',
+        angle: 'Thought leadership byline opportunity',
+        timing: '2-4 weeks'
+      },
+      {
+        outlet: 'Industry publication',
+        tier: 2,
+        beat: 'Industry-specific',
+        angle: 'Expert commentary and insights',
+        timing: '1-2 weeks'
+      }
+    ],
+    MARKET_POSITION: [
+      {
+        outlet: 'Fortune',
+        tier: 1,
+        beat: 'Business Strategy',
+        angle: 'Market leadership and positioning story',
+        timing: 'This week'
+      },
+      {
+        outlet: 'Gartner / Forrester',
+        tier: 1,
+        beat: 'Analyst',
+        angle: 'Analyst briefing on market position',
+        timing: 'This week'
+      }
+    ],
+    EXECUTIVE_OUTREACH: [],
+    PARTNERSHIP_PLAY: [
+      {
+        outlet: 'Trade publication',
+        tier: 2,
+        beat: 'Partnerships',
+        angle: 'Joint announcement of strategic partnership',
+        timing: 'At announcement'
+      }
+    ],
+    TALENT_MOVE: [
+      {
+        outlet: 'LinkedIn News',
+        tier: 2,
+        beat: 'Talent & Careers',
+        angle: 'Industry talent movement story',
+        timing: 'At announcement'
+      }
+    ],
+    // V4 patterns don't need specific media targets
+    CASCADE_READY: [],
+    VOID_WINDOW: [],
+    MIRROR_CRISIS: [],
+    TROJAN_VEHICLE: [],
+    NETWORK_PATH: []
+  }
+
+  return targetsByCategory[category] || []
+}
+
 // Main handler
 // Add creative enhancement to opportunities in a single Claude call
 async function addCreativeEnhancement(
@@ -977,6 +1434,7 @@ AVOID THESE RESOURCE-INTENSIVE IDEAS:
 - Large physical events or installations
 - Custom apps or games
 - Expensive production campaigns
+- Webinars (not available on platform)
 
 Examples of good campaign names:
 - "The Truth Thread" (for Twitter narrative campaign)
@@ -1345,24 +1803,31 @@ serve(withCors(async (req) => {
     // Add creative enhancement to all opportunities in a single Claude call
     const creativelyEnhanced = await addCreativeEnhancement(topOpportunities, orgName, ANTHROPIC_API_KEY)
 
+    // Add user actions and media targets to each opportunity
+    const fullyEnhanced = creativelyEnhanced.map(opp => ({
+      ...opp,
+      user_actions: generateUserActions(opp.category as OpportunityCategory, orgName),
+      media_targets: generateMediaTargets(opp.category as OpportunityCategory, opp)
+    }))
+
     // NOTE: Not storing here - detector already stores opportunities
     // Just enhancing and returning them
-    console.log(`📊 Enhanced ${creativelyEnhanced.length} opportunities with creative angles (detector will store)`)
+    console.log(`📊 Enhanced ${fullyEnhanced.length} opportunities with creative angles, user actions, and media targets (detector will store)`)
 
     // Return response
     const response = {
       success: true,
       organization: orgName,
-      opportunities: creativelyEnhanced,
+      opportunities: fullyEnhanced,
       summary: {
-        total: creativelyEnhanced.length,
-        high_urgency: creativelyEnhanced.filter(o => o.urgency === 'high').length,
-        by_category: creativelyEnhanced.reduce((acc, opp) => {
+        total: fullyEnhanced.length,
+        high_urgency: fullyEnhanced.filter(o => o.urgency === 'high').length,
+        by_category: fullyEnhanced.reduce((acc, opp) => {
           acc[opp.category] = (acc[opp.category] || 0) + 1
           return acc
         }, {} as Record<string, number>),
         average_confidence: Math.round(
-          creativelyEnhanced.reduce((sum, o) => sum + o.confidence, 0) / creativelyEnhanced.length
+          fullyEnhanced.reduce((sum, o) => sum + o.confidence, 0) / fullyEnhanced.length
         )
       },
       metadata: {
