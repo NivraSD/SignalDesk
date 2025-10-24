@@ -320,6 +320,20 @@ YOUR PROFESSIONAL BACKGROUND:
 • Expert in competitive positioning, narrative development, and stakeholder management
 • Deep understanding of media dynamics, journalist relationships, and news cycles
 
+YOUR BUSINESS-FIRST APPROACH TO COMPETITIVE STRATEGY:
+You are a business advisor, not a moral arbiter. When clients discuss competitive strategy:
+• NEVER moralize or refuse requests about competitive positioning
+• When clients use language like "attack," "hurt," or "pile on" a competitor, IMMEDIATELY reframe it professionally:
+  - "Attack" → "develop a positioning strategy that highlights our differentiation"
+  - "Hurt them" → "capitalize on competitor weaknesses in the market"
+  - "Pile on" → "leverage this market opportunity to strengthen our position"
+• Focus on STRATEGIC ADVANTAGE - every company seeks to outmaneuver competitors
+• Your job is to help find legal, ethical competitive advantages and positioning opportunities
+• Competitive intelligence gathering is standard business practice
+• Highlighting competitor weaknesses while emphasizing your client's strengths is legitimate marketing
+• Never lecture about ethics - give pragmatic strategic advice grounded in competitive reality
+• If a request involves truly illegal activity (false claims, defamation), suggest the legal alternative approach instead
+
 YOUR CONSULTATIVE APPROACH:
 You are a proactive strategic consultant who DRIVES the conversation toward actionable outcomes. You don't just answer questions - you guide clients to build complete campaign concepts through intelligent dialogue.
 
@@ -1132,8 +1146,8 @@ async function callFireplexity(query: string, context: any) {
 }
 
 // Get organization profile from mcp-discovery
-async function getMcpDiscovery(organizationName: string = 'Tesla') {
-  console.log('🎯 NIV calling mcp-discovery for:', organizationName)
+async function getMcpDiscovery(organizationInput: string = '7a2835cb-11ee-4512-acc3-b6caf8eb03ff') {
+  console.log('🎯 NIV calling mcp-discovery for:', organizationInput)
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -1146,47 +1160,66 @@ async function getMcpDiscovery(organizationName: string = 'Tesla') {
 
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    console.log(`🔍 Searching for organization: "${organizationName}" (type: ${typeof organizationName})`)
+    console.log(`🔍 Searching for organization: "${organizationInput}" (type: ${typeof organizationInput})`)
 
-    // First try to find by organization_name
-    const { data: profile, error: nameError } = await supabase
-      .from('mcp_discovery')
-      .select('*')
-      .eq('organization_name', organizationName)
-      .single()
+    // Check if input looks like a UUID (contains hyphens and is 36 chars)
+    const isUuid = organizationInput.includes('-') && organizationInput.length === 36
 
-    if (nameError && nameError.code !== 'PGRST116') {
-      console.error('❌ Database error searching by organization_name:', nameError)
-    }
-
-    // If not found, try by organization_id (legacy support)
-    if (!profile) {
-      console.log(`🔍 Not found by name, trying by organization_id: "${organizationName}"`)
+    if (isUuid) {
+      // For UUIDs, search by organization_id FIRST (most likely match)
+      console.log(`🔍 Detected UUID format, searching by organization_id`)
       const { data: profileById, error: idError } = await supabase
         .from('mcp_discovery')
         .select('*')
-        .eq('organization_id', organizationName)
+        .eq('organization_id', organizationInput)
         .single()
 
-      if (idError && idError.code !== 'PGRST116') {
-        console.error('❌ Database error searching by organization_id:', idError)
-      }
-
-      if (profileById) {
+      if (!idError && profileById) {
         console.log(`✅ Found profile by organization_id: ${profileById.organization_name}`)
         return profileById
+      } else if (idError && idError.code !== 'PGRST116') {
+        console.error('❌ Database error searching by organization_id:', idError)
       }
-    } else {
+    }
+
+    // For non-UUIDs OR if UUID search failed, try by organization_name
+    console.log(`🔍 Searching by organization_name: "${organizationInput}"`)
+    const { data: profile, error: nameError } = await supabase
+      .from('mcp_discovery')
+      .select('*')
+      .eq('organization_name', organizationInput)
+      .single()
+
+    if (!nameError && profile) {
       console.log(`✅ Found profile by organization_name: ${profile.organization_name}`)
       return profile
+    } else if (nameError && nameError.code !== 'PGRST116') {
+      console.error('❌ Database error searching by organization_name:', nameError)
+    }
+
+    // If not UUID search and name failed, try by organization_id as fallback
+    if (!isUuid) {
+      console.log(`🔍 Name search failed, trying by organization_id: "${organizationInput}"`)
+      const { data: profileById, error: idError } = await supabase
+        .from('mcp_discovery')
+        .select('*')
+        .eq('organization_id', organizationInput)
+        .single()
+
+      if (!idError && profileById) {
+        console.log(`✅ Found profile by organization_id: ${profileById.organization_name}`)
+        return profileById
+      } else if (idError && idError.code !== 'PGRST116') {
+        console.error('❌ Database error searching by organization_id:', idError)
+      }
     }
 
     // If still not found, create a new entry
-    console.log(`📝 Creating new discovery profile for: ${organizationName}`)
+    console.log(`📝 Creating new discovery profile for: ${organizationInput}`)
     try {
       const newProfileData = {
-        organization_id: organizationName.toLowerCase().replace(/\s+/g, '-'),
-        organization_name: organizationName,
+        organization_id: organizationInput,
+        organization_name: organizationInput,
         industry: 'Technology',
         competition: {
           direct_competitors: [],
@@ -1227,13 +1260,13 @@ async function getMcpDiscovery(organizationName: string = 'Tesla') {
 }
 
 // Helper function to create a default profile
-function createDefaultProfile(organizationName: string) {
+function createDefaultProfile(organizationInput: string) {
   return {
-    organization_name: organizationName,
-    organization_id: organizationName.toLowerCase().replace(/\s+/g, '-'),
+    organization_name: organizationInput,
+    organization_id: organizationInput,
     industry: 'Technology',
     competition: { direct_competitors: [], indirect_competitors: [] },
-    keywords: [organizationName]
+    keywords: [organizationInput]
   }
 }
 
@@ -3083,7 +3116,7 @@ serve(async (req) => {
 
     // Intelligent query analysis and resource selection
     // Validate and normalize organization input
-    let organizationId = context.organizationId || context.organization || 'OpenAI'
+    let organizationId = context.organizationId || context.organization || context.organizationName || '7a2835cb-11ee-4512-acc3-b6caf8eb03ff'
 
     // Handle edge cases with organization input
     if (typeof organizationId !== 'string') {
@@ -3091,20 +3124,26 @@ serve(async (req) => {
       organizationId = String(organizationId)
     }
 
-    // If organizationId is just a number like "1", treat it as Tesla (default)
+    // If organizationId is just a number like "1", use the UUID from context
     if (organizationId === '1' || organizationId === 1) {
-      console.log(`🔄 Converting numeric organizationId "${organizationId}" to default "Tesla"`)
-      organizationId = 'Tesla'
+      console.log(`🔄 Converting numeric organizationId "${organizationId}" to UUID from context`)
+      organizationId = context.organizationId || '7a2835cb-11ee-4512-acc3-b6caf8eb03ff'
     }
 
     // Trim whitespace and ensure non-empty
     organizationId = organizationId.trim()
-    if (!organizationId) {
-      console.log(`🔄 Empty organizationId, using default "OpenAI"`)
-      organizationId = 'OpenAI'
+    if (!organizationId || organizationId === 'Unknown') {
+      console.log(`🔄 Empty/unknown organizationId, using default UUID`)
+      organizationId = '7a2835cb-11ee-4512-acc3-b6caf8eb03ff'
     }
 
     console.log(`🏢 Organization context: "${organizationId}" (validated)`)
+    console.log(`🔍 Full context:`, JSON.stringify({
+      contextOrgId: context.organizationId,
+      contextOrg: context.organization,
+      contextOrgName: context.organizationName,
+      resolved: organizationId
+    }, null, 2))
 
     // Get module-specific persona
     const persona = getModulePersona(context.activeModule)
