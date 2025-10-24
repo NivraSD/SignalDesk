@@ -1,5 +1,5 @@
 # SignalDesk V3 - Comprehensive System Status
-*Last Updated: October 16, 2025 - Stakeholder Prediction System Added*
+*Last Updated: October 24, 2025 - NIV Advisor & Command Center V2 Added*
 
 ## Executive Summary
 
@@ -13,17 +13,20 @@ SignalDesk V3 is a fully operational AI-powered strategic communications platfor
 - ✅ **MCP Architecture** - 40+ specialized edge functions following Model Context Protocol pattern
 - ✅ **Frontend Integration** - BlueprintV3Presentation with color-coded execution ownership
 - ✅ **Stakeholder Prediction System** - AI-powered prediction of stakeholder actions (Beta) - Oct 16, 2025
+- ✅ **NIV Advisor & Command Center V2** - Conversational AI advisor with intelligent routing (Oct 24, 2025)
 
 ### Core Capabilities Status
 - ✅ **Campaign Builder** - Complete research → positioning → blueprint generation workflow
 - ✅ **VECTOR Campaigns** - Advanced multi-stakeholder psychological influence campaigns (NEW)
 - ✅ **Blueprint V3 Generation** - 75-second 6-part blueprint with 4-phase tactical orchestration
+- ✅ **NIV Advisor** - 25-year veteran conversational AI advisor with intelligent routing (Oct 24, 2025)
+- ✅ **Command Center V2** - NIV Panel with real-time streaming responses and organization context
 - ✅ **NIV Strategic Framework Generation** - Using niv-fireplexity for research, 140s timeout
 - ✅ **Intelligence Pipeline** - Discovery → Monitor → Enrichment → Synthesis → Opportunities
 - ✅ **Real-Time Intelligence** - Frontend-orchestrated monitoring (Oct 3, 2025 - PRODUCTION READY)
 - ✅ **Stakeholder Predictions** - AI-powered behavioral pattern analysis and action forecasting (Beta)
-- ✅ **Content Generation** - Multi-modal (text, image, video, presentations)
-- ✅ **Opportunity Engine** - MCP Detector + Creative Enhancement via Orchestrator V2
+- ✅ **Content Generation** - Multi-modal (text, image, video, presentations) with platform-specific formatting
+- ✅ **Opportunity Engine V2** - Execution-ready opportunities with real-time content generation
 - ✅ **Crisis Command Center** - Full crisis management suite with AI advisor and response generation
 - ✅ **NIV Crisis Consultant** - Dedicated AI consultant for crisis planning and real-time guidance
 - ✅ **Memory Vault** - Central persistence and orchestration hub
@@ -362,24 +365,71 @@ Blueprint V3 lays the foundation for V4's advanced influence mechanics while del
 
 ---
 
-### 2. NIV (Neural Intelligence Vehicle) ✅
+### 2. NIV (Neural Intelligence Vehicle) & Command Center ✅
 
-**Status: Fully Operational - Phase 3 Active**
+**Status: Fully Operational - NIV Advisor V2 Active (October 24, 2025)**
 
-#### Core Components:
+#### NIV Advisor - NEW October 2025
+**The Strategic Communications AI Advisor**
+
+NIV Advisor is a conversational AI with 25+ years of virtual experience in corporate communications and public affairs, designed to advise, research, strategize, and route to specialized content generation functions.
+
+**Core Persona:**
+- 25-year veteran in corporate communications and public affairs
+- Expertise across technology, healthcare, financial services, consumer goods
+- Deep knowledge of academic research (Cialdini, Kahneman, Centola, Berger)
+- Real-world case study expertise (J&J Tylenol, ALS Ice Bucket, Old Spice, Boeing 737 MAX)
+- Business-first approach to competitive strategy (no moralizing)
+
+**Intelligent Routing System:**
+1. **Content Generation Route** → `niv-content-intelligent-v2`
+   - Detects content generation intent with confidence scoring
+   - Supports 34+ content types with platform-specific formatting
+   - Packages proper `campaignContext` for execution
+
+2. **Crisis Management Route** → `niv-crisis-advisor`
+   - Keyword-based detection (crisis, emergency, breach, etc.)
+   - Specialized crisis planning and real-time guidance
+
+3. **Research & Intelligence Route** → `niv-fireplexity`
+   - Deep market research and competitive intelligence
+   - Real-time web research with Firecrawl integration
+
+**Key Features:**
+- Organization context persistence (fixed Oct 24, 2025)
+- Conversation state management with concept tracking
+- Professional reframing of competitive strategy language
+- Automatic routing based on user intent and conversation stage
+
+#### Command Center V2 (NIV Panel)
+**Production UI: `/src/components/niv/NIVPanel.tsx`**
+
+- Real-time streaming responses with two-stage architecture
+- Quick acknowledgment (stage: 'acknowledge') for immediate feedback
+- Full processing (stage: 'full') for complete analysis
+- Organization context integration from user profile
+- Support for multi-turn conversations with history
+- Markdown rendering with code syntax highlighting
+- Typing indicators and loading states
+
+#### Legacy NIV Components (Still Active)
 - **niv-orchestrator-robust** - Main orchestration with 140s timeout
 - **niv-fireplexity** - Research engine using Firecrawl for web search
 - **niv-strategic-framework** - Framework generation from research data
 - **campaign-detector** - 20+ campaign type detection system
 - **niv-memory-vault** - Strategy persistence and workflow orchestration
 
-#### Capabilities:
-- Research/strategy mode separation
-- Real-time web research via niv-fireplexity
-- Campaign-specific framework generation
-- Industry and context-aware recommendations
-- Automatic Memory Vault integration
-- Workflow component triggering
+#### Content Generation Improvements (October 24, 2025)
+- **Press Releases**: Strict 11-step AP format enforcement
+  - FOR IMMEDIATE RELEASE header, dateline, headline, subhead
+  - Proper executive quote formatting
+  - Boilerplate and contact info sections
+  - ### end marker
+- **Social Posts**: Platform-specific formatting
+  - Twitter/X: 280 character limit strictly enforced
+  - LinkedIn: 150-300 words professional tone
+  - Facebook: 100-250 words conversational
+  - Instagram: 125-150 words with hashtag strategy
 
 #### Campaign Types Supported:
 - **Product Launch** (5 types): B2B SaaS, Consumer Tech, Medical Device, CPG, Fintech
@@ -901,45 +951,115 @@ This shifts organizations from **reactive crisis management** to **proactive str
 
 ---
 
-### 5. Opportunity Engine ✅
+### 5. Opportunity Engine V2 ✅
 
-**Status: Production Ready with Creative Enhancement**
+**Status: Production Ready with Real-Time Content Generation (October 24, 2025)**
 
-#### Two-Stage Architecture:
-1. **MCP Opportunity Detector**:
-   - Identifies 8-10 PR opportunities from enriched intelligence
-   - Categories: Competitive, Viral, Strategic, Defensive, Talent, Stakeholder
-   - Direct database storage with organization_id handling
-   - Clears old opportunities before inserting new
+#### V2 Architecture - Execution-Ready Opportunities
 
-2. **Opportunity Orchestrator V2**:
-   - Creative campaign enhancement (single Claude call)
-   - Generates memorable campaign names (e.g., "Operation Market Truth")
-   - Creates 3-5 step playbooks with owners and deadlines
-   - Temperature 0.9 for maximum creativity
+**Major October 24, 2025 Updates:**
+- V2 opportunities with full `execution_plan` and `strategic_context`
+- Real-time content generation with live progress tracking
+- Visual progress bars with platform completion indicators
+- Content viewer modal with rich metadata
+- Parallel content creation with 3-second polling
 
-#### Opportunity Structure:
+#### Two-Column UI (OpportunitiesModule V2):
+1. **Left Column (2/5 width)**: Opportunities list
+   - Score, urgency, content item count
+   - Execute button with gradient progress bar
+   - Auto-refresh on execution completion
+
+2. **Right Column (3/5 width)**: Execution details
+   - Strategic Context (trigger_events, why_now, competitive_advantage)
+   - Execution Plan (stakeholder_campaigns with content_items)
+   - Generated Content section with view/copy functionality
+
+#### V2 Opportunity Structure:
 ```typescript
 {
-  title: string,              // Catchy, specific title
+  // V1 Fields (retained for compatibility)
+  title: string,
   urgency: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW",
-  window: string,             // "24-48 hours", "1 week"
-  action_items: [{           // THE PLAYBOOK
-    step: number,
-    action: string,         // Exactly what to do
-    owner: string,         // CEO, CMO, CTO, etc.
-    deadline: string,      // When it must be done
-    success_metric: string // How to measure
-  }],
-  campaign_name: string,     // Creative campaign name
-  creative_approach: string, // Bold PR strategy
-  expected_impact: {        // THE WHY
-    revenue: string,
-    reputation: string,
-    competitive_advantage: string
-  }
+  score: number,  // 0-100
+  category: string,
+
+  // V2 Strategic Context
+  strategic_context: {
+    trigger_events: string[],
+    market_dynamics: string,
+    why_now: string,
+    competitive_advantage: string,
+    time_window: string,
+    expected_impact: string,
+    risk_if_missed: string
+  },
+
+  // V2 Execution Plan
+  execution_plan: {
+    stakeholder_campaigns: [{
+      stakeholder_name: string,
+      stakeholder_priority: number,
+      lever_name: string,
+      lever_priority: number,
+      content_items: [{
+        type: string,  // press_release, blog_post, etc.
+        topic: string,
+        target: string,
+        platform: string,
+        brief: {
+          angle: string,
+          key_points: string[],
+          tone: string,
+          length: string,
+          cta: string
+        },
+        urgency: string
+      }]
+    }],
+    execution_timeline: {
+      immediate: string[],
+      this_week: string[],
+      this_month: string[],
+      ongoing: string[]
+    },
+    success_metrics: any[]
+  },
+
+  version: 2,  // Distinguishes V2 from V1
+  auto_executable: boolean
 }
 ```
+
+#### Real-Time Content Generation:
+1. **Progress Tracking**:
+   - Gradient progress bar (purple to pink)
+   - Percentage display and time-based updates
+   - Stage indicators: "Generating content... (~3/7 pieces)"
+
+2. **Live Content Polling**:
+   - Polls `content_library` every 3 seconds
+   - Content appears as generated (not all at once)
+   - Counter badge updates in real-time: "3 pieces" → "7 pieces"
+
+3. **Gamma Presentation**:
+   - Extended polling timeout: 60s → 120s
+   - Time-based progress: "Gamma generating... (45s / 120s)"
+   - Auto-saves presentation URL when complete
+
+4. **Content Display**:
+   - Title with full context (e.g., "Opportunity - blog_post - Stakeholder")
+   - Type badges, stakeholder info, channel (owned/media)
+   - Purpose/topic description
+   - View button opens modal with full content + metadata
+   - Copy to clipboard functionality
+
+#### MCP Opportunity Detector V2:
+- Generates execution-ready opportunities with full strategic_context
+- Creates stakeholder_campaigns with detailed content_items
+- Each content item includes comprehensive brief
+- Saves to database with version: 2 flag
+- Auto-executable field for one-click generation
 
 ### 6. Memory Vault & Orchestration ✅
 
