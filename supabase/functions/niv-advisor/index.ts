@@ -1372,71 +1372,67 @@ async function callFireplexity(query: string, context: any) {
 
     console.log(`⏰ Timeframe detected: ${timeframe}`)
 
-    // Use niv-firesearch for intelligent research with answer validation
-    // Add 120-second timeout to prevent 504 errors
-    const fetchPromise = fetch(`${supabaseUrl}/functions/v1/niv-firesearch`, {
+    // Call Firecrawl directly (like monitor-stage-1-fireplexity does)
+    // No wrappers, no validation, no decomposition - just search and return
+    const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY') || 'fc-3048810124b640eb99293880a4ab25d0'
+    const FIRECRAWL_BASE_URL = 'https://api.firecrawl.dev/v2'
+
+    // Map timeframe to tbs parameter
+    const tbsMap: Record<string, string> = {
+      'current': 'qdr:h',    // Last hour
+      'recent': 'qdr:d3',    // Last 3 days
+      'week': 'qdr:w',       // Last week
+      'month': 'qdr:m',      // Last month
+      'year': ''             // No filter
+    }
+    const tbs = tbsMap[timeframe] || 'qdr:d3' // Default 3 days
+
+    console.log(`🔥 Calling Firecrawl directly with tbs=${tbs}`)
+
+    const response = await fetch(`${FIRECRAWL_BASE_URL}/search`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseKey}`
+        'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         query: query,
-        organizationId: context.organizationId || 'OpenAI',
-        conversationId: context.conversationId,
-        timeframe: timeframe,
-        maxIterations: 0 // Skip retries - with 0.3 confidence threshold we get answers on first pass
+        sources: ['web', 'news'],
+        limit: 10, // Get top 10 results
+        tbs, // Time-based filter
+        scrapeOptions: {
+          formats: ['markdown'],
+          onlyMainContent: true
+        }
       })
     })
-
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('FireSearch timeout after 120s')), 120000)
-    )
-
-    const response = await Promise.race([fetchPromise, timeoutPromise])
 
     if (response.ok) {
       const data = await response.json()
 
-      if (data.success && data.validatedAnswers) {
-        console.log(`✅ FireSearch complete:`)
-        console.log(`   - Sub-questions: ${data.subQuestions.length}`)
-        console.log(`   - Validated answers: ${data.validatedAnswers.length}`)
-        console.log(`   - Total sources: ${data.totalSources}`)
-        console.log(`   - Synthesis length: ${data.synthesis.length} chars`)
+      if (data.success) {
+        const webResults = data.data?.web || []
+        const newsResults = data.data?.news || []
+        const allResults = [...webResults, ...newsResults]
 
-        // Transform FireSearch results to article format for NIV Advisor
-        const articles = []
+        console.log(`✅ Firecrawl complete:`)
+        console.log(`   - Web results: ${webResults.length}`)
+        console.log(`   - News results: ${newsResults.length}`)
+        console.log(`   - Total: ${allResults.length}`)
 
-        // Add synthesis as a primary "article"
-        articles.push({
-          title: `Research Synthesis: ${query}`,
-          description: data.synthesis.substring(0, 200),
-          url: 'firesearch://synthesis',
-          content: data.synthesis,
-          source: { name: 'FireSearch', domain: 'internal' },
-          publishedAt: new Date().toISOString(),
-          relevanceScore: 1.0,
-          type: 'synthesis'
-        })
-
-        // Add validated sources
-        data.validatedAnswers.forEach((va, idx) => {
-          va.sources.forEach((source, sIdx) => {
-            articles.push({
-              title: source.title,
-              description: source.excerpt,
-              url: source.url,
-              content: source.excerpt,
-              source: { name: extractSourceName(source.url), domain: extractDomain(source.url) },
-              publishedAt: source.publishDate || new Date().toISOString(),
-              relevanceScore: source.relevance || 0.8,
-              subQuestion: va.subQuestion,
-              confidence: va.confidence,
-              type: 'validated_source'
-            })
-          })
-        })
+        // Transform to article format
+        const articles = allResults.map(result => ({
+          title: result.title || 'Untitled',
+          description: result.description || '',
+          url: result.url,
+          content: result.markdown || result.description || '',
+          source: {
+            name: extractSourceName(result.url),
+            domain: extractDomain(result.url)
+          },
+          publishedAt: result.publishedTime || new Date().toISOString(),
+          relevanceScore: result.score || 50
+        }))
 
         return articles
       }
@@ -3685,66 +3681,61 @@ Respond with JSON only:
           }
 
           try {
-            // Add 120-second timeout to prevent 504 errors
-            const fetchPromise = fetch(`${supabaseUrl}/functions/v1/niv-firesearch`, {
+            // Call Firecrawl directly (no wrappers, no validation)
+            const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY') || 'fc-3048810124b640eb99293880a4ab25d0'
+            const FIRECRAWL_BASE_URL = 'https://api.firecrawl.dev/v2'
+
+            const tbsMap: Record<string, string> = {
+              'current': 'qdr:h',
+              'recent': 'qdr:d3',
+              'week': 'qdr:w',
+              'month': 'qdr:m',
+              'year': ''
+            }
+            const tbs = tbsMap[timeframe] || 'qdr:d3'
+
+            const response = await fetch(`${FIRECRAWL_BASE_URL}/search`, {
               method: 'POST',
               headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${supabaseKey}`
+                'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
+                'Content-Type': 'application/json'
               },
               body: JSON.stringify({
                 query: query,
-                organizationId: organizationId,
-                conversationId: conversationId,
-                timeframe: timeframe,
-                maxIterations: 0 // Skip retries - with 0.3 confidence threshold we get answers on first pass
+                sources: ['web', 'news'],
+                limit: 10,
+                tbs,
+                scrapeOptions: {
+                  formats: ['markdown'],
+                  onlyMainContent: true
+                }
               })
             })
-
-            const timeoutPromise = new Promise((_, reject) =>
-              setTimeout(() => reject(new Error('FireSearch timeout after 120s')), 120000)
-            )
-
-            const response = await Promise.race([fetchPromise, timeoutPromise])
 
             if (response.ok) {
               const data = await response.json()
 
-              if (data.success && data.validatedAnswers) {
-                // Transform to articles format
-                const articles = []
+              if (data.success) {
+                const webResults = data.data?.web || []
+                const newsResults = data.data?.news || []
+                const allResults = [...webResults, ...newsResults]
 
-                // Add synthesis
-                articles.push({
-                  title: `Research: ${query.substring(0, 50)}...`,
-                  content: data.synthesis,
-                  type: 'synthesis',
-                  validatedAnswers: data.validatedAnswers.length,
-                  totalSources: data.totalSources
-                })
+                const articles = allResults.map(result => ({
+                  title: result.title || 'Untitled',
+                  description: result.description || '',
+                  url: result.url,
+                  content: result.markdown || result.description || '',
+                  publishedAt: result.publishedTime || new Date().toISOString()
+                }))
 
-                // Add validated sources
-                data.validatedAnswers.forEach(va => {
-                  va.sources.forEach(source => {
-                    articles.push({
-                      title: source.title,
-                      description: source.excerpt,
-                      url: source.url,
-                      content: source.excerpt,
-                      confidence: va.confidence
-                    })
-                  })
-                })
-
-                console.log(`✅ FireSearch returned ${articles.length} validated results`)
+                console.log(`✅ Firecrawl returned ${articles.length} results`)
                 return { data: articles, success: true }
               }
             }
           } catch (error) {
-            console.error(`⚠️ FireSearch failed in orchestration:`, error.message)
+            console.error(`⚠️ Firecrawl failed in orchestration:`, error.message)
           }
 
-          // Fallback to empty results
           return { data: [], success: false }
         },
         intelligencePipeline: async (query: string) => {
