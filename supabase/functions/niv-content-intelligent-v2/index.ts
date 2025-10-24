@@ -3970,7 +3970,7 @@ ${targetAudiences.length > 0 ? `**TARGET AUDIENCE:**\n${targetAudiences[0]}` : '
 
 Write ONLY the blog post content. No meta-commentary.`,
 
-    'social-post': `Create ${parameters.variations || 3} distinct social media posts for ${parameters.platforms?.join(', ') || 'LinkedIn and Twitter'}:
+    'social-post': `Create ${parameters.variations || 3} distinct, platform-specific social media posts:
 
 **TODAY'S DATE:** ${currentDate}
 
@@ -3984,26 +3984,67 @@ ${positioning ? `Positioning: ${positioning}` : ''}
 **KEY MESSAGES:**
 ${keyMessages.length > 0 ? keyMessages.map((msg: string) => `- ${msg}`).join('\n') : '- Innovation and impact'}
 
-**REQUIREMENTS:**
-- Create ${parameters.variations || 3} DISTINCT variations
-- Each must be genuinely different (not just word changes)
+**PLATFORMS:** ${parameters.platforms?.join(', ') || 'Twitter, LinkedIn, Facebook'}
+
+**CRITICAL PLATFORM-SPECIFIC REQUIREMENTS:**
+
+FOR TWITTER/X:
+- Maximum 280 characters per post
+- Punchy, concise language
+- Strong hook in first 10 words
+- Optional emoji usage (1-2 max)
+${parameters.includeHashtags ? '- 1-2 relevant hashtags at end' : '- No hashtags'}
+- Thread-friendly if needed (but each tweet stands alone)
+
+FOR LINKEDIN:
+- Professional tone
+- 150-300 words optimal (can go longer for thought leadership)
+- Start with compelling hook or question
+- Include line breaks for readability
+- Can include personal insights or story
+${parameters.includeHashtags ? '- 3-5 relevant hashtags at end' : '- No hashtags'}
+- Professional emoji usage acceptable (minimal)
+
+FOR FACEBOOK:
+- Conversational, friendly tone
+- 100-250 words
+- Engaging question or hook
+- Personal and relatable
+${parameters.includeHashtags ? '- 2-3 relevant hashtags' : '- No hashtags'}
+
+FOR INSTAGRAM:
+- Visual-first mindset
+- 125-150 words caption
+- Engaging storytelling
+- Multiple line breaks
+${parameters.includeHashtags ? '- 10-15 relevant hashtags (mix of popular and niche)' : '- No hashtags'}
+
+**GENERAL REQUIREMENTS:**
+- Create ${parameters.variations || 3} GENUINELY DIFFERENT posts
+- Each must have unique angle, not just reworded
 - Align with strategic brief and key messages
-- Platform-appropriate format
 - Include compelling hooks
-- Reference current trends where relevant (today is ${currentDate})
-${parameters.includeHashtags ? '- Include relevant hashtags' : '- No hashtags'}
+- Reference current context (${currentDate})
+- Platform voice must match channel
 
-Format as:
-POST 1:
-[actual content]
+**OUTPUT FORMAT:**
 
-POST 2:
-[actual content]
+Platform: [Platform Name]
+---
+[Actual post content respecting character limits]
+---
 
-POST 3:
-[actual content]
+Platform: [Platform Name]
+---
+[Actual post content respecting character limits]
+---
 
-Write ONLY the posts. No labels or meta-commentary in the post text itself.`,
+Platform: [Platform Name]
+---
+[Actual post content respecting character limits]
+---
+
+Write ONLY the posts. No explanations. STRICTLY respect character limits.`,
 
     'media-pitch': `Write a compelling, personalized media pitch email:
 
@@ -4102,7 +4143,7 @@ ${targetAudiences.length > 0 ? `**TARGET AUDIENCE:**\n${targetAudiences[0]}` : '
 
 Write ONLY the white paper content.`,
 
-    'press-release': `Write a newsworthy press release:
+    'press-release': `Write a professional press release in proper AP format:
 
 **TODAY'S DATE:** ${currentDate}
 
@@ -4116,19 +4157,34 @@ ${positioning ? `Positioning: ${positioning}` : ''}
 **KEY MESSAGES:**
 ${keyMessages.length > 0 ? keyMessages.map((msg: string) => `- ${msg}`).join('\n') : ''}
 
-**REQUIREMENTS:**
-- Follow AP style
-- Compelling headline and subheadline
-- Strong lede paragraph (who, what, when, where, why)
-- Include executive quote
-- Reference key data points
-- Professional boilerplate
-- Contact information placeholder
-- Align with strategic brief
-- Newsworthy and timely (${currentDate})
-- 400-600 words
+**STRICT FORMAT REQUIREMENTS - MUST FOLLOW EXACTLY:**
 
-Write ONLY the press release.`,
+1. FOR IMMEDIATE RELEASE header
+2. CITY, STATE – Date (${currentDate}) format dateline
+3. Bold, compelling headline in title case
+4. Italicized subheadline expanding on headline
+5. Strong lede paragraph covering who, what, when, where, why
+6. Body paragraphs with supporting details and context
+7. Executive quote in this format:
+   "Quote content," said [Name], [Title] at [Organization]. "Continuation of quote if needed."
+8. Additional data points and details
+9. Professional boilerplate paragraph starting with "About [Organization]:"
+10. Contact information:
+    Media Contact:
+    [Name]
+    [Title]
+    [Email]
+    [Phone]
+11. ### (three hash marks) centered at end to indicate end of release
+
+**STYLE:**
+- AP style throughout
+- Third person only
+- 400-600 words
+- Newsworthy angle
+- Timely relevance to ${currentDate}
+
+Write the complete press release with ALL required elements in proper format.`,
 
     'thought-leadership': `Write an authoritative thought leadership article:
 
