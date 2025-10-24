@@ -53,13 +53,17 @@ export default function LiveActivityFeed({ organizationId, onNavigate }: LiveAct
         })
       })
 
-      // Load recent campaigns
-      const { data: campaigns } = await supabase
+      // Load recent campaigns (gracefully handle if table doesn't exist)
+      const { data: campaigns, error: campaignsError } = await supabase
         .from('campaign_builder_sessions')
         .select('*')
         .eq('organization_id', organizationId)
         .order('updated_at', { ascending: false })
         .limit(3)
+
+      if (campaignsError) {
+        console.warn('Campaign builder sessions not available:', campaignsError.message)
+      }
 
       campaigns?.forEach(camp => {
         if (camp.updated_at !== camp.created_at) {

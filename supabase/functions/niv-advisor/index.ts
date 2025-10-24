@@ -3384,7 +3384,10 @@ Respond with JSON only:
       }
 
       // Decompose the query into research steps
-      const researchPlan = await decomposeQuery(userMessage, context, ANTHROPIC_API_KEY)
+      // IMPORTANT: Use refined search query from Claude's understanding, not raw user message
+      const researchQuery = queryStrategy?.searchQuery || claudeUnderstanding?.approach?.search_query || userMessage
+      console.log(`🔍 Using research query: "${researchQuery.substring(0, 80)}..."`)
+      const researchPlan = await decomposeQuery(researchQuery, context, ANTHROPIC_API_KEY)
       console.log(`📋 Research plan created: ${researchPlan.steps.length} steps`)
 
       // Create tools for self-orchestration

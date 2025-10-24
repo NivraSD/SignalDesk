@@ -81,6 +81,10 @@ export default function DailyBrief({ organizationId, onNavigate }: DailyBriefPro
         .eq('organization_id', organizationId)
         .order('updated_at', { ascending: false })
 
+      if (campError) {
+        console.warn('Campaign builder sessions not available:', campError.message)
+      }
+
       const activeCampaigns = campaigns?.filter(c => c.status === 'in_progress' || c.status === 'active') || []
 
       setData({

@@ -104,13 +104,17 @@ export default function SuggestedActions({ organizationId, onNavigate }: Suggest
         }
       }
 
-      // 3. Check for in-progress campaigns
-      const { data: campaigns } = await supabase
+      // 3. Check for in-progress campaigns (gracefully handle if table doesn't exist)
+      const { data: campaigns, error: campaignsError } = await supabase
         .from('campaign_builder_sessions')
         .select('*')
         .eq('organization_id', organizationId)
         .eq('status', 'in_progress')
         .order('updated_at', { ascending: false })
+
+      if (campaignsError) {
+        console.warn('Campaign builder sessions not available:', campaignsError.message)
+      }
 
       campaigns?.forEach((campaign, idx) => {
         if (idx === 0) {
