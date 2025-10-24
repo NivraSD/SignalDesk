@@ -2164,6 +2164,25 @@ function buildClaudeMessage(
   shouldGenerateFramework?: boolean,
   conceptState?: ConceptState
 ): string {
+  // CRITICAL: Dynamic date functions called at request time
+  const getCurrentDate = () => {
+    const now = new Date()
+    return now.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  }
+
+  const getCurrentYear = () => new Date().getFullYear()
+  const getCurrentMonth = () => new Date().toLocaleDateString('en-US', { month: 'long' })
+  const getThreeMonthsFromNow = () => {
+    const date = new Date()
+    date.setMonth(date.getMonth() + 3)
+    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  }
+
   let message = ""
 
   // START WITH CLIENT CONTEXT - But emphasize it's just a starting point
@@ -2323,13 +2342,21 @@ Save strategic recommendations for when explicitly requested.\n`
 
     message += `\n**NOW CREATE A COMPLETE STRATEGIC FRAMEWORK:**\n\n`
 
+    message += `**CRITICAL - TEMPORAL AWARENESS:**\n`
+    message += `TODAY IS: ${getCurrentDate()}\n`
+    message += `CURRENT YEAR: ${getCurrentYear()}\n`
+    message += `THREE MONTHS FROM NOW: ${getThreeMonthsFromNow()}\n`
+    message += `- ALL timeline goals must use dates AFTER today\n`
+    message += `- Example GOOD: "Achieve 30% share of voice by ${getThreeMonthsFromNow()}"\n`
+    message += `- Example BAD: "Achieve 30% by March 2025" (if today is October 2025)\n\n`
+
     message += `**EXECUTIVE SUMMARY**\n`
     message += `[2-3 paragraphs synthesizing the opportunity, approach, and expected impact]\n\n`
 
     message += `**STRATEGIC OBJECTIVES**\n`
-    message += `- Primary Goal: [Main objective]\n`
-    message += `- Supporting Goals: [2-3 secondary objectives]\n`
-    message += `- Success Metrics: [How we measure victory]\n\n`
+    message += `- Primary Goal: [Measurable objective with specific date AFTER ${getCurrentDate()}]\n`
+    message += `- Supporting Goals: [2-3 secondary objectives with dates]\n`
+    message += `- Success Metrics: [How we measure victory with timeframes]\n\n`
 
     message += `**CORE NARRATIVE & MESSAGING**\n`
     message += `- The Story: [2-3 sentence narrative]\n`
@@ -2361,12 +2388,13 @@ Save strategic recommendations for when explicitly requested.\n`
     message += `3. [Specific action with owner]\n\n`
 
     message += `**TIMELINE & MILESTONES**\n`
-    message += `- Phase 1 (Weeks 1-2): [Initial rollout]\n`
-    message += `- Phase 2 (Weeks 3-4): [Amplification]\n`
-    message += `- Phase 3 (Month 2+): [Sustained momentum]\n\n`
+    message += `- Phase 1 (Weeks 1-2 starting TODAY ${getCurrentDate()}): [Initial rollout with specific dates]\n`
+    message += `- Phase 2 (Weeks 3-4): [Amplification with milestones]\n`
+    message += `- Phase 3 (By ${getThreeMonthsFromNow()}): [Long-term sustained momentum]\n\n`
 
     message += `Base EVERYTHING on our research and conversations. Be SPECIFIC and ACTIONABLE.\n`
-    message += `End with: "This strategic framework incorporates all our research and is ready for execution. The framework will be saved to Memory Vault for implementation."\n`
+    message += `**IMPORTANT:** Use actual future dates (like "${getThreeMonthsFromNow()}"), not past dates.\n`
+    message += `End with: "What specific aspects of this strategy would you like me to help execute first?"\n`
   }
 
   // Add proposal generation instructions if orchestrated research completed
@@ -3215,17 +3243,15 @@ function detectStrategicIntent(message: string, conversationHistory?: any[]): bo
 function detectCommandIntent(message: string): { isCommand: boolean; commandType?: string } {
   const queryLower = message.toLowerCase()
 
-  // Detect routing/execution commands
+  // Detect routing/execution commands - SIMPLIFIED and more flexible
   const routingCommands = [
-    /send.*to (gamma|campaign builder|content generator)/i,
-    /create.*in (gamma|campaign builder)/i,
-    /open.*in/i,
-    /take.*to/i,
-    /route.*to/i,
-    /use (gamma|campaign builder|content generator)/i,
-    /generate.*deck/i,
-    /make.*presentation/i,
-    /build.*in/i
+    /(create|make|generate|build).*(presentation|deck|slides?)/i,  // "create a presentation", "make deck", "generate slides"
+    /(create|make|generate|build).*(press release|blog|article|post|email)/i,  // Content creation
+    /send.*(to|in) (gamma|campaign builder)/i,  // "send to gamma"
+    /open.*(in|with) (gamma|campaign builder)/i,  // "open in gamma"
+    /use (gamma|campaign builder)/i,  // "use gamma"
+    /execute (this|it|the strategy)/i,  // "execute this", "execute the strategy"
+    /take.*(to|into) (gamma|campaign)/i  // "take to gamma"
   ]
 
   for (const regex of routingCommands) {
@@ -3608,15 +3634,86 @@ serve(async (req) => {
       // Get the conceptState to check if we have a strategic framework
       const conceptState = getConceptState(conversationId)
 
-      // Check conversation history for the last framework
+      // Extract strategy from conversation text (since we no longer generate structured frameworks)
       let latestFramework = null
+
+      // Look for the last assistant message with strategic advice
       for (let i = conversationHistory.length - 1; i >= 0; i--) {
         const msg = conversationHistory[i]
-        if (msg.role === 'assistant' && msg.structured) {
-          latestFramework = msg.structured
-          console.log('📦 Found strategic framework in conversation history')
-          break
+        if (msg.role === 'assistant' || msg.role === 'niv') {
+          // Check if this message contains strategic content
+          const content = msg.content || ''
+          const hasStrategy = content.includes('STRATEGIC OBJECTIVES') ||
+                             content.includes('Strategy:') ||
+                             content.includes('Tactical Plan') ||
+                             content.includes('Key Messages') ||
+                             content.includes('Timeline')
+
+          if (hasStrategy) {
+            console.log('📦 Found strategic advice in conversation')
+            // Create a simple framework structure from the conversational text
+            latestFramework = {
+              strategy: {
+                objective: extractBetween(content, 'Primary Goal:', '\n') || 'Strategic Initiative',
+                narrative: content,  // Full context
+                keyMessages: extractListItems(content, 'Key Messages:'),
+                target_audiences: extractListItems(content, 'Target Audience'),
+                proof_points: extractListItems(content, 'Proof Points')
+              },
+              contentStrategy: {
+                subject: extractBetween(content, 'Primary Goal:', '\n') || 'Strategic Framework',
+                narrative: content,
+                key_messages: extractListItems(content, 'Key Messages:'),
+                target_audiences: extractListItems(content, 'Target Audience'),
+                chosen_approach: 'conversational-framework'
+              },
+              media_targets: {
+                tier_1_targets: extractListItems(content, 'Tier 1 Targets:'),
+                tier_2_targets: extractListItems(content, 'Tier 2 Targets:')
+              },
+              executionPlan: {
+                timeline: {
+                  phases: [],
+                  milestones: extractListItems(content, 'Milestones:')
+                },
+                autoExecutableContent: {
+                  contentTypes: ['press-release', 'media-pitch', 'social-post', 'media-list'],
+                  estimatedPieces: 6
+                }
+              }
+            }
+            break
+          }
         }
+      }
+
+      // Helper functions to extract content from text
+      function extractBetween(text: string, start: string, end: string): string {
+        const startIdx = text.indexOf(start)
+        if (startIdx === -1) return ''
+        const textAfterStart = text.substring(startIdx + start.length)
+        const endIdx = textAfterStart.indexOf(end)
+        if (endIdx === -1) return textAfterStart.trim()
+        return textAfterStart.substring(0, endIdx).trim()
+      }
+
+      function extractListItems(text: string, sectionTitle: string): string[] {
+        const items: string[] = []
+        const startIdx = text.indexOf(sectionTitle)
+        if (startIdx === -1) return items
+
+        const section = text.substring(startIdx + sectionTitle.length, startIdx + 500)
+        const lines = section.split('\n')
+
+        for (const line of lines) {
+          const trimmed = line.trim()
+          if (trimmed.startsWith('-') || trimmed.startsWith('•') || /^\d+\./.test(trimmed)) {
+            const cleanedItem = trimmed.replace(/^[-•\d.]\s*/, '').trim()
+            if (cleanedItem) items.push(cleanedItem)
+          }
+        }
+
+        return items
       }
 
       // Detect what content type user wants
@@ -4529,9 +4626,10 @@ Remember to maintain natural conversation flow while bringing this perspective t
       )
     }
 
-    // Generate strategic framework when appropriate
-    if (shouldGenerateFramework && stage === 'full') {
-      console.log('🎯 Calling NIV Strategic Framework edge function...')
+    // DISABLED: Strategic framework generation now happens conversationally within Claude's response
+    // NIV provides strategic advice in conversation, not as external framework object
+    if (false && shouldGenerateFramework && stage === 'full') {
+      console.log('🎯 [DISABLED] Strategic Framework edge function...')
 
       // Store NIV's response in concept state
       conceptState.fullConversation.push({
