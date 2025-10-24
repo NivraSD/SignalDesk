@@ -32,6 +32,7 @@ export default function NIVPanel({ embedded = false, onCampaignGenerated, onOppo
   const [input, setInput] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
   const [currentTool, setCurrentTool] = useState<string | null>(null)
+  const [conversationId] = useState(`niv-${Date.now()}`) // PERSISTENT conversation ID for entire session
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Initialize with welcome message
@@ -54,6 +55,16 @@ export default function NIVPanel({ embedded = false, onCampaignGenerated, onOppo
     scrollToBottom()
   }, [messages])
 
+  // Build conversation history from messages for backend
+  const buildConversationHistory = () => {
+    return messages
+      .filter(m => !(m.role === 'niv' && m.content.includes("Hi, I'm NIV"))) // Skip welcome message
+      .map(m => ({
+        role: m.role === 'user' ? 'user' : 'assistant',
+        content: m.content
+      }))
+  }
+
   const handleSend = async (text?: string) => {
     const messageText = text || input
     if (!messageText.trim() || isProcessing) return
@@ -72,7 +83,9 @@ export default function NIVPanel({ embedded = false, onCampaignGenerated, onOppo
     setIsProcessing(true)
 
     try {
-      const conversationId = `niv-${Date.now()}`
+      // Build conversation history BEFORE adding current message
+      const conversationHistory = buildConversationHistory()
+      console.log(`📜 Conversation history: ${conversationHistory.length} messages`)
 
       // Step 1: Quick acknowledgment (like Execute module)
       console.log('🤖 Getting quick acknowledgment...')
@@ -81,7 +94,8 @@ export default function NIVPanel({ embedded = false, onCampaignGenerated, onOppo
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: messageText,
-          conversationId: conversationId,
+          conversationId: conversationId, // PERSISTENT ID - same for entire session
+          conversationHistory: conversationHistory, // SEND FULL HISTORY
           organizationId: organization?.id || '1',
           organizationContext: {
             name: organization?.name || 'Unknown',
@@ -114,7 +128,8 @@ export default function NIVPanel({ embedded = false, onCampaignGenerated, onOppo
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: messageText,
-          conversationId: conversationId,
+          conversationId: conversationId, // SAME PERSISTENT ID
+          conversationHistory: conversationHistory, // SAME FULL HISTORY
           organizationId: organization?.id || '1',
           organizationContext: {
             name: organization?.name || 'Unknown',

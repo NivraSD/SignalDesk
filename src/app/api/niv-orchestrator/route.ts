@@ -6,10 +6,11 @@ const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { message, conversationId, organizationId, organizationContext, framework, stage } = body
+    const { message, conversationId, organizationId, organizationContext, framework, stage, conversationHistory } = body
 
     console.log(`NIV Panel API: Calling niv-advisor (stage: ${stage || 'full'})`)
     console.log(`NIV Panel API: organizationId from frontend: "${organizationId}"`)
+    console.log(`NIV Panel API: conversationHistory length: ${(conversationHistory || []).length}`)
 
     // Build context exactly like niv-orchestrator-robust - pass organizationId through
     const context: any = {
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         message,
         conversationId: conversationId || `niv-${Date.now()}`,
-        conversationHistory: [],
+        conversationHistory: conversationHistory || [], // FORWARD from frontend instead of hardcoded empty!
         stage: stage || 'full',
         sessionId: conversationId || `niv-${Date.now()}`,
         context
