@@ -65,6 +65,88 @@ export default function NIVPanel({ embedded = false, onCampaignGenerated, onOppo
       }))
   }
 
+  // Poll Gamma presentation status (like Execute component does)
+  const pollGammaStatus = async (generationId: string, messageId: string) => {
+    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    let attempts = 0
+    const maxAttempts = 60 // 60 attempts * 3 seconds = 3 minutes max
+
+    while (attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 3000)) // Wait 3 seconds
+      attempts++
+
+      try {
+        const response = await fetch(
+          `${SUPABASE_URL}/functions/v1/gamma-presentation?generationId=${generationId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+            }
+          }
+        )
+
+        if (response.ok) {
+          const statusData = await response.json()
+
+          if (statusData.status === 'complete' || statusData.status === 'completed') {
+            // Presentation is ready!
+            const finalUrl = statusData.gammaUrl || statusData.presentationUrl || statusData.url || statusData.webUrl
+
+            // Update the message with the final link
+            setMessages(prev => prev.map(msg => {
+              if (msg.id === messageId) {
+                return {
+                  ...msg,
+                  content: `✅ **Your Gamma presentation is ready!**\n\n[Open Presentation](${finalUrl})`,
+                  actions: [
+                    {
+                      label: 'Open Presentation',
+                      type: 'primary' as const,
+                      icon: <Target className="w-4 h-4" />,
+                      action: () => window.open(finalUrl, '_blank')
+                    }
+                  ]
+                }
+              }
+              return msg
+            }))
+
+            return // Exit polling
+          } else if (statusData.status === 'failed' || statusData.status === 'error') {
+            // Generation failed
+            setMessages(prev => prev.map(msg => {
+              if (msg.id === messageId) {
+                return {
+                  ...msg,
+                  content: `❌ Gamma presentation generation failed: ${statusData.error || 'Unknown error'}`
+                }
+              }
+              return msg
+            }))
+            return
+          }
+          // If still pending, continue polling
+        }
+      } catch (error) {
+        console.error('Gamma polling error:', error)
+        // Continue polling even if one attempt fails
+      }
+    }
+
+    // Timeout
+    setMessages(prev => prev.map(msg => {
+      if (msg.id === messageId) {
+        return {
+          ...msg,
+          content: `⏱️ Gamma presentation generation timed out after 3 minutes. Please check the Gamma dashboard.`
+        }
+      }
+      return msg
+    }))
+  }
+
   const handleSend = async (text?: string) => {
     const messageText = text || input
     if (!messageText.trim() || isProcessing) return
@@ -249,6 +331,11 @@ export default function NIVPanel({ embedded = false, onCampaignGenerated, onOppo
       }
 
       setMessages(prev => [...prev, nivMessage])
+
+      // If this is a Gamma presentation being generated, start polling
+      if (data.type === 'gamma_generating' && data.gammaGenerationId) {
+        pollGammaStatus(data.gammaGenerationId, nivMessage.id)
+      }
 
       // Show tool status if available
       if (data.tools_used) {

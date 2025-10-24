@@ -631,15 +631,18 @@ export default function MemoryVaultModule() {
       console.log(`✅ Merged with template: ${filename}`)
 
       // Update template usage count
-      await supabase
-        .from('brand_assets')
-        .update({
-          usage_count: supabase.raw('usage_count + 1'),
-          last_used_at: new Date().toISOString()
-        })
-        .eq('id', templateId)
+      const asset = brandAssets.find(a => a.id === templateId)
+      if (asset) {
+        await supabase
+          .from('brand_assets')
+          .update({
+            usage_count: (asset.usage_count || 0) + 1,
+            last_used_at: new Date().toISOString()
+          })
+          .eq('id', templateId)
 
-      await fetchBrandAssets()
+        await fetchBrandAssets()
+      }
     } catch (error) {
       console.error('❌ Template merge error:', error)
       alert(`Failed to merge template: ${error instanceof Error ? error.message : 'Unknown error'}`)

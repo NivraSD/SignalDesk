@@ -3764,6 +3764,7 @@ serve(async (req) => {
           // and go directly to gamma-presentation below
           let responseMessage = ''
           let contentData: any = null
+          let gammaGenerationId: string | null = null
 
           if (requestedContentType !== 'presentation') {
             // Call niv-content in auto-execute mode for non-presentation content
@@ -3838,15 +3839,17 @@ serve(async (req) => {
                 const gammaData = await gammaResponse.json()
                 console.log('✅ Gamma presentation started:', gammaData.generationId)
 
+                // Store generationId for polling
+                gammaGenerationId = gammaData.generationId
+
                 // Initialize responseMessage if empty (presentation-only path)
                 if (!responseMessage) {
-                  responseMessage = `🎨 **Gamma Presentation**\n`
+                  responseMessage = `🎨 **Generating your Gamma presentation...**\n\n`
                 } else {
-                  responseMessage += `\n\n🎨 **Gamma Presentation**\n`
+                  responseMessage += `\n\n🎨 **Generating your Gamma presentation...**\n\n`
                 }
-                responseMessage += `Status: Generating (30-60 seconds)\n`
-                responseMessage += `Generation ID: \`${gammaData.generationId}\`\n`
-                responseMessage += `\n[Check Status](${Deno.env.get('SUPABASE_URL')}/functions/v1/gamma-presentation?generationId=${gammaData.generationId})`
+                responseMessage += `Your presentation is being created. This typically takes 30-60 seconds.\n`
+                responseMessage += `I'll update you automatically when it's ready!`
               } else {
                 console.warn('Gamma generation failed:', gammaResponse.status)
                 responseMessage = responseMessage || '⚠️ Gamma presentation generation failed.'
@@ -3860,11 +3863,13 @@ serve(async (req) => {
           return new Response(
             JSON.stringify({
               success: true,
-              type: 'content_generated',
+              type: gammaGenerationId ? 'gamma_generating' : 'content_generated',
               message: responseMessage,
+              response: responseMessage, // NIVPanel looks for 'response' field
               content: contentData?.content || null,
               contentType: requestedContentType,
               hasGamma: useGamma && requestedContentType === 'presentation',
+              gammaGenerationId: gammaGenerationId, // Frontend will poll using this
               sessionId: sessionId,
               conversationId: conversationId
             }),
