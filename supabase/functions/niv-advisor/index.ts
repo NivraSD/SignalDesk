@@ -1357,17 +1357,19 @@ async function callFireplexity(query: string, context: any) {
 
   try {
     // Determine timeframe based on query intent
-    let timeframe = 'recent' // default: past 3 days
+    let timeframe = 'week' // default: past 7 days (more reasonable than 3)
 
     const queryLower = query.toLowerCase()
     if (queryLower.match(/breaking|just|today|current|right now|this morning/i)) {
       timeframe = 'current' // past 24 hours
-    } else if (queryLower.match(/latest|recent|new|this week/i)) {
+    } else if (queryLower.match(/latest|recent|new/i)) {
+      timeframe = 'recent' // past 3 days for truly recent queries
+    } else if (queryLower.match(/this week/i)) {
       timeframe = 'week' // past 7 days
-    } else if (queryLower.match(/this month|past month/i)) {
-      timeframe = 'month'
+    } else if (queryLower.match(/this month|past month|market share|revenue|analysis|landscape|positioning/i)) {
+      timeframe = 'month' // past 30 days for analysis queries
     }
-    // REMOVED "2025|2024" trigger - always filter to recent results by default
+    // Years like "2025" are context, not timeframe signals
 
     console.log(`⏰ Timeframe detected: ${timeframe}`)
 
@@ -4144,16 +4146,18 @@ Respond with JSON only:
           const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
           // Determine timeframe
-          let timeframe = 'recent'  // Default: past 3 days (qdr:d3)
+          let timeframe = 'week'  // Default: past 7 days (more reasonable than 3)
           const queryLower = query.toLowerCase()
           if (queryLower.match(/breaking|just|today|current|right now/i)) {
             timeframe = 'current'  // Past 24 hours
-          } else if (queryLower.match(/latest|recent|new|this week/i)) {
+          } else if (queryLower.match(/latest|recent|new/i)) {
+            timeframe = 'recent'  // Past 3 days for truly recent queries
+          } else if (queryLower.match(/this week/i)) {
             timeframe = 'week'  // Past 7 days
-          } else if (queryLower.match(/this month|past month/i)) {
-            timeframe = 'month'  // Past 30 days
+          } else if (queryLower.match(/this month|past month|market share|revenue|analysis|landscape|positioning/i)) {
+            timeframe = 'month'  // Past 30 days for analysis queries
           }
-          // Always use date filter - no year/all-time option
+          // Always use date filter - years like "2025" are context, not signals
 
           try {
             // Call Firecrawl directly (no wrappers, no validation)
