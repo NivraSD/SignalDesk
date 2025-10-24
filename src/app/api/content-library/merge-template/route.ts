@@ -45,19 +45,22 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    if (!template.file_url) {
+    // Check if we have file_path (preferred) or file_url
+    const filePath = template.file_path
+    if (!filePath) {
       return NextResponse.json(
-        { error: 'Template has no file URL' },
+        { error: 'Template has no file path' },
         { status: 400 }
       )
     }
 
-    // 3. Download template from storage
-    const templateFileName = template.file_url.split('/').pop()
+    console.log('📥 Downloading template from path:', filePath)
+
+    // 3. Download template from storage using file_path
     const { data: fileData, error: downloadError } = await supabase
       .storage
       .from('brand-assets')
-      .download(templateFileName)
+      .download(filePath)
 
     if (downloadError || !fileData) {
       return NextResponse.json(

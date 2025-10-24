@@ -3760,9 +3760,15 @@ serve(async (req) => {
             messageCount: preloadedStrategy.key_messages?.length || 0
           })
 
-          // Call niv-content in auto-execute mode
-          const contentResponse = await fetch(
-            `${Deno.env.get('SUPABASE_URL')}/functions/v1/niv-content-intelligent-v2`,
+          // For presentations, skip niv-content (it doesn't support 'presentation' type)
+          // and go directly to gamma-presentation below
+          let responseMessage = ''
+          let contentData: any = null
+
+          if (requestedContentType !== 'presentation') {
+            // Call niv-content in auto-execute mode for non-presentation content
+            const contentResponse = await fetch(
+              `${Deno.env.get('SUPABASE_URL')}/functions/v1/niv-content-intelligent-v2`,
             {
               method: 'POST',
               headers: {
@@ -3788,12 +3794,13 @@ serve(async (req) => {
             throw new Error(`Content generation failed: ${contentResponse.status}`)
           }
 
-          const contentData = await contentResponse.json()
-          console.log('✅ Content generated successfully')
+            contentData = await contentResponse.json()
+            console.log('✅ Content generated successfully')
 
-          let responseMessage = `✅ **Content Generated**\n\n${contentData.content || contentData.message || 'Content created successfully'}`
+            responseMessage = `✅ **Content Generated**\n\n${contentData.content || contentData.message || 'Content created successfully'}`
+          }
 
-          // If presentation, also generate Gamma presentation
+          // If presentation, generate Gamma presentation
           if (useGamma && requestedContentType === 'presentation') {
             console.log('🎨 Generating Gamma presentation...')
 
@@ -3831,17 +3838,22 @@ serve(async (req) => {
                 const gammaData = await gammaResponse.json()
                 console.log('✅ Gamma presentation started:', gammaData.generationId)
 
-                responseMessage += `\n\n🎨 **Gamma Presentation**\n`
+                // Initialize responseMessage if empty (presentation-only path)
+                if (!responseMessage) {
+                  responseMessage = `🎨 **Gamma Presentation**\n`
+                } else {
+                  responseMessage += `\n\n🎨 **Gamma Presentation**\n`
+                }
                 responseMessage += `Status: Generating (30-60 seconds)\n`
                 responseMessage += `Generation ID: \`${gammaData.generationId}\`\n`
                 responseMessage += `\n[Check Status](${Deno.env.get('SUPABASE_URL')}/functions/v1/gamma-presentation?generationId=${gammaData.generationId})`
               } else {
                 console.warn('Gamma generation failed:', gammaResponse.status)
-                responseMessage += `\n\n⚠️ Gamma presentation generation failed. Content is available above.`
+                responseMessage = responseMessage || '⚠️ Gamma presentation generation failed.'
               }
             } catch (gammaError) {
               console.error('Gamma generation error:', gammaError)
-              responseMessage += `\n\n⚠️ Could not generate Gamma presentation, but content is available above.`
+              responseMessage = responseMessage || '⚠️ Could not generate Gamma presentation.'
             }
           }
 
@@ -3850,7 +3862,7 @@ serve(async (req) => {
               success: true,
               type: 'content_generated',
               message: responseMessage,
-              content: contentData.content,
+              content: contentData?.content || null,
               contentType: requestedContentType,
               hasGamma: useGamma && requestedContentType === 'presentation',
               sessionId: sessionId,

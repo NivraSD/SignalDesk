@@ -78,6 +78,8 @@ export async function POST(request: NextRequest) {
       .from('brand-assets')
       .getPublicUrl(fileName)
 
+    console.log(`📂 File uploaded to: ${publicUrl}`)
+
     // 3. Create database record
     const { data: asset, error: dbError } = await supabase
       .from('brand_assets')
@@ -86,6 +88,7 @@ export async function POST(request: NextRequest) {
         asset_type: assetType,
         file_name: file.name,
         file_path: uploadData.path,
+        file_url: publicUrl, // ← ADD THIS: Save the public URL
         file_size: file.size,
         mime_type: file.type,
         name: name || file.name,

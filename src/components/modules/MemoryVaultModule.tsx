@@ -387,6 +387,42 @@ export default function MemoryVaultModule() {
     }
   }, [activeTab, organization?.id])
 
+  // Delete brand asset
+  const handleDeleteAsset = async (id: string) => {
+    if (!confirm('Delete this brand asset? This cannot be undone.')) return
+
+    try {
+      const asset = brandAssets.find(a => a.id === id)
+      if (!asset) return
+
+      // Delete from storage if file_path exists
+      if (asset.file_url) {
+        const fileName = asset.file_url.split('/brand-assets/').pop()
+        if (fileName) {
+          await supabase.storage
+            .from('brand-assets')
+            .remove([fileName])
+        }
+      }
+
+      // Delete from database
+      const { error } = await supabase
+        .from('brand_assets')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+
+      setBrandAssets(prev => prev.filter(a => a.id !== id))
+      if (selectedAsset?.id === id) setSelectedAsset(null)
+
+      console.log('✅ Asset deleted:', id)
+    } catch (error) {
+      console.error('Delete error:', error)
+      alert('Failed to delete asset')
+    }
+  }
+
   // Handle file upload for brand assets
   const handleAssetUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -783,6 +819,7 @@ export default function MemoryVaultModule() {
             selectedAsset={selectedAsset}
             onSelectAsset={setSelectedAsset}
             onUpload={() => fileInputRef.current?.click()}
+            onDelete={handleDeleteAsset}
             uploading={uploadingAsset}
           />
         )}
@@ -1427,18 +1464,20 @@ function MoveDialog({
   )
 }
 
-// Brand Assets Tab Component (keeping existing)
+// Brand Assets Tab Component
 function BrandAssetsTab({
   assets,
   selectedAsset,
   onSelectAsset,
   onUpload,
+  onDelete,
   uploading
 }: {
   assets: BrandAsset[]
   selectedAsset: BrandAsset | null
   onSelectAsset: (asset: BrandAsset | null) => void
   onUpload: () => void
+  onDelete: (id: string) => void
   uploading: boolean
 }) {
   return (
@@ -1492,7 +1531,17 @@ function BrandAssetsTab({
         {selectedAsset ? (
           <div className="p-6 max-w-4xl mx-auto">
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-white mb-2">{selectedAsset.name}</h2>
+              <div className="flex items-start justify-between mb-2">
+                <h2 className="text-2xl font-bold text-white">{selectedAsset.name}</h2>
+                <button
+                  onClick={() => onDelete(selectedAsset.id)}
+                  className="flex items-center gap-2 px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors border border-red-500/20"
+                  title="Delete Asset"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span className="text-sm font-medium">Delete</span>
+                </button>
+              </div>
               <div className="flex items-center gap-3 text-sm text-gray-400">
                 <span className="px-2 py-0.5 bg-gray-800 rounded">
                   {selectedAsset.asset_type}
