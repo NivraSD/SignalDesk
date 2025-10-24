@@ -4102,47 +4102,35 @@ Remember to maintain natural conversation flow while bringing this perspective t
         queryLower.includes('pull it together') ||
         queryLower.includes('ready to execute')))
 
-    // CRITICAL: Check if we have research context before generating framework
-    // Use orchestrator-robust's detectStrategicIntent with conversation history check
-    const hasStrategicIntent = detectStrategicIntent(userMessage, conversationHistory)
+    // TRUST CLAUDE'S DECISION - match orchestrator-robust's simple logic
+    // Claude already analyzed the conversation and made a decision - we should respect it
 
-    // Check if we have research history in the conceptState
-    const hasResearchInConversation = conceptState.researchHistory.length > 0 ||
-                                      conceptState.fullConversation.some(msg =>
-                                        msg.role === 'assistant' &&
-                                        (msg.content.includes('Research Findings') ||
-                                         msg.content.includes('Key findings') ||
-                                         msg.content.includes('analysis shows')))
-
-    // Check Claude's understanding if available
-    if (claudeUnderstanding?.approach?.generate_framework === true && hasResearchInConversation) {
+    // Check Claude's understanding if available - TRUST IT FIRST
+    if (claudeUnderstanding?.approach?.generate_framework === true) {
       shouldGenerateFramework = true
-      console.log('🤖 Claude detected framework request AND research context exists')
-    } else if (hasStrategicIntent && hasResearchInConversation) {
-      shouldGenerateFramework = true
-      console.log('🎯 Strategic intent detected with research context')
+      console.log('🤖 Claude detected framework request')
+    } else if (claudeUnderstanding?.approach?.generate_framework === false) {
+      shouldGenerateFramework = false
+      console.log('🤖 Claude says do research first, not framework')
     } else if (frameworkConfirmation && previousMessageAskedForConfirmation) {
       // User confirmed after seeing structured answers
       shouldGenerateFramework = true
       console.log('✅ User confirmed framework execution after reviewing answers')
-    } else if (explicitFrameworkRequest && hasResearchInConversation) {
+    } else if (explicitFrameworkRequest) {
       shouldGenerateFramework = true
-      console.log('🎯 Explicit framework request detected with research context:', queryLower.substring(0, 100))
-    } else if (afterDiscussionRequest && hasResearchInConversation) {
+      console.log('🎯 Explicit framework request detected:', queryLower.substring(0, 100))
+    } else if (afterDiscussionRequest) {
       shouldGenerateFramework = true
-      console.log('📝 Framework requested after discussion with research')
-    } else if (conceptState.stage === 'ready' && conceptState.confidence >= 80 && hasResearchInConversation) {
-      // Only auto-trigger if user seems to want closure AND we have research
+      console.log('📝 Framework requested after discussion')
+    } else if (conceptState.stage === 'ready' && conceptState.confidence >= 80) {
+      // Only auto-trigger if user seems to want closure
       if (queryLower.includes('what\'s next') || queryLower.includes('ready')) {
         shouldGenerateFramework = true
-        console.log('🚀 Concept ready with research - auto-triggering framework')
+        console.log('🚀 Concept ready - auto-triggering framework')
       }
-    } else if (explicitFrameworkRequest && !hasResearchInConversation) {
-      console.log('⚠️ Framework requested but no research context - will do research first')
-      shouldGenerateFramework = false
     }
 
-    console.log(`🎯 Framework generation decision: ${shouldGenerateFramework} (hasResearch: ${hasResearchInConversation})`)
+    console.log(`🎯 Framework generation decision: ${shouldGenerateFramework}`)
 
     // Build the message and validate token count before API call
     const claudeMessage = buildClaudeMessage(userMessage, toolResults, queryType, queryStrategy, conversationHistory, shouldGenerateFramework, conceptState)

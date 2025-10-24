@@ -8,8 +8,38 @@ console.log("NIV Strategic Framework Generator starting...")
 console.log(`🔑 API Key Status: ${ANTHROPIC_API_KEY ? 'Found' : 'NOT FOUND'}`)
 console.log(`🔑 Key length: ${ANTHROPIC_API_KEY ? ANTHROPIC_API_KEY.length : 0}`)
 
-// Strategic Framework Generation System Prompt
-const STRATEGIC_FRAMEWORK_PROMPT = `You are NIV's Strategic Framework Generator. Your job is to create COMPLETE strategic frameworks ready for immediate execution.
+// CRITICAL: Dynamic date function - called at REQUEST TIME, not module load
+const getCurrentDate = () => {
+  const now = new Date()
+  return now.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
+}
+
+const getCurrentYear = () => new Date().getFullYear()
+const getCurrentMonth = () => new Date().toLocaleDateString('en-US', { month: 'long' })
+const getThreeMonthsFromNow = () => {
+  const date = new Date()
+  date.setMonth(date.getMonth() + 3)
+  return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+}
+
+// Strategic Framework Generation System Prompt - FUNCTION to get dynamic dates
+const getStrategicFrameworkPrompt = () => `You are NIV's Strategic Framework Generator. Your job is to create COMPLETE strategic frameworks ready for immediate execution.
+
+**CURRENT DATE: ${getCurrentDate()}**
+**CURRENT YEAR: ${getCurrentYear()}**
+**CURRENT MONTH: ${getCurrentMonth()} ${getCurrentYear()}**
+
+**CRITICAL - TEMPORAL AWARENESS:**
+- ALL timelines must use CURRENT dates, not past dates
+- When setting goals, use dates AFTER today (${getCurrentDate()})
+- Example GOOD: "Achieve 30% share of voice by ${getThreeMonthsFromNow()}"
+- Example BAD: "Achieve 30% share of voice by March 2025" (if today is October 2025)
+- Use specific future dates: "Q4 ${getCurrentYear()}", "Q1 ${getCurrentYear() + 1}", "${getThreeMonthsFromNow()}"
 
 REQUIRED STRUCTURE - ALL FIELDS MUST BE POPULATED:
 
@@ -374,10 +404,18 @@ async function generateStrategicFramework(
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 4096,
-        system: STRATEGIC_FRAMEWORK_PROMPT,
+        system: getStrategicFrameworkPrompt(), // CRITICAL: Call function to get dynamic dates
         messages: [{
           role: 'user',
           content: `Create a strategic framework based on this request and research.
+
+**CURRENT DATE CONTEXT:**
+Today is ${getCurrentDate()}
+Current Year: ${getCurrentYear()}
+Current Month: ${getCurrentMonth()} ${getCurrentYear()}
+Three months from now: ${getThreeMonthsFromNow()}
+
+**CRITICAL:** ALL timeline dates must be AFTER today. DO NOT use past dates.
 ${conversationContext}
 LATEST USER REQUEST: ${userQuery}
 
@@ -401,8 +439,10 @@ CRITICAL FRAMEWORK GENERATION INSTRUCTIONS:
 
 2. CREATE A REAL STRATEGY (not a summary):
    - The objective should be MEASURABLE and TIME-BOUND
-   - Example: "Achieve 30% share of voice in EdTech media by March 2025"
-   - NOT: "Enhance our position in the market"
+   - Example GOOD: "Achieve 30% share of voice in EdTech media by ${getThreeMonthsFromNow()}"
+   - Example GOOD: "Secure 15+ tier-1 media placements by Q1 ${getCurrentYear() + 1}"
+   - Example BAD: "Enhance our position in the market" (not measurable)
+   - Example BAD: "Achieve 30% share by March 2025" (if today is October 2025 - that's the PAST!)
 
 3. DESIGN EXECUTABLE TACTICS:
    - Media Outreach: Name specific publications (e.g., "TechCrunch exclusive on Study Mode launch")
