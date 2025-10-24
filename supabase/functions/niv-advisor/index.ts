@@ -3466,6 +3466,109 @@ async function routeToContentGeneration(
 }
 
 // Main handler
+// Transform strategic framework to Gamma presentation format
+function formatFrameworkForGamma(framework: any): string {
+  let content = `# ${framework.strategy?.objective || 'Strategic Framework'}\n\n`
+
+  // Slide 1: Executive Summary
+  content += `## Executive Summary\n\n`
+  content += `${framework.strategy?.rationale || framework.strategy?.narrative || ''}\n\n`
+
+  if (framework.strategy?.proof_points?.length > 0) {
+    content += `### Key Evidence\n`
+    framework.strategy.proof_points.forEach((point: string) => {
+      content += `- ${point}\n`
+    })
+    content += `\n`
+  }
+
+  // Slide 2: Strategic Objectives
+  content += `## Strategic Objectives\n\n`
+  content += `### Primary Goal\n`
+  content += `${framework.strategy?.objective || ''}\n\n`
+
+  if (framework.strategy?.keyMessages?.length > 0) {
+    content += `### Key Messages\n`
+    framework.strategy.keyMessages.forEach((msg: string, i: number) => {
+      content += `${i + 1}. ${msg}\n`
+    })
+    content += `\n`
+  }
+
+  // Slide 3: Target Audiences
+  content += `## Target Audiences\n\n`
+  if (framework.strategy?.target_audiences?.length > 0) {
+    framework.strategy.target_audiences.forEach((audience: string) => {
+      content += `### ${audience}\n`
+      content += `Target stakeholder group for messaging and engagement.\n\n`
+    })
+  }
+
+  // Slide 4: Media Strategy
+  content += `## Media Strategy\n\n`
+  if (framework.media_targets) {
+    if (framework.media_targets.tier_1_targets?.length > 0) {
+      content += `### Tier 1 Targets\n`
+      framework.media_targets.tier_1_targets.forEach((outlet: string) => {
+        content += `- ${outlet}\n`
+      })
+      content += `\n`
+    }
+    if (framework.media_targets.tier_2_targets?.length > 0) {
+      content += `### Tier 2 Targets\n`
+      framework.media_targets.tier_2_targets.forEach((outlet: string) => {
+        content += `- ${outlet}\n`
+      })
+      content += `\n`
+    }
+  }
+
+  // Slide 5: Content Plan
+  content += `## Content Plan\n\n`
+  if (framework.executionPlan?.autoExecutableContent?.contentTypes?.length > 0) {
+    content += `### Auto-Executable Content\n`
+    framework.executionPlan.autoExecutableContent.contentTypes.forEach((type: string) => {
+      content += `- ${type}\n`
+    })
+    content += `\n`
+    content += `**Estimated Pieces:** ${framework.executionPlan.autoExecutableContent.estimatedPieces || framework.executionPlan.autoExecutableContent.contentTypes.length}\n\n`
+  }
+
+  // Slide 6: Timeline
+  content += `## Execution Timeline\n\n`
+  if (framework.executionPlan?.timeline?.phases?.length > 0) {
+    framework.executionPlan.timeline.phases.forEach((phase: any) => {
+      content += `### ${phase.name} (${phase.duration})\n`
+      if (phase.objectives?.length > 0) {
+        phase.objectives.forEach((obj: string) => {
+          content += `- ${obj}\n`
+        })
+      }
+      content += `\n`
+    })
+  }
+
+  if (framework.executionPlan?.timeline?.milestones?.length > 0) {
+    content += `### Key Milestones\n`
+    framework.executionPlan.timeline.milestones.forEach((milestone: string) => {
+      content += `- ${milestone}\n`
+    })
+    content += `\n`
+  }
+
+  // Slide 7: Success Metrics
+  content += `## Success Metrics\n\n`
+  if (framework.contentStrategy?.kpis?.length > 0) {
+    framework.contentStrategy.kpis.forEach((kpi: any) => {
+      content += `### ${kpi.metric}\n`
+      content += `**Target:** ${kpi.target}\n`
+      content += `**Timeframe:** ${kpi.timeframe}\n\n`
+    })
+  }
+
+  return content
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -3499,17 +3602,197 @@ serve(async (req) => {
 
     // CRITICAL: Detect if this is a command (not a research query)
     const commandDetection = detectCommandIntent(userMessage)
-    if (commandDetection.isCommand) {
-      console.log(`🎯 Command detected (${commandDetection.commandType}): Not a research query`)
+    if (commandDetection.isCommand && commandDetection.commandType === 'routing') {
+      console.log(`🎯 Execution command detected: ${userMessage.substring(0, 100)}`)
 
-      if (commandDetection.commandType === 'routing') {
-        // User wants to route to an execution component
+      // Get the conceptState to check if we have a strategic framework
+      const conceptState = getConceptState(conversationId)
+
+      // Check conversation history for the last framework
+      let latestFramework = null
+      for (let i = conversationHistory.length - 1; i >= 0; i--) {
+        const msg = conversationHistory[i]
+        if (msg.role === 'assistant' && msg.structured) {
+          latestFramework = msg.structured
+          console.log('📦 Found strategic framework in conversation history')
+          break
+        }
+      }
+
+      // Detect what content type user wants
+      const messageLower = userMessage.toLowerCase()
+      let requestedContentType = 'presentation' // default
+      let useGamma = false
+
+      if (messageLower.includes('presentation') || messageLower.includes('deck') || messageLower.includes('slides') || messageLower.includes('gamma')) {
+        requestedContentType = 'presentation'
+        useGamma = true
+      } else if (messageLower.includes('press release')) {
+        requestedContentType = 'press-release'
+      } else if (messageLower.includes('blog')) {
+        requestedContentType = 'blog-post'
+      } else if (messageLower.includes('social')) {
+        requestedContentType = 'social-post'
+      } else if (messageLower.includes('email')) {
+        requestedContentType = 'email'
+      }
+
+      console.log(`📝 Detected content type: ${requestedContentType}, useGamma: ${useGamma}`)
+
+      // If we have a framework, execute content generation
+      if (latestFramework) {
+        console.log('⚡ Executing content generation with strategic framework...')
+
+        try {
+          // Package framework for niv-content
+          const preloadedStrategy = {
+            subject: latestFramework.strategy?.objective || latestFramework.contentStrategy?.subject || 'Strategic Initiative',
+            narrative: latestFramework.strategy?.narrative || latestFramework.contentStrategy?.narrative || '',
+            key_messages: latestFramework.strategy?.keyMessages || latestFramework.contentStrategy?.key_messages || [],
+            target_audiences: latestFramework.strategy?.target_audiences || latestFramework.contentStrategy?.target_audiences || [],
+            media_targets: latestFramework.media_targets || latestFramework.contentStrategy?.media_targets || {},
+            timeline: latestFramework.executionPlan?.timeline || latestFramework.contentStrategy?.timeline || {},
+            proof_points: latestFramework.strategy?.proof_points || [],
+            chosen_approach: latestFramework.contentStrategy?.chosen_approach || 'framework-based'
+          }
+
+          console.log('📦 Packaged strategy:', {
+            subject: preloadedStrategy.subject,
+            contentType: requestedContentType,
+            hasNarrative: !!preloadedStrategy.narrative,
+            messageCount: preloadedStrategy.key_messages?.length || 0
+          })
+
+          // Call niv-content in auto-execute mode
+          const contentResponse = await fetch(
+            `${Deno.env.get('SUPABASE_URL')}/functions/v1/niv-content-intelligent-v2`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`
+              },
+              body: JSON.stringify({
+                autoExecute: true,
+                preloadedStrategy: preloadedStrategy,
+                requestedContentType: requestedContentType,
+                organizationContext: {
+                  organizationId: context.organizationId || organizationId,
+                  organizationName: latestFramework.discoveryContext?.organization?.name || context.organizationName || 'Organization',
+                  conversationId: conversationId
+                },
+                saveFolder: 'NIV Advisor Content',
+                message: `Generate ${requestedContentType} from strategic framework`
+              })
+            }
+          )
+
+          if (!contentResponse.ok) {
+            throw new Error(`Content generation failed: ${contentResponse.status}`)
+          }
+
+          const contentData = await contentResponse.json()
+          console.log('✅ Content generated successfully')
+
+          let responseMessage = `✅ **Content Generated**\n\n${contentData.content || contentData.message || 'Content created successfully'}`
+
+          // If presentation, also generate Gamma presentation
+          if (useGamma && requestedContentType === 'presentation') {
+            console.log('🎨 Generating Gamma presentation...')
+
+            try {
+              // Transform to Gamma-compatible markdown
+              const presentationContent = formatFrameworkForGamma(latestFramework)
+
+              const gammaResponse = await fetch(
+                `${Deno.env.get('SUPABASE_URL')}/functions/v1/gamma-presentation`,
+                {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+                  },
+                  body: JSON.stringify({
+                    title: preloadedStrategy.subject,
+                    content: presentationContent,
+                    topic: preloadedStrategy.subject,
+                    format: 'presentation',
+                    slideCount: 12,
+                    capture: true,
+                    organization_id: context.organizationId || organizationId,
+                    campaign_id: conversationId,
+                    options: {
+                      imageSource: 'ai',
+                      tone: 'professional',
+                      cardSplit: 'auto'
+                    }
+                  })
+                }
+              )
+
+              if (gammaResponse.ok) {
+                const gammaData = await gammaResponse.json()
+                console.log('✅ Gamma presentation started:', gammaData.generationId)
+
+                responseMessage += `\n\n🎨 **Gamma Presentation**\n`
+                responseMessage += `Status: Generating (30-60 seconds)\n`
+                responseMessage += `Generation ID: \`${gammaData.generationId}\`\n`
+                responseMessage += `\n[Check Status](${Deno.env.get('SUPABASE_URL')}/functions/v1/gamma-presentation?generationId=${gammaData.generationId})`
+              } else {
+                console.warn('Gamma generation failed:', gammaResponse.status)
+                responseMessage += `\n\n⚠️ Gamma presentation generation failed. Content is available above.`
+              }
+            } catch (gammaError) {
+              console.error('Gamma generation error:', gammaError)
+              responseMessage += `\n\n⚠️ Could not generate Gamma presentation, but content is available above.`
+            }
+          }
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              type: 'content_generated',
+              message: responseMessage,
+              content: contentData.content,
+              contentType: requestedContentType,
+              hasGamma: useGamma && requestedContentType === 'presentation',
+              sessionId: sessionId,
+              conversationId: conversationId
+            }),
+            {
+              headers: {
+                ...corsHeaders,
+                'Content-Type': 'application/json'
+              }
+            }
+          )
+
+        } catch (executionError) {
+          console.error('❌ Execution error:', executionError)
+          return new Response(
+            JSON.stringify({
+              success: false,
+              type: 'execution_error',
+              message: `Failed to generate content: ${executionError.message}`,
+              sessionId: sessionId,
+              conversationId: conversationId
+            }),
+            {
+              headers: {
+                ...corsHeaders,
+                'Content-Type': 'application/json'
+              },
+              status: 500
+            }
+          )
+        }
+      } else {
+        // No framework available
         return new Response(
           JSON.stringify({
-            success: true,
-            type: 'routing_command',
-            message: 'I understand you want to create content or take action. Let me help you route to the right tool.',
-            command: commandDetection.commandType,
+            success: false,
+            type: 'no_framework',
+            message: 'I need to create a strategic framework first before I can execute content generation. Could you describe what you want to create?',
             sessionId: sessionId,
             conversationId: conversationId
           }),
