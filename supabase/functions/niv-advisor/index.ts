@@ -1366,9 +1366,8 @@ async function callFireplexity(query: string, context: any) {
       timeframe = 'week' // past 7 days
     } else if (queryLower.match(/this month|past month/i)) {
       timeframe = 'month'
-    } else if (queryLower.match(/this year|2025|2024/i)) {
-      timeframe = 'year'
     }
+    // REMOVED "2025|2024" trigger - always filter to recent results by default
 
     console.log(`⏰ Timeframe detected: ${timeframe}`)
 
@@ -4145,13 +4144,16 @@ Respond with JSON only:
           const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
           // Determine timeframe
-          let timeframe = 'recent'
+          let timeframe = 'recent'  // Default: past 3 days (qdr:d3)
           const queryLower = query.toLowerCase()
           if (queryLower.match(/breaking|just|today|current|right now/i)) {
-            timeframe = 'current'
+            timeframe = 'current'  // Past 24 hours
           } else if (queryLower.match(/latest|recent|new|this week/i)) {
-            timeframe = 'week'
+            timeframe = 'week'  // Past 7 days
+          } else if (queryLower.match(/this month|past month/i)) {
+            timeframe = 'month'  // Past 30 days
           }
+          // Always use date filter - no year/all-time option
 
           try {
             // Call Firecrawl directly (no wrappers, no validation)
