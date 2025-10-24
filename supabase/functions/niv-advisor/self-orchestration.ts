@@ -35,8 +35,24 @@ export async function decomposeQuery(
   context: any,
   claudeApiKey: string
 ): Promise<ResearchPlan> {
+  // Get current date for temporal context
+  const now = new Date()
+  const currentDate = now.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
+  const currentYear = now.getFullYear()
+  const currentMonth = now.toLocaleDateString('en-US', { month: 'long' })
+
   const DECOMPOSITION_PROMPT = `You are NIV's query decomposition system.
 Break down this complex request into specific research steps.
+
+**CRITICAL - CURRENT DATE CONTEXT:**
+Today is ${currentDate}
+Current Year: ${currentYear}
+Current Month: ${currentMonth} ${currentYear}
 
 User Query: ${userQuery}
 Current Context: We're researching for ${context.organizationId || 'a client'}
@@ -52,6 +68,13 @@ Consider:
 - What can be researched simultaneously?
 - What needs validation from multiple sources?
 - What competitive intelligence would be valuable?
+
+**IMPORTANT - TEMPORAL CONTEXT IN SEARCH QUERIES:**
+- ALWAYS include "${currentYear}" in search queries for current/recent information
+- For "latest" or "recent" queries, use "${currentMonth} ${currentYear}" or "Q4 ${currentYear}"
+- Avoid outdated years (2024, 2023) unless specifically asking for historical data
+- Example: "Google Gemini 3 launch ${currentMonth} ${currentYear}" NOT "Gemini 3 launch"
+- Example: "OpenAI regulatory compliance ${currentYear}" NOT "OpenAI compliance"
 
 Return a structured plan with specific queries for each step.`
 

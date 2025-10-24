@@ -3220,6 +3220,8 @@ serve(async (req) => {
 
 You are analyzing this user query to understand what they need and how to get it.
 
+**REMEMBER:** Today is ${getCurrentDate()}. We're in ${new Date().getFullYear()}.
+
 ${conversationHistory.length > 0 ? `Recent Conversation:
 ${conversationHistory.map(msg => `${msg.role === 'user' ? 'User' : 'NIV'}: ${msg.content}`).join('\n')}
 ` : ''}
@@ -3231,7 +3233,7 @@ Current Module: ${context.activeModule || 'intelligence'}
 Think step by step:
 1. What is the user really asking for?
 2. Do I need fresh, real-time information to answer this properly?
-3. What specific search terms would find the best results?
+3. What specific search terms would find the best results? **INCLUDE ${new Date().getFullYear()} IN SEARCH QUERIES FOR CURRENT INFO**
 4. Should I search quality sources only, or cast a wider net?
 5. Should I generate a strategic framework now?
 
@@ -3240,6 +3242,13 @@ Key decision criteria:
 - If asking about specific current events, competitors, or news → MUST use fireplexity_targeted
 - If asking for strategic advice or analysis of existing info → can use contextual_response
 - Default to searching when uncertain - better to have fresh data
+
+**CRITICAL - SEARCH QUERY TEMPORAL CONTEXT:**
+- For "latest" or "recent": Include "${new Date().toLocaleDateString('en-US', { month: 'long' })} ${new Date().getFullYear()}" or "${new Date().getFullYear()}"
+- For upcoming events: Include "${new Date().getFullYear()}" or "Q4 ${new Date().getFullYear()}"
+- NEVER use outdated years like 2024, 2023 for current queries
+- Example GOOD: "Google Gemini 3 launch October ${new Date().getFullYear()}"
+- Example BAD: "Google Gemini 3 launch" (no year context)
 
 IMPORTANT: Strategic framework generation:
 - Set generate_framework to FALSE if user is asking for research, analysis, or information
@@ -3261,7 +3270,7 @@ Respond with JSON only:
   "approach": {
     "strategy": "MUST be 'fireplexity_targeted' if requires_fresh_data is true, otherwise intelligence_pipeline or contextual_response",
     "reasoning": "why this approach makes sense",
-    "search_query": "specific, targeted search query that will find what user needs (e.g., 'OpenAI regulatory compliance 2024' not just 'OpenAI')",
+    "search_query": "specific, targeted search query with YEAR for current info (e.g., 'OpenAI regulatory compliance October ${new Date().getFullYear()}' not just 'OpenAI')",
     "search_domains": "quality_first (check quality sources but can expand)/quality_only (strict)/all_web (broad search)",
     "domain_reasoning": "why this domain choice (e.g., 'regulatory news may be on government sites not in master sources')",
     "confidence": 0.0-1.0,
