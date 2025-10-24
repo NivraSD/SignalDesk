@@ -9,6 +9,34 @@ export async function POST(request: NextRequest) {
     const { message, conversationId, organizationId, organizationContext, framework, stage } = body
 
     console.log(`NIV Panel API: Calling niv-advisor (stage: ${stage || 'full'})`)
+    console.log(`NIV Panel API: organizationId from frontend: "${organizationId}"`)
+
+    // Build context exactly like niv-orchestrator-robust - pass organizationId through
+    const context: any = {
+      activeModule: 'intelligence',
+      sessionId: conversationId || `niv-${Date.now()}`
+    }
+
+    // IMPORTANT: Only add organizationId if it's NOT '1' (which is a placeholder)
+    // Pass it through so edge function can use it for mcp-discovery lookup
+    if (organizationId && organizationId !== '1') {
+      context.organizationId = organizationId
+      console.log(`✅ Using real organizationId: ${organizationId}`)
+    } else {
+      console.warn(`⚠️ No valid organizationId provided, edge function will handle default`)
+    }
+
+    // Add organization name and other context if available
+    if (organizationContext?.name) {
+      context.organizationName = organizationContext.name
+      context.organization = organizationContext.name
+    }
+    if (organizationContext?.industry) {
+      context.industry = organizationContext.industry
+    }
+    if (organizationContext?.competitors) {
+      context.competitors = organizationContext.competitors
+    }
 
     // Call niv-advisor (conversational advisor - Phase 5)
     const response = await fetch(`${SUPABASE_URL}/functions/v1/niv-advisor`, {
@@ -23,13 +51,7 @@ export async function POST(request: NextRequest) {
         conversationHistory: [],
         stage: stage || 'full',
         sessionId: conversationId || `niv-${Date.now()}`,
-        context: {
-          organizationId: organizationId || '1',
-          organizationName: organizationContext?.name || 'Unknown',
-          organization: organizationContext?.name || 'Unknown',
-          industry: organizationContext?.industry || 'Technology',
-          competitors: organizationContext?.competitors || []
-        }
+        context
       })
     })
 

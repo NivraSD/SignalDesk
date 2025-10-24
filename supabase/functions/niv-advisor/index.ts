@@ -3115,8 +3115,8 @@ serve(async (req) => {
     let shouldGenerateFramework = false
 
     // Intelligent query analysis and resource selection
-    // Validate and normalize organization input
-    let organizationId = context.organizationId || context.organization || context.organizationName || '7a2835cb-11ee-4512-acc3-b6caf8eb03ff'
+    // Extract organization from context - matches niv-orchestrator-robust exactly
+    let organizationId = context.organizationId || context.organization || context.organizationName
 
     // Handle edge cases with organization input
     if (typeof organizationId !== 'string') {
@@ -3124,26 +3124,22 @@ serve(async (req) => {
       organizationId = String(organizationId)
     }
 
-    // If organizationId is just a number like "1", use the UUID from context
-    if (organizationId === '1' || organizationId === 1) {
-      console.log(`🔄 Converting numeric organizationId "${organizationId}" to UUID from context`)
-      organizationId = context.organizationId || '7a2835cb-11ee-4512-acc3-b6caf8eb03ff'
+    // If organizationId is just "1" or numeric, DON'T convert - use it to search
+    // The frontend sends real UUIDs, only fallback to default if truly empty
+    if (organizationId === '1' || organizationId === 1 || !organizationId || organizationId === 'Unknown') {
+      console.warn(`⚠️ Invalid organizationId received: "${organizationId}"`)
+      console.log(`🔍 Full context received:`, JSON.stringify(context, null, 2))
+      console.log(`🔄 This should not happen - frontend should always send organization UUID`)
+      // Use a placeholder that will trigger profile creation
+      organizationId = 'Unknown'
     }
 
-    // Trim whitespace and ensure non-empty
-    organizationId = organizationId.trim()
-    if (!organizationId || organizationId === 'Unknown') {
-      console.log(`🔄 Empty/unknown organizationId, using default UUID`)
-      organizationId = '7a2835cb-11ee-4512-acc3-b6caf8eb03ff'
+    // Trim whitespace
+    if (typeof organizationId === 'string') {
+      organizationId = organizationId.trim()
     }
 
     console.log(`🏢 Organization context: "${organizationId}" (validated)`)
-    console.log(`🔍 Full context:`, JSON.stringify({
-      contextOrgId: context.organizationId,
-      contextOrg: context.organization,
-      contextOrgName: context.organizationName,
-      resolved: organizationId
-    }, null, 2))
 
     // Get module-specific persona
     const persona = getModulePersona(context.activeModule)
