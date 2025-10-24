@@ -180,14 +180,59 @@ async function generateAIImage(
     const data = await response.json()
 
     // Handle both success and fallback responses
+    let imageUrl = null
     if (data.success && data.images && data.images.length > 0) {
-      return data.images[0].url || data.imageUrl
+      imageUrl = data.images[0].url || data.imageUrl
     } else if (data.imageUrl) {
-      return data.imageUrl
+      imageUrl = data.imageUrl
     }
 
-    console.warn('⚠️ Vertex AI returned no image URL')
-    return null
+    if (!imageUrl) {
+      console.warn('⚠️ Vertex AI returned no image URL')
+      return null
+    }
+
+    // If it's a data URI, we need to upload it to storage and return a public URL
+    // PptxGenJS can't handle data URIs directly
+    if (imageUrl.startsWith('data:image/')) {
+      console.log('  → Converting data URI to storage URL...')
+      try {
+        // Extract base64 data
+        const base64Data = imageUrl.split(',')[1]
+        const imageType = imageUrl.match(/data:image\/(\w+);/)?.[1] || 'png'
+
+        // Convert to binary
+        const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0))
+
+        // Upload to Supabase Storage
+        const fileName = `ai-generated-${Date.now()}-${Math.random().toString(36).substring(7)}.${imageType}`
+        const storagePath = `${organizationId}/images/${fileName}`
+
+        const { error: uploadError } = await fetch(`${SUPABASE_URL}/storage/v1/object/presentations/${storagePath}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+            'Content-Type': `image/${imageType}`
+          },
+          body: binaryData
+        })
+
+        if (uploadError) {
+          console.error('  ⚠️ Failed to upload image to storage:', uploadError)
+          return null
+        }
+
+        // Get public URL
+        const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/presentations/${storagePath}`
+        console.log('  ✅ Image uploaded to:', publicUrl)
+        return publicUrl
+      } catch (error) {
+        console.error('  ⚠️ Error converting data URI:', error)
+        return null
+      }
+    }
+
+    return imageUrl
   } catch (error) {
     console.error('Error generating AI image:', error)
     return null
@@ -286,7 +331,7 @@ Return ONLY valid JSON, no markdown code blocks, no extra text`
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-5-20250929',
         max_tokens: 8192,  // Increased for larger presentations
         messages: [{
           role: 'user',

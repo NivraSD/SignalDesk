@@ -3,6 +3,156 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { corsHeaders } from "../_shared/cors.ts"
 
+/**
+ * Intelligent industry mapping - converts ANY industry name to supported categories
+ * Returns null if no mapping found (will check exact match)
+ */
+function mapIndustryToCategory(industryInput: string): string | null {
+  const input = industryInput.toLowerCase().replace(/[^a-z]/g, '')
+
+  // TECHNOLOGY - AI, Software, SaaS, Cloud, etc.
+  if (
+    input.includes('artificial') || input.includes('intelligence') ||
+    input.includes('ai') || input.includes('machine') || input.includes('learning') ||
+    input.includes('software') || input.includes('saas') || input.includes('cloud') ||
+    input.includes('tech') || input.includes('computing') || input.includes('cyber') ||
+    input.includes('data') || input.includes('analytics') || input.includes('internet') ||
+    input.includes('digital') || input.includes('semiconductor') || input.includes('chip') ||
+    input.includes('hardware') || input.includes('electronics') || input.includes('gaming') ||
+    input.includes('esports') || input.includes('social') || input.includes('media') && input.includes('tech')
+  ) {
+    return 'technology'
+  }
+
+  // HEALTHCARE - Biotech, Pharma, Medical, Health Insurance
+  if (
+    input.includes('health') || input.includes('medical') || input.includes('pharma') ||
+    input.includes('biotech') || input.includes('clinical') || input.includes('hospital') ||
+    input.includes('drug') || input.includes('therapeutic') || input.includes('medicine') ||
+    input.includes('life') && input.includes('science') || input.includes('diagnostic') ||
+    input.includes('wellness') || input.includes('fitness') || input.includes('nutrition')
+  ) {
+    return 'healthcare'
+  }
+
+  // FINANCIAL SERVICES - Banking, Fintech, Insurance, Investment
+  if (
+    input.includes('financ') || input.includes('bank') || input.includes('fintech') ||
+    input.includes('payment') || input.includes('credit') || input.includes('insurance') ||
+    input.includes('invest') || input.includes('capital') || input.includes('trading') ||
+    input.includes('crypto') || input.includes('blockchain') || input.includes('asset') ||
+    input.includes('wealth') || input.includes('lending') || input.includes('mortgage')
+  ) {
+    return 'financial_services'
+  }
+
+  // AUTOMOTIVE - Cars, EVs, Autonomous Vehicles
+  if (
+    input.includes('auto') || input.includes('vehicle') || input.includes('car') ||
+    input.includes('electric') && input.includes('vehicle') || input.includes('ev') ||
+    input.includes('transport') || input.includes('mobility') || input.includes('autonomous')
+  ) {
+    return 'automotive'
+  }
+
+  // RETAIL & E-COMMERCE
+  if (
+    input.includes('retail') || input.includes('ecommerce') || input.includes('commerce') ||
+    input.includes('consumer') || input.includes('shopping') || input.includes('marketplace') ||
+    input.includes('fashion') || input.includes('apparel') || input.includes('grocery') ||
+    input.includes('brand') || input.includes('luxury')
+  ) {
+    return 'retail'
+  }
+
+  // ENERGY - Oil & Gas, Renewable, Utilities
+  if (
+    input.includes('energy') || input.includes('oil') || input.includes('gas') ||
+    input.includes('solar') || input.includes('wind') || input.includes('renewable') ||
+    input.includes('power') || input.includes('electric') && input.includes('utility') ||
+    input.includes('battery') || input.includes('nuclear')
+  ) {
+    return 'energy'
+  }
+
+  // REAL ESTATE & CONSTRUCTION
+  if (
+    input.includes('real') && input.includes('estate') || input.includes('property') ||
+    input.includes('construction') || input.includes('housing') || input.includes('building') ||
+    input.includes('reit')
+  ) {
+    return 'real_estate'
+  }
+
+  // FOOD & BEVERAGE
+  if (
+    input.includes('food') || input.includes('beverage') || input.includes('restaurant') ||
+    input.includes('agriculture') || input.includes('farming') || input.includes('agtech')
+  ) {
+    return 'food_beverage'
+  }
+
+  // MANUFACTURING & INDUSTRIAL
+  if (
+    input.includes('manufactur') || input.includes('industrial') || input.includes('factory') ||
+    input.includes('supply') && input.includes('chain') || input.includes('logistics')
+  ) {
+    return 'manufacturing'
+  }
+
+  // TELECOMMUNICATIONS
+  if (
+    input.includes('telecom') || input.includes('wireless') || input.includes('mobile') ||
+    input.includes('network') || input.includes('broadband') || input.includes('fiber')
+  ) {
+    return 'telecommunications'
+  }
+
+  // MEDIA & ENTERTAINMENT
+  if (
+    input.includes('media') || input.includes('entertainment') || input.includes('film') ||
+    input.includes('music') || input.includes('streaming') || input.includes('content') ||
+    input.includes('publishing') || input.includes('news')
+  ) {
+    return 'media_entertainment'
+  }
+
+  // EDUCATION
+  if (
+    input.includes('education') || input.includes('edtech') || input.includes('learning') ||
+    input.includes('university') || input.includes('school') || input.includes('academic')
+  ) {
+    return 'education'
+  }
+
+  // TRAVEL & HOSPITALITY
+  if (
+    input.includes('travel') || input.includes('tourism') || input.includes('hotel') ||
+    input.includes('hospitality') || input.includes('airline') || input.includes('aviation')
+  ) {
+    return 'travel_hospitality'
+  }
+
+  // LEGAL & PROFESSIONAL SERVICES
+  if (
+    input.includes('legal') || input.includes('law') || input.includes('consulting') ||
+    input.includes('professional') && input.includes('service')
+  ) {
+    return 'professional_services'
+  }
+
+  // AEROSPACE & DEFENSE
+  if (
+    input.includes('aerospace') || input.includes('defense') || input.includes('military') ||
+    input.includes('aviation') || input.includes('space')
+  ) {
+    return 'aerospace_defense'
+  }
+
+  // No match found - will check exact industry key
+  return null
+}
+
 // TIER 1 SOURCES - Always included regardless of industry
 const TIER1_SOURCES = {
   mainstream_media: [
@@ -636,9 +786,20 @@ serve(async (req) => {
     
     // Add industry-specific sources if industry provided
     if (industry) {
-      const industryLower = industry.toLowerCase().replace(/[^a-z_]/g, '_')
+      let industryLower = industry.toLowerCase().replace(/[^a-z_]/g, '_')
+
+      // Comprehensive industry mapping - converts ANY industry to supported categories
+      // Supported categories: technology, healthcare, financial_services, automotive, retail, energy, etc.
+      const industryMapping = mapIndustryToCategory(industryLower)
+      if (industryMapping) {
+        console.log(`📌 Mapping industry "${industry}" → "${industryMapping}"`)
+        industryLower = industryMapping
+      } else {
+        console.log(`⚠️ No mapping found for "${industry}", checking exact match...`)
+      }
+
       const industrySources = INDUSTRY_SOURCES[industryLower]
-      
+
       if (industrySources) {
         // Add competitive sources
         if (industrySources.competitive?.rss) {

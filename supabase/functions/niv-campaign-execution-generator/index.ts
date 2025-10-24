@@ -25,7 +25,7 @@ serve(async (req) => {
 
     console.log('⚙️ Execution Generator:', {
       pattern: blueprintBase.overview?.pattern,
-      phases: Object.keys(orchestrationStrategy.phases || {}).length,
+      stakeholders: orchestrationStrategy.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans?.length || 0,
       org: organizationContext.name
     })
 
@@ -65,48 +65,35 @@ How to pivot based on:
 
 Output ONLY valid JSON.`
 
-    // Count content pieces across all pillars and phases
+    // Count content pieces from VECTOR blueprint structure
     let totalContentPieces = 0
     let mediaOutreachCount = 0
-    let eventCount = 0
-    let influencerCount = 0
+    let socialPostCount = 0
+    let thoughtLeadershipCount = 0
 
-    if (orchestrationStrategy.phases) {
-      Object.values(orchestrationStrategy.phases).forEach((phase: any) => {
-        // Pillar 1: Owned content
-        if (phase.pillar1_ownedActions?.organizationalVoice) {
-          phase.pillar1_ownedActions.organizationalVoice.forEach((voice: any) => {
-            totalContentPieces += voice.contentNeeds?.length || 0
-          })
-        }
+    const plans = orchestrationStrategy.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans || []
 
-        // Pillar 2: Relationship content
-        if (phase.pillar2_relationshipOrchestration?.tier1Influencers) {
-          influencerCount += phase.pillar2_relationshipOrchestration.tier1Influencers.length
-          phase.pillar2_relationshipOrchestration.tier1Influencers.forEach((influencer: any) => {
-            totalContentPieces += influencer.engagementStrategy?.contentToCreateForThem?.length || 0
-          })
-        }
+    plans.forEach((plan: any) => {
+      plan.influenceLevers?.forEach((lever: any) => {
+        const campaign = lever.campaign || {}
 
-        // Pillar 3: Event content
-        if (phase.pillar3_eventOrchestration?.tier1Events) {
-          eventCount += phase.pillar3_eventOrchestration.tier1Events.length
-        }
-
-        // Pillar 4: Media content
-        if (phase.pillar4_mediaEngagement?.outletStrategy) {
-          phase.pillar4_mediaEngagement.outletStrategy.forEach((tier: any) => {
-            mediaOutreachCount += tier.storiesToPitch?.length || 0
-          })
-        }
+        // Count all content types
+        mediaOutreachCount += campaign.mediaPitches?.length || 0
+        socialPostCount += campaign.socialPosts?.length || 0
+        thoughtLeadershipCount += campaign.thoughtLeadership?.length || 0
+        totalContentPieces += (campaign.mediaPitches?.length || 0) +
+                             (campaign.socialPosts?.length || 0) +
+                             (campaign.thoughtLeadership?.length || 0) +
+                             (campaign.additionalTactics?.length || 0)
       })
-    }
+    })
 
     const workloadContext = `## Estimated Workload
 - Total content pieces to create: ${totalContentPieces}
-- Influencer relationships to manage: ${influencerCount}
-- Events to participate in: ${eventCount}
-- Media pitches to execute: ${mediaOutreachCount}`
+- Media pitches to execute: ${mediaOutreachCount}
+- Social posts to publish: ${socialPostCount}
+- Thought leadership pieces: ${thoughtLeadershipCount}
+- Total stakeholders to influence: ${plans.length}`
 
     const userPrompt = `# Campaign Overview
 ${JSON.stringify(blueprintBase.overview, null, 2)}

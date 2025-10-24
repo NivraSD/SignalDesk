@@ -1,10 +1,57 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Target, Zap, Clock, TrendingUp, AlertCircle, Play, ChevronRight, Sparkles, FileText, Image, Users, Share2, Palette, Megaphone } from 'lucide-react'
+import { Target, Zap, Clock, TrendingUp, AlertCircle, Play, ChevronRight, Sparkles, FileText, Image, Users, Share2, Palette, Megaphone, ExternalLink, Download, Check, Loader2, Eye } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase/client'
 import { useAppStore } from '@/stores/useAppStore'
+
+// V2 OPPORTUNITY STRUCTURE
+interface ContentBrief {
+  angle: string
+  key_points: string[]
+  tone: string
+  length: string
+  cta: string
+}
+
+interface ContentItem {
+  type: string
+  topic: string
+  target?: string
+  platform?: string
+  brief: ContentBrief
+  urgency: string
+}
+
+interface StakeholderCampaign {
+  stakeholder_name: string
+  stakeholder_priority: number
+  lever_name: string
+  lever_priority: number
+  content_items: ContentItem[]
+}
+
+interface ExecutionPlan {
+  stakeholder_campaigns: StakeholderCampaign[]
+  execution_timeline: {
+    immediate: string[]
+    this_week: string[]
+    this_month: string[]
+    ongoing: string[]
+  }
+  success_metrics: any[]
+}
+
+interface StrategicContext {
+  trigger_events: string[]
+  market_dynamics: string
+  why_now: string
+  competitive_advantage: string
+  time_window: string
+  expected_impact: string
+  risk_if_missed: string
+}
 
 interface Opportunity {
   id: string
@@ -12,216 +59,369 @@ interface Opportunity {
   description: string
   score: number
   urgency: 'high' | 'medium' | 'low'
-  time_window: string
   category: string
-  trigger_event: string
-  campaign_name?: string  // Creative field from orchestrator-v2
-  creative_approach?: string  // Creative field from orchestrator-v2
-  data?: any  // Additional data that may contain creative fields
-  recommended_action: {
-    what: {
-      primary_action: string
-      specific_tasks: string[]
-      deliverables: string[]
-    }
-    who: {
-      owner: string
-      team: string[]
-    }
-    when: {
-      start_immediately: boolean
-      ideal_launch: string
-      duration: string
-    }
-    where: {
-      channels: string[]
-      platforms: string[]
-    }
-  }
-  execution_status?: 'ready' | 'generating' | 'complete'
-  generated_content?: {
-    press_release?: string
-    social_posts?: any[]
-    visuals?: string[]
-    media_list?: any[]
-  }
+  version?: number
+  strategic_context?: StrategicContext
+  execution_plan?: ExecutionPlan
+  organization_id?: string
+  status?: string
+  executed?: boolean
+  presentation_url?: string
+  auto_executable?: boolean
+  data?: any
 }
 
 export default function OpportunitiesModule() {
-  // Get opportunities from the store (these have creative fields from orchestrator-v2)
-  const storeOpportunities = useAppStore((state) => state.opportunities)
+  const { organization } = useAppStore()
   const [opportunities, setOpportunities] = useState<Opportunity[]>([])
   const [selectedOpp, setSelectedOpp] = useState<Opportunity | null>(null)
+  const [loading, setLoading] = useState(true)
   const [executing, setExecuting] = useState<string | null>(null)
-  const [generationProgress, setGenerationProgress] = useState<Record<string, string>>({})
   const [clearing, setClearing] = useState(false)
+  const [generationProgress, setGenerationProgress] = useState<{
+    current?: string
+    progress?: number
+  }>({})
+  const [generatedContent, setGeneratedContent] = useState<any[]>([])
+  const [viewingContent, setViewingContent] = useState<any | null>(null)
 
-  // Use opportunities from the store which have creative fields from orchestrator-v2
   useEffect(() => {
-    if (storeOpportunities && storeOpportunities.length > 0) {
-      console.log('✅ Using enhanced opportunities from store/pipeline:', storeOpportunities.length)
-      // Map store opportunities to the expected format
-      const mappedOpps = storeOpportunities.map((opp: any) => ({
-        ...opp,
-        // Ensure all required fields are present
-        id: opp.id || opp.opportunity_id || Math.random().toString(),
-        execution_status: opp.execution_status || 'ready',
-        recommended_action: opp.recommended_action || opp.data?.recommended_action,
-        // Add creative fields from orchestrator-v2
-        campaign_name: opp.campaign_name || opp.data?.campaign_name,
-        creative_approach: opp.creative_approach || opp.data?.creative_approach
-      }))
-      setOpportunities(mappedOpps)
+    fetchOpportunities()
+  }, [organization])
+
+  // Fetch generated content when selecting an executed opportunity
+  useEffect(() => {
+    if (selectedOpp?.executed && selectedOpp.id) {
+      fetchGeneratedContent(selectedOpp.id)
     } else {
-      // Fallback to fetching from database if store is empty
-      fetchOpportunities()
+      setGeneratedContent([])
     }
-  }, [storeOpportunities])
+  }, [selectedOpp?.id])
 
   const fetchOpportunities = async () => {
     try {
-      // Use API route with service role key
-      const response = await fetch('/api/opportunities')
-      const result = await response.json()
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('opportunities')
+        .select('*')
+        .eq('organization_id', organization?.id || '7a2835cb-11ee-4512-acc3-b6caf8eb03ff')
+        .in('status', ['active', 'executed']) // Include both active and executed
+        .order('score', { ascending: false })
 
-      if (!response.ok) {
-        console.error('Error fetching opportunities:', result.error)
+      if (error) throw error
+
+      setOpportunities(data || [])
+      console.log('Loaded', data?.length, 'opportunities from database')
+    } catch (error) {
+      console.error('Error fetching opportunities:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchGeneratedContent = async (opportunityId: string) => {
+    try {
+      console.log('📚 Fetching content for opportunity:', opportunityId)
+      const { data, error } = await supabase
+        .from('content_library')
+        .select('*')
+        .eq('organization_id', organization?.id || '7a2835cb-11ee-4512-acc3-b6caf8eb03ff')
+        .eq('metadata->>blueprint_id', opportunityId)
+        .neq('content_type', 'phase_strategy') // Exclude strategy documents
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching content:', error)
         return
       }
 
-      if (result.opportunities) {
-        console.log(`Loaded ${result.opportunities.length} opportunities from database`)
-        setOpportunities(result.opportunities)
-      }
-    } catch (err) {
-      console.error('Failed to fetch opportunities:', err)
+      console.log(`📦 Loaded ${data?.length || 0} content items`)
+      setGeneratedContent(data || [])
+    } catch (error) {
+      console.error('Error fetching generated content:', error)
     }
   }
 
   const clearOpportunities = async () => {
-    if (!confirm('Clear all opportunities? This cannot be undone.')) return
-
-    setClearing(true)
     try {
-      const response = await fetch('/api/opportunities', {
-        method: 'DELETE'
-      })
+      setClearing(true)
+      const { error } = await supabase
+        .from('opportunities')
+        .delete()
+        .eq('organization_id', organization?.id || '7a2835cb-11ee-4512-acc3-b6caf8eb03ff')
 
-      if (response.ok) {
-        setOpportunities([])
-        setSelectedOpp(null)
-        console.log('Cleared all opportunities')
-      } else {
-        console.error('Failed to clear opportunities')
-      }
-    } catch (err) {
-      console.error('Error clearing opportunities:', err)
+      if (error) throw error
+
+      setOpportunities([])
+      setSelectedOpp(null)
+    } catch (error) {
+      console.error('Error clearing opportunities:', error)
     } finally {
       setClearing(false)
     }
   }
 
   const executeOpportunity = async (opp: Opportunity) => {
+    console.log('🚀 Execute opportunity called:', opp)
+
+    if (!opp.version || opp.version !== 2 || !opp.execution_plan) {
+      console.error('❌ Not a V2 opportunity or missing execution plan')
+      return
+    }
+
+    console.log('✅ V2 opportunity detected - executing full plan:', {
+      stakeholderCampaigns: opp.execution_plan.stakeholder_campaigns.length,
+      totalContentItems: opp.execution_plan.stakeholder_campaigns.reduce((sum, c) => sum + c.content_items.length, 0)
+    })
+
     setExecuting(opp.id)
-    setGenerationProgress({})
+    setGenerationProgress({ current: 'Preparing campaign execution...', progress: 10 })
+
+    let progressInterval: NodeJS.Timeout | null = null
 
     try {
-      // Step 1: Strategic Plan (2 sec)
-      setGenerationProgress(prev => ({ ...prev, strategy: 'Generating strategic plan...' }))
-      const strategyResponse = await fetch('/api/generate-strategy', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ opportunity: opp })
-      })
-      const strategy = await strategyResponse.json()
-      setGenerationProgress(prev => ({ ...prev, strategy: '✓ Strategic plan complete' }))
+      const generated: any[] = []
 
-      // Step 2: Written Content (10 sec)
-      setGenerationProgress(prev => ({ ...prev, content: 'Creating written content...' }))
-      const contentResponse = await fetch('/api/generate-content', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          opportunity: opp,
-          strategy,
-          types: ['press_release', 'blog_post', 'social_posts', 'email_pitches']
-        })
-      })
-      const content = await contentResponse.json()
-      setGenerationProgress(prev => ({ ...prev, content: '✓ Written content ready' }))
+      // Build content requirements from execution plan
+      const contentRequirements: {
+        owned: Array<{ type: string; stakeholder: string; purpose: string; keyPoints: string[] }>
+        media: Array<{ type: string; stakeholder: string; purpose: string; keyPoints: string[] }>
+      } = {
+        owned: [],
+        media: []
+      }
 
-      // Step 3: Visual Content (15 sec)
-      setGenerationProgress(prev => ({ ...prev, visuals: 'Generating visuals with DALL-E 3...' }))
-      const visualResponse = await fetch('/api/generate-visuals', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          opportunity: opp,
-          content,
-          types: ['hero_image', 'infographic', 'social_graphics']
-        })
-      })
-      const visuals = await visualResponse.json()
-      setGenerationProgress(prev => ({ ...prev, visuals: '✓ Visual content created' }))
+      for (const campaign of opp.execution_plan.stakeholder_campaigns) {
+        for (const item of campaign.content_items) {
+          // Skip invalid types
+          if (item.type === 'webinar' || item.type === 'event' || item.type === 'partnership_outreach') {
+            console.log(`⏭️ Skipping invalid type: ${item.type} (cannot generate)`)
+            continue
+          }
 
-      // Step 4: Media Strategy (5 sec)
-      setGenerationProgress(prev => ({ ...prev, media: 'Building media list...' }))
-      const mediaResponse = await fetch('/api/generate-media-strategy', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ opportunity: opp })
-      })
-      const mediaStrategy = await mediaResponse.json()
-      setGenerationProgress(prev => ({ ...prev, media: '✓ Media strategy complete' }))
+          const contentReq = {
+            type: item.type,
+            stakeholder: campaign.stakeholder_name,
+            purpose: item.topic,
+            keyPoints: item.brief?.key_points || []
+          }
 
-      // Step 5: Social Campaign (3 sec)
-      setGenerationProgress(prev => ({ ...prev, social: 'Creating social campaign...' }))
-      const socialResponse = await fetch('/api/generate-social', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          opportunity: opp,
-          content,
-          visuals
-        })
-      })
-      const socialCampaign = await socialResponse.json()
-      setGenerationProgress(prev => ({ ...prev, social: '✓ Social campaign ready' }))
-
-      // Update opportunity with generated content
-      const updatedOpp = {
-        ...opp,
-        execution_status: 'complete' as const,
-        generated_content: {
-          ...strategy,
-          ...content,
-          visuals: visuals.images,
-          media_list: mediaStrategy.journalists,
-          social_campaign: socialCampaign
+          if (item.type === 'press_release' || item.type === 'media_pitch') {
+            contentRequirements.media.push(contentReq)
+          } else {
+            contentRequirements.owned.push(contentReq)
+          }
         }
       }
 
-      setOpportunities(prev => 
-        prev.map(o => o.id === opp.id ? updatedOpp : o)
-      )
-      setSelectedOpp(updatedOpp)
-      
-      // Save to database
-      await supabase
-        .from('campaigns')
-        .insert({
-          opportunity_id: opp.id,
-          organization_id: '1',
-          title: opp.title,
-          status: 'ready',
-          content: updatedOpp.generated_content
+      console.log('📦 Campaign orchestration:', {
+        ownedContent: contentRequirements.owned.length,
+        mediaContent: contentRequirements.media.length
+      })
+
+      const totalPieces = contentRequirements.owned.length + contentRequirements.media.length
+
+      setGenerationProgress({
+        current: `Generating ${totalPieces} content pieces...`,
+        progress: 20
+      })
+
+      // Start a progress simulator and real-time content polling
+      let simulatedProgress = 20
+      let lastContentCount = 0
+
+      progressInterval = setInterval(async () => {
+        // Poll for actual content from database
+        try {
+          const { data: polledContent } = await supabase
+            .from('content_library')
+            .select('id')
+            .eq('organization_id', organization?.id || '7a2835cb-11ee-4512-acc3-b6caf8eb03ff')
+            .eq('metadata->>blueprint_id', opp.id)
+            .neq('content_type', 'phase_strategy')
+
+          const currentCount = polledContent?.length || 0
+
+          // If we have actual content, use real count
+          if (currentCount > lastContentCount) {
+            lastContentCount = currentCount
+            const progressPercent = 20 + Math.floor((currentCount / totalPieces) * 60)
+            setGenerationProgress({
+              current: `Generated ${currentCount}/${totalPieces} content pieces`,
+              progress: Math.min(progressPercent, 80)
+            })
+
+            // Refresh the displayed content
+            if (selectedOpp?.id === opp.id) {
+              await fetchGeneratedContent(opp.id)
+            }
+          } else if (simulatedProgress < 80) {
+            // Otherwise simulate progress
+            simulatedProgress += 2
+            const piecesEstimate = Math.floor((simulatedProgress - 20) / 60 * totalPieces)
+            setGenerationProgress({
+              current: `Generating content... (~${piecesEstimate}/${totalPieces} pieces)`,
+              progress: simulatedProgress
+            })
+          }
+        } catch (error) {
+          console.error('Error polling content:', error)
+        }
+      }, 3000) // Poll every 3 seconds
+
+      // Call niv-content-intelligent-v2 with campaign_generation stage
+      const { data: orchestrationResult, error: contentError } = await supabase.functions.invoke('niv-content-intelligent-v2', {
+        body: {
+          message: `Generate campaign content for ${opp.title}`,
+          conversationHistory: [],
+          organizationContext: {
+            conversationId: `opp-${opp.id}-${Date.now()}`,
+            organizationId: opp.organization_id || '7a2835cb-11ee-4512-acc3-b6caf8eb03ff',
+            organizationName: opp.description || 'Organization'
+          },
+          stage: 'campaign_generation',
+          campaignContext: {
+            phase: 'execution',
+            phaseNumber: 1,
+            objective: opp.title,
+            narrative: opp.description,
+            keyMessages: opp.strategic_context?.trigger_events || [],
+            contentRequirements,
+            researchInsights: [opp.strategic_context?.why_now || ''],
+            currentDate: new Date().toISOString().split('T')[0],
+            campaignFolder: `opportunity-${opp.id}`,
+            blueprintId: opp.id,
+            positioning: opp.strategic_context?.competitive_advantage || '',
+            targetStakeholders: opp.execution_plan.stakeholder_campaigns.map(c => c.stakeholder_name),
+            campaignType: 'OPPORTUNITY_EXECUTION',
+            timeline: opp.strategic_context?.time_window || 'Immediate'
+          }
+        }
+      })
+
+      // Clear the progress interval
+      if (progressInterval) {
+        clearInterval(progressInterval)
+      }
+
+      if (contentError) {
+        console.error('Campaign orchestration failed:', contentError)
+        throw new Error(`Campaign orchestration failed: ${contentError.message}`)
+      }
+
+      if (orchestrationResult) {
+        console.log('✅ Campaign orchestration complete:', orchestrationResult)
+
+        const generatedCount = orchestrationResult.generatedContent?.length || 0
+        setGenerationProgress({
+          current: `✅ Generated ${generatedCount}/${totalPieces} content pieces`,
+          progress: 85
         })
 
-    } catch (error) {
-      console.error('Execution error:', error)
+        if (orchestrationResult.generatedContent && orchestrationResult.generatedContent.length > 0) {
+          // Content is already saved to content_library by niv-content-intelligent-v2
+          // Just fetch it to display
+          console.log(`✅ ${orchestrationResult.generatedContent.length} pieces generated`)
+          await fetchGeneratedContent(opp.id)
+        }
+      }
+
+      // Generate Gamma presentation
+      setGenerationProgress({ current: 'Generating Gamma presentation...', progress: 90 })
+
+      let presentationUrl = null
+      try {
+        const { data: gammaData, error: gammaError } = await supabase.functions.invoke('generate-opportunity-presentation', {
+          body: {
+            opportunity_id: opp.id,
+            organization_id: opp.organization_id || '7a2835cb-11ee-4512-acc3-b6caf8eb03ff'
+          }
+        })
+
+        if (!gammaError && gammaData?.generationId) {
+          console.log('📊 Gamma started, polling...', gammaData.generationId)
+
+          // Poll for completion - increased to 24 attempts (2 minutes)
+          const maxAttempts = 24
+          for (let i = 0; i < maxAttempts; i++) {
+            setGenerationProgress({
+              current: `Gamma generating... (${i * 5}s / ${maxAttempts * 5}s)`,
+              progress: 90 + (i / maxAttempts) * 8 // 90-98%
+            })
+
+            await new Promise(resolve => setTimeout(resolve, 5000))
+
+            const { data: statusData, error: statusError } = await supabase.functions.invoke('gamma-presentation', {
+              body: { generationId: gammaData.generationId }
+            })
+
+            if (!statusError && statusData?.status === 'completed' && statusData.gammaUrl) {
+              presentationUrl = statusData.gammaUrl
+              console.log('✅ Gamma completed:', presentationUrl)
+              setGenerationProgress({ current: '✅ Gamma presentation ready!', progress: 98 })
+              break
+            }
+
+            if (statusData?.status === 'error') {
+              console.error('Gamma generation error:', statusData)
+              setGenerationProgress({ current: '⚠️ Gamma generation failed', progress: 90 })
+              break
+            }
+          }
+
+          // If we exhausted attempts, still save the URL for manual checking
+          if (!presentationUrl) {
+            console.warn('Gamma polling timed out - check Gamma dashboard manually')
+            setGenerationProgress({ current: '⚠️ Gamma still generating (check dashboard)', progress: 90 })
+          }
+        }
+      } catch (gammaError) {
+        console.error('Gamma generation failed:', gammaError)
+        setGenerationProgress({ current: '⚠️ Gamma generation failed', progress: 90 })
+      }
+
+      // Final content fetch to ensure we have everything
+      console.log('📦 Final content fetch...')
+      await fetchGeneratedContent(opp.id)
+
+      // Update database
+      const { error: updateError } = await supabase
+        .from('opportunities')
+        .update({
+          status: 'executed',
+          executed: true,
+          presentation_url: presentationUrl
+        })
+        .eq('id', opp.id)
+
+      if (updateError) console.error('Error updating opportunity:', updateError)
+
+      setOpportunities(prev =>
+        prev.map(o => o.id === opp.id ? { ...o, executed: true, presentation_url: presentationUrl } : o)
+      )
+
+      if (selectedOpp?.id === opp.id) {
+        setSelectedOpp({ ...opp, executed: true, presentation_url: presentationUrl })
+      }
+
+      setGenerationProgress({ current: '✅ Campaign execution complete!', progress: 100 })
+
+      // One more content fetch after UI updates to ensure display
+      setTimeout(() => fetchGeneratedContent(opp.id), 500)
+
+    } catch (error: any) {
+      console.error('❌ Execution error:', error)
+      setGenerationProgress({ current: `❌ Error: ${error.message}`, progress: 0 })
     } finally {
-      setExecuting(null)
-      setTimeout(() => setGenerationProgress({}), 3000)
+      // Clean up progress interval
+      if (progressInterval) {
+        clearInterval(progressInterval)
+      }
+
+      setTimeout(() => {
+        setExecuting(null)
+        setGenerationProgress({})
+      }, 3000)
     }
   }
 
@@ -248,7 +448,7 @@ export default function OpportunitiesModule() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Target className="w-5 h-5 text-purple-400" />
-            <h2 className="text-lg font-semibold text-white">Opportunity Engine</h2>
+            <h2 className="text-lg font-semibold text-white">Opportunity Engine V2</h2>
             <span className="px-2 py-1 text-xs bg-purple-500/20 text-purple-400 rounded-full">
               {opportunities.length} Active
             </span>
@@ -271,108 +471,115 @@ export default function OpportunitiesModule() {
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main Content - Two Columns */}
       <div className="flex-1 overflow-hidden flex">
-        {/* Opportunities List */}
+        {/* LEFT COLUMN: Opportunities List */}
         <div className="w-2/5 border-r border-gray-800 overflow-y-auto">
           <div className="p-4 space-y-3">
-            {opportunities.map((opp) => (
-              <motion.div
-                key={opp.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`p-4 bg-gray-900/50 rounded-lg border cursor-pointer transition-all ${
-                  selectedOpp?.id === opp.id 
-                    ? 'border-purple-500/50 bg-purple-500/5' 
-                    : 'border-gray-800 hover:border-gray-700'
-                }`}
-                onClick={() => setSelectedOpp(opp)}
-              >
-                {/* Opportunity Card Header */}
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-sm font-semibold text-white line-clamp-2 flex-1">
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
+              </div>
+            ) : opportunities.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                <Target className="w-12 h-12 mb-4 opacity-50" />
+                <p className="text-sm">No opportunities detected</p>
+                <p className="text-xs mt-2">Run Intelligence Module to detect opportunities</p>
+              </div>
+            ) : (
+              opportunities.map((opp) => (
+                <motion.div
+                  key={opp.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`p-4 bg-gray-900/50 rounded-lg border cursor-pointer transition-all ${
+                    selectedOpp?.id === opp.id
+                      ? 'border-purple-500/50 bg-purple-500/5'
+                      : 'border-gray-800 hover:border-gray-700'
+                  }`}
+                  onClick={() => setSelectedOpp(opp)}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <h3 className="text-sm font-semibold text-white line-clamp-2 mb-1">
                         {opp.title}
                       </h3>
-                      {/* Social Media Indicator */}
-                      {(opp.data?.source === 'social_media' || opp.data?.context?.source_platforms) && (
-                        <div className="flex items-center gap-1 px-2 py-0.5 bg-blue-500/10 border border-blue-500/30 rounded text-xs text-blue-400">
-                          <Share2 className="w-3 h-3" />
-                          <span>Social</span>
+                      <p className="text-xs text-gray-400 line-clamp-2">
+                        {opp.description}
+                      </p>
+                      {opp.version === 2 && opp.execution_plan && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          {opp.execution_plan.stakeholder_campaigns.reduce((sum, c) => sum + c.content_items.length, 0)} content items
                         </div>
                       )}
                     </div>
-                    {/* Show creative campaign name if available */}
-                    {(opp.campaign_name || opp.data?.campaign_name) && (
-                      <div className="flex items-center gap-1 mb-1">
-                        <Megaphone className="w-3 h-3 text-purple-400" />
-                        <span className="text-xs text-purple-400 font-medium">
-                          {opp.campaign_name || opp.data?.campaign_name}
-                        </span>
-                      </div>
-                    )}
-                    <p className="text-xs text-gray-400 line-clamp-2">
-                      {opp.description}
-                    </p>
+                    <div className={`text-2xl font-bold ${getScoreColor(opp.score)}`}>
+                      {opp.score}
+                    </div>
                   </div>
-                  <div className={`text-2xl font-bold ${getScoreColor(opp.score)}`}>
-                    {opp.score}
-                  </div>
-                </div>
 
-                {/* Metadata */}
-                <div className="flex items-center gap-3 mt-3">
-                  <span className={`px-2 py-0.5 text-xs rounded-full border ${getUrgencyColor(opp.urgency)}`}>
-                    {opp.urgency.toUpperCase()}
-                  </span>
-                  <span className="text-xs text-gray-500 flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    {opp.time_window}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {opp.category}
-                  </span>
-                </div>
-
-                {/* Quick Execute Button */}
-                {opp.urgency === 'high' && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      executeOpportunity(opp)
-                    }}
-                    disabled={executing === opp.id}
-                    className="mt-3 w-full px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-medium rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                  >
-                    {executing === opp.id ? (
-                      <>
-                        <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Generating Campaign...
-                      </>
-                    ) : (
-                      <>
-                        <Zap className="w-3 h-3" />
-                        Execute Now
-                      </>
+                  <div className="flex items-center gap-3 mt-3">
+                    <span className={`px-2 py-0.5 text-xs rounded-full border ${getUrgencyColor(opp.urgency)}`}>
+                      {opp.urgency.toUpperCase()}
+                    </span>
+                    <span className="text-xs text-gray-500">{opp.category}</span>
+                    {opp.executed && (
+                      <span className="px-2 py-0.5 text-xs bg-green-500/20 text-green-400 rounded border border-green-500/30">
+                        ✓ EXECUTED
+                      </span>
                     )}
-                  </button>
-                )}
-              </motion.div>
-            ))}
+                  </div>
+
+                  {!opp.executed && opp.version === 2 && opp.execution_plan && (
+                    <div className="mt-3 w-full">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          executeOpportunity(opp)
+                        }}
+                        disabled={executing === opp.id}
+                        className="w-full px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-medium rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        {executing === opp.id ? (
+                          <>
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            {generationProgress.current || 'Executing...'}
+                          </>
+                        ) : (
+                          <>
+                            <Zap className="w-3 h-3" />
+                            Execute Campaign
+                          </>
+                        )}
+                      </button>
+                      {executing === opp.id && generationProgress.progress !== undefined && (
+                        <div className="mt-2">
+                          <div className="w-full bg-gray-800 rounded-full h-1.5">
+                            <div
+                              className="bg-gradient-to-r from-purple-500 to-pink-500 h-1.5 rounded-full transition-all duration-300"
+                              style={{ width: `${generationProgress.progress}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </motion.div>
+              ))
+            )}
           </div>
         </div>
 
-        {/* Selected Opportunity Details */}
+        {/* RIGHT COLUMN: Selected Opportunity Details */}
         <div className="flex-1 overflow-y-auto">
           {selectedOpp ? (
             <div className="p-6">
-              {/* Detail Header */}
+              {/* Header */}
               <div className="mb-6">
                 <h2 className="text-2xl font-bold text-white mb-2">{selectedOpp.title}</h2>
-                <p className="text-gray-400">{selectedOpp.description}</p>
-                
-                <div className="flex items-center gap-4 mt-4">
+                <p className="text-gray-400 mb-4">{selectedOpp.description}</p>
+
+                <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     <Target className="w-4 h-4 text-purple-400" />
                     <span className="text-sm text-gray-300">Score: </span>
@@ -382,243 +589,221 @@ export default function OpportunitiesModule() {
                   </div>
                   <div className="flex items-center gap-2">
                     <AlertCircle className="w-4 h-4 text-orange-400" />
-                    <span className="text-sm text-gray-300">Urgency: </span>
                     <span className={`px-2 py-0.5 text-xs rounded-full border ${getUrgencyColor(selectedOpp.urgency)}`}>
                       {selectedOpp.urgency.toUpperCase()}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4 text-blue-400" />
-                    <span className="text-sm text-gray-300">Window: </span>
-                    <span className="text-sm text-blue-400">{selectedOpp.time_window}</span>
+                    <span className="text-sm text-blue-400">
+                      {selectedOpp.strategic_context?.time_window || 'TBD'}
+                    </span>
                   </div>
                 </div>
               </div>
 
-              {/* Trigger Event */}
-              <div className="mb-6 p-4 bg-gray-900/50 rounded-lg border border-gray-800">
-                <h3 className="text-sm font-semibold text-gray-300 mb-2">Trigger Event</h3>
-                <p className="text-sm text-gray-400">{selectedOpp.trigger_event}</p>
-              </div>
+              {/* V2: Strategic Context */}
+              {selectedOpp.version === 2 && selectedOpp.strategic_context && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-white mb-4">Strategic Context</h3>
 
-              {/* Social Signals - Only show for social opportunities */}
-              {(selectedOpp.data?.source === 'social_media' || selectedOpp.data?.context?.source_platforms) && (
-                <div className="mb-6 p-4 bg-blue-900/10 rounded-lg border border-blue-500/30">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Share2 className="w-4 h-4 text-blue-400" />
-                    <h3 className="text-sm font-semibold text-blue-400">Social Media Signals</h3>
+                  {/* Trigger Events */}
+                  <div className="mb-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800">
+                    <h4 className="text-sm font-semibold text-purple-400 mb-2">Trigger Events</h4>
+                    <ul className="space-y-1">
+                      {selectedOpp.strategic_context.trigger_events.map((event, idx) => (
+                        <li key={idx} className="text-sm text-gray-300 flex items-start gap-2">
+                          <ChevronRight className="w-3 h-3 text-gray-500 mt-0.5 flex-shrink-0" />
+                          <span>{event}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
 
-                  {selectedOpp.data?.context?.source_platforms && (
-                    <div className="mb-3">
-                      <span className="text-xs text-gray-500">Platforms:</span>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {selectedOpp.data.context.source_platforms.map((platform: string, idx: number) => (
-                          <span key={idx} className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-400 rounded border border-blue-500/30">
-                            {platform}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  {/* Why Now */}
+                  <div className="mb-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800">
+                    <h4 className="text-sm font-semibold text-blue-400 mb-2">Why Now</h4>
+                    <p className="text-sm text-gray-300">{selectedOpp.strategic_context.why_now}</p>
+                  </div>
 
-                  {selectedOpp.data?.context?.social_signals && (
-                    <div className="space-y-2">
-                      <span className="text-xs text-gray-500">
-                        {selectedOpp.data.context.social_signals.length} signals detected
-                      </span>
-                      <div className="max-h-40 overflow-y-auto space-y-2">
-                        {selectedOpp.data.context.social_signals.slice(0, 3).map((signal: any, idx: number) => (
-                          <div key={idx} className="p-2 bg-gray-900/50 rounded border border-gray-800 text-xs">
-                            <div className="text-gray-400 mb-1">{signal.content?.substring(0, 100)}...</div>
-                            <div className="flex items-center gap-2 text-gray-600">
-                              <span>{signal.platform}</span>
-                              {signal.engagement && <span>• {signal.engagement} engagement</span>}
+                  {/* Competitive Advantage */}
+                  <div className="mb-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800">
+                    <h4 className="text-sm font-semibold text-green-400 mb-2">Competitive Advantage</h4>
+                    <p className="text-sm text-gray-300">{selectedOpp.strategic_context.competitive_advantage}</p>
+                  </div>
+
+                  {/* Expected Impact */}
+                  <div className="mb-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800">
+                    <h4 className="text-sm font-semibold text-orange-400 mb-2">Expected Impact</h4>
+                    <p className="text-sm text-gray-300">{selectedOpp.strategic_context.expected_impact}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* V2: Execution Plan */}
+              {selectedOpp.version === 2 && selectedOpp.execution_plan && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-white mb-4">Execution Plan</h3>
+
+                  {/* Stakeholder Campaigns */}
+                  {selectedOpp.execution_plan.stakeholder_campaigns.map((campaign, idx) => (
+                    <div key={idx} className="mb-4 p-4 bg-gradient-to-br from-purple-900/20 to-pink-900/20 rounded-lg border border-purple-500/30">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Users className="w-4 h-4 text-purple-400" />
+                        <h4 className="text-sm font-semibold text-purple-300">
+                          {campaign.stakeholder_name}
+                        </h4>
+                        <span className="px-2 py-0.5 text-xs bg-purple-500/20 text-purple-400 rounded">
+                          Priority {campaign.stakeholder_priority}
+                        </span>
+                      </div>
+
+                      <div className="text-xs text-gray-400 mb-3">
+                        Lever: {campaign.lever_name}
+                      </div>
+
+                      {/* Content Items */}
+                      <div className="space-y-2">
+                        {campaign.content_items.map((item, itemIdx) => (
+                          <div key={itemIdx} className="p-3 bg-gray-900/50 rounded border border-gray-800">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs font-medium text-white">{item.type}</span>
+                              <span className={`px-2 py-0.5 text-xs rounded ${
+                                item.urgency === 'immediate' ? 'bg-red-500/20 text-red-400' :
+                                item.urgency === 'this_week' ? 'bg-yellow-500/20 text-yellow-400' :
+                                'bg-green-500/20 text-green-400'
+                              }`}>
+                                {item.urgency}
+                              </span>
+                            </div>
+                            <div className="text-xs text-gray-400 mb-2">{item.topic}</div>
+                            <div className="text-xs text-gray-500">
+                              {item.brief?.angle && `Angle: ${item.brief.angle}`}
                             </div>
                           </div>
                         ))}
                       </div>
                     </div>
-                  )}
-                </div>
-              )}
+                  ))}
 
-              {/* Recommended Action */}
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Recommended Action Plan</h3>
-                
-                {/* What */}
-                <div className="mb-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800">
-                  <h4 className="text-sm font-semibold text-purple-400 mb-2">What to Do</h4>
-                  <p className="text-sm text-white mb-2">{selectedOpp.recommended_action?.what?.primary_action || selectedOpp.data?.recommended_action?.what?.primary_action || 'No action defined'}</p>
-                  <div className="space-y-1">
-                    {(selectedOpp.recommended_action?.what?.specific_tasks || selectedOpp.data?.recommended_action?.what?.specific_tasks || []).map((task, idx) => (
-                      <div key={idx} className="flex items-start gap-2">
-                        <ChevronRight className="w-3 h-3 text-gray-500 mt-0.5" />
-                        <span className="text-xs text-gray-400">{task}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Who */}
-                <div className="mb-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800">
-                  <h4 className="text-sm font-semibold text-blue-400 mb-2">Who Should Execute</h4>
-                  <p className="text-sm text-white mb-1">Owner: {selectedOpp.recommended_action?.who?.owner || selectedOpp.data?.recommended_action?.who?.owner || 'Not assigned'}</p>
-                  <p className="text-xs text-gray-400">Team: {(selectedOpp.recommended_action?.who?.team || selectedOpp.data?.recommended_action?.who?.team || []).join(', ')}</p>
-                </div>
-
-                {/* When */}
-                <div className="mb-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800">
-                  <h4 className="text-sm font-semibold text-green-400 mb-2">When to Execute</h4>
-                  <p className="text-sm text-white">
-                    {(selectedOpp.recommended_action?.when?.start_immediately || selectedOpp.data?.recommended_action?.when?.start_immediately) ?
-                      '⚡ Start Immediately' :
-                      `Ideal Launch: ${selectedOpp.recommended_action?.when?.ideal_launch || selectedOpp.data?.recommended_action?.when?.ideal_launch || 'TBD'}`
-                    }
-                  </p>
-                  <p className="text-xs text-gray-400">Duration: {selectedOpp.recommended_action?.when?.duration || selectedOpp.data?.recommended_action?.when?.duration || 'TBD'}</p>
-                </div>
-
-                {/* Where */}
-                <div className="mb-6 p-4 bg-gray-900/50 rounded-lg border border-gray-800">
-                  <h4 className="text-sm font-semibold text-orange-400 mb-2">Where to Execute</h4>
-                  <div className="space-y-2">
-                    <div>
-                      <span className="text-xs text-gray-500">Channels:</span>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {(selectedOpp.recommended_action?.where?.channels || selectedOpp.data?.recommended_action?.where?.channels || []).map((channel, idx) => (
-                          <span key={idx} className="px-2 py-0.5 text-xs bg-gray-800 text-gray-300 rounded">
-                            {channel}
-                          </span>
+                  {/* Success Metrics */}
+                  {selectedOpp.execution_plan.success_metrics && selectedOpp.execution_plan.success_metrics.length > 0 && (
+                    <div className="p-4 bg-gray-900/50 rounded-lg border border-gray-800">
+                      <h4 className="text-sm font-semibold text-green-400 mb-2">Success Metrics</h4>
+                      <ul className="space-y-1">
+                        {selectedOpp.execution_plan.success_metrics.map((metric: any, idx) => (
+                          <li key={idx} className="text-xs text-gray-400">
+                            • {metric.metric}: {metric.target}
+                          </li>
                         ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Creative Campaign Section - Moved to bottom */}
-              {(selectedOpp.campaign_name || selectedOpp.data?.campaign_name ||
-                selectedOpp.creative_approach || selectedOpp.data?.creative_approach) && (
-                <div className="mb-6 p-4 bg-gradient-to-br from-purple-900/20 to-pink-900/20 rounded-lg border border-purple-500/30">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Palette className="w-4 h-4 text-purple-400" />
-                    <h3 className="text-sm font-semibold text-purple-300">Creative Campaign Strategy</h3>
-                    <span className="px-2 py-0.5 text-xs bg-purple-500/20 text-purple-400 rounded-full">AI Generated</span>
-                  </div>
-
-                  {(selectedOpp.campaign_name || selectedOpp.data?.campaign_name) && (
-                    <div className="mb-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Megaphone className="w-3 h-3 text-pink-400" />
-                        <span className="text-xs text-gray-400">Campaign Name</span>
-                      </div>
-                      <p className="text-sm text-white font-medium">
-                        {selectedOpp.campaign_name || selectedOpp.data?.campaign_name}
-                      </p>
-                    </div>
-                  )}
-
-                  {(selectedOpp.creative_approach || selectedOpp.data?.creative_approach) && (
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <Sparkles className="w-3 h-3 text-yellow-400" />
-                        <span className="text-xs text-gray-400">Creative Approach</span>
-                      </div>
-                      <p className="text-sm text-gray-300">
-                        {selectedOpp.creative_approach || selectedOpp.data?.creative_approach}
-                      </p>
+                      </ul>
                     </div>
                   )}
                 </div>
               )}
 
-              {/* One-Click Execution */}
-              <div className="mb-6">
-                <button
-                  onClick={() => executeOpportunity(selectedOpp)}
-                  disabled={executing === selectedOpp.id || selectedOpp.execution_status === 'complete'}
-                  className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
-                >
-                  {executing === selectedOpp.id ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Generating Complete Campaign (35 seconds)...
-                    </>
-                  ) : selectedOpp.execution_status === 'complete' ? (
-                    <>
-                      <Sparkles className="w-5 h-5" />
-                      Campaign Ready - View Results
-                    </>
+              {/* Generated Content Section */}
+              {(selectedOpp.executed || (executing === selectedOpp.id)) && (
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-white">Generated Content</h3>
+                    <span className="px-2 py-1 text-xs bg-purple-500/20 text-purple-400 rounded">
+                      {generatedContent.length} pieces
+                    </span>
+                  </div>
+                  {generatedContent.length === 0 ? (
+                    <div className="p-4 bg-gray-900/50 rounded-lg border border-gray-800 text-center">
+                      <p className="text-sm text-gray-500">
+                        {executing === selectedOpp.id ? 'Generating content...' : 'No content generated yet'}
+                      </p>
+                    </div>
                   ) : (
-                    <>
-                      <Play className="w-5 h-5" />
-                      Execute Opportunity - Generate Full Campaign
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Generation Progress */}
-              {Object.keys(generationProgress).length > 0 && (
-                <div className="mb-6 p-4 bg-gray-900/50 rounded-lg border border-purple-500/30">
-                  <h4 className="text-sm font-semibold text-purple-400 mb-3">Generation Progress</h4>
                   <div className="space-y-2">
-                    {Object.entries(generationProgress).map(([key, status]) => (
-                      <div key={key} className="flex items-center gap-2">
-                        {status.includes('✓') ? (
-                          <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                            <span className="text-xs text-white">✓</span>
+                    {generatedContent.map((content, idx) => (
+                      <div key={idx} className="p-4 bg-gray-900/50 rounded-lg border border-gray-800">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h4 className="text-sm font-medium text-white mb-1">{content.title}</h4>
+                            <div className="flex items-center gap-2 text-xs text-gray-400 mb-1">
+                              <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded">
+                                {content.content_type}
+                              </span>
+                              {content.metadata?.stakeholder && (
+                                <span className="text-gray-500">→ {content.metadata.stakeholder}</span>
+                              )}
+                              {content.metadata?.channel && (
+                                <span className="px-2 py-0.5 bg-gray-500/20 text-gray-400 rounded">
+                                  {content.metadata.channel}
+                                </span>
+                              )}
+                            </div>
+                            {content.metadata?.purpose && (
+                              <p className="text-xs text-gray-500 mt-1">{content.metadata.purpose}</p>
+                            )}
                           </div>
-                        ) : (
-                          <div className="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
-                        )}
-                        <span className="text-xs text-gray-300">{status}</span>
+                          <button
+                            onClick={() => setViewingContent(content)}
+                            className="px-3 py-1 text-xs bg-purple-500/20 text-purple-400 rounded hover:bg-purple-500/30 transition-colors flex items-center gap-1"
+                          >
+                            <Eye className="w-3 h-3" />
+                            View
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
+                  )}
                 </div>
               )}
 
-              {/* Generated Content Preview */}
-              {selectedOpp.generated_content && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-white">Generated Campaign Assets</h3>
-                  
-                  {/* Content Types */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 bg-gray-900/50 rounded-lg border border-gray-800">
-                      <FileText className="w-5 h-5 text-blue-400 mb-2" />
-                      <h4 className="text-sm font-semibold text-white mb-1">Press Release</h4>
-                      <p className="text-xs text-gray-400">Ready for distribution</p>
-                    </div>
-                    <div className="p-4 bg-gray-900/50 rounded-lg border border-gray-800">
-                      <Image className="w-5 h-5 text-green-400 mb-2" />
-                      <h4 className="text-sm font-semibold text-white mb-1">Visual Content</h4>
-                      <p className="text-xs text-gray-400">3 images generated</p>
-                    </div>
-                    <div className="p-4 bg-gray-900/50 rounded-lg border border-gray-800">
-                      <Users className="w-5 h-5 text-purple-400 mb-2" />
-                      <h4 className="text-sm font-semibold text-white mb-1">Media List</h4>
-                      <p className="text-xs text-gray-400">25 journalists identified</p>
-                    </div>
-                    <div className="p-4 bg-gray-900/50 rounded-lg border border-gray-800">
-                      <Share2 className="w-5 h-5 text-pink-400 mb-2" />
-                      <h4 className="text-sm font-semibold text-white mb-1">Social Campaign</h4>
-                      <p className="text-xs text-gray-400">5 platforms ready</p>
-                    </div>
-                  </div>
+              {/* Presentation Link */}
+              {selectedOpp.executed && selectedOpp.presentation_url && (
+                <div className="mb-6">
+                  <a
+                    href={selectedOpp.presentation_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-colors"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    View Gamma Presentation
+                  </a>
+                </div>
+              )}
 
-                  {/* Export Actions */}
-                  <div className="flex gap-3">
-                    <button className="flex-1 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm rounded-lg transition-colors">
-                      View Full Campaign
-                    </button>
-                    <button className="flex-1 px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 text-sm rounded-lg transition-colors">
-                      Export All Assets
-                    </button>
-                  </div>
+              {/* Execute Button */}
+              {!selectedOpp.executed && selectedOpp.version === 2 && selectedOpp.execution_plan && (
+                <div className="space-y-3">
+                  <button
+                    onClick={() => executeOpportunity(selectedOpp)}
+                    disabled={executing === selectedOpp.id}
+                    className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+                  >
+                    {executing === selectedOpp.id ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        {generationProgress.current || 'Executing...'}
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-5 h-5" />
+                        Execute Campaign - Generate All Content
+                      </>
+                    )}
+                  </button>
+                  {executing === selectedOpp.id && generationProgress.progress !== undefined && (
+                    <div className="space-y-2">
+                      <div className="w-full bg-gray-800 rounded-full h-2">
+                        <div
+                          className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${generationProgress.progress}%` }}
+                        />
+                      </div>
+                      <div className="text-xs text-gray-400 text-center">
+                        {generationProgress.progress}% complete
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -632,6 +817,92 @@ export default function OpportunitiesModule() {
           )}
         </div>
       </div>
+
+      {/* Content Viewer Modal */}
+      <AnimatePresence>
+        {viewingContent && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80"
+            onClick={() => setViewingContent(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-gray-900 rounded-xl border border-gray-800 max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="px-6 py-4 border-b border-gray-800 flex items-start justify-between">
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-white mb-2">{viewingContent.title}</h3>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded">
+                      {viewingContent.content_type}
+                    </span>
+                    {viewingContent.metadata?.stakeholder && (
+                      <span className="text-gray-400">Stakeholder: {viewingContent.metadata.stakeholder}</span>
+                    )}
+                    {viewingContent.metadata?.channel && (
+                      <span className="px-2 py-0.5 bg-gray-500/20 text-gray-400 rounded capitalize">
+                        {viewingContent.metadata.channel}
+                      </span>
+                    )}
+                  </div>
+                  {viewingContent.metadata?.purpose && (
+                    <p className="text-xs text-gray-500 mt-2">{viewingContent.metadata.purpose}</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => setViewingContent(null)}
+                  className="ml-4 p-2 text-gray-400 hover:text-white transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="flex-1 overflow-y-auto p-6">
+                <div className="prose prose-invert max-w-none">
+                  <div className="text-gray-300 whitespace-pre-wrap font-mono text-sm leading-relaxed">
+                    {viewingContent.content}
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="px-6 py-4 border-t border-gray-800 flex items-center justify-between">
+                <div className="text-xs text-gray-500">
+                  {viewingContent.metadata?.generated_at && (
+                    <span>Generated: {new Date(viewingContent.metadata.generated_at).toLocaleString()}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(viewingContent.content)
+                      // Could add a toast notification here
+                      console.log('Content copied to clipboard')
+                    }}
+                    className="px-3 py-1.5 text-xs bg-purple-500/20 text-purple-400 rounded hover:bg-purple-500/30 transition-colors"
+                  >
+                    Copy Content
+                  </button>
+                  <button
+                    onClick={() => setViewingContent(null)}
+                    className="px-3 py-1.5 text-xs bg-gray-700 text-gray-300 rounded hover:bg-gray-600 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

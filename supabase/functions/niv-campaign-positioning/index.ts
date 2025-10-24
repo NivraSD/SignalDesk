@@ -94,7 +94,7 @@ Based on this research, generate 3 distinct positioning options that would effec
 Output valid JSON only.`
 
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 4000,
       temperature: 0.7,
       system: systemPrompt,

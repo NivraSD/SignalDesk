@@ -235,26 +235,33 @@ export function SignalDeckOrchestrator({
           <p className="text-gray-600 mb-6">
             Your PowerPoint presentation "{outline.topic}" has been generated successfully.
           </p>
-          <div className="flex gap-3 justify-center">
-            <a
-              href={fileUrl}
-              download
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium inline-flex items-center gap-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              Download PowerPoint
-            </a>
-            <a
-              href={fileUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-6 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-medium"
-            >
-              Preview
-            </a>
-          </div>
+          {fileUrl ? (
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => {
+                  console.log('Downloading presentation from:', fileUrl)
+                  window.open(fileUrl, '_blank')
+                }}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium inline-flex items-center gap-2 cursor-pointer"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Download PowerPoint
+              </button>
+              <button
+                onClick={() => {
+                  console.log('Opening presentation preview:', fileUrl)
+                  window.open(fileUrl, '_blank')
+                }}
+                className="px-6 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-medium cursor-pointer"
+              >
+                Preview
+              </button>
+            </div>
+          ) : (
+            <p className="text-red-600">Error: Download URL not available</p>
+          )}
           <div className="mt-6 text-sm text-gray-500">
             ✓ Saved to MemoryVault → Presentations folder
           </div>

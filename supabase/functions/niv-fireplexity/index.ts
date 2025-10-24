@@ -191,23 +191,50 @@ async function performIntelligentSearch(
     console.log(`🔍 Search ${i + 1}/${queriesToTry}: "${searchQuery.substring(0, 80)}..."`)
 
     try {
+      // Intelligently select Firecrawl categories based on query content
+      const categories = []
+      const queryLower = searchQuery.toLowerCase()
+
+      // Add 'research' category for academic/statistical queries
+      if (queryLower.match(/statistic|study|research|data|report|survey|analysis|finding|trend|percent|rate/i)) {
+        categories.push('research')
+      }
+
+      // Add 'pdf' category for whitepapers, reports, documentation
+      if (queryLower.match(/whitepaper|report|document|guide|manual|specification|overview/i)) {
+        categories.push('pdf')
+      }
+
+      // Add 'github' category for technical/API queries
+      if (queryLower.match(/api|sdk|code|implementation|library|package|integration|github|developer/i)) {
+        categories.push('github')
+      }
+
+      const searchBody: any = {
+        query: searchQuery,
+        sources: ['web', 'news'], // Add sources for multi-source search
+        limit: searchLimit,
+        ...(searchStrategy.tbs && { tbs: searchStrategy.tbs }), // Add time-based search if specified
+        scrapeOptions: {
+          formats: ['markdown'],
+          onlyMainContent: true, // Filter out navigation and ads
+          maxAge: maxAge // Dynamic maxAge based on time filter
+        }
+      }
+
+      // Add categories if any were detected
+      if (categories.length > 0) {
+        searchBody.categories = categories
+        console.log(`📚 Using categories: ${categories.join(', ')}`)
+      }
+
       const searchResponse = await fetch(`${FIRECRAWL_BASE_URL}/search`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${firecrawlKey}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          query: searchQuery,
-          sources: ['web', 'news'], // Add sources for multi-source search
-          limit: searchLimit,
-          ...(searchStrategy.tbs && { tbs: searchStrategy.tbs }), // Add time-based search if specified
-          scrapeOptions: {
-            formats: ['markdown'],
-            onlyMainContent: true, // Filter out navigation and ads
-            maxAge: maxAge // Dynamic maxAge based on time filter
-          }
-        })
+        body: JSON.stringify(searchBody)
       })
 
       if (!searchResponse.ok) {
@@ -220,6 +247,15 @@ async function performIntelligentSearch(
       // Parse multi-source response structure
       const webResults = searchData.data?.web || []
       const newsResults = searchData.data?.news || []
+
+      // Log first result to see what Firecrawl is returning
+      if (webResults.length > 0) {
+        const sample = webResults[0]
+        console.log(`📋 Sample result structure: url=${!!sample.url}, markdown=${sample.markdown?.length || 0} chars, content=${sample.content?.length || 0} chars`)
+        if (sample.markdown) {
+          console.log(`📄 Markdown preview: ${sample.markdown.substring(0, 200)}...`)
+        }
+      }
 
       // Tag results with their source type
       const taggedWebResults = webResults.map(r => ({ ...r, sourceType: 'web' }))
@@ -376,7 +412,7 @@ async function processSearchResults(
         title,
         description,
         url,
-        content: content.substring(0, 2000), // Limit content size
+        content: content.substring(0, 15000), // Increased from 2000 to 15000 chars to preserve more context
         source,
         sourceType: result.sourceType || 'web', // Include source type (web/news)
         publishDate,

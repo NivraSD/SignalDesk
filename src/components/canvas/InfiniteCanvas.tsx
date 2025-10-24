@@ -14,11 +14,13 @@ import NivCanvasComponentV4 from '@/components/niv/NivCanvasComponentV4'
 import MemoryVaultModule from '@/components/modules/MemoryVaultModule'
 import ExecuteTabProduction from '@/components/execute/ExecuteTabProduction'
 import StrategicPlanningModule from '@/components/modules/StrategicPlanningModule'
+import StrategicPlanningModuleV3Complete from '@/components/modules/StrategicPlanningModuleV3Complete'
 import CrisisCommandCenter from '@/components/modules/CrisisCommandCenter'
 import NivCrisisConsultant from '@/components/modules/NivCrisisConsultant'
 import WorkspaceCanvasComponent from '@/components/workspace/WorkspaceCanvasComponent'
 import StrategicCampaignPlanner from '@/components/prototype/StrategicCampaignPlanner'
 import StakeholderPredictionDashboard from '@/components/predictions/StakeholderPredictionDashboard'
+import { CommandCenterV2 } from '@/components/command-center'
 import { useAppStore } from '@/stores/useAppStore'
 
 interface CanvasState {
@@ -53,6 +55,7 @@ const GRID_SIZE = 50
 const COMPONENT_MARGIN = 20
 
 const COMPONENT_TYPES: ComponentType[] = [
+  { id: 'niv-command', label: 'NIV', icon: Brain, color: 'from-purple-600 to-pink-600', defaultWidth: 770, defaultHeight: 525 },
   { id: 'intelligence', label: 'Intelligence', icon: Brain, color: 'from-blue-500 to-cyan-500', defaultWidth: 800, defaultHeight: 600 },
   { id: 'niv', label: 'NIV Strategy', icon: MessageSquare, color: 'from-purple-500 to-pink-500', defaultWidth: 640, defaultHeight: 480 },
   { id: 'predictions', label: 'Predictions (BETA)', icon: AlertTriangle, color: 'from-yellow-500 to-orange-500', defaultWidth: 900, defaultHeight: 700 },
@@ -83,6 +86,20 @@ export default function InfiniteCanvas({ children }: { children?: React.ReactNod
   const [nextZIndex, setNextZIndex] = useState(10)
   const [activeComponentId, setActiveComponentId] = useState<string | null>(null)
   const [nivBlueprint, setNivBlueprint] = useState<any | null>(null)
+  const [planData, setPlanData] = useState<{ blueprint: any; sessionId: string; orgId: string } | null>(() => {
+    // Initialize from localStorage if available
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('planData')
+      if (saved) {
+        try {
+          return JSON.parse(saved)
+        } catch (e) {
+          console.error('Failed to parse saved plan data:', e)
+        }
+      }
+    }
+    return null
+  })
 
   // Find next available grid position - 2 column layout
   const findNextPosition = useCallback((width: number, height: number) => {
@@ -154,6 +171,16 @@ export default function InfiniteCanvas({ children }: { children?: React.ReactNod
       if (moduleId === 'campaign-planner' && data?.blueprint) {
         console.log('Storing NIV blueprint for Campaign Planner:', data.blueprint)
         setNivBlueprint(data.blueprint)
+      }
+
+      // If Campaign Builder is passing blueprint data for plan, store it
+      if (moduleId === 'plan' && data?.blueprint) {
+        console.log('Storing blueprint for Strategic Planning:', data)
+        setPlanData({
+          blueprint: data.blueprint,
+          sessionId: data.sessionId,
+          orgId: data.orgId
+        })
       }
 
       addComponent(moduleId)
@@ -327,6 +354,16 @@ export default function InfiniteCanvas({ children }: { children?: React.ReactNod
 
   const renderComponentContent = (component: CanvasComponentData) => {
     switch (component.type) {
+      case 'niv-command':
+        return (
+          <CommandCenterV2
+            onNavigateToTab={(tabId: string, context?: any) => {
+              // Open the requested tab/module
+              addComponent(tabId)
+              // TODO: Pass context to the opened component
+            }}
+          />
+        )
       case 'niv':
         return null  // NIV uses its own component
       case 'workspace':
@@ -342,6 +379,17 @@ export default function InfiniteCanvas({ children }: { children?: React.ReactNod
       case 'opportunities':
         return <OpportunitiesModule />
       case 'plan':
+        // Use V3Complete if we have blueprint data from Campaign Builder
+        if (planData) {
+          return (
+            <StrategicPlanningModuleV3Complete
+              blueprint={planData.blueprint}
+              sessionId={planData.sessionId}
+              orgId={planData.orgId}
+            />
+          )
+        }
+        // Fallback to old module for legacy support
         return <StrategicPlanningModule />
       case 'execute':
         return <ExecuteTabProduction framework={framework} />
@@ -355,6 +403,43 @@ export default function InfiniteCanvas({ children }: { children?: React.ReactNod
         return <div className="p-6">Unknown component type</div>
     }
   }
+
+  // Save planData to localStorage whenever it changes
+  useEffect(() => {
+    if (planData) {
+      localStorage.setItem('planData', JSON.stringify(planData))
+    }
+  }, [planData])
+
+  // Check for pending plan data from Campaign Builder on mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.get('openPlan') === 'true') {
+      const pendingData = sessionStorage.getItem('pendingPlanData')
+      if (pendingData) {
+        try {
+          const data = JSON.parse(pendingData)
+          console.log('📋 Loading pending plan data from Campaign Builder:', data)
+
+          // Store in planData state (will auto-save to localStorage via effect above)
+          setPlanData({
+            blueprint: data.blueprint,
+            sessionId: data.sessionId,
+            orgId: data.orgId
+          })
+
+          // Open the Plan module
+          addComponent('plan')
+
+          // Clear the pending data and URL param
+          sessionStorage.removeItem('pendingPlanData')
+          window.history.replaceState({}, '', '/')
+        } catch (err) {
+          console.error('Failed to parse pending plan data:', err)
+        }
+      }
+    }
+  }, [addComponent])
 
   // Broadcast open components to parent for tab highlighting
   useEffect(() => {

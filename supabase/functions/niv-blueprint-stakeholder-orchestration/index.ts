@@ -116,34 +116,63 @@ serve(async (req) => {
 
     console.log('📡 Calling Claude for orchestration generation...')
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 12000,  // Reduced from 16000 to speed up generation
-        temperature: 0.5,
-        system: 'You are a JSON generator. Return ONLY valid JSON with no markdown code blocks, no explanations, no preamble. Start with { and end with }. Be concise and efficient.',
-        messages: [{
-          role: 'user',
-          content: prompt
-        }]
-      })
-    })
+    // Try with primary model, fallback to Sonnet 4.5 if needed
+    const models = ['claude-haiku-4-5-20251001', 'claude-sonnet-4-5-20250929']
+    let response
+    let lastError
 
-    if (!response.ok) {
-      const error = await response.text()
-      throw new Error(`Claude API error: ${error}`)
+    for (const model of models) {
+      try {
+        console.log(`  Trying model: ${model}`)
+        response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01'
+          },
+          body: JSON.stringify({
+            model: model,
+            max_tokens: 64000,  // Increased for comprehensive orchestration plans with multiple stakeholders and campaigns
+            temperature: 0.5,
+            system: 'You are a JSON generator. Return ONLY valid JSON with no markdown code blocks, no explanations, no preamble. Start with { and end with }.',
+            messages: [{
+              role: 'user',
+              content: prompt
+            }]
+          })
+        })
+
+        if (response.ok) {
+          console.log(`  ✅ Success with ${model}`)
+          break
+        } else {
+          const errorText = await response.text()
+          lastError = errorText
+          console.log(`  ❌ ${model} failed: ${errorText.substring(0, 200)}`)
+          continue
+        }
+      } catch (err) {
+        lastError = err.message
+        console.log(`  ❌ ${model} error: ${err.message}`)
+        continue
+      }
+    }
+
+    if (!response || !response.ok) {
+      throw new Error(`All Claude models failed. Last error: ${lastError}`)
     }
 
     const data = await response.json()
     const rawText = data.content[0].text
 
     console.log('✅ Claude response received')
+    console.log('   Response length:', rawText.length, 'characters')
+
+    // Log token usage
+    if (data.usage) {
+      console.log('   Token usage:', JSON.stringify(data.usage))
+    }
 
     // Extract JSON from response
     let orchestrationPlans: StakeholderOrchestrationPlan[]
@@ -169,10 +198,22 @@ serve(async (req) => {
         throw new Error('No JSON object found in response')
       }
     } catch (parseError) {
-      console.error('❌ Failed to parse Claude response as JSON:', parseError)
-      console.error('Raw response:', rawText.substring(0, 1000))
-      console.error('Raw response length:', rawText.length)
-      throw new Error('Failed to parse orchestration plans from Claude response')
+      console.error('❌ Failed to parse Claude response as JSON:', parseError.message)
+      console.error('   Parse error at position:', parseError.message.match(/position (\d+)/)?.[1] || 'unknown')
+      console.error('   Response length:', rawText.length, 'characters')
+      console.error('   First 500 chars:', rawText.substring(0, 500))
+      console.error('   Last 500 chars:', rawText.substring(rawText.length - 500))
+
+      // Show the area around the error if we can find it
+      const posMatch = parseError.message.match(/position (\d+)/)
+      if (posMatch) {
+        const errorPos = parseInt(posMatch[1])
+        const start = Math.max(0, errorPos - 200)
+        const end = Math.min(rawText.length, errorPos + 200)
+        console.error('   Context around error:', rawText.substring(start, end))
+      }
+
+      throw new Error(`Failed to parse orchestration plans: ${parseError.message}`)
     }
 
     console.log('✅ Parsed orchestration plans')
@@ -306,7 +347,11 @@ For EACH stakeholder's psychological influence levers (from Part 2), create a MU
 
 ## CRITICAL GUIDELINES
 
-1. **Use Part 2 Levers**: Each stakeholder in Part 2 has ~4 influence levers. Use those EXACT levers as your foundation.
+1. **Use Part 2 Levers**: Each stakeholder in Part 2 has EXACTLY 4 influence levers with priorities 1-4. Use those EXACT levers as your foundation. MAINTAIN the priority numbers (1, 2, 3, 4) from Part 2 - do not change them!
+   - Priority 1 = Fear Mitigation
+   - Priority 2 = Aspiration Activation
+   - Priority 3 = Social Proof
+   - Priority 4 = Authority/Credibility
 
 2. **Multi-Channel for Each Lever**: Every lever gets 2 media pitches, 2-3 social posts, 1 thought leadership piece, and 1 additional tactic. Keep it focused and efficient.
 
@@ -432,7 +477,7 @@ Return ONLY valid JSON with this EXACT structure:
 
 ## KEY PRINCIPLES
 
-1. **Use Part 2 Influence Levers as Foundation**: Don't invent new levers - use the exact psychological levers from Part 2 (fear mitigation, aspiration activation, decision triggers, objection handling).
+1. **Use Part 2 Influence Levers as Foundation**: Don't invent new levers - use the EXACT 4 psychological levers from Part 2 with their exact priority numbers (1=Fear Mitigation, 2=Aspiration Activation, 3=Social Proof, 4=Authority).
 
 2. **WHO → WHAT → WHERE for Everything**:
    - Media: WHO = specific journalist, WHAT = exact story angle, WHERE = outlet
@@ -455,9 +500,10 @@ Return ONLY valid JSON with this EXACT structure:
 ## CRITICAL REMINDERS
 
 - Return ONLY valid JSON, no markdown wrapper, no explanations
-- Each stakeholder gets ALL their influence levers from Part 2 (usually 3-4 levers)
+- Each stakeholder gets ALL 4 influence levers from Part 2 (Priority 1, 2, 3, 4 - DO NOT SKIP ANY)
 - Each lever gets a complete multi-channel campaign
 - Be specific with WHO, WHAT, WHERE - no placeholders like "[Customer Name]" unless you truly don't have the data
+- VERIFY you have created exactly 4 levers per stakeholder with priorities 1, 2, 3, and 4 before returning
 
 Generate the complete stakeholder orchestration plan now in valid JSON format.`
 }

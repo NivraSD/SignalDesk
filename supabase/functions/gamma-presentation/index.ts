@@ -1,10 +1,18 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
 // Gamma API configuration
 const GAMMA_API_URL = 'https://public-api.gamma.app/v0.2'
 const GAMMA_API_KEY = Deno.env.get('GAMMA_API_KEY') || 'sk-gamma-zFOvUwGMpXZaDiB5sWkl3a5lakNfP19E90ZUZUdZM'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
+const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+
+// Store pending capture requests (in-memory, for this Edge Function instance)
+// Key: generationId, Value: PresentationRequest
+const pendingCaptures = new Map<string, PresentationRequest>()
 
 interface PresentationRequest {
   title?: string
@@ -14,6 +22,10 @@ interface PresentationRequest {
   format?: 'presentation' | 'document' | 'social'
   slideCount?: number  // Also accept slideCount
   style?: string  // Also accept style
+  // NEW: Capture options
+  capture?: boolean  // Enable capture to campaign_presentations table
+  campaign_id?: string  // Link to campaign
+  organization_id?: string  // Required for capture
   // Export options are provided by Gamma after generation, not requested upfront
   options?: {
     numCards?: number
@@ -103,6 +115,91 @@ function frameworkToPresentation(framework: any, title?: string): string {
   return presentationContent
 }
 
+// Extract text content from PPTX file (simplified version - uses basic text extraction)
+async function extractPptxContent(pptxBuffer: Uint8Array): Promise<{ fullText: string; slides: any[] }> {
+  try {
+    // For now, we'll do a simple text extraction
+    // In production, you might want to use a proper PPTX parser
+    const decoder = new TextDecoder()
+    const text = decoder.decode(pptxBuffer)
+
+    // Simple extraction - just return the text we can find
+    // This is a placeholder - ideally use a proper PPTX parser
+    return {
+      fullText: text.substring(0, 50000), // Limit to 50KB of text
+      slides: [] // TODO: Parse actual slide structure
+    }
+  } catch (error) {
+    console.error('Error extracting PPTX content:', error)
+    return { fullText: '', slides: [] }
+  }
+}
+
+// Capture presentation to database (metadata only for now)
+async function capturePresentation(
+  generationId: string,
+  gammaUrl: string,
+  pptxDownloadUrl: string | null,
+  request: PresentationRequest
+) {
+  if (!request.capture || !request.organization_id) {
+    console.log('📍 Capture disabled or no organization_id provided', {
+      capture: request.capture,
+      org_id: request.organization_id
+    })
+    return null
+  }
+
+  console.log('📥 Capturing presentation metadata to SignalDesk...')
+
+  try {
+    const presentationTitle = request.title || request.topic || 'Untitled Presentation'
+
+    // For now, we only capture metadata (no .pptx file download)
+    // TODO: Add .pptx download when Gamma API supports export
+    const fullText = `${presentationTitle}\n\nGamma Presentation\nGenerated: ${new Date().toISOString()}`
+    const slides: any[] = []
+    const pptxUrl = null  // Will add later when we figure out export
+
+    // Store in campaign_presentations table
+    const { data, error } = await supabase
+      .from('campaign_presentations')
+      .insert({
+        organization_id: request.organization_id,
+        campaign_id: request.campaign_id || null,
+        gamma_id: generationId,
+        gamma_url: gammaUrl,
+        gamma_edit_url: `${gammaUrl}/edit`,
+        title: presentationTitle,
+        topic: request.topic || request.title,
+        slide_count: request.options?.numCards || request.slideCount || 10,
+        full_text: fullText,
+        slides: slides,
+        pptx_url: pptxUrl,
+        format: request.format || 'presentation',
+        generation_params: {
+          inputText: request.content?.substring(0, 500),
+          framework: request.framework ? 'included' : 'none',
+          options: request.options
+        }
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error saving to campaign_presentations:', error)
+      throw error
+    }
+
+    console.log('✅ Presentation captured to SignalDesk:', data.id)
+    return data
+  } catch (error) {
+    console.error('Capture error:', error)
+    // Don't fail the whole request if capture fails
+    return null
+  }
+}
+
 // Generate presentation via Gamma API
 async function generatePresentation(request: PresentationRequest) {
   console.log('🎨 Generating presentation with Gamma')
@@ -136,10 +233,11 @@ async function generatePresentation(request: PresentationRequest) {
       format: request.format || 'presentation',
       numCards: request.options?.numCards || request.slideCount || (request.framework ? 12 : 10),
       cardSplit: request.options?.cardSplit || 'auto'
+      // NOTE: exportPdfPptx is not supported in Gamma API v0.2
+      // We'll capture metadata only for now
     }
 
     // Note: Export URLs come from Gamma AFTER generation is complete
-    // We don't request them upfront
 
     // Add theme only if specified (let Gamma use workspace default otherwise)
     if (request.options?.themeName && request.options.themeName !== 'auto') {
@@ -247,16 +345,23 @@ async function generatePresentation(request: PresentationRequest) {
 }
 
 // Check generation status (for polling)
-async function checkGenerationStatus(generationId: string) {
+async function checkGenerationStatus(generationId: string, captureRequest?: PresentationRequest) {
   console.log('🔍 Checking status for generation:', generationId)
 
   try {
+    // Add 15-second timeout to prevent edge function from hanging
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 15000)
+
     const response = await fetch(`${GAMMA_API_URL}/generations/${generationId}`, {
       method: 'GET',
       headers: {
         'X-API-KEY': GAMMA_API_KEY
-      }
+      },
+      signal: controller.signal
     })
+
+    clearTimeout(timeoutId)
 
     if (response.ok) {
       const data = await response.json()
@@ -274,8 +379,26 @@ async function checkGenerationStatus(generationId: string) {
         if (presentationId) {
           exportUrls.view = data.gammaUrl
           exportUrls.edit = `${data.gammaUrl}/edit`
-          // Note: Direct export URLs may be provided by Gamma in future API versions
+          // Check if download URLs are provided
+          if (data.pptxDownloadUrl) {
+            exportUrls.pptx = data.pptxDownloadUrl
+          }
+          if (data.pdfDownloadUrl) {
+            exportUrls.pdf = data.pdfDownloadUrl
+          }
         }
+      }
+
+      // NEW: Capture presentation if completed and capture was requested
+      let capturedData = null
+      if (isCompleted && captureRequest?.capture) {
+        console.log('🎯 Presentation completed - triggering capture...')
+        capturedData = await capturePresentation(
+          generationId,
+          data.gammaUrl,
+          data.pptxDownloadUrl || null,
+          captureRequest
+        )
       }
 
       return {
@@ -285,7 +408,9 @@ async function checkGenerationStatus(generationId: string) {
         generationId: generationId,
         exportUrls: exportUrls, // Export options available after generation
         credits: data.credits || {},  // Credit usage info
-        message: data.message || (isCompleted ? 'Presentation ready!' : 'Still generating...')
+        message: data.message || (isCompleted ? 'Presentation ready!' : 'Still generating...'),
+        captured: capturedData ? true : false,
+        capturedId: capturedData?.id || null
       }
     } else if (response.status === 404) {
       // Generation not found
@@ -307,6 +432,19 @@ async function checkGenerationStatus(generationId: string) {
     }
   } catch (error) {
     console.error('Status check error:', error)
+
+    // If it's a timeout/abort error, return "still processing" instead of error
+    // This allows frontend to keep polling
+    if (error.name === 'AbortError') {
+      console.log('⏱️ Gamma API status check timed out - returning pending status')
+      return {
+        success: true,
+        status: 'pending',
+        generationId: generationId,
+        message: 'Still generating... (status check timed out, will retry)'
+      }
+    }
+
     return {
       success: false,
       status: 'error',
@@ -336,7 +474,16 @@ serve(async (req) => {
 
     if (generationId) {
       console.log('🔍 Status check requested for generation:', generationId)
-      const status = await checkGenerationStatus(generationId)
+
+      // Check if this generation has a pending capture request
+      const captureRequest = pendingCaptures.get(generationId)
+
+      const status = await checkGenerationStatus(generationId, captureRequest)
+
+      // If completed, clean up the pending capture
+      if (status.status === 'completed' || status.status === 'error') {
+        pendingCaptures.delete(generationId)
+      }
 
       return new Response(
         JSON.stringify(status),
@@ -363,6 +510,29 @@ serve(async (req) => {
       throw new Error(`Invalid JSON in request body: ${parseError.message}`)
     }
 
+    // Check if this is a POST status check (body contains ONLY generationId)
+    // This handles Supabase client's .invoke() which sends POST instead of GET
+    if (body.generationId && Object.keys(body).length <= 2) {
+      // Status check via POST (from Supabase client)
+      console.log('🔍 Status check requested via POST for generation:', body.generationId)
+
+      const captureRequest = pendingCaptures.get(body.generationId)
+      const status = await checkGenerationStatus(body.generationId, captureRequest)
+
+      // If completed, clean up the pending capture
+      if (status.status === 'completed' || status.status === 'error') {
+        pendingCaptures.delete(body.generationId)
+      }
+
+      return new Response(
+        JSON.stringify(status),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
+        }
+      )
+    }
+
     // Handle both direct requests and MCP-style requests from niv-content-robust
     let request: PresentationRequest
     if (body.tool && body.parameters) {
@@ -380,10 +550,26 @@ serve(async (req) => {
       hasTitle: !!request.title,
       hasTopic: !!request.topic,
       hasContent: !!request.content,
-      hasFramework: !!request.framework
+      hasFramework: !!request.framework,
+      capture: !!request.capture,
+      organizationId: request.organization_id
     })
 
     const result = await generatePresentation(request)
+
+    // Store capture request if capture is enabled
+    if (request.capture && result.generationId) {
+      console.log('💾 Storing capture request for generation:', result.generationId)
+      pendingCaptures.set(result.generationId, request)
+
+      // Clean up after 10 minutes (in case status is never polled)
+      setTimeout(() => {
+        if (pendingCaptures.has(result.generationId)) {
+          console.log('🗑️ Cleaning up stale capture request:', result.generationId)
+          pendingCaptures.delete(result.generationId)
+        }
+      }, 10 * 60 * 1000)
+    }
 
     return new Response(
       JSON.stringify(result),

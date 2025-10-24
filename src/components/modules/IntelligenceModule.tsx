@@ -295,9 +295,8 @@ export default function IntelligenceModule() {
     { id: 'monitor-stage-1', name: 'PR Filtering', status: 'pending', icon: Activity },
     { id: 'monitor-stage-2-relevance', name: 'Relevance Scoring', status: 'pending', icon: Target },
     { id: 'monitoring-stage-2-enrichment', name: 'Entity Extraction', status: 'pending', icon: Users },
-    { id: 'intelligence-orchestrator-v2', name: 'Intelligence Orchestrator', status: 'pending', icon: TrendingUp },
     { id: 'mcp-executive-synthesis', name: 'Executive Synthesis', status: 'pending', icon: Zap },
-    { id: 'opportunity-orchestrator', name: 'Opportunity Engine', status: 'pending', icon: AlertCircle }
+    { id: 'mcp-opportunity-detector', name: 'Opportunity Detection', status: 'pending', icon: AlertCircle }
   ]
 
   const [stages, setStages] = useState(pipelineStages)
@@ -455,9 +454,13 @@ export default function IntelligenceModule() {
         )
 
         console.log('Full pipeline response:', pipelineData)
+        console.log('🔍 pipelineData.synthesis:', pipelineData?.synthesis)
+        console.log('🔍 pipelineData.executiveSynthesis:', pipelineData?.executiveSynthesis)
+        console.log('🔍 pipelineData keys:', pipelineData ? Object.keys(pipelineData) : 'null')
 
         // Check if we have executive synthesis or synthesis
         const synthesisData = pipelineData?.synthesis || pipelineData?.executiveSynthesis
+        console.log('🔍 synthesisData after OR:', synthesisData)
         if (synthesisData) {
           console.log('Executive Synthesis received:', synthesisData)
           setExecutiveSynthesis(synthesisData)

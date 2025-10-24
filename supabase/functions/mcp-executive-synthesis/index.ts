@@ -544,7 +544,7 @@ Provide a concise executive synthesis focusing on:
         'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-20250514',  // Back to Sonnet 4 - was working before
         max_tokens: 4000,
         temperature: 0.3,  // Lower temperature for more focused, strategic output
         system: `You are a senior PR strategist receiving ENRICHED INTELLIGENCE DATA for ${organization?.name || 'a major corporation'}.
@@ -785,10 +785,12 @@ Remember: You're not gathering intelligence - you're SYNTHESIZING already-gather
           };
         }
       } else {
-        console.log('📝 No JSON structure found, creating fallback');
+        console.log('📝 No JSON structure found, using markdown format');
+        // Claude returned markdown text (which is actually preferred for readability)
         synthesis = {
           executive_summary: synthesisText,
-          error: "Response was not in expected JSON format"
+          format: "markdown",
+          // Don't include error field - markdown is a valid format
         };
       }
     }

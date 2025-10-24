@@ -685,6 +685,9 @@ export default function NIVContentOrchestratorProduction({
     console.log('📤 Sending organizationContext:', basePayload.organizationContext)
 
     // Step 1: Get immediate acknowledgment
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 70000) // 70 second timeout for cold starts
+
     const ackResponse = await fetch(
       `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/niv-content-intelligent-v2`,
       {
@@ -696,9 +699,12 @@ export default function NIVContentOrchestratorProduction({
         body: JSON.stringify({
           ...basePayload,
           stage: 'acknowledge'
-        })
+        }),
+        signal: controller.signal
       }
     )
+
+    clearTimeout(timeoutId)
 
     let ackData
     if (ackResponse.ok) {
@@ -729,6 +735,9 @@ export default function NIVContentOrchestratorProduction({
       lastMessages: messages.slice(-3).map(m => ({ role: m.role, content: m.content ? m.content.substring(0, 100) : '' }))
     })
 
+    const controller2 = new AbortController()
+    const timeoutId2 = setTimeout(() => controller2.abort(), 120000) // 120 second timeout for presentation generation
+
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/niv-content-intelligent-v2`,
       {
@@ -740,9 +749,12 @@ export default function NIVContentOrchestratorProduction({
         body: JSON.stringify({
           ...basePayload,
           stage: 'full'
-        })
+        }),
+        signal: controller2.signal
       }
     )
+
+    clearTimeout(timeoutId2)
 
     if (!response.ok) {
       throw new Error(`Backend error: ${response.statusText}`)
@@ -760,7 +772,7 @@ export default function NIVContentOrchestratorProduction({
   const handleGammaPresentation = async (userMessage: string) => {
     console.log('📊 Routing to Gamma for presentation')
 
-    // Step 1: Initiate generation
+    // Step 1: Initiate generation WITH CAPTURE
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/gamma-presentation`,
       {
@@ -774,7 +786,11 @@ export default function NIVContentOrchestratorProduction({
           context: {
             organization: organization?.name || 'OpenAI',
             conversationHistory: messages.slice(-3).map(m => m.content)
-          }
+          },
+          // NEW: Enable capture to SignalDesk
+          capture: true,
+          organization_id: organization?.id || 'f3b7f0e4-8c9d-4a1e-9b2f-5d6e7f8a9b0c', // default org ID
+          campaign_id: null // TODO: Link to campaign if available
         })
       }
     )
@@ -815,11 +831,24 @@ export default function NIVContentOrchestratorProduction({
             console.log('✅ Gamma presentation complete!')
             const finalUrl = statusData.gammaUrl || statusData.presentationUrl || statusData.url || statusData.webUrl
             console.log('📊 Final presentation URL:', finalUrl)
+
+            // NEW: Log capture status
+            if (statusData.captured) {
+              console.log('💾 Presentation captured to SignalDesk!', {
+                capturedId: statusData.capturedId,
+                pptxUrl: statusData.exportUrls?.pptx
+              })
+            } else {
+              console.log('⚠️ Presentation was not captured (capture may have failed)')
+            }
+
             return {
               ...statusData,
               presentationUrl: finalUrl,
               url: finalUrl,
-              gammaUrl: finalUrl
+              gammaUrl: finalUrl,
+              captured: statusData.captured,
+              capturedId: statusData.capturedId
             }
           } else if (statusData.status === 'failed' || statusData.status === 'error') {
             throw new Error(`Gamma generation failed: ${statusData.error || 'Unknown error'}`)
@@ -1204,7 +1233,7 @@ export default function NIVContentOrchestratorProduction({
           content: response.message,
           timestamp: new Date(),
           metadata: {
-            type: 'signaldeck',
+            type: 'signaldeck_generating',
             status: 'generating',
             generationId: response.generationId,
             pollUrl: response.pollUrl
@@ -1722,6 +1751,11 @@ export default function NIVContentOrchestratorProduction({
         // Special messages for specific types
         if ((type === 'presentation' || type === 'board-presentation') && content?.url) {
           successContent = `✅ I've created your ${displayName} using Gamma!\n\n🔗 View your presentation: ${content.url}\n\nYou can edit it directly in Gamma or create another version.`
+
+          // NEW: Add capture notification
+          if (content?.captured) {
+            successContent += `\n\n💾 **Saved to SignalDesk!** This presentation has been captured and is now searchable in your library.`
+          }
         } else if ((type === 'image' || type === 'infographic' || type === 'social-graphics') && content?.url) {
           successContent = `✅ I've generated your ${displayName}! It's displayed in the workspace below.`
         } else if (type === 'video' && content?.url) {
@@ -1987,7 +2021,8 @@ IMPORTANT:
           const data = await response.json()
           console.log(`📊 SignalDeck Poll ${attempts}/${maxAttempts}:`, data.status)
 
-          if (data.status === 'completed' && data.downloadUrl) {
+          const downloadUrl = data.downloadUrl || data.fileUrl
+          if (data.status === 'completed' && downloadUrl) {
             clearInterval(pollInterval)
 
             // Update the message with download link
@@ -1995,11 +2030,11 @@ IMPORTANT:
               msg.id === messageId
                 ? {
                     ...msg,
-                    content: `✅ Your PowerPoint presentation "${topic}" is ready!\n\n[Download PowerPoint](${data.downloadUrl})`,
+                    content: `✅ Your PowerPoint presentation "${topic}" is ready!\n\n[Download PowerPoint](${downloadUrl})`,
                     metadata: {
                       ...msg.metadata,
                       status: 'completed',
-                      downloadUrl: data.downloadUrl,
+                      downloadUrl: downloadUrl,
                       presentationTopic: topic
                     }
                   }
@@ -2266,7 +2301,7 @@ IMPORTANT:
                 )}
 
                 {/* Show SignalDeck Generating */}
-                {msg.metadata?.type === 'signaldeck_generating' && msg.metadata?.generationId && (
+                {msg.metadata?.type === 'signaldeck_generating' && msg.metadata?.status !== 'completed' && msg.metadata?.generationId && (
                   <div className="mt-4">
                     <SignalDeckOrchestrator
                       outline={null}

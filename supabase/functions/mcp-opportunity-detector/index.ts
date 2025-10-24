@@ -3,6 +3,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 // Temporarily disable creative enhancer import to fix timeout
 // import { creativeEnhancer } from './opportunity-creative.ts';
 import { detectSocialOpportunities, type SocialSignal } from './social-patterns.ts';
+import type { OpportunityV2, ContentItem } from './types-v2.ts';
+import { buildOpportunityDetectionPromptV2, OPPORTUNITY_SYSTEM_PROMPT_V2 } from './prompt-v2.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -270,12 +272,20 @@ IMPORTANT REQUIREMENTS:
 6. Include defensive opportunities to protect against emerging threats
 7. Score based on: impact potential (40%), time sensitivity (30%), feasibility (30%)
 
-CRITICAL: Return ONLY a valid JSON array starting with [ and ending with ].
-Do not include any markdown formatting, explanations, or text outside the JSON.
-Ensure all JSON strings are properly escaped - use \\" for quotes inside strings.
-Do not include any comments in the JSON (no // or /* */ comments).
-Ensure proper comma placement - no trailing commas.
-Example format: [{"title": "...", "description": "...", ...}]`;
+CRITICAL JSON FORMATTING RULES:
+1. Return ONLY a valid JSON array starting with [ and ending with ]
+2. NO markdown, NO explanations, NO text outside the JSON
+3. Escape ALL quotes inside strings using \\"
+4. NO trailing commas
+5. NO line breaks inside string values - use spaces instead
+6. **Limit to TOP 3 opportunities ONLY** - quality over quantity
+7. Keep execution plans CONCISE - 2-3 stakeholders max per opportunity
+8. Each content item brief should be 1-2 sentences max
+9. If approaching token limit, STOP EARLY with fewer complete opportunities
+
+The response MUST be parseable JSON. Test: can you copy-paste your output into JSON.parse()? If no, simplify.
+
+Start your response with [ and end with ] - nothing else.`;
 
   try {
     // Remove timeout for now to debug
@@ -293,7 +303,7 @@ Example format: [{"title": "...", "description": "...", ...}]`;
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 6000,
+        max_tokens: 4000,  // Reduced from 6000 to prevent truncation/malformed JSON
         temperature: 0.7,
         system: `You are a PR opportunity detection system analyzing real-time intelligence data.
 Your job is to identify ACTIONABLE PR opportunities from today's monitoring data.
@@ -354,16 +364,23 @@ Return opportunities as a valid JSON array with proper structure.`,
     });
 
     try {
-      // Clean the response first
+      // Clean the response first - handle various markdown fence formats
       let cleanContent = content.trim();
 
-      // Remove markdown if present
+      // Remove ALL types of code fences (handles malformed like `` `json` too)
+      // First, try standard fences
       if (cleanContent.includes('```json')) {
         const match = cleanContent.match(/```json\s*([\s\S]*?)```/);
         if (match) cleanContent = match[1].trim();
       } else if (cleanContent.includes('```')) {
         const match = cleanContent.match(/```\s*([\s\S]*?)```/);
         if (match) cleanContent = match[1].trim();
+      }
+
+      // Handle malformed fences like `` `json` or any backtick combinations
+      if (cleanContent.includes('`')) {
+        // Remove any backtick sequences at start/end
+        cleanContent = cleanContent.replace(/^`+\s*(?:json)?\s*\n?/, '').replace(/`+\s*$/, '').trim();
       }
 
       // Now try to parse
@@ -374,16 +391,23 @@ Return opportunities as a valid JSON array with proper structure.`,
       console.error('Parse failed:', e.message);
       console.error('Attempting fallback extraction...');
 
-      // Try to extract array
-      const match = content.match(/\[[\s\S]*\]/);
-      if (match) {
+      // Try to extract the outermost JSON array bracket-to-bracket
+      const firstBracket = content.indexOf('[');
+      const lastBracket = content.lastIndexOf(']');
+
+      if (firstBracket >= 0 && lastBracket > firstBracket) {
+        const extracted = content.substring(firstBracket, lastBracket + 1);
         try {
-          opportunities = JSON.parse(match[0]);
-          console.log('✅ Extracted array:', opportunities.length);
+          opportunities = JSON.parse(extracted);
+          console.log('✅ Extracted array from positions', firstBracket, 'to', lastBracket, ':', opportunities.length);
         } catch (e2) {
           console.error('Fallback also failed:', e2.message);
+          console.error('Tried to parse:', extracted.substring(0, 500));
           opportunities = [];
         }
+      } else {
+        console.error('Could not find valid JSON array boundaries');
+        opportunities = [];
       }
     }
 
@@ -430,6 +454,174 @@ Return opportunities as a valid JSON array with proper structure.`,
 }
 
 /**
+ * V2: Detect opportunities with complete execution plans
+ */
+async function detectOpportunitiesV2(
+  extractedData: any,
+  organizationName: string,
+  organizationId: string
+): Promise<OpportunityV2[]> {
+
+  console.log('🚀 V2 Opportunity Detection - Building execution-ready opportunities...')
+
+  const prompt = buildOpportunityDetectionPromptV2({
+    organizationName,
+    events: extractedData.events.all.slice(0, 25), // Reduced from 40 to prevent timeout
+    topics: extractedData.topics.slice(0, 8), // Limit topics
+    quotes: extractedData.quotes.slice(0, 8), // Limit quotes
+    entities: extractedData.entities.slice(0, 12), // Limit entities
+    discoveryTargets: extractedData.discoveryTargets,
+    organizationProfile: extractedData.organizationProfile
+  })
+
+  console.log('Calling Claude Sonnet 4 for V2 opportunity generation...')
+  console.log('Prompt length:', prompt.length, 'characters')
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 20000, // Reduced from 32k to prevent timeout - still plenty for execution plans
+        temperature: 0.7,
+        system: OPPORTUNITY_SYSTEM_PROMPT_V2,
+        messages: [{
+          role: 'user',
+          content: prompt
+        }]
+      })
+    })
+
+    if (!response.ok) {
+      console.error('Claude API error:', response.status, response.statusText)
+      const errorText = await response.text()
+      console.error('Error details:', errorText)
+      throw new Error(`Claude API error: ${response.status}`)
+    }
+
+    const data = await response.json()
+    const content = data.content?.[0]?.text || ''
+
+    console.log('✅ Claude V2 response received, length:', content.length)
+
+    // Parse V2 opportunities
+    let opportunities: OpportunityV2[] = []
+
+    try {
+      let cleanContent = content.trim()
+
+      // Remove markdown code fences
+      if (cleanContent.includes('```json')) {
+        const match = cleanContent.match(/```json\s*([\s\S]*?)```/)
+        if (match) cleanContent = match[1].trim()
+      } else if (cleanContent.includes('```')) {
+        const match = cleanContent.match(/```\s*([\s\S]*?)```/)
+        if (match) cleanContent = match[1].trim()
+      }
+
+      // Remove any stray backticks
+      cleanContent = cleanContent.replace(/^`+\s*(?:json)?\s*\n?/, '').replace(/`+\s*$/, '').trim()
+
+      opportunities = JSON.parse(cleanContent)
+      console.log('✅ Parsed V2 opportunities:', opportunities.length)
+
+    } catch (e) {
+      console.error('Parse failed:', e.message)
+
+      // Fallback: extract JSON array
+      const firstBracket = content.indexOf('[')
+      const lastBracket = content.lastIndexOf(']')
+
+      if (firstBracket >= 0 && lastBracket > firstBracket) {
+        const extracted = content.substring(firstBracket, lastBracket + 1)
+        try {
+          opportunities = JSON.parse(extracted)
+          console.log('✅ Extracted V2 opportunities:', opportunities.length)
+        } catch (e2) {
+          console.error('Fallback parse failed:', e2.message)
+          return []
+        }
+      } else {
+        console.error('Could not find JSON array in response')
+        return []
+      }
+    }
+
+    // Validate V2 format
+    const validOpportunities = opportunities.filter(opp => {
+      const hasRequiredFields =
+        opp.title &&
+        opp.strategic_context &&
+        opp.execution_plan &&
+        opp.execution_plan.stakeholder_campaigns?.length > 0
+
+      if (!hasRequiredFields) {
+        console.warn(`⚠️ Filtering out invalid V2 opportunity: "${opp.title}"`)
+      }
+
+      return hasRequiredFields
+    })
+
+    console.log(`✅ Validated ${validOpportunities.length}/${opportunities.length} V2 opportunities`)
+
+    // Count total content items
+    validOpportunities.forEach(opp => {
+      const totalItems = opp.execution_plan.stakeholder_campaigns
+        .reduce((sum, campaign) => sum + campaign.content_items.length, 0)
+      console.log(`  - "${opp.title}": ${totalItems} content items across ${opp.execution_plan.stakeholder_campaigns.length} stakeholder campaigns`)
+    })
+
+    return validOpportunities
+
+  } catch (error: any) {
+    console.error('❌ Error in V2 opportunity detection:', error)
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack
+    })
+    return []
+  }
+}
+
+/**
+ * Normalize urgency value to valid database constraint
+ * Converts time-based urgency (e.g. "24-48 hours") to categorical ("high"/"medium"/"low")
+ */
+function normalizeUrgency(urgency: any): 'high' | 'medium' | 'low' {
+  if (!urgency) return 'medium';
+
+  const urgencyStr = String(urgency).toLowerCase();
+
+  // Already valid
+  if (urgencyStr === 'high' || urgencyStr === 'medium' || urgencyStr === 'low') {
+    return urgencyStr as 'high' | 'medium' | 'low';
+  }
+
+  // Map time-based urgency to categorical
+  // Patterns like "24-48 hours", "immediate", "this week", "critical", etc.
+  if (urgencyStr.includes('immediate') || urgencyStr.includes('critical') ||
+      urgencyStr.includes('24') || urgencyStr.includes('48') ||
+      urgencyStr.includes('hour') || urgencyStr.includes('asap') ||
+      urgencyStr.includes('now') || urgencyStr.includes('urgent')) {
+    return 'high';
+  }
+
+  if (urgencyStr.includes('week') || urgencyStr.includes('7 day') ||
+      urgencyStr.includes('soon') || urgencyStr.includes('moderate')) {
+    return 'medium';
+  }
+
+  // Default to medium if we can't determine
+  return 'medium';
+}
+
+/**
  * Calculate expiry date based on time window
  */
 function calculateExpiryDate(timeWindow: string): string {
@@ -455,7 +647,7 @@ serve(async (req) => {
   }
 
   try {
-    const {
+    let {
       organization_id,
       organization_name,
       enriched_data,
@@ -532,12 +724,19 @@ serve(async (req) => {
     // Extract intelligence data
     const extractedData = extractIntelligenceData(enriched_data, organization_name);
 
-    // Call Claude to detect opportunities
-    let opportunities = await detectOpportunitiesWithClaude(
+    // V2: Detect opportunities with execution plans
+    console.log('🎯 Using V2 Opportunity Detection Engine...')
+    let opportunitiesV2 = await detectOpportunitiesV2(
       extractedData,
       organization_name,
       organization_id
-    );
+    )
+
+    console.log(`✅ V2 Detection Complete: Found ${opportunitiesV2.length} execution-ready opportunities`);
+
+    // Skip V1 detection to prevent timeouts - V2 is now the primary engine
+    console.log('⏭️ Skipping V1 detection (using V2 only)')
+    let opportunities: DetectedOpportunity[] = [];
 
     // Enhance opportunities with creative angles
     console.log('🎨 Enhancing opportunities with creative angles...');
@@ -597,41 +796,105 @@ serve(async (req) => {
       console.log(`📊 Total opportunities including social: ${opportunities.length}`);
     }
 
-    // Apply filtering based on config
-    const minScore = detection_config.min_score || 60;
-    opportunities = opportunities.filter(opp => opp.score >= minScore);
+    // Apply smart filtering: keep all if <= 5, otherwise rank and take top 5
+    const targetCount = 5;
 
-    const maxOpps = detection_config.max_opportunities || 20;
-    opportunities = opportunities.slice(0, maxOpps);
-
-    console.log(`✅ Final opportunities: ${opportunities.length} (filtered by score >= ${minScore})`);
+    if (opportunities.length <= targetCount) {
+      // Keep all opportunities when we have 5 or fewer
+      console.log(`✅ Final opportunities: ${opportunities.length} (keeping all - below threshold of ${targetCount})`);
+    } else {
+      // More than 5: rank by score and take top 5
+      opportunities = opportunities
+        .sort((a, b) => b.score - a.score) // Sort descending by score
+        .slice(0, targetCount);
+      console.log(`✅ Final opportunities: ${opportunities.length} (ranked by score, kept top ${targetCount})`);
+    }
 
     // Store opportunities in database
-    if (opportunities.length > 0) {
-      console.log('📦 Storing opportunities in database...');
-      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-      // Clear existing opportunities for this organization
-      console.log(`🗑️ Clearing existing opportunities for organization_id: "${organization_id}"`);
+    // Clear existing opportunities for this organization
+    console.log(`🗑️ Clearing existing opportunities for organization_id: "${organization_id}"`);
+    const { data: existingOpps } = await supabase
+      .from('opportunities')
+      .select('id, organization_id, title, version')
+      .eq('organization_id', organization_id);
 
-      // First, let's see what opportunities exist
-      const { data: existingOpps } = await supabase
-        .from('opportunities')
-        .select('id, organization_id, title')
-        .eq('organization_id', organization_id);
+    console.log(`Found ${existingOpps?.length || 0} existing opportunities (${existingOpps?.filter(o => o.version === 2).length || 0} V2) to clear`);
 
-      console.log(`Found ${existingOpps?.length || 0} existing opportunities to clear for org_id "${organization_id}"`);
+    const { error: deleteError } = await supabase
+      .from('opportunities')
+      .delete()
+      .eq('organization_id', organization_id);
 
-      const { error: deleteError } = await supabase
-        .from('opportunities')
-        .delete()
-        .eq('organization_id', organization_id);
+    if (deleteError) {
+      console.error('Error clearing old opportunities:', deleteError);
+    }
 
-      if (deleteError) {
-        console.error('Error clearing old opportunities:', deleteError);
+    // Save V2 opportunities with full execution plans
+    const savedOpportunityIds: string[] = []
+
+    if (opportunitiesV2.length > 0) {
+      console.log(`📦 Storing ${opportunitiesV2.length} V2 opportunities with execution plans...`);
+
+      for (const opp of opportunitiesV2) {
+        const insertData = {
+          organization_id,
+          title: opp.title,
+          description: opp.description,
+          score: opp.score,
+          urgency: normalizeUrgency(opp.urgency), // Normalize to valid values
+          category: opp.category,
+
+          // V2 fields
+          strategic_context: opp.strategic_context,
+          execution_plan: opp.execution_plan,
+          time_window: opp.strategic_context?.time_window || opp.time_window,
+          expected_impact: opp.strategic_context?.expected_impact || '',
+          auto_executable: opp.auto_executable !== false, // Default true for V2
+          executed: false,
+          version: 2,
+
+          // Legacy data field for backward compatibility
+          data: {
+            confidence_factors: opp.confidence_factors,
+            pattern_matched: opp.detection_metadata?.pattern_matched || opp.category,
+            trigger_event: opp.strategic_context?.trigger_events?.join('; ') || '',
+            detection_metadata: opp.detection_metadata,
+            // Count for UI
+            total_content_items: opp.execution_plan?.stakeholder_campaigns
+              ?.reduce((sum, c) => sum + c.content_items.length, 0) || 0,
+            stakeholder_count: opp.execution_plan?.stakeholder_campaigns?.length || 0
+          },
+
+          status: 'active',
+          expires_at: calculateExpiryDate(opp.strategic_context?.time_window || '3 days')
+        };
+
+        const { data: savedOpp, error } = await supabase
+          .from('opportunities')
+          .insert(insertData)
+          .select('id')
+          .single();
+
+        if (error) {
+          console.error(`Error inserting V2 opportunity "${opp.title}":`, error);
+        } else if (savedOpp) {
+          const itemCount = opp.execution_plan.stakeholder_campaigns
+            .reduce((sum, c) => sum + c.content_items.length, 0);
+          console.log(`  ✅ Saved: "${opp.title}" (${itemCount} content items)`);
+          savedOpportunityIds.push(savedOpp.id);
+        }
       }
 
-      // Insert new opportunities
+      console.log(`✅ Stored ${opportunitiesV2.length} V2 opportunities`);
+      console.log(`💡 Tip: Use generate-opportunity-presentation edge function to create Gamma presentations on-demand`);
+    }
+
+    // Also save V1 opportunities for comparison/fallback
+    if (opportunities.length > 0) {
+      console.log(`📦 Storing ${opportunities.length} V1 opportunities (legacy format)...`);
+
       for (const opportunity of opportunities) {
         const insertData = {
           organization_id,
@@ -641,6 +904,7 @@ serve(async (req) => {
           urgency: opportunity.urgency,
           time_window: opportunity.time_window,
           category: opportunity.category,
+          version: 1, // Mark as V1
           data: {
             trigger_event: opportunity.trigger_event,
             pr_angle: opportunity.pr_angle,
@@ -648,31 +912,7 @@ serve(async (req) => {
             confidence_factors: opportunity.confidence_factors,
             recommended_action: opportunity.recommended_action,
             context: opportunity.context,
-            // UI-expected fields
             execution_type: opportunity.score >= 85 ? 'assisted' : 'manual',
-            playbook: {
-              template_id: opportunity.category?.toLowerCase(),
-              key_messages: opportunity.key_messages || [
-                `${organization_name} ${opportunity.pr_angle}`,
-                opportunity.recommended_action?.what?.primary_action
-              ].filter(Boolean),
-              target_audience: 'Media and stakeholders',
-              channels: opportunity.recommended_action?.where?.channels || ['Press', 'Social'],
-              assets_needed: opportunity.recommended_action?.what?.deliverables || []
-            },
-            action_items: opportunity.recommended_action?.what?.specific_tasks?.map((task: string, i: number) => ({
-              step: i + 1,
-              action: task,
-              owner: opportunity.recommended_action?.who?.owner || 'PR Team',
-              deadline: opportunity.recommended_action?.when?.ideal_launch || 'Within 3 days'
-            })) || [],
-            success_metrics: [
-              'Media coverage achieved',
-              'Message penetration',
-              'Competitive positioning improved'
-            ],
-            expected_impact: opportunity.score >= 85 ? 'High visibility and competitive advantage' : 'Moderate visibility improvement',
-            confidence: opportunity.score,
             organization_name
           },
           status: 'active',
@@ -684,20 +924,27 @@ serve(async (req) => {
           .insert(insertData);
 
         if (error) {
-          console.error(`Error inserting opportunity "${opportunity.title}":`, error);
+          console.error(`Error inserting V1 opportunity "${opportunity.title}":`, error);
         }
       }
 
-      console.log(`✅ Stored ${opportunities.length} opportunities for org_id "${organization_id}" in database`);
+      console.log(`✅ Stored ${opportunities.length} V1 opportunities`);
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        opportunities: opportunities,
+        opportunities: opportunities, // V1 for backward compatibility
+        opportunitiesV2: opportunitiesV2, // V2 with execution plans
         metadata: {
-          total_detected: opportunities.length,
+          total_v1: opportunities.length,
+          total_v2: opportunitiesV2.length,
+          total_content_items: opportunitiesV2.reduce((sum, opp) =>
+            sum + opp.execution_plan.stakeholder_campaigns
+              .reduce((s, c) => s + c.content_items.length, 0), 0
+          ),
           detection_method: 'claude-sonnet-4-20250514',
+          detection_version: '2.0',
           timestamp: new Date().toISOString()
         }
       }),
@@ -708,12 +955,15 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in opportunity detection:', error);
+    console.error('❌ Error in opportunity detection:', error);
+    console.error('Error stack:', error.stack);
     return new Response(
       JSON.stringify({
         success: false,
         error: error.message,
-        opportunities: []
+        stack: error.stack,
+        opportunities: [],
+        opportunitiesV2: []
       }),
       {
         status: 500,

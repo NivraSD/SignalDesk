@@ -168,14 +168,42 @@ Content: ${a.full_content?.substring(0, 3000) || a.content?.substring(0, 1500) |
 IMPORTANT CONTEXT: ${coverageContext?.message_for_synthesis || 'Focus on extracting value from available content.'}
 ${coverageContext?.context ? `Coverage note: ${coverageContext.context}` : ''}
 
-Extract the following intelligence:
+Extract the following intelligence in EXACT JSON format:
 
-1. EVENTS: Key developments, announcements, actions (with dates if mentioned)
-2. ENTITIES: Important people, companies, organizations mentioned
+1. EVENTS: Key developments as structured objects
+   FORMAT for each event:
+   {
+     "type": "crisis|product|partnership|funding|regulatory|workforce|acquisition|other",
+     "entity": "Company or Person name (who this event is about)",
+     "description": "Clear description of what happened",
+     "category": "competitive|strategic|market|regulatory",
+     "date": "Date if mentioned"
+   }
+
+2. ENTITIES: Important people, companies, organizations
+   FORMAT: Array of strings - just the names
+
 3. QUOTES: Significant statements from executives or officials
+   FORMAT for each quote:
+   {
+     "text": "The actual quote",
+     "source": "Person who said it",
+     "context": "Brief context"
+   }
+
 4. METRICS: Financial figures, percentages, growth rates
-5. STRATEGIC_INSIGHTS: What this means for ${targets.organization}'s strategy
-6. DISCOVERY_MATCHES: Which specific competitors/stakeholders/topics are covered
+   FORMAT for each metric:
+   {
+     "type": "financial|percentage|growth|other",
+     "value": "The actual number/metric",
+     "context": "What it refers to"
+   }
+
+5. INSIGHTS: Strategic implications
+   FORMAT: Array of strings - key insights
+
+6. DISCOVERY_MATCHES: Which competitors/stakeholders/topics found
+   FORMAT: Object with arrays: { "competitors": [], "stakeholders": [], "topics": [] }
 
 ${targets.extraction_focus?.length > 0 ? `
 EXTRACTION FOCUS:
@@ -183,15 +211,25 @@ ${targets.extraction_focus.map(f => `- ${f}`).join('\n')}
 ` : ''}
 
 Focus on:
-- Competitor activities and vulnerabilities
+- Competitor activities and vulnerabilities (mark entity clearly!)
 - Regulatory changes and stakeholder positions
 - Market shifts and opportunities
 - Crisis indicators and reputation risks
 - Strategic positioning opportunities
 
-NOTE: We already know certain topics may not have coverage today. Focus on extracting maximum value from what IS available rather than noting what's missing.
+CRITICAL: For EVENTS, the "entity" field MUST be the company/person the event is ABOUT.
+Example: If Google announces a product, entity="Google", type="product"
+Example: If Microsoft acquires a startup, entity="Microsoft", type="acquisition"
 
-Provide response as JSON with these exact keys: events, entities, quotes, metrics, insights, discovery_matches`;
+Return ONLY valid JSON matching this structure:
+{
+  "events": [array of event objects with type, entity, description, category, date],
+  "entities": [array of name strings],
+  "quotes": [array of quote objects],
+  "metrics": [array of metric objects],
+  "insights": [array of insight strings],
+  "discovery_matches": {"competitors": [], "stakeholders": [], "topics": []}
+}`;
 
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -213,14 +251,43 @@ Provide response as JSON with these exact keys: events, entities, quotes, metric
       if (response.ok) {
         const data = await response.json();
         const content = data.content?.[0]?.text || '{}';
-        
+
         try {
           // Extract JSON from response
           const jsonMatch = content.match(/\{[^]*\}/s);
           const extracted = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
-          
-          // Aggregate extracted data
-          if (extracted.events) allExtractedData.events.push(...extracted.events);
+
+          // TRANSFORMATION LAYER: Normalize event structure
+          if (extracted.events) {
+            const normalizedEvents = extracted.events.map((event: any) => {
+              // Handle both new structured format and legacy formats
+              if (event.type && event.entity && event.description) {
+                // Already in correct format
+                return event;
+              } else if (event.date && event.event && event.significance) {
+                // Legacy format from previous prompt - transform it
+                return {
+                  type: 'general',
+                  entity: 'Unknown', // Extract from event text if possible
+                  description: event.event,
+                  category: 'market',
+                  date: event.date
+                };
+              } else {
+                // Unrecognized format - try to salvage it
+                return {
+                  type: event.type || 'general',
+                  entity: event.entity || event.company || event.person || 'Unknown',
+                  description: event.description || event.event || event.text || 'No description',
+                  category: event.category || 'market',
+                  date: event.date || event.timestamp
+                };
+              }
+            }).filter(e => e.entity !== 'Unknown' && e.description !== 'No description'); // Filter out garbage
+
+            allExtractedData.events.push(...normalizedEvents);
+          }
+
           if (extracted.entities) allExtractedData.entities.push(...extracted.entities);
           if (extracted.quotes) allExtractedData.quotes.push(...extracted.quotes);
           if (extracted.metrics) allExtractedData.metrics.push(...extracted.metrics);

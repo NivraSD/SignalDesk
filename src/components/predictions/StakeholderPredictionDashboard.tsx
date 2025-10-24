@@ -29,12 +29,28 @@ interface Prediction {
   status: string
 }
 
+// Helper to extract stakeholder from prediction title
+function extractStakeholderFromTitle(title: string): string {
+  if (!title) return 'Unknown'
+  // Try to extract the subject before "will" or first entity mentioned
+  const willMatch = title.match(/^([^w]+?)\s+will/i)
+  if (willMatch) return willMatch[1].trim()
+
+  // Try to find entity before a verb
+  const verbMatch = title.match(/^([^a-z]+(?:[A-Z][a-z]*\s*)+)(?:to|is|has|announces|plans|expects)/i)
+  if (verbMatch) return verbMatch[1].trim()
+
+  // Return first few words as fallback
+  return title.split(' ').slice(0, 3).join(' ')
+}
+
 export default function StakeholderPredictionDashboard({ organizationId }: { organizationId: string }) {
   const [loading, setLoading] = useState(false)
   const [buildingProfiles, setBuildingProfiles] = useState(false)
   const [predictions, setPredictions] = useState<Prediction[]>([])
   const [stakeholders, setStakeholders] = useState<Stakeholder[]>([])
   const [selectedFilter, setSelectedFilter] = useState<string>('all')
+  const [groupByStakeholder, setGroupByStakeholder] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [dataStats, setDataStats] = useState<{ events: number; stakeholders: number } | null>(null)
 
@@ -61,38 +77,93 @@ export default function StakeholderPredictionDashboard({ organizationId }: { org
       setLoading(true)
       setError(null)
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/stakeholder-pattern-detector`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`
-        },
-        body: JSON.stringify({ organizationId })
+      // Fetch predictions directly from database
+      const { createClient } = await import('@supabase/supabase-js')
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+
+      const { data, error } = await supabase
+        .from('predictions')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Supabase error:', error)
+        throw new Error(`Failed to load predictions: ${error.message}`)
+      }
+
+      // Transform new prediction format to match old format for display
+      const transformedPredictions = (data || []).map((pred: any) => ({
+        id: pred.id,
+        stakeholder_id: '', // New predictions don't have stakeholder_id
+        stakeholder_name: pred.data?.stakeholder || extractStakeholderFromTitle(pred.title),
+        predicted_action: pred.title,
+        action_category: pred.category,
+        probability: pred.confidence_score / 100, // Convert 0-100 to 0-1
+        expected_timeframe: pred.time_horizon,
+        expected_date_min: calculateMinDate(pred.time_horizon),
+        expected_date_max: calculateMaxDate(pred.time_horizon),
+        confidence_level: pred.impact_level, // Using impact as confidence for now
+        trigger_signals: pred.data?.evidence || [],
+        supporting_evidence: pred.data,
+        pattern_matched: pred.category,
+        status: pred.status,
+        // New fields specific to real-time predictions
+        description: pred.description,
+        implications: pred.data?.implications || [],
+        recommended_actions: pred.data?.recommended_actions || []
+      }))
+
+      setPredictions(transformedPredictions)
+      setDataStats({
+        events: 0, // Will be populated from real-time monitor response
+        stakeholders: 0
       })
-
-      if (!response.ok) {
-        throw new Error(`Failed to load predictions: ${response.statusText}`)
-      }
-
-      const data = await response.json()
-
-      if (data.success) {
-        setPredictions(data.predictions || [])
-        // Store data stats for display
-        if (data.events_analyzed !== undefined || data.stakeholders_analyzed !== undefined) {
-          setDataStats({
-            events: data.events_analyzed || 0,
-            stakeholders: data.stakeholders_analyzed || 0
-          })
-        }
-      } else {
-        setError(data.error || 'Failed to load predictions')
-      }
     } catch (err: any) {
       console.error('Error loading predictions:', err)
       setError(err.message)
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Helper functions to calculate dates from time_horizon
+  const calculateMinDate = (timeHorizon: string): string => {
+    const now = new Date()
+    switch (timeHorizon) {
+      case '1-week':
+        return new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString()
+      case '1-month':
+        return new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
+      case '3-months':
+        return new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString()
+      case '6-months':
+        return new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000).toISOString()
+      case '1-year':
+        return new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString()
+      default:
+        return new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
+    }
+  }
+
+  const calculateMaxDate = (timeHorizon: string): string => {
+    const now = new Date()
+    switch (timeHorizon) {
+      case '1-week':
+        return new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString()
+      case '1-month':
+        return new Date(now.getTime() + 45 * 24 * 60 * 60 * 1000).toISOString()
+      case '3-months':
+        return new Date(now.getTime() + 120 * 24 * 60 * 60 * 1000).toISOString()
+      case '6-months':
+        return new Date(now.getTime() + 210 * 24 * 60 * 60 * 1000).toISOString()
+      case '1-year':
+        return new Date(now.getTime() + 425 * 24 * 60 * 60 * 1000).toISOString()
+      default:
+        return new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000).toISOString()
     }
   }
 
@@ -182,6 +253,16 @@ export default function StakeholderPredictionDashboard({ organizationId }: { org
           </div>
           <div className="flex gap-2">
             <button
+              onClick={() => setGroupByStakeholder(!groupByStakeholder)}
+              className={`px-4 py-2 rounded-lg text-sm ${
+                groupByStakeholder
+                  ? 'bg-purple-600 hover:bg-purple-500'
+                  : 'bg-gray-800 hover:bg-gray-700'
+              }`}
+            >
+              {groupByStakeholder ? '📊 By Category' : '👥 By Stakeholder'}
+            </button>
+            <button
               onClick={buildProfiles}
               className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm"
             >
@@ -231,7 +312,7 @@ export default function StakeholderPredictionDashboard({ organizationId }: { org
 
         {/* Filters */}
         <div className="flex gap-2 mt-4 flex-wrap">
-          {['all', 'high-priority', 'imminent', 'regulator', 'activist', 'investor', 'competitor'].map(filter => (
+          {['all', 'high-priority', 'imminent', 'competitive', 'regulatory', 'market', 'technology', 'partnership', 'crisis'].map(filter => (
             <button
               key={filter}
               onClick={() => setSelectedFilter(filter)}
@@ -281,7 +362,37 @@ export default function StakeholderPredictionDashboard({ organizationId }: { org
               <p>No predictions match the selected filter.</p>
             )}
           </div>
+        ) : groupByStakeholder ? (
+          // Group by stakeholder
+          <div className="space-y-6">
+            {Object.entries(
+              filteredPredictions
+                .sort((a, b) => b.probability - a.probability)
+                .reduce((groups, prediction) => {
+                  const stakeholder = prediction.stakeholder_name || 'Unknown'
+                  if (!groups[stakeholder]) groups[stakeholder] = []
+                  groups[stakeholder].push(prediction)
+                  return groups
+                }, {} as Record<string, typeof filteredPredictions>)
+            ).map(([stakeholder, stakeholderPredictions]) => (
+              <div key={stakeholder} className="bg-gray-800/30 rounded-lg p-4">
+                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                  <span>👤</span>
+                  {stakeholder}
+                  <span className="text-xs bg-gray-700 px-2 py-1 rounded-full">
+                    {stakeholderPredictions.length} prediction{stakeholderPredictions.length !== 1 ? 's' : ''}
+                  </span>
+                </h3>
+                <div className="space-y-3">
+                  {stakeholderPredictions.map(prediction => (
+                    <PredictionCard key={prediction.id} prediction={prediction} />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
+          // Standard list view
           <div className="space-y-4">
             {filteredPredictions
               .sort((a, b) => b.probability - a.probability)
@@ -309,6 +420,13 @@ function PredictionCard({ prediction }: { prediction: Prediction }) {
   }[prediction.confidence_level] || 'text-gray-400 bg-gray-800 border-gray-700'
 
   const categoryIcon = {
+    competitive: '🏢',
+    regulatory: '⚖️',
+    market: '📈',
+    technology: '💻',
+    partnership: '🤝',
+    crisis: '⚠️',
+    // Legacy mappings
     regulator: '⚖️',
     activist: '📢',
     investor: '💰',
@@ -377,23 +495,41 @@ function PredictionCard({ prediction }: { prediction: Prediction }) {
         </div>
       )}
 
-      {/* Supporting Evidence (when expanded) */}
-      {expanded && prediction.supporting_evidence && (
+      {/* Description (when expanded) */}
+      {expanded && prediction.description && (
         <div className="mt-3 pt-3 border-t border-white/10">
-          <div className="text-xs font-semibold mb-2 opacity-75">Pattern Match Timeline:</div>
-          <div className="grid grid-cols-5 gap-2 text-xs">
-            {Object.entries(prediction.supporting_evidence).map(([period, data]: [string, any]) => (
-              <div key={period} className="bg-black/20 rounded p-2">
-                <div className="font-semibold">{period}</div>
-                <div className="opacity-75">
-                  {data.found}/{data.expected} signals
-                </div>
-                <div className="text-[10px] opacity-50">
-                  {data.events} events
-                </div>
-              </div>
+          <div className="text-xs font-semibold mb-1 opacity-75">What Will Happen:</div>
+          <p className="text-sm opacity-90">{prediction.description}</p>
+        </div>
+      )}
+
+      {/* Implications (when expanded) */}
+      {expanded && prediction.implications && prediction.implications.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-white/10">
+          <div className="text-xs font-semibold mb-2 opacity-75">Implications:</div>
+          <ul className="space-y-1 text-sm">
+            {prediction.implications.map((implication, i) => (
+              <li key={i} className="flex items-start gap-2">
+                <span className="text-blue-400 mt-1">•</span>
+                <span className="opacity-90">{implication}</span>
+              </li>
             ))}
-          </div>
+          </ul>
+        </div>
+      )}
+
+      {/* Recommended Actions (when expanded) */}
+      {expanded && prediction.recommended_actions && prediction.recommended_actions.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-white/10">
+          <div className="text-xs font-semibold mb-2 opacity-75">Recommended Actions:</div>
+          <ul className="space-y-1 text-sm">
+            {prediction.recommended_actions.map((action, i) => (
+              <li key={i} className="flex items-start gap-2">
+                <span className="text-green-400 mt-1">→</span>
+                <span className="opacity-90">{action}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

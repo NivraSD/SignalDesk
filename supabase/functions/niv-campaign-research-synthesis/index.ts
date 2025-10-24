@@ -1,5 +1,5 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
-import { corsHeaders } from '../_shared/cors.ts';
+import { withCors, jsonResponse, errorResponse } from '../_shared/cors.ts';
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 
@@ -16,11 +16,7 @@ const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
  * CampaignIntelligenceBrief that matches the VECTOR spec exactly.
  */
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: corsHeaders });
-  }
-
+serve(withCors(async (req) => {
   try {
     console.log('🧪 Campaign Research Synthesis - Final Synthesis');
 
@@ -62,6 +58,13 @@ serve(async (req) => {
 
     console.log(`📦 Received research from ${metadata?.totalToolCalls || 'N/A'} tool calls`);
     console.log(`⏱️  Research collection took ${metadata?.researchTime || 'N/A'}ms`);
+
+    // Log research data sizes
+    console.log(`📊 Research data sizes:`);
+    console.log(`  - Stakeholder: ${stakeholderResearch?.results?.length || 0} results`);
+    console.log(`  - Narrative: ${narrativeResearch?.results?.length || 0} results`);
+    console.log(`  - Channel: ${channelResearch?.journalists?.length || 0} journalists`);
+    console.log(`  - Historical: ${historicalResearch?.results?.length || 0} results`);
 
     const startTime = Date.now();
 
@@ -231,11 +234,14 @@ IMPORTANT SYNTHESIS GUIDELINES:
 
 Return ONLY the JSON object. No markdown, no explanation, just pure JSON.`;
 
-    // Build the user prompt with all research data
+    // Build the user prompt with ALL research data
     const userPrompt = `Campaign Goal: ${campaignGoal}
 Organization: ${organizationContext.name || 'Unknown'}
 Industry: ${organizationContext.industry || 'General'}
 ${refinementRequest ? `Refinement: ${refinementRequest}` : ''}
+
+===== ORGANIZATION PROFILE =====
+${JSON.stringify(compiledResearch?.discovery?.profile, null, 2)}
 
 ===== STAKEHOLDER RESEARCH =====
 ${JSON.stringify(stakeholderResearch, null, 2)}
@@ -259,62 +265,130 @@ Focus on creating actionable, detailed intelligence that will enable:
 Return ONLY the JSON object.`;
 
     console.log('🤖 Calling Claude for final synthesis...');
+    console.log(`📏 System prompt size: ${systemPrompt.length} chars`);
+    console.log(`📏 User prompt size: ${userPrompt.length} chars`);
+    console.log(`📏 Total prompt size: ${systemPrompt.length + userPrompt.length} chars`);
 
-    // Call Claude for synthesis
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY!,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 8000,
-        system: systemPrompt,
-        messages: [
-          {
-            role: 'user',
-            content: userPrompt
-          }
-        ]
-      })
-    });
+    // Call Claude for synthesis with timeout and error handling
+    const claudeRequestBody = {
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 32000,  // Increased for comprehensive synthesis with all research data
+      system: systemPrompt,
+      messages: [
+        {
+          role: 'user',
+          content: userPrompt
+        }
+      ]
+    };
+
+    console.log(`🚀 Sending request to Claude API...`);
+
+    // Add timeout to prevent hanging (120 seconds for large research synthesis)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120000);
+
+    let response;
+    try {
+      response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ANTHROPIC_API_KEY!,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify(claudeRequestBody),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+      console.log(`📨 Received response from Claude API: ${response.status}`);
+
+    } catch (fetchError: any) {
+      clearTimeout(timeoutId);
+      if (fetchError.name === 'AbortError') {
+        console.error('❌ Claude API request timed out after 120 seconds');
+        throw new Error('Claude API request timed out after 120 seconds - research payload may be too large');
+      }
+      console.error('❌ Fetch error calling Claude API:', fetchError);
+      throw new Error(`Failed to call Claude API: ${fetchError.message}`);
+    }
 
     if (!response.ok) {
-      throw new Error(`Claude API error: ${response.status}`);
+      let errorBody = 'Unknown error';
+      try {
+        errorBody = await response.text();
+      } catch (e) {
+        errorBody = `Failed to read error body: ${e.message}`;
+      }
+      console.error(`❌ Claude API returned error ${response.status}:`, errorBody);
+      throw new Error(`Claude API error: ${response.status} - ${errorBody.substring(0, 500)}`);
     }
 
-    const claudeResponse = await response.json();
-    const textContent = claudeResponse.content.find((c: any) => c.type === 'text');
+    console.log('📦 Parsing Claude response...');
+    let claudeResponse;
+    try {
+      const responseText = await response.text();
+      console.log(`📏 Raw response size: ${responseText.length} bytes`);
+      claudeResponse = JSON.parse(responseText);
+      console.log(`✅ Claude response parsed successfully`);
+    } catch (jsonError: any) {
+      console.error('❌ Failed to parse Claude response as JSON:', jsonError);
+      throw new Error(`Failed to parse Claude response: ${jsonError.message}`);
+    }
+
+    // Check for usage info
+    if (claudeResponse.usage) {
+      console.log(`📊 Token usage:`, JSON.stringify(claudeResponse.usage));
+    }
+
+    const textContent = claudeResponse.content?.find((c: any) => c.type === 'text');
 
     if (!textContent) {
+      console.error('❌ No text content in Claude response');
+      console.error('Response structure:', JSON.stringify(claudeResponse, null, 2).substring(0, 1000));
       throw new Error('No text content in Claude response');
     }
+
+    console.log(`📝 Claude returned ${textContent.text.length} characters`);
 
     // Parse the synthesized CampaignIntelligenceBrief
     let campaignIntelligenceBrief;
     try {
-      // Try to extract JSON from markdown code block
-      const jsonMatch = textContent.text.match(/```json\n([\s\S]*?)\n```/);
-      if (jsonMatch) {
-        campaignIntelligenceBrief = JSON.parse(jsonMatch[1]);
-      } else {
-        // Try to parse the entire response as JSON
-        campaignIntelligenceBrief = JSON.parse(textContent.text);
+      let cleanedText = textContent.text;
+
+      // Remove markdown code fences - try multiple patterns
+      // First, remove leading `json\n or ```json\n
+      if (cleanedText.startsWith('```json\n')) {
+        cleanedText = cleanedText.substring(8); // Remove ```json\n
+      } else if (cleanedText.startsWith('`json\n')) {
+        cleanedText = cleanedText.substring(6); // Remove `json\n
+      } else if (cleanedText.startsWith('```\n')) {
+        cleanedText = cleanedText.substring(4); // Remove ```\n
       }
+
+      // Remove trailing backticks
+      cleanedText = cleanedText.replace(/\n```$/g, '').replace(/`+$/g, '').trim();
+
+      // Try to parse the cleaned response as JSON
+      campaignIntelligenceBrief = JSON.parse(cleanedText);
     } catch (e) {
       console.error('Failed to parse Claude synthesis response as JSON');
+      console.error('Parse error:', e.message);
       console.error('Raw response (first 1000 chars):', textContent.text.substring(0, 1000));
       console.error('Response length:', textContent.text.length);
 
-      // Try more aggressive JSON extraction
+      // Try more aggressive JSON extraction - find the outermost JSON object
       try {
         // Look for any JSON object in the response
-        const jsonStart = textContent.text.indexOf('{');
-        const jsonEnd = textContent.text.lastIndexOf('}') + 1;
+        let testText = textContent.text;
+        // Remove all markdown formatting
+        testText = testText.replace(/```[a-z]*\n?/g, '').replace(/`+/g, '').trim();
+
+        const jsonStart = testText.indexOf('{');
+        const jsonEnd = testText.lastIndexOf('}') + 1;
         if (jsonStart >= 0 && jsonEnd > jsonStart) {
-          const extracted = textContent.text.substring(jsonStart, jsonEnd);
+          const extracted = testText.substring(jsonStart, jsonEnd);
           campaignIntelligenceBrief = JSON.parse(extracted);
           console.log('✅ Extracted JSON from position', jsonStart, 'to', jsonEnd);
         } else {
@@ -346,26 +420,19 @@ Return ONLY the JSON object.`;
     console.log(`📰 Identified ${campaignIntelligenceBrief.narrativeLandscape?.narrativeVacuums?.length || 0} narrative opportunities`);
     console.log(`💡 Generated ${campaignIntelligenceBrief.keyInsights?.length || 0} key insights`);
 
-    return new Response(JSON.stringify({
+    return jsonResponse({
       success: true,
       campaignIntelligenceBrief,
       synthesisTime,
       service: 'Campaign Research Synthesis',
       timestamp: new Date().toISOString()
-    }), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (error: any) {
     console.error('❌ Synthesis error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: error.message || 'Synthesis failed',
-      timestamp: new Date().toISOString()
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    return errorResponse(
+      error.message || 'Synthesis failed',
+      500
+    );
   }
-});
+}));

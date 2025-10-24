@@ -144,8 +144,8 @@ Respond with JSON only:
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 800,
+      model: 'claude-sonnet-4-5-20250929',
+      max_tokens: 1200,
       messages: [{ role: 'user', content: prompt }]
     })
   })
@@ -260,8 +260,8 @@ Respond with JSON only:
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 600,
+      model: 'claude-sonnet-4-5-20250929',
+      max_tokens: 1000,
       messages: [{ role: 'user', content: prompt }]
     })
   })
@@ -325,8 +325,8 @@ Respond with JSON only:
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1000,
+      model: 'claude-sonnet-4-5-20250929',
+      max_tokens: 1500,
       messages: [{ role: 'user', content: prompt }]
     })
   })

@@ -79,7 +79,35 @@ Output ONLY valid JSON matching this structure:
       },
       "influenceLevers": [
         {
-          "lever": "Fear mitigation | Aspiration activation | Social proof | Authority",
+          "lever": "Fear mitigation",
+          "priority": 1,
+          "positioningMessage": "Which positioning message to use",
+          "approach": "How to present this message",
+          "channels": ["Channels from their information diet"],
+          "trustedVoices": ["Who they listen to"],
+          "psychologicalMechanism": "Why this works for them"
+        },
+        {
+          "lever": "Aspiration activation",
+          "priority": 2,
+          "positioningMessage": "Which positioning message to use",
+          "approach": "How to present this message",
+          "channels": ["Channels from their information diet"],
+          "trustedVoices": ["Who they listen to"],
+          "psychologicalMechanism": "Why this works for them"
+        },
+        {
+          "lever": "Social proof",
+          "priority": 3,
+          "positioningMessage": "Which positioning message to use",
+          "approach": "How to present this message",
+          "channels": ["Channels from their information diet"],
+          "trustedVoices": ["Who they listen to"],
+          "psychologicalMechanism": "Why this works for them"
+        },
+        {
+          "lever": "Authority",
+          "priority": 4,
           "positioningMessage": "Which positioning message to use",
           "approach": "How to present this message",
           "channels": ["Channels from their information diet"],
@@ -160,11 +188,13 @@ For EACH stakeholder group above:
    - Which positioning DIFFERENTIATORS provide proof/credibility they need?
    - Which positioning OPPORTUNITIES are relevant to this stakeholder?
 
-3. **Create influence levers:**
-   - Fear mitigation lever: How to use positioning to address their fear
-   - Aspiration activation lever: How to use positioning to activate aspiration
-   - Social proof lever: How to use positioning + their trusted voices
-   - Authority lever: How to establish credibility using positioning differentiators
+3. **Create EXACTLY 4 influence levers with priorities 1-4:**
+   - Priority 1 - Fear mitigation lever: How to use positioning to address their fear
+   - Priority 2 - Aspiration activation lever: How to use positioning to activate aspiration
+   - Priority 3 - Social proof lever: How to use positioning + their trusted voices
+   - Priority 4 - Authority lever: How to establish credibility using positioning differentiators
+
+   **CRITICAL: You MUST create all 4 levers for each stakeholder. Do not skip any priority level.**
 
 4. **Design touchpoint strategy for 4 phases:**
    - Use THEIR actual channels (from channelIntelligence.byStakeholder)
@@ -193,7 +223,7 @@ Output comprehensive influence strategies for ALL stakeholders in valid JSON for
         console.log(`Attempt ${attempts}/${maxAttempts} to generate influence strategies...`)
 
         const message = await anthropic.messages.create({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-haiku-4-5-20251001',
           max_tokens: 3500, // Reduced from 4096 to improve speed
           temperature: 0.7,
           system: systemPrompt,

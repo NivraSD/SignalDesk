@@ -494,12 +494,19 @@ export function CampaignBuilderWizard() {
         const data = await CampaignBuilderService.getSession(session.sessionId)
         if (data?.blueprint_progress) {
           const progress = data.blueprint_progress
+
+          // Determine pattern stage based on orchestration progress
+          // Pattern runs in parallel with orchestration, so it should follow orchestration state
+          const patternStage = progress.orchestration === 'running' || progress.orchestration === 'completed'
+            ? progress.orchestration
+            : 'pending'
+
           setBlueprintProgress({
             currentStage: getCurrentProgressStage(progress),
             stages: {
               base: progress.base || 'pending',
               orchestration: progress.orchestration || 'pending',
-              pattern: 'pending', // Not tracked separately
+              pattern: patternStage,
               execution: progress.execution || 'pending',
               merging: progress.merging || 'pending'
             }
@@ -711,13 +718,13 @@ export function CampaignBuilderWizard() {
     URL.revokeObjectURL(url)
   }
 
-  // Handle execution start - immediately generate content with progress
+  // Handle execution start - send to Strategic Planning tab
   const handleExecutionStart = async () => {
-    console.log('🚀 Starting execution...')
+    console.log('🚀 Sending to Strategic Planning tab...')
 
     if (!session || !session.blueprint) {
-      console.error('❌ No blueprint available for execution')
-      setError('No blueprint available to execute')
+      console.error('❌ No blueprint available')
+      setError('No blueprint available')
       return
     }
 
@@ -726,96 +733,18 @@ export function CampaignBuilderWizard() {
       return
     }
 
-    // Update stage to execution
-    setSession(prev => ({
-      ...prev!,
-      stage: 'execution'
+    // Store blueprint data in sessionStorage for canvas to pick up
+    sessionStorage.setItem('pendingPlanData', JSON.stringify({
+      blueprint: session.blueprint,
+      sessionId: session.sessionId,
+      orgId: organization.id
     }))
 
-    setIsLoading(true)
-    setError(null)
+    console.log('✅ Blueprint stored for Strategic Planning module')
+    console.log('🔄 Navigating to canvas...')
 
-    // Estimate content pieces from blueprint
-    const estimatedPieces = estimateContentPieces(session.blueprint, session.selectedApproach || 'PR_CAMPAIGN')
-    setContentProgress({
-      current: 0,
-      total: estimatedPieces,
-      currentPiece: 'Initializing content generation...'
-    })
-
-    try {
-      console.log('🌐 Calling campaign-executor to generate all content...')
-
-      // Simulate progress updates (since we can't get real-time progress from the API)
-      const progressInterval = setInterval(() => {
-        setContentProgress(prev => {
-          if (prev.current >= prev.total) return prev
-          return {
-            ...prev,
-            current: Math.min(prev.current + 1, prev.total),
-            currentPiece: `Generating piece ${prev.current + 1} of ${prev.total}...`
-          }
-        })
-      }, 3000) // Update every 3 seconds
-
-      // Call campaign executor to generate all content
-      const response = await fetch('/api/campaign-executor', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          blueprintId: session.sessionId,
-          blueprint: session.blueprint,
-          campaignType: session.selectedApproach || 'PR_CAMPAIGN',
-          orgId: organization.id,
-          organizationContext: {
-            name: organization.name,
-            industry: organization.industry || 'Technology'
-          }
-        })
-      })
-
-      clearInterval(progressInterval)
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('❌ Content generation failed:', errorText)
-        throw new Error(`Content generation failed: ${response.status}`)
-      }
-
-      const data = await response.json()
-      console.log('✅ Content generated:', data)
-
-      // Set final progress
-      setContentProgress({
-        current: data.contentGenerated,
-        total: data.contentGenerated,
-        currentPiece: 'Complete!'
-      })
-
-      setConversationHistory(prev => [
-        ...prev,
-        { role: 'user', content: 'Begin execution', stage: 'blueprint' },
-        {
-          role: 'assistant',
-          content: `Generated ${data.contentGenerated} content pieces successfully!`,
-          stage: 'execution',
-          data: data.content
-        }
-      ])
-
-    } catch (err: any) {
-      console.error('❌ Execution failed:', err)
-      setError(err.message || 'Content generation failed')
-      setContentProgress({
-        current: 0,
-        total: 0,
-        currentPiece: 'Failed'
-      })
-    } finally {
-      setIsLoading(false)
-    }
-
-    console.log('✅ Execution complete')
+    // Navigate to home page where canvas will pick up the pending plan data
+    window.location.href = '/?openPlan=true'
   }
 
   // Estimate content pieces from blueprint structure
@@ -983,13 +912,47 @@ export function CampaignBuilderWizard() {
         if (isLoading) {
           return (
             <div className="max-w-3xl mx-auto space-y-6">
-              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8 text-center">
-                <svg className="animate-spin h-10 w-10 text-blue-500 mx-auto mb-4" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                <h3 className="text-xl font-semibold text-white">Generating Positioning Options</h3>
-                <p className="text-gray-400 mt-2">Analyzing research to create strategic positioning recommendations...</p>
+              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8">
+                <h3 className="text-xl font-semibold text-white text-center mb-6">Generating Positioning Options</h3>
+
+                <div className="space-y-4">
+                  {/* Analysis Stage */}
+                  <div className="flex items-center gap-4">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center bg-blue-600 animate-pulse">
+                      <span className="text-white">⋯</span>
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium text-white">Analyzing Research Data</div>
+                      <div className="text-sm text-gray-400">Processing stakeholder insights and market dynamics</div>
+                    </div>
+                  </div>
+
+                  {/* Strategic Framing */}
+                  <div className="flex items-center gap-4">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-700">
+                      <span className="text-gray-400">○</span>
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium text-white">Strategic Framing</div>
+                      <div className="text-sm text-gray-400">Developing positioning angles and narratives</div>
+                    </div>
+                  </div>
+
+                  {/* Option Generation */}
+                  <div className="flex items-center gap-4">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-700">
+                      <span className="text-gray-400">○</span>
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium text-white">Creating Options</div>
+                      <div className="text-sm text-gray-400">Generating 3-4 distinct positioning strategies</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 text-center text-sm text-gray-500">
+                  <p>Expected time: ~30-45 seconds</p>
+                </div>
               </div>
             </div>
           )

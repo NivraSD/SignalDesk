@@ -21,7 +21,7 @@ interface RouterRequest {
  * Real-Time Alert Router
  *
  * Simplified architecture:
- * 1. Get results from niv-fireplexity-monitor (or firecrawl-observer)
+ * 1. Get results from niv-fireplexity-monitor-v2 (or firecrawl-observer)
  * 2. Route to 3 detector functions IN PARALLEL
  * 3. Return counts to frontend
  *
@@ -46,7 +46,7 @@ serve(async (req) => {
     console.log('🚀 Real-Time Alert Router');
     console.log(`   Organization: ${organization_name}`);
     console.log(`   Time window: ${time_window}`);
-    console.log(`   Source: ${use_firecrawl_observer ? 'firecrawl-observer' : 'niv-fireplexity-monitor'}`);
+    console.log(`   Source: ${use_firecrawl_observer ? 'firecrawl-observer' : 'niv-fireplexity-monitor-v2'}`);
     console.log(`   Opportunities: ${route_to_opportunities}`);
     console.log(`   Crisis detection: ${route_to_crisis}`);
     console.log(`   Predictions: ${route_to_predictions}`);
@@ -109,7 +109,6 @@ serve(async (req) => {
 
     // ===== STEP 1: Get Search Results =====
     let searchResults = [];
-    let alerts = [];
 
     if (use_firecrawl_observer) {
       console.log('\n📡 Step 1: Getting results from firecrawl-observer...');
@@ -136,10 +135,10 @@ serve(async (req) => {
         console.log('⚠️ No recent firecrawl-observer results found');
       }
     } else {
-      console.log('\n📡 Step 1: Calling niv-fireplexity-monitor...');
+      console.log('\n📡 Step 1: Calling niv-fireplexity-monitor-v2 (Firecrawl + 100+ sources)...');
 
       const searchResponse = await fetch(
-        `${SUPABASE_URL}/functions/v1/niv-fireplexity-monitor`,
+        `${SUPABASE_URL}/functions/v1/niv-fireplexity-monitor-v2`,
         {
           method: 'POST',
           headers: {
@@ -148,41 +147,21 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             organization_id: organization_name,
-            recency_window: time_window === '1hour' ? '30min' :
-                           time_window === '6hours' ? '6hours' : '24hours',
-            relevance_threshold: 60,
-            route_to_opportunity_engine: false // We'll handle routing ourselves
+            recency_window: time_window === '1hour' ? '1hour' :
+                           time_window === '6hours' ? '6hours' : '24hours'
           })
         }
       );
 
       if (!searchResponse.ok) {
-        throw new Error(`Search failed: ${searchResponse.status}`);
+        throw new Error(`Monitor failed: ${searchResponse.status}`);
       }
 
       const searchData = await searchResponse.json();
-      console.log(`✅ Found ${searchData.results_found} results from search`);
+      console.log(`✅ Found ${searchData.results_found} results from RSS monitor (${searchData.execution_time_ms}ms)`);
 
-      // Get the actual results from database
-      const { data: monitoringData } = await supabase
-        .from('fireplexity_monitoring')
-        .select('results')
-        .eq('organization_id', organization_name)
-        .order('executed_at', { ascending: false })
-        .limit(1)
-        .single();
-
-      searchResults = monitoringData?.results || [];
-
-      // Get alerts if available
-      const { data: alertsData } = await supabase
-        .from('real_time_alerts')
-        .select('*')
-        .eq('organization_id', organization_name)
-        .order('detected_at', { ascending: false })
-        .limit(20);
-
-      alerts = alertsData || [];
+      // Articles are now returned directly in the response
+      searchResults = searchData.articles || [];
     }
 
     if (searchResults.length === 0) {
@@ -210,9 +189,9 @@ serve(async (req) => {
       });
     }
 
-    // Take top 20 results for processing
-    const topResults = searchResults.slice(0, 20);
-    console.log(`\n🎯 Processing top ${topResults.length} results`);
+    // Use all results from monitor (already filtered and scored)
+    const topResults = searchResults;
+    console.log(`\n🎯 Processing ${topResults.length} articles`);
 
     // ===== STEP 2: Route to Detectors IN PARALLEL =====
     console.log('\n⚡ Step 2: Routing to detectors in parallel...');
@@ -234,14 +213,47 @@ serve(async (req) => {
             organization_id: organizationUuid,
             organization_name,
             search_results: topResults,
-            alerts: alerts.filter(a => a.alert_type === 'opportunity'),
             profile
           })
         })
         .then(async res => {
           if (res.ok) {
             const data = await res.json();
-            console.log(`   ✅ Opportunity detector: ${data.opportunities?.length || 0} opportunities`);
+            console.log(`   ✅ Opportunity detector: ${data.opportunities?.length || 0} opportunities detected`);
+
+            // If opportunities detected, send to orchestrator for playbook creation
+            if (data.opportunities && data.opportunities.length > 0) {
+              console.log(`   🎯 Sending ${data.opportunities.length} opportunities to orchestrator...`);
+
+              try {
+                const orchestratorResponse = await fetch(`${SUPABASE_URL}/functions/v1/opportunity-orchestrator-v2`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                  },
+                  body: JSON.stringify({
+                    organization_id: organizationUuid,
+                    organization_name,
+                    detected_opportunities: data.opportunities,
+                    profile
+                  })
+                });
+
+                if (orchestratorResponse.ok) {
+                  const orchestratedData = await orchestratorResponse.json();
+                  console.log(`   ✅ Orchestrator: ${orchestratedData.opportunities?.length || 0} executable opportunities created`);
+                  return { type: 'opportunities', data: orchestratedData };
+                } else {
+                  console.warn(`   ⚠️ Orchestrator returned ${orchestratorResponse.status}, using detector results`);
+                  return { type: 'opportunities', data };
+                }
+              } catch (orchError) {
+                console.error(`   ❌ Orchestrator error: ${orchError.message}, using detector results`);
+                return { type: 'opportunities', data };
+              }
+            }
+
             return { type: 'opportunities', data };
           }
           console.warn(`   ⚠️ Opportunity detector returned ${res.status}`);
@@ -258,8 +270,6 @@ serve(async (req) => {
     if (route_to_crisis) {
       console.log('   🚨 Routing to crisis detector...');
 
-      const crisisAlerts = alerts.filter(a => a.alert_type === 'crisis');
-
       // ALWAYS route to crisis detector - let AI decide if there's a crisis
       // Don't pre-filter based on keywords - that's too limiting
       detectionPromises.push(
@@ -273,9 +283,12 @@ serve(async (req) => {
               tool: 'detect_crisis_signals',
               arguments: {
                 sources: ['news', 'social'],
-                keywords: [organization_name, ...crisisAlerts.map(a => a.title).filter(Boolean)],
+                keywords: [organization_name],
                 sensitivity: 'high',
-                timeWindow: time_window
+                timeWindow: time_window,
+                articles: topResults, // Pass actual articles to analyze
+                organization_name,
+                profile
               }
             })
           })
@@ -300,7 +313,6 @@ serve(async (req) => {
                   started_at: new Date().toISOString(),
                   trigger_source: 'real-time-alert-router',
                   trigger_data: {
-                    alerts: crisisAlerts.map(a => ({ title: a.title, url: a.url })),
                     articles: topResults.slice(0, 3).map(r => ({ title: r.title, url: r.url })),
                     signals_detected: signalsDetected,
                     risk_level: riskLevel,
@@ -329,56 +341,59 @@ serve(async (req) => {
         );
     }
 
-    // TRACK C: Predictions
+    // TRACK C: Predictions (Real-Time Forward-Looking Analysis)
     if (route_to_predictions) {
-      console.log('   🔮 Routing to prediction detector...');
+      console.log('   🔮 Routing to real-time prediction generator...');
 
       detectionPromises.push(
-        fetch(`${SUPABASE_URL}/functions/v1/stakeholder-pattern-detector`, {
+        fetch(`${SUPABASE_URL}/functions/v1/real-time-prediction-generator`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${SUPABASE_KEY}`
           },
           body: JSON.stringify({
-            organizationId: organizationUuid,
-            runNow: true,
-            recentArticles: topResults.slice(0, 10) // Give it context from recent articles
+            organization_id: organizationUuid,
+            organization_name,
+            articles: topResults, // All articles for context
+            profile
           })
         })
         .then(async res => {
           if (res.ok) {
             const data = await res.json();
-            console.log(`   ✅ Prediction detector: ${data.predictions_generated || 0} predictions`);
+            console.log(`   ✅ Prediction generator: ${data.predictions_generated || 0} predictions (analyzing ${data.data_analyzed?.current_articles || 0} current + ${data.data_analyzed?.historical_articles || 0} historical articles)`);
             return { type: 'predictions', data };
           }
-          console.warn(`   ⚠️ Prediction detector returned ${res.status}`);
+          console.warn(`   ⚠️ Prediction generator returned ${res.status}`);
           return { type: 'predictions', data: { predictions: [], predictions_generated: 0 } };
         })
         .catch(error => {
-          console.error(`   ❌ Prediction detector error: ${error.message}`);
+          console.error(`   ❌ Prediction generator error: ${error.message}`);
           return { type: 'predictions', data: { predictions: [], predictions_generated: 0 } };
         })
       );
     }
 
-    // DON'T wait for detectors - they save to database themselves
-    // Just fire them off and return immediately
-    // Frontend will poll the database for results
-    console.log(`\n🚀 Detectors running in background (${detectionPromises.length} total)`);
+    // WAIT for detectors to complete so we can return actual results
+    console.log(`\n🚀 Running ${detectionPromises.length} detectors in parallel...`);
 
-    // Fire and forget - detectors will save results to database
-    Promise.all(detectionPromises).catch(err => {
-      console.error('⚠️ Background detector error (non-blocking):', err);
-    });
+    let detectorResults = [];
+    try {
+      detectorResults = await Promise.all(detectionPromises);
+      console.log(`✅ All detectors completed`);
+    } catch (err) {
+      console.error('⚠️ Detector error:', err);
+    }
 
-    // Return immediately with status
-    const opportunityResult = { opportunities: [], status: route_to_opportunities ? 'processing' : 'disabled' };
-    const crisisResult = { crises: [], crises_count: 0, status: route_to_crisis ? 'processing' : 'disabled' };
-    const predictionResult = { predictions: [], predictions_generated: 0, status: route_to_predictions ? 'processing' : 'disabled' };
+    // Extract results from detector responses
+    const opportunityResult = detectorResults.find(r => r.type === 'opportunities')?.data || { opportunities: [] };
+    const crisisResult = detectorResults.find(r => r.type === 'crises')?.data || { crises: [], crises_count: 0 };
+    const predictionResult = detectorResults.find(r => r.type === 'predictions')?.data || { predictions: [], predictions_generated: 0 };
 
     const totalTime = Date.now() - startTime;
     console.log(`\n✅ Real-time alert routing complete in ${totalTime}ms`);
+    console.log(`   📊 Results: ${opportunityResult.opportunities?.length || 0} opportunities, ${crisisResult.crises_count || 0} crises, ${predictionResult.predictions_generated || 0} predictions`);
 
     return new Response(JSON.stringify({
       success: true,
@@ -403,8 +418,7 @@ serve(async (req) => {
       predictions_count: predictionResult.predictions_generated || 0,
 
       // Metadata
-      source: use_firecrawl_observer ? 'firecrawl-observer' : 'niv-fireplexity-monitor',
-      alerts_found: alerts.length
+      source: use_firecrawl_observer ? 'firecrawl-observer' : 'niv-fireplexity-monitor (RSS)'
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

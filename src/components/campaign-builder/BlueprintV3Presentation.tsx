@@ -358,11 +358,30 @@ export function BlueprintV3Presentation({
               {blueprint.part1_goalFramework.behavioralGoals && blueprint.part1_goalFramework.behavioralGoals.length > 0 && (
                 <div className="mb-3">
                   <p className="text-sm text-gray-400 mb-1">Behavioral Goals</p>
-                  <ul className="list-disc list-inside space-y-1 text-sm text-gray-300">
-                    {blueprint.part1_goalFramework.behavioralGoals.map((goal, i) => (
-                      <li key={i}>{goal}</li>
+                  <div className="space-y-2">
+                    {blueprint.part1_goalFramework.behavioralGoals.map((goal: any, i: number) => (
+                      <div key={i} className="p-2 bg-zinc-900/50 rounded text-sm">
+                        {typeof goal === 'string' ? (
+                          <p className="text-gray-300">{goal}</p>
+                        ) : (
+                          <>
+                            <div className="flex items-start justify-between mb-1">
+                              <p className="text-white font-medium">{goal.stakeholder}</p>
+                              {goal.successMetric && (
+                                <span className="text-xs text-emerald-300">{goal.successMetric}</span>
+                              )}
+                            </div>
+                            {goal.desiredBehavior && (
+                              <p className="text-gray-300 text-xs mb-1">Target: {goal.desiredBehavior}</p>
+                            )}
+                            {goal.currentState && (
+                              <p className="text-gray-500 text-xs">Current: {goal.currentState}</p>
+                            )}
+                          </>
+                        )}
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               )}
 
@@ -520,156 +539,6 @@ export function BlueprintV3Presentation({
                 <p className="text-xs text-gray-500">Weeks 10-12</p>
               </div>
             </div>
-          )}
-        </div>
-      )
-    },
-    {
-      id: 'psychology',
-      title: 'Stakeholder Mapping',
-      icon: '🧠',
-      color: 'purple',
-      render: () => (
-        <div className="space-y-4">
-          {/* NEW: Stakeholder Groups from part2_stakeholderMapping */}
-          {blueprint.part2_stakeholderMapping?.groups &&
-           blueprint.part2_stakeholderMapping.groups.length > 0 ? (
-            <div>
-              <p className="text-sm text-gray-400 mb-3">Target Stakeholder Groups ({blueprint.part2_stakeholderMapping.groups.length})</p>
-              <div className="space-y-3">
-                {blueprint.part2_stakeholderMapping.groups.map((group: any, i: number) => (
-                  <div key={i} className="p-4 bg-purple-900/20 border border-purple-500/30 rounded">
-                    <div className="flex items-start justify-between mb-2">
-                      <p className="text-lg font-semibold text-purple-300">{group.name}</p>
-                      {group.priority && (
-                        <span className="px-2 py-0.5 bg-purple-900/50 text-purple-300 text-xs rounded">
-                          Priority {group.priority}
-                        </span>
-                      )}
-                    </div>
-                    {group.psychologicalProfile && (
-                      <div className="space-y-1 text-sm mt-2">
-                        {group.psychologicalProfile.primaryFear && (
-                          <p className="text-red-300">
-                            <span className="text-gray-400">Fear:</span> {group.psychologicalProfile.primaryFear}
-                          </p>
-                        )}
-                        {group.psychologicalProfile.primaryAspiration && (
-                          <p className="text-emerald-300">
-                            <span className="text-gray-400">Aspiration:</span> {group.psychologicalProfile.primaryAspiration}
-                          </p>
-                        )}
-                        {group.psychologicalProfile.decisionTrigger && (
-                          <p className="text-blue-300">
-                            <span className="text-gray-400">Decision Trigger:</span> {group.psychologicalProfile.decisionTrigger}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* Stakeholder Relationships */}
-              {blueprint.part2_stakeholderMapping.stakeholderRelationships && (
-                <div className="mt-4 p-3 bg-zinc-900/50 rounded">
-                  <p className="text-sm text-gray-400 mb-1">Stakeholder Relationships</p>
-                  <p className="text-sm text-gray-300">{blueprint.part2_stakeholderMapping.stakeholderRelationships}</p>
-                </div>
-              )}
-            </div>
-          ) : blueprint.part2_psychologicalInfluence?.influenceStrategies &&
-           blueprint.part2_psychologicalInfluence.influenceStrategies.length > 0 ? (
-            blueprint.part2_psychologicalInfluence.influenceStrategies.map((strategy, i) => (
-              <div key={i} className="p-4 bg-purple-900/20 border border-purple-500/30 rounded">
-                <p className="text-lg font-semibold text-purple-300 mb-3">{strategy.stakeholder}</p>
-
-                {/* Psychological Profile */}
-                {strategy.psychologicalProfile && (
-                  <div className="mb-3 p-3 bg-zinc-900/50 rounded">
-                    <p className="text-xs text-purple-200 font-medium mb-2">Psychological Profile</p>
-                    <div className="space-y-1 text-sm">
-                      {strategy.psychologicalProfile.primaryFear && (
-                        <p className="text-red-300">
-                          <span className="text-gray-400">Fear:</span> {strategy.psychologicalProfile.primaryFear}
-                        </p>
-                      )}
-                      {strategy.psychologicalProfile.primaryAspiration && (
-                        <p className="text-emerald-300">
-                          <span className="text-gray-400">Aspiration:</span> {strategy.psychologicalProfile.primaryAspiration}
-                        </p>
-                      )}
-                      {strategy.psychologicalProfile.decisionTrigger && (
-                        <p className="text-blue-300">
-                          <span className="text-gray-400">Decision Trigger:</span> {strategy.psychologicalProfile.decisionTrigger}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Positioning Alignment */}
-                {strategy.positioningAlignment?.coreMessage && (
-                  <div className="mb-3 p-3 bg-blue-900/20 rounded">
-                    <p className="text-xs text-blue-200 font-medium mb-1">Core Message for This Stakeholder</p>
-                    <p className="text-sm text-gray-300">{strategy.positioningAlignment.coreMessage}</p>
-                  </div>
-                )}
-
-                {/* Influence Levers */}
-                {strategy.influenceLevers && strategy.influenceLevers.length > 0 && (
-                  <div className="mb-3">
-                    <p className="text-xs text-purple-200 font-medium mb-2">Influence Levers ({strategy.influenceLevers.length})</p>
-                    <div className="space-y-2">
-                      {strategy.influenceLevers.map((lever, j) => (
-                        <div key={j} className="p-2 bg-zinc-900/50 rounded text-xs">
-                          <div className="flex items-start justify-between mb-1">
-                            <span className="font-semibold text-purple-400">{lever.lever}</span>
-                            {lever.channels && lever.channels.length > 0 && (
-                              <span className="text-gray-500">{lever.channels.length} channels</span>
-                            )}
-                          </div>
-                          {lever.approach && (
-                            <p className="text-gray-300 mb-1">{lever.approach}</p>
-                          )}
-                          {lever.psychologicalMechanism && (
-                            <p className="text-gray-500 italic text-[10px]">Why: {lever.psychologicalMechanism}</p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* 4-Phase Touchpoint Strategy */}
-                {strategy.touchpointStrategy && (
-                  <div>
-                    <p className="text-xs text-purple-200 font-medium mb-2">4-Phase Journey</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      {['phase1_awareness', 'phase2_consideration', 'phase3_conversion', 'phase4_advocacy'].map((phaseKey, idx) => {
-                        const phase = strategy.touchpointStrategy?.[phaseKey as keyof typeof strategy.touchpointStrategy]
-                        if (!phase) return null
-                        const phaseNames = ['Awareness', 'Consideration', 'Conversion', 'Advocacy']
-                        const phaseColors = ['blue', 'purple', 'amber', 'emerald']
-                        return (
-                          <div key={phaseKey} className={`p-2 bg-${phaseColors[idx]}-900/10 border border-${phaseColors[idx]}-500/20 rounded`}>
-                            <p className={`text-xs font-semibold text-${phaseColors[idx]}-300 mb-1`}>{phaseNames[idx]}</p>
-                            {phase.objective && (
-                              <p className="text-[10px] text-gray-300 mb-1">{phase.objective}</p>
-                            )}
-                            {phase.channels && phase.channels.length > 0 && (
-                              <p className="text-[10px] text-gray-500">{phase.channels.slice(0, 2).join(', ')}</p>
-                            )}
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))
-          ) : (
-            <p className="text-gray-400">No influence strategies generated</p>
           )}
         </div>
       )
@@ -1121,157 +990,178 @@ export function BlueprintV3Presentation({
     },
     {
       id: 'execution',
-      title: 'Execution Requirements',
+      title: 'Execution Inventory',
       icon: '⚡',
       color: 'emerald',
-      render: () => (
-        <div className="space-y-4">
-          {/* NEW: Execution Requirements from part5_executionRequirements */}
-          {blueprint.part5_executionRequirements && (
-            <div className="space-y-4">
-              {/* Team Bandwidth */}
-              {blueprint.part5_executionRequirements.teamBandwidth && (
-                <div className="p-4 bg-emerald-900/20 border border-emerald-500/30 rounded">
-                  <p className="text-lg font-semibold text-emerald-300 mb-3">Team Bandwidth</p>
-                  {blueprint.part5_executionRequirements.teamBandwidth.totalHoursPerWeek && (
-                    <p className="text-white mb-2">
-                      Total: {blueprint.part5_executionRequirements.teamBandwidth.totalHoursPerWeek} hours/week
-                    </p>
-                  )}
-                  {blueprint.part5_executionRequirements.teamBandwidth.roles && (
-                    <div className="space-y-2">
-                      {blueprint.part5_executionRequirements.teamBandwidth.roles.slice(0, 3).map((role: any, i: number) => (
-                        <div key={i} className="p-2 bg-zinc-900/50 rounded text-sm">
-                          <p className="text-white font-medium">{role.role}</p>
-                          <p className="text-gray-400 text-xs">{role.hoursPerWeek} hours/week</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
+      render: () => {
+        // NEW STRUCTURE: Build execution inventory from stakeholder orchestration
+        if (blueprint.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans) {
+          // Group stakeholders by priority
+          const priorityGroups: Record<number, any[]> = {}
 
-              {/* Budget Requirements */}
-              {blueprint.part5_executionRequirements.budgetRequirements && (
-                <div className="p-4 bg-amber-900/20 border border-amber-500/30 rounded">
-                  <p className="text-lg font-semibold text-amber-300 mb-3">Budget Requirements</p>
-                  {blueprint.part5_executionRequirements.budgetRequirements.totalMinimumMonthly && (
-                    <div className="mb-2">
-                      <p className="text-sm text-gray-400">Minimum Monthly</p>
-                      <p className="text-2xl font-bold text-amber-300">
-                        ${blueprint.part5_executionRequirements.budgetRequirements.totalMinimumMonthly}
-                      </p>
-                    </div>
-                  )}
-                  {blueprint.part5_executionRequirements.budgetRequirements.totalRecommendedMonthly && (
-                    <div>
-                      <p className="text-sm text-gray-400">Recommended Monthly</p>
-                      <p className="text-xl font-semibold text-white">
-                        ${blueprint.part5_executionRequirements.budgetRequirements.totalRecommendedMonthly}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
+          blueprint.part3_stakeholderOrchestration.stakeholderOrchestrationPlans.forEach((plan: any) => {
+            const priority = plan.stakeholder?.priority || 4
+            if (!priorityGroups[priority]) {
+              priorityGroups[priority] = []
+            }
+            priorityGroups[priority].push(plan)
+          })
 
-          {/* Pending Status */}
-          {blueprint.part6_contentInventory?.status === 'pending' && (
-            <div className="p-4 bg-amber-900/20 border border-amber-500/30 rounded">
-              <div className="flex items-start gap-3">
-                <span className="text-2xl">⏳</span>
-                <div>
-                  <p className="text-amber-300 font-semibold mb-1">Content Inventory Pending</p>
-                  <p className="text-sm text-gray-400">{blueprint.part6_contentInventory.message}</p>
-                  <p className="text-xs text-gray-500 mt-2">
-                    This will be available once the new stakeholder orchestration format is fully integrated with the content inventory generator.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
+          const priorityLabels: Record<number, { label: string; color: string; description: string }> = {
+            1: { label: 'Priority 1: Launch Critical', color: 'red', description: 'Must-have content for launch success' },
+            2: { label: 'Priority 2: High-Impact', color: 'amber', description: 'Amplification and depth' },
+            3: { label: 'Priority 3: Supporting', color: 'blue', description: 'Ongoing engagement content' },
+            4: { label: 'Priority 4: Long-tail', color: 'gray', description: 'Sustained presence' }
+          }
 
-          {blueprint.part6_contentInventory?.summary && (
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div className="p-3 bg-emerald-900/20 border border-emerald-500/30 rounded">
-                <p className="text-sm text-gray-400 mb-1">Signaldesk Auto-Execute</p>
-                <p className="text-2xl font-bold text-emerald-300">
-                  {blueprint.part6_contentInventory.summary.totalSignaldeskActions || 0}
+          return (
+            <div className="space-y-6">
+              <div className="p-3 bg-blue-900/20 border border-blue-500/30 rounded">
+                <p className="text-sm text-blue-200">
+                  This execution inventory shows all content organized by stakeholder priority.
+                  Click "View in Strategic Planning" below to execute and track these items.
                 </p>
-                <p className="text-xs text-gray-500">actions</p>
               </div>
-              <div className="p-3 bg-amber-900/20 border border-amber-500/30 rounded">
-                <p className="text-sm text-gray-400 mb-1">User Action Required</p>
-                <p className="text-2xl font-bold text-amber-300">
-                  {blueprint.part6_contentInventory.summary.totalOrganizationActions || 0}
-                </p>
-                <p className="text-xs text-gray-500">actions</p>
-              </div>
-            </div>
-          )}
 
-          {/* Signaldesk Actions */}
-          {blueprint.part6_contentInventory?.signaldeskActions &&
-           blueprint.part6_contentInventory.signaldeskActions.items &&
-           blueprint.part6_contentInventory.signaldeskActions.items.length > 0 && (
-            <div className="mb-4">
-              <p className="text-sm font-semibold text-emerald-300 mb-2">
-                ✅ Signaldesk Auto-Execute ({blueprint.part6_contentInventory.signaldeskActions.count})
-              </p>
-              <p className="text-xs text-gray-400 mb-3">{blueprint.part6_contentInventory.signaldeskActions.description}</p>
-              <div className="space-y-2">
-                {blueprint.part6_contentInventory.signaldeskActions.items.slice(0, 5).map((action: any, i: number) => (
-                  <div key={i} className="p-2 bg-emerald-900/10 border border-emerald-500/20 rounded text-sm">
-                    <div className="flex items-start justify-between mb-1">
-                      <span className="text-emerald-300 font-medium">
-                        {action.contentType || action.pillar}
-                      </span>
-                      <span className="text-xs text-gray-500">{action.timing}</span>
-                    </div>
-                    <p className="text-xs text-gray-300">{action.targetStakeholder || action.story}</p>
-                  </div>
-                ))}
-                {blueprint.part6_contentInventory.signaldeskActions.items.length > 5 && (
-                  <p className="text-xs text-gray-500 text-center">
-                    + {blueprint.part6_contentInventory.signaldeskActions.items.length - 5} more actions
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
+              {[1, 2, 3, 4].map(priorityLevel => {
+                const stakeholdersAtPriority = priorityGroups[priorityLevel]
+                if (!stakeholdersAtPriority || stakeholdersAtPriority.length === 0) return null
 
-          {/* Organization Actions */}
-          {blueprint.part6_contentInventory?.organizationActions &&
-           blueprint.part6_contentInventory.organizationActions.items &&
-           blueprint.part6_contentInventory.organizationActions.items.length > 0 && (
-            <div>
-              <p className="text-sm font-semibold text-amber-300 mb-2">
-                👤 User Action Required ({blueprint.part6_contentInventory.organizationActions.count})
-              </p>
-              <p className="text-xs text-gray-400 mb-3">{blueprint.part6_contentInventory.organizationActions.description}</p>
-              <div className="space-y-2">
-                {blueprint.part6_contentInventory.organizationActions.items.slice(0, 5).map((action: any, i: number) => (
-                  <div key={i} className="p-2 bg-amber-900/10 border border-amber-500/20 rounded text-sm">
-                    <div className="flex items-start justify-between mb-1">
-                      <span className="text-amber-300 font-medium">
-                        {action.event || action.who || action.pillar}
-                      </span>
-                      <span className="text-xs text-gray-500">{action.timing}</span>
+                const { label, color, description } = priorityLabels[priorityLevel]
+
+                return (
+                  <div key={priorityLevel} className={`p-4 bg-${color}-900/20 border border-${color}-500/30 rounded`}>
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className={`text-lg font-semibold text-${color}-300`}>{label}</p>
+                        <span className="text-xs text-gray-500">{stakeholdersAtPriority.length} stakeholder(s)</span>
+                      </div>
+                      <p className="text-xs text-gray-400">{description}</p>
                     </div>
-                    <p className="text-xs text-gray-300">{action.action || action.goal}</p>
+
+                    <div className="space-y-4">
+                      {stakeholdersAtPriority.map((plan: any, i: number) => {
+                        // Count total content items for this stakeholder
+                        let totalItems = 0
+                        const contentCounts = {
+                          mediaPitches: 0,
+                          socialPosts: 0,
+                          thoughtLeadership: 0,
+                          additionalTactics: 0
+                        }
+
+                        plan.influenceLevers?.forEach((lever: any) => {
+                          if (lever.campaign) {
+                            contentCounts.mediaPitches += lever.campaign.mediaPitches?.length || 0
+                            contentCounts.socialPosts += lever.campaign.socialPosts?.length || 0
+                            contentCounts.thoughtLeadership += lever.campaign.thoughtLeadership?.length || 0
+                            contentCounts.additionalTactics += lever.campaign.additionalTactics?.length || 0
+                          }
+                        })
+
+                        totalItems = Object.values(contentCounts).reduce((sum, count) => sum + count, 0)
+
+                        return (
+                          <div key={i} className="p-3 bg-zinc-900/50 border border-zinc-800 rounded">
+                            <div className="flex items-start justify-between mb-3">
+                              <div>
+                                <p className="text-white font-semibold">{plan.stakeholder?.name}</p>
+                                {plan.stakeholder?.psychologicalProfile?.primaryAspiration && (
+                                  <p className="text-xs text-gray-400 mt-1">
+                                    Goal: {plan.stakeholder.psychologicalProfile.primaryAspiration}
+                                  </p>
+                                )}
+                              </div>
+                              <span className="text-xs px-2 py-1 bg-zinc-800 text-gray-400 rounded">
+                                {totalItems} items
+                              </span>
+                            </div>
+
+                            {/* Content breakdown */}
+                            <div className="grid grid-cols-2 gap-2">
+                              {contentCounts.mediaPitches > 0 && (
+                                <div className="p-2 bg-emerald-900/10 border border-emerald-500/20 rounded">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-emerald-400">📰</span>
+                                    <div>
+                                      <p className="text-xs text-emerald-300 font-medium">Media Pitches</p>
+                                      <p className="text-xs text-gray-500">{contentCounts.mediaPitches} pitches</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {contentCounts.socialPosts > 0 && (
+                                <div className="p-2 bg-blue-900/10 border border-blue-500/20 rounded">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-blue-400">📱</span>
+                                    <div>
+                                      <p className="text-xs text-blue-300 font-medium">Social Posts</p>
+                                      <p className="text-xs text-gray-500">{contentCounts.socialPosts} posts</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {contentCounts.thoughtLeadership > 0 && (
+                                <div className="p-2 bg-purple-900/10 border border-purple-500/20 rounded">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-purple-400">✍️</span>
+                                    <div>
+                                      <p className="text-xs text-purple-300 font-medium">Thought Leadership</p>
+                                      <p className="text-xs text-gray-500">{contentCounts.thoughtLeadership} articles</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {contentCounts.additionalTactics > 0 && (
+                                <div className="p-2 bg-amber-900/10 border border-amber-500/20 rounded">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-amber-400">👤</span>
+                                    <div>
+                                      <p className="text-xs text-amber-300 font-medium">User Actions</p>
+                                      <p className="text-xs text-gray-500">{contentCounts.additionalTactics} items</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
-                ))}
-                {blueprint.part6_contentInventory.organizationActions.items.length > 5 && (
-                  <p className="text-xs text-gray-500 text-center">
-                    + {blueprint.part6_contentInventory.organizationActions.items.length - 5} more actions
-                  </p>
-                )}
-              </div>
+                )
+              })}
             </div>
-          )}
-        </div>
-      )
+          )
+        }
+
+        // FALLBACK: Old content inventory format
+        return (
+          <div className="space-y-4">
+            {blueprint.part6_contentInventory?.summary && (
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="p-3 bg-emerald-900/20 border border-emerald-500/30 rounded">
+                  <p className="text-sm text-gray-400 mb-1">Signaldesk Auto-Execute</p>
+                  <p className="text-2xl font-bold text-emerald-300">
+                    {blueprint.part6_contentInventory.summary.totalSignaldeskActions || 0}
+                  </p>
+                  <p className="text-xs text-gray-500">actions</p>
+                </div>
+                <div className="p-3 bg-amber-900/20 border border-amber-500/30 rounded">
+                  <p className="text-sm text-gray-400 mb-1">User Action Required</p>
+                  <p className="text-2xl font-bold text-amber-300">
+                    {blueprint.part6_contentInventory.summary.totalOrganizationActions || 0}
+                  </p>
+                  <p className="text-xs text-gray-500">actions</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )
+      }
     }
   ]
 
@@ -1433,7 +1323,7 @@ export function BlueprintV3Presentation({
               disabled={isRefining}
               className="px-6 py-3 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
             >
-              Begin Execution
+              View in Strategic Planning
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>

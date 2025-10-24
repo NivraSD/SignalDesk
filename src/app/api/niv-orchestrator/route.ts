@@ -6,12 +6,12 @@ const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { message, conversationId, organizationId, organizationContext, framework } = body
+    const { message, conversationId, organizationId, organizationContext, framework, stage } = body
 
-    console.log('NIV Panel API: Calling niv-orchestrator-robust')
+    console.log(`NIV Panel API: Calling niv-advisor (stage: ${stage || 'full'})`)
 
-    // Call the niv-orchestrator-robust edge function
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/niv-orchestrator-robust`, {
+    // Call niv-advisor (conversational advisor - Phase 5)
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/niv-advisor`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -19,13 +19,17 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         message,
-        conversationId: conversationId || `niv-panel-${Date.now()}`,
-        organizationId: organizationId || '1',
-        organizationContext: organizationContext || {
-          name: 'Unknown',
-          industry: 'Technology'
-        },
-        framework: framework || null
+        conversationId: conversationId || `niv-${Date.now()}`,
+        conversationHistory: [],
+        stage: stage || 'full',
+        sessionId: conversationId || `niv-${Date.now()}`,
+        context: {
+          organizationId: organizationId || '1',
+          organizationName: organizationContext?.name || 'Unknown',
+          organization: organizationContext?.name || 'Unknown',
+          industry: organizationContext?.industry || 'Technology',
+          competitors: organizationContext?.competitors || []
+        }
       })
     })
 

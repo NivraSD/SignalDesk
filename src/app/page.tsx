@@ -11,6 +11,7 @@ import IntelligenceModule from '@/components/modules/IntelligenceModule'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const tabs = [
+  { id: 'niv-command', name: 'NIV', icon: Brain, color: '#bb44ff' },
   { id: 'intelligence', name: 'Intelligence', icon: Brain, color: '#00ffcc' },
   { id: 'opportunities', name: 'Opportunities', icon: Target, color: '#ff00ff' },
   { id: 'campaign-planner', name: 'Campaigns', icon: TrendingUp, color: '#00ddff' },
@@ -186,7 +187,37 @@ export default function Dashboard() {
                         className="absolute top-full mt-2 left-0 bg-gray-900 border border-gray-700 rounded-lg shadow-xl overflow-hidden z-50"
                         style={{ minWidth: '200px' }}
                       >
-                        {tab.id === 'intelligence' ? (
+                        {tab.id === 'niv-command' ? (
+                          <>
+                            <div className="px-4 py-2 text-xs text-gray-500 font-semibold uppercase border-b border-gray-800">
+                              NIV Strategic Advisor
+                            </div>
+                            {openComponents.includes('niv-command') ? (
+                              <button
+                                onClick={() => handleModuleAction('niv-command', 'view')}
+                                className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
+                              >
+                                <Brain className="w-4 h-4 text-purple-400" />
+                                View NIV
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleModuleAction('niv-command', 'window')}
+                                className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
+                              >
+                                <Plus className="w-4 h-4" />
+                                Open NIV
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleModuleAction('niv-command', 'window')}
+                              className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm text-gray-400 flex items-center gap-2"
+                            >
+                              <Plus className="w-4 h-4" />
+                              Open New Window
+                            </button>
+                          </>
+                        ) : tab.id === 'intelligence' ? (
                           <>
                             <div className="px-4 py-2 text-xs text-gray-500 font-semibold uppercase border-b border-gray-800">
                               Intelligence Hub

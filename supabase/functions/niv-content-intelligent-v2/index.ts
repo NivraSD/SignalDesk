@@ -133,6 +133,24 @@ const CONTENT_GENERATION_TOOLS = [
     }
   },
   {
+    name: "do_additional_research",
+    description: "Request targeted additional research when you identify specific data gaps or need specific facts/statistics for a presentation. Use this BEFORE generating the final presentation if you notice the current research lacks: specific statistics, recent data, competitor information, market trends, or other critical facts needed to make the presentation credible and data-driven.",
+    input_schema: {
+      type: "object",
+      properties: {
+        research_query: {
+          type: "string",
+          description: "Specific focused question or topic to research (e.g., 'Sora 2 pricing and release timeline', 'Gen Z social media usage statistics 2024', 'OpenAI market share vs competitors')"
+        },
+        why_needed: {
+          type: "string",
+          description: "Brief explanation of what data gap this research will fill (e.g., 'Need specific pricing data for competitive slide', 'Missing recent usage statistics')"
+        }
+      },
+      required: ["research_query", "why_needed"]
+    }
+  },
+  {
     name: "generate_presentation",
     description: "Generate a presentation using Gamma based on an APPROVED outline. ONLY use this after the user has reviewed and approved the presentation outline created by create_presentation_outline. Do NOT use this if they haven't seen/approved the outline yet.",
     input_schema: {
@@ -738,6 +756,54 @@ function getConversationState(conversationId: string): ConversationState {
   return conversationStates.get(conversationId)!
 }
 
+// Retry wrapper for failed operations
+async function withRetry<T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 2,
+  delayMs: number = 2000
+): Promise<T> {
+  let lastError: Error | undefined
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation()
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error('Unknown error')
+
+      if (attempt < maxRetries) {
+        console.log(`⚠️ Attempt ${attempt} failed, retrying in ${delayMs}ms... (${lastError.message})`)
+        await new Promise(resolve => setTimeout(resolve, delayMs))
+      }
+    }
+  }
+
+  throw lastError
+}
+
+// Batch promises into groups to avoid overwhelming Claude API
+async function batchPromises<T>(
+  items: any[],
+  batchSize: number,
+  processFn: (item: any) => Promise<T>
+): Promise<T[]> {
+  const results: T[] = []
+
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize)
+    console.log(`📦 Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(items.length / batchSize)} (${batch.length} items)`)
+
+    const batchResults = await Promise.all(batch.map(processFn))
+    results.push(...batchResults)
+
+    // Small delay between batches to avoid rate limits
+    if (i + batchSize < items.length) {
+      await new Promise(resolve => setTimeout(resolve, 1000))
+    }
+  }
+
+  return results
+}
+
 // Update conversation state
 function updateConversationState(
   conversationId: string,
@@ -760,7 +826,7 @@ function updateConversationState(
   }
 
   // Extract user preferences
-  if (role === 'user') {
+  if (role === 'user' && message) {
     const lower = message.toLowerCase()
 
     if (lower.includes('want to') || lower.includes('need to')) {
@@ -818,7 +884,31 @@ serve(async (req) => {
     const organizationId = organizationContext?.organizationId || 'OpenAI'
     const organizationName = organizationContext?.organizationName || organizationId
 
-    console.log(`🎯 NIV Content: ${message} Stage: ${stage}`)
+    // 🎯 AUTO-DETECTION: Detect when request should use campaign_generation mode
+    let effectiveStage = stage
+    const messageUpper = (message || '').toUpperCase()
+
+    // Detect blueprint execution markers
+    const isBlueprintExecution =
+      messageUpper.includes('CONTENT GENERATION FROM APPROVED BLUEPRINT') ||
+      messageUpper.includes('BLUEPRINT EXECUTION') ||
+      messageUpper.includes('EXECUTING FROM APPROVED') ||
+      messageUpper.includes('YOUR JOB IS TO GENERATE') ||
+      (messageUpper.includes('APPROVED') && messageUpper.includes('GENERATE THE ACTUAL'))
+
+    // Detect if campaignContext is provided - strong signal for campaign_generation mode
+    const hasCampaignContext = !!campaignContext
+
+    // Auto-route to campaign_generation if:
+    // 1. Message contains blueprint execution markers, OR
+    // 2. campaignContext is provided (regardless of stage parameter)
+    if ((isBlueprintExecution || hasCampaignContext) && effectiveStage !== 'acknowledge') {
+      console.log('🔄 AUTO-DETECTION: Routing to campaign_generation mode')
+      console.log(`   Reason: ${isBlueprintExecution ? 'Blueprint execution markers detected' : 'campaignContext provided'}`)
+      effectiveStage = 'campaign_generation'
+    }
+
+    console.log(`🎯 NIV Content: ${message.substring(0, 100)}... Stage: ${effectiveStage}${effectiveStage !== stage ? ` (auto-detected from: ${stage})` : ''}`)
 
     // Get or create conversation state
     const conversationState = getConversationState(conversationId)
@@ -899,7 +989,7 @@ serve(async (req) => {
     updateConversationState(conversationId, message, 'user')
 
     // ACKNOWLEDGE STAGE - Natural acknowledgment like orchestrator-robust
-    if (stage === 'acknowledge') {
+    if (effectiveStage === 'acknowledge') {
       console.log('🧠 Acknowledge stage: Quick understanding...')
 
       // Get Claude's understanding for better acknowledgment
@@ -916,7 +1006,8 @@ serve(async (req) => {
     }
 
     // CAMPAIGN GENERATION STAGE - Use NIV's intelligence for strategic content
-    if (stage === 'campaign_generation' && requestBody.campaignContext) {
+    // Note: effectiveStage can be auto-detected based on message markers or campaignContext
+    if (effectiveStage === 'campaign_generation' && (requestBody.campaignContext || hasCampaignContext)) {
       console.log('🎯 Campaign Generation Mode - Strategic Content Orchestration via NIV')
 
       // Create Supabase client for saving to Memory Vault
@@ -948,11 +1039,11 @@ serve(async (req) => {
       const allGeneratedContent = []
 
       // Generate owned content with NIV's strategic intelligence
-      // Use Promise.all to generate in parallel to avoid 60s timeout
+      // Use batching (5 at a time) to avoid overwhelming Claude API
       if (contentRequirements.owned && contentRequirements.owned.length > 0) {
-        console.log('🎨 Generating owned content with NIV intelligence (parallel)...')
+        console.log(`🎨 Generating ${contentRequirements.owned.length} owned content pieces (batched: 5 at a time)...`)
 
-        const ownedPromises = contentRequirements.owned.map(async (ownedReq) => {
+        const processOwnedItem = async (ownedReq: any) => {
           try {
             console.log(`  📝 Generating ${ownedReq.type} for ${ownedReq.stakeholder}...`)
 
@@ -978,7 +1069,8 @@ serve(async (req) => {
             console.log(`    📋 Strategic brief: ${strategicBrief.substring(0, 200)}...`)
 
             // Generate content directly with Claude (bypasses MCP for better quality)
-            const content = await generateContentDirectly(ownedReq.type, strategicBrief, {
+            // Wrap in retry logic for timeout resilience
+            const content = await withRetry(() => generateContentDirectly(ownedReq.type, strategicBrief, {
               organization: orgProfile.organizationName,
               subject: strategicBrief,
               topic: strategicBrief,
@@ -1004,7 +1096,7 @@ serve(async (req) => {
                 specificGuidance: ownedReq.keyPoints,
                 strategicBrief: strategicBrief
               }
-            })
+            }), 2, 3000)  // 2 retries, 3 second delay
 
             console.log(`    ✅ ${ownedReq.type} generated for ${ownedReq.stakeholder}`)
 
@@ -1025,17 +1117,18 @@ serve(async (req) => {
               error: error instanceof Error ? error.message : 'Generation failed'
             }
           }
-        })
+        }
 
-        const ownedResults = await Promise.all(ownedPromises)
+        const ownedResults = await batchPromises(contentRequirements.owned, 5, processOwnedItem)
         allGeneratedContent.push(...ownedResults)
       }
 
-      // Generate media engagement with NIV's strategic intelligence (parallel)
+      // Generate media engagement with NIV's strategic intelligence
+      // Use batching (5 at a time) to avoid overwhelming Claude API
       if (contentRequirements.media && contentRequirements.media.length > 0) {
-        console.log('📰 Generating media engagement with NIV intelligence (parallel)...')
+        console.log(`📰 Generating ${contentRequirements.media.length} media pieces (batched: 5 at a time)...`)
 
-        const mediaPromises = contentRequirements.media.map(async (mediaReq) => {
+        const processMediaItem = async (mediaReq: any) => {
           try {
             console.log(`  📝 Generating ${mediaReq.type} for ${mediaReq.journalists?.join(', ') || 'media'}...`)
 
@@ -1061,7 +1154,8 @@ serve(async (req) => {
             console.log(`    📋 Strategic brief: ${strategicBrief.substring(0, 200)}...`)
 
             // Generate content directly with Claude (bypasses MCP for better quality)
-            const content = await generateContentDirectly(mediaReq.type, strategicBrief, {
+            // Wrap in retry logic for timeout resilience
+            const content = await withRetry(() => generateContentDirectly(mediaReq.type, strategicBrief, {
               organization: orgProfile.organizationName,
               subject: strategicBrief,
               topic: strategicBrief,
@@ -1087,7 +1181,7 @@ serve(async (req) => {
                 journalists: mediaReq.journalists,
                 strategicBrief: strategicBrief
               }
-            })
+            }), 2, 3000)  // 2 retries, 3 second delay
 
             console.log(`    ✅ ${mediaReq.type} generated`)
 
@@ -1108,9 +1202,9 @@ serve(async (req) => {
               error: error instanceof Error ? error.message : 'Generation failed'
             }
           }
-        })
+        }
 
-        const mediaResults = await Promise.all(mediaPromises)
+        const mediaResults = await batchPromises(contentRequirements.media, 5, processMediaItem)
         allGeneratedContent.push(...mediaResults)
       }
 
@@ -1241,8 +1335,27 @@ ${campaignContext.timeline || 'Not specified'}
     console.log('💬 Full stage: Natural conversation...')
 
     // STEP 1: UNDERSTANDING - Like orchestrator-robust, analyze what user wants
+    // OPTIMIZATION: Skip understanding call for SignalDeck to avoid timeout
     console.log('🧠 Understanding user request...')
-    const understanding = await getClaudeUnderstanding(message, conversationHistory, orgProfile, conversationState)
+    const isSignalDeckRequest = message.toLowerCase().includes('signal deck') ||
+                               message.toLowerCase().includes('signaldeck')
+
+    let understanding
+    if (isSignalDeckRequest && conversationHistory.length === 0) {
+      // Fast path for initial SignalDeck request - skip Claude understanding call
+      console.log('⚡ Fast path: Skipping understanding call for SignalDeck')
+      understanding = {
+        understanding: {
+          content_type: 'signaldeck',
+          requires_fresh_data: true,
+          entities: [],
+          topics: []
+        },
+        acknowledgment: `I understand you need a SignalDeck presentation. Let me gather the research first.`
+      }
+    } else {
+      understanding = await getClaudeUnderstanding(message, conversationHistory, orgProfile, conversationState)
+    }
     console.log('✅ Understanding:', understanding)
 
     // Update conversation state with understanding
@@ -1259,6 +1372,9 @@ ${campaignContext.timeline || 'Not specified'}
     // Skip research for simple media list requests
     const isSimpleMediaList = message.toLowerCase().includes('media list') &&
                               !message.toLowerCase().includes('media plan');
+    const isSignalDeck = message.toLowerCase().includes('signal deck') ||
+                         message.toLowerCase().includes('signaldeck') ||
+                         understanding.understanding?.content_type === 'signaldeck';
 
     // Trust the understanding - if Claude says it needs fresh data, do research
     // Access the nested understanding object
@@ -1304,6 +1420,7 @@ ${campaignContext.timeline || 'Not specified'}
 
     let researchResults = null
     let freshResearch = false  // Track if this is NEW research
+    let researchTimedOut = false // Track if research timed out
 
     if (needsResearch) {
       console.log('🔍 Research needed...')
@@ -1318,15 +1435,19 @@ ${campaignContext.timeline || 'Not specified'}
         conversationState.researchResults = researchResults
         conversationState.stage = 'research_review'  // Move to research review stage
       } else {
-        console.log('⚠️ Research returned no results, continuing without research')
+        console.log('⚠️ Research returned no results or timed out')
+        researchTimedOut = true
         researchResults = null; // Treat as if no research was done
+        conversationState.stage = 'research_review'  // Still go to research review to explain timeout
       }
     }
 
-    // If we just completed fresh research for a presentation, present findings FIRST
+    // If we just completed fresh research OR research timed out for a presentation/signaldeck, present findings FIRST
     // Don't create outline yet - let user review research and confirm approach
-    const isPresentationRequest = understanding.understanding?.content_type === 'presentation'
-    const shouldPresentResearchFirst = freshResearch && isPresentationRequest &&
+    const isPresentationRequest = understanding.understanding?.content_type === 'presentation' ||
+                                  understanding.understanding?.content_type === 'signaldeck' ||
+                                  isSignalDeck
+    const shouldPresentResearchFirst = (freshResearch || researchTimedOut) && isPresentationRequest &&
                                        conversationState.stage === 'research_review'
 
     // Check if user is confirming after research review
@@ -1529,7 +1650,7 @@ ${campaignContext.timeline || 'Not specified'}
           organization: orgProfile.organizationName,
           subject: toolUse.input.topic,
           angle: toolUse.input.angle
-        }, conversationHistory, conversationState)
+        }, conversationHistory, conversationState, campaignContext)
 
         return new Response(JSON.stringify({
           success: true,
@@ -1779,7 +1900,7 @@ ${campaignContext.timeline || 'Not specified'}
           organization: orgProfile.organizationName,
           topic: toolUse.input.topic,
           angle: toolUse.input.angle
-        }, conversationHistory, conversationState)
+        }, conversationHistory, conversationState, campaignContext)
 
         return new Response(JSON.stringify({
           success: true,
@@ -2257,6 +2378,56 @@ ${toolUse.input.tactical_recommendations.map((r: string) => `- ${r}`).join('\n')
         }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       }
 
+      // Handle additional research request
+      if (toolUse && toolUse.name === 'do_additional_research') {
+        console.log('🔍 Claude requested additional research:', toolUse.input.research_query)
+        console.log('📊 Reason:', toolUse.input.why_needed)
+
+        // Execute the additional research
+        const additionalResearch = await executeResearch(toolUse.input.research_query, organizationId)
+
+        // Merge with existing research if available
+        if (additionalResearch && additionalResearch.keyFindings?.length > 0) {
+          console.log(`✅ Additional research complete: ${additionalResearch.keyFindings.length} findings`)
+
+          // Merge with existing research
+          if (conversationState.researchResults) {
+            // Combine key findings
+            const existingFindings = conversationState.researchResults.keyFindings || []
+            const newFindings = additionalResearch.keyFindings || []
+            conversationState.researchResults.keyFindings = [...existingFindings, ...newFindings]
+
+            // Update synthesis
+            if (additionalResearch.synthesis) {
+              conversationState.researchResults.synthesis = conversationState.researchResults.synthesis
+                ? `${conversationState.researchResults.synthesis}\n\nAdditional insights: ${additionalResearch.synthesis}`
+                : additionalResearch.synthesis
+            }
+          } else {
+            conversationState.researchResults = additionalResearch
+          }
+
+          // Return findings to Claude
+          const findingsSummary = additionalResearch.keyFindings.slice(0, 5).map((f: string, i: number) => `${i + 1}. ${f}`).join('\n')
+
+          return new Response(JSON.stringify({
+            success: true,
+            mode: 'research_findings',
+            message: `**Additional Research Complete**\n\n${additionalResearch.synthesis || ''}\n\n**Key Findings:**\n${findingsSummary}\n\nYou can now use these findings to enhance the presentation.`,
+            researchData: conversationState.researchResults,
+            conversationId
+          }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        } else {
+          console.log('⚠️ Additional research returned no results')
+          return new Response(JSON.stringify({
+            success: true,
+            mode: 'research_findings',
+            message: `I attempted additional research on "${toolUse.input.research_query}" but didn't find substantial new data. We can proceed with the existing research or you can provide specific data points you'd like included.`,
+            conversationId
+          }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+      }
+
       // Handle presentation outline creation
       if (toolUse && toolUse.name === 'create_presentation_outline') {
         console.log('📊 Claude created presentation outline')
@@ -2321,15 +2492,37 @@ ${section.talking_points.map((p: string) => `- ${p}`).join('\n')}
           throw new Error('Outline missing required fields (topic or sections)')
         }
 
-        // Build detailed prompt for Gamma with the structured outline
+        // Build detailed prompt for Gamma with the structured outline AND research data
         const currentDate = new Date().toISOString().split('T')[0]
         const currentYear = new Date().getFullYear()
+
+        // Get research data if available
+        const researchData = conversationState.researchResults
+        let researchSection = ''
+
+        if (researchData && (researchData.keyFindings?.length > 0 || researchData.synthesis)) {
+          researchSection = `\n**CRITICAL: Use this research data in your presentation:**\n\n`
+
+          if (researchData.synthesis) {
+            researchSection += `**Overview:** ${researchData.synthesis}\n\n`
+          }
+
+          if (researchData.keyFindings && researchData.keyFindings.length > 0) {
+            researchSection += `**Key Facts & Data Points (incorporate these into slides):**\n`
+            researchData.keyFindings.forEach((finding: string, i: number) => {
+              researchSection += `${i + 1}. ${finding}\n`
+            })
+            researchSection += '\n'
+          }
+
+          researchSection += `**INSTRUCTION:** Integrate the above facts, statistics, and insights throughout the presentation. Use specific data points to support key messages. Make the presentation data-driven and credible.\n\n`
+        }
 
         const gammaPrompt = `**CURRENT DATE: ${currentDate}**
 **CURRENT YEAR: ${currentYear}**
 
 IMPORTANT: This presentation is being created in ${currentYear}. Use current data and avoid referencing outdated information from before 2024.
-
+${researchSection}
 Create a ${outline.slide_count || 10}-slide presentation on "${outline.topic}" for ${outline.audience}.
 
 Purpose: ${outline.purpose}
@@ -2344,9 +2537,9 @@ Content: ${section.talking_points.join('; ')}
 Visual: ${section.visual_suggestion}
 `).join('\n')}
 
-Style: Professional, clean design with visuals supporting each key point.
+Style: Professional, clean design with visuals supporting each key point. Use specific data and facts from the research provided above.
 
-REMINDER: Current date is ${currentDate}. Ensure all data references and examples are from 2024-${currentYear}.`
+REMINDER: Current date is ${currentDate}. Ensure all data references and examples are from 2024-${currentYear}. Incorporate the research findings listed above into relevant slides.`
 
         console.log('📊 Built Gamma prompt:', gammaPrompt.substring(0, 500))
         console.log('📊 Outline:', JSON.stringify(outline, null, 2))
@@ -2361,7 +2554,11 @@ REMINDER: Current date is ${currentDate}. Ensure all data references and example
             options: {
               audience: outline.audience,
               tone: outline.purpose
-            }
+            },
+            // IMPORTANT: Enable capture to SignalDesk database
+            capture: true,
+            organization_id: organizationId,
+            campaign_id: null
           }
 
           console.log('📤 Sending to Gamma:', {
@@ -2369,7 +2566,9 @@ REMINDER: Current date is ${currentDate}. Ensure all data references and example
             contentLength: requestBody.content?.length,
             hasContent: !!requestBody.content,
             format: requestBody.format,
-            slideCount: requestBody.slideCount
+            slideCount: requestBody.slideCount,
+            capture: requestBody.capture,
+            organization_id: requestBody.organization_id
           })
 
           console.log('📤 FULL REQUEST BODY:', JSON.stringify(requestBody, null, 2))
@@ -2811,10 +3010,22 @@ async function getClaudeUnderstanding(
   orgProfile: any,
   conversationState?: ConversationState
 ): Promise<any> {
+  // Extract previously mentioned entities to help resolve pronouns
+  const previousEntities = new Set()
+  conversationHistory.slice(-5).forEach(msg => {
+    if (msg.metadata?.understanding?.entities) {
+      msg.metadata.understanding.entities.forEach(e => previousEntities.add(e))
+    }
+  })
+
   const understandingPrompt = `You are NIV, a Senior Strategic Content Consultant analyzing a user's content creation request.
 
 ${conversationHistory.length > 0 ? `Recent Conversation:
 ${conversationHistory.slice(-3).map(msg => `${msg.role === 'user' ? 'User' : 'NIV'}: ${msg.content}`).join('\n')}
+` : ''}
+${previousEntities.size > 0 ? `
+Previously Mentioned Entities: ${Array.from(previousEntities).join(', ')}
+(Use these to resolve pronouns like "them", "they", "it" in the current query)
 ` : ''}
 
 Current User Query: "${message}"
@@ -2863,7 +3074,7 @@ Respond with JSON only:
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-5-20250929',
         max_tokens: 500,
         messages: [{ role: 'user', content: understandingPrompt }]
       })
@@ -2877,13 +3088,16 @@ Respond with JSON only:
     const data = await response.json()
     const responseText = data.content[0].text
 
-    // Extract JSON from response
+    // Extract JSON from response - handle malformed backticks
     let jsonText = responseText.trim()
     const jsonMatch = jsonText.match(/```json\s*([\s\S]*?)\s*```/) ||
                      jsonText.match(/```\s*([\s\S]*?)\s*```/)
     if (jsonMatch) {
       jsonText = jsonMatch[1].trim()
     }
+
+    // Remove any remaining backticks (handles malformed like `` `json`)
+    jsonText = jsonText.replace(/`+/g, '').trim()
 
     const understanding = JSON.parse(jsonText)
     return understanding
@@ -3070,7 +3284,23 @@ async function callClaude(
 
     // Different instructions based on whether we should present findings first
     if (shouldPresentResearchFirst) {
-      currentUserMessage = `**RESEARCH RESULTS:**
+      // Check if research timed out
+      if (!research || !research.articles || research.articles.length === 0) {
+        currentUserMessage = `**RESEARCH STATUS:**
+Research timed out (exceeded 60 second limit). This happens when gathering comprehensive market data takes longer than expected.
+
+**YOUR OPTIONS:**
+1. Create the presentation based on general industry knowledge and best practices
+2. I can try a more focused research query if you have specific data points you need
+
+**RECOMMENDATION:**
+For a data-driven executive presentation, I suggest creating an outline based on strategic frameworks and industry trends. We can validate specific data points later or you can provide any specific metrics you want included.
+
+Would you like me to proceed with creating the presentation outline using strategic best practices, or would you prefer to provide specific data points you want included?
+
+${context}`
+      } else {
+        currentUserMessage = `**RESEARCH RESULTS:**
 ${researchContext.join('\n')}
 
 **IMPORTANT - RESEARCH PRESENTATION MODE:**
@@ -3081,6 +3311,8 @@ Then ask: "Based on these findings, would you like me to create the presentation
 DO NOT create the presentation outline yet - present findings first and wait for user confirmation.
 
 ${context}`
+      }
+
     } else {
       currentUserMessage = `**RESEARCH RESULTS:**
 ${researchContext.join('\n')}
@@ -3110,7 +3342,7 @@ ${context}`
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 2000,
       system: enhancedSystemPrompt,
       messages: messages,
@@ -3126,18 +3358,18 @@ ${context}`
   return data // Return full response object, not just text
 }
 
-// Helper: Execute research via Intelligent Research
+// Helper: Execute research via Fireplexity (DIRECT - like niv-orchestrator-robust)
 async function executeResearch(query: string, organizationId: string) {
-  console.log('🔍 Executing intelligent research...')
+  console.log('🔍 Executing research via Fireplexity...')
 
   try {
-    // Create timeout promise (120 seconds = 2 minutes)
+    // Create timeout promise (90 seconds to stay well under Supabase's 150s limit)
     const timeout = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Research timeout after 120s')), 120000)
+      setTimeout(() => reject(new Error('Research timeout after 90s')), 90000)
     );
 
     const fetchPromise = fetch(
-      `${SUPABASE_URL}/functions/v1/niv-research-intelligent`,
+      `${SUPABASE_URL}/functions/v1/niv-fireplexity`,
       {
         method: 'POST',
         headers: {
@@ -3145,9 +3377,10 @@ async function executeResearch(query: string, organizationId: string) {
           'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
         },
         body: JSON.stringify({
-          query: `${query} for ${organizationId}`,
-          organizationId,
-          maxIterations: 2 // Allow follow-up searches to improve quality
+          query: query,
+          organizationId: organizationId,
+          searchMode: 'focused', // Use focused mode for speed
+          useCache: true
         })
       }
     );
@@ -3162,12 +3395,24 @@ async function executeResearch(query: string, organizationId: string) {
 
     const data = await response.json()
 
-    console.log(`✅ Research complete: ${data.results?.length || 0} articles, quality: ${data.quality}`)
+    console.log(`✅ Research complete: ${data.results?.length || 0} articles`)
+
+    // Build keyFindings from top results (like orchestrator-robust)
+    const keyFindings = data.results?.slice(0, 5).map((r: any) =>
+      `${r.title}: ${r.description}`
+    ) || []
+
+    console.log(`📊 Research data: keyFindings=${keyFindings.length}`)
+    if (keyFindings.length > 0) {
+      console.log(`📋 Key finding preview: ${keyFindings[0]?.substring(0, 100)}...`)
+    } else {
+      console.log(`⚠️ No results returned from research!`)
+    }
 
     return {
       articles: data.results || [],
       synthesis: data.summary || '',
-      keyFindings: data.keyFindings || []
+      keyFindings: keyFindings
     }
   } catch (error) {
     console.error('⚠️ Research failed or timed out:', error.message);
@@ -3185,10 +3430,11 @@ async function callMCPServiceWithContext(
   service: string,
   baseParams: any,
   conversationHistory: any[],
-  conversationState: ConversationState
+  conversationState: ConversationState,
+  campaignContext?: any
 ) {
-  // Build context from conversation history and research
-  const contentContext = buildContentContext(conversationHistory, conversationState)
+  // Build context from conversation history, research, and campaign blueprint
+  const contentContext = buildContentContext(conversationHistory, conversationState, campaignContext)
 
   // Merge base params with context
   return await callMCPService(service, {
@@ -3273,7 +3519,11 @@ function extractFrameworkFromOutline(outline: any): {
 }
 
 // Helper: Build context from conversation history and research for content generation
-function buildContentContext(conversationHistory: any[], conversationState: ConversationState): {
+function buildContentContext(
+  conversationHistory: any[],
+  conversationState: ConversationState,
+  campaignContext?: any
+): {
   narrative: string
   positioning: string
   research: string
@@ -3286,14 +3536,50 @@ function buildContentContext(conversationHistory: any[], conversationState: Conv
     keyPoints: [] as string[]
   }
 
-  // Extract research if available
+  // Extract from campaign context (VECTOR blueprint) if available
+  if (campaignContext?.blueprint) {
+    const blueprint = campaignContext.blueprint
+
+    // Extract positioning from message architecture or positioning field
+    if (blueprint.messageArchitecture?.coreMessage) {
+      context.positioning = blueprint.messageArchitecture.coreMessage
+    } else if (campaignContext.positioning) {
+      context.positioning = campaignContext.positioning
+    }
+
+    // Extract narrative from campaign goal or primary objective
+    if (blueprint.part1_goalFramework?.primaryObjective) {
+      context.narrative = blueprint.part1_goalFramework.primaryObjective
+    } else if (campaignContext.campaignGoal) {
+      context.narrative = campaignContext.campaignGoal
+    }
+
+    // Extract key points from behavioral goals or message frames
+    if (blueprint.part1_goalFramework?.behavioralGoals) {
+      context.keyPoints = blueprint.part1_goalFramework.behavioralGoals.map((g: any) =>
+        g.desiredBehavior || g
+      )
+    } else if (blueprint.messageArchitecture?.narrativeFrames) {
+      context.keyPoints = blueprint.messageArchitecture.narrativeFrames.map((f: any) =>
+        f.frame || f
+      )
+    }
+
+    console.log('📋 Extracted context from campaign blueprint:', {
+      hasNarrative: !!context.narrative,
+      hasPositioning: !!context.positioning,
+      keyPointsCount: context.keyPoints.length
+    })
+  }
+
+  // Extract research if available (from conversation state)
   if (conversationState.researchResults) {
     const research = conversationState.researchResults
     if (research.synthesis) {
       context.research = research.synthesis
     }
     if (research.keyFindings && research.keyFindings.length > 0) {
-      context.keyPoints = research.keyFindings
+      context.keyPoints = [...context.keyPoints, ...research.keyFindings]
     }
   }
 
@@ -3572,7 +3858,7 @@ Write ONLY the brief, nothing else. Make it compelling and strategic.`
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-5-20250929',
         max_tokens: 300,
         temperature: 0.7,
         messages: [{
@@ -3876,11 +4162,23 @@ Write ONLY the thought leadership content.`
 
   const prompt = contentPrompts[normalizedType] || contentPrompts['blog-post']
 
+  // Content-type-specific timeouts (in milliseconds)
+  const timeoutDurations: Record<string, number> = {
+    'thought-leadership': 150000,  // 150s - long-form content
+    'case-study': 150000,          // 150s - detailed narrative
+    'white-paper': 180000,         // 180s - comprehensive technical
+    'blog-post': 120000,           // 120s - medium-form
+    'media-pitch': 60000,          // 60s - short, focused
+    'social-post': 60000,          // 60s - brief
+    'press-release': 90000         // 90s - structured format
+  }
+  const timeoutMs = timeoutDurations[normalizedType] || 90000
+
   let timeoutId: number | undefined
   try {
-    // Call Claude directly with 30-second timeout
+    // Call Claude directly with content-type-specific timeout
     const controller = new AbortController()
-    timeoutId = setTimeout(() => controller.abort(), 30000)
+    timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -3891,7 +4189,7 @@ Write ONLY the thought leadership content.`
       },
       signal: controller.signal,
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-5-20250929',
         max_tokens: 16000,
         temperature: 0.7,
         messages: [{
@@ -3917,7 +4215,8 @@ Write ONLY the thought leadership content.`
 
   } catch (error) {
     if (error.name === 'AbortError') {
-      console.error(`⏱️ Claude API timed out for ${normalizedType} after 30 seconds`)
+      const timeoutSeconds = Math.round(timeoutMs / 1000)
+      console.error(`⏱️ Claude API timed out for ${normalizedType} after ${timeoutSeconds} seconds`)
       throw new Error(`Content generation timed out for ${normalizedType}`)
     }
 
@@ -3965,10 +4264,10 @@ async function callMCPService(contentType: string, parameters: any): Promise<str
 
   let timeoutId: number | undefined
   try {
-    // Create timeout controller - 30 seconds max for content generation
-    // (Supabase Edge Functions have 60s total limit, need buffer for multiple pieces)
+    // Create timeout controller - 90 seconds max for content generation
+    // (Complex content needs more time than 30s)
     const controller = new AbortController()
-    timeoutId = setTimeout(() => controller.abort(), 30000)
+    timeoutId = setTimeout(() => controller.abort(), 90000)
 
     const response = await fetch(
       `${SUPABASE_URL}/functions/v1/${route.service}`,

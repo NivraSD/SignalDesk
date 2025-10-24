@@ -221,45 +221,143 @@ const TOOLS = [
 
 // Tool implementations
 async function detectCrisisSignals(args: any) {
-  const { sources = ['social', 'news'], keywords, sensitivity = 'medium', timeWindow = '3h' } = args;
-  
-  // Use Claude to analyze potential crisis signals
-  const prompt = `Analyze potential crisis signals for keywords: ${keywords.join(', ')}
-  Sources: ${sources.join(', ')}
-  Sensitivity: ${sensitivity}
-  Time window: ${timeWindow}
-  
-  Identify:
-  - Warning signals detected
-  - Risk level (1-10)
-  - Trending negative topics
-  - Velocity of spread
-  - Recommended actions
-  
-  Return as JSON.`;
-  
+  const {
+    sources = ['social', 'news'],
+    keywords,
+    sensitivity = 'medium',
+    timeWindow = '3h',
+    articles = [],
+    organization_name = keywords?.[0] || 'the organization',
+    profile = {}
+  } = args;
+
+  console.log(`🚨 Crisis Signal Detection for ${organization_name}`);
+  console.log(`   Analyzing ${articles.length} articles`);
+  console.log(`   Sensitivity: ${sensitivity}`);
+
+  // If no articles, return low risk
+  if (!articles || articles.length === 0) {
+    console.log('   ℹ️  No articles to analyze');
+    return {
+      signalsDetected: 0,
+      riskLevel: 0,
+      status: 'monitoring',
+      warningSignals: [],
+      message: 'No articles available for crisis analysis'
+    };
+  }
+
+  // Prepare article summaries for Claude
+  const articleSummaries = articles.slice(0, 20).map((a: any, i: number) => ({
+    index: i + 1,
+    title: a.title,
+    source: a.source,
+    published: a.published_at || a.published,
+    snippet: a.content?.substring(0, 300) || a.description?.substring(0, 300) || '',
+    url: a.url
+  }));
+
+  // Use Claude to analyze potential crisis signals with ACTUAL article data
+  const prompt = `You are a crisis detection AI analyzing news articles for ${organization_name}.
+
+# YOUR TASK
+Analyze these articles and identify ANY crisis signals, warning signs, or negative developments that could harm ${organization_name}'s reputation, operations, or stakeholder relationships.
+
+# ARTICLES TO ANALYZE (${articleSummaries.length} articles from last ${timeWindow})
+${JSON.stringify(articleSummaries, null, 2)}
+
+# ORGANIZATION CONTEXT
+${JSON.stringify({
+  name: organization_name,
+  industry: profile.industry || 'Technology',
+  competitors: profile.competition?.direct_competitors?.slice(0, 3) || [],
+  stakeholders: [
+    ...(profile.stakeholders?.major_investors?.slice(0, 2) || []),
+    ...(profile.stakeholders?.regulators?.slice(0, 2) || [])
+  ]
+}, null, 2)}
+
+# CRISIS CATEGORIES TO CHECK
+Look for signals in these categories:
+- **Legal/Regulatory**: Lawsuits, investigations, regulatory actions, compliance issues
+- **Operational**: Outages, failures, security breaches, product issues
+- **Reputational**: Scandals, controversies, executive misconduct, PR disasters
+- **Financial**: Losses, fraud, bankruptcy concerns, stock crashes
+- **Competitive**: Aggressive competitive moves, market share losses, pricing wars
+- **Stakeholder**: Employee protests, customer backlash, investor concerns, partner exits
+
+# DETECTION RULES
+- **High sensitivity**: Flag even minor negative signals (criticism, complaints, concerns)
+- **Medium sensitivity**: Flag moderate issues (incidents, negative trends, emerging risks)
+- **Low sensitivity**: Only flag major crises (scandals, breaches, lawsuits, failures)
+
+Current sensitivity: ${sensitivity}
+
+# OUTPUT FORMAT
+Return ONLY a JSON object:
+{
+  "signalsDetected": <number of crisis signals found>,
+  "riskLevel": <1-10, where 1=no risk, 10=critical crisis>,
+  "status": "monitoring|concerning|critical",
+  "warningSignals": ["Array of specific crisis signals detected"],
+  "crisisCategory": "legal|operational|reputational|financial|competitive|stakeholder|none",
+  "affectedStakeholders": ["List of stakeholder groups affected"],
+  "urgency": "low|medium|high|critical",
+  "recommendedActions": ["Specific actions to take"],
+  "evidence": [
+    {
+      "article_title": "Title of article",
+      "crisis_signal": "What crisis signal was detected",
+      "severity": "low|medium|high|critical"
+    }
+  ]
+}
+
+IMPORTANT:
+- Be specific about what crisis signals you detect
+- Reference specific articles in evidence
+- If NO crisis signals found, return riskLevel: 0-2
+- If minor concerns, return riskLevel: 3-5
+- If moderate crisis, return riskLevel: 6-7
+- If major crisis, return riskLevel: 8-10
+- Base your analysis ONLY on the articles provided`;
+
+  console.log('   🤖 Calling Claude for crisis analysis...');
+
   const completion = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
-    max_tokens: 800,
+    max_tokens: 1500,
     temperature: 0.3,
     messages: [{ role: 'user', content: prompt }]
   });
-  
+
   const responseText = completion.content[0].type === 'text' ? completion.content[0].text : '{}';
-  
+
+  console.log('   📝 Claude response received');
+
   try {
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-    return jsonMatch ? JSON.parse(jsonMatch[0]) : {
+    const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : {
       signalsDetected: 0,
       riskLevel: 1,
-      status: 'monitoring'
+      status: 'monitoring',
+      warningSignals: []
     };
-  } catch {
+
+    console.log(`   ✅ Analysis complete: ${parsed.signalsDetected} signals, risk level ${parsed.riskLevel}/10`);
+
+    return parsed;
+  } catch (parseError) {
+    console.error('   ❌ Failed to parse Claude response:', parseError);
+    console.error('   Response text:', responseText);
+
+    // Fallback
     return {
-      signalsDetected: Math.floor(Math.random() * 5),
-      riskLevel: sensitivity === 'high' ? 7 : 3,
-      warningSignals: ['Negative sentiment spike', 'Influencer criticism'],
-      recommendedActions: ['Increase monitoring', 'Prepare response team']
+      signalsDetected: 0,
+      riskLevel: 1,
+      status: 'monitoring',
+      warningSignals: [],
+      error: 'Failed to parse crisis analysis'
     };
   }
 }

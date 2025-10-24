@@ -6,25 +6,95 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-interface FireplexityMonitorRequest {
+interface MonitorRequest {
   organization_id: string
   organization_name?: string
-  queries?: string[]
-  check_interval?: string
-  relevance_threshold?: number
   recency_window?: string
-  route_to_opportunity_engine?: boolean  // NEW: Send high-priority alerts to opportunity engine
 }
 
-interface Alert {
-  type: 'crisis' | 'opportunity' | 'volume_spike'
-  severity: 'critical' | 'high' | 'medium' | 'low'
-  source: string
-  title: string
-  url?: string
-  content: string
-  detected_at: Date
-  keywords_matched?: string[]
+// ==================== RSS FETCHERS ====================
+
+// Timeout wrapper for fetch operations
+async function fetchWithTimeout(promise: Promise<any>, timeoutMs: number) {
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('Fetch timeout')), timeoutMs)
+  )
+  return Promise.race([promise, timeoutPromise])
+}
+
+async function fetchFromRSS(feedUrl: string, sourceName = 'RSS Feed', authToken: string) {
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+
+    // Add 10 second timeout per RSS feed
+    const fetchPromise = fetch(`${supabaseUrl}/functions/v1/rss-proxy`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseKey}`
+      },
+      body: JSON.stringify({
+        url: feedUrl
+      })
+    })
+
+    const response = await fetchWithTimeout(fetchPromise, 10000) as Response
+
+    if (!response.ok) {
+      console.log(`   ⚠️ RSS proxy returned ${response.status} for ${sourceName}`);
+      return [];
+    }
+
+    const data = await response.json();
+    const articles = data.articles || data.items || [];
+    console.log(`   ✓ Fetched ${articles.length} articles from ${sourceName}`);
+
+    return articles.map((item: any) => ({
+      title: item.title,
+      url: item.url || item.link,
+      content: item.description || item.content || '',
+      published_at: item.publishedAt || item.pubDate || new Date().toISOString(),
+      source: sourceName,
+      source_url: feedUrl
+    }));
+  } catch (error) {
+    console.error(`   ❌ RSS error for ${sourceName}: ${error.message}`);
+    return [];
+  }
+}
+
+// Get industry sources from registry
+async function getIndustrySources(industry: string) {
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+
+    console.log(`📚 Fetching sources for industry: ${industry}`);
+    const response = await fetch(`${supabaseUrl}/functions/v1/master-source-registry`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseKey}`
+      },
+      body: JSON.stringify({
+        industry: industry
+      })
+    });
+
+    if (!response.ok) {
+      console.log('   ⚠️ Source registry unavailable');
+      return { competitive: [], market: [], regulatory: [], media: [] };
+    }
+
+    const result = await response.json();
+    const sources = result.data || result;
+    console.log(`   ✓ Got ${sources.competitive?.length || 0} competitive, ${sources.market?.length || 0} market, ${sources.regulatory?.length || 0} regulatory, ${sources.media?.length || 0} media sources`);
+    return sources;
+  } catch (error) {
+    console.error('   ❌ Registry error:', error.message);
+    return { competitive: [], market: [], regulatory: [], media: [] };
+  }
 }
 
 serve(async (req) => {
@@ -37,343 +107,227 @@ serve(async (req) => {
     const {
       organization_id,
       organization_name,
-      queries: customQueries,
-      relevance_threshold = 70,
-      recency_window = '30min',
-      route_to_opportunity_engine = false
-    }: FireplexityMonitorRequest = await req.json()
+      recency_window = '6hours'
+    }: MonitorRequest = await req.json()
 
-    console.log('🔍 Fireplexity Real-Time Monitor Starting:', {
+    console.log('🔍 Real-Time RSS Monitor Starting:', {
       organization_id,
-      recency_window,
-      relevance_threshold
+      recency_window
     })
+
+    const startTime = Date.now()
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // Load config from organization_profiles (created by mcp-discovery)
-    let config
-    if (customQueries) {
-      config = {
-        organization_id,
-        organization_name: organization_name || organization_id,
-        fireplexity_queries: customQueries,
-        crisis_keywords: DEFAULT_CRISIS_KEYWORDS,
-        opportunity_keywords: DEFAULT_OPPORTUNITY_KEYWORDS
-      }
-    } else {
-      // Try to get organization profile from mcp-discovery
-      const { data: profileData, error: profileError } = await supabase
-        .from('organization_profiles')
-        .select('profile_data')
-        .eq('organization_name', organization_id)
-        .single()
+    // Get organization profile from mcp-discovery
+    const { data: profileData, error: profileError } = await supabase
+      .from('organization_profiles')
+      .select('profile_data')
+      .eq('organization_name', organization_id)
+      .single()
 
-      if (profileError || !profileData) {
-        console.error('❌ No organization profile found for:', organization_id)
-        return new Response(JSON.stringify({
-          success: false,
-          error: 'No organization profile found. Please run mcp-discovery first to create a profile.'
-        }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
-      }
-
-      const profile = profileData.profile_data
-
-      // Build config from mcp-discovery profile
-      // Use profile data to build company-specific breaking news queries
-      config = {
-        organization_id,
-        organization_name: profile.organization_name,
-        profile: profile,
-        crisis_keywords: profile.monitoring_config?.crisis_indicators || DEFAULT_CRISIS_KEYWORDS,
-        opportunity_keywords: profile.monitoring_config?.opportunity_indicators || DEFAULT_OPPORTUNITY_KEYWORDS,
-        competitors: [
-          ...(profile.competition?.direct_competitors || []),
-          ...(profile.competition?.indirect_competitors || [])
-        ].slice(0, 10),
-        stakeholders: [
-          ...(profile.stakeholders?.regulators || []),
-          ...(profile.stakeholders?.major_investors || []),
-          ...(profile.stakeholders?.key_executives || [])
-        ].slice(0, 5)
-      }
+    if (profileError || !profileData) {
+      console.error('❌ No organization profile found for:', organization_id)
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'No organization profile found. Please run mcp-discovery first to create a profile.'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
     }
 
-    // Build company-specific breaking news queries
-    // Similar to how monitor-stage-1 builds queries, but for real-time search
-    let queries = buildCompanySpecificQueries(
-      config.organization_name,
-      config
+    const profile = profileData.profile_data
+    const orgName = organization_name || profile.organization_name || organization_id
+
+    console.log(`📌 Organization: ${orgName}`)
+    console.log(`🏭 Industry: ${profile.industry || 'Unknown'}`)
+
+    // Extract entities from profile for relevance filtering
+    const competitors = [
+      ...(profile.competition?.direct_competitors || []),
+      ...(profile.competition?.indirect_competitors || [])
+    ].filter(Boolean)
+
+    const stakeholders = [
+      ...(profile.stakeholders?.regulators || []),
+      ...(profile.stakeholders?.major_investors || []),
+      ...(profile.stakeholders?.executives || [])
+    ].filter(Boolean)
+
+    const keywords = [
+      ...(profile.monitoring_config?.keywords || []),
+      ...(profile.keywords || []),
+      orgName
+    ].filter(Boolean)
+
+    console.log(`⚔️ Competitors: ${competitors.slice(0, 5).join(', ')}${competitors.length > 5 ? ` +${competitors.length - 5} more` : ''}`)
+    console.log(`👥 Stakeholders: ${stakeholders.slice(0, 3).join(', ')}${stakeholders.length > 3 ? ` +${stakeholders.length - 3} more` : ''}`)
+
+    // ==================== FETCH RSS FEEDS ====================
+    console.log('\n📡 Fetching RSS feeds from master-source-registry...')
+
+    const articlesMap = new Map()
+    const titleMap = new Map()
+
+    // Get sources from master-source-registry
+    const industrySources = await getIndustrySources(profile.industry || 'general')
+
+    let allSources = [
+      ...(industrySources.competitive || []),
+      ...(industrySources.market || []),
+      ...(industrySources.regulatory || []),
+      ...(industrySources.media || [])
+    ]
+
+    // LIMIT to top 20 sources to avoid timeout
+    // Prioritize sources with higher priority
+    allSources.sort((a, b) => {
+      const priorityMap = { high: 3, medium: 2, low: 1 }
+      const aPriority = priorityMap[a.priority as keyof typeof priorityMap] || 1
+      const bPriority = priorityMap[b.priority as keyof typeof priorityMap] || 1
+      return bPriority - aPriority
+    })
+
+    const sourcesToFetch = allSources.slice(0, 20) // Top 20 only
+
+    console.log(`📚 Processing ${sourcesToFetch.length} RSS sources (from ${allSources.length} total) in parallel...`)
+
+    // Fetch sources in parallel with timeout protection
+    const fetchPromises = sourcesToFetch.map(source =>
+      fetchFromRSS(source.url, source.name, supabaseKey)
+        .then(articles => ({ source, articles }))
+        .catch(err => {
+          console.log(`   ❌ Failed to fetch ${source.name}: ${err.message}`)
+          return { source, articles: [] }
+        })
     )
 
-    // Limit to 10 queries max to stay under 150s timeout
-    if (queries.length > 10) {
-      console.log(`⚠️  Too many queries (${queries.length}). Limiting to 10 most important...`)
-      queries = queries.slice(0, 10)
-    }
+    const results = await Promise.all(fetchPromises)
 
-    console.log(`📝 Executing ${queries.length} queries in batches...`)
+    // Process and filter articles
+    for (const { source, articles } of results) {
+      articles.forEach((article: any) => {
+        // Skip duplicates
+        if (article.url && articlesMap.has(article.url)) return
 
-    // Execute queries in parallel batches of 3
-    const allResults = []
-    const startTime = Date.now()
-    const BATCH_SIZE = 3
+        const normalizedTitle = article.title?.toLowerCase().replace(/[^a-z0-9]/g, '') || ''
+        if (titleMap.has(normalizedTitle)) return
 
-    for (let i = 0; i < queries.length; i += BATCH_SIZE) {
-      const batch = queries.slice(i, i + BATCH_SIZE)
-      console.log(`\n🔄 Batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(queries.length/BATCH_SIZE)}: ${batch.length} queries`)
-
-      const batchPromises = batch.map(async (query) => {
-        try {
-          console.log(`  🔎 "${query}"`)
-
-          const response = await fetch(`${supabaseUrl}/functions/v1/niv-fireplexity`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${supabaseKey}`
-            },
-            body: JSON.stringify({
-              query,
-              searchMode: 'focused',
-              recency: recency_window
-            })
-          })
-
-          if (!response.ok) {
-            console.log(`  ⚠️ "${query}" failed: ${response.status}`)
-            return []
-          }
-
-          const data = await response.json()
-
-          if (data.results && data.results.length > 0) {
-            console.log(`  ✅ "${query}": ${data.results.length} results`)
-            return data.results.map((r: any) => ({
-              ...r,
-              query_used: query
-            }))
-          } else {
-            console.log(`  ℹ️ "${query}": no results`)
-            return []
-          }
-
-        } catch (error) {
-          console.error(`  ❌ "${query}": ${error.message}`)
-          return []
+        // Clean HTML from description
+        if (article.content) {
+          article.content = article.content.replace(/<[^>]*>/g, '').substring(0, 500)
         }
-      })
 
-      // Wait for batch to complete
-      const batchResults = await Promise.all(batchPromises)
-      allResults.push(...batchResults.flat())
+        articlesMap.set(article.url, {
+          ...article,
+          source_tier: source.priority || 'medium',
+          source_category: source.category || 'competitive'
+        })
+        titleMap.set(normalizedTitle, article.url)
+      })
     }
+
+    let allArticles = Array.from(articlesMap.values())
+    console.log(`\n📊 Total articles collected: ${allArticles.length}`)
+
+    // ==================== FILTER BY RECENCY ====================
+    const timeWindowMs = recency_window === '1hour' ? 60 * 60 * 1000 :
+                        recency_window === '6hours' ? 6 * 60 * 60 * 1000 :
+                        recency_window === '24hours' ? 24 * 60 * 60 * 1000 :
+                        6 * 60 * 60 * 1000 // default 6 hours
+
+    const cutoffTime = new Date(Date.now() - timeWindowMs)
+
+    const beforeFilter = allArticles.length
+    allArticles = allArticles.filter(article => {
+      const articleDate = new Date(article.published_at || 0)
+      return articleDate > cutoffTime
+    })
+
+    console.log(`🕐 Filtered by recency (${recency_window}): ${beforeFilter} → ${allArticles.length} articles`)
+
+    // ==================== FILTER BY RELEVANCE ====================
+    // Check if article mentions org, competitors, stakeholders, or keywords
+    const relevantArticles = allArticles.filter(article => {
+      const text = `${article.title || ''} ${article.content || ''}`.toLowerCase()
+
+      const orgMentioned = text.includes(orgName.toLowerCase())
+      const competitorMentioned = competitors.some(comp => comp && text.includes(comp.toLowerCase()))
+      const stakeholderMentioned = stakeholders.some(sh => sh && text.includes(sh.toLowerCase()))
+      const keywordMentioned = keywords.some(kw => kw && text.includes(kw.toLowerCase()))
+
+      return orgMentioned || competitorMentioned || stakeholderMentioned || keywordMentioned
+    })
+
+    console.log(`🎯 Filtered by relevance: ${allArticles.length} → ${relevantArticles.length} articles`)
+
+    // Score each article for prioritization
+    const scoredArticles = relevantArticles.map(article => {
+      const title = (article.title || '').toLowerCase()
+      const content = (article.content || '').toLowerCase()
+      const text = `${title} ${content}`
+
+      let score = 0
+
+      // Organization in title: +40
+      if (title.includes(orgName.toLowerCase())) score += 40
+
+      // Competitor in title: +30
+      if (competitors.some(comp => comp && title.includes(comp.toLowerCase()))) score += 30
+
+      // Stakeholder mentioned: +20
+      if (stakeholders.some(sh => sh && text.includes(sh.toLowerCase()))) score += 20
+
+      // Keywords: +10
+      if (keywords.some(kw => kw && text.includes(kw.toLowerCase()))) score += 10
+
+      return {
+        ...article,
+        relevance_score: score
+      }
+    })
+
+    // Sort by relevance and take top results
+    scoredArticles.sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0))
+    const topResults = scoredArticles.slice(0, 50) // Top 50 for detectors
 
     const executionTime = Date.now() - startTime
     console.log(`\n⏱️  Total execution time: ${executionTime}ms`)
-
-    // STAGE 1: Deduplicate results
-    const deduplicated = deduplicateResults(allResults)
-    console.log(`\n📊 Stage 1 - Deduplicated: ${allResults.length} → ${deduplicated.length} unique results`)
-
-    // STAGE 2: Relevance scoring (filter out low-quality results)
-    console.log(`\n🎯 Stage 2 - Relevance Scoring...`)
-    const scoredResults = scoreRelevance(deduplicated, config, organization_id)
-    const relevant = scoredResults.filter(r => r.relevance_score >= relevance_threshold)
-    console.log(`   Relevant: ${relevant.length}/${deduplicated.length} (threshold: ${relevance_threshold})`)
-
-    // STAGE 3: Only process top results (save API calls)
-    const topResults = relevant.slice(0, 20) // Max 20 for enrichment
-    console.log(`   Processing top ${topResults.length} results for alert detection`)
-
-    // STAGE 4: AI Review - Detect real alerts from top results only
-    console.log(`\n🤖 Stage 3 - AI Alert Detection...`)
-    const alerts = await detectAlertsWithAI(topResults, config, organization_id)
-
-    console.log(`🚨 Real alerts detected: ${alerts.length}/${topResults.length}`)
-
-    // STAGE 5: Route high-priority alerts to opportunity engine (if requested)
-    let opportunityEngineResult = null
-    if (route_to_opportunity_engine && alerts.length > 0) {
-      const criticalAlerts = alerts.filter(a =>
-        a.severity === 'critical' || a.severity === 'high'
-      )
-
-      if (criticalAlerts.length > 0) {
-        console.log(`\n🎯 Stage 4 - Routing ${criticalAlerts.length} high-priority alerts to opportunity engine...`)
-
-        try {
-          // Format alerts as articles for enrichment (matching monitor-stage-2-enrichment format)
-          const alertArticles = criticalAlerts.map(alert => ({
-            title: alert.title,
-            content: alert.content,
-            url: alert.url,
-            source: 'fireplexity-realtime',
-            published_at: alert.detected_at.toISOString(),
-            relevance_score: alert.severity === 'critical' ? 100 : 85
-          }))
-
-          // Get profile if we have organization_id
-          let profile = null
-          if (config.organization_name) {
-            const { data: profileData } = await supabase
-              .from('organization_profiles')
-              .select('profile_data')
-              .eq('organization_name', config.organization_name)
-              .single()
-
-            if (profileData) {
-              profile = profileData.profile_data
-            }
-          }
-
-          // Call monitoring-stage-2-enrichment with same format as intelligence pipeline
-          const enrichmentResponse = await fetch(
-            `${supabaseUrl}/functions/v1/monitoring-stage-2-enrichment`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${supabaseKey}`
-              },
-              body: JSON.stringify({
-                articles: alertArticles,
-                profile: profile,
-                organization_name: config.organization_name || organization_id,
-                coverage_report: {
-                  context: 'Real-time alerts from Fireplexity monitor',
-                  source: 'niv-fireplexity-monitor'
-                }
-              })
-            }
-          )
-
-          if (enrichmentResponse.ok) {
-            const enrichedData = await enrichmentResponse.json()
-            console.log(`   ✅ Enrichment complete`)
-
-            // Now call opportunity detector with enriched data
-            const detectorResponse = await fetch(
-              `${supabaseUrl}/functions/v1/mcp-opportunity-detector`,
-              {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${supabaseKey}`
-                },
-                body: JSON.stringify({
-                  organization_id: organization_id,
-                  organization_name: config.organization_name || organization_id,
-                  enriched_data: enrichedData,
-                  profile: profile
-                })
-              }
-            )
-
-            if (detectorResponse.ok) {
-              opportunityEngineResult = await detectorResponse.json()
-              console.log(`   ✅ Opportunity engine: ${opportunityEngineResult.opportunities?.length || 0} opportunities generated`)
-            }
-          }
-        } catch (error) {
-          console.error('   ⚠️ Opportunity engine routing failed:', error.message)
-        }
-      }
-    }
+    console.log(`✅ Returning ${topResults.length} articles to detectors`)
 
     // Save monitoring results to database
-    const { data: savedMonitoring, error: saveError } = await supabase
+    await supabase
       .from('fireplexity_monitoring')
       .insert({
         organization_id,
-        query: queries.join(', '),
-        search_mode: 'focused',
+        query: 'RSS feeds from master-source-registry',
+        search_mode: 'rss',
         recency_window,
-        results: relevant,
-        results_count: relevant.length,
-        relevance_threshold,
-        relevant_results_count: relevant.length,
-        alerts_triggered: alerts.length,
-        crisis_keywords: config.crisis_keywords,
-        opportunity_keywords: config.opportunity_keywords,
+        results: topResults,
+        results_count: topResults.length,
+        relevance_threshold: 0,
+        relevant_results_count: topResults.length,
+        alerts_triggered: 0, // Detectors will create alerts
         executed_at: new Date().toISOString(),
         execution_time_ms: executionTime
       })
-      .select()
-      .single()
-
-    if (saveError) {
-      console.error('❌ Error saving monitoring results:', saveError)
-    }
-
-    // Save alerts to real_time_alerts table
-    const savedAlertIds = []
-
-    for (const alert of alerts) {
-      const { data: savedAlert, error: alertError } = await supabase
-        .from('real_time_alerts')
-        .insert({
-          organization_id,
-          source: 'fireplexity',
-          source_data: {
-            query: alert.query_used,
-            result: alert.result_data
-          },
-          alert_type: alert.type === 'volume_spike' ? 'info' : alert.type,
-          severity: alert.severity,
-          confidence: calculateConfidence(alert),
-          title: alert.title,
-          summary: alert.content.substring(0, 500),
-          full_content: {
-            content: alert.content,
-            url: alert.url,
-            keywords_matched: alert.keywords_matched
-          },
-          url: alert.url,
-          detected_at: alert.detected_at.toISOString()
-        })
-        .select()
-        .single()
-
-      if (!alertError && savedAlert) {
-        savedAlertIds.push(savedAlert.id)
-      }
-    }
-
-    // Update monitoring record with alert IDs
-    if (savedAlertIds.length > 0 && savedMonitoring) {
-      await supabase
-        .from('fireplexity_monitoring')
-        .update({ alert_ids: savedAlertIds })
-        .eq('id', savedMonitoring.id)
-    }
-
-    console.log('✅ Fireplexity monitoring complete\n')
 
     return new Response(JSON.stringify({
       success: true,
-      results_found: relevant.length,
-      alerts_triggered: alerts.length,
-      opportunities_generated: opportunityEngineResult?.opportunities?.length || 0,
+      results_found: topResults.length,
       execution_time_ms: executionTime,
-      alerts: alerts.map(a => ({
-        type: a.type,
-        severity: a.severity,
-        title: a.title
-      })),
-      opportunities: opportunityEngineResult?.opportunities || []
+      source: 'rss_master_registry',
+      articles: topResults
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
 
   } catch (error) {
-    console.error('❌ Fireplexity monitor error:', error)
+    console.error('❌ RSS monitor error:', error)
     return new Response(JSON.stringify({
       success: false,
       error: error.message
@@ -383,298 +337,3 @@ serve(async (req) => {
     })
   }
 })
-
-// ============================================
-// Helper Functions
-// ============================================
-
-/**
- * Build company-specific breaking news queries from mcp-discovery profile
- * Similar to monitor-stage-1, but focused on real-time breaking news
- */
-function buildCompanySpecificQueries(orgName: string, config: any): string[] {
-  const queries = []
-
-  // 1. COMPANY-SPECIFIC CRISIS QUERIES (highest priority)
-  const crisisTerms = ['crisis', 'lawsuit', 'investigation', 'breach', 'recall', 'scandal']
-  crisisTerms.forEach(term => {
-    queries.push(`"${orgName}" ${term}`)
-  })
-
-  // 2. COMPETITOR BREAKING NEWS (monitor competitive intelligence)
-  // Use actual company names, not "Company X competitor"
-  const competitors = config.competitors || []
-  competitors.slice(0, 3).forEach((competitor: string) => {
-    queries.push(`"${competitor}" AND "${orgName}"`)
-  })
-
-  // 3. KEY STAKEHOLDER ACTIVITY (executives, investors, regulators)
-  const stakeholders = config.stakeholders || []
-  stakeholders.slice(0, 2).forEach((stakeholder: string) => {
-    queries.push(`"${stakeholder}" AND "${orgName}"`)
-  })
-
-  // 4. GENERAL BREAKING NEWS (catch-all for major events)
-  queries.push(`"${orgName}" breaking news`)
-
-  console.log(`🔍 Built ${queries.length} company-specific queries for ${orgName}`)
-  console.log('   Sample queries:', queries.slice(0, 3))
-
-  return queries.slice(0, 15) // Limit to 15 queries (5 batches of 3)
-}
-
-function deduplicateResults(results: any[]): any[] {
-  const seen = new Map()
-
-  for (const result of results) {
-    const url = result.url || result.link || ''
-
-    if (!seen.has(url) || url === '') {
-      seen.set(url || Math.random().toString(), result)
-    }
-  }
-
-  return Array.from(seen.values())
-}
-
-function scoreRelevance(results: any[], config: any, organization_id: string): any[] {
-  const crisisKeywords = config.crisis_keywords || DEFAULT_CRISIS_KEYWORDS
-  const oppKeywords = config.opportunity_keywords || DEFAULT_OPPORTUNITY_KEYWORDS
-  const competitors = config.competitors || []
-
-  return results.map(result => {
-    const title = (result.title || '').toLowerCase()
-    const content = (result.content || result.snippet || '').toLowerCase()
-    const combined = `${title} ${content}`
-
-    let score = 0
-
-    // Organization mentioned in title: +40 points
-    if (title.includes(organization_id.toLowerCase())) {
-      score += 40
-    }
-
-    // Organization in content: +20 points
-    if (content.includes(organization_id.toLowerCase())) {
-      score += 20
-    }
-
-    // Crisis keywords: +25 points
-    const hasCrisis = crisisKeywords.some((kw: string) =>
-      combined.includes(kw.toLowerCase())
-    )
-    if (hasCrisis) score += 25
-
-    // Opportunity keywords: +20 points
-    const hasOpp = oppKeywords.some((kw: string) =>
-      combined.includes(kw.toLowerCase())
-    )
-    if (hasOpp) score += 20
-
-    // Direct competitor in title: +30 points
-    const competitorInTitle = competitors.some((comp: string) =>
-      title.includes(comp.toLowerCase())
-    )
-    if (competitorInTitle) score += 30
-
-    // Competitor in content: +15 points
-    const competitorInContent = competitors.some((comp: string) =>
-      content.includes(comp.toLowerCase())
-    )
-    if (competitorInContent && !competitorInTitle) score += 15
-
-    return {
-      ...result,
-      relevance_score: score
-    }
-  })
-}
-
-async function detectAlertsWithAI(results: any[], config: any, organization_id: string): Promise<Alert[]> {
-  if (results.length === 0) return []
-
-  // Use simple keyword detection for now (AI review would be too slow)
-  // But filter out obvious HTML/UI garbage
-  return detectAlerts(results.filter(r => isRealArticle(r)), config)
-}
-
-function isRealArticle(result: any): boolean {
-  const title = result.title || ''
-  const content = result.content || result.snippet || ''
-
-  // Filter out HTML/UI elements
-  const garbagePatterns = [
-    /^skip/i,
-    /^enable/i,
-    /navigation/i,
-    /^login/i,
-    /^register/i,
-    /^new watches/i,
-    /fortune 500$/i, // Just "Fortune 500" alone
-    /opens? in (a )?new window/i,
-    /^democracy dies/i,
-    /^creative strategy/i,
-    /trade directly/i,
-    /contest:/i,
-    /^market alerts$/i,
-    /^hardwareindustry$/i,
-    /^\d+\./,  // Just numbers like "2."
-    /^see the archives$/i,
-    /^today:/i,
-    /^!\[/  // Markdown images
-  ]
-
-  // If title matches garbage patterns, filter it out
-  if (garbagePatterns.some(pattern => pattern.test(title))) {
-    return false
-  }
-
-  // Must have meaningful content (at least 50 chars)
-  if (content.length < 50) {
-    return false
-  }
-
-  // Must have title that's not just a fragment
-  if (title.length < 15 && !title.match(/\w{3,}/)) {
-    return false
-  }
-
-  return true
-}
-
-function detectAlerts(results: any[], config: any): Alert[] {
-  const alerts: Alert[] = []
-
-  // Crisis keyword detection
-  const crisisKeywords = config.crisis_keywords || DEFAULT_CRISIS_KEYWORDS
-
-  for (const result of results) {
-    const content = (result.content || '').toLowerCase()
-    const title = (result.title || '').toLowerCase()
-
-    // Check crisis keywords
-    const matchedCrisisKeywords = crisisKeywords.filter((kw: string) =>
-      content.includes(kw.toLowerCase()) || title.includes(kw.toLowerCase())
-    )
-
-    if (matchedCrisisKeywords.length > 0) {
-      const severity = determineCrisisSeverity(matchedCrisisKeywords, content, title)
-
-      alerts.push({
-        type: 'crisis',
-        severity,
-        source: 'fireplexity',
-        title: result.title || 'Crisis Alert',
-        url: result.url || result.link,
-        content: result.content || result.snippet || '',
-        detected_at: new Date(),
-        keywords_matched: matchedCrisisKeywords,
-        query_used: result.query_used,
-        result_data: result
-      } as any)
-
-      continue // Don't check opportunity if it's a crisis
-    }
-
-    // Check opportunity keywords
-    const oppKeywords = config.opportunity_keywords || DEFAULT_OPPORTUNITY_KEYWORDS
-
-    const matchedOppKeywords = oppKeywords.filter((kw: string) =>
-      content.includes(kw.toLowerCase()) || title.includes(kw.toLowerCase())
-    )
-
-    if (matchedOppKeywords.length > 0) {
-      alerts.push({
-        type: 'opportunity',
-        severity: 'medium',
-        source: 'fireplexity',
-        title: result.title || 'Opportunity Alert',
-        url: result.url || result.link,
-        content: result.content || result.snippet || '',
-        detected_at: new Date(),
-        keywords_matched: matchedOppKeywords,
-        query_used: result.query_used,
-        result_data: result
-      } as any)
-    }
-  }
-
-  // Volume spike detection
-  if (results.length > 10) {
-    alerts.push({
-      type: 'volume_spike',
-      severity: 'high',
-      source: 'fireplexity',
-      title: `High volume: ${results.length} articles detected`,
-      content: `Unusual volume of news coverage detected in monitoring window`,
-      detected_at: new Date()
-    } as any)
-  }
-
-  return alerts
-}
-
-function determineCrisisSeverity(
-  keywords: string[],
-  content: string,
-  title: string
-): 'critical' | 'high' | 'medium' | 'low' {
-  // Critical crisis keywords
-  const critical = ['death', 'deaths', 'killed', 'explosion', 'fire', 'hack', 'hacked', 'breach']
-  if (keywords.some(kw => critical.includes(kw.toLowerCase()))) {
-    return 'critical'
-  }
-
-  // High severity keywords
-  const high = ['recall', 'lawsuit', 'investigation', 'fraud', 'scandal']
-  if (keywords.some(kw => high.includes(kw.toLowerCase()))) {
-    return 'high'
-  }
-
-  // Multiple crisis keywords = higher severity
-  if (keywords.length >= 3) {
-    return 'high'
-  }
-
-  if (keywords.length >= 2) {
-    return 'medium'
-  }
-
-  return 'medium'
-}
-
-function calculateConfidence(alert: Alert): number {
-  let confidence = 50 // Base confidence
-
-  // More matched keywords = higher confidence
-  if (alert.keywords_matched) {
-    confidence += Math.min(30, alert.keywords_matched.length * 10)
-  }
-
-  // Longer content = more context = higher confidence
-  if (alert.content && alert.content.length > 500) {
-    confidence += 10
-  }
-
-  // Has URL = more reliable source
-  if (alert.url) {
-    confidence += 10
-  }
-
-  return Math.min(100, confidence)
-}
-
-// Default keywords
-const DEFAULT_CRISIS_KEYWORDS = [
-  'recall', 'lawsuit', 'investigation', 'breach', 'scandal',
-  'fraud', 'death', 'injury', 'fire', 'explosion', 'leak',
-  'hack', 'hacked', 'cybersecurity', 'ransomware', 'outage',
-  'layoff', 'layoffs', 'bankruptcy', 'insolvent', 'crisis'
-]
-
-const DEFAULT_OPPORTUNITY_KEYWORDS = [
-  'partnership', 'merger', 'acquisition', 'funding', 'investment',
-  'expansion', 'launch', 'launches', 'winner', 'award',
-  'growth', 'revenue', 'profit', 'profitable', 'breakthrough',
-  'innovation', 'patent', 'approval', 'contract', 'deal'
-]

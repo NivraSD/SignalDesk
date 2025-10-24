@@ -20,31 +20,105 @@ export interface OrganizationContext {
 // Cache organization contexts for session persistence
 const contextCache = new Map<string, OrganizationContext>()
 
-// Master source registry for trusted news sources
-const MASTER_SOURCE_REGISTRY = {
-  tier1_business: [
-    'reuters.com',
-    'bloomberg.com',
-    'ft.com',
-    'wsj.com',
-    'businessinsider.com',
-    'fortune.com',
-    'forbes.com'
-  ],
-  tier1_tech: [
-    'techcrunch.com',
-    'theverge.com',
-    'arstechnica.com',
-    'wired.com',
-    'thenextweb.com',
-    'venturebeat.com'
-  ],
-  industry_specific: {
-    ai: ['theinformation.com', 'aiweekly.co', 'bensbites.co'],
-    crypto: ['coindesk.com', 'cointelegraph.com', 'decrypt.co'],
-    biotech: ['statnews.com', 'fiercebiotech.com', 'biopharmadive.com'],
-    fintech: ['finextra.com', 'tearsheet.co', 'bankingdive.com']
+// Cache for master-source-registry results (avoid repeated calls)
+const sourceRegistryCache = new Map<string, string[]>()
+
+/**
+ * Fetch trusted sources from master-source-registry
+ * This replaces the hardcoded 13 domains with 100+ curated sources
+ */
+async function fetchTrustedSourcesFromRegistry(industry?: string): Promise<string[]> {
+  const cacheKey = industry || 'general'
+
+  // Check cache first
+  if (sourceRegistryCache.has(cacheKey)) {
+    console.log(`📋 Using cached sources for ${cacheKey}`)
+    return sourceRegistryCache.get(cacheKey)!
   }
+
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.log('⚠️ No Supabase credentials, using fallback sources')
+      return getFallbackSources()
+    }
+
+    console.log(`📚 Fetching sources from master-source-registry for industry: ${industry || 'general'}`)
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/master-source-registry`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseKey}`
+      },
+      body: JSON.stringify({ industry: industry || 'general' })
+    })
+
+    if (!response.ok) {
+      console.log(`⚠️ Master-source-registry returned ${response.status}, using fallback`)
+      return getFallbackSources()
+    }
+
+    const data = await response.json()
+    const sources = data.data || data
+
+    // Extract domains from all source categories
+    const domains: string[] = []
+
+    // Helper to extract domain from URL
+    const extractDomain = (url: string): string | null => {
+      try {
+        const urlObj = new URL(url)
+        return urlObj.hostname.replace('www.', '')
+      } catch {
+        return null
+      }
+    }
+
+    // Process all source categories
+    const categories = ['competitive', 'media', 'regulatory', 'market', 'forward', 'specialized']
+    for (const category of categories) {
+      const categorySources = sources[category] || []
+      if (Array.isArray(categorySources)) {
+        categorySources.forEach((source: any) => {
+          if (source.url) {
+            const domain = extractDomain(source.url)
+            if (domain) domains.push(domain)
+          }
+        })
+      }
+    }
+
+    // Remove duplicates and cache
+    const uniqueDomains = [...new Set(domains)]
+    console.log(`✅ Loaded ${uniqueDomains.length} trusted source domains from master-source-registry`)
+
+    sourceRegistryCache.set(cacheKey, uniqueDomains)
+    return uniqueDomains
+
+  } catch (error) {
+    console.error('❌ Error fetching from master-source-registry:', error)
+    return getFallbackSources()
+  }
+}
+
+/**
+ * Fallback sources if master-source-registry is unavailable
+ * Uses tier-1 business and tech sources as baseline
+ */
+function getFallbackSources(): string[] {
+  console.log('📋 Using fallback tier-1 sources')
+  return [
+    // Tier 1 Business
+    'reuters.com', 'bloomberg.com', 'ft.com', 'wsj.com',
+    'businessinsider.com', 'fortune.com', 'forbes.com',
+    'cnbc.com', 'economist.com', 'marketwatch.com',
+    // Tier 1 Tech
+    'techcrunch.com', 'theverge.com', 'arstechnica.com',
+    'wired.com', 'venturebeat.com', 'theinformation.com'
+  ]
 }
 
 /**
@@ -86,7 +160,7 @@ export async function getOrganizationContext(
       indirectCompetitors: discoveryData.indirect_competitors || [],
       emergingCompetitors: discoveryData.emerging_competitors || [],
       keyWords: discoveryData.keywords || [],
-      trustedSources: extractTrustedSources(discoveryData),
+      trustedSources: await extractTrustedSources(discoveryData),
       lastUpdated: discoveryData.created_at
     }
 
@@ -113,8 +187,8 @@ async function createMinimalContext(organizationId: string): Promise<Organizatio
   // Generate smart keywords based on organization
   const keywords = generateKeywords(organizationId, industry)
 
-  // Select appropriate news sources
-  const sources = selectNewsSources(industry, subIndustry)
+  // Select appropriate news sources from master-source-registry
+  const sources = await selectNewsSources(industry, subIndustry)
 
   return {
     organizationId,
@@ -209,42 +283,46 @@ function generateKeywords(org: string, industry: string): string[] {
 
 /**
  * Select appropriate news sources based on industry
+ * Now uses master-source-registry for comprehensive coverage
  */
-function selectNewsSources(industry: string, subIndustry?: string): string[] {
-  const sources = [
-    ...MASTER_SOURCE_REGISTRY.tier1_business,
-    ...MASTER_SOURCE_REGISTRY.tier1_tech
-  ]
+async function selectNewsSources(industry: string, subIndustry?: string): Promise<string[]> {
+  // Fetch from master-source-registry with industry context
+  const sources = await fetchTrustedSourcesFromRegistry(industry)
 
-  // Add industry-specific sources
-  if (subIndustry === 'ai_ml') {
-    sources.push(...(MASTER_SOURCE_REGISTRY.industry_specific.ai || []))
-  } else if (subIndustry === 'fintech') {
-    sources.push(...(MASTER_SOURCE_REGISTRY.industry_specific.fintech || []))
-  } else if (subIndustry === 'biotech') {
-    sources.push(...(MASTER_SOURCE_REGISTRY.industry_specific.biotech || []))
-  }
+  console.log(`📰 Selected ${sources.length} trusted news sources for ${industry}${subIndustry ? ` (${subIndustry})` : ''}`)
 
-  return [...new Set(sources)] // Remove duplicates
+  return sources
 }
 
 /**
  * Extract trusted sources from Discovery data
+ * Uses master-source-registry + any custom sources from profile
  */
-function extractTrustedSources(discoveryData: any): string[] {
+async function extractTrustedSources(discoveryData: any): Promise<string[]> {
   const sources = []
 
-  // Extract from RSS feeds if available
+  // Get sources from master-source-registry based on industry
+  const registrySources = await fetchTrustedSourcesFromRegistry(discoveryData.industry)
+  sources.push(...registrySources)
+
+  // Also extract from RSS feeds if available in profile
   if (discoveryData.rss_feeds) {
-    sources.push(...discoveryData.rss_feeds.map((feed: any) =>
-      new URL(feed.url || feed).hostname.replace('www.', '')
-    ))
+    const extractDomain = (urlStr: string): string | null => {
+      try {
+        const url = new URL(urlStr)
+        return url.hostname.replace('www.', '')
+      } catch {
+        return null
+      }
+    }
+
+    discoveryData.rss_feeds.forEach((feed: any) => {
+      const domain = extractDomain(feed.url || feed)
+      if (domain) sources.push(domain)
+    })
   }
 
-  // Add default trusted sources
-  sources.push(...MASTER_SOURCE_REGISTRY.tier1_business)
-  sources.push(...MASTER_SOURCE_REGISTRY.tier1_tech)
-
+  // Remove duplicates
   return [...new Set(sources)]
 }
 

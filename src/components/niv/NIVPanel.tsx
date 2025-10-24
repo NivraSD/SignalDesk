@@ -39,7 +39,7 @@ export default function NIVPanel({ embedded = false, onCampaignGenerated, onOppo
     setMessages([{
       id: '1',
       role: 'niv',
-      content: `Hi, I'm NIV - your strategic campaign planner. What would you like to work on today?`,
+      content: `Hi, I'm NIV - how can I help you today?`,
       timestamp: new Date(),
       type: 'text'
     }])
@@ -50,14 +50,8 @@ export default function NIVPanel({ embedded = false, onCampaignGenerated, onOppo
   }
 
   useEffect(() => {
-    // Only scroll if user is near bottom (prevents scroll jumping while typing)
-    const messagesContainer = messagesEndRef.current?.parentElement
-    if (messagesContainer) {
-      const isNearBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight < 100
-      if (isNearBottom) {
-        scrollToBottom()
-      }
-    }
+    // Always scroll to bottom when new messages arrive
+    scrollToBottom()
   }, [messages])
 
   const handleSend = async (text?: string) => {
@@ -78,10 +72,10 @@ export default function NIVPanel({ embedded = false, onCampaignGenerated, onOppo
     setIsProcessing(true)
 
     try {
-      const conversationId = `niv-panel-${Date.now()}`
+      const conversationId = `niv-${Date.now()}`
 
-      // STAGE 1: Get acknowledgment
-      console.log('📨 Stage 1: Requesting acknowledgment...')
+      // Step 1: Quick acknowledgment (like Execute module)
+      console.log('🤖 Getting quick acknowledgment...')
       const ackResponse = await fetch('/api/niv-orchestrator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -89,34 +83,32 @@ export default function NIVPanel({ embedded = false, onCampaignGenerated, onOppo
           message: messageText,
           conversationId: conversationId,
           organizationId: organization?.id || '1',
-          stage: 'acknowledge',
           organizationContext: {
             name: organization?.name || 'Unknown',
-            industry: organization?.industry || 'Technology'
+            industry: organization?.industry || 'Technology',
+            competitors: organization?.competitors || []
           },
-          framework: framework || null
+          stage: 'acknowledge' // Quick acknowledgment first
         })
       })
 
-      if (!ackResponse.ok) {
-        throw new Error(`NIV acknowledgment error: ${ackResponse.status}`)
+      if (ackResponse.ok) {
+        const ackData = await ackResponse.json()
+        if (ackData.message) {
+          // Show acknowledgment message
+          const ackMessage: Message = {
+            id: (Date.now() + 0.5).toString(),
+            role: 'niv',
+            content: ackData.message,
+            timestamp: new Date(),
+            type: 'text'
+          }
+          setMessages(prev => [...prev, ackMessage])
+        }
       }
 
-      const ackData = await ackResponse.json()
-      console.log('✅ Acknowledgment received:', ackData.message)
-
-      // Show acknowledgment immediately
-      const ackMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'niv',
-        content: ackData.message || 'I understand. Let me gather that information for you.',
-        timestamp: new Date(),
-        type: 'text'
-      }
-      setMessages(prev => [...prev, ackMessage])
-
-      // STAGE 2: Get research results
-      console.log('🔍 Stage 2: Executing research...')
+      // Step 2: Full processing
+      console.log('🤖 Processing full request...')
       const response = await fetch('/api/niv-orchestrator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -124,12 +116,12 @@ export default function NIVPanel({ embedded = false, onCampaignGenerated, onOppo
           message: messageText,
           conversationId: conversationId,
           organizationId: organization?.id || '1',
-          stage: 'research',
           organizationContext: {
             name: organization?.name || 'Unknown',
-            industry: organization?.industry || 'Technology'
-          },
-          framework: framework || null
+            industry: organization?.industry || 'Technology',
+            competitors: organization?.competitors || []
+          }
+          // No stage parameter = 'full' processing
         })
       })
 
@@ -138,7 +130,7 @@ export default function NIVPanel({ embedded = false, onCampaignGenerated, onOppo
       }
 
       const data = await response.json()
-      console.log('✅ Research complete:', data)
+      console.log('✅ Processing complete:', data)
 
       // Process NIV response
       const nivMessage: Message = {
@@ -150,78 +142,90 @@ export default function NIVPanel({ embedded = false, onCampaignGenerated, onOppo
         data: data
       }
 
-      // Add actions based on response type
+      // Add actions based on response type from niv-advisor
       if (data.action) {
         nivMessage.actions = []
 
-        if (data.action.type === 'campaign_ready') {
+        // Content generation action
+        if (data.action.type === 'content_generation') {
           nivMessage.actions.push({
-            label: 'Open Campaign Planner',
+            label: 'View in Memory Vault',
             type: 'primary',
             icon: <FileText className="w-4 h-4" />,
             action: () => {
-              if (onCampaignGenerated && data.action.data.blueprint) {
+              const event = new CustomEvent('addComponentToCanvas', {
+                detail: { moduleId: 'memoryvault', action: 'window' }
+              })
+              window.dispatchEvent(event)
+            }
+          })
+        }
+
+        // Open campaign planner action
+        if (data.action.type === 'open_campaign_planner') {
+          nivMessage.actions.push({
+            label: 'Open Campaign Builder',
+            type: 'primary',
+            icon: <FileText className="w-4 h-4" />,
+            action: () => {
+              if (onCampaignGenerated && data.action.data?.blueprint) {
                 onCampaignGenerated(data.action.data.blueprint)
               }
-              // Open campaign planner component with V4 blueprint data
               const event = new CustomEvent('addComponentToCanvas', {
                 detail: {
                   moduleId: 'campaign-planner',
                   action: 'window',
-                  data: {
-                    blueprint: data.action.data.blueprint
-                  }
+                  data: data.action.data
                 }
               })
               window.dispatchEvent(event)
             }
           })
-          nivMessage.actions.push({
-            label: 'View Blueprint',
-            type: 'secondary',
-            icon: <Sparkles className="w-4 h-4" />,
-            action: () => {
-              // Show blueprint in a new message
-              const blueprintMessage: Message = {
-                id: (Date.now() + 2).toString(),
-                role: 'niv',
-                content: formatBlueprint(data.action.data.blueprint),
-                timestamp: new Date(),
-                type: 'data',
-                data: data.action.data.blueprint
-              }
-              setMessages(prev => [...prev, blueprintMessage])
-            }
-          })
         }
 
-        if (data.action.type === 'opportunities_found' && data.opportunities) {
+        // Open module action (opportunities, intelligence, execute, etc.)
+        if (data.action.type === 'open_module') {
+          const moduleId = data.action.data?.module || 'opportunities'
+          const moduleLabels: Record<string, string> = {
+            'opportunities': 'Open Opportunities',
+            'campaign-planner': 'Open Campaign Builder',
+            'intelligence': 'Open Intelligence',
+            'memoryvault': 'Open Memory Vault',
+            'execute': 'Open Execute',
+            'crisis': 'Open Crisis Management',
+            'plan': 'Open Strategic Planning'
+          }
+
           nivMessage.actions.push({
-            label: 'View Opportunities',
+            label: moduleLabels[moduleId] || 'Open Module',
             type: 'primary',
             icon: <Target className="w-4 h-4" />,
             action: () => {
-              if (onOpportunityDetected && data.opportunities) {
-                onOpportunityDetected(data.opportunities)
-              }
-              // Open opportunities tab
               const event = new CustomEvent('addComponentToCanvas', {
-                detail: { moduleId: 'opportunities', action: 'window' }
+                detail: {
+                  moduleId: moduleId,
+                  action: 'window',
+                  data: data.action.data?.context
+                }
               })
               window.dispatchEvent(event)
             }
           })
         }
 
-        if (data.action.type === 'content_ready') {
+        // Execute opportunity action (special case of open_module)
+        if (data.action.type === 'execute_opportunity') {
           nivMessage.actions.push({
-            label: 'View Content',
+            label: 'Execute Opportunity',
             type: 'primary',
             icon: <Zap className="w-4 h-4" />,
             action: () => {
-              // Open execute tab
               const event = new CustomEvent('addComponentToCanvas', {
-                detail: { moduleId: 'execute', action: 'window' }
+                detail: {
+                  moduleId: 'opportunities',
+                  action: 'window',
+                  data: { context: 'execution' }
+                }
               })
               window.dispatchEvent(event)
             }
@@ -273,27 +277,39 @@ ${blueprint.strategy?.keyMessages?.map((msg: string, i: number) => `${i + 1}. ${
 
   return (
     <div className={`flex flex-col h-full ${embedded ? 'bg-gray-900/50' : 'bg-gray-900'} ${!embedded && 'rounded-lg border border-gray-700'}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-700 bg-gradient-to-r from-purple-900/30 to-pink-900/30">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-            <Brain className="w-6 h-6 text-white" />
+      {/* Header - only show when not embedded */}
+      {!embedded && (
+        <div className="flex items-center justify-between p-4 border-b border-gray-700 bg-gradient-to-r from-purple-900/30 to-pink-900/30">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+              <Brain className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-white font-semibold">NIV - Strategic Campaign Planner</h3>
+              <p className="text-xs text-gray-400">AI-Powered Campaign Intelligence</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-white font-semibold">NIV - Strategic Campaign Planner</h3>
-            <p className="text-xs text-gray-400">AI-Powered Campaign Intelligence</p>
-          </div>
+          {currentTool && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-purple-500/20 rounded-full">
+              <Loader className="w-3 h-3 text-purple-400 animate-spin" />
+              <span className="text-xs text-purple-400">{currentTool}</span>
+            </div>
+          )}
         </div>
-        {currentTool && (
+      )}
+
+      {/* Show tool indicator when embedded */}
+      {embedded && currentTool && (
+        <div className="flex items-center justify-end px-4 py-2 border-b border-gray-700">
           <div className="flex items-center gap-2 px-3 py-1.5 bg-purple-500/20 rounded-full">
             <Loader className="w-3 h-3 text-purple-400 animate-spin" />
             <span className="text-xs text-purple-400">{currentTool}</span>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* Messages Area - flex-1 ensures it expands to fill available space */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
         {messages.map((message) => (
           <div
             key={message.id}
@@ -351,14 +367,26 @@ ${blueprint.strategy?.keyMessages?.map((msg: string, i: number) => `${i + 1}. ${
       </div>
 
       {/* Input Area */}
-      <div className="p-4 border-t border-gray-700 bg-gray-900/50">
+      <div className="flex-shrink-0 p-4 border-t border-gray-700 bg-gray-900/50">
         <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex gap-2">
-          <input
-            type="text"
+          <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={isProcessing}
             placeholder="Ask NIV about campaigns, opportunities, intelligence..."
+            rows={1}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                handleSend()
+              }
+            }}
+            style={{ resize: 'none', minHeight: '40px', maxHeight: '200px' }}
+            onInput={(e) => {
+              const target = e.target as HTMLTextAreaElement
+              target.style.height = 'auto'
+              target.style.height = Math.min(target.scrollHeight, 200) + 'px'
+            }}
             className="flex-1 px-4 py-3 bg-gray-800 text-white rounded-lg border border-gray-600 focus:border-purple-500 focus:outline-none text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           />
           <button
