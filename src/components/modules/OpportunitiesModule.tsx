@@ -416,8 +416,8 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
         if (!gammaError && gammaData?.generationId) {
           console.log('📊 Gamma started, polling...', gammaData.generationId)
 
-          // Poll for completion - increased to 24 attempts (2 minutes)
-          const maxAttempts = 24
+          // Poll for completion - increased to 72 attempts (6 minutes)
+          const maxAttempts = 72
           for (let i = 0; i < maxAttempts; i++) {
             setGenerationProgress({
               current: `Finalizing Presentation... (${i * 5}s / ${maxAttempts * 5}s)`,
@@ -427,7 +427,13 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
             await new Promise(resolve => setTimeout(resolve, 5000))
 
             const { data: statusData, error: statusError } = await supabase.functions.invoke('gamma-presentation', {
-              body: { generationId: gammaData.generationId }
+              body: {
+                generationId: gammaData.generationId,
+                capture: true,
+                organization_id: opp.organization_id || '7a2835cb-11ee-4512-acc3-b6caf8eb03ff',
+                campaign_id: opp.id,
+                title: opp.title
+              }
             })
 
             if (!statusError && statusData?.status === 'completed' && statusData.gammaUrl) {

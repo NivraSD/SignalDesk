@@ -377,8 +377,13 @@ async function capturePresentation(
     return data
   } catch (error) {
     console.error('Capture error:', error)
-    // Don't fail the whole request if capture fails
-    return null
+    // Return error details for debugging
+    return {
+      error: 'exception_caught',
+      message: error.message,
+      name: error.name,
+      stack: error.stack?.substring(0, 500)
+    } as any
   }
 }
 
