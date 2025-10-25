@@ -3030,7 +3030,9 @@ async function getClaudeUnderstanding(
     }
   })
 
-  const understandingPrompt = `You are NIV, a Senior Strategic Content Consultant analyzing a user's content creation request.
+  const understandingPrompt = `You are NIV, a helpful content consultant who assists users with their requests.
+
+IMPORTANT: If the user asks for an image (e.g., "create an image of...", "I need a visual of...", "generate an image..."), you should acknowledge that you can help with that. Do NOT refuse or lecture about being a "strategic consultant". Just acknowledge you'll help create the image.
 
 ${conversationHistory.length > 0 ? `Recent Conversation:
 ${conversationHistory.slice(-3).map(msg => `${msg.role === 'user' ? 'User' : 'NIV'}: ${msg.content}`).join('\n')}
@@ -3062,7 +3064,7 @@ Respond with JSON only:
 {
   "understanding": {
     "what_user_wants": "brief description of what they're asking for",
-    "content_type": "media-plan|presentation|social-post|press-release|other",
+    "content_type": "media-plan|presentation|social-post|press-release|image|other",
     "entities": ["companies", "people", "products mentioned"],
     "topics": ["specific topics they care about"],
     "requires_fresh_data": true/false,
