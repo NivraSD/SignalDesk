@@ -231,15 +231,24 @@ async function capturePresentation(
   pptxDownloadUrl: string | null,
   request: PresentationRequest
 ) {
+  console.log('📥 Capture function called with request:', {
+    capture: request.capture,
+    organization_id: request.organization_id,
+    campaign_id: request.campaign_id,
+    title: request.title,
+    topic: request.topic
+  })
+
   if (!request.capture || !request.organization_id) {
-    console.log('📍 Capture disabled or no organization_id provided', {
+    console.log('⛔ Capture disabled or no organization_id provided', {
       capture: request.capture,
-      org_id: request.organization_id
+      org_id: request.organization_id,
+      RETURNING_NULL: true
     })
     return null
   }
 
-  console.log('📥 Capturing presentation to SignalDesk...')
+  console.log('✅ Capture validation passed, proceeding with capture...')
 
   try {
     const presentationTitle = request.title || request.topic || 'Untitled Presentation'
@@ -548,8 +557,10 @@ async function checkGenerationStatus(generationId: string, captureRequest?: Pres
           exportUrls.view = data.gammaUrl
           exportUrls.edit = `${data.gammaUrl}/edit`
           // Check if download URLs are provided
-          if (data.pptxDownloadUrl) {
-            exportUrls.pptx = data.pptxDownloadUrl
+          // Gamma API returns 'exportUrl' field (not 'pptxDownloadUrl')
+          const pptxDownloadUrl = data.exportUrl || data.pptxDownloadUrl
+          if (pptxDownloadUrl) {
+            exportUrls.pptx = pptxDownloadUrl
           }
           if (data.pdfDownloadUrl) {
             exportUrls.pdf = data.pdfDownloadUrl
@@ -561,10 +572,11 @@ async function checkGenerationStatus(generationId: string, captureRequest?: Pres
       let capturedData = null
       if (isCompleted && captureRequest?.capture) {
         console.log('🎯 Presentation completed - triggering capture...')
+        const pptxDownloadUrl = data.exportUrl || data.pptxDownloadUrl
         capturedData = await capturePresentation(
           generationId,
           data.gammaUrl,
-          data.pptxDownloadUrl || null,
+          pptxDownloadUrl || null,
           captureRequest
         )
       }
@@ -678,13 +690,33 @@ serve(async (req) => {
       throw new Error(`Invalid JSON in request body: ${parseError.message}`)
     }
 
-    // Check if this is a POST status check (body contains ONLY generationId)
+    // Check if this is a POST status check (body contains generationId without content/topic)
     // This handles Supabase client's .invoke() which sends POST instead of GET
-    if (body.generationId && Object.keys(body).length <= 2) {
+    // Allow capture-related fields: generationId, capture, organization_id, campaign_id
+    if (body.generationId && !body.content && !body.topic && !body.framework) {
       // Status check via POST (from Supabase client)
       console.log('🔍 Status check requested via POST for generation:', body.generationId)
 
-      const captureRequest = pendingCaptures.get(body.generationId)
+      // Use capture request from pending map OR from request body
+      let captureRequest = pendingCaptures.get(body.generationId)
+      if (!captureRequest && body.capture) {
+        // Create capture request from body params
+        console.log('📋 Creating capture request from polling body:', {
+          capture: body.capture,
+          organization_id: body.organization_id,
+          campaign_id: body.campaign_id
+        })
+        captureRequest = {
+          capture: body.capture,
+          organization_id: body.organization_id,
+          campaign_id: body.campaign_id,
+          title: body.title,
+          topic: body.topic,
+          format: body.format,
+          options: body.options
+        } as any
+      }
+
       const status = await checkGenerationStatus(body.generationId, captureRequest)
 
       // If completed, clean up the pending capture

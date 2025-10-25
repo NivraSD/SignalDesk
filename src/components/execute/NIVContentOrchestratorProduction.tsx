@@ -69,13 +69,13 @@ const CONTENT_ROUTING_MAP: Record<string, {
     workflow: 'orchestrated'
   },
   'image': {
-    service: 'vertex-ai-image-generation',
+    service: 'vertex-ai-visual',
     complexity: 'simple',
     workflow: 'direct',
     api: 'vertex'
   },
   'visual': {
-    service: 'vertex-ai-image-generation',
+    service: 'vertex-ai-visual',
     complexity: 'simple',
     workflow: 'direct',
     api: 'vertex'
@@ -871,7 +871,7 @@ export default function NIVContentOrchestratorProduction({
     console.log('🎨 Routing to Vertex AI for image')
 
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/vertex-ai-image-generation`,
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/vertex-ai-visual`,
       {
         method: 'POST',
         headers: {
@@ -1312,7 +1312,7 @@ export default function NIVContentOrchestratorProduction({
     }
 
     // VERTEX RESPONSES
-    else if (routing.service === 'vertex-ai-image-generation') {
+    else if (routing.service === 'vertex-ai-visual') {
       if (response.imageUrl || response.images) {
         setMessages(prev => [...prev, {
           id: `msg-${Date.now()}`,
