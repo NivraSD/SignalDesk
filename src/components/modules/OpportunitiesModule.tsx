@@ -205,11 +205,11 @@ ${opp.strategic_context?.trigger_events?.map(e => `- ${e}`).join('\n') || 'N/A'}
 ## Execution Plan
 
 **Stakeholder Campaigns:**
-${opp.execution_plan?.stakeholder_campaigns.map(c => `
+${opp.execution_plan?.stakeholder_campaigns?.map(c => `
 ### ${c.stakeholder_name}
-- **Objective:** ${c.objective}
-- **Key Messages:** ${c.key_messages.join(', ')}
-- **Content Items:** ${c.content_items.map(i => i.type).join(', ')}
+- **Objective:** ${c.objective || 'N/A'}
+- **Key Messages:** ${c.key_messages?.join(', ') || 'N/A'}
+- **Content Items:** ${c.content_items?.map(i => i.type).join(', ') || 'N/A'}
 `).join('\n') || 'N/A'}
 
 **Timeline:**
@@ -226,7 +226,7 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
 
       try {
         await supabase.from('content_library').insert({
-          organization_id: opp.organization_id || '7a2835cb-11ee-4512-acc3-b6caf8eb03ff',
+          organization_id: organization?.id || '7a2835cb-11ee-4512-acc3-b6caf8eb03ff',
           title: `${opp.title} - Overview`,
           content: overviewContent,
           content_type: 'strategy',

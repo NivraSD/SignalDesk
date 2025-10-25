@@ -115,27 +115,99 @@ function frameworkToPresentation(framework: any, title?: string): string {
   return presentationContent
 }
 
-// Extract text content from PPTX file (simplified version - uses basic text extraction)
+// Download file from URL
+async function downloadFile(url: string): Promise<Uint8Array> {
+  console.log('📥 Downloading file from:', url)
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`Failed to download file: ${response.status} ${response.statusText}`)
+  }
+  const arrayBuffer = await response.arrayBuffer()
+  return new Uint8Array(arrayBuffer)
+}
+
+// Upload file to Supabase Storage
+async function uploadToStorage(
+  file: Uint8Array,
+  organizationId: string,
+  gammaId: string,
+  extension: string
+): Promise<string> {
+  const filePath = `presentations/${organizationId}/${gammaId}.${extension}`
+
+  console.log('📤 Uploading to Supabase Storage:', filePath)
+
+  const { data, error } = await supabase.storage
+    .from('presentations')
+    .upload(filePath, file, {
+      contentType: extension === 'pptx'
+        ? 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+        : 'application/pdf',
+      upsert: true
+    })
+
+  if (error) {
+    console.error('Storage upload error:', error)
+    throw error
+  }
+
+  // Get public URL
+  const { data: urlData } = supabase.storage
+    .from('presentations')
+    .getPublicUrl(filePath)
+
+  console.log('✅ File uploaded successfully:', urlData.publicUrl)
+  return urlData.publicUrl
+}
+
+// Extract text content from PPTX file using JSZip
 async function extractPptxContent(pptxBuffer: Uint8Array): Promise<{ fullText: string; slides: any[] }> {
   try {
-    // For now, we'll do a simple text extraction
-    // In production, you might want to use a proper PPTX parser
-    const decoder = new TextDecoder()
-    const text = decoder.decode(pptxBuffer)
+    console.log('📄 Extracting text from PPTX...')
 
-    // Simple extraction - just return the text we can find
-    // This is a placeholder - ideally use a proper PPTX parser
-    return {
-      fullText: text.substring(0, 50000), // Limit to 50KB of text
-      slides: [] // TODO: Parse actual slide structure
+    // Import JSZip dynamically
+    const JSZip = (await import('https://esm.sh/jszip@3.10.1')).default
+    const zip = await JSZip.loadAsync(pptxBuffer)
+
+    const slides: any[] = []
+    let fullText = ''
+
+    // Extract slide XMLs from ppt/slides/ folder
+    const slideFiles = Object.keys(zip.files)
+      .filter(name => name.startsWith('ppt/slides/slide') && name.endsWith('.xml'))
+      .sort()
+
+    console.log(`  Found ${slideFiles.length} slides`)
+
+    for (const slideFile of slideFiles) {
+      const xmlContent = await zip.files[slideFile].async('text')
+
+      // Extract text from XML (simplified - gets text between <a:t> tags)
+      const textMatches = xmlContent.match(/<a:t>([^<]+)<\/a:t>/g) || []
+      const slideText = textMatches
+        .map(match => match.replace(/<\/?a:t>/g, ''))
+        .join(' ')
+
+      slides.push({
+        number: slides.length + 1,
+        text: slideText,
+        file: slideFile
+      })
+
+      fullText += `\n--- Slide ${slides.length} ---\n${slideText}\n`
     }
+
+    console.log(`✅ Extracted ${fullText.length} characters from ${slides.length} slides`)
+
+    return { fullText, slides }
   } catch (error) {
     console.error('Error extracting PPTX content:', error)
+    // Return empty but don't fail the whole capture
     return { fullText: '', slides: [] }
   }
 }
 
-// Capture presentation to database (metadata only for now)
+// Capture presentation to database with full content extraction
 async function capturePresentation(
   generationId: string,
   gammaUrl: string,
@@ -150,16 +222,46 @@ async function capturePresentation(
     return null
   }
 
-  console.log('📥 Capturing presentation metadata to SignalDesk...')
+  console.log('📥 Capturing presentation to SignalDesk...')
 
   try {
     const presentationTitle = request.title || request.topic || 'Untitled Presentation'
 
-    // For now, we only capture metadata (no .pptx file download)
-    // TODO: Add .pptx download when Gamma API supports export
-    const fullText = `${presentationTitle}\n\nGamma Presentation\nGenerated: ${new Date().toISOString()}`
-    const slides: any[] = []
-    const pptxUrl = null  // Will add later when we figure out export
+    let fullText = `${presentationTitle}\n\nGamma Presentation\nGenerated: ${new Date().toISOString()}`
+    let slides: any[] = []
+    let pptxStorageUrl: string | null = null
+
+    // Download and process PPTX if URL is available
+    if (pptxDownloadUrl) {
+      console.log('📦 PPTX download URL available - processing...')
+
+      try {
+        // Download PPTX from Gamma
+        const pptxBuffer = await downloadFile(pptxDownloadUrl)
+
+        // Upload to Supabase Storage
+        pptxStorageUrl = await uploadToStorage(
+          pptxBuffer,
+          request.organization_id,
+          generationId,
+          'pptx'
+        )
+
+        // Extract text content
+        const extracted = await extractPptxContent(pptxBuffer)
+        if (extracted.fullText) {
+          fullText = `${presentationTitle}\n\n${extracted.fullText}`
+          slides = extracted.slides
+          console.log(`✅ Extracted content from ${slides.length} slides`)
+        }
+      } catch (error) {
+        console.error('Error downloading/processing PPTX:', error)
+        // Continue with metadata only
+        console.log('⚠️ Continuing with metadata only')
+      }
+    } else {
+      console.log('⚠️ No PPTX download URL provided - saving metadata only')
+    }
 
     // Store in campaign_presentations table
     const { data, error } = await supabase
@@ -172,10 +274,10 @@ async function capturePresentation(
         gamma_edit_url: `${gammaUrl}/edit`,
         title: presentationTitle,
         topic: request.topic || request.title,
-        slide_count: request.options?.numCards || request.slideCount || 10,
+        slide_count: slides.length || request.options?.numCards || request.slideCount || 10,
         full_text: fullText,
         slides: slides,
-        pptx_url: pptxUrl,
+        pptx_url: pptxStorageUrl,
         format: request.format || 'presentation',
         generation_params: {
           inputText: request.content?.substring(0, 500),
@@ -191,7 +293,42 @@ async function capturePresentation(
       throw error
     }
 
-    console.log('✅ Presentation captured to SignalDesk:', data.id)
+    console.log('✅ Presentation captured to campaign_presentations:', data.id)
+
+    // ALSO save to Memory Vault (content_library) for NIV access
+    if (fullText && fullText.length > 100) {  // Only if we have real content
+      console.log('💾 Saving to Memory Vault...')
+
+      try {
+        await supabase
+          .from('content_library')
+          .insert({
+            organization_id: request.organization_id,
+            session_id: request.campaign_id,
+            content_type: 'presentation',
+            title: presentationTitle,
+            content: fullText,
+            metadata: {
+              gamma_id: generationId,
+              gamma_url: gammaUrl,
+              slide_count: slides.length,
+              format: 'pptx',
+              slides: slides,
+              campaign_presentation_id: data.id
+            },
+            tags: ['gamma', 'presentation', 'auto-generated'],
+            status: 'final',
+            folder_path: `presentations/${presentationTitle}`,
+            file_url: pptxStorageUrl
+          })
+
+        console.log('✅ Saved to Memory Vault')
+      } catch (mvError) {
+        console.error('Error saving to Memory Vault:', mvError)
+        // Don't fail if Memory Vault save fails
+      }
+    }
+
     return data
   } catch (error) {
     console.error('Capture error:', error)
@@ -232,12 +369,12 @@ async function generatePresentation(request: PresentationRequest) {
       textMode: request.content ? 'preserve' : 'generate',
       format: request.format || 'presentation',
       numCards: request.options?.numCards || request.slideCount || (request.framework ? 12 : 10),
-      cardSplit: request.options?.cardSplit || 'auto'
-      // NOTE: exportPdfPptx is not supported in Gamma API v0.2
-      // We'll capture metadata only for now
+      cardSplit: request.options?.cardSplit || 'auto',
+      // REQUEST PPTX EXPORT - Gamma will provide download URL in status response
+      exportAs: 'pptx'
     }
 
-    // Note: Export URLs come from Gamma AFTER generation is complete
+    // Export URLs will be available in the GET /generations/{id} response when completed
 
     // Add theme only if specified (let Gamma use workspace default otherwise)
     if (request.options?.themeName && request.options.themeName !== 'auto') {
