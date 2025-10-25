@@ -94,7 +94,7 @@ export default function MemoryVaultModule() {
   const [newFolderParent, setNewFolderParent] = useState<string>('')
   const [showExportDialog, setShowExportDialog] = useState(false)
   const [itemToExport, setItemToExport] = useState<ContentItem | null>(null)
-  const [exportMode, setExportMode] = useState<'basic' | 'template'>('basic')
+  const [exportMode, setExportMode] = useState<'basic' | 'attach'>('basic')
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('')
   const [mergingTemplate, setMergingTemplate] = useState(false)
 
@@ -585,6 +585,71 @@ export default function MemoryVaultModule() {
     }
   }
 
+  // Attach content to template (no placeholders)
+  const handleAttachToTemplate = async (item: ContentItem, templateId: string) => {
+    if (!templateId) {
+      alert('Please select a template')
+      return
+    }
+
+    setMergingTemplate(true)
+    try {
+      const response = await fetch('/api/content-library/attach-to-template', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contentId: item.id,
+          templateId
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Attach failed')
+      }
+
+      // Download the file
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+
+      const contentDisposition = response.headers.get('Content-Disposition')
+      const filename = contentDisposition
+        ? contentDisposition.split('filename=')[1].replace(/"/g, '')
+        : `${item.title.replace(/[^a-z0-9]/gi, '_')}_attached.docx`
+
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+
+      console.log(`✅ Attached to template: ${filename}`)
+
+      // Update template usage count
+      const asset = brandAssets.find(a => a.id === templateId)
+      if (asset) {
+        await supabase
+          .from('brand_assets')
+          .update({
+            usage_count: (asset.usage_count || 0) + 1,
+            last_used_at: new Date().toISOString()
+          })
+          .eq('id', templateId)
+
+        await fetchBrandAssets()
+      }
+    } catch (error) {
+      console.error('❌ Template attach error:', error)
+      alert(`Failed to attach to template: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setMergingTemplate(false)
+    }
+  }
+
   // Merge content with template
   const handleMergeTemplate = async (item: ContentItem, templateId: string) => {
     if (!templateId) {
@@ -965,10 +1030,10 @@ export default function MemoryVaultModule() {
             <p className="text-sm text-gray-400 mb-4">Exporting: {itemToExport.title}</p>
 
             {/* Mode Tabs */}
-            <div className="flex gap-2 mb-4">
+            <div className="grid grid-cols-2 gap-2 mb-4">
               <button
                 onClick={() => setExportMode('basic')}
-                className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${
+                className={`px-4 py-2 rounded-lg font-medium transition-all ${
                   exportMode === 'basic'
                     ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
                     : 'bg-gray-800/50 text-gray-400 hover:bg-gray-800'
@@ -977,14 +1042,14 @@ export default function MemoryVaultModule() {
                 Basic Export
               </button>
               <button
-                onClick={() => setExportMode('template')}
-                className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${
-                  exportMode === 'template'
+                onClick={() => setExportMode('attach')}
+                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                  exportMode === 'attach'
                     ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
                     : 'bg-gray-800/50 text-gray-400 hover:bg-gray-800'
                 }`}
               >
-                Merge Template
+                Use Template
               </button>
             </div>
 
@@ -1030,9 +1095,14 @@ export default function MemoryVaultModule() {
               </div>
             )}
 
-            {/* Template Merge Options */}
-            {exportMode === 'template' && (
+            {/* Use Template - Attach to existing templates */}
+            {exportMode === 'attach' && (
               <div className="space-y-4 mb-6">
+                <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                  <p className="text-xs text-green-300">
+                    <strong>Use Template:</strong> Appends your content to your branded template (letterhead, presentation, etc.). Your content will be added to the end of the document for easy editing.
+                  </p>
+                </div>
                 <div>
                   <label className="text-sm text-gray-400 mb-2 block">Select Brand Template</label>
                   {brandAssets.filter(a => a.asset_type.startsWith('template-')).length === 0 ? (
@@ -1070,7 +1140,7 @@ export default function MemoryVaultModule() {
 
                 <button
                   onClick={async () => {
-                    await handleMergeTemplate(itemToExport, selectedTemplateId)
+                    await handleAttachToTemplate(itemToExport, selectedTemplateId)
                     setShowExportDialog(false)
                     setItemToExport(null)
                     setSelectedTemplateId('')
@@ -1082,10 +1152,10 @@ export default function MemoryVaultModule() {
                   {mergingTemplate ? (
                     <span className="flex items-center justify-center gap-2">
                       <Loader className="w-4 h-4 animate-spin" />
-                      Merging...
+                      Processing...
                     </span>
                   ) : (
-                    'Merge & Download'
+                    'Download with Template'
                   )}
                 </button>
               </div>
