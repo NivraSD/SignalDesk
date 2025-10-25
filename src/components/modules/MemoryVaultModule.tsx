@@ -31,6 +31,15 @@ interface ContentItem {
   content_signature?: string
   created_at: string
   organization_id: string
+  // Execution tracking
+  executed?: boolean
+  executed_at?: string
+  result?: {
+    type: 'media_response' | 'engagement' | 'pickup' | 'other'
+    value?: string | number
+    notes?: string
+  }
+  feedback?: string
 }
 
 interface BrandAsset {
@@ -46,12 +55,19 @@ interface BrandAsset {
 }
 
 interface AnalyticsData {
-  avgSaveTime: number
-  pendingJobs: number
-  completionRate: number
-  workerActive: boolean
   totalContent: number
+  executedContent: number
+  executionRate: number
   contentByType: Record<string, number>
+  executionByType: Record<string, { total: number; executed: number }>
+  resultsByType: Record<string, number>
+  recentExecutions: Array<{
+    id: string
+    title: string
+    content_type: string
+    executed_at: string
+    result?: any
+  }>
 }
 
 interface FolderNode {
@@ -106,14 +122,19 @@ export default function MemoryVaultModule() {
 
   // Analytics State
   const [analytics, setAnalytics] = useState<AnalyticsData>({
-    avgSaveTime: 0,
-    pendingJobs: 0,
-    completionRate: 0,
-    workerActive: false,
     totalContent: 0,
-    contentByType: {}
+    executedContent: 0,
+    executionRate: 0,
+    contentByType: {},
+    executionByType: {},
+    resultsByType: {},
+    recentExecutions: []
   })
   const [loadingAnalytics, setLoadingAnalytics] = useState(false)
+
+  // Execution tracking state
+  const [editingResultFor, setEditingResultFor] = useState<string | null>(null)
+  const [executingAction, setExecutingAction] = useState(false)
 
   // Build folder tree from flat list
   const buildFolderTree = (items: ContentItem[]): FolderNode[] => {
@@ -253,67 +274,186 @@ export default function MemoryVaultModule() {
     }
   }
 
-  // Fetch Analytics
+  // Fetch Analytics - Campaign Performance Focus
   const fetchAnalytics = async () => {
     if (!organization?.id) return
 
     setLoadingAnalytics(true)
     try {
-      const { data: perfData } = await supabase
-        .from('performance_metrics')
-        .select('*')
-        .eq('metric_type', 'save_time')
-        .gte('created_at', new Date(Date.now() - 3600000).toISOString())
-
-      const avgSaveTime = perfData?.length
-        ? perfData.reduce((sum, m) => sum + m.metric_value, 0) / perfData.length
-        : 0
-
-      const { data: jobData } = await supabase
-        .from('job_queue')
-        .select('status')
-        .eq('status', 'pending')
-
       const { data: contentData } = await supabase
         .from('content_library')
-        .select('content_type, intelligence_status')
+        .select('id, title, content_type, executed, executed_at, result, folder')
         .eq('organization_id', organization.id)
 
       const contentByType: Record<string, number> = {}
-      let completeCount = 0
+      const executionByType: Record<string, { total: number; executed: number }> = {}
+      const resultsByType: Record<string, number> = {}
+      let executedCount = 0
 
       contentData?.forEach(item => {
+        // Count by type
         contentByType[item.content_type] = (contentByType[item.content_type] || 0) + 1
-        if (item.intelligence_status === 'complete') completeCount++
+
+        // Track execution by type
+        if (!executionByType[item.content_type]) {
+          executionByType[item.content_type] = { total: 0, executed: 0 }
+        }
+        executionByType[item.content_type].total++
+
+        if (item.executed) {
+          executedCount++
+          executionByType[item.content_type].executed++
+
+          // Count results by type
+          if (item.result?.type) {
+            resultsByType[item.result.type] = (resultsByType[item.result.type] || 0) + 1
+          }
+        }
       })
 
-      const completionRate = contentData?.length
-        ? (completeCount / contentData.length) * 100
+      // Get recent executions
+      const { data: recentExecutions } = await supabase
+        .from('content_library')
+        .select('id, title, content_type, executed_at, result')
+        .eq('organization_id', organization.id)
+        .eq('executed', true)
+        .order('executed_at', { ascending: false })
+        .limit(10)
+
+      const executionRate = contentData?.length
+        ? (executedCount / contentData.length) * 100
         : 0
 
-      const { data: workerData } = await supabase
-        .from('job_queue')
-        .select('completed_at')
-        .eq('status', 'completed')
-        .order('completed_at', { ascending: false })
-        .limit(1)
-
-      const workerActive = workerData?.[0]?.completed_at
-        ? new Date(workerData[0].completed_at) > new Date(Date.now() - 300000)
-        : false
-
       setAnalytics({
-        avgSaveTime: Math.round(avgSaveTime),
-        pendingJobs: jobData?.length || 0,
-        completionRate: Math.round(completionRate),
-        workerActive,
         totalContent: contentData?.length || 0,
-        contentByType
+        executedContent: executedCount,
+        executionRate: Math.round(executionRate),
+        contentByType,
+        executionByType,
+        resultsByType,
+        recentExecutions: recentExecutions || []
       })
     } catch (error) {
       console.error('Error fetching analytics:', error)
     } finally {
       setLoadingAnalytics(false)
+    }
+  }
+
+  // Get content-type specific result field configuration
+  const getResultFieldForType = (contentType: string): { label: string; placeholder: string; resultType: string } => {
+    const resultFields: Record<string, { label: string; placeholder: string; resultType: string }> = {
+      'media-pitch': { label: 'Response', placeholder: 'e.g., Replied, No response, Meeting scheduled', resultType: 'media_response' },
+      'thought-leadership': { label: 'Engagement', placeholder: 'e.g., Views, Shares, Comments', resultType: 'engagement' },
+      'social-post': { label: 'Engagement', placeholder: 'e.g., Likes, Comments, Shares', resultType: 'engagement' },
+      'press-release': { label: 'Media Pickup', placeholder: 'e.g., Number of outlets, Coverage quality', resultType: 'pickup' },
+      'user-action': { label: 'Result', placeholder: 'Enter result or outcome', resultType: 'other' }
+    }
+    return resultFields[contentType] || { label: 'Result', placeholder: 'Enter result', resultType: 'other' }
+  }
+
+  // Handle marking content as executed/not executed
+  const handleToggleExecuted = async (item: ContentItem, executed: boolean) => {
+    setExecutingAction(true)
+    try {
+      const { error } = await supabase
+        .from('content_library')
+        .update({
+          executed,
+          executed_at: executed ? new Date().toISOString() : null
+        })
+        .eq('id', item.id)
+
+      if (error) throw error
+
+      // Update local state
+      setContentItems(prev => {
+        const updated = prev.map(i =>
+          i.id === item.id ? { ...i, executed, executed_at: executed ? new Date().toISOString() : undefined } : i
+        )
+        setFolderTree(buildFolderTree(updated))
+        return updated
+      })
+
+      if (selectedContent?.id === item.id) {
+        setSelectedContent({ ...item, executed, executed_at: executed ? new Date().toISOString() : undefined })
+      }
+    } catch (error) {
+      console.error('Error toggling execution status:', error)
+      alert('Failed to update execution status')
+    } finally {
+      setExecutingAction(false)
+    }
+  }
+
+  // Handle updating result data
+  const handleUpdateResult = async (item: ContentItem, resultValue: string, resultNotes: string) => {
+    setExecutingAction(true)
+    try {
+      const resultField = getResultFieldForType(item.content_type)
+      const resultData = {
+        type: resultField.resultType as 'media_response' | 'engagement' | 'pickup' | 'other',
+        value: resultValue,
+        notes: resultNotes
+      }
+
+      const { error } = await supabase
+        .from('content_library')
+        .update({ result: resultData })
+        .eq('id', item.id)
+
+      if (error) throw error
+
+      // Update local state
+      setContentItems(prev => {
+        const updated = prev.map(i =>
+          i.id === item.id ? { ...i, result: resultData } : i
+        )
+        setFolderTree(buildFolderTree(updated))
+        return updated
+      })
+
+      if (selectedContent?.id === item.id) {
+        setSelectedContent({ ...item, result: resultData })
+      }
+
+      setEditingResultFor(null)
+    } catch (error) {
+      console.error('Error updating result:', error)
+      alert('Failed to update result')
+    } finally {
+      setExecutingAction(false)
+    }
+  }
+
+  // Handle updating feedback
+  const handleUpdateFeedback = async (item: ContentItem, feedback: string) => {
+    setExecutingAction(true)
+    try {
+      const { error } = await supabase
+        .from('content_library')
+        .update({ feedback })
+        .eq('id', item.id)
+
+      if (error) throw error
+
+      // Update local state
+      setContentItems(prev => {
+        const updated = prev.map(i =>
+          i.id === item.id ? { ...i, feedback } : i
+        )
+        setFolderTree(buildFolderTree(updated))
+        return updated
+      })
+
+      if (selectedContent?.id === item.id) {
+        setSelectedContent({ ...item, feedback })
+      }
+    } catch (error) {
+      console.error('Error updating feedback:', error)
+      alert('Failed to update feedback')
+    } finally {
+      setExecutingAction(false)
     }
   }
 
@@ -878,6 +1018,13 @@ export default function MemoryVaultModule() {
               e.preventDefault()
               setContextMenu({ x: e.clientX, y: e.clientY, item })
             }}
+            onToggleExecuted={handleToggleExecuted}
+            onUpdateResult={handleUpdateResult}
+            onUpdateFeedback={handleUpdateFeedback}
+            editingResultFor={editingResultFor}
+            setEditingResultFor={setEditingResultFor}
+            executingAction={executingAction}
+            getResultFieldForType={getResultFieldForType}
           />
         )}
 
@@ -1193,7 +1340,14 @@ function ContentLibraryTab({
   onExport,
   onCreateFolder,
   loading,
-  onContextMenu
+  onContextMenu,
+  onToggleExecuted,
+  onUpdateResult,
+  onUpdateFeedback,
+  editingResultFor,
+  setEditingResultFor,
+  executingAction,
+  getResultFieldForType
 }: {
   folderTree: FolderNode[]
   selectedContent: ContentItem | null
@@ -1208,7 +1362,28 @@ function ContentLibraryTab({
   onCreateFolder: () => void
   loading: boolean
   onContextMenu: (e: React.MouseEvent, item: ContentItem) => void
+  onToggleExecuted: (item: ContentItem, executed: boolean) => Promise<void>
+  onUpdateResult: (item: ContentItem, resultValue: string, resultNotes: string) => Promise<void>
+  onUpdateFeedback: (item: ContentItem, feedback: string) => Promise<void>
+  editingResultFor: string | null
+  setEditingResultFor: (id: string | null) => void
+  executingAction: boolean
+  getResultFieldForType: (contentType: string) => { label: string; placeholder: string; resultType: string }
 }) {
+  // Local state for result form
+  const [resultValue, setResultValue] = useState('')
+  const [resultNotes, setResultNotes] = useState('')
+  const [feedbackText, setFeedbackText] = useState('')
+
+  // Reset form when selected content changes
+  useEffect(() => {
+    if (selectedContent) {
+      setResultValue(selectedContent.result?.value?.toString() || '')
+      setResultNotes(selectedContent.result?.notes || '')
+      setFeedbackText(selectedContent.feedback || '')
+    }
+  }, [selectedContent?.id])
+
   // Filter items by search
   const filterItems = (items: ContentItem[]): ContentItem[] => {
     if (!searchQuery) return items
@@ -1386,6 +1561,109 @@ function ContentLibraryTab({
               </div>
 
               <StatusBadge status={selectedContent.intelligence_status} size="lg" />
+            </div>
+
+            {/* Execution Tracking Section */}
+            <div className="mb-6 p-4 bg-gradient-to-br from-emerald-500/5 to-emerald-500/10 border border-emerald-500/20 rounded-lg">
+              <h3 className="font-semibold text-emerald-400 mb-4 flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" />
+                Execution Tracking
+                {selectedContent.executed && (
+                  <span className="text-xs px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/30">
+                    ✓ Complete
+                  </span>
+                )}
+              </h3>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 mb-4">
+                <button
+                  onClick={() => onOpenInWorkspace(selectedContent)}
+                  className="px-3 py-1 rounded text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1"
+                >
+                  <Eye className="w-3 h-3" />
+                  View Content
+                </button>
+                {!selectedContent.executed && (
+                  <button
+                    onClick={() => onToggleExecuted(selectedContent, true)}
+                    disabled={executingAction}
+                    className="px-3 py-1 rounded text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
+                  >
+                    Mark as Complete
+                  </button>
+                )}
+                {selectedContent.executed && (
+                  <button
+                    onClick={() => setEditingResultFor(editingResultFor === selectedContent.id ? null : selectedContent.id)}
+                    className="px-3 py-1 rounded text-xs font-medium bg-purple-600 text-white hover:bg-purple-700"
+                  >
+                    {editingResultFor === selectedContent.id ? 'Hide Result' : 'Result'}
+                  </button>
+                )}
+              </div>
+
+              {/* Result Form (collapsible) */}
+              {selectedContent.executed && editingResultFor === selectedContent.id && (
+                <div className="space-y-3 p-3 bg-gray-900/50 rounded-lg border border-gray-800">
+                  <div>
+                    <label className="text-xs text-gray-400 mb-1 block">
+                      {getResultFieldForType(selectedContent.content_type).label}
+                    </label>
+                    <input
+                      type="text"
+                      value={resultValue}
+                      onChange={(e) => setResultValue(e.target.value)}
+                      placeholder={getResultFieldForType(selectedContent.content_type).placeholder}
+                      className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-400 mb-1 block">Notes</label>
+                    <textarea
+                      value={resultNotes}
+                      onChange={(e) => setResultNotes(e.target.value)}
+                      placeholder="Additional context or details..."
+                      className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 min-h-[60px]"
+                    />
+                  </div>
+                  <button
+                    onClick={() => onUpdateResult(selectedContent, resultValue, resultNotes)}
+                    disabled={executingAction}
+                    className="w-full px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm font-medium disabled:opacity-50"
+                  >
+                    {executingAction ? 'Saving...' : 'Save Result'}
+                  </button>
+                </div>
+              )}
+
+              {/* Feedback Section */}
+              <div className="mt-4">
+                <label className="text-xs text-gray-400 mb-1 block">Additional Feedback</label>
+                <textarea
+                  value={feedbackText}
+                  onChange={(e) => setFeedbackText(e.target.value)}
+                  onBlur={() => {
+                    if (feedbackText !== selectedContent.feedback) {
+                      onUpdateFeedback(selectedContent, feedbackText)
+                    }
+                  }}
+                  placeholder="Share your thoughts on this content's performance or usage..."
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 min-h-[80px]"
+                />
+                <p className="text-xs text-gray-500 mt-1">Auto-saves when you click away</p>
+              </div>
+
+              {/* Current Status Display */}
+              {selectedContent.result && (
+                <div className="mt-4 p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+                  <p className="text-xs text-purple-300 mb-1 font-medium">Current Result:</p>
+                  <p className="text-sm text-white">{selectedContent.result.value}</p>
+                  {selectedContent.result.notes && (
+                    <p className="text-xs text-gray-400 mt-1">{selectedContent.result.notes}</p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Intelligence Section */}
@@ -1675,7 +1953,7 @@ function BrandAssetsTab({
   )
 }
 
-// Analytics Tab Component (keeping existing)
+// Analytics Tab Component - Campaign Performance Focus
 function AnalyticsTab({
   data,
   loading,
@@ -1689,7 +1967,10 @@ function AnalyticsTab({
     <div className="h-full overflow-y-auto p-6">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-white">System Analytics</h2>
+          <div>
+            <h2 className="text-2xl font-bold text-white">Campaign Performance</h2>
+            <p className="text-sm text-gray-400 mt-1">Track execution and results across your content</p>
+          </div>
           <button
             onClick={onRefresh}
             disabled={loading}
@@ -1700,58 +1981,120 @@ function AnalyticsTab({
           </button>
         </div>
 
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        {/* Key Metrics */}
+        <div className="grid grid-cols-3 gap-4 mb-6">
           <MetricCard
-            title="Avg Save Time"
-            value={`${data.avgSaveTime}ms`}
-            status={data.avgSaveTime < 200 ? 'success' : data.avgSaveTime < 500 ? 'warning' : 'error'}
-            target="< 200ms"
-            icon={<Zap className="w-5 h-5" />}
+            title="Total Content"
+            value={data.totalContent}
+            status="success"
+            target={`${data.executedContent} executed`}
+            icon={<FileText className="w-5 h-5" />}
           />
           <MetricCard
-            title="Pending Jobs"
-            value={data.pendingJobs}
-            status={data.pendingJobs < 50 ? 'success' : data.pendingJobs < 100 ? 'warning' : 'error'}
-            target="< 100"
-            icon={<TrendingUp className="w-5 h-5" />}
-          />
-          <MetricCard
-            title="Completion Rate"
-            value={`${data.completionRate}%`}
-            status={data.completionRate > 90 ? 'success' : data.completionRate > 70 ? 'warning' : 'error'}
-            target="> 90%"
+            title="Execution Rate"
+            value={`${data.executionRate}%`}
+            status={data.executionRate > 50 ? 'success' : data.executionRate > 25 ? 'warning' : 'error'}
+            target="> 50%"
             icon={<CheckCircle className="w-5 h-5" />}
           />
           <MetricCard
-            title="Worker Status"
-            value={data.workerActive ? 'Active' : 'Inactive'}
-            status={data.workerActive ? 'success' : 'error'}
-            target="Active"
-            icon={<Activity className="w-5 h-5" />}
+            title="Executed Content"
+            value={data.executedContent}
+            status={data.executedContent > 0 ? 'success' : 'warning'}
+            target={`${data.totalContent - data.executedContent} pending`}
+            icon={<TrendingUp className="w-5 h-5" />}
           />
         </div>
 
-        <div className="p-6 bg-gray-900/50 border border-gray-800 rounded-lg">
-          <h3 className="font-semibold text-white mb-4">Content by Type</h3>
+        {/* Execution by Content Type */}
+        <div className="p-6 bg-gray-900/50 border border-gray-800 rounded-lg mb-6">
+          <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-blue-400" />
+            Execution by Content Type
+          </h3>
           <div className="space-y-3">
-            {Object.entries(data.contentByType).map(([type, count]) => (
-              <div key={type} className="flex items-center justify-between">
-                <span className="text-gray-300 capitalize">{type.replace(/-/g, ' ')}</span>
-                <div className="flex items-center gap-3">
-                  <div className="w-32 h-2 bg-gray-800 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-orange-500 to-pink-500"
-                      style={{
-                        width: `${(count / data.totalContent) * 100}%`
-                      }}
-                    />
+            {Object.entries(data.executionByType).map(([type, stats]) => {
+              const executionPct = stats.total > 0 ? (stats.executed / stats.total) * 100 : 0
+              return (
+                <div key={type} className="flex items-center justify-between">
+                  <span className="text-gray-300 capitalize min-w-[150px]">{type.replace(/-/g, ' ')}</span>
+                  <div className="flex items-center gap-3 flex-1">
+                    <div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-emerald-500 to-green-500"
+                        style={{ width: `${executionPct}%` }}
+                      />
+                    </div>
+                    <span className="text-white font-medium w-24 text-right text-sm">
+                      {stats.executed}/{stats.total} ({Math.round(executionPct)}%)
+                    </span>
                   </div>
-                  <span className="text-white font-medium w-12 text-right">{count}</span>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
+
+        {/* Results Breakdown */}
+        {Object.keys(data.resultsByType).length > 0 && (
+          <div className="p-6 bg-gray-900/50 border border-gray-800 rounded-lg mb-6">
+            <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-purple-400" />
+              Results by Type
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              {Object.entries(data.resultsByType).map(([type, count]) => (
+                <div key={type} className="p-4 bg-gradient-to-br from-purple-500/5 to-purple-500/10 border border-purple-500/20 rounded-lg">
+                  <div className="text-sm text-gray-400 capitalize mb-1">{type.replace(/_/g, ' ')}</div>
+                  <div className="text-2xl font-bold text-white">{count}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Recent Executions */}
+        {data.recentExecutions.length > 0 && (
+          <div className="p-6 bg-gray-900/50 border border-gray-800 rounded-lg">
+            <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+              <Clock className="w-5 h-5 text-orange-400" />
+              Recent Executions
+            </h3>
+            <div className="space-y-2">
+              {data.recentExecutions.map(item => (
+                <div key={item.id} className="p-3 bg-gray-800/50 rounded-lg hover:bg-gray-800 transition-colors">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <div className="font-medium text-white text-sm">{item.title}</div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs px-2 py-0.5 bg-gray-700 rounded text-gray-300">
+                          {item.content_type}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {new Date(item.executed_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      {item.result?.value && (
+                        <div className="text-xs text-purple-300 mt-1">
+                          Result: {item.result.value}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {data.executedContent === 0 && (
+          <div className="text-center py-12">
+            <TrendingUp className="w-16 h-16 mx-auto mb-4 text-gray-600 opacity-50" />
+            <h3 className="text-lg font-medium text-gray-400 mb-2">No Content Executed Yet</h3>
+            <p className="text-sm text-gray-500">Mark content as complete to start tracking campaign performance</p>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -839,12 +839,21 @@ export default function StrategicPlanningModuleV3Complete({
       i.id === itemId ? { ...i, executed, executedAt: executed ? new Date() : undefined } : i
     ))
 
+    const updateData = {
+      executed,
+      executed_at: executed ? new Date().toISOString() : null
+    }
+
+    // Update campaign_execution_items
     await supabase
       .from('campaign_execution_items')
-      .update({
-        executed,
-        executed_at: executed ? new Date().toISOString() : null
-      })
+      .update(updateData)
+      .eq('id', itemId)
+
+    // Also update content_library for Memory Vault analytics
+    await supabase
+      .from('content_library')
+      .update(updateData)
       .eq('id', itemId)
   }
 
@@ -858,11 +867,20 @@ export default function StrategicPlanningModuleV3Complete({
       i.id === itemId ? { ...i, result: { type: resultField.resultType as any, value: resultValue, notes: resultNotes } } : i
     ))
 
+    const resultData = {
+      result: { type: resultField.resultType, value: resultValue, notes: resultNotes }
+    }
+
+    // Update campaign_execution_items
     await supabase
       .from('campaign_execution_items')
-      .update({
-        result: { type: resultField.resultType, value: resultValue, notes: resultNotes }
-      })
+      .update(resultData)
+      .eq('id', itemId)
+
+    // Also update content_library for Memory Vault analytics
+    await supabase
+      .from('content_library')
+      .update(resultData)
       .eq('id', itemId)
   }
 
