@@ -185,7 +185,7 @@ async function testGeneration(opportunityId) {
   return data.generationId
 }
 
-async function testPollingAndExport(generationId) {
+async function testPollingAndExport(generationId, opportunityId) {
   console.log('\n' + '='.repeat(80))
   console.log('TEST 2: Polling & PPTX Export')
   console.log('='.repeat(80))
@@ -199,8 +199,14 @@ async function testPollingAndExport(generationId) {
 
     await new Promise(resolve => setTimeout(resolve, 5000))
 
+    // Include capture params when polling so Edge function can reconstruct capture request
     const { data: status, error } = await supabase.functions.invoke('gamma-presentation', {
-      body: { generationId }
+      body: {
+        generationId,
+        capture: true,
+        organization_id: ORGANIZATION_ID,
+        campaign_id: opportunityId
+      }
     })
 
     if (error) {
@@ -481,7 +487,7 @@ async function runTests() {
       return
     }
 
-    const status = await testPollingAndExport(generationId)
+    const status = await testPollingAndExport(generationId, opportunityId)
     if (!status) {
       console.error('❌ Generation did not complete successfully')
       return

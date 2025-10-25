@@ -570,8 +570,14 @@ async function checkGenerationStatus(generationId: string, captureRequest?: Pres
 
       // NEW: Capture presentation if completed and capture was requested
       let capturedData = null
+      let captureDebug: any = {
+        attempted: false,
+        reason: null
+      }
+
       if (isCompleted && captureRequest?.capture) {
         console.log('🎯 Presentation completed - triggering capture...')
+        captureDebug.attempted = true
         const pptxDownloadUrl = data.exportUrl || data.pptxDownloadUrl
         capturedData = await capturePresentation(
           generationId,
@@ -579,6 +585,11 @@ async function checkGenerationStatus(generationId: string, captureRequest?: Pres
           pptxDownloadUrl || null,
           captureRequest
         )
+        if (!capturedData) {
+          captureDebug.reason = 'capturePresentation returned null'
+        }
+      } else {
+        captureDebug.reason = `isCompleted=${isCompleted}, captureRequest=${!!captureRequest}, captureRequest.capture=${captureRequest?.capture}`
       }
 
       return {
@@ -590,7 +601,8 @@ async function checkGenerationStatus(generationId: string, captureRequest?: Pres
         credits: data.credits || {},  // Credit usage info
         message: data.message || (isCompleted ? 'Presentation ready!' : 'Still generating...'),
         captured: capturedData ? true : false,
-        capturedId: capturedData?.id || null
+        capturedId: capturedData?.id || null,
+        captureDebug: captureDebug  // Debug info
       }
     } else if (response.status === 404) {
       // Generation not found

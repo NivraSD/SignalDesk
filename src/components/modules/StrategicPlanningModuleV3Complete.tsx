@@ -52,7 +52,7 @@ interface InfluenceLever {
 
 interface ContentItem {
   id: string
-  type: 'media_pitch' | 'social_post' | 'thought_leadership' | 'user_action'
+  type: 'media_pitch' | 'social_post' | 'thought_leadership' | 'user_action' | 'press_release'
   stakeholder: string
   stakeholderPriority: number
   leverName: string
@@ -64,6 +64,14 @@ interface ContentItem {
   generatedContent?: string
   generationError?: string
   generatedAt?: Date
+  // Execution tracking
+  executed?: boolean
+  executedAt?: Date
+  result?: {
+    type: 'media_response' | 'engagement' | 'pickup' | 'other'
+    value?: string | number
+    notes?: string
+  }
 }
 
 interface StrategicPlanningModuleV3Props {
@@ -72,7 +80,7 @@ interface StrategicPlanningModuleV3Props {
   orgId: string
 }
 
-type ViewMode = 'execution' | 'planning' | 'blueprint' | 'progress'
+type ViewMode = 'execution' | 'blueprint' | 'progress'
 
 export default function StrategicPlanningModuleV3Complete({
   blueprint: initialBlueprint,
@@ -825,6 +833,38 @@ export default function StrategicPlanningModuleV3Complete({
     setExpandedStakeholders(newExpanded)
   }
 
+  const handleToggleExecuted = async (itemId: string, executed: boolean) => {
+    setContentItems(prev => prev.map(i =>
+      i.id === itemId ? { ...i, executed, executedAt: executed ? new Date() : undefined } : i
+    ))
+
+    await supabase
+      .from('campaign_execution_items')
+      .update({
+        executed,
+        executed_at: executed ? new Date().toISOString() : null
+      })
+      .eq('id', itemId)
+  }
+
+  const handleUpdateResult = async (itemId: string, resultValue: string, resultNotes: string) => {
+    const item = contentItems.find(i => i.id === itemId)
+    if (!item) return
+
+    const resultField = getResultFieldForType(item.type)
+
+    setContentItems(prev => prev.map(i =>
+      i.id === itemId ? { ...i, result: { type: resultField.resultType as any, value: resultValue, notes: resultNotes } } : i
+    ))
+
+    await supabase
+      .from('campaign_execution_items')
+      .update({
+        result: { type: resultField.resultType, value: resultValue, notes: resultNotes }
+      })
+      .eq('id', itemId)
+  }
+
   const getStatusIcon = (status: ContentItem['status']) => {
     const icons = {
       pending: <div className="w-2 h-2 rounded-full bg-gray-400" />,
@@ -841,9 +881,21 @@ export default function StrategicPlanningModuleV3Complete({
       media_pitch: { label: 'Media Pitch', icon: '📰', color: 'emerald' },
       social_post: { label: 'Social Post', icon: '📱', color: 'blue' },
       thought_leadership: { label: 'Thought Leadership', icon: '✍️', color: 'purple' },
+      press_release: { label: 'Press Release', icon: '📄', color: 'cyan' },
       user_action: { label: 'User Action Required', icon: '👤', color: 'amber' }
     }
     return types[type]
+  }
+
+  const getResultFieldForType = (type: ContentItem['type']): { label: string; placeholder: string; resultType: string } => {
+    const resultFields = {
+      media_pitch: { label: 'Response', placeholder: 'e.g., Replied, No response, Meeting scheduled', resultType: 'media_response' },
+      thought_leadership: { label: 'Engagement', placeholder: 'e.g., Views, Shares, Comments', resultType: 'engagement' },
+      social_post: { label: 'Engagement', placeholder: 'e.g., Likes, Comments, Shares', resultType: 'engagement' },
+      press_release: { label: 'Media Pickup', placeholder: 'e.g., Number of outlets, Coverage quality', resultType: 'pickup' },
+      user_action: { label: 'Result', placeholder: 'Enter result or outcome', resultType: 'other' }
+    }
+    return resultFields[type] || { label: 'Result', placeholder: 'Enter result', resultType: 'other' }
   }
 
   const priorityColors: Record<number, string> = {
@@ -959,17 +1011,6 @@ export default function StrategicPlanningModuleV3Complete({
             >
               <Target className="w-4 h-4" />
               Execution
-            </button>
-            <button
-              onClick={() => setViewMode('planning')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                viewMode === 'planning'
-                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-              }`}
-            >
-              <ChevronRight className="w-4 h-4" />
-              Planning
             </button>
             <button
               onClick={() => setViewMode('blueprint')}
@@ -1157,108 +1198,6 @@ export default function StrategicPlanningModuleV3Complete({
             </div>
           )}
 
-          {/* Planning View - Grouped by Stakeholder */}
-          {viewMode === 'planning' && (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-white mb-6">Planning by Stakeholder</h2>
-
-              {/* Simple stakeholder grouping */}
-              {Object.entries(itemsByStakeholder).map(([stakeholder, stakeholderItems]) => {
-                const pendingItems = stakeholderItems.filter(i => i.status === 'pending' && i.type !== 'user_action')
-
-                return (
-                  <div key={stakeholder} className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                        <Target className="w-5 h-5 text-emerald-400" />
-                        <span>{stakeholder}</span>
-                        <span className="text-sm text-gray-400 font-normal">({stakeholderItems.length} content items)</span>
-                      </h3>
-                      {pendingItems.length > 0 && (
-                        <button
-                          onClick={() => handleBatchGenerate(pendingItems)}
-                          className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 transition-colors font-medium"
-                        >
-                          Generate All ({pendingItems.length})
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="space-y-3">
-                      {stakeholderItems.map(item => {
-                                const typeInfo = getContentTypeLabel(item.type)
-                                const isGenerating = generating.has(item.id)
-
-                                return (
-                                  <div
-                                    key={item.id}
-                                    className={`p-3 bg-${typeInfo.color}-900/10 border border-${typeInfo.color}-500/20 rounded`}
-                                  >
-                                    <div className="flex items-start justify-between gap-3">
-                                      <div className="flex-1">
-                                        <div className="flex items-center gap-2 mb-1">
-                                          <span className="text-lg">{typeInfo.icon}</span>
-                                          <span className={`text-xs font-medium text-${typeInfo.color}-300`}>
-                                            {typeInfo.label}
-                                          </span>
-                                          {getStatusIcon(isGenerating ? 'generating' : item.status)}
-                                        </div>
-                                        <p className="text-sm text-white font-medium mb-1">{item.topic}</p>
-                                        {item.target && (
-                                          <p className="text-xs text-gray-400">{item.target}</p>
-                                        )}
-                                        {item.status === 'failed' && item.generationError && (
-                                          <p className="text-xs text-red-400 mt-1">Error: {item.generationError}</p>
-                                        )}
-                                      </div>
-                                      <div className="flex gap-2">
-                                        {item.type !== 'user_action' && item.status === 'pending' && (
-                                          <button
-                                            onClick={() => handleGenerate(item)}
-                                            disabled={isGenerating}
-                                            className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                                              isGenerating
-                                                ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                                                : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                                            }`}
-                                          >
-                                            {isGenerating ? 'Generating...' : 'Generate'}
-                                          </button>
-                                        )}
-                                        {item.status === 'generating' && (
-                                          <div className="px-3 py-1 rounded text-xs font-medium bg-blue-600/20 text-blue-400 border border-blue-500/30 flex items-center gap-2">
-                                            <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-                                            Generating...
-                                          </div>
-                                        )}
-                                        {(item.status === 'generated' || item.status === 'published') && (
-                                          <button
-                                            onClick={() => setViewingItem(item)}
-                                            className="px-3 py-1 rounded text-xs font-medium bg-blue-600 text-white hover:bg-blue-700"
-                                          >
-                                            View
-                                          </button>
-                                        )}
-                                        {item.status === 'failed' && (
-                                          <button
-                                            onClick={() => handleGenerate(item)}
-                                            className="px-3 py-1 rounded text-xs font-medium bg-amber-600 text-white hover:bg-amber-700"
-                                          >
-                                            Retry
-                                          </button>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                )
-                      })}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-
           {/* Blueprint View */}
           {viewMode === 'blueprint' && blueprint && (
             <BlueprintV3Presentation
@@ -1274,8 +1213,131 @@ export default function StrategicPlanningModuleV3Complete({
           {/* Progress View */}
           {viewMode === 'progress' && (
             <div className="space-y-6">
+              {/* Execution Inventory by Priority */}
               <div className="bg-gray-800 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-white mb-4">Campaign Progress</h3>
+                <h3 className="text-2xl font-bold text-white mb-6">Content Execution by Priority</h3>
+
+                {[1, 2, 3, 4].map(priority => {
+                  const stakeholderGroups = itemsByPriorityAndStakeholder[priority]
+                  if (!stakeholderGroups) return null
+
+                  const items = Object.values(stakeholderGroups).flat()
+                  if (items.length === 0) return null
+
+                  const color = priorityColors[priority]
+                  const executed = items.filter(i => i.executed).length
+
+                  return (
+                    <div key={priority} className="mb-6 last:mb-0">
+                      <button
+                        onClick={() => togglePriority(priority)}
+                        className="w-full flex items-center justify-between p-4 bg-gray-900/50 rounded-lg hover:bg-gray-900/70 transition-colors mb-3"
+                      >
+                        <div className="flex items-center gap-3">
+                          <ChevronRight className={`w-5 h-5 text-${color}-400 transition-transform ${expandedPriorities.has(priority) ? 'rotate-90' : ''}`} />
+                          <span className={`text-lg font-bold text-${color}-300`}>Priority {priority}</span>
+                          <span className="text-sm text-gray-400">({items.length} items)</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span className="text-sm text-gray-400">
+                            Executed: <span className="text-white font-semibold">{executed}/{items.length}</span>
+                          </span>
+                        </div>
+                      </button>
+
+                      {expandedPriorities.has(priority) && (
+                        <div className="space-y-3 ml-4">
+                          {items.map(item => {
+                            const typeInfo = getContentTypeLabel(item.type)
+                            const resultField = getResultFieldForType(item.type)
+
+                            return (
+                              <div
+                                key={item.id}
+                                className={`p-4 bg-${typeInfo?.color || 'gray'}-900/10 border border-${typeInfo?.color || 'gray'}-500/20 rounded-lg`}
+                              >
+                                <div className="flex items-start gap-4">
+                                  {/* Execution checkbox */}
+                                  <input
+                                    type="checkbox"
+                                    checked={item.executed || false}
+                                    onChange={(e) => handleToggleExecuted(item.id, e.target.checked)}
+                                    className="mt-1 w-5 h-5 rounded border-gray-600 bg-gray-700 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-gray-800"
+                                  />
+
+                                  <div className="flex-1 space-y-3">
+                                    {/* Content info */}
+                                    <div>
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <span className="text-lg">{typeInfo?.icon}</span>
+                                        <span className={`text-xs font-medium text-${typeInfo?.color || 'gray'}-300`}>
+                                          {typeInfo?.label}
+                                        </span>
+                                        {getStatusIcon(item.status)}
+                                      </div>
+                                      <p className="text-sm text-white font-medium">{item.topic}</p>
+                                      {item.target && (
+                                        <p className="text-xs text-gray-400 mt-1">{item.target}</p>
+                                      )}
+                                      <p className="text-xs text-gray-500 mt-1">
+                                        {item.stakeholder} • {item.leverName}
+                                      </p>
+                                    </div>
+
+                                    {/* Result tracking - only show if executed */}
+                                    {item.executed && (
+                                      <div className="space-y-2 pt-2 border-t border-gray-700">
+                                        <label className="block text-xs font-medium text-gray-400">
+                                          {resultField.label}
+                                        </label>
+                                        <input
+                                          type="text"
+                                          placeholder={resultField.placeholder}
+                                          defaultValue={item.result?.value || ''}
+                                          onBlur={(e) => handleUpdateResult(item.id, e.target.value, item.result?.notes || '')}
+                                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm text-white placeholder-gray-500 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                                        />
+                                        <textarea
+                                          placeholder="Additional notes (optional)"
+                                          defaultValue={item.result?.notes || ''}
+                                          onBlur={(e) => handleUpdateResult(item.id, item.result?.value || '', e.target.value)}
+                                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm text-white placeholder-gray-500 focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
+                                          rows={2}
+                                        />
+                                        {item.executedAt && (
+                                          <p className="text-xs text-gray-500">
+                                            Executed: {new Date(item.executedAt).toLocaleDateString()}
+                                          </p>
+                                        )}
+                                      </div>
+                                    )}
+
+                                    {/* Action buttons */}
+                                    <div className="flex gap-2">
+                                      {(item.status === 'generated' || item.status === 'published') && (
+                                        <button
+                                          onClick={() => setViewingItem(item)}
+                                          className="px-3 py-1 rounded text-xs font-medium bg-blue-600 text-white hover:bg-blue-700"
+                                        >
+                                          View Content
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Campaign Content Stats */}
+              <div className="bg-gray-800 rounded-lg p-6">
+                <h3 className="text-xl font-bold text-white mb-4">Campaign Content</h3>
                 <div className="mb-4">
                   <div className="flex justify-between text-sm mb-2">
                     <span className="text-gray-400">Overall Completion</span>
@@ -1289,7 +1351,7 @@ export default function StrategicPlanningModuleV3Complete({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 mt-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
                   <div className="bg-gray-900/50 rounded p-4">
                     <p className="text-sm text-gray-400 mb-1">Total Items</p>
                     <p className="text-3xl font-bold text-white">{totalItems}</p>
@@ -1299,46 +1361,13 @@ export default function StrategicPlanningModuleV3Complete({
                     <p className="text-3xl font-bold text-emerald-400">{generatedItems}</p>
                   </div>
                   <div className="bg-gray-900/50 rounded p-4">
+                    <p className="text-sm text-gray-400 mb-1">Executed</p>
+                    <p className="text-3xl font-bold text-blue-400">{contentItems.filter(i => i.executed).length}</p>
+                  </div>
+                  <div className="bg-gray-900/50 rounded p-4">
                     <p className="text-sm text-gray-400 mb-1">Pending</p>
                     <p className="text-3xl font-bold text-amber-400">{contentItems.filter(i => i.status === 'pending').length}</p>
                   </div>
-                  <div className="bg-gray-900/50 rounded p-4">
-                    <p className="text-sm text-gray-400 mb-1">Generating</p>
-                    <p className="text-3xl font-bold text-blue-400">{generating.size}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Progress by Priority */}
-              <div className="bg-gray-800 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-white mb-4">Progress by Priority</h3>
-                <div className="space-y-4">
-                  {[1, 2, 3, 4].map(priority => {
-                    const stakeholderGroups = itemsByPriorityAndStakeholder[priority]
-                    if (!stakeholderGroups) return null
-
-                    const items = Object.values(stakeholderGroups).flat()
-                    if (items.length === 0) return null
-
-                    const generated = items.filter(i => i.status === 'generated' || i.status === 'published').length
-                    const percent = Math.round((generated / items.length) * 100)
-                    const color = priorityColors[priority]
-
-                    return (
-                      <div key={priority}>
-                        <div className="flex justify-between text-sm mb-2">
-                          <span className={`text-${color}-300`}>Priority {priority}</span>
-                          <span className="text-white font-semibold">{generated}/{items.length}</span>
-                        </div>
-                        <div className="h-3 bg-gray-700 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full bg-${color}-500 transition-all duration-500`}
-                            style={{ width: `${percent}%` }}
-                          />
-                        </div>
-                      </div>
-                    )
-                  })}
                 </div>
               </div>
             </div>
