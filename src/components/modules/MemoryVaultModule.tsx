@@ -64,13 +64,13 @@ interface FolderNode {
 
 // Smart folder templates
 const FOLDER_TEMPLATES = [
-  { name: 'Campaigns', icon: '📢', color: 'text-blue-400' },
-  { name: 'Media Plans', icon: '📰', color: 'text-purple-400' },
-  { name: 'Strategies', icon: '🎯', color: 'text-green-400' },
+  { name: 'Opportunities', icon: '🎯', color: 'text-blue-400' },
+  { name: 'Campaigns', icon: '📢', color: 'text-purple-400' },
+  { name: 'Media Plans', icon: '📰', color: 'text-cyan-400' },
+  { name: 'Strategies', icon: '💡', color: 'text-green-400' },
   { name: 'Press Releases', icon: '📝', color: 'text-orange-400' },
   { name: 'Social Content', icon: '💬', color: 'text-pink-400' },
-  { name: 'Brand Assets', icon: '✨', color: 'text-yellow-400' },
-  { name: 'Research', icon: '🔬', color: 'text-cyan-400' },
+  { name: 'Research', icon: '🔬', color: 'text-yellow-400' },
   { name: 'Drafts', icon: '📄', color: 'text-gray-400' }
 ]
 

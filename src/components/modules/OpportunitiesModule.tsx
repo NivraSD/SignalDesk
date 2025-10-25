@@ -180,6 +180,71 @@ export default function OpportunitiesModule() {
     let progressInterval: NodeJS.Timeout | null = null
 
     try {
+      // Save opportunity overview to Memory Vault
+      const overviewContent = `# ${opp.title}
+
+${opp.description}
+
+## Strategic Context
+
+**Why Now:** ${opp.strategic_context?.why_now || 'N/A'}
+
+**Market Dynamics:** ${opp.strategic_context?.market_dynamics || 'N/A'}
+
+**Time Window:** ${opp.strategic_context?.time_window || 'N/A'}
+
+**Competitive Advantage:** ${opp.strategic_context?.competitive_advantage || 'N/A'}
+
+**Expected Impact:** ${opp.strategic_context?.expected_impact || 'N/A'}
+
+**Risk if Missed:** ${opp.strategic_context?.risk_if_missed || 'N/A'}
+
+**Trigger Events:**
+${opp.strategic_context?.trigger_events?.map(e => `- ${e}`).join('\n') || 'N/A'}
+
+## Execution Plan
+
+**Stakeholder Campaigns:**
+${opp.execution_plan?.stakeholder_campaigns.map(c => `
+### ${c.stakeholder_name}
+- **Objective:** ${c.objective}
+- **Key Messages:** ${c.key_messages.join(', ')}
+- **Content Items:** ${c.content_items.map(i => i.type).join(', ')}
+`).join('\n') || 'N/A'}
+
+**Timeline:**
+- **Immediate:** ${opp.execution_plan?.execution_timeline?.immediate?.join(', ') || 'N/A'}
+- **This Week:** ${opp.execution_plan?.execution_timeline?.this_week?.join(', ') || 'N/A'}
+- **This Month:** ${opp.execution_plan?.execution_timeline?.this_month?.join(', ') || 'N/A'}
+- **Ongoing:** ${opp.execution_plan?.execution_timeline?.ongoing?.join(', ') || 'N/A'}
+
+**Success Metrics:**
+${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`).join('\n') || 'N/A'}
+
+---
+*Opportunity Score: ${opp.score} | Urgency: ${opp.urgency} | Category: ${opp.category}*`
+
+      try {
+        await supabase.from('content_library').insert({
+          organization_id: opp.organization_id || '7a2835cb-11ee-4512-acc3-b6caf8eb03ff',
+          title: `${opp.title} - Overview`,
+          content: overviewContent,
+          content_type: 'strategy',
+          folder: `Opportunities/${opp.title}`,
+          themes: [opp.category],
+          topics: opp.strategic_context?.trigger_events || [],
+          metadata: {
+            opportunity_id: opp.id,
+            urgency: opp.urgency,
+            score: opp.score,
+            is_overview: true
+          }
+        })
+        console.log('✅ Saved opportunity overview to Memory Vault')
+      } catch (error) {
+        console.error('❌ Failed to save overview:', error)
+      }
+
       const generated: any[] = []
 
       // Build content requirements from execution plan
@@ -288,7 +353,7 @@ export default function OpportunitiesModule() {
             contentRequirements,
             researchInsights: [opp.strategic_context?.why_now || ''],
             currentDate: new Date().toISOString().split('T')[0],
-            campaignFolder: `opportunity-${opp.id}`,
+            campaignFolder: `Opportunities/${opp.title}`,
             blueprintId: opp.id,
             positioning: opp.strategic_context?.competitive_advantage || '',
             targetStakeholders: opp.execution_plan.stakeholder_campaigns.map(c => c.stakeholder_name),

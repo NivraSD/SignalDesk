@@ -77,12 +77,8 @@ export default function StakeholderPredictionDashboard({ organizationId }: { org
       setLoading(true)
       setError(null)
 
-      // Fetch predictions directly from database
-      const { createClient } = await import('@supabase/supabase-js')
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
+      // Fetch predictions directly from database using shared client
+      const { supabase } = await import('@/lib/supabase/client')
 
       const { data, error } = await supabase
         .from('predictions')
@@ -174,18 +170,16 @@ export default function StakeholderPredictionDashboard({ organizationId }: { org
 
       // This will be called to build initial profiles
       // In production, this would profile all stakeholders
-      const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/stakeholder-profiler`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`
-        },
-        body: JSON.stringify({ organizationId, forceUpdate: true })
+      const { supabase } = await import('@/lib/supabase/client')
+      const { data, error } = await supabase.functions.invoke('stakeholder-profiler', {
+        body: { organizationId, forceUpdate: true }
       })
 
-      if (response.ok) {
+      if (!error) {
         // After profiling, reload predictions
         await loadPredictions()
+      } else {
+        throw new Error(error.message || 'Failed to build profiles')
       }
     } catch (err: any) {
       console.error('Error building profiles:', err)
