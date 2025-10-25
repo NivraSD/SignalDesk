@@ -240,12 +240,17 @@ async function capturePresentation(
   })
 
   if (!request.capture || !request.organization_id) {
+    const failureReason = !request.capture ? 'capture_is_falsy' : 'organization_id_missing'
     console.log('⛔ Capture disabled or no organization_id provided', {
       capture: request.capture,
+      capture_type: typeof request.capture,
       org_id: request.organization_id,
+      org_id_type: typeof request.organization_id,
+      failure_reason: failureReason,
       RETURNING_NULL: true
     })
-    return null
+    // Return an object with debug info instead of null
+    return { error: failureReason, capture: request.capture, organization_id: request.organization_id } as any
   }
 
   console.log('✅ Capture validation passed, proceeding with capture...')
@@ -585,8 +590,9 @@ async function checkGenerationStatus(generationId: string, captureRequest?: Pres
           pptxDownloadUrl || null,
           captureRequest
         )
-        if (!capturedData) {
-          captureDebug.reason = 'capturePresentation returned null'
+        if (!capturedData || !capturedData.id) {
+          captureDebug.reason = 'capturePresentation returned null or error'
+          captureDebug.captureResult = capturedData
         }
       } else {
         captureDebug.reason = `isCompleted=${isCompleted}, captureRequest=${!!captureRequest}, captureRequest.capture=${captureRequest?.capture}`

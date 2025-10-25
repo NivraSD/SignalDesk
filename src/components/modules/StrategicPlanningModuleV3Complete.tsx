@@ -93,6 +93,7 @@ export default function StrategicPlanningModuleV3Complete({
   const [expandedStakeholders, setExpandedStakeholders] = useState<Set<string>>(new Set())
   const [generating, setGenerating] = useState<Set<string>>(new Set())
   const [viewingItem, setViewingItem] = useState<ContentItem | null>(null)
+  const [editingResultFor, setEditingResultFor] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -1213,9 +1214,9 @@ export default function StrategicPlanningModuleV3Complete({
           {/* Progress View */}
           {viewMode === 'progress' && (
             <div className="space-y-6">
-              {/* Execution Inventory by Priority */}
+              {/* Campaign Status by Priority */}
               <div className="bg-gray-800 rounded-lg p-6">
-                <h3 className="text-2xl font-bold text-white mb-6">Content Execution by Priority</h3>
+                <h3 className="text-2xl font-bold text-white mb-6">Campaign Status</h3>
 
                 {[1, 2, 3, 4].map(priority => {
                   const stakeholderGroups = itemsByPriorityAndStakeholder[priority]
@@ -1250,79 +1251,97 @@ export default function StrategicPlanningModuleV3Complete({
                           {items.map(item => {
                             const typeInfo = getContentTypeLabel(item.type)
                             const resultField = getResultFieldForType(item.type)
+                            const isEditingResult = editingResultFor === item.id
 
                             return (
                               <div
                                 key={item.id}
                                 className={`p-4 bg-${typeInfo?.color || 'gray'}-900/10 border border-${typeInfo?.color || 'gray'}-500/20 rounded-lg`}
                               >
-                                <div className="flex items-start gap-4">
-                                  {/* Execution checkbox */}
-                                  <input
-                                    type="checkbox"
-                                    checked={item.executed || false}
-                                    onChange={(e) => handleToggleExecuted(item.id, e.target.checked)}
-                                    className="mt-1 w-5 h-5 rounded border-gray-600 bg-gray-700 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-gray-800"
-                                  />
-
-                                  <div className="flex-1 space-y-3">
-                                    {/* Content info */}
-                                    <div>
-                                      <div className="flex items-center gap-2 mb-1">
-                                        <span className="text-lg">{typeInfo?.icon}</span>
-                                        <span className={`text-xs font-medium text-${typeInfo?.color || 'gray'}-300`}>
-                                          {typeInfo?.label}
+                                <div className="space-y-3">
+                                  {/* Content info */}
+                                  <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="text-lg">{typeInfo?.icon}</span>
+                                      <span className={`text-xs font-medium text-${typeInfo?.color || 'gray'}-300`}>
+                                        {typeInfo?.label}
+                                      </span>
+                                      {getStatusIcon(item.status)}
+                                      {item.executed && (
+                                        <span className="ml-auto text-xs px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                          ✓ Complete
                                         </span>
-                                        {getStatusIcon(item.status)}
-                                      </div>
-                                      <p className="text-sm text-white font-medium">{item.topic}</p>
-                                      {item.target && (
-                                        <p className="text-xs text-gray-400 mt-1">{item.target}</p>
                                       )}
-                                      <p className="text-xs text-gray-500 mt-1">
-                                        {item.stakeholder} • {item.leverName}
-                                      </p>
                                     </div>
-
-                                    {/* Result tracking - only show if executed */}
-                                    {item.executed && (
-                                      <div className="space-y-2 pt-2 border-t border-gray-700">
-                                        <label className="block text-xs font-medium text-gray-400">
-                                          {resultField.label}
-                                        </label>
-                                        <input
-                                          type="text"
-                                          placeholder={resultField.placeholder}
-                                          defaultValue={item.result?.value || ''}
-                                          onBlur={(e) => handleUpdateResult(item.id, e.target.value, item.result?.notes || '')}
-                                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm text-white placeholder-gray-500 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                                        />
-                                        <textarea
-                                          placeholder="Additional notes (optional)"
-                                          defaultValue={item.result?.notes || ''}
-                                          onBlur={(e) => handleUpdateResult(item.id, item.result?.value || '', e.target.value)}
-                                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm text-white placeholder-gray-500 focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
-                                          rows={2}
-                                        />
-                                        {item.executedAt && (
-                                          <p className="text-xs text-gray-500">
-                                            Executed: {new Date(item.executedAt).toLocaleDateString()}
-                                          </p>
-                                        )}
-                                      </div>
+                                    <p className="text-sm text-white font-medium">{item.topic}</p>
+                                    {item.target && (
+                                      <p className="text-xs text-gray-400 mt-1">{item.target}</p>
                                     )}
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      {item.stakeholder} • {item.leverName}
+                                    </p>
+                                  </div>
 
-                                    {/* Action buttons */}
-                                    <div className="flex gap-2">
-                                      {(item.status === 'generated' || item.status === 'published') && (
-                                        <button
-                                          onClick={() => setViewingItem(item)}
-                                          className="px-3 py-1 rounded text-xs font-medium bg-blue-600 text-white hover:bg-blue-700"
-                                        >
-                                          View Content
-                                        </button>
+                                  {/* Result form - show when editing */}
+                                  {isEditingResult && (
+                                    <div className="space-y-2 pt-2 border-t border-gray-700">
+                                      <label className="block text-xs font-medium text-gray-400">
+                                        {resultField.label}
+                                      </label>
+                                      <input
+                                        type="text"
+                                        placeholder={resultField.placeholder}
+                                        defaultValue={item.result?.value || ''}
+                                        onBlur={(e) => handleUpdateResult(item.id, e.target.value, item.result?.notes || '')}
+                                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm text-white placeholder-gray-500 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                                      />
+                                      <textarea
+                                        placeholder="Additional notes (optional)"
+                                        defaultValue={item.result?.notes || ''}
+                                        onBlur={(e) => handleUpdateResult(item.id, item.result?.value || '', e.target.value)}
+                                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm text-white placeholder-gray-500 focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
+                                        rows={2}
+                                      />
+                                      {item.executedAt && (
+                                        <p className="text-xs text-gray-500">
+                                          Executed: {new Date(item.executedAt).toLocaleDateString()}
+                                        </p>
                                       )}
+                                      <button
+                                        onClick={() => setEditingResultFor(null)}
+                                        className="px-3 py-1 rounded text-xs font-medium bg-gray-600 text-white hover:bg-gray-700"
+                                      >
+                                        Done
+                                      </button>
                                     </div>
+                                  )}
+
+                                  {/* Action buttons */}
+                                  <div className="flex gap-2">
+                                    {(item.status === 'generated' || item.status === 'published') && (
+                                      <button
+                                        onClick={() => setViewingItem(item)}
+                                        className="px-3 py-1 rounded text-xs font-medium bg-blue-600 text-white hover:bg-blue-700"
+                                      >
+                                        View Content
+                                      </button>
+                                    )}
+                                    {!item.executed && (
+                                      <button
+                                        onClick={() => handleToggleExecuted(item.id, true)}
+                                        className="px-3 py-1 rounded text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-700"
+                                      >
+                                        Mark as Complete
+                                      </button>
+                                    )}
+                                    {item.executed && (
+                                      <button
+                                        onClick={() => setEditingResultFor(isEditingResult ? null : item.id)}
+                                        className="px-3 py-1 rounded text-xs font-medium bg-purple-600 text-white hover:bg-purple-700"
+                                      >
+                                        {isEditingResult ? 'Hide Result' : 'Result'}
+                                      </button>
+                                    )}
                                   </div>
                                 </div>
                               </div>
