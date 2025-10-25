@@ -147,11 +147,12 @@ export default function StrategicPlanningModuleV3Complete({
   }, [sessionId])
 
   const loadOrInitializeItems = async () => {
-    // Try to load existing items from database
+    // Try to load existing items from content_library
     const { data: existingItems, error: loadError } = await supabase
-      .from('campaign_execution_items')
+      .from('content_library')
       .select('*')
       .eq('session_id', sessionId)
+      .eq('organization_id', orgId)
 
     if (loadError) {
       console.error('Error loading items:', loadError)
@@ -165,17 +166,20 @@ export default function StrategicPlanningModuleV3Complete({
       const items = existingItems.map(dbItem => ({
         id: dbItem.id,
         type: dbItem.content_type as ContentItem['type'],
-        stakeholder: dbItem.stakeholder_name,
-        stakeholderPriority: dbItem.stakeholder_priority,
-        leverName: dbItem.lever_name,
-        leverPriority: dbItem.lever_priority,
-        topic: dbItem.topic,
-        target: dbItem.target,
-        details: dbItem.details,
-        status: dbItem.status as ContentItem['status'],
-        generatedContent: dbItem.generated_content,
-        generationError: dbItem.generation_error,
-        generatedAt: dbItem.generated_at ? new Date(dbItem.generated_at) : undefined
+        stakeholder: dbItem.metadata?.stakeholder || '',
+        stakeholderPriority: dbItem.metadata?.stakeholder_priority || 1,
+        leverName: dbItem.metadata?.lever_name || '',
+        leverPriority: dbItem.metadata?.lever_priority || 1,
+        topic: dbItem.title,
+        target: dbItem.metadata?.target,
+        details: dbItem.metadata,
+        status: dbItem.status === 'draft' ? 'generated' : (dbItem.status as ContentItem['status']),
+        generatedContent: dbItem.content,
+        generationError: undefined,
+        generatedAt: dbItem.created_at ? new Date(dbItem.created_at) : undefined,
+        executed: dbItem.executed || false,
+        executedAt: dbItem.executed_at ? new Date(dbItem.executed_at) : undefined,
+        result: dbItem.result
       }))
       setContentItems(items)
       setLoading(false)
@@ -190,34 +194,39 @@ export default function StrategicPlanningModuleV3Complete({
 
     // Double-check that items don't already exist before inserting
     const { data: existingCheck } = await supabase
-      .from('campaign_execution_items')
+      .from('content_library')
       .select('id')
       .eq('session_id', sessionId)
+      .eq('organization_id', orgId)
       .limit(1)
 
     if (existingCheck && existingCheck.length > 0) {
       console.log('⚠️ Items already exist, skipping initialization')
       // Items were created by another request, reload them
       const { data: existing } = await supabase
-        .from('campaign_execution_items')
+        .from('content_library')
         .select('*')
         .eq('session_id', sessionId)
+        .eq('organization_id', orgId)
 
       if (existing) {
         const items = existing.map(dbItem => ({
           id: dbItem.id,
           type: dbItem.content_type as ContentItem['type'],
-          stakeholder: dbItem.stakeholder_name,
-          stakeholderPriority: dbItem.stakeholder_priority,
-          leverName: dbItem.lever_name,
-          leverPriority: dbItem.lever_priority,
-          topic: dbItem.topic,
-          target: dbItem.target,
-          details: dbItem.details,
-          status: dbItem.status as ContentItem['status'],
-          generatedContent: dbItem.generated_content,
-          generationError: dbItem.generation_error,
-          generatedAt: dbItem.generated_at ? new Date(dbItem.generated_at) : undefined
+          stakeholder: dbItem.metadata?.stakeholder || '',
+          stakeholderPriority: dbItem.metadata?.stakeholder_priority || 1,
+          leverName: dbItem.metadata?.lever_name || '',
+          leverPriority: dbItem.metadata?.lever_priority || 1,
+          topic: dbItem.title,
+          target: dbItem.metadata?.target,
+          details: dbItem.metadata,
+          status: dbItem.status === 'draft' ? 'generated' : (dbItem.status as ContentItem['status']),
+          generatedContent: dbItem.content,
+          generationError: undefined,
+          generatedAt: dbItem.created_at ? new Date(dbItem.created_at) : undefined,
+          executed: dbItem.executed || false,
+          executedAt: dbItem.executed_at ? new Date(dbItem.executed_at) : undefined,
+          result: dbItem.result
         }))
         setContentItems(items)
       }
@@ -225,24 +234,33 @@ export default function StrategicPlanningModuleV3Complete({
       return
     }
 
-    // Save to database
+    // Get campaign name for folder structure
+    const campaignName = blueprint.overview?.campaignName || 'Untitled Campaign'
+
+    // Save to content_library with folder structure
     const dbItems = items.map(item => ({
       id: item.id,
       session_id: sessionId,
       organization_id: orgId,
-      stakeholder_name: item.stakeholder,
-      stakeholder_priority: item.stakeholderPriority,
-      lever_name: item.leverName,
-      lever_priority: item.leverPriority,
       content_type: item.type,
-      topic: item.topic,
-      target: item.target,
-      details: item.details,
-      status: item.status
+      title: item.topic,
+      content: '', // Will be filled when generated
+      status: 'pending',
+      folder: `Campaigns/${campaignName}/Priority ${item.stakeholderPriority}/${item.stakeholder}`,
+      metadata: {
+        stakeholder: item.stakeholder,
+        stakeholder_priority: item.stakeholderPriority,
+        lever_name: item.leverName,
+        lever_priority: item.leverPriority,
+        target: item.target,
+        details: item.details
+      },
+      tags: ['campaign', `priority-${item.stakeholderPriority}`, item.stakeholder],
+      intelligence_status: 'pending'
     }))
 
     const { error: insertError } = await supabase
-      .from('campaign_execution_items')
+      .from('content_library')
       .insert(dbItems)
 
     if (insertError) {
@@ -547,37 +565,15 @@ export default function StrategicPlanningModuleV3Complete({
         i.id === item.id ? updatedItem : i
       ))
 
-      // Save to campaign_execution_items
-      await supabase
-        .from('campaign_execution_items')
-        .update({
-          status: 'generated',
-          generated_content: generatedContent,
-          generated_at: new Date().toISOString()
-        })
-        .eq('id', item.id)
-
-      // Also save to Memory Vault (content_library)
+      // Update content_library with generated content
       await supabase
         .from('content_library')
-        .insert({
-          organization_id: orgId,
-          session_id: sessionId,
-          content_type: item.type,
-          title: item.topic,
+        .update({
           content: generatedContent,
-          metadata: {
-            stakeholder: item.stakeholder,
-            stakeholder_priority: item.stakeholderPriority,
-            lever_name: item.leverName,
-            lever_priority: item.leverPriority,
-            target: item.target,
-            blueprint_item_id: item.id
-          },
-          tags: ['campaign', `priority-${item.stakeholderPriority}`, item.stakeholder],
           status: 'draft',
-          folder_path: `campaigns/${sessionId}/${item.stakeholder}`
+          updated_at: new Date().toISOString()
         })
+        .eq('id', item.id)
 
     } catch (error: any) {
       console.error('Generation error:', error)
@@ -590,10 +586,9 @@ export default function StrategicPlanningModuleV3Complete({
 
       // Save error to database
       await supabase
-        .from('campaign_execution_items')
+        .from('content_library')
         .update({
-          status: 'failed',
-          generation_error: error.message
+          status: 'failed'
         })
         .eq('id', item.id)
     } finally {
@@ -730,37 +725,15 @@ export default function StrategicPlanningModuleV3Complete({
               : i
           ))
 
-          // Save to campaign_execution_items
-          await supabase
-            .from('campaign_execution_items')
-            .update({
-              status: 'generated',
-              generated_content: generatedContent,
-              generated_at: new Date().toISOString()
-            })
-            .eq('id', item.id)
-
-          // Also save to Memory Vault (content_library)
+          // Update content_library with generated content
           await supabase
             .from('content_library')
-            .insert({
-              organization_id: orgId,
-              session_id: sessionId,
-              content_type: item.type,
-              title: item.topic,
+            .update({
               content: generatedContent,
-              metadata: {
-                stakeholder: item.stakeholder,
-                stakeholder_priority: item.stakeholderPriority,
-                lever_name: item.leverName,
-                lever_priority: item.leverPriority,
-                target: item.target,
-                blueprint_item_id: item.id
-              },
-              tags: ['campaign', `priority-${item.stakeholderPriority}`, item.stakeholder],
               status: 'draft',
-              folder_path: `campaigns/${sessionId}/${item.stakeholder}`
+              updated_at: new Date().toISOString()
             })
+            .eq('id', item.id)
 
           return { item, success: true }
         } catch (error: any) {
@@ -793,8 +766,8 @@ export default function StrategicPlanningModuleV3Complete({
     ))
 
     await supabase
-      .from('campaign_execution_items')
-      .update({ generated_content: content })
+      .from('content_library')
+      .update({ content })
       .eq('id', itemId)
   }
 
@@ -804,10 +777,9 @@ export default function StrategicPlanningModuleV3Complete({
     ))
 
     await supabase
-      .from('campaign_execution_items')
+      .from('content_library')
       .update({
-        status: 'published',
-        published_at: new Date().toISOString()
+        status: 'published'
       })
       .eq('id', itemId)
 
@@ -844,13 +816,7 @@ export default function StrategicPlanningModuleV3Complete({
       executed_at: executed ? new Date().toISOString() : null
     }
 
-    // Update campaign_execution_items
-    await supabase
-      .from('campaign_execution_items')
-      .update(updateData)
-      .eq('id', itemId)
-
-    // Also update content_library for Memory Vault analytics
+    // Update content_library
     await supabase
       .from('content_library')
       .update(updateData)
@@ -871,13 +837,7 @@ export default function StrategicPlanningModuleV3Complete({
       result: { type: resultField.resultType, value: resultValue, notes: resultNotes }
     }
 
-    // Update campaign_execution_items
-    await supabase
-      .from('campaign_execution_items')
-      .update(resultData)
-      .eq('id', itemId)
-
-    // Also update content_library for Memory Vault analytics
+    // Update content_library
     await supabase
       .from('content_library')
       .update(resultData)
