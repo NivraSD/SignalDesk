@@ -55,18 +55,35 @@ interface BrandAsset {
 }
 
 interface AnalyticsData {
+  // Content Overview
   totalContent: number
   executedContent: number
   executionRate: number
-  contentByType: Record<string, number>
-  executionByType: Record<string, { total: number; executed: number }>
-  resultsByType: Record<string, number>
+
+  // Activity Over Time
+  activityToday: number
+  activityThisWeek: number
+  activityThisMonth: number
+
+  // Performance Metrics
+  performanceByType: Array<{
+    type: string
+    executed: number
+    results: Array<{
+      label: string
+      value: string | number
+      notes?: string
+    }>
+  }>
+
+  // Recent Activity
   recentExecutions: Array<{
     id: string
     title: string
     content_type: string
     executed_at: string
     result?: any
+    folder?: string
   }>
 }
 
@@ -125,9 +142,10 @@ export default function MemoryVaultModule() {
     totalContent: 0,
     executedContent: 0,
     executionRate: 0,
-    contentByType: {},
-    executionByType: {},
-    resultsByType: {},
+    activityToday: 0,
+    activityThisWeek: 0,
+    activityThisMonth: 0,
+    performanceByType: [],
     recentExecutions: []
   })
   const [loadingAnalytics, setLoadingAnalytics] = useState(false)
@@ -280,41 +298,70 @@ export default function MemoryVaultModule() {
 
     setLoadingAnalytics(true)
     try {
+      const now = new Date()
+      const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+      const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+      const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+
+      // Fetch all content
       const { data: contentData } = await supabase
         .from('content_library')
         .select('id, title, content_type, executed, executed_at, result, folder')
         .eq('organization_id', organization.id)
 
-      const contentByType: Record<string, number> = {}
-      const executionByType: Record<string, { total: number; executed: number }> = {}
-      const resultsByType: Record<string, number> = {}
       let executedCount = 0
+      let activityToday = 0
+      let activityThisWeek = 0
+      let activityThisMonth = 0
+
+      // Track performance by type
+      const performanceMap = new Map<string, {
+        executed: number
+        results: Array<{ label: string; value: string | number; notes?: string }>
+      }>()
 
       contentData?.forEach(item => {
-        // Count by type
-        contentByType[item.content_type] = (contentByType[item.content_type] || 0) + 1
-
-        // Track execution by type
-        if (!executionByType[item.content_type]) {
-          executionByType[item.content_type] = { total: 0, executed: 0 }
-        }
-        executionByType[item.content_type].total++
-
         if (item.executed) {
           executedCount++
-          executionByType[item.content_type].executed++
 
-          // Count results by type
-          if (item.result?.type) {
-            resultsByType[item.result.type] = (resultsByType[item.result.type] || 0) + 1
+          // Count activity by time period
+          if (item.executed_at) {
+            const executedDate = new Date(item.executed_at)
+            if (executedDate >= oneDayAgo) activityToday++
+            if (executedDate >= oneWeekAgo) activityThisWeek++
+            if (executedDate >= oneMonthAgo) activityThisMonth++
+          }
+
+          // Track performance by content type
+          const typeKey = item.content_type
+          if (!performanceMap.has(typeKey)) {
+            performanceMap.set(typeKey, { executed: 0, results: [] })
+          }
+          const perf = performanceMap.get(typeKey)!
+          perf.executed++
+
+          // Add result if it exists
+          if (item.result?.value) {
+            perf.results.push({
+              label: item.title,
+              value: item.result.value,
+              notes: item.result.notes
+            })
           }
         }
       })
 
-      // Get recent executions
+      // Convert performance map to array
+      const performanceByType = Array.from(performanceMap.entries()).map(([type, data]) => ({
+        type,
+        executed: data.executed,
+        results: data.results
+      }))
+
+      // Get recent executions with folder info
       const { data: recentExecutions } = await supabase
         .from('content_library')
-        .select('id, title, content_type, executed_at, result')
+        .select('id, title, content_type, executed_at, result, folder')
         .eq('organization_id', organization.id)
         .eq('executed', true)
         .order('executed_at', { ascending: false })
@@ -328,9 +375,10 @@ export default function MemoryVaultModule() {
         totalContent: contentData?.length || 0,
         executedContent: executedCount,
         executionRate: Math.round(executionRate),
-        contentByType,
-        executionByType,
-        resultsByType,
+        activityToday,
+        activityThisWeek,
+        activityThisMonth,
+        performanceByType,
         recentExecutions: recentExecutions || []
       })
     } catch (error) {
@@ -1981,84 +2029,132 @@ function AnalyticsTab({
           </button>
         </div>
 
-        {/* Key Metrics */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <MetricCard
-            title="Total Content"
-            value={data.totalContent}
-            status="success"
-            target={`${data.executedContent} executed`}
-            icon={<FileText className="w-5 h-5" />}
-          />
-          <MetricCard
-            title="Execution Rate"
-            value={`${data.executionRate}%`}
-            status={data.executionRate > 50 ? 'success' : data.executionRate > 25 ? 'warning' : 'error'}
-            target="> 50%"
-            icon={<CheckCircle className="w-5 h-5" />}
-          />
-          <MetricCard
-            title="Executed Content"
-            value={data.executedContent}
-            status={data.executedContent > 0 ? 'success' : 'warning'}
-            target={`${data.totalContent - data.executedContent} pending`}
-            icon={<TrendingUp className="w-5 h-5" />}
-          />
-        </div>
-
-        {/* Execution by Content Type */}
-        <div className="p-6 bg-gray-900/50 border border-gray-800 rounded-lg mb-6">
-          <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-blue-400" />
-            Execution by Content Type
-          </h3>
-          <div className="space-y-3">
-            {Object.entries(data.executionByType).map(([type, stats]) => {
-              const executionPct = stats.total > 0 ? (stats.executed / stats.total) * 100 : 0
-              return (
-                <div key={type} className="flex items-center justify-between">
-                  <span className="text-gray-300 capitalize min-w-[150px]">{type.replace(/-/g, ' ')}</span>
-                  <div className="flex items-center gap-3 flex-1">
-                    <div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-emerald-500 to-green-500"
-                        style={{ width: `${executionPct}%` }}
-                      />
-                    </div>
-                    <span className="text-white font-medium w-24 text-right text-sm">
-                      {stats.executed}/{stats.total} ({Math.round(executionPct)}%)
-                    </span>
-                  </div>
-                </div>
-              )
-            })}
+        {/* Executed Content Overview */}
+        <div className="p-6 bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20 rounded-lg mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-emerald-400 flex items-center gap-2">
+              <CheckCircle className="w-5 h-5" />
+              Content Execution
+            </h3>
+            <span className="text-sm text-gray-400">
+              {data.executionRate}% completion rate
+            </span>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <div className="flex items-end gap-3 mb-2">
+                <span className="text-4xl font-bold text-white">{data.executedContent}</span>
+                <span className="text-2xl text-gray-400 pb-1">/ {data.totalContent}</span>
+              </div>
+              <p className="text-sm text-gray-400">pieces executed</p>
+            </div>
+            <div className="w-32 h-32 relative">
+              <svg className="w-full h-full transform -rotate-90">
+                <circle
+                  cx="64"
+                  cy="64"
+                  r="56"
+                  stroke="currentColor"
+                  strokeWidth="8"
+                  fill="none"
+                  className="text-gray-800"
+                />
+                <circle
+                  cx="64"
+                  cy="64"
+                  r="56"
+                  stroke="currentColor"
+                  strokeWidth="8"
+                  fill="none"
+                  strokeDasharray={`${2 * Math.PI * 56}`}
+                  strokeDashoffset={`${2 * Math.PI * 56 * (1 - data.executionRate / 100)}`}
+                  className="text-emerald-500 transition-all duration-500"
+                  strokeLinecap="round"
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-2xl font-bold text-white">{data.executionRate}%</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Results Breakdown */}
-        {Object.keys(data.resultsByType).length > 0 && (
+        {/* Activity Over Time */}
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="p-4 bg-gray-900/50 border border-gray-800 rounded-lg">
+            <div className="flex items-center gap-2 mb-2">
+              <Clock className="w-4 h-4 text-blue-400" />
+              <h4 className="text-sm font-medium text-gray-400">Last 24 Hours</h4>
+            </div>
+            <div className="text-3xl font-bold text-white">{data.activityToday}</div>
+            <p className="text-xs text-gray-500 mt-1">pieces executed</p>
+          </div>
+          <div className="p-4 bg-gray-900/50 border border-gray-800 rounded-lg">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className="w-4 h-4 text-purple-400" />
+              <h4 className="text-sm font-medium text-gray-400">Last 7 Days</h4>
+            </div>
+            <div className="text-3xl font-bold text-white">{data.activityThisWeek}</div>
+            <p className="text-xs text-gray-500 mt-1">pieces executed</p>
+          </div>
+          <div className="p-4 bg-gray-900/50 border border-gray-800 rounded-lg">
+            <div className="flex items-center gap-2 mb-2">
+              <BarChart3 className="w-4 h-4 text-orange-400" />
+              <h4 className="text-sm font-medium text-gray-400">Last 30 Days</h4>
+            </div>
+            <div className="text-3xl font-bold text-white">{data.activityThisMonth}</div>
+            <p className="text-xs text-gray-500 mt-1">pieces executed</p>
+          </div>
+        </div>
+
+        {/* Content Performance */}
+        {data.performanceByType.length > 0 && (
           <div className="p-6 bg-gray-900/50 border border-gray-800 rounded-lg mb-6">
             <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-purple-400" />
-              Results by Type
+              Content Performance
             </h3>
-            <div className="grid grid-cols-2 gap-4">
-              {Object.entries(data.resultsByType).map(([type, count]) => (
-                <div key={type} className="p-4 bg-gradient-to-br from-purple-500/5 to-purple-500/10 border border-purple-500/20 rounded-lg">
-                  <div className="text-sm text-gray-400 capitalize mb-1">{type.replace(/_/g, ' ')}</div>
-                  <div className="text-2xl font-bold text-white">{count}</div>
+            <div className="space-y-4">
+              {data.performanceByType.map(perf => (
+                <div key={perf.type} className="border-l-2 border-purple-500/30 pl-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-medium text-white capitalize">{perf.type.replace(/-/g, ' ')}</h4>
+                    <span className="text-sm text-gray-400">{perf.executed} executed</span>
+                  </div>
+                  {perf.results.length > 0 ? (
+                    <div className="space-y-1.5">
+                      {perf.results.slice(0, 3).map((result, idx) => (
+                        <div key={idx} className="text-sm bg-gray-800/50 rounded px-3 py-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-300 text-xs truncate flex-1">{result.label}</span>
+                            <span className="text-purple-300 font-medium ml-2">{result.value}</span>
+                          </div>
+                          {result.notes && (
+                            <div className="text-xs text-gray-500 mt-1">{result.notes}</div>
+                          )}
+                        </div>
+                      ))}
+                      {perf.results.length > 3 && (
+                        <div className="text-xs text-gray-500 text-center py-1">
+                          +{perf.results.length - 3} more results
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-500">No results recorded yet</div>
+                  )}
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Recent Executions */}
+        {/* Recent Activity */}
         {data.recentExecutions.length > 0 && (
           <div className="p-6 bg-gray-900/50 border border-gray-800 rounded-lg">
             <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-orange-400" />
-              Recent Executions
+              <Activity className="w-5 h-5 text-orange-400" />
+              Recent Activity
             </h3>
             <div className="space-y-2">
               {data.recentExecutions.map(item => (
@@ -2066,16 +2162,22 @@ function AnalyticsTab({
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1">
                       <div className="font-medium text-white text-sm">{item.title}</div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs px-2 py-0.5 bg-gray-700 rounded text-gray-300">
-                          {item.content_type}
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <span className="text-xs px-2 py-0.5 bg-gray-700 rounded text-gray-300 capitalize">
+                          {item.content_type.replace(/-/g, ' ')}
                         </span>
+                        {item.folder && (
+                          <span className="text-xs text-gray-500 flex items-center gap-1">
+                            <Folder className="w-3 h-3" />
+                            {item.folder.split('/').pop()}
+                          </span>
+                        )}
                         <span className="text-xs text-gray-500">
                           {new Date(item.executed_at).toLocaleDateString()}
                         </span>
                       </div>
                       {item.result?.value && (
-                        <div className="text-xs text-purple-300 mt-1">
+                        <div className="text-xs text-purple-300 mt-1.5 bg-purple-500/10 px-2 py-1 rounded inline-block">
                           Result: {item.result.value}
                         </div>
                       )}
