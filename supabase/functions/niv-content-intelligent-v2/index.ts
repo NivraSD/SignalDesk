@@ -943,6 +943,7 @@ serve(async (req) => {
           )
 
           await supabase.from('content_library').insert({
+            id: crypto.randomUUID(),
             organization_id: organizationId,
             content_type: requestedContentType,
             title: `${preloadedStrategy.subject} - ${requestedContentType}`,
@@ -1241,6 +1242,7 @@ ${campaignContext.timeline || 'Not specified'}
         const { error: strategyError } = await supabase
           .from('content_library')
           .insert({
+            id: crypto.randomUUID(),
             organization_id: organizationId,
             content_type: 'phase_strategy',
             title: `Phase ${phaseNumber}: ${phase} - Strategy`,
@@ -1284,6 +1286,7 @@ ${campaignContext.timeline || 'Not specified'}
           const { error: contentError } = await supabase
             .from('content_library')
             .insert({
+              id: crypto.randomUUID(),
               organization_id: organizationId,
               content_type: normalizedContentType,  // Use normalized type
               title: `${phase} - ${normalizedContentType} - ${contentPiece.stakeholder || contentPiece.journalists?.[0] || 'general'}`,
@@ -2637,7 +2640,8 @@ ${section.talking_points.map((point: string) => `- ${point}`).join('\n')}
           try {
             console.log('💾 Saving presentation outline to Memory Vault')
             await supabase.from('content_library').insert({
-              org_id: organizationId,
+              id: crypto.randomUUID(),
+              organization_id: organizationId,
               content_type: 'presentation_outline',
               title: outline.topic,
               content: markdownContent,
@@ -2650,7 +2654,7 @@ ${section.talking_points.map((point: string) => `- ${point}`).join('\n')}
                 created_date: new Date().toISOString(),
                 status: 'generating'
               },
-              folder_path: `presentations/${outline.topic.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
+              folder: `presentations/${outline.topic.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
             })
             console.log('✅ Saved presentation outline to Memory Vault')
           } catch (saveError) {
@@ -2934,6 +2938,7 @@ ${section.talking_points.map((p: string) => `  • ${p}`).join('\n')}
         try {
           // Save strategy document first
           await supabase.from('content_library').insert({
+            id: crypto.randomUUID(),
             organization_id: organizationId,
             content_type: 'strategy-document',
             title: `${strategy.subject} - Strategy`,
@@ -2949,6 +2954,7 @@ ${section.talking_points.map((p: string) => `  • ${p}`).join('\n')}
           // Save each content piece
           for (const piece of generatedContent) {
             await supabase.from('content_library').insert({
+              id: crypto.randomUUID(),
               organization_id: organizationId,
               content_type: piece.type,
               title: `${strategy.subject} - ${piece.type.replace('-', ' ').toUpperCase()}`,

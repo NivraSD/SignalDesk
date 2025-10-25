@@ -236,22 +236,29 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
 *Opportunity Score: ${opp.score} | Urgency: ${opp.urgency} | Category: ${opp.category}*`
 
       try {
-        await supabase.from('content_library').insert({
+        const { error: overviewError } = await supabase.from('content_library').insert({
+          id: crypto.randomUUID(),
           organization_id: organization?.id || '7a2835cb-11ee-4512-acc3-b6caf8eb03ff',
           title: `${folderName} - Overview`,
           content: overviewContent,
           content_type: 'strategy',
           folder: `Opportunities/${folderName}`,
-          themes: [opp.category],
-          topics: opp.strategic_context?.trigger_events || [],
+          tags: [opp.category, ...(opp.strategic_context?.trigger_events || [])],
           metadata: {
             opportunity_id: opp.id,
             urgency: opp.urgency,
             score: opp.score,
-            is_overview: true
+            is_overview: true,
+            themes: [opp.category],
+            topics: opp.strategic_context?.trigger_events || []
           }
         })
-        console.log('✅ Saved opportunity overview to Memory Vault:', `Opportunities/${folderName}`)
+
+        if (overviewError) {
+          console.error('❌ Failed to save overview:', overviewError)
+        } else {
+          console.log('✅ Saved opportunity overview to Memory Vault:', `Opportunities/${folderName}`)
+        }
       } catch (error) {
         console.error('❌ Failed to save overview:', error)
       }
