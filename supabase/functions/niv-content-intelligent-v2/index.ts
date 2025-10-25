@@ -1566,13 +1566,15 @@ ${campaignContext.timeline || 'Not specified'}
           const imageData = await imageResponse.json()
           console.log('✅ Image data:', imageData)
 
-          // Extract image URL from response
+          // Extract image URL from response - must be a string, not an object
           const imageUrl = imageData.images?.[0]?.url ||
+                          imageData.images?.[0]?.uri ||
+                          imageData.images?.[0]?.gcsUri ||
                           imageData.imageUrl ||
                           imageData.url ||
-                          (imageData.fallback?.type === 'visual_brief' ? null : imageData.images?.[0])
+                          null
 
-          if (!imageUrl) {
+          if (!imageUrl || typeof imageUrl !== 'string') {
             // Return visual brief if no image was generated
             return new Response(JSON.stringify({
               success: false,
@@ -2261,7 +2263,17 @@ ${campaignContext.timeline || 'Not specified'}
             })
           })
           const imageData = await imageResponse.json()
-          const imageUrl = imageData.images?.[0]?.url || imageData.imageUrl || imageData.url
+          const imageUrl = imageData.images?.[0]?.url ||
+                          imageData.images?.[0]?.uri ||
+                          imageData.images?.[0]?.gcsUri ||
+                          imageData.imageUrl ||
+                          imageData.url ||
+                          null
+
+          if (!imageUrl || typeof imageUrl !== 'string') {
+            throw new Error('No valid image URL returned from Vertex AI')
+          }
+
           return new Response(JSON.stringify({
             success: true, mode: 'image_generated',
             message: `✅ Social graphic generated`, imageUrl, conversationId

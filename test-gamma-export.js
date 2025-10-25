@@ -17,14 +17,21 @@ const supabase = createClient(
   process.env.REACT_APP_SUPABASE_ANON_KEY
 )
 
-// Your organization ID
+// Your organization ID and optional opportunity ID
 const ORGANIZATION_ID = '7a2835cb-11ee-4512-acc3-b6caf8eb03ff'  // Replace with your org ID
+const OPPORTUNITY_ID = null  // Set to an opportunity UUID to test folder integration
+
+// If testing with an opportunity, the presentation will be stored at:
+// - Storage: {org_id}/opportunities/{opportunity_id}/presentations/{title}_{gamma_id}.pptx
+// - Memory Vault: opportunities/{opportunity_id}/presentations
 
 async function testGammaExport() {
   console.log('🧪 Testing Gamma Presentation Export\n')
 
   // Step 1: Generate presentation
   console.log('📊 Step 1: Generating presentation...')
+  console.log(`   ${OPPORTUNITY_ID ? `Linked to opportunity: ${OPPORTUNITY_ID}` : 'Standalone presentation'}\n`)
+
   const { data: generateResult, error: generateError } = await supabase.functions.invoke('gamma-presentation', {
     body: {
       title: 'Test Export - AI in Healthcare',
@@ -53,6 +60,7 @@ Artificial Intelligence is transforming healthcare through:
 AI will continue to revolutionize healthcare, making it more accessible, affordable, and effective.`,
       capture: true,  // Enable capture
       organization_id: ORGANIZATION_ID,
+      campaign_id: OPPORTUNITY_ID,  // Links to opportunity (if set)
       options: {
         numCards: 5,
         imageSource: 'ai',
@@ -124,10 +132,18 @@ AI will continue to revolutionize healthcare, making it more accessible, afforda
         console.log('  ✅ Found in campaign_presentations:')
         console.log(`     ID: ${presentation.id}`)
         console.log(`     Title: ${presentation.title}`)
+        console.log(`     Opportunity: ${presentation.campaign_id || 'None (standalone)'}`)
         console.log(`     Slide count: ${presentation.slide_count}`)
         console.log(`     PPTX URL: ${presentation.pptx_url || 'Not stored'}`)
         console.log(`     Full text length: ${presentation.full_text?.length || 0} chars`)
         console.log(`     Slides extracted: ${presentation.slides?.length || 0}`)
+
+        if (presentation.pptx_url && OPPORTUNITY_ID) {
+          console.log(`\n     📁 Storage path includes opportunity folder:`)
+          console.log(`        Expected: opportunities/${OPPORTUNITY_ID}/presentations/`)
+          const hasOpportunityFolder = presentation.pptx_url.includes(`/opportunities/${OPPORTUNITY_ID}/`)
+          console.log(`        ${hasOpportunityFolder ? '✅' : '❌'} Verified in path`)
+        }
       }
 
       // Check content_library (Memory Vault)
@@ -149,6 +165,15 @@ AI will continue to revolutionize healthcare, making it more accessible, afforda
         console.log(`     Content type: ${memoryVault.content_type}`)
         console.log(`     Content length: ${memoryVault.content?.length || 0} chars`)
         console.log(`     Tags: ${memoryVault.tags?.join(', ')}`)
+        console.log(`     Folder path: ${memoryVault.folder_path}`)
+
+        if (OPPORTUNITY_ID) {
+          const expectedFolder = `opportunities/${OPPORTUNITY_ID}/presentations`
+          const correctFolder = memoryVault.folder_path === expectedFolder
+          console.log(`\n     📁 Opportunity folder organization:`)
+          console.log(`        Expected: ${expectedFolder}`)
+          console.log(`        ${correctFolder ? '✅' : '❌'} ${correctFolder ? 'Correct!' : 'Mismatch'}`)
+        }
       }
 
       // Step 5: Summary

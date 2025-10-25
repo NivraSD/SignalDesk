@@ -131,9 +131,26 @@ async function uploadToStorage(
   file: Uint8Array,
   organizationId: string,
   gammaId: string,
-  extension: string
+  extension: string,
+  opportunityId?: string,
+  presentationTitle?: string
 ): Promise<string> {
-  const filePath = `presentations/${organizationId}/${gammaId}.${extension}`
+  // Build file path based on whether this is linked to an opportunity
+  let filePath: string
+
+  if (opportunityId) {
+    // Store within opportunity folder structure
+    // Format: {org_id}/opportunities/{opportunity_id}/presentations/{title}_{gamma_id}.pptx
+    const sanitizedTitle = (presentationTitle || 'presentation')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .substring(0, 50)
+
+    filePath = `${organizationId}/opportunities/${opportunityId}/presentations/${sanitizedTitle}_${gammaId}.${extension}`
+  } else {
+    // Standalone presentation (not linked to opportunity)
+    filePath = `${organizationId}/presentations/${gammaId}.${extension}`
+  }
 
   console.log('📤 Uploading to Supabase Storage:', filePath)
 
@@ -244,7 +261,9 @@ async function capturePresentation(
           pptxBuffer,
           request.organization_id,
           generationId,
-          'pptx'
+          'pptx',
+          request.campaign_id,  // This is the opportunity ID
+          presentationTitle
         )
 
         // Extract text content
@@ -300,11 +319,21 @@ async function capturePresentation(
       console.log('💾 Saving to Memory Vault...')
 
       try {
+        // Build folder path based on opportunity linkage
+        let folderPath: string
+        if (request.campaign_id) {
+          // Store within opportunity folder in Memory Vault
+          folderPath = `opportunities/${request.campaign_id}/presentations`
+        } else {
+          // Standalone presentation folder
+          folderPath = `presentations`
+        }
+
         await supabase
           .from('content_library')
           .insert({
             organization_id: request.organization_id,
-            session_id: request.campaign_id,
+            session_id: request.campaign_id,  // Links to opportunity if available
             content_type: 'presentation',
             title: presentationTitle,
             content: fullText,
@@ -314,15 +343,17 @@ async function capturePresentation(
               slide_count: slides.length,
               format: 'pptx',
               slides: slides,
-              campaign_presentation_id: data.id
+              campaign_presentation_id: data.id,
+              opportunity_id: request.campaign_id,  // Explicit link
+              source: 'gamma'
             },
-            tags: ['gamma', 'presentation', 'auto-generated'],
+            tags: ['gamma', 'presentation', 'auto-generated', request.campaign_id ? 'opportunity' : 'standalone'],
             status: 'final',
-            folder_path: `presentations/${presentationTitle}`,
+            folder_path: folderPath,
             file_url: pptxStorageUrl
           })
 
-        console.log('✅ Saved to Memory Vault')
+        console.log(`✅ Saved to Memory Vault at: ${folderPath}`)
       } catch (mvError) {
         console.error('Error saving to Memory Vault:', mvError)
         // Don't fail if Memory Vault save fails

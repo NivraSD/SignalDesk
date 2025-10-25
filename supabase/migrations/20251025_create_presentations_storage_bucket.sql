@@ -17,40 +17,32 @@ VALUES (
 ON CONFLICT (id) DO NOTHING;
 
 -- RLS Policies for presentations bucket
-CREATE POLICY "Authenticated users can upload presentations"
-ON storage.objects FOR INSERT
-TO authenticated
-WITH CHECK (bucket_id = 'presentations');
+-- Note: These policies are permissive to allow Edge Functions to work
+-- The Edge Function uses service_role which bypasses RLS anyway
 
-CREATE POLICY "Anyone can view presentations"
+-- Allow anyone to view presentations (public bucket)
+CREATE POLICY "Public can view presentations"
 ON storage.objects FOR SELECT
 TO public
 USING (bucket_id = 'presentations');
 
-CREATE POLICY "Users can update their own presentations"
-ON storage.objects FOR UPDATE
+-- Allow authenticated users to manage presentations
+CREATE POLICY "Authenticated can manage presentations"
+ON storage.objects FOR ALL
 TO authenticated
-USING (bucket_id = 'presentations');
+USING (bucket_id = 'presentations')
+WITH CHECK (bucket_id = 'presentations');
 
-CREATE POLICY "Users can delete their own presentations"
-ON storage.objects FOR DELETE
-TO authenticated
-USING (bucket_id = 'presentations');
+-- Allow anon users to upload (for Edge Functions using anon key)
+CREATE POLICY "Anon can manage presentations"
+ON storage.objects FOR ALL
+TO anon
+USING (bucket_id = 'presentations')
+WITH CHECK (bucket_id = 'presentations');
 
--- Service role has full access
+-- Service role has full access (bypasses RLS anyway, but explicit is good)
 CREATE POLICY "Service role full access to presentations"
 ON storage.objects FOR ALL
 TO service_role
 USING (bucket_id = 'presentations')
 WITH CHECK (bucket_id = 'presentations');
-
--- Anon access for edge functions
-CREATE POLICY "Anon can upload presentations"
-ON storage.objects FOR INSERT
-TO anon
-WITH CHECK (bucket_id = 'presentations');
-
-CREATE POLICY "Anon can update presentations"
-ON storage.objects FOR UPDATE
-TO anon
-USING (bucket_id = 'presentations');

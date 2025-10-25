@@ -161,8 +161,19 @@ export default function OpportunitiesModule() {
     }
   }
 
+  // Helper function to create clean folder name from opportunity title
+  const getOpportunityFolderName = (title: string): string => {
+    // Remove "Opportunity: " prefix if it exists
+    let cleanTitle = title.replace(/^Opportunity:\s*/i, '')
+    return cleanTitle.trim()
+  }
+
   const executeOpportunity = async (opp: Opportunity) => {
     console.log('🚀 Execute opportunity called:', opp)
+
+    // Create clean folder name
+    const folderName = getOpportunityFolderName(opp.title)
+    console.log('📁 Using folder name:', folderName)
 
     if (!opp.version || opp.version !== 2 || !opp.execution_plan) {
       console.error('❌ Not a V2 opportunity or missing execution plan')
@@ -227,10 +238,10 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
       try {
         await supabase.from('content_library').insert({
           organization_id: organization?.id || '7a2835cb-11ee-4512-acc3-b6caf8eb03ff',
-          title: `${opp.title} - Overview`,
+          title: `${folderName} - Overview`,
           content: overviewContent,
           content_type: 'strategy',
-          folder: `Opportunities/${opp.title}`,
+          folder: `Opportunities/${folderName}`,
           themes: [opp.category],
           topics: opp.strategic_context?.trigger_events || [],
           metadata: {
@@ -240,7 +251,7 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
             is_overview: true
           }
         })
-        console.log('✅ Saved opportunity overview to Memory Vault')
+        console.log('✅ Saved opportunity overview to Memory Vault:', `Opportunities/${folderName}`)
       } catch (error) {
         console.error('❌ Failed to save overview:', error)
       }
@@ -353,7 +364,7 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
             contentRequirements,
             researchInsights: [opp.strategic_context?.why_now || ''],
             currentDate: new Date().toISOString().split('T')[0],
-            campaignFolder: `Opportunities/${opp.title}`,
+            campaignFolder: `Opportunities/${folderName}`,
             blueprintId: opp.id,
             positioning: opp.strategic_context?.competitive_advantage || '',
             targetStakeholders: opp.execution_plan.stakeholder_campaigns.map(c => c.stakeholder_name),
