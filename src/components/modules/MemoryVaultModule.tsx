@@ -168,8 +168,6 @@ export default function MemoryVaultModule() {
   const [selectedAsset, setSelectedAsset] = useState<BrandAsset | null>(null)
   const [uploadingAsset, setUploadingAsset] = useState(false)
   const [currentFolder, setCurrentFolder] = useState<string | null>(null)
-  const [showNewFolderDialog, setShowNewFolderDialog] = useState(false)
-  const [newFolderName, setNewFolderName] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Analytics State
@@ -725,8 +723,8 @@ export default function MemoryVaultModule() {
     }
   }
 
-  // Create folder (just stores the folder name for upload selection)
-  const handleCreateFolder = () => {
+  // Create folder for brand assets (just stores the folder name for upload selection)
+  const handleCreateBrandFolder = () => {
     if (!newFolderName.trim()) return
 
     // The folder will be created when the first asset is uploaded to it
@@ -1067,7 +1065,7 @@ export default function MemoryVaultModule() {
                       type="text"
                       value={newFolderName}
                       onChange={(e) => setNewFolderName(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleCreateFolder()}
+                      onKeyPress={(e) => e.key === 'Enter' && handleCreateBrandFolder()}
                       placeholder="Folder name (e.g., Photos, Templates)"
                       className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 mb-4"
                       autoFocus
@@ -1083,7 +1081,7 @@ export default function MemoryVaultModule() {
                         Cancel
                       </button>
                       <button
-                        onClick={handleCreateFolder}
+                        onClick={handleCreateBrandFolder}
                         disabled={!newFolderName.trim()}
                         className="px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 rounded-lg transition-colors disabled:opacity-50"
                       >
