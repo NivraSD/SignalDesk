@@ -258,6 +258,289 @@ Generate Pitches → Personalize → Create Drafts:
 └── Ready for final review and send
 ```
 
+### For GEO Schemas (AI Visibility)
+```
+Generate/Optimize Schema → Review → Deploy:
+├── Push to CDN (auto-update on website)
+├── Update WordPress Plugin (via WP REST API)
+├── Sync to Shopify (via Shopify API)
+├── Update Webflow (via Webflow API)
+├── Download JSON-LD (manual implementation)
+└── Copy HTML snippet (paste in <head>)
+```
+
+---
+
+## 🤖 GEO Schema Publishing (AI Visibility Integration)
+
+### Concept
+Automatically deploy optimized JSON-LD schemas to user websites for improved AI agent visibility (ChatGPT, Claude, Perplexity, Gemini).
+
+### Deployment Methods
+
+#### 1. **CDN Hosting (Recommended)**
+SignalDesk hosts schemas on CDN, user includes single script tag:
+
+```html
+<!-- User adds once to website <head> -->
+<script src="https://schemas.signaldesk.com/loader.js"
+        data-org-id="org_123"></script>
+
+<!-- Auto-loads all active schemas -->
+<!-- Updates in real-time when changed in SignalDesk -->
+```
+
+**Benefits:**
+- One-time setup
+- Auto-updates when schemas change
+- No manual deployment
+- Version control maintained
+- Rollback capability
+
+#### 2. **CMS/Platform Plugins**
+
+**WordPress Plugin:**
+- Install via WordPress plugin directory
+- OAuth connection to SignalDesk account
+- Auto-syncs schemas from SignalDesk
+- Displays schema validation in WP admin
+- Updates in real-time
+
+**Shopify App:**
+- Install from Shopify App Store
+- Connects to SignalDesk
+- Syncs Product, Organization, Offer schemas
+- Auto-updates when products change
+
+**Webflow Integration:**
+- Custom code component
+- Connects via API
+- Syncs schemas to site code
+- Updates on publish
+
+**Implementation:**
+```javascript
+// WordPress plugin auto-sync
+add_action('wp_head', function() {
+  $schemas = fetch_signaldesk_schemas(get_option('signaldesk_org_id'));
+  foreach ($schemas as $schema) {
+    echo '<script type="application/ld+json">';
+    echo json_encode($schema->content);
+    echo '</script>';
+  }
+});
+```
+
+#### 3. **API Endpoint Access**
+For custom implementations:
+
+```javascript
+// User's website fetches schemas
+GET https://api.signaldesk.com/v1/schemas/org_123/active
+
+Response:
+{
+  schemas: [
+    { "@context": "https://schema.org", "@type": "Organization", ... },
+    { "@context": "https://schema.org", "@type": "Product", ... }
+  ],
+  lastUpdated: "2025-10-26T14:00:00Z",
+  deploymentUrl: "https://schemas.signaldesk.com/org_123/all.json"
+}
+
+// Inject into page
+```
+
+#### 4. **Manual Export Options**
+
+**Download Formats:**
+- JSON-LD file (all.json)
+- Individual schema files (organization.json, product.json)
+- HTML snippet (ready to paste)
+- Google Tag Manager tag (import and deploy)
+- WordPress plugin code (self-hosted)
+
+**Use Case:** For developers who want full control or custom implementations
+
+#### 5. **Direct Platform Integrations**
+
+**Squarespace:**
+- Code injection in Settings → Advanced
+- Auto-update via API
+
+**Wix:**
+- Custom HTML element
+- Velo code for dynamic updates
+
+**HubSpot:**
+- Site settings header HTML
+- API integration for auto-sync
+
+### Schema Validation System
+
+**Pre-Deployment Validation:**
+```
+1. User updates schema in SignalDesk
+   ↓
+2. Auto-validate against schema.org
+   ↓
+3. Check for required fields
+   ↓
+4. Test JSON-LD syntax
+   ↓
+5. If valid → Mark ready for deployment
+   If invalid → Show errors, block deployment
+```
+
+**Post-Deployment Verification:**
+```
+1. Schema deployed via chosen method
+   ↓
+2. SignalDesk crawls user's website (via Firecrawl)
+   ↓
+3. Extracts actual schemas from page
+   ↓
+4. Compares to expected schemas
+   ↓
+5. If match → Mark as "Active ✓"
+   If mismatch → Alert user with diff
+   If missing → "Deployment failed" notification
+```
+
+### Deployment Tracking
+
+**Database Schema:**
+```sql
+CREATE TABLE schema_deployments (
+  id UUID PRIMARY KEY,
+  schema_id UUID REFERENCES schemas(id),
+  organization_id UUID REFERENCES organizations(id),
+
+  -- Deployment method
+  method VARCHAR(50), -- 'cdn', 'wordpress', 'shopify', 'api', 'manual'
+  status VARCHAR(20), -- 'pending', 'active', 'failed', 'archived'
+
+  -- Deployment details
+  deployment_url TEXT, -- Where it's deployed
+  platform_data JSONB, -- Platform-specific details
+
+  -- Validation
+  last_validated TIMESTAMPTZ,
+  validation_status VARCHAR(20), -- 'verified', 'mismatch', 'missing'
+  validation_errors JSONB,
+
+  -- Tracking
+  deployed_at TIMESTAMPTZ,
+  last_synced TIMESTAMPTZ,
+  sync_frequency VARCHAR(20), -- 'realtime', 'hourly', 'daily', 'manual'
+
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### User Experience Flow
+
+**Initial Setup:**
+```
+1. User generates/optimizes schemas in SignalDesk
+2. Clicks "Deploy Schemas"
+3. Chooses deployment method:
+   - "Auto-deploy via CDN" (easiest)
+   - "Install WordPress Plugin"
+   - "Connect Shopify"
+   - "Download JSON-LD" (manual)
+4. Follows platform-specific setup (one-time)
+5. Schemas automatically sync from then on
+```
+
+**Ongoing Updates:**
+```
+1. User updates schema in SignalDesk (or NIV auto-updates)
+2. Schema auto-deploys based on method:
+   - CDN: Instant update
+   - WordPress: Syncs on next page load
+   - Shopify: Syncs within 1 minute
+   - API: Syncs per user's implementation
+   - Manual: User notified to re-export
+3. Validation runs automatically
+4. User sees "Schema updated ✓" notification
+```
+
+### Platform-Specific Considerations
+
+**WordPress:**
+- REST API for authentication
+- Custom endpoint for schema sync
+- Caching compatibility (purge on update)
+- Multisite support
+
+**Shopify:**
+- Shopify API for product data
+- Auto-sync with product updates
+- Theme integration
+- Shopify Plus features
+
+**Webflow:**
+- Custom code components
+- CMS collection integration
+- Publish hooks
+- Staging vs. production
+
+### Integration with Export Connectors
+
+**Unified Export UI:**
+```jsx
+<ExportButton content={schema}>
+  <ExportOption icon={<Globe />} label="Deploy to Website">
+    <DeployOption method="cdn" status="connected" />
+    <DeployOption method="wordpress" status="available" />
+    <DeployOption method="shopify" status="available" />
+  </ExportOption>
+
+  <ExportOption icon={<Download />} label="Download">
+    <DownloadFormat type="json-ld" />
+    <DownloadFormat type="html" />
+    <DownloadFormat type="gtm" />
+  </ExportOption>
+
+  <ExportOption icon={<Code />} label="Get API Endpoint">
+    <CopyableUrl url="https://api.signaldesk.com/v1/schemas/org_123/active" />
+  </ExportOption>
+</ExportButton>
+```
+
+### Security & Compliance
+
+**Schema Hosting:**
+- CDN with SSL/TLS
+- Read-only public access
+- Rate limiting
+- DDoS protection
+
+**Platform Connections:**
+- OAuth 2.0 for CMS platforms
+- Encrypted credential storage
+- Scope limitation (only schema deployment)
+- User can revoke anytime
+
+**Data Privacy:**
+- Schemas are public by nature (visible in HTML)
+- No PII in schemas
+- User controls what data is included
+
+### Performance Monitoring
+
+**Track Deployment Success:**
+- % of schemas successfully deployed
+- Average deployment time
+- Validation success rate
+- Platform-specific success rates
+
+**AI Visibility Impact:**
+- Citation rate before/after schema deployment
+- Rank improvement in AI responses
+- Platform-specific performance (ChatGPT vs Claude)
+
 ---
 
 ## 🎯 Benefits Summary
@@ -288,16 +571,20 @@ Generate Pitches → Personalize → Create Drafts:
 - Basic export functionality
 - Download options
 - Google Docs integration
+- GEO schema CDN hosting
 
 **Month 2:**
 - Cloud storage providers
 - Email draft creation
 - Bulk operations
+- WordPress/Shopify schema plugins
 
 **Month 3:**
 - Advanced integrations
 - Workflow automation
 - Enterprise features
+- Multi-platform schema variants
+- Schema A/B testing
 
 ---
 
