@@ -6,7 +6,7 @@ import {
   Brain, Tag, Clock, Folder, TrendingUp, Activity,
   Filter, X, ChevronRight, ChevronDown, Download, Trash2, Eye,
   BarChart3, Zap, CheckCircle, AlertCircle, Loader, Edit,
-  FolderPlus, MoreVertical, Move, Copy, FolderOpen, File
+  FolderPlus, MoreVertical, Move, Copy, FolderOpen, File, ExternalLink
 } from 'lucide-react'
 import { useAppStore } from '@/stores/useAppStore'
 import { createClient } from '@supabase/supabase-js'
@@ -1575,6 +1575,30 @@ function ContentLibraryTab({
                   </div>
                 </div>
                 <div className="flex gap-2">
+                  {/* Gamma Presentation Buttons */}
+                  {(selectedContent.content_type === 'presentation' || selectedContent.content_type === 'presentation_outline') && selectedContent.metadata?.gamma_url && (
+                    <a
+                      href={selectedContent.metadata.gamma_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-3 py-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 rounded-lg transition-colors border border-purple-500/20"
+                      title="View Gamma Presentation"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      <span className="text-sm font-medium">View Gamma</span>
+                    </a>
+                  )}
+                  {(selectedContent.content_type === 'presentation' || selectedContent.content_type === 'presentation_outline') && selectedContent.metadata?.pptx_url && (
+                    <a
+                      href={selectedContent.metadata.pptx_url}
+                      download
+                      className="flex items-center gap-2 px-3 py-2 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 rounded-lg transition-colors border border-orange-500/20"
+                      title="Download PPTX"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span className="text-sm font-medium">Download PPTX</span>
+                    </a>
+                  )}
                   <button
                     onClick={() => onOpenInWorkspace(selectedContent)}
                     className="flex items-center gap-2 px-3 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg transition-colors border border-blue-500/20"

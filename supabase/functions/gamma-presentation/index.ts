@@ -346,6 +346,7 @@ async function capturePresentation(
         await supabase
           .from('content_library')
           .insert({
+            id: crypto.randomUUID(),
             organization_id: request.organization_id,
             session_id: request.campaign_id,  // Links to opportunity if available
             content_type: 'presentation',
@@ -354,6 +355,7 @@ async function capturePresentation(
             metadata: {
               gamma_id: generationId,
               gamma_url: gammaUrl,
+              pptx_url: pptxStorageUrl,
               slide_count: slides.length,
               format: 'pptx',
               slides: slides,
@@ -363,7 +365,7 @@ async function capturePresentation(
             },
             tags: ['gamma', 'presentation', 'auto-generated', request.campaign_id ? 'opportunity' : 'standalone'],
             status: 'final',
-            folder_path: folderPath,
+            folder: folderPath,
             file_url: pptxStorageUrl
           })
 
