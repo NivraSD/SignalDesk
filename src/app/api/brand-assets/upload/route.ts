@@ -28,6 +28,7 @@ export async function POST(request: NextRequest) {
     const name = formData.get('name') as string
     const description = formData.get('description') as string
     const tags = formData.get('tags') as string // Comma-separated
+    const folder = formData.get('folder') as string | null
 
     // Validate required fields
     if (!file || !assetType || !organizationId) {
@@ -94,6 +95,7 @@ export async function POST(request: NextRequest) {
         name: name || file.name,
         description: description || null,
         tags: tags ? tags.split(',').map(t => t.trim()) : [],
+        folder: folder || null, // Store folder for organization
         status: 'active',
         created_at: new Date().toISOString()
       })

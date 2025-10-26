@@ -414,6 +414,7 @@ function extractDomain(url: string): string {
 
 /**
  * Normalize Fireplexity results to match monitor-stage-1 schema
+ * ENHANCED: Adds recency scoring to prioritize fresh news over stale content
  */
 function normalizeArticlesSchema(articles: any[], profile: any): any[] {
   return articles.map((article, index) => {
@@ -428,6 +429,27 @@ function normalizeArticlesSchema(articles: any[], profile: any): any[] {
     // Determine source category
     const sourceCategory = categorizeSource(sourceName, profile)
 
+    // Calculate base relevance score
+    const baseScore = article.relevanceScore || article.relevance_score || 0.5
+
+    // ADD RECENCY SCORING (like NIV V2) - prioritize fresh news
+    const publishedDate = new Date(article.publishDate || article.published_at || Date.now())
+    const hoursAgo = (Date.now() - publishedDate.getTime()) / (1000 * 60 * 60)
+
+    let recencyBonus = 0
+    if (hoursAgo < 1) recencyBonus = 0.25      // Within 1 hour: +25 points
+    else if (hoursAgo < 6) recencyBonus = 0.15  // Within 6 hours: +15 points
+    else if (hoursAgo < 12) recencyBonus = 0.10 // Within 12 hours: +10 points
+    else if (hoursAgo < 24) recencyBonus = 0.05 // Within 24 hours: +5 points
+
+    // Source tier bonus
+    let tierBonus = 0
+    if (sourceTier === 'critical') tierBonus = 0.15
+    else if (sourceTier === 'high') tierBonus = 0.10
+
+    // Final relevance score with recency and tier bonuses
+    const finalScore = Math.min(baseScore + recencyBonus + tierBonus, 1.0)
+
     return {
       // Core fields (from Fireplexity)
       title: article.title,
@@ -437,7 +459,7 @@ function normalizeArticlesSchema(articles: any[], profile: any): any[] {
 
       // Renamed fields (fix schema incompatibilities)
       published_at: article.publishDate || article.published_at || new Date().toISOString(),
-      relevance_score: article.relevanceScore || article.relevance_score || 0.5,
+      relevance_score: finalScore, // NOW includes recency + tier bonuses
 
       // Source fields (flattened and categorized)
       source: sourceName,
@@ -448,21 +470,24 @@ function normalizeArticlesSchema(articles: any[], profile: any): any[] {
 
       // Monitoring metadata (expected by downstream stages)
       claude_assessed: true, // Fireplexity uses AI
-      is_priority: (article.relevanceScore || 0.5) > 0.7,
+      is_priority: finalScore > 0.7, // Updated to use final score
 
       // Discovery coverage (what entities are mentioned)
       discovery_coverage: {
         competitors: findMentionedCompetitors(article, profile),
         stakeholders: findMentionedStakeholders(article, profile),
         topics: findMentionedTopics(article, profile),
-        score: (article.relevanceScore || 0.5) * 100
+        score: finalScore * 100 // Updated to use final score
       },
 
       // Metadata
       metadata: {
         search_query: article.searchQuery || '',
         firecrawl_processed: true,
-        index: index
+        index: index,
+        recency_hours: Math.round(hoursAgo * 10) / 10, // Track how old the article is
+        recency_bonus: recencyBonus,
+        base_score: baseScore
       }
     }
   })

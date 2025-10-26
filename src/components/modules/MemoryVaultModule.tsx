@@ -52,6 +52,7 @@ interface BrandAsset {
   brand_voice_profile?: any
   usage_count: number
   created_at: string
+  folder?: string
 }
 
 interface AnalyticsData {
@@ -135,6 +136,9 @@ export default function MemoryVaultModule() {
   const [brandAssets, setBrandAssets] = useState<BrandAsset[]>([])
   const [selectedAsset, setSelectedAsset] = useState<BrandAsset | null>(null)
   const [uploadingAsset, setUploadingAsset] = useState(false)
+  const [currentFolder, setCurrentFolder] = useState<string | null>(null)
+  const [showNewFolderDialog, setShowNewFolderDialog] = useState(false)
+  const [newFolderName, setNewFolderName] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Analytics State
@@ -629,8 +633,11 @@ export default function MemoryVaultModule() {
 
       formData.append('assetType', assetType) // camelCase to match API
       formData.append('name', file.name)
+      if (currentFolder) {
+        formData.append('folder', currentFolder)
+      }
 
-      console.log('📤 Uploading:', file.name, assetType)
+      console.log('📤 Uploading:', file.name, assetType, currentFolder ? `to folder: ${currentFolder}` : '')
 
       const response = await fetch('/api/brand-assets/upload', {
         method: 'POST',
@@ -654,6 +661,17 @@ export default function MemoryVaultModule() {
       setUploadingAsset(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
     }
+  }
+
+  // Create folder (just stores the folder name for upload selection)
+  const handleCreateFolder = () => {
+    if (!newFolderName.trim()) return
+
+    // The folder will be created when the first asset is uploaded to it
+    // For now, just set it as the current folder
+    setCurrentFolder(newFolderName.trim())
+    setNewFolderName('')
+    setShowNewFolderDialog(false)
   }
 
   // Delete content
@@ -977,6 +995,43 @@ export default function MemoryVaultModule() {
                 className="hidden"
                 accept=".pdf,.doc,.docx,.ppt,.pptx,.png,.jpg,.jpeg,.svg"
               />
+
+              {/* Folder Creation Dialog */}
+              {showNewFolderDialog && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                  <div className="bg-gray-900 rounded-lg p-6 w-96 border border-gray-800">
+                    <h3 className="text-lg font-semibold text-white mb-4">Create New Folder</h3>
+                    <input
+                      type="text"
+                      value={newFolderName}
+                      onChange={(e) => setNewFolderName(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleCreateFolder()}
+                      placeholder="Folder name (e.g., Photos, Templates)"
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 mb-4"
+                      autoFocus
+                    />
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        onClick={() => {
+                          setShowNewFolderDialog(false)
+                          setNewFolderName('')
+                        }}
+                        className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleCreateFolder}
+                        disabled={!newFolderName.trim()}
+                        className="px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 rounded-lg transition-colors disabled:opacity-50"
+                      >
+                        Create Folder
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploadingAsset}
@@ -1084,6 +1139,9 @@ export default function MemoryVaultModule() {
             onUpload={() => fileInputRef.current?.click()}
             onDelete={handleDeleteAsset}
             uploading={uploadingAsset}
+            currentFolder={currentFolder}
+            onFolderChange={setCurrentFolder}
+            onCreateFolder={() => setShowNewFolderDialog(true)}
           />
         )}
 
@@ -1894,7 +1952,10 @@ function BrandAssetsTab({
   onSelectAsset,
   onUpload,
   onDelete,
-  uploading
+  uploading,
+  currentFolder,
+  onFolderChange,
+  onCreateFolder
 }: {
   assets: BrandAsset[]
   selectedAsset: BrandAsset | null
@@ -1902,25 +1963,82 @@ function BrandAssetsTab({
   onUpload: () => void
   onDelete: (id: string) => void
   uploading: boolean
+  currentFolder: string | null
+  onFolderChange: (folder: string | null) => void
+  onCreateFolder: () => void
 }) {
+  // Get unique folders from assets
+  const folders = Array.from(new Set(assets.map(a => a.folder).filter(Boolean))) as string[]
+
+  // Filter assets by current folder
+  const filteredAssets = currentFolder
+    ? assets.filter(a => a.folder === currentFolder)
+    : assets.filter(a => !a.folder) // Root level assets
   return (
     <div className="h-full flex">
       <div className="w-80 border-r border-gray-800 bg-gray-900/30 overflow-y-auto p-4">
+        {/* Folder Navigation */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold text-gray-400">Folders</h3>
+            <button
+              onClick={onCreateFolder}
+              className="p-1 hover:bg-gray-800 rounded text-gray-400 hover:text-white transition-colors"
+              title="New Folder"
+            >
+              <FolderPlus className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="space-y-1">
+            <button
+              onClick={() => onFolderChange(null)}
+              className={`w-full text-left px-3 py-2 rounded-lg transition-colors text-sm flex items-center gap-2 ${
+                currentFolder === null
+                  ? 'bg-orange-500/20 text-orange-400'
+                  : 'text-gray-400 hover:bg-gray-800/50'
+              }`}
+            >
+              <Folder className="w-4 h-4" />
+              <span>All Assets</span>
+            </button>
+            {folders.map(folder => (
+              <button
+                key={folder}
+                onClick={() => onFolderChange(folder)}
+                className={`w-full text-left px-3 py-2 rounded-lg transition-colors text-sm flex items-center gap-2 ${
+                  currentFolder === folder
+                    ? 'bg-orange-500/20 text-orange-400'
+                    : 'text-gray-400 hover:bg-gray-800/50'
+                }`}
+              >
+                <Folder className="w-4 h-4" />
+                <span>{folder}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Assets List */}
         <div className="space-y-2">
-          {assets.length === 0 ? (
+          <h3 className="text-sm font-semibold text-gray-400 mb-2">
+            {currentFolder || 'Root'} Assets
+          </h3>
+          {filteredAssets.length === 0 ? (
             <div className="text-center py-8">
               <Sparkles className="w-8 h-8 mx-auto mb-2 text-gray-600" />
-              <p className="text-gray-500 text-sm mb-4">No brand assets yet</p>
+              <p className="text-gray-500 text-sm mb-4">
+                {currentFolder ? `No assets in ${currentFolder}` : 'No assets in root'}
+              </p>
               <button
                 onClick={onUpload}
                 disabled={uploading}
                 className="px-4 py-2 bg-orange-500/20 text-orange-400 rounded-lg hover:bg-orange-500/30 transition-colors text-sm disabled:opacity-50"
               >
-                Upload Your First Asset
+                Upload Asset
               </button>
             </div>
           ) : (
-            assets.map(asset => (
+            filteredAssets.map(asset => (
               <button
                 key={asset.id}
                 onClick={() => onSelectAsset(asset)}
