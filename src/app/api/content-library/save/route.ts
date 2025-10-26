@@ -34,7 +34,10 @@ export async function POST(request: NextRequest) {
         status: 'saved',
         intelligence_status: 'pending', // NEW: Will be processed async
         created_by: 'niv',
-        folder: folder || 'Unsorted' // Default to Unsorted until intelligence assigns better folder
+        folder: folder || 'Unsorted', // Default to Unsorted until intelligence assigns better folder
+        salience_score: 1.0, // NEW: Start with maximum salience
+        last_accessed_at: new Date().toISOString(),
+        access_count: 0
       })
       .select()
       .single()
@@ -152,6 +155,25 @@ async function logPerformanceMetric(
   }
 }
 
+// Boost salience when content is accessed
+async function boostSalienceForAccess(contentIds: string[]): Promise<void> {
+  try {
+    // Use the database function to boost salience for each item
+    // This is more efficient than individual updates
+    for (const contentId of contentIds) {
+      await supabase.rpc('boost_salience_on_access', {
+        content_id: contentId,
+        boost_amount: 0.05 // 5% boost
+      })
+    }
+
+    console.log(`📈 Boosted salience for ${contentIds.length} items`)
+  } catch (error) {
+    // Don't fail if salience boost fails (not critical)
+    console.warn('Failed to boost salience:', error)
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -184,6 +206,11 @@ export async function GET(request: NextRequest) {
         location: 'content_library',
         message: 'Content library not yet initialized'
       })
+    }
+
+    // Boost salience for accessed items (fire-and-forget, don't block response)
+    if (data && data.length > 0) {
+      boostSalienceForAccess(data.map(item => item.id)).catch(() => {})
     }
 
     return NextResponse.json({

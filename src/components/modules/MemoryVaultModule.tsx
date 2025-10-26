@@ -6,7 +6,7 @@ import {
   Brain, Tag, Clock, Folder, TrendingUp, Activity,
   Filter, X, ChevronRight, ChevronDown, Download, Trash2, Eye,
   BarChart3, Zap, CheckCircle, AlertCircle, Loader, Edit,
-  FolderPlus, MoreVertical, Move, Copy, FolderOpen, File, ExternalLink
+  FolderPlus, MoreVertical, Move, Copy, FolderOpen, File, ExternalLink, Target
 } from 'lucide-react'
 import { useAppStore } from '@/stores/useAppStore'
 import { createClient } from '@supabase/supabase-js'
@@ -86,6 +86,37 @@ interface AnalyticsData {
     result?: any
     folder?: string
   }>
+
+  // Campaign Attribution
+  attribution?: {
+    totalCoverage: number
+    highConfidenceMatches: number
+    totalReach: number
+    avgConfidence: number
+    sentimentBreakdown: {
+      positive: number
+      neutral: number
+      negative: number
+    }
+    topOutlets: Array<{
+      outlet: string
+      count: number
+      reach: number
+    }>
+    timeline: Array<{
+      date: string
+      outlet: string
+      type: string
+      confidence: number
+      reach: number
+      title: string
+      url: string
+      sentiment: string
+      match_type: string
+    }>
+    verifiedCount: number
+    pendingVerification: number
+  }
 }
 
 interface FolderNode {
@@ -375,6 +406,36 @@ export default function MemoryVaultModule() {
         ? (executedCount / contentData.length) * 100
         : 0
 
+      // Fetch campaign attribution data
+      let attributionData = undefined
+      try {
+        const { data: attributionResponse, error: attrError } = await supabase.functions.invoke(
+          'campaign-performance-get',
+          {
+            body: {
+              organizationId: organization.id
+            }
+          }
+        )
+
+        if (!attrError && attributionResponse?.metrics) {
+          const metrics = attributionResponse.metrics
+          attributionData = {
+            totalCoverage: metrics.total_coverage || 0,
+            highConfidenceMatches: metrics.high_confidence_matches || 0,
+            totalReach: metrics.total_reach || 0,
+            avgConfidence: metrics.avg_confidence || 0,
+            sentimentBreakdown: metrics.sentiment_breakdown || { positive: 0, neutral: 0, negative: 0 },
+            topOutlets: metrics.top_outlets || [],
+            timeline: metrics.timeline || [],
+            verifiedCount: metrics.verified_count || 0,
+            pendingVerification: metrics.pending_verification || 0
+          }
+        }
+      } catch (attrError) {
+        console.log('Campaign attribution data not available yet')
+      }
+
       setAnalytics({
         totalContent: contentData?.length || 0,
         executedContent: executedCount,
@@ -383,7 +444,8 @@ export default function MemoryVaultModule() {
         activityThisWeek,
         activityThisMonth,
         performanceByType,
-        recentExecutions: recentExecutions || []
+        recentExecutions: recentExecutions || [],
+        attribution: attributionData
       })
     } catch (error) {
       console.error('Error fetching analytics:', error)
@@ -2220,6 +2282,179 @@ function AnalyticsTab({
             </div>
           </div>
         </div>
+
+        {/* Campaign Attribution - NEW */}
+        {data.attribution && data.attribution.totalCoverage > 0 && (
+          <div className="p-6 bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-blue-400 flex items-center gap-2">
+                <Target className="w-5 h-5" />
+                Campaign Attribution
+              </h3>
+              <span className="text-sm text-gray-400">
+                AI-powered media tracking
+              </span>
+            </div>
+
+            {/* Top-level metrics */}
+            <div className="grid grid-cols-4 gap-4 mb-6">
+              <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-800">
+                <div className="text-sm text-gray-400 mb-1">Total Coverage</div>
+                <div className="text-3xl font-bold text-white">{data.attribution.totalCoverage}</div>
+                <div className="text-xs text-blue-300 mt-1">
+                  {data.attribution.highConfidenceMatches} high confidence
+                </div>
+              </div>
+              <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-800">
+                <div className="text-sm text-gray-400 mb-1">Total Reach</div>
+                <div className="text-3xl font-bold text-white">
+                  {(data.attribution.totalReach / 1000000).toFixed(1)}M
+                </div>
+                <div className="text-xs text-purple-300 mt-1">estimated audience</div>
+              </div>
+              <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-800">
+                <div className="text-sm text-gray-400 mb-1">Avg Confidence</div>
+                <div className="text-3xl font-bold text-white">
+                  {(data.attribution.avgConfidence * 100).toFixed(0)}%
+                </div>
+                <div className="text-xs text-emerald-300 mt-1">match accuracy</div>
+              </div>
+              <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-800">
+                <div className="text-sm text-gray-400 mb-1">Verification</div>
+                <div className="text-3xl font-bold text-white">{data.attribution.verifiedCount}</div>
+                <div className="text-xs text-orange-300 mt-1">
+                  {data.attribution.pendingVerification} pending
+                </div>
+              </div>
+            </div>
+
+            {/* Sentiment Breakdown */}
+            <div className="mb-6">
+              <h4 className="text-sm font-medium text-gray-400 mb-3">Sentiment Analysis</h4>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-emerald-400">Positive</span>
+                    <span className="text-lg font-bold text-white">
+                      {data.attribution.sentimentBreakdown.positive}
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {((data.attribution.sentimentBreakdown.positive / data.attribution.totalCoverage) * 100).toFixed(0)}% of total
+                  </div>
+                </div>
+                <div className="bg-gray-500/10 border border-gray-500/30 rounded-lg p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-400">Neutral</span>
+                    <span className="text-lg font-bold text-white">
+                      {data.attribution.sentimentBreakdown.neutral}
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {((data.attribution.sentimentBreakdown.neutral / data.attribution.totalCoverage) * 100).toFixed(0)}% of total
+                  </div>
+                </div>
+                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-red-400">Negative</span>
+                    <span className="text-lg font-bold text-white">
+                      {data.attribution.sentimentBreakdown.negative}
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {((data.attribution.sentimentBreakdown.negative / data.attribution.totalCoverage) * 100).toFixed(0)}% of total
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Top Outlets */}
+            {data.attribution.topOutlets.length > 0 && (
+              <div className="mb-6">
+                <h4 className="text-sm font-medium text-gray-400 mb-3">Top Outlets</h4>
+                <div className="space-y-2">
+                  {data.attribution.topOutlets.slice(0, 5).map((outlet, idx) => (
+                    <div key={idx} className="flex items-center justify-between bg-gray-900/50 rounded-lg p-3 border border-gray-800">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 text-sm font-bold">
+                          {idx + 1}
+                        </div>
+                        <div>
+                          <div className="font-medium text-white">{outlet.outlet}</div>
+                          <div className="text-xs text-gray-500">
+                            {(outlet.reach / 1000).toFixed(0)}K reach
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-lg font-bold text-white">{outlet.count}</div>
+                        <div className="text-xs text-gray-500">mentions</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recent Attribution Timeline */}
+            {data.attribution.timeline.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-400 mb-3">Recent Attributions</h4>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {data.attribution.timeline.slice(0, 10).map((item, idx) => (
+                    <div key={idx} className="bg-gray-900/50 rounded-lg p-3 border border-gray-800 hover:bg-gray-800/50 transition-colors">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <a
+                            href={item.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-medium text-white hover:text-blue-400 text-sm transition-colors"
+                          >
+                            {item.title}
+                          </a>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            <span className="text-xs px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded">
+                              {item.outlet}
+                            </span>
+                            <span className={`text-xs px-2 py-0.5 rounded ${
+                              item.match_type === 'exact_phrase'
+                                ? 'bg-emerald-500/20 text-emerald-300'
+                                : item.match_type === 'semantic'
+                                ? 'bg-purple-500/20 text-purple-300'
+                                : 'bg-orange-500/20 text-orange-300'
+                            }`}>
+                              {item.match_type === 'exact_phrase' ? 'Exact Match' :
+                               item.match_type === 'semantic' ? 'Semantic Match' : 'Contextual Match'}
+                            </span>
+                            <span className={`text-xs px-2 py-0.5 rounded ${
+                              item.sentiment === 'positive'
+                                ? 'bg-emerald-500/20 text-emerald-300'
+                                : item.sentiment === 'negative'
+                                ? 'bg-red-500/20 text-red-300'
+                                : 'bg-gray-500/20 text-gray-300'
+                            }`}>
+                              {item.sentiment}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {new Date(item.date).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-medium text-white">
+                            {(item.confidence * 100).toFixed(0)}%
+                          </div>
+                          <div className="text-xs text-gray-500">confidence</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Activity Over Time */}
         <div className="grid grid-cols-3 gap-4 mb-6">

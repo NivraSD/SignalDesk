@@ -395,7 +395,155 @@ async function getSuccessfulPatterns(organizationId: string, limit: number = 20)
   }
 }
 
-// Search all content types
+// Composite Retrieval Scoring
+// Based on OpenMemory's multi-factor ranking approach
+// Formula: score = 0.4 × similarity + 0.2 × salience + 0.1 × recency + 0.1 × relationship + 0.2 × execution_success
+function scoreContentItems(items: any[], query: string, queryKeywords: string[]): any[] {
+  return items.map(item => {
+    // 1. Similarity score (0.0-1.0)
+    const similarity = calculateSimilarity(item, query, queryKeywords);
+
+    // 2. Salience score (0.0-1.0)
+    const salience = item.salience_score ?? 1.0;
+
+    // 3. Recency score (0.0-1.0)
+    const recency = calculateRecency(item.created_at, item.last_accessed_at);
+
+    // 4. Relationship strength (0.0-1.0) - future: use related_content_ids
+    const relationship = 0.0;
+
+    // 5. Execution success (0.0-1.0)
+    const execution_success = calculateExecutionSuccess(item);
+
+    // Composite score with weights
+    const composite_score =
+      0.4 * similarity +
+      0.2 * salience +
+      0.1 * recency +
+      0.1 * relationship +
+      0.2 * execution_success;
+
+    // Generate retrieval reason
+    const retrieval_reason = generateRetrievalReason({
+      similarity,
+      salience,
+      recency,
+      execution_success,
+      item,
+      query,
+      queryKeywords
+    });
+
+    // Calculate confidence
+    const confidence = similarity > 0.8 && salience > 0.7 ? 0.95 :
+                      execution_success > 0.8 ? 0.9 :
+                      similarity > 0.7 ? 0.85 :
+                      similarity > 0.5 && salience > 0.5 ? 0.75 :
+                      similarity > 0.3 ? 0.6 : 0.5;
+
+    return {
+      ...item,
+      composite_score,
+      score_breakdown: { similarity, salience, recency, relationship, execution_success },
+      retrieval_reason,
+      confidence
+    };
+  }).sort((a, b) => b.composite_score - a.composite_score);
+}
+
+function calculateSimilarity(item: any, query: string, queryKeywords: string[]): number {
+  let score = 0;
+  let factors = 0;
+
+  // Keyword overlap
+  if (queryKeywords.length > 0) {
+    const itemKeywords = [
+      ...(item.themes || []),
+      ...(item.topics || []),
+      item.content_type,
+      ...(Array.isArray(item.tags) ? item.tags : [])
+    ].map(k => String(k).toLowerCase());
+
+    const matches = queryKeywords.filter(qk =>
+      itemKeywords.some(ik => ik.includes(qk) || qk.includes(ik))
+    );
+
+    score += matches.length / queryKeywords.length;
+    factors++;
+  }
+
+  // Title/content match
+  if (query) {
+    const queryLower = query.toLowerCase();
+    const titleMatch = item.title?.toLowerCase().includes(queryLower) ? 1 : 0;
+    const contentStr = typeof item.content === 'string' ? item.content : JSON.stringify(item.content || {});
+    const contentMatch = contentStr.toLowerCase().includes(queryLower) ? 0.5 : 0;
+
+    score += Math.max(titleMatch, contentMatch);
+    factors++;
+  }
+
+  return factors > 0 ? score / factors : 0.5;
+}
+
+function calculateRecency(created_at: string, last_accessed_at?: string): number {
+  const now = Date.now();
+  const referenceTime = last_accessed_at || created_at;
+  const referenceDate = new Date(referenceTime).getTime();
+  const daysAgo = (now - referenceDate) / (1000 * 60 * 60 * 24);
+
+  // Decay curve: e^(-days / 90)
+  return Math.max(0.1, Math.min(1.0, Math.exp(-daysAgo / 90)));
+}
+
+function calculateExecutionSuccess(item: any): number {
+  if (!item.executed) return 0.0;
+
+  if (typeof item.feedback === 'number') {
+    return Math.min(1.0, item.feedback / 5);
+  }
+
+  if (typeof item.feedback === 'string') {
+    const feedbackLower = item.feedback.toLowerCase();
+    const positiveWords = ['success', 'great', 'excellent', 'worked', 'effective', 'good'];
+    const negativeWords = ['failed', 'poor', 'ineffective', 'bad'];
+
+    const hasPositive = positiveWords.some(word => feedbackLower.includes(word));
+    const hasNegative = negativeWords.some(word => feedbackLower.includes(word));
+
+    if (hasPositive && !hasNegative) return 0.9;
+    if (hasNegative) return 0.3;
+  }
+
+  return 0.5;
+}
+
+function generateRetrievalReason(params: any): string {
+  const { similarity, salience, recency, execution_success, item, query, queryKeywords } = params;
+  const reasons: string[] = [];
+
+  if (similarity > 0.7) {
+    const matchedKeywords = queryKeywords.filter((qk: string) =>
+      item.themes?.some((t: string) => t.toLowerCase().includes(qk)) ||
+      item.topics?.some((t: string) => t.toLowerCase().includes(qk))
+    );
+
+    if (matchedKeywords.length > 0) {
+      reasons.push(`Strong match: ${matchedKeywords.slice(0, 3).join(', ')}`);
+    } else {
+      reasons.push(`High relevance to "${query.slice(0, 50)}${query.length > 50 ? '...' : ''}"`);
+    }
+  }
+
+  if (execution_success > 0.7) reasons.push('Proven successful');
+  if (salience > 0.8) reasons.push('Highly relevant');
+  if (recency > 0.8) reasons.push('Recently accessed');
+  if (item.content_type) reasons.push(`Type: ${item.content_type}`);
+
+  return reasons.length > 0 ? reasons.join(' • ') : 'General match';
+}
+
+// Search all content types with composite scoring
 async function searchContent(organizationId: string, query: string, contentType?: string, limit: number = 50): Promise<ApiResponse> {
   try {
     let dbQuery = supabase
@@ -415,13 +563,24 @@ async function searchContent(organizationId: string, query: string, contentType?
 
     const { data, error } = await dbQuery
       .order('created_at', { ascending: false })
-      .limit(limit);
+      .limit(limit * 2); // Fetch more to score and filter
 
     if (error) throw error;
 
+    if (!data || data.length === 0) {
+      return { success: true, data: [] };
+    }
+
+    // Apply composite scoring
+    const queryKeywords = query.toLowerCase().split(/\s+/).filter(k => k.length > 2);
+    const scoredData = scoreContentItems(data, query, queryKeywords);
+
+    // Return top results
+    const topResults = scoredData.slice(0, limit);
+
     return {
       success: true,
-      data: data || []
+      data: topResults
     };
   } catch (error: any) {
     return {

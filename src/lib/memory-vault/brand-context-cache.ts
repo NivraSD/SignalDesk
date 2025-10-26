@@ -130,6 +130,12 @@ async function queryBrandContext(
       return null
     }
 
+    // Boost salience for accessed assets (fire-and-forget, don't block)
+    const assetIds = [guidelines?.id, template?.id].filter(Boolean) as string[]
+    if (assetIds.length > 0) {
+      boostBrandAssetSalience(assetIds).catch(() => {})
+    }
+
     return {
       guidelines: guidelines ? {
         id: guidelines.id,
@@ -267,4 +273,26 @@ export function getBrandContextSync(
   warmBrandContextCache(organizationId, [contentType]).catch(() => {})
 
   return null
+}
+
+/**
+ * Boost salience for brand assets when accessed
+ * Fire-and-forget, never blocks
+ */
+async function boostBrandAssetSalience(assetIds: string[]): Promise<void> {
+  try {
+    // Boost salience by 0.05 (5%) and increment access_count
+    await supabase
+      .from('brand_assets')
+      .update({
+        last_accessed_at: new Date().toISOString()
+      })
+      .in('id', assetIds)
+
+    // Note: We use a simple update here because brand_assets doesn't have
+    // the boost_salience_on_access function. The actual salience boost
+    // will be calculated during the next decay cycle based on last_accessed_at.
+  } catch (error) {
+    // Silently fail - this is not critical
+  }
 }
