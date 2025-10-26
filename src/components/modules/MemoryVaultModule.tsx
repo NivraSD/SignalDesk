@@ -407,6 +407,7 @@ export default function MemoryVaultModule() {
       // Fetch campaign attribution data
       let attributionData = undefined
       try {
+        console.log('📊 Fetching campaign attribution data for org:', organization.id)
         const { data: attributionResponse, error: attrError } = await supabase.functions.invoke(
           'campaign-performance-get',
           {
@@ -415,6 +416,9 @@ export default function MemoryVaultModule() {
             }
           }
         )
+
+        console.log('📊 Attribution response:', attributionResponse)
+        console.log('📊 Attribution error:', attrError)
 
         if (!attrError && attributionResponse?.metrics) {
           const metrics = attributionResponse.metrics
@@ -429,9 +433,36 @@ export default function MemoryVaultModule() {
             verifiedCount: metrics.verified_count || 0,
             pendingVerification: metrics.pending_verification || 0
           }
+          console.log('✅ Attribution data loaded:', attributionData)
+        } else {
+          // Initialize with empty data to show the section
+          attributionData = {
+            totalCoverage: 0,
+            highConfidenceMatches: 0,
+            totalReach: 0,
+            avgConfidence: 0,
+            sentimentBreakdown: { positive: 0, neutral: 0, negative: 0 },
+            topOutlets: [],
+            timeline: [],
+            verifiedCount: 0,
+            pendingVerification: 0
+          }
+          console.log('📊 Initialized empty attribution data')
         }
       } catch (attrError) {
-        console.log('Campaign attribution data not available yet')
+        console.error('❌ Error fetching campaign attribution:', attrError)
+        // Initialize with empty data even on error
+        attributionData = {
+          totalCoverage: 0,
+          highConfidenceMatches: 0,
+          totalReach: 0,
+          avgConfidence: 0,
+          sentimentBreakdown: { positive: 0, neutral: 0, negative: 0 },
+          topOutlets: [],
+          timeline: [],
+          verifiedCount: 0,
+          pendingVerification: 0
+        }
       }
 
       setAnalytics({
@@ -2282,7 +2313,7 @@ function AnalyticsTab({
         </div>
 
         {/* Campaign Attribution - NEW */}
-        {data.attribution && data.attribution.totalCoverage > 0 && (
+        {data.attribution && (
           <div className="p-6 bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg mb-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-blue-400 flex items-center gap-2">
@@ -2294,6 +2325,17 @@ function AnalyticsTab({
               </span>
             </div>
 
+            {data.attribution.totalCoverage === 0 ? (
+              <div className="text-center py-8">
+                <Target className="w-16 h-16 mx-auto mb-4 text-gray-600 opacity-50" />
+                <h3 className="text-lg font-medium text-gray-400 mb-2">No Attributions Yet</h3>
+                <p className="text-sm text-gray-500 max-w-md mx-auto">
+                  Campaign attribution tracking is ready. When you export content and media coverage is detected,
+                  AI-powered attribution will appear here automatically.
+                </p>
+              </div>
+            ) : (
+              <>
             {/* Top-level metrics */}
             <div className="grid grid-cols-4 gap-4 mb-6">
               <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-800">
@@ -2450,6 +2492,8 @@ function AnalyticsTab({
                   ))}
                 </div>
               </div>
+            )}
+            </>
             )}
           </div>
         )}
