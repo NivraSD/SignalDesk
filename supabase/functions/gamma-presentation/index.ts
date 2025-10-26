@@ -361,6 +361,7 @@ async function capturePresentation(
               slides: slides,
               campaign_presentation_id: data.id,
               opportunity_id: request.campaign_id,  // Explicit link
+              blueprint_id: request.campaign_id,  // For OpportunitiesModule lookup
               source: 'gamma'
             },
             tags: ['gamma', 'presentation', 'auto-generated', request.campaign_id ? 'opportunity' : 'standalone'],
