@@ -420,12 +420,25 @@ const CONTENT_GENERATION_TOOLS = [
   },
   {
     name: "generate_instagram_caption",
-    description: "Generate Instagram caption with hashtags.",
+    description: "Generate Instagram caption with hashtags only (no image).",
     input_schema: {
       type: "object",
       properties: {
         topic: { type: "string", description: "Post topic" },
         style: { type: "string", description: "Caption style", default: "engaging" }
+      },
+      required: ["topic"]
+    }
+  },
+  {
+    name: "generate_instagram_post_with_image",
+    description: "Generate a complete Instagram post package with both caption AND image. Use this when user requests an Instagram post (they typically need both text and visual). This tool creates the caption and automatically generates a matching image.",
+    input_schema: {
+      type: "object",
+      properties: {
+        topic: { type: "string", description: "Post topic or announcement" },
+        style: { type: "string", description: "Caption style", default: "engaging" },
+        imageStyle: { type: "string", description: "Image style/aesthetic", default: "professional" }
       },
       required: ["topic"]
     }
@@ -712,6 +725,29 @@ const CONTENT_GENERATION_TOOLS = [
         }
       },
       required: ["approved_strategy"]
+    }
+  },
+  {
+    name: "search_memory_vault",
+    description: "Search Memory Vault for templates, examples, or past content that can guide current content generation. Use this to find proven successful patterns, templates, or examples when generating content. Memory Vault uses AI-powered composite scoring to prioritize proven successful content over generic matches.",
+    input_schema: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description: "What you're looking for (e.g., 'press release for product launch', 'social post about AI', 'thought leadership on sustainability')"
+        },
+        content_type: {
+          type: "string",
+          description: "Type of content to search for (press-release, social-post, thought-leadership, media-pitch, etc.)"
+        },
+        limit: {
+          type: "number",
+          description: "Number of results to return (default 3, max 10)",
+          default: 3
+        }
+      },
+      required: ["query"]
     }
   }
 ]
@@ -1667,6 +1703,72 @@ ${campaignContext.timeline || 'Not specified'}
         }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       }
 
+      // Handle Memory Vault search with composite scoring
+      if (toolUse && toolUse.name === 'search_memory_vault') {
+        console.log('🔍 Searching Memory Vault with composite scoring')
+        console.log('   Query:', toolUse.input.query)
+        console.log('   Type:', toolUse.input.content_type)
+
+        try {
+          const searchResponse = await supabase.functions.invoke('niv-memory-vault', {
+            body: {
+              action: 'search',
+              query: toolUse.input.query,
+              organizationId: organizationId,
+              contentType: toolUse.input.content_type,
+              limit: Math.min(toolUse.input.limit || 3, 10)
+            }
+          })
+
+          if (searchResponse.error) {
+            console.error('Memory Vault search error:', searchResponse.error)
+            throw searchResponse.error
+          }
+
+          const results = searchResponse.data?.results || []
+          console.log(`✅ Found ${results.length} results from Memory Vault`)
+
+          // Format results for Claude with composite scores and explanations
+          const formattedResults = results.map((r: any, idx: number) => ({
+            rank: idx + 1,
+            title: r.title,
+            type: r.content_type,
+            content_preview: r.content?.substring(0, 500) + '...',
+            score: r.composite_score?.toFixed(2),
+            why_recommended: r.retrieval_reason,
+            metrics: {
+              relevance: `${(r.similarity_score * 100).toFixed(0)}%`,
+              success_rate: r.execution_score ? `${(r.execution_score * 100).toFixed(0)}%` : 'Not tracked',
+              times_used: r.access_count || 0,
+              last_used: r.last_accessed_at
+            },
+            executed: r.executed,
+            full_content: r.content
+          }))
+
+          return new Response(JSON.stringify({
+            success: true,
+            mode: 'memory_vault_results',
+            message: results.length > 0
+              ? `Found ${results.length} template${results.length > 1 ? 's' : ''} from Memory Vault`
+              : 'No templates found in Memory Vault for this query',
+            results: formattedResults,
+            query: toolUse.input.query,
+            conversationId
+          }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+        } catch (error) {
+          console.error('❌ Memory Vault search error:', error)
+          return new Response(JSON.stringify({
+            success: false,
+            mode: 'memory_vault_results',
+            message: 'Memory Vault search failed - proceeding without templates',
+            results: [],
+            conversationId
+          }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+      }
+
       // Handle simple media list generation
       if (toolUse && toolUse.name === 'generate_media_list') {
         console.log('📋 Generating media list with journalist registry')
@@ -2092,6 +2194,91 @@ ${campaignContext.timeline || 'Not specified'}
           success: true, mode: 'content_generated', contentType: 'instagram-caption',
           message: `✅ Instagram caption generated`, content, conversationId
         }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      if (toolUse && toolUse.name === 'generate_instagram_post_with_image') {
+        console.log('📸 Generating complete Instagram post with caption + image')
+
+        // Step 1: Generate the caption
+        const caption = await callMCPService('social-post', {
+          organization: orgProfile.organizationName,
+          message: toolUse.input.topic,
+          platforms: ['instagram'],
+          tone: toolUse.input.style || 'engaging'
+        })
+
+        console.log('✅ Caption generated, now generating image')
+
+        // Step 2: Create image prompt based on the topic
+        const imagePrompt = `Professional ${toolUse.input.imageStyle || 'modern'} social media graphic for ${orgProfile.organizationName} about: ${toolUse.input.topic}. Clean, brand-appropriate design suitable for Instagram. High quality, corporate aesthetic.`
+
+        // Step 3: Generate the image
+        try {
+          const imageResponse = await fetch(
+            `${SUPABASE_URL}/functions/v1/vertex-ai-visual`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+              },
+              body: JSON.stringify({
+                type: 'image',
+                prompt: imagePrompt,
+                aspectRatio: '1:1',
+                numberOfImages: 1
+              })
+            }
+          )
+
+          if (!imageResponse.ok) {
+            const errorText = await imageResponse.text()
+            console.error('Image generation failed:', errorText)
+            // Return just the caption if image fails
+            return new Response(JSON.stringify({
+              success: true,
+              mode: 'content_generated',
+              contentType: 'instagram-post',
+              message: `✅ Instagram caption generated (image generation failed)`,
+              content: caption,
+              error: 'Image generation unavailable',
+              conversationId
+            }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+          }
+
+          const imageData = await imageResponse.json()
+          const imageUrl = imageData.images?.[0]?.url ||
+                          imageData.images?.[0]?.uri ||
+                          imageData.images?.[0]?.gcsUri ||
+                          imageData.imageUrl ||
+                          imageData.url ||
+                          null
+
+          console.log('✅ Complete Instagram post package ready')
+
+          // Return both caption and image
+          return new Response(JSON.stringify({
+            success: true,
+            mode: 'instagram_post_complete',
+            contentType: 'instagram-post',
+            message: `✅ Instagram post generated with caption and image`,
+            caption: caption,
+            imageUrl: imageUrl,
+            imagePrompt: imagePrompt,
+            conversationId
+          }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        } catch (error) {
+          console.error('Error generating image:', error)
+          // Return caption even if image fails
+          return new Response(JSON.stringify({
+            success: true,
+            mode: 'content_generated',
+            contentType: 'instagram-caption',
+            message: `✅ Instagram caption generated (image error: ${error.message})`,
+            content: caption,
+            conversationId
+          }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
       }
 
       if (toolUse && toolUse.name === 'generate_facebook_post') {
@@ -4361,7 +4548,8 @@ async function callMCPService(contentType: string, parameters: any): Promise<str
             organization: parameters.organization || 'Organization',
             announcement: parameters.subject || parameters.topic || 'Product Announcement',
             subject: parameters.subject || parameters.topic || 'Product Announcement',
-            topic: parameters.topic || parameters.subject || '',
+            topic: parameters.topic || parameters.subject || parameters.message || '',
+            message: parameters.message || parameters.topic || parameters.subject || '',
             angle: parameters.angle || '',
             narrative: parameters.narrative || parameters.angle || '',
             keyPoints: parameters.keyPoints || [],
@@ -4369,7 +4557,12 @@ async function callMCPService(contentType: string, parameters: any): Promise<str
             research: parameters.research || '',
             industry: parameters.industry || 'technology',
             strategy: parameters.strategy || parameters.angle || '',
-            tone: 'professional',
+            tone: parameters.tone || 'professional',
+
+            // Social media specific parameters
+            platforms: parameters.platforms || undefined,
+            includeHashtags: parameters.includeHashtags !== undefined ? parameters.includeHashtags : true,
+            includeEmojis: parameters.includeEmojis !== undefined ? parameters.includeEmojis : false,
 
             // Pass through complete framework data for maximum context
             proof_points: parameters.proof_points || [],
@@ -4386,7 +4579,7 @@ async function callMCPService(contentType: string, parameters: any): Promise<str
             context: {
               strategy: {
                 keyMessages: parameters.keyPoints || [],
-                primaryMessage: parameters.topic || parameters.subject || 'Product Announcement',
+                primaryMessage: parameters.message || parameters.topic || parameters.subject || 'Product Announcement',
                 narrative: parameters.narrative || parameters.angle || '',
                 objective: parameters.topic || parameters.subject || parameters.narrative || '',
                 proof_points: parameters.proof_points || [],
