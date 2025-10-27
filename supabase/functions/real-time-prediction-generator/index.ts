@@ -32,7 +32,9 @@ serve(async (req) => {
       organization_id,
       organization_name,
       articles = [],
-      profile = {}
+      profile = {},
+      trigger_event_id = null,
+      trigger_event_summary = null
     } = await req.json()
 
     console.log(`🔮 Real-Time Prediction Generator - ${organization_name}`)
@@ -270,8 +272,61 @@ Return ONLY the JSON array, no other text.`
 
     console.log(`✅ Generated ${predictions.length} predictions`)
 
-    // ==================== STEP 3: SAVE TO DATABASE ====================
-    if (predictions.length > 0) {
+    // ==================== STEP 3: MATCH PREDICTIONS TO TARGETS ====================
+    console.log('🎯 Matching predictions to intelligence targets...')
+
+    // Get organization's targets
+    const { data: targets, error: targetsError } = await supabase
+      .from('intelligence_targets')
+      .select('*')
+      .eq('organization_id', organization_id)
+      .eq('active', true)
+
+    if (targetsError) {
+      console.error('Error fetching targets:', targetsError)
+    }
+
+    // Match each prediction to a target
+    const enhancedPredictions = predictions.map(pred => {
+      const stakeholder = (pred.stakeholder || '').toLowerCase()
+      const title = pred.title.toLowerCase()
+
+      // Find matching target
+      const matchedTarget = targets?.find(target => {
+        const targetName = target.name.toLowerCase()
+
+        // Check if stakeholder or title mentions target name
+        if (stakeholder.includes(targetName) || title.includes(targetName)) {
+          return true
+        }
+
+        // Check if any keywords match
+        if (target.keywords && Array.isArray(target.keywords)) {
+          return target.keywords.some(keyword =>
+            stakeholder.includes(keyword.toLowerCase()) ||
+            title.includes(keyword.toLowerCase())
+          )
+        }
+
+        return false
+      })
+
+      if (matchedTarget) {
+        console.log(`   ✓ Matched "${pred.title}" to target: ${matchedTarget.name} (${matchedTarget.type})`)
+      }
+
+      return {
+        ...pred,
+        target_id: matchedTarget?.id || null,
+        target_name: matchedTarget?.name || pred.stakeholder,
+        target_type: matchedTarget?.type || null
+      }
+    })
+
+    console.log(`🎯 Matched ${enhancedPredictions.filter(p => p.target_id).length}/${enhancedPredictions.length} predictions to targets`)
+
+    // ==================== STEP 4: SAVE TO DATABASE ====================
+    if (enhancedPredictions.length > 0) {
       console.log('💾 Saving predictions to database...')
 
       // Clear existing predictions for this organization
@@ -280,8 +335,8 @@ Return ONLY the JSON array, no other text.`
         .delete()
         .eq('organization_id', organization_id)
 
-      // Insert new predictions
-      const predictionRecords = predictions.map(pred => ({
+      // Insert new predictions with target and trigger data
+      const predictionRecords = enhancedPredictions.map(pred => ({
         organization_id,
         title: pred.title,
         description: pred.description,
@@ -289,6 +344,14 @@ Return ONLY the JSON array, no other text.`
         confidence_score: pred.confidence,
         time_horizon: pred.time_horizon,
         impact_level: pred.impact,
+        // Target integration
+        target_id: pred.target_id,
+        target_name: pred.target_name,
+        target_type: pred.target_type,
+        // Trigger event tracking
+        trigger_event_id: trigger_event_id,
+        trigger_event_summary: trigger_event_summary,
+        pattern_confidence: pred.confidence, // How well the pattern matched
         data: {
           stakeholder: pred.stakeholder,
           evidence: pred.evidence,
@@ -298,7 +361,8 @@ Return ONLY the JSON array, no other text.`
             current_articles_count: articles.length,
             historical_articles_count: historicalArticles.length,
             strategic_insights_count: executiveSyntheses.length,
-            generation_method: 'claude-pattern-analysis-v2'
+            generation_method: 'claude-pattern-analysis-v2',
+            trigger_event_provided: !!trigger_event_id
           }
         },
         status: 'active',
@@ -317,6 +381,37 @@ Return ONLY the JSON array, no other text.`
       } else {
         console.log(`✅ Saved ${insertedData?.length || predictionRecords.length} predictions`)
         console.log(`   organization_id: ${organization_id}`)
+
+        // Create monitoring records for each prediction
+        if (insertedData && insertedData.length > 0) {
+          console.log('📊 Creating monitoring records...')
+
+          const monitoringRecords = insertedData.map(pred => {
+            // Calculate next check time based on time horizon
+            const nextCheck = calculateNextCheckTime(pred.time_horizon)
+
+            return {
+              prediction_id: pred.id,
+              monitoring_status: 'watching',
+              last_checked_at: new Date().toISOString(),
+              next_check_at: nextCheck,
+              supporting_signals_count: 0,
+              contradicting_signals_count: 0,
+              confidence_trend: 'stable',
+              alert_threshold_met: false
+            }
+          })
+
+          const { error: monitoringError } = await supabase
+            .from('prediction_monitoring')
+            .insert(monitoringRecords)
+
+          if (monitoringError) {
+            console.error('Warning: Failed to create monitoring records:', monitoringError)
+          } else {
+            console.log(`✅ Created ${monitoringRecords.length} monitoring records`)
+          }
+        }
       }
     }
 
@@ -427,4 +522,31 @@ function getWeekNumber(date: Date): number {
   d.setUTCDate(d.getUTCDate() + 4 - dayNum)
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
   return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7)
+}
+
+/**
+ * Calculate when to next check a prediction based on its time horizon
+ * Check more frequently as deadline approaches
+ */
+function calculateNextCheckTime(timeHorizon: string): string {
+  const now = new Date()
+  let daysUntilCheck = 7 // Default: weekly
+
+  switch (timeHorizon) {
+    case '1-week':
+      daysUntilCheck = 1 // Check daily for short-term predictions
+      break
+    case '1-month':
+      daysUntilCheck = 3 // Every 3 days
+      break
+    case '3-months':
+      daysUntilCheck = 7 // Weekly
+      break
+    case '6-months':
+    case '1-year':
+      daysUntilCheck = 14 // Bi-weekly
+      break
+  }
+
+  return new Date(now.getTime() + daysUntilCheck * 24 * 60 * 60 * 1000).toISOString()
 }

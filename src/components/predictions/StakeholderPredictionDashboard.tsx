@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { AlertCircle, TrendingUp, Clock, Target, AlertTriangle, CheckCircle } from 'lucide-react'
+import { AlertCircle, TrendingUp, Clock, Target, AlertTriangle, CheckCircle, Check, X } from 'lucide-react'
 
 interface Stakeholder {
   id: string
@@ -210,6 +210,42 @@ export default function StakeholderPredictionDashboard({ organizationId }: { org
     }
   }
 
+  const validatePrediction = async (predictionId: string, cameTrue: boolean) => {
+    try {
+      const { supabase } = await import('@/lib/supabase/client')
+
+      // Update prediction status
+      await supabase
+        .from('predictions')
+        .update({ status: cameTrue ? 'validated' : 'invalidated' })
+        .eq('id', predictionId)
+
+      // Record outcome
+      const outcome = cameTrue
+        ? prompt('What happened? (Enter outcome details)')
+        : 'Prediction did not materialize'
+
+      if (!outcome && cameTrue) return // User cancelled
+
+      await supabase
+        .from('prediction_outcomes')
+        .insert({
+          prediction_id: predictionId,
+          validated_at: new Date().toISOString(),
+          validation_method: 'manual',
+          outcome_occurred: cameTrue,
+          actual_outcome: outcome,
+          overall_accuracy: cameTrue ? 85 : 0 // Default accuracy
+        })
+
+      // Reload predictions
+      await loadPredictions()
+    } catch (err: any) {
+      console.error('Failed to validate prediction:', err)
+      setError(err.message)
+    }
+  }
+
   // Filter predictions
   const filteredPredictions = predictions.filter(p => {
     if (selectedFilter === 'all') return true
@@ -400,7 +436,11 @@ export default function StakeholderPredictionDashboard({ organizationId }: { org
                 </h3>
                 <div className="space-y-3">
                   {stakeholderPredictions.map(prediction => (
-                    <PredictionCard key={prediction.id} prediction={prediction} />
+                    <PredictionCard
+                      key={prediction.id}
+                      prediction={prediction}
+                      onValidate={validatePrediction}
+                    />
                   ))}
                 </div>
               </div>
@@ -412,7 +452,11 @@ export default function StakeholderPredictionDashboard({ organizationId }: { org
             {filteredPredictions
               .sort((a, b) => b.probability - a.probability)
               .map(prediction => (
-                <PredictionCard key={prediction.id} prediction={prediction} />
+                <PredictionCard
+                  key={prediction.id}
+                  prediction={prediction}
+                  onValidate={validatePrediction}
+                />
               ))}
           </div>
         )}
@@ -421,7 +465,13 @@ export default function StakeholderPredictionDashboard({ organizationId }: { org
   )
 }
 
-function PredictionCard({ prediction }: { prediction: Prediction }) {
+function PredictionCard({
+  prediction,
+  onValidate
+}: {
+  prediction: Prediction
+  onValidate?: (predictionId: string, cameTrue: boolean) => void
+}) {
   const [expanded, setExpanded] = useState(false)
 
   const daysUntilMin = Math.floor(
@@ -563,10 +613,30 @@ function PredictionCard({ prediction }: { prediction: Prediction }) {
         </div>
       )}
 
+      {/* Validation buttons (only for active predictions) */}
+      {prediction.status === 'active' && onValidate && (
+        <div className="mt-4 pt-3 border-t border-white/10 flex gap-2">
+          <button
+            onClick={() => onValidate(prediction.id, true)}
+            className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-medium flex items-center justify-center gap-2"
+          >
+            <Check className="w-4 h-4" />
+            Came True
+          </button>
+          <button
+            onClick={() => onValidate(prediction.id, false)}
+            className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-sm font-medium flex items-center justify-center gap-2"
+          >
+            <X className="w-4 h-4" />
+            Didn't Happen
+          </button>
+        </div>
+      )}
+
       {!expanded && (
         <button
           onClick={() => setExpanded(true)}
-          className="text-xs underline opacity-75 hover:opacity-100"
+          className="text-xs underline opacity-75 hover:opacity-100 mt-2"
         >
           Show details
         </button>

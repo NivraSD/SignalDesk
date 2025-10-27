@@ -53,10 +53,10 @@ class IntelligenceOrchestratorV4 {
         }
       }
       
-      // STEP 2: Call monitor-stage-1-fireplexity to collect articles (Firecrawl + 100+ sources)
-      console.log('📰 Step 2: Collecting articles from monitor-stage-1-fireplexity...');
+      // STEP 2: Call monitor-stage-1 to collect articles from RSS feeds
+      console.log('📰 Step 2: Collecting articles from monitor-stage-1...');
       const monitorResponse = await fetch(
-        `${supabaseUrl}/functions/v1/monitor-stage-1-fireplexity?t=${Date.now()}`,
+        `${supabaseUrl}/functions/v1/monitor-stage-1?t=${Date.now()}`,
         {
           method: 'POST',
           cache: 'no-store',
@@ -80,10 +80,10 @@ class IntelligenceOrchestratorV4 {
           findings: monitoringData.findings?.length || 0
         });
       } else {
-        console.error('❌ Monitor-stage-1-fireplexity failed:', await monitorResponse.text());
+        console.error('❌ Monitor-stage-1 failed:', await monitorResponse.text());
         return {
           success: false,
-          error: 'Failed to collect articles from monitor-stage-1-fireplexity'
+          error: 'Failed to collect articles from monitor-stage-1'
         };
       }
       
