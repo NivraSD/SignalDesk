@@ -59,17 +59,15 @@ export class IntelligenceService {
       onProgress?.('mcp-discovery', 'completed', data)
       
       // mcp-discovery returns { profile, content, success }
-      // monitor-stage-1-fireplexity expects { organization, profile }
+      // monitor-stage-1 expects { organization, profile }
       if (data?.profile) {
-        console.log('Starting monitor-stage-1-fireplexity with profile (Firecrawl + 100+ sources)')
+        console.log('Starting monitor-stage-1 with profile (RSS-based with accurate dates)')
         onProgress?.('monitor-stage-1', 'running')
 
-        const monitoringResponse = await supabase.functions.invoke('monitor-stage-1-fireplexity', {
+        const monitoringResponse = await supabase.functions.invoke('monitor-stage-1', {
           body: {
             organization: orgName,
             profile: data.profile
-            // recency_window defaults to 24 hours
-            // skip_deduplication defaults to false
           }
         }, {
           headers: {
@@ -77,10 +75,10 @@ export class IntelligenceService {
           }
         })
 
-        console.log('monitor-stage-1-fireplexity response:', monitoringResponse)
+        console.log('monitor-stage-1 response:', monitoringResponse)
         onProgress?.('monitor-stage-1', 'completed', monitoringResponse.data)
 
-        // monitor-stage-1-fireplexity returns { articles, metadata, success }
+        // monitor-stage-1 returns { articles, metadata, success }
         // monitor-stage-2-relevance expects { articles, profile, organization_name, top_k }
         if (monitoringResponse.data?.articles) {
           console.log('Starting monitor-stage-2-relevance')
