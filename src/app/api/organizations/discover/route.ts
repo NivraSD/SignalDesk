@@ -35,6 +35,7 @@ export async function POST(req: NextRequest) {
           arguments: {
             organization_name,
             industry_hint,
+            website,
             save_to_persistence: false // Don't save yet, let user customize first
           }
         })

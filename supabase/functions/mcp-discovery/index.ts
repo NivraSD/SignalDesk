@@ -109,8 +109,12 @@ const TOOLS = [
           description: "Name of the organization to profile"
         },
         industry_hint: {
-          type: "string", 
+          type: "string",
           description: "Industry hint to help with source selection"
+        },
+        website: {
+          type: "string",
+          description: "Organization website URL for context and disambiguation"
         },
         save_to_persistence: {
           type: "boolean",
@@ -139,10 +143,11 @@ const TOOLS = [
 
 // Enhanced profile creation with intelligent gap filling
 async function createOrganizationProfile(args: any) {
-  const { organization_name, industry_hint, save_to_persistence = true } = args;
+  const { organization_name, industry_hint, website, save_to_persistence = true } = args;
 
   console.log(`🔍 Creating SMART organization profile for: ${organization_name}`);
   console.log(`   Industry hint: ${industry_hint || 'Auto-detect'}`);
+  console.log(`   Website: ${website || 'Not provided'}`);
 
   // Debug: Check if API key is available
   const apiKeyCheck = ANTHROPIC_API_KEY || Deno.env.get('ANTHROPIC_API_KEY') || Deno.env.get('CLAUDE_API_KEY');
@@ -151,9 +156,9 @@ async function createOrganizationProfile(args: any) {
   try {
     // STEP 1: Get available data from registries
     console.log('📚 Step 1: Gathering available data from registries...');
-    
+
     // Get industry competitors from our registry
-    const industryData = await gatherIndustryData(organization_name, industry_hint);
+    const industryData = await gatherIndustryData(organization_name, industry_hint, website);
     
     // Get sources from master-source-registry
     const sourcesData = await gatherSourcesData(industryData.industry);
@@ -209,19 +214,92 @@ async function createOrganizationProfile(args: any) {
   }
 }
 
+// Fetch website content to help identify the company
+async function fetchWebsiteInfo(website: string) {
+  if (!website) {
+    return null;
+  }
+
+  try {
+    console.log(`🌐 Fetching website info from: ${website}`);
+
+    const response = await fetch(website, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; SignalDesk/1.0; +https://signaldesk.com)'
+      },
+      redirect: 'follow'
+    });
+
+    if (!response.ok) {
+      console.warn(`Failed to fetch website: ${response.status}`);
+      return null;
+    }
+
+    const html = await response.text();
+
+    // Extract key information using regex
+    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    const descriptionMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i) ||
+                            html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["']/i);
+    const keywordsMatch = html.match(/<meta[^>]*name=["']keywords["'][^>]*content=["']([^"']+)["']/i);
+
+    // Extract first paragraph or h1 content
+    const h1Match = html.match(/<h1[^>]*>([^<]+)<\/h1>/i);
+    const firstPMatch = html.match(/<p[^>]*>([^<]{50,500})<\/p>/i);
+
+    const info = {
+      title: titleMatch ? titleMatch[1].trim() : '',
+      description: descriptionMatch ? descriptionMatch[1].trim() : '',
+      keywords: keywordsMatch ? keywordsMatch[1].trim() : '',
+      h1: h1Match ? h1Match[1].trim() : '',
+      firstParagraph: firstPMatch ? firstPMatch[1].replace(/<[^>]+>/g, '').trim() : ''
+    };
+
+    console.log(`✅ Extracted website info:`, {
+      title: info.title.substring(0, 100),
+      description: info.description.substring(0, 100)
+    });
+
+    return info;
+  } catch (error) {
+    console.error('Failed to fetch website:', error);
+    return null;
+  }
+}
+
 // Gather industry data from our registries
-async function gatherIndustryData(organization_name: string, industry_hint?: string) {
+async function gatherIndustryData(organization_name: string, industry_hint?: string, website?: string) {
   // First, try to detect the industry if not provided
   let industry = industry_hint;
   
   if (!industry) {
+    // Fetch website info to help with detection
+    const websiteInfo = website ? await fetchWebsiteInfo(website) : null;
+
+    // Build context for Claude
+    let detectionPrompt = `What industry is ${organization_name} in?`;
+
+    if (websiteInfo) {
+      detectionPrompt += `\n\nContext from their website (${website}):`;
+      if (websiteInfo.title) detectionPrompt += `\n- Page title: ${websiteInfo.title}`;
+      if (websiteInfo.description) detectionPrompt += `\n- Description: ${websiteInfo.description}`;
+      if (websiteInfo.h1) detectionPrompt += `\n- Main heading: ${websiteInfo.h1}`;
+      if (websiteInfo.firstParagraph) detectionPrompt += `\n- About: ${websiteInfo.firstParagraph}`;
+      if (websiteInfo.keywords) detectionPrompt += `\n- Keywords: ${websiteInfo.keywords}`;
+    }
+
+    detectionPrompt += `\n\nAnswer with just the primary industry name (e.g., "automotive", "technology", "healthcare", "finance", "retail").`;
+
+    console.log('🔍 Industry detection prompt:', detectionPrompt.substring(0, 300));
+
     // Use Claude to detect industry
     const detection = await callAnthropic([{
       role: 'user',
-      content: `What industry is ${organization_name} in? Answer with just the industry name (e.g., "automotive", "technology", "healthcare").`
-    }], 100, 'claude-sonnet-4-20250514');
-    
+      content: detectionPrompt
+    }], 200, 'claude-sonnet-4-20250514');
+
     industry = detection.content[0].type === 'text' ? detection.content[0].text.trim() : 'technology';
+    console.log(`✅ Detected industry: ${industry}`);
   }
   
   // Get competitors from our registry
