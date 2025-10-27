@@ -154,12 +154,16 @@ async function createOrganizationProfile(args: any) {
   console.log(`   API Key available: ${apiKeyCheck ? 'Yes (length: ' + apiKeyCheck.length + ')' : 'No'}`);
 
   try {
+    // STEP 0: Check for user-defined intelligence targets
+    console.log('📋 Step 0: Checking for user-defined targets...');
+    const userTargets = await fetchUserDefinedTargets(organization_name);
+
     // STEP 1: Get available data from registries
     console.log('📚 Step 1: Gathering available data from registries...');
 
-    // Get industry competitors from our registry
-    const industryData = await gatherIndustryData(organization_name, industry_hint, website);
-    
+    // Get industry competitors from our registry (merged with user targets)
+    const industryData = await gatherIndustryData(organization_name, industry_hint, website, userTargets);
+
     // Get sources from master-source-registry
     const sourcesData = await gatherSourcesData(industryData.industry);
     
@@ -267,8 +271,54 @@ async function fetchWebsiteInfo(website: string) {
   }
 }
 
+// Fetch user-defined intelligence targets from database
+async function fetchUserDefinedTargets(organization_name: string) {
+  try {
+    console.log(`📋 Checking for user-defined intelligence targets...`);
+
+    const { data, error } = await supabase
+      .from('intelligence_targets')
+      .select('*')
+      .eq('organization_name', organization_name)
+      .eq('active', true);
+
+    if (error) {
+      console.log(`   ⚠️ Error fetching targets: ${error.message}`);
+      return null;
+    }
+
+    if (!data || data.length === 0) {
+      console.log(`   No existing targets found - will use full discovery`);
+      return null;
+    }
+
+    // Organize targets by type
+    const competitors = data.filter(t => t.type === 'competitor').map(t => t.name);
+    const topics = data.filter(t => t.type === 'topic').map(t => t.name);
+    const stakeholders = data.filter(t => t.type === 'stakeholder').map(t => t.name);
+    const influencers = data.filter(t => t.type === 'influencer').map(t => t.name);
+
+    console.log(`   ✅ Found user-defined targets:`);
+    console.log(`      - Competitors: ${competitors.length}`);
+    console.log(`      - Topics: ${topics.length}`);
+    console.log(`      - Stakeholders: ${stakeholders.length}`);
+    console.log(`      - Influencers: ${influencers.length}`);
+
+    return {
+      competitors,
+      topics,
+      stakeholders,
+      influencers,
+      total: data.length
+    };
+  } catch (error) {
+    console.error(`   ❌ Failed to fetch targets:`, error);
+    return null;
+  }
+}
+
 // Gather industry data from our registries
-async function gatherIndustryData(organization_name: string, industry_hint?: string, website?: string) {
+async function gatherIndustryData(organization_name: string, industry_hint?: string, website?: string, userTargets?: any) {
   // First, try to detect the industry if not provided
   let industry = industry_hint;
   
@@ -322,13 +372,36 @@ Your answer (one industry name only):`;
   
   // Get competitors from our registry
   const subCategory = discoverSubCategory(organization_name, industry);
-  const competitors = getIndustryCompetitors(industry, subCategory, 20); // Get more initially
-  
+  const discoveredCompetitors = getIndustryCompetitors(industry, subCategory, 20); // Get more initially
+
+  // Merge user-defined targets with discovered ones
+  let finalCompetitors = [];
+  let finalTopics = [];
+  let finalStakeholders = [];
+
+  if (userTargets) {
+    // PRIORITIZE user targets - put them first
+    finalCompetitors = [...new Set([...userTargets.competitors, ...discoveredCompetitors])];
+    finalTopics = userTargets.topics || [];
+    finalStakeholders = userTargets.stakeholders || [];
+
+    console.log(`✅ Merged targets:`);
+    console.log(`   - User competitors: ${userTargets.competitors.length}`);
+    console.log(`   - Discovered competitors: ${discoveredCompetitors.length}`);
+    console.log(`   - Total unique competitors: ${finalCompetitors.length}`);
+  } else {
+    // No user targets - use only discovered ones
+    finalCompetitors = discoveredCompetitors;
+  }
+
   return {
     industry,
     subCategory,
-    competitors,
-    hasCompetitors: competitors.length > 0
+    competitors: finalCompetitors,
+    topics: finalTopics,
+    stakeholders: finalStakeholders,
+    hasCompetitors: finalCompetitors.length > 0,
+    userDefined: !!userTargets
   };
 }
 
