@@ -402,6 +402,35 @@ export default function IntelligenceModule() {
     }
   }
 
+  // Clear synthesis when organization changes
+  useEffect(() => {
+    if (organization?.id) {
+      console.log(`🔄 Organization changed to ${organization.name}, loading latest synthesis`)
+      // Reset running state
+      setError(null)
+      setIsRunning(false)
+      setCurrentStage(0)
+      setSocialSignals([])
+      setRealtimeResults(null)
+      setRealtimeAlerts([])
+
+      // Load latest synthesis from database
+      IntelligenceService.getLatestSynthesis(organization.id).then(synthesis => {
+        if (synthesis) {
+          console.log('✅ Loaded previous synthesis:', synthesis)
+          // The synthesis table stores the full synthesis object in the 'data' column
+          setExecutiveSynthesis(synthesis.data || synthesis)
+        } else {
+          console.log('No previous synthesis found')
+          setExecutiveSynthesis(null)
+        }
+      }).catch(error => {
+        console.error('Failed to load synthesis:', error)
+        setExecutiveSynthesis(null)
+      })
+    }
+  }, [organization?.id])
+
   // Auto-fetch when tab opens or filters change
   useEffect(() => {
     if (activeTab === 'social') {
@@ -688,12 +717,17 @@ export default function IntelligenceModule() {
         {activeTab === 'synthesis' && (
           <div className="p-6 overflow-y-auto h-full">
             <div className="max-w-4xl mx-auto">
-              <div className="bg-gray-800/50 rounded-lg p-6 mb-6">
-                <h3 className="text-xl font-bold mb-4 text-yellow-400">Executive Synthesis Engine</h3>
-                <p className="text-gray-300 mb-6">
-                  Transform complex intelligence into executive-ready insights. This powerful synthesis engine
-                  analyzes multiple data sources to deliver actionable strategic recommendations.
-                </p>
+              {/* Start Synthesis Button - Always visible at top */}
+              <div className="mb-6 flex justify-between items-center">
+                <h3 className="text-xl font-bold text-yellow-400">Executive Synthesis</h3>
+                <button
+                  onClick={runPipeline}
+                  disabled={isRunning || !organization}
+                  className="px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg hover:from-yellow-600 hover:to-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  {executiveSynthesis ? 'Run New Synthesis' : 'Start Synthesis'}
+                </button>
               </div>
 
               {/* Executive Synthesis Component */}
@@ -750,17 +784,9 @@ export default function IntelligenceModule() {
                     ) : (
                       <>
                         <Sparkles className="w-12 h-12 mx-auto mb-4 text-yellow-400" />
-                        <h4 className="text-lg font-semibold mb-2">Executive Synthesis</h4>
-                        <p className="text-gray-400 mb-6">
-                          {!organization ? 'Please select an organization first' : 'Run comprehensive synthesis to transform research into strategic insights'}
+                        <p className="text-gray-400">
+                          {!organization ? 'Please select an organization first' : 'Click "Start Synthesis" above to transform research into strategic insights'}
                         </p>
-                        <button
-                          onClick={runPipeline}
-                          disabled={isRunning || !organization}
-                          className="px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg hover:from-yellow-600 hover:to-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Start Synthesis Process
-                        </button>
                       </>
                     )}
                   </div>
@@ -768,27 +794,6 @@ export default function IntelligenceModule() {
               ) : (
                 <IntelligenceSynthesisDisplay synthesis={executiveSynthesis} />
               )}
-
-              <div className="grid grid-cols-2 gap-4 mt-6">
-                <div className="bg-gray-800/50 rounded-lg p-4">
-                  <h5 className="font-semibold text-green-400 mb-2">What It Does</h5>
-                  <ul className="text-sm text-gray-300 space-y-1">
-                    <li>• Aggregates intelligence from multiple sources</li>
-                    <li>• Identifies patterns and strategic implications</li>
-                    <li>• Generates actionable recommendations</li>
-                    <li>• Prioritizes by impact and urgency</li>
-                  </ul>
-                </div>
-                <div className="bg-gray-800/50 rounded-lg p-4">
-                  <h5 className="font-semibold text-blue-400 mb-2">Best For</h5>
-                  <ul className="text-sm text-gray-300 space-y-1">
-                    <li>• Weekly strategic briefings</li>
-                    <li>• Major decision support</li>
-                    <li>• Competitive intelligence reports</li>
-                    <li>• Board and investor updates</li>
-                  </ul>
-                </div>
-              </div>
             </div>
           </div>
         )}
