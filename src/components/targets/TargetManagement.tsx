@@ -16,6 +16,7 @@ interface IntelligenceTarget {
   active: boolean
   created_at: string
   updated_at: string
+  prediction_count?: number // Number of active predictions linked to this target
 }
 
 interface TargetManagementProps {
@@ -72,7 +73,25 @@ export default function TargetManagement({
       }
 
       console.log(`✅ Loaded ${data.targets?.length || 0} targets`)
-      setTargets(data.targets || [])
+
+      // Fetch prediction counts for each target
+      const { supabase } = await import('@/lib/supabase/client')
+      const targetsWithCounts = await Promise.all(
+        (data.targets || []).map(async (target: IntelligenceTarget) => {
+          const { count } = await supabase
+            .from('predictions')
+            .select('id', { count: 'exact', head: true })
+            .eq('target_id', target.id)
+            .eq('status', 'active')
+
+          return {
+            ...target,
+            prediction_count: count || 0
+          }
+        })
+      )
+
+      setTargets(targetsWithCounts)
     } catch (err: any) {
       console.error('Failed to load targets:', err)
       setError(err.message)
@@ -581,6 +600,11 @@ export default function TargetManagement({
                                   <span className={`text-sm font-medium ${getPriorityColor(target.priority)}`}>
                                     {target.priority.toUpperCase()}
                                   </span>
+                                  {target.prediction_count !== undefined && target.prediction_count > 0 && (
+                                    <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full flex items-center gap-1">
+                                      🔮 {target.prediction_count} {target.prediction_count === 1 ? 'prediction' : 'predictions'}
+                                    </span>
+                                  )}
                                 </div>
                                 <p className="text-sm text-gray-500 mt-1">
                                   Added {new Date(target.created_at).toLocaleDateString()}

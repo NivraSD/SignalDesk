@@ -27,6 +27,10 @@ interface Prediction {
   supporting_evidence: any
   pattern_matched: string
   status: string
+  // Target integration fields
+  target_id?: string | null
+  target_name?: string | null
+  target_type?: 'competitor' | 'topic' | 'keyword' | 'influencer' | null
 }
 
 // Helper to extract stakeholder from prediction title
@@ -53,6 +57,19 @@ export default function StakeholderPredictionDashboard({ organizationId }: { org
   const [groupByStakeholder, setGroupByStakeholder] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [dataStats, setDataStats] = useState<{ events: number; stakeholders: number } | null>(null)
+
+  // Clear state when organization changes
+  useEffect(() => {
+    if (organizationId) {
+      console.log(`🔄 StakeholderPredictionDashboard: Organization changed, clearing state`)
+      setPredictions([])
+      setStakeholders([])
+      setError(null)
+      setDataStats(null)
+      setSelectedFilter('all')
+      setGroupByStakeholder(false)
+    }
+  }, [organizationId])
 
   // Initial load
   useEffect(() => {
@@ -95,7 +112,7 @@ export default function StakeholderPredictionDashboard({ organizationId }: { org
       const transformedPredictions = (data || []).map((pred: any) => ({
         id: pred.id,
         stakeholder_id: '', // New predictions don't have stakeholder_id
-        stakeholder_name: pred.data?.stakeholder || extractStakeholderFromTitle(pred.title),
+        stakeholder_name: pred.target_name || pred.data?.stakeholder || extractStakeholderFromTitle(pred.title),
         predicted_action: pred.title,
         action_category: pred.category,
         probability: pred.confidence_score / 100, // Convert 0-100 to 0-1
@@ -107,6 +124,10 @@ export default function StakeholderPredictionDashboard({ organizationId }: { org
         supporting_evidence: pred.data,
         pattern_matched: pred.category,
         status: pred.status,
+        // Target integration fields
+        target_id: pred.target_id,
+        target_name: pred.target_name,
+        target_type: pred.target_type,
         // New fields specific to real-time predictions
         description: pred.description,
         implications: pred.data?.implications || [],
@@ -430,14 +451,29 @@ function PredictionCard({ prediction }: { prediction: Prediction }) {
     media: '📰'
   }[prediction.action_category] || '📊'
 
+  const targetTypeIcon = {
+    competitor: '🏢',
+    topic: '📌',
+    keyword: '🔑',
+    influencer: '👤'
+  }[prediction.target_type || ''] || null
+
   return (
     <div className={`border rounded-lg p-4 ${confidenceColor}`}>
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-2xl">{categoryIcon}</span>
-            <div>
-              <h3 className="font-semibold">{prediction.stakeholder_name || 'Unknown Stakeholder'}</h3>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold">{prediction.stakeholder_name || 'Unknown Stakeholder'}</h3>
+                {prediction.target_name && prediction.target_type && (
+                  <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    {targetTypeIcon && <span>{targetTypeIcon}</span>}
+                    <span className="capitalize">{prediction.target_type}</span>
+                  </span>
+                )}
+              </div>
               <div className="text-xs opacity-75 capitalize">{prediction.action_category}</div>
             </div>
           </div>
