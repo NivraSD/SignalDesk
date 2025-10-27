@@ -4,10 +4,13 @@ import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 
 import { useState, useEffect, useRef } from 'react'
-import { Brain, Target, FileText, Rocket, Database, Sparkles, User, ChevronDown, Plus, Shield, Bot, FileEdit, TrendingUp, MessageCircle, AlertTriangle } from 'lucide-react'
+import { Brain, Target, FileText, Rocket, Database, Sparkles, User, ChevronDown, Plus, Shield, Bot, FileEdit, TrendingUp, MessageCircle, AlertTriangle, Trash2, X, Building2 } from 'lucide-react'
 import { useAppStore } from '@/stores/useAppStore'
 import InfiniteCanvas from '@/components/canvas/InfiniteCanvas'
 import IntelligenceModule from '@/components/modules/IntelligenceModule'
+import OrganizationOnboarding from '@/components/onboarding/OrganizationOnboarding'
+import TargetManagement from '@/components/targets/TargetManagement'
+import OrgManagementDashboard from '@/components/admin/OrgManagementDashboard'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const tabs = [
@@ -21,37 +24,115 @@ const tabs = [
   { id: 'memoryvault', name: 'MemoryVault', icon: Database, color: '#ffaa00' },
 ]
 
-const projects = [
-  { id: '7a2835cb-11ee-4512-acc3-b6caf8eb03ff', name: 'OpenAI', industry: 'Artificial Intelligence' },
-  { id: '852099f4-1a4d-44d1-ad90-932d0ef7f840', name: 'Buffer', industry: 'Social Media' },
-  { id: '85a7c337-8e83-4335-9897-986fdd56c84b', name: 'Sprout Social', industry: 'Social Media' },
-  { id: 'b6ad8f95-d3ce-4bac-8cfa-da2d848accb0', name: 'Sprinklr', industry: 'Social Media' },
-  { id: 'fd9f16ca-433d-4fd4-ad71-a5f0c325122f', name: 'Hootsuite', industry: 'Social Media' }
-]
-
 export default function Dashboard() {
   const router = useRouter()
   const { activeModule, switchModule, organization, setOrganization } = useAppStore()
   const [showModuleMenu, setShowModuleMenu] = useState<string | null>(null)
   const [showProjectMenu, setShowProjectMenu] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const [showOnboarding, setShowOnboarding] = useState(false)
+  const [showTargetManagement, setShowTargetManagement] = useState(false)
+  const [showOrgDashboard, setShowOrgDashboard] = useState(false)
   const [currentTime, setCurrentTime] = useState<string>('')
   const [openComponents, setOpenComponents] = useState<string[]>([])
   const [hasCrisisAlerts, setHasCrisisAlerts] = useState(false)
+  const [organizations, setOrganizations] = useState<any[]>([])
+  const [loadingOrgs, setLoadingOrgs] = useState(true)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [orgToDelete, setOrgToDelete] = useState<any>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
-  // Initialize with default organization if none exists or if ID is not a UUID
-  useEffect(() => {
-    const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str)
+  // Load organizations from database
+  const loadOrganizations = async () => {
+    setLoadingOrgs(true)
+    try {
+      const response = await fetch('/api/organizations')
+      const data = await response.json()
 
-    if (!organization || !isUUID(organization.id)) {
-      setOrganization({
-        id: projects[0].id,
-        name: projects[0].name,
-        industry: projects[0].industry,
-        config: {}
-      })
+      if (data.success && data.organizations) {
+        setOrganizations(data.organizations)
+
+        // If no org selected, select the first one
+        if (!organization && data.organizations.length > 0) {
+          const firstOrg = data.organizations[0]
+          setOrganization({
+            id: firstOrg.id,
+            name: firstOrg.name,
+            industry: firstOrg.industry,
+            config: {}
+          })
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load organizations:', error)
+    } finally {
+      setLoadingOrgs(false)
     }
+  }
+
+  // Delete organization
+  const deleteOrganization = async (org: any) => {
+    try {
+      const response = await fetch(`/api/organizations?id=${org.id}`, {
+        method: 'DELETE'
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        alert(`Failed to delete organization: ${data.error || 'Unknown error'}`)
+        return
+      }
+
+      console.log(`✅ Deleted organization: ${org.name}`)
+
+      // If deleted org was selected, switch to first available org
+      if (organization?.id === org.id) {
+        const remainingOrgs = organizations.filter(o => o.id !== org.id)
+        if (remainingOrgs.length > 0) {
+          setOrganization({
+            id: remainingOrgs[0].id,
+            name: remainingOrgs[0].name,
+            industry: remainingOrgs[0].industry,
+            config: {}
+          })
+        } else {
+          setOrganization(null)
+        }
+      }
+
+      // Reload organizations list
+      await loadOrganizations()
+    } catch (error) {
+      console.error('Failed to delete organization:', error)
+      alert('Failed to delete organization. Please try again.')
+    }
+  }
+
+  // Handle delete confirmation
+  const handleDeleteClick = (org: any, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setOrgToDelete(org)
+    setShowDeleteConfirm(true)
+    setShowProjectMenu(false)
+  }
+
+  const confirmDelete = async () => {
+    if (orgToDelete) {
+      await deleteOrganization(orgToDelete)
+      setShowDeleteConfirm(false)
+      setOrgToDelete(null)
+    }
+  }
+
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false)
+    setOrgToDelete(null)
+  }
+
+  // Load organizations on mount
+  useEffect(() => {
+    loadOrganizations()
   }, [])
 
   // Close menus when clicking outside
@@ -488,28 +569,67 @@ export default function Dashboard() {
                     className="absolute top-full mt-2 right-0 bg-gray-900 border border-gray-700 rounded-lg shadow-xl overflow-hidden"
                     style={{ minWidth: '200px' }}
                   >
-                    {projects.map(project => (
-                      <button
-                        key={project.id}
-                        onClick={() => {
-                          setOrganization({
-                            id: project.id,
-                            name: project.name,
-                            industry: project.industry,
-                            config: {}
-                          })
-                          setShowProjectMenu(false)
-                        }}
-                        className={`w-full text-left px-4 py-2 hover:bg-gray-800 text-sm ${
-                          organization?.name === project.name ? 'bg-gray-800 text-cyan-400' : ''
-                        }`}
-                      >
-                        {project.name}
-                      </button>
-                    ))}
+                    {loadingOrgs ? (
+                      <div className="px-4 py-2 text-sm text-gray-500">Loading...</div>
+                    ) : organizations.length === 0 ? (
+                      <div className="px-4 py-2 text-sm text-gray-500">No organizations</div>
+                    ) : (
+                      organizations.map(org => (
+                        <div
+                          key={org.id}
+                          className={`flex items-center justify-between gap-2 px-4 py-2 hover:bg-gray-800 text-sm group ${
+                            organization?.id === org.id ? 'bg-gray-800 text-cyan-400' : ''
+                          }`}
+                        >
+                          <button
+                            onClick={() => {
+                              setOrganization({
+                                id: org.id,
+                                name: org.name,
+                                industry: org.industry,
+                                config: {}
+                              })
+                              setShowProjectMenu(false)
+                            }}
+                            className="flex-1 text-left"
+                          >
+                            <div className="font-medium">{org.name}</div>
+                            {org.industry && (
+                              <div className="text-xs text-gray-500">{org.industry}</div>
+                            )}
+                          </button>
+                          <button
+                            onClick={(e) => handleDeleteClick(org, e)}
+                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/20 rounded transition-all"
+                            title="Delete organization"
+                          >
+                            <Trash2 className="w-4 h-4 text-red-400" />
+                          </button>
+                        </div>
+                      ))
+                    )}
                     <div className="border-t border-gray-700">
-                      <button className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm text-cyan-400">
-                        + New Project
+                      {organization && (
+                        <button
+                          onClick={() => {
+                            setShowProjectMenu(false)
+                            setShowTargetManagement(true)
+                          }}
+                          className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm text-white flex items-center gap-2"
+                        >
+                          <Target className="w-4 h-4" />
+                          Manage Targets
+                        </button>
+                      )}
+                      <button
+                        onClick={() => {
+                          setShowProjectMenu(false)
+                          setShowOnboarding(true)
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm text-cyan-400 flex items-center gap-2"
+                      >
+                        <Plus className="w-4 h-4" />
+                        New Organization
                       </button>
                     </div>
                   </motion.div>
@@ -542,6 +662,16 @@ export default function Dashboard() {
                       <p className="text-sm font-semibold">John Doe</p>
                       <p className="text-xs text-gray-500">john@signaldesk.ai</p>
                     </div>
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false)
+                        setShowOrgDashboard(true)
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
+                    >
+                      <Building2 className="w-4 h-4" />
+                      Manage Organizations
+                    </button>
                     <button className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm">
                       Profile Settings
                     </button>
@@ -568,6 +698,109 @@ export default function Dashboard() {
           {/* NIV is now integrated into the canvas as a draggable, resizable component */}
         </InfiniteCanvas>
       </main>
+
+      {/* Organization Onboarding Modal */}
+      <OrganizationOnboarding
+        isOpen={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
+        onComplete={(newOrg) => {
+          // Reload organizations list
+          loadOrganizations()
+          // Set the new org as active
+          setOrganization(newOrg)
+        }}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+            onClick={cancelDelete}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-gray-900 border border-red-500/30 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl"
+            >
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="w-6 h-6 text-red-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-white mb-2">Delete Organization?</h3>
+                  <p className="text-gray-400 mb-4">
+                    Are you sure you want to delete <span className="font-semibold text-white">{orgToDelete?.name}</span>?
+                  </p>
+                  <p className="text-sm text-red-400 mb-6">
+                    ⚠️ This will permanently delete all data, including intelligence targets, campaigns, content, and predictions for this organization. This action cannot be undone.
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={confirmDelete}
+                      className="flex-1 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors"
+                    >
+                      Delete Organization
+                    </button>
+                    <button
+                      onClick={cancelDelete}
+                      className="flex-1 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Target Management Modal */}
+      {organization && (
+        <TargetManagement
+          isOpen={showTargetManagement}
+          onClose={() => setShowTargetManagement(false)}
+          organizationId={organization.id}
+          organizationName={organization.name}
+        />
+      )}
+
+      {/* Org Management Dashboard */}
+      <OrgManagementDashboard
+        isOpen={showOrgDashboard}
+        onClose={() => setShowOrgDashboard(false)}
+        onNewOrg={() => {
+          setShowOrgDashboard(false)
+          setShowOnboarding(true)
+        }}
+        onSelectOrg={(org) => {
+          setOrganization({
+            id: org.id,
+            name: org.name,
+            industry: org.industry,
+            config: {}
+          })
+        }}
+        onManageTargets={(org) => {
+          setOrganization({
+            id: org.id,
+            name: org.name,
+            industry: org.industry,
+            config: {}
+          })
+          setShowTargetManagement(true)
+        }}
+        onDeleteOrg={(org) => {
+          setOrgToDelete(org)
+          setShowDeleteConfirm(true)
+        }}
+      />
     </div>
   )
 }
