@@ -120,7 +120,26 @@ serve(async (req) => {
     // STEP 5: Transform schema to match monitor-stage-1 output
     console.log('\n🔄 Step 5: Transforming schema for pipeline compatibility...')
 
-    const normalizedArticles = normalizeArticlesSchema(newArticles, profile)
+    // CRITICAL: Filter to last 48 hours to prevent old cached articles from Firecrawl
+    const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000)
+    const recentArticles = newArticles.filter(article => {
+      const articleDate = new Date(article.publishDate || article.published_at || article.publishedTime || 0)
+      const isRecent = articleDate > twoDaysAgo
+
+      if (!isRecent) {
+        console.log(`   🕒 Filtered out old article from ${articleDate.toISOString()}: "${article.title?.substring(0, 60)}..."`)
+      }
+
+      return isRecent
+    })
+
+    console.log(`   🕒 Date filtering: ${newArticles.length} articles → ${recentArticles.length} articles (last 48 hours)`)
+
+    if (recentArticles.length < newArticles.length) {
+      console.log(`   ⚠️ ${newArticles.length - recentArticles.length} old articles filtered out`)
+    }
+
+    const normalizedArticles = normalizeArticlesSchema(recentArticles, profile)
     console.log(`   ✓ Normalized ${normalizedArticles.length} articles`)
 
     // STEP 6: Create coverage report (like monitor-stage-1 does)
