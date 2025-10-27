@@ -288,7 +288,25 @@ async function gatherIndustryData(organization_name: string, industry_hint?: str
       if (websiteInfo.keywords) detectionPrompt += `\n- Keywords: ${websiteInfo.keywords}`;
     }
 
-    detectionPrompt += `\n\nAnswer with just the primary industry name (e.g., "automotive", "technology", "healthcare", "finance", "retail").`;
+    detectionPrompt += `\n\nIMPORTANT DISTINCTIONS:
+- "Strategic communications firm" = public relations/PR industry (NOT telecommunications)
+- "Communications services" in business context = PR/marketing/corporate communications
+- "Telecommunications" = phone/internet carriers like AT&T, Verizon (infrastructure)
+- "Marketing agency" = marketing/advertising industry
+- "Consulting firm" = professional services/consulting
+
+Answer with just the primary industry name from these options:
+- "public-relations" (for PR/communications firms, corporate communications)
+- "marketing" (for advertising/marketing agencies)
+- "telecommunications" (ONLY for phone/internet carriers)
+- "technology" (for software/IT companies)
+- "consulting" (for management/business consulting)
+- "finance" (for banking/investment)
+- "healthcare" (for medical/pharmaceutical)
+- "retail" (for consumer retail)
+- "automotive" (for car manufacturers)
+
+Your answer (one industry name only):`;
 
     console.log('🔍 Industry detection prompt:', detectionPrompt.substring(0, 300));
 
@@ -296,7 +314,7 @@ async function gatherIndustryData(organization_name: string, industry_hint?: str
     const detection = await callAnthropic([{
       role: 'user',
       content: detectionPrompt
-    }], 200, 'claude-sonnet-4-20250514');
+    }], 50, 'claude-sonnet-4-20250514');
 
     industry = detection.content[0].type === 'text' ? detection.content[0].text.trim() : 'technology';
     console.log(`✅ Detected industry: ${industry}`);

@@ -79,6 +79,16 @@ export const INDUSTRY_COMPETITORS_DETAILED = {
     performance_marketing: [
       'Merkle', 'Wpromote', 'iProspect', '360i', 'Tinuiti',
       'Jellyfish', 'Reprise Digital', 'Rise Interactive', 'WebFX', 'Directive'
+    ],
+
+    public_relations: [
+      'Edelman', 'Weber Shandwick', 'FleishmanHillard', 'Ketchum', 'Burson Cohn & Wolfe',
+      'Ogilvy PR', 'Porter Novelli', 'Ruder Finn', 'ICR', 'Brunswick'
+    ],
+
+    strategic_communications: [
+      'Edelman', 'Weber Shandwick', 'FleishmanHillard', 'Brunswick', 'Finsbury Glover Hering',
+      'ICR', 'Sard Verbinnen', 'Joele Frank', 'Kekst CNC', 'Prosek Partners'
     ]
   },
 
@@ -338,7 +348,15 @@ export function getIndustryCompetitors(
     'telco': 'telecommunications',
     'wireless': 'telecommunications',
     'broadband': 'telecommunications',
-    'mobile': 'telecommunications'
+    'mobile': 'telecommunications',
+
+    // PR/Communications variations
+    'public_relations': 'marketing_advertising',
+    'public-relations': 'marketing_advertising',
+    'pr': 'marketing_advertising',
+    'strategic_communications': 'marketing_advertising',
+    'corporate_communications': 'marketing_advertising',
+    'communications_firm': 'marketing_advertising'
   };
   
   let industryKey = industry.toLowerCase().replace(/[\s\-]+/g, '_');
