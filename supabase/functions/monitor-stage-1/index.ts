@@ -836,18 +836,10 @@ serve(async (req) => {
         .slice(0, 100 - allArticles.length);
       allArticles.push(...remaining);
     }
-    
-    // Filter to last 48 hours BEFORE limiting to 100
-    const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
-    const recentArticles = allArticles.filter(article => {
-      const articleDate = new Date(article.published_at || article.publishedAt || 0);
-      return articleDate > twoDaysAgo;
-    });
 
-    console.log(`🕒 Date filtering: ${allArticles.length} articles → ${recentArticles.length} articles (last 48 hours)`);
-
-    // Limit to 100 articles AFTER date filtering
-    const finalArticles = recentArticles.slice(0, 100);
+    // Articles already filtered to last 48 hours at line 721-728
+    // Limit to 100 articles
+    const finalArticles = allArticles.slice(0, 100);
     
     // Category breakdown
     const categoryBreakdown = finalArticles.reduce((acc, article) => {
