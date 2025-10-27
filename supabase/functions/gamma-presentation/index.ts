@@ -336,9 +336,11 @@ async function capturePresentation(
       // Build folder path based on opportunity linkage
       let folderPath: string
       if (request.campaign_id) {
-        // Store within opportunity folder in Memory Vault
+        // Store within opportunity folder in Memory Vault using the opportunity TITLE
+        // This matches how other execution content is organized - all content for an opportunity
+        // appears in Opportunities/{OpportunityTitle}/ alongside press releases, pitches, etc.
         // IMPORTANT: Use capital "O" to match Memory Vault template folder
-        folderPath = `Opportunities/${request.campaign_id}/presentations`
+        folderPath = `Opportunities/${presentationTitle}`
         console.log(`📁 Opportunity presentation - saving to: ${folderPath}`)
       } else {
         // Standalone presentation folder
