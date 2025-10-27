@@ -597,11 +597,19 @@ async function generateSocialPosts(args: any) {
   const target_audience = args.target_audience || args.targetAudiences?.join(', ');
   const key_messages = args.key_messages || args.keyMessages || args.keyPoints || [];
   const tone = args.tone || 'professional';
-  const platforms = args.platforms || ['twitter', 'linkedin'];
+  const platforms = args.platforms || ['linkedin']; // Default to single platform to avoid confusion
   const variations = args.variations || 3;
   const includeHashtags = args.includeHashtags !== undefined ? args.includeHashtags : true;
   const includeEmojis = args.includeEmojis !== undefined ? args.includeEmojis : false;
   const thread = args.thread || false;
+
+  console.log('📱 generateSocialPosts called with:', {
+    message: message?.substring(0, 100),
+    topic: topic?.substring(0, 100),
+    platforms,
+    tone,
+    variations
+  });
 
   // Build comprehensive content message from available inputs
   let contentMessage = message;
@@ -616,6 +624,8 @@ async function generateSocialPosts(args: any) {
   if (!contentMessage) {
     contentMessage = 'Create engaging social media content for professional audience';
   }
+
+  console.log('📝 Content message:', contentMessage.substring(0, 200));
 
   const posts: any = {};
 

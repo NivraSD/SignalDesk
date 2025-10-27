@@ -31,6 +31,22 @@ interface ContentItem {
   content_signature?: string
   created_at: string
   organization_id: string
+  // Presentation metadata (Gamma URLs, download links)
+  metadata?: {
+    gamma_id?: string
+    gamma_url?: string
+    gamma_edit_url?: string
+    pptx_url?: string
+    slide_count?: number
+    format?: string
+    slides?: any[]
+    campaign_presentation_id?: string
+    opportunity_id?: string
+    blueprint_id?: string
+    source?: string
+    has_full_content?: boolean
+    [key: string]: any  // Allow other metadata fields
+  }
   // Execution tracking
   executed?: boolean
   executed_at?: string

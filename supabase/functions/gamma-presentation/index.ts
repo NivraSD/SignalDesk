@@ -328,53 +328,73 @@ async function capturePresentation(
 
     console.log('✅ Presentation captured to campaign_presentations:', data.id)
 
-    // ALSO save to Memory Vault (content_library) for NIV access
-    if (fullText && fullText.length > 100) {  // Only if we have real content
-      console.log('💾 Saving to Memory Vault...')
+    // ALWAYS save to Memory Vault (content_library) for NIV access, even without full content
+    // This ensures presentations appear in Memory Vault immediately
+    console.log('💾 Saving to Memory Vault...')
 
-      try {
-        // Build folder path based on opportunity linkage
-        let folderPath: string
-        if (request.campaign_id) {
-          // Store within opportunity folder in Memory Vault
-          folderPath = `opportunities/${request.campaign_id}/presentations`
-        } else {
-          // Standalone presentation folder
-          folderPath = `presentations`
-        }
-
-        await supabase
-          .from('content_library')
-          .insert({
-            id: crypto.randomUUID(),
-            organization_id: request.organization_id,
-            session_id: request.campaign_id,  // Links to opportunity if available
-            content_type: 'presentation',
-            title: presentationTitle,
-            content: fullText,
-            metadata: {
-              gamma_id: generationId,
-              gamma_url: gammaUrl,
-              pptx_url: pptxStorageUrl,
-              slide_count: slides.length,
-              format: 'pptx',
-              slides: slides,
-              campaign_presentation_id: data.id,
-              opportunity_id: request.campaign_id,  // Explicit link
-              blueprint_id: request.campaign_id,  // For OpportunitiesModule lookup
-              source: 'gamma'
-            },
-            tags: ['gamma', 'presentation', 'auto-generated', request.campaign_id ? 'opportunity' : 'standalone'],
-            status: 'final',
-            folder: folderPath,
-            file_url: pptxStorageUrl
-          })
-
-        console.log(`✅ Saved to Memory Vault at: ${folderPath}`)
-      } catch (mvError) {
-        console.error('Error saving to Memory Vault:', mvError)
-        // Don't fail if Memory Vault save fails
+    try {
+      // Build folder path based on opportunity linkage
+      let folderPath: string
+      if (request.campaign_id) {
+        // Store within opportunity folder in Memory Vault
+        folderPath = `opportunities/${request.campaign_id}/presentations`
+        console.log(`📁 Opportunity presentation - saving to: ${folderPath}`)
+      } else {
+        // Standalone presentation folder
+        folderPath = `presentations`
+        console.log(`📁 Standalone presentation - saving to: ${folderPath}`)
       }
+
+      // Even if we don't have full PPTX content yet, save the presentation metadata
+      // The Gamma URL and metadata are valuable even without slide text
+      const contentToSave = fullText || `${presentationTitle}\n\nGamma Presentation\nView at: ${gammaUrl}`
+
+      await supabase
+        .from('content_library')
+        .insert({
+          id: crypto.randomUUID(),
+          organization_id: request.organization_id,
+          session_id: request.campaign_id,  // Links to opportunity if available
+          content_type: 'presentation',
+          title: presentationTitle,
+          content: contentToSave,
+          metadata: {
+            gamma_id: generationId,
+            gamma_url: gammaUrl,
+            gamma_edit_url: `${gammaUrl}/edit`,
+            pptx_url: pptxStorageUrl,
+            slide_count: slides.length || request.slideCount || 10,
+            format: 'pptx',
+            slides: slides,
+            campaign_presentation_id: data.id,
+            opportunity_id: request.campaign_id,  // Explicit link
+            blueprint_id: request.campaign_id,  // For OpportunitiesModule lookup
+            source: 'gamma',
+            has_full_content: slides.length > 0  // Track if we have slide content
+          },
+          tags: ['gamma', 'presentation', 'auto-generated', request.campaign_id ? 'opportunity' : 'standalone'],
+          status: 'final',
+          folder: folderPath,
+          file_url: pptxStorageUrl
+        })
+
+      console.log(`✅ Saved to Memory Vault at: ${folderPath}`)
+      console.log('Memory Vault save parameters:', {
+        organization_id: request.organization_id,
+        campaign_id: request.campaign_id,
+        folder: folderPath,
+        title: presentationTitle,
+        has_gamma_url: !!gammaUrl
+      })
+    } catch (mvError: any) {
+      console.error('❌ Error saving to Memory Vault:', mvError)
+      console.error('Memory Vault error details:', {
+        message: mvError?.message,
+        code: mvError?.code,
+        details: mvError?.details,
+        hint: mvError?.hint
+      })
+      // Don't fail the whole capture if Memory Vault save fails
     }
 
     return data

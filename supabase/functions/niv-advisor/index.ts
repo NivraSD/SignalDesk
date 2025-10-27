@@ -3317,13 +3317,24 @@ function detectContentGenerationIntent(message: string, conceptState: ConceptSta
 } {
   const lower = message.toLowerCase()
 
+  // SPECIAL CASE: Media plan requests can be generated without framework
+  if (lower.includes('media plan')) {
+    console.log('📋 Media plan request detected - can generate without framework')
+    return {
+      wantsContent: true,
+      contentType: 'media-plan',
+      confidence: 0.95
+    }
+  }
+
   // Strong signals for content generation
   const strongSignals = [
-    /generate|create|write|draft/i,
-    /press release|blog post|social post|email|newsletter/i,
+    /generate|create|write|draft|build/i,
+    /press release|blog post|social post|email|newsletter|media plan/i,
     /let'?s create|let'?s generate|let'?s write/i,
     /need (a|the)|want (a|the)/i,
-    /can you (create|generate|write)/i
+    /can you (create|generate|write|build)/i,
+    /turn.*into.*plan|convert.*to.*plan/i
   ]
 
   // Check if concept is ready (framework exists)
@@ -3348,6 +3359,19 @@ function detectContentGenerationIntent(message: string, conceptState: ConceptSta
     }
   }
 
+  // Even without framework, if they're explicitly asking to create specific content
+  if (signalCount >= 2) {
+    const contentType = extractContentType(message)
+    if (contentType && contentType !== 'press-release') { // Don't auto-generate press releases without framework
+      console.log(`📝 Direct content request detected (no framework): ${contentType}`)
+      return {
+        wantsContent: true,
+        contentType,
+        confidence: 0.6
+      }
+    }
+  }
+
   return { wantsContent: false, confidence: 0 }
 }
 
@@ -3358,6 +3382,7 @@ function extractContentType(message: string): string | undefined {
   const lower = message.toLowerCase()
 
   const typeMap: Record<string, string> = {
+    'media plan': 'media-plan',
     'press release': 'press-release',
     'blog post': 'blog-post',
     'blog': 'blog-post',
@@ -4010,9 +4035,14 @@ Key decision criteria:
 IMPORTANT: Strategic framework generation:
 - Set generate_framework to FALSE if user is asking for research, analysis, or information
 - Set generate_framework to FALSE if this is the first message about a topic
-- Only set generate_framework to TRUE if user explicitly says "create a strategy", "develop a plan", "build a framework" AFTER seeing research
+- Set generate_framework to FALSE if user wants CONTENT EXECUTION (media plan, press release, blog post, etc.)
+- Only set generate_framework to TRUE if user explicitly says "create a strategy document", "develop a strategic framework", "build a campaign strategy" AFTER seeing research
+- "create a media plan" = content execution (generate_framework: false) - routes to content generator
+- "create a strategy" = strategic framework (generate_framework: true) - creates strategy document
 - Example: "We need analysis on AI education landscape" → generate_framework: false (they want research first)
-- Example: "Based on that analysis, create our launch strategy" → generate_framework: true (follow-up request)
+- Example: "Based on that analysis, create our launch strategy" → generate_framework: true (strategic framework request)
+- Example: "create a media plan for this launch" → generate_framework: false (content execution - routes to generator)
+- Example: "turn this into a media plan" → generate_framework: false (content execution request)
 
 Respond with JSON only:
 {
@@ -5050,7 +5080,12 @@ Remember to maintain natural conversation flow while bringing this perspective t
         // Check if we have a framework to work with
         const hasFramework = conceptState.stage === 'ready' || conceptState.lastResponse?.structuredResponse
 
-        if (hasFramework) {
+        // Media plans and certain content types can be generated without framework
+        const canGenerateWithoutFramework = contentIntent.contentType === 'media-plan' ||
+                                           contentIntent.contentType === 'media-list' ||
+                                           contentIntent.contentType === 'social-post'
+
+        if (hasFramework || canGenerateWithoutFramework) {
           try {
             // Get the framework from last response or concept state
             const framework = conceptState.lastResponse?.structuredResponse || {
