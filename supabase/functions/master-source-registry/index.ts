@@ -149,6 +149,15 @@ function mapIndustryToCategory(industryInput: string): string | null {
     return 'aerospace_defense'
   }
 
+  // CONGLOMERATE & DIVERSIFIED TRADING HOUSES
+  if (
+    input.includes('conglomerate') || input.includes('diversified') || input.includes('holding') ||
+    input.includes('trading') && input.includes('house') || input.includes('sogo') || input.includes('shosha') ||
+    input.includes('trading') && input.includes('investment') || input.includes('multi') && input.includes('industry')
+  ) {
+    return 'conglomerate'
+  }
+
   // No match found - will check exact industry key
   return null
 }
@@ -496,6 +505,91 @@ const INDUSTRY_SOURCES = {
       compliance_areas: [
         'emissions regulations', 'renewable mandates', 'grid reliability',
         'pipeline safety', 'nuclear safety', 'carbon pricing'
+      ]
+    }
+  },
+
+  // CONGLOMERATE & DIVERSIFIED TRADING HOUSES (Sogo Shosha)
+  conglomerate: {
+    competitive: {
+      rss: [
+        // Asian Business News - Critical for trading houses
+        { name: 'Nikkei Asia', url: 'https://asia.nikkei.com/rss/feed/nar', type: 'rss', priority: 'critical' },
+        { name: 'South China Morning Post Business', url: 'https://www.scmp.com/rss/2/feed', type: 'rss', priority: 'critical' },
+        { name: 'Japan Times Business', url: 'https://www.japantimes.co.jp/feed/topstories/', type: 'rss', priority: 'critical' },
+        { name: 'Economic Times India', url: 'https://economictimes.indiatimes.com/rssfeedstopstories.cms', type: 'rss', priority: 'high' },
+
+        // Commodities & Trading
+        { name: 'Reuters Commodities', url: 'https://feeds.reuters.com/reuters/commoditiesNews', type: 'rss', priority: 'critical' },
+        { name: 'Bloomberg Commodities', url: 'https://feeds.bloomberg.com/commodities/news.rss', type: 'rss', priority: 'critical' },
+        { name: 'S&P Global Platts', url: 'https://www.spglobal.com/platts/en/rss-feed/oil', type: 'rss', priority: 'critical' },
+        { name: 'Metal Bulletin', url: 'https://www.metalbulletin.com/rss.xml', type: 'rss', priority: 'high' },
+        { name: 'Agrimoney', url: 'https://www.agrimoney.com/feed/', type: 'rss', priority: 'high' },
+
+        // Energy & Resources
+        { name: 'Oil Price', url: 'https://oilprice.com/rss/main', type: 'rss', priority: 'high' },
+        { name: 'Energy Intelligence', url: 'https://www.energyintel.com/rss', type: 'rss', priority: 'high' },
+        { name: 'Mining.com', url: 'https://www.mining.com/feed/', type: 'rss', priority: 'high' },
+
+        // Infrastructure & Shipping
+        { name: 'TradeWinds', url: 'https://www.tradewindsnews.com/rss', type: 'rss', priority: 'high' },
+        { name: 'Lloyd\'s List', url: 'https://lloydslist.maritimeintelligence.informa.com/rss', type: 'rss', priority: 'high' },
+        { name: 'Infrastructure Investor', url: 'https://www.infrastructureinvestor.com/feed/', type: 'rss', priority: 'medium' },
+
+        // General Business - Asia Focus
+        { name: 'Asian Business Review', url: 'https://asianbusinessreview.com/rss', type: 'rss', priority: 'medium' },
+        { name: 'The Straits Times Business', url: 'https://www.straitstimes.com/business/rss.xml', type: 'rss', priority: 'medium' }
+      ],
+      search_queries: [
+        'trading house acquisition', 'sogo shosha investment', 'commodity trading deal',
+        'Japanese conglomerate', 'Mitsubishi Marubeni Itochu Sumitomo Mitsui',
+        'LNG deal', 'mining investment', 'infrastructure project Asia',
+        'energy transition investment', 'supply chain diversification',
+        'Japan overseas investment', 'trading company partnership'
+      ],
+      track_urls: [
+        'https://asia.nikkei.com/Business',
+        'https://www.japantimes.co.jp/business/',
+        'https://www.reuters.com/business/energy/',
+        'https://www.bloomberg.com/commodities'
+      ]
+    },
+    media: {
+      rss: [
+        { name: 'Financial Times Asia', url: 'https://www.ft.com/asia-pacific?format=rss', type: 'rss', priority: 'high' },
+        { name: 'Asia Financial', url: 'https://www.asiafinancial.com/feed', type: 'rss', priority: 'medium' },
+        { name: 'Quartz', url: 'https://qz.com/feed', type: 'rss', priority: 'high' }
+      ],
+      key_journalists: [
+        '@nikkeiasia', '@SCMPNews', '@JapanTimesNews', '@ReutersChina',
+        '@BloombergAsia', '@FTAsia'
+      ],
+      podcasts: [
+        'Asia Business', 'Nikkei Asian Review Podcast', 'China Money Podcast',
+        'Asia Tech Podcast', 'Commodities People'
+      ]
+    },
+    regulatory: {
+      rss: [
+        { name: 'Japan FSA', url: 'https://www.fsa.go.jp/en/rss.xml', type: 'rss', priority: 'high' },
+        { name: 'METI Japan', url: 'https://www.meti.go.jp/english/rss/', type: 'rss', priority: 'high' }
+      ],
+      agencies: [
+        'Japan Fair Trade Commission (JFTC)',
+        'Financial Services Agency (FSA) Japan',
+        'Ministry of Economy, Trade and Industry (METI)',
+        'China CSRC', 'ASEAN regulators', 'WTO', 'IOSCO'
+      ],
+      compliance_areas: [
+        'cross-border M&A', 'commodity market regulation', 'trade compliance',
+        'anti-corruption (FCPA, UK Bribery Act)', 'sanctions compliance',
+        'export controls', 'supply chain due diligence', 'ESG reporting'
+      ]
+    },
+    market: {
+      rss: [
+        { name: 'Nikkei 225', url: 'https://asia.nikkei.com/Business/Markets/rss', type: 'rss', priority: 'high' },
+        { name: 'Shanghai Stock Exchange', url: 'https://english.sse.com.cn/rss/', type: 'rss', priority: 'medium' }
       ]
     }
   },
