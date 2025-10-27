@@ -337,7 +337,8 @@ async function capturePresentation(
       let folderPath: string
       if (request.campaign_id) {
         // Store within opportunity folder in Memory Vault
-        folderPath = `opportunities/${request.campaign_id}/presentations`
+        // IMPORTANT: Use capital "O" to match Memory Vault template folder
+        folderPath = `Opportunities/${request.campaign_id}/presentations`
         console.log(`📁 Opportunity presentation - saving to: ${folderPath}`)
       } else {
         // Standalone presentation folder
