@@ -349,37 +349,57 @@ async function capturePresentation(
       // The Gamma URL and metadata are valuable even without slide text
       const contentToSave = fullText || `${presentationTitle}\n\nGamma Presentation\nView at: ${gammaUrl}`
 
-      await supabase
+      const contentLibraryData = {
+        id: crypto.randomUUID(),
+        organization_id: request.organization_id,
+        session_id: request.campaign_id,  // Links to opportunity if available
+        content_type: 'presentation',
+        title: presentationTitle,
+        content: contentToSave,
+        metadata: {
+          gamma_id: generationId,
+          gamma_url: gammaUrl,
+          gamma_edit_url: `${gammaUrl}/edit`,
+          pptx_url: pptxStorageUrl,
+          slide_count: slides.length || request.slideCount || 10,
+          format: 'pptx',
+          slides: slides,
+          campaign_presentation_id: data.id,
+          opportunity_id: request.campaign_id,  // Explicit link
+          blueprint_id: request.campaign_id,  // For OpportunitiesModule lookup
+          source: 'gamma',
+          has_full_content: slides.length > 0  // Track if we have slide content
+        },
+        tags: ['gamma', 'presentation', 'auto-generated', request.campaign_id ? 'opportunity' : 'standalone'],
+        status: 'final',
+        folder: folderPath,
+        file_url: pptxStorageUrl
+      }
+
+      console.log('💾 Attempting to insert to content_library:', {
+        id: contentLibraryData.id,
+        organization_id: contentLibraryData.organization_id,
+        title: contentLibraryData.title,
+        folder: contentLibraryData.folder,
+        has_metadata: !!contentLibraryData.metadata
+      })
+
+      const { data: mvData, error: mvInsertError } = await supabase
         .from('content_library')
-        .insert({
-          id: crypto.randomUUID(),
-          organization_id: request.organization_id,
-          session_id: request.campaign_id,  // Links to opportunity if available
-          content_type: 'presentation',
-          title: presentationTitle,
-          content: contentToSave,
-          metadata: {
-            gamma_id: generationId,
-            gamma_url: gammaUrl,
-            gamma_edit_url: `${gammaUrl}/edit`,
-            pptx_url: pptxStorageUrl,
-            slide_count: slides.length || request.slideCount || 10,
-            format: 'pptx',
-            slides: slides,
-            campaign_presentation_id: data.id,
-            opportunity_id: request.campaign_id,  // Explicit link
-            blueprint_id: request.campaign_id,  // For OpportunitiesModule lookup
-            source: 'gamma',
-            has_full_content: slides.length > 0  // Track if we have slide content
-          },
-          tags: ['gamma', 'presentation', 'auto-generated', request.campaign_id ? 'opportunity' : 'standalone'],
-          status: 'final',
-          folder: folderPath,
-          file_url: pptxStorageUrl
-        })
+        .insert(contentLibraryData)
+        .select()
+        .single()
+
+      if (mvInsertError) {
+        console.error('❌ Memory Vault insert failed:', mvInsertError)
+        // Log the error but don't throw - presentation is already saved to campaign_presentations
+        console.error('Continuing without Memory Vault save - presentation exists in campaign_presentations')
+        return data  // Return the campaign_presentations record
+      }
 
       console.log(`✅ Saved to Memory Vault at: ${folderPath}`)
-      console.log('Memory Vault save parameters:', {
+      console.log('Memory Vault save success:', {
+        id: mvData.id,
         organization_id: request.organization_id,
         campaign_id: request.campaign_id,
         folder: folderPath,
