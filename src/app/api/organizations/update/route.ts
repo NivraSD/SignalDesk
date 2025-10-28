@@ -32,14 +32,32 @@ export async function PUT(request: Request) {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Update organization
+    // First, get current organization to preserve existing settings
+    const { data: currentOrg, error: fetchError } = await supabase
+      .from('organizations')
+      .select('settings')
+      .eq('id', id)
+      .single()
+
+    if (fetchError) {
+      console.error('Error fetching current organization:', fetchError)
+      return NextResponse.json(
+        { error: 'Failed to fetch organization', details: fetchError.message },
+        { status: 500 }
+      )
+    }
+
+    // Update organization with URL in settings JSONB field
     const { data, error } = await supabase
       .from('organizations')
       .update({
         name: name.trim(),
-        domain: domain.trim(),
         industry: industry?.trim() || null,
         size: size || null,
+        settings: {
+          ...(currentOrg?.settings || {}),
+          url: domain.trim()
+        },
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
@@ -54,9 +72,16 @@ export async function PUT(request: Request) {
       )
     }
 
+    // Flatten settings for easier access
+    const flatOrg = {
+      ...data,
+      url: data.settings?.url,
+      description: data.settings?.description
+    }
+
     return NextResponse.json({
       success: true,
-      organization: data
+      organization: flatOrg
     })
   } catch (error: any) {
     console.error('Error in update organization API:', error)

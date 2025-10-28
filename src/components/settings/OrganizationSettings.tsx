@@ -32,7 +32,7 @@ export default function OrganizationSettings({
   // About tab form state
   const [orgData, setOrgData] = useState({
     name: '',
-    domain: '',
+    domain: '',  // Using "domain" as the field name but will map to url
     industry: '',
     size: ''
   })
@@ -59,7 +59,7 @@ export default function OrganizationSettings({
       if (data.organization) {
         setOrgData({
           name: data.organization.name || '',
-          domain: data.organization.domain || '',
+          domain: data.organization.url || '',  // Map url to domain field
           industry: data.organization.industry || '',
           size: data.organization.size || ''
         })

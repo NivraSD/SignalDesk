@@ -8,10 +8,43 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 /**
  * GET /api/organizations
- * List all organizations
+ * List all organizations or get a single organization by ID
  */
 export async function GET(req: NextRequest) {
   try {
+    const searchParams = req.nextUrl.searchParams
+    const id = searchParams.get('id')
+
+    // If ID provided, get single organization
+    if (id) {
+      const { data: org, error } = await supabase
+        .from('organizations')
+        .select('*')
+        .eq('id', id)
+        .single()
+
+      if (error) {
+        console.error('Failed to fetch organization:', error)
+        return NextResponse.json(
+          { error: 'Failed to fetch organization' },
+          { status: 500 }
+        )
+      }
+
+      // Flatten settings for easier access
+      const flatOrg = {
+        ...org,
+        url: org.settings?.url,
+        description: org.settings?.description
+      }
+
+      return NextResponse.json({
+        success: true,
+        organization: flatOrg
+      })
+    }
+
+    // Otherwise, list all organizations
     const { data: organizations, error } = await supabase
       .from('organizations')
       .select('*')

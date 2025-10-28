@@ -57,7 +57,8 @@ export default function Dashboard() {
           setOrganization({
             id: firstOrg.id,
             name: firstOrg.name,
-            domain: firstOrg.domain,
+            url: firstOrg.url,
+            domain: firstOrg.url,  // Set both for compatibility
             industry: firstOrg.industry,
             size: firstOrg.size,
             config: {}
@@ -94,7 +95,8 @@ export default function Dashboard() {
           setOrganization({
             id: remainingOrgs[0].id,
             name: remainingOrgs[0].name,
-            domain: remainingOrgs[0].domain,
+            url: remainingOrgs[0].url,
+            domain: remainingOrgs[0].url,  // Set both for compatibility
             industry: remainingOrgs[0].industry,
             size: remainingOrgs[0].size,
             config: {}
@@ -793,7 +795,10 @@ export default function Dashboard() {
           setOrganization({
             id: org.id,
             name: org.name,
+            url: org.url,
+            domain: org.url,  // Set both for compatibility
             industry: org.industry,
+            size: org.size,
             config: {}
           })
         }}
@@ -801,7 +806,8 @@ export default function Dashboard() {
           setOrganization({
             id: org.id,
             name: org.name,
-            domain: org.domain,
+            url: org.url,
+            domain: org.url,  // Set both for compatibility
             industry: org.industry,
             size: org.size,
             config: {}

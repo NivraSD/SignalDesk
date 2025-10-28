@@ -13,7 +13,8 @@ interface User {
 interface Organization {
   id: string
   name: string
-  domain?: string
+  url?: string
+  domain?: string  // Alias for url, kept for compatibility
   industry?: string
   size?: string
   config?: any
