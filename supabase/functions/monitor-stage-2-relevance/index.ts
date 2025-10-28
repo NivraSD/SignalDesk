@@ -167,24 +167,102 @@ function extractFinancialSignals(text: string): any {
 
 function extractTimeMarkers(text: string): string[] {
   const markers = [];
-  
+
   // Extract quarters
   const quarters = text.match(/Q[1-4]\s*20\d{2}/gi) || [];
   markers.push(...quarters);
-  
+
   // Extract months and years
   const monthYear = text.match(/(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+20\d{2}/gi) || [];
   markers.push(...monthYear);
-  
+
   // Extract relative time markers
   const relativeTime = text.match(/(?:next|last|this)\s+(?:week|month|quarter|year)/gi) || [];
   markers.push(...relativeTime);
-  
+
   // Extract specific dates
   const dates = text.match(/\d{1,2}\/\d{1,2}\/\d{2,4}/g) || [];
   markers.push(...dates);
-  
+
   return [...new Set(markers)].slice(0, 5);
+}
+
+function detectEventRecency(text: string, titleText: string): { isRecent: boolean, penalty: number, signals: string[] } {
+  const signals = [];
+  let isRecent = true;
+  let penalty = 0;
+
+  // CRITICAL: Detect retrospective/old event language
+  const oldEventPatterns = [
+    // Explicit time references to past
+    /\b(months?|years?|weeks?) ago\b/i,
+    /\b(back in|way back|remember when)\b/i,
+    /\b(last (january|february|march|april|may|june|july|august|september|october|november|december))\b/i,
+    /\bin (2021|2022|2023|early 2024|mid 2024)\b/i,
+
+    // Retrospective framing
+    /\b(look(ing)? back|in retrospect|historically|at the time)\b/i,
+    /\b(previously|formerly|used to|had been)\b/i,
+
+    // Roundup/compilation indicators
+    /\b(top \d+|best of|worst of|year in review|roundup|recap)\b/i,
+    /\b(trends of|highlights from|looking back at)\b/i,
+
+    // Past-tense crisis that's already resolved
+    /\b(faced|dealt with|survived|overcame) (a |the )?(crisis|scandal|controversy|backlash)\b/i,
+  ];
+
+  // Recent event indicators (should be present for truly new events)
+  const recentEventPatterns = [
+    /\b(today|yesterday|this (week|morning|afternoon))\b/i,
+    /\b(just (announced|launched|revealed|reported))\b/i,
+    /\b(breaking|developing|latest)\b/i,
+    /\b((will|plan to|expected to) (announce|launch|release))\b/i,
+    /\b(upcoming|imminent|soon to be)\b/i,
+  ];
+
+  // Check for old event signals
+  const hasOldEventSignals = oldEventPatterns.some(pattern => {
+    const match = pattern.test(text) || pattern.test(titleText);
+    if (match) {
+      signals.push(`OLD_EVENT: ${pattern.source.substring(0, 30)}`);
+    }
+    return match;
+  });
+
+  // Check for recent event signals
+  const hasRecentEventSignals = recentEventPatterns.some(pattern => {
+    const match = pattern.test(text) || pattern.test(titleText);
+    if (match) {
+      signals.push(`RECENT: ${pattern.source.substring(0, 30)}`);
+    }
+    return match;
+  });
+
+  // Decision logic
+  if (hasOldEventSignals && !hasRecentEventSignals) {
+    // Clearly old event being recirculated
+    isRecent = false;
+    penalty = 200; // Massive penalty - effectively filters out
+    signals.push('VERDICT: OLD_EVENT_RECIRCULATED');
+  } else if (hasOldEventSignals && hasRecentEventSignals) {
+    // Mixed signals - might be new development on old story
+    isRecent = true;
+    penalty = 30; // Moderate penalty
+    signals.push('VERDICT: MIXED_RECENCY');
+  } else if (!hasRecentEventSignals && !hasOldEventSignals) {
+    // No clear time signals - neutral
+    isRecent = true;
+    penalty = 10; // Small penalty for lack of timeliness
+    signals.push('VERDICT: UNCLEAR_TIMING');
+  } else {
+    // Has recent signals, no old signals - good
+    isRecent = true;
+    penalty = 0;
+    signals.push('VERDICT: RECENT_EVENT');
+  }
+
+  return { isRecent, penalty, signals };
 }
 
 // Helper function to find source profile
@@ -313,7 +391,10 @@ serve(async (req) => {
     const scoredArticles = articles.map(article => {
       const text = `${article.title || ''} ${article.description || ''} ${article.content || ''}`.toLowerCase();
       const titleText = (article.title || '').toLowerCase();
-      
+
+      // CHECK EVENT RECENCY FIRST - filter out old events early
+      const recencyCheck = detectEventRecency(text, titleText);
+
       let score = 0;
       const factors = [];
       const entities_found = [];
@@ -607,6 +688,17 @@ serve(async (req) => {
         factors.push('TIME_SENSITIVE');
       }
       
+      // Apply recency penalty BEFORE capping
+      score = Math.max(0, score - recencyCheck.penalty);
+
+      // Add recency signals to factors for transparency
+      if (recencyCheck.penalty > 0) {
+        factors.push(...recencyCheck.signals);
+      }
+
+      // CAP SCORE AT 100 - prevents broken 500+ scores
+      score = Math.min(100, score);
+
       // Extract key data and initial analysis for enrichment
       const pr_extraction = {
         mentioned_entities: entities_found,
@@ -615,7 +707,7 @@ serve(async (req) => {
         competitor_count: competitorMentioned.length,
         primary_category: category,
         coverage_gaps: [], // Will be filled in final selection
-        
+
         // Context for synthesis and opportunities
         actionable_signals: {
           product_launch: hasProductLaunch,
@@ -625,20 +717,27 @@ serve(async (req) => {
           strategic_move: hasStrategicMove,
           technology_update: hasTechnologyUpdate
         },
-        
+
         // Extract key phrases and context for enrichment
         key_phrases: extractKeyPhrases(text),
         event_type: detectEventType(text),
         sentiment_indicators: detectSentiment(text),
         strategic_relevance: calculateStrategicRelevance(text, targetEntities),
-        
+
         // Pre-extract for enrichment efficiency
         potential_events: extractPotentialEvents(text),
         mentioned_products: extractProducts(text),
         financial_signals: extractFinancialSignals(text),
-        temporal_markers: extractTimeMarkers(text)
+        temporal_markers: extractTimeMarkers(text),
+
+        // NEW: Include recency information
+        event_recency: {
+          is_recent: recencyCheck.isRecent,
+          recency_penalty: recencyCheck.penalty,
+          recency_signals: recencyCheck.signals
+        }
       };
-      
+
       return {
         ...article,
         pr_relevance_score: score,

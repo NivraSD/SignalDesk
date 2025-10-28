@@ -484,7 +484,7 @@ export default function IntelligenceModule() {
         body: {
           organization_id: organization.id,
           organization_name: organization.name,
-          results
+          geo_results: results  // Fixed: renamed 'results' to 'geo_results' to match backend expectation
         }
       })
 
