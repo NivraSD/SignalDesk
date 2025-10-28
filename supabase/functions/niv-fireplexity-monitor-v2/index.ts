@@ -98,12 +98,12 @@ serve(async (req) => {
 
     if (targetsData && targetsData.length > 0) {
       targetsData.forEach((target: any) => {
-        if (target.target_type === 'competitor' && target.target_name) {
-          discoveryTargets.competitors.add(target.target_name)
-        } else if (target.target_type === 'stakeholder' && target.target_name) {
-          discoveryTargets.stakeholders.add(target.target_name)
-        } else if (target.target_type === 'topic' && target.target_name) {
-          discoveryTargets.topics.add(target.target_name)
+        if (target.type === 'competitor' && target.name) {
+          discoveryTargets.competitors.add(target.name)
+        } else if (target.type === 'stakeholder' && target.name) {
+          discoveryTargets.stakeholders.add(target.name)
+        } else if (target.type === 'topic' && target.name) {
+          discoveryTargets.topics.add(target.name)
         }
       })
       console.log(`   ✓ Loaded ${discoveryTargets.competitors.size} competitors, ${discoveryTargets.stakeholders.size} stakeholders, ${discoveryTargets.topics.size} topics from intelligence_targets`)
