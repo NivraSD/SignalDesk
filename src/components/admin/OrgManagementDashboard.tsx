@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { Building2, Target, Users, Lightbulb, Megaphone, Plus, Settings, Trash2, X, Loader, RefreshCw } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { supabase } from '@/lib/supabase/client'
 
 interface Organization {
   id: string
@@ -57,30 +58,34 @@ export default function OrgManagementDashboard({
 
       const orgs = data.organizations || []
 
-      // Load stats for each organization
+      // Load stats for each organization using Supabase client
       const orgsWithStats = await Promise.all(
         orgs.map(async (org: Organization) => {
           try {
-            // Get target count
-            const targetsResponse = await fetch(`/api/organizations/targets?organization_id=${org.id}`)
-            const targetsData = await targetsResponse.json()
-            const targetCount = targetsData.targets?.length || 0
+            // Get target count from intelligence_targets
+            const { count: targetCount } = await supabase
+              .from('intelligence_targets')
+              .select('*', { count: 'exact', head: true })
+              .eq('organization_id', org.id)
 
-            // Get opportunity count (from opportunities table)
-            const opportunitiesResponse = await fetch(`/api/opportunities?organization_id=${org.id}`)
-            const opportunitiesData = await opportunitiesResponse.json()
-            const opportunityCount = opportunitiesData.opportunities?.length || 0
+            // Get opportunity count from opportunities table (all time, not just recent)
+            const { count: opportunityCount } = await supabase
+              .from('opportunities')
+              .select('*', { count: 'exact', head: true })
+              .eq('organization_id', org.id)
 
-            // Get campaign count (from content_library where content_type = 'campaign')
-            const campaignsResponse = await fetch(`/api/content?organization_id=${org.id}&content_type=campaign`)
-            const campaignsData = await campaignsResponse.json()
-            const campaignCount = campaignsData.content?.length || 0
+            // Get campaign count from content_library where content_type contains 'campaign'
+            const { count: campaignCount } = await supabase
+              .from('content_library')
+              .select('*', { count: 'exact', head: true })
+              .eq('organization_id', org.name) // Note: content_library uses organization name, not ID
+              .ilike('content_type', '%campaign%')
 
             return {
               ...org,
-              targetCount,
-              opportunityCount,
-              campaignCount
+              targetCount: targetCount || 0,
+              opportunityCount: opportunityCount || 0,
+              campaignCount: campaignCount || 0
             }
           } catch (err) {
             console.error(`Failed to load stats for ${org.name}:`, err)
