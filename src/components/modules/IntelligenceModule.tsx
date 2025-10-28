@@ -593,6 +593,14 @@ export default function IntelligenceModule() {
       // Use url field from organizations table (domain is an alias)
       const orgUrl = organization.url || organization.domain
 
+      console.log('🔍 Organization data:', {
+        id: organization.id,
+        name: organization.name,
+        url: organization.url,
+        domain: organization.domain,
+        orgUrl
+      })
+
       if (!orgUrl) {
         alert('Please set your organization domain/website in settings first')
         setSchemaExtracting(false)

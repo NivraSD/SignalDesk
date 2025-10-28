@@ -95,6 +95,23 @@ export default function OrganizationSettings({
 
       setSuccess('Organization updated successfully')
 
+      // Update global organization state with new data
+      const { useAppStore } = await import('@/stores/useAppStore')
+      const setOrganization = useAppStore.getState().setOrganization
+      const currentOrg = useAppStore.getState().organization
+
+      if (currentOrg?.id === organizationId && data.organization) {
+        setOrganization({
+          ...currentOrg,
+          name: data.organization.name,
+          url: data.organization.url,
+          domain: data.organization.url,
+          industry: data.organization.industry,
+          size: data.organization.size
+        })
+        console.log('✅ Updated global organization state with new URL:', data.organization.url)
+      }
+
       // Call onUpdate callback to refresh parent state
       if (onUpdate) {
         onUpdate()
