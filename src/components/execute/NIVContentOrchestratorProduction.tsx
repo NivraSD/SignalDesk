@@ -879,6 +879,7 @@ export default function NIVContentOrchestratorProduction({
           'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`
         },
         body: JSON.stringify({
+          type: 'image',
           prompt: userMessage,
           organization: organization?.name || 'OpenAI'
         })
