@@ -220,7 +220,15 @@ function buildQueryDiscoveryPrompt(context: {
   recentNews: string[]
   industryPatterns: string[]
 }): string {
+  const currentDate = new Date().toISOString().split('T')[0] // YYYY-MM-DD format
+  const currentYear = new Date().getFullYear()
+
   return `You are a GEO (Generative Experience Optimization) expert. Your task is to generate high-value test queries that will reveal how AI platforms (Claude, ChatGPT, Gemini, Perplexity) respond to questions about this organization.
+
+CURRENT DATE: ${currentDate}
+CURRENT YEAR: ${currentYear}
+
+IMPORTANT: Generate queries that are relevant for ${currentYear}. Do NOT reference 2024 or past years. Use "current", "latest", "${currentYear}", or no year at all.
 
 ORGANIZATION CONTEXT:
 - Name: ${context.organizationName}
