@@ -107,27 +107,61 @@ serve(async (req) => {
 
     console.log(`🔍 Testing ${queries.length} queries`)
 
+    // FETCH ACTIVE SCHEMA for performance tracking
+    console.log('📋 Fetching active schema...')
+    let activeSchema: any = null
+    try {
+      const { data: schema } = await supabase
+        .from('content_library')
+        .select('*')
+        .eq('organization_id', organization_id)
+        .eq('content_type', 'schema')
+        .eq('folder', 'Schemas/Active/')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (schema) {
+        activeSchema = schema
+        console.log(`✅ Found active schema: ${schema.metadata?.schema_type || 'Unknown'}`)
+      } else {
+        console.log('⚠️  No active schema found - schema performance tracking disabled')
+      }
+    } catch (error) {
+      console.log('⚠️  Could not fetch schema:', error)
+    }
+
     const signals: any[] = []
+    const platformPerformance: Record<string, any[]> = {
+      claude: [],
+      gemini: [],
+      perplexity: [],
+      chatgpt: []
+    }
 
     // TEST 1: Claude AI Visibility
     console.log('🤖 Testing Claude visibility...')
     const claudeResults = await testClaudeVisibility(queries, organization_name)
     signals.push(...claudeResults)
+    platformPerformance.claude = claudeResults.filter(r => r.type === 'ai_visibility' || r.type === 'visibility_gap')
 
     // TEST 2: Gemini AI Visibility
     console.log('🌟 Testing Gemini visibility...')
     const geminiResults = await testGeminiVisibility(queries, organization_name)
     signals.push(...geminiResults)
+    platformPerformance.gemini = geminiResults.filter(r => r.type === 'ai_visibility' || r.type === 'visibility_gap')
 
     // TEST 3: Perplexity AI Visibility (Sonar model with sources)
     console.log('🔮 Testing Perplexity visibility...')
     const perplexityResults = await testPerplexityVisibility(queries, organization_name)
     signals.push(...perplexityResults)
+    platformPerformance.perplexity = perplexityResults.filter(r => r.type === 'ai_visibility' || r.type === 'visibility_gap')
 
     // TEST 4: ChatGPT AI Visibility (GPT-4o)
     console.log('💬 Testing ChatGPT visibility...')
     const chatgptResults = await testChatGPTVisibility(queries, organization_name)
     signals.push(...chatgptResults)
+    platformPerformance.chatgpt = chatgptResults.filter(r => r.type === 'ai_visibility' || r.type === 'visibility_gap')
 
     // TEST 5: Competitor Schema Extraction (via Firecrawl)
     if (orgCompetitors.length > 0) {

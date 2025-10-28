@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Building2, Target, Users, FileText, TrendingUp, Plus, Settings, Trash2, X, Loader, RefreshCw } from 'lucide-react'
+import { Building2, Target, Users, Lightbulb, Megaphone, Plus, Settings, Trash2, X, Loader, RefreshCw } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 interface Organization {
@@ -11,8 +11,8 @@ interface Organization {
   url?: string
   created_at: string
   targetCount?: number
-  contentCount?: number
-  predictionCount?: number
+  opportunityCount?: number
+  campaignCount?: number
 }
 
 interface OrgManagementDashboardProps {
@@ -66,23 +66,29 @@ export default function OrgManagementDashboard({
             const targetsData = await targetsResponse.json()
             const targetCount = targetsData.targets?.length || 0
 
-            // Get content count (from content_library)
-            // Get prediction count (from predictions)
-            // For now, we'll set these to 0 as they require more complex queries
+            // Get opportunity count (from opportunities table)
+            const opportunitiesResponse = await fetch(`/api/opportunities?organization_id=${org.id}`)
+            const opportunitiesData = await opportunitiesResponse.json()
+            const opportunityCount = opportunitiesData.opportunities?.length || 0
+
+            // Get campaign count (from content_library where content_type = 'campaign')
+            const campaignsResponse = await fetch(`/api/content?organization_id=${org.id}&content_type=campaign`)
+            const campaignsData = await campaignsResponse.json()
+            const campaignCount = campaignsData.content?.length || 0
 
             return {
               ...org,
               targetCount,
-              contentCount: 0,
-              predictionCount: 0
+              opportunityCount,
+              campaignCount
             }
           } catch (err) {
             console.error(`Failed to load stats for ${org.name}:`, err)
             return {
               ...org,
               targetCount: 0,
-              contentCount: 0,
-              predictionCount: 0
+              opportunityCount: 0,
+              campaignCount: 0
             }
           }
         })
@@ -219,14 +225,14 @@ export default function OrgManagementDashboard({
                       <p className="text-xs text-gray-500">Targets</p>
                     </div>
                     <div className="bg-gray-900 rounded-lg p-3 text-center">
-                      <FileText className="w-5 h-5 text-green-400 mx-auto mb-1" />
-                      <p className="text-lg font-bold text-white">{org.contentCount}</p>
-                      <p className="text-xs text-gray-500">Content</p>
+                      <Lightbulb className="w-5 h-5 text-yellow-400 mx-auto mb-1" />
+                      <p className="text-lg font-bold text-white">{org.opportunityCount}</p>
+                      <p className="text-xs text-gray-500">Opportunities</p>
                     </div>
                     <div className="bg-gray-900 rounded-lg p-3 text-center">
-                      <TrendingUp className="w-5 h-5 text-yellow-400 mx-auto mb-1" />
-                      <p className="text-lg font-bold text-white">{org.predictionCount}</p>
-                      <p className="text-xs text-gray-500">Predictions</p>
+                      <Megaphone className="w-5 h-5 text-green-400 mx-auto mb-1" />
+                      <p className="text-lg font-bold text-white">{org.campaignCount}</p>
+                      <p className="text-xs text-gray-500">Campaigns</p>
                     </div>
                   </div>
 
