@@ -35,6 +35,7 @@ import { IntelligenceService } from '@/lib/services/intelligenceService'
 import { supabase } from '@/lib/supabase/client'
 import { useAppStore } from '@/stores/useAppStore'
 import IntelligenceSynthesisDisplay from '@/components/IntelligenceSynthesisDisplay'
+import StakeholderPredictionDashboard from '@/components/predictions/StakeholderPredictionDashboard'
 
 // Import the executive synthesis component if it exists
 // import ExecutiveSynthesisDisplay from '../intelligence/ExecutiveSynthesisDisplay'
@@ -60,7 +61,7 @@ interface PipelineStage {
 
 export default function IntelligenceModule() {
   const { organization } = useAppStore()
-  const [activeTab, setActiveTab] = useState<'synthesis' | 'capabilities' | 'prompts' | 'social' | 'realtime'>('capabilities')
+  const [activeTab, setActiveTab] = useState<'synthesis' | 'social' | 'realtime' | 'predictions'>('synthesis')
   const [activePromptCategory, setActivePromptCategory] = useState('quick-wins')
   const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -536,17 +537,6 @@ export default function IntelligenceModule() {
           {/* Tab Navigation */}
           <div className="flex gap-2">
             <button
-              onClick={() => setActiveTab('capabilities')}
-              className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-                activeTab === 'capabilities'
-                  ? 'bg-purple-500/20 text-purple-400'
-                  : 'bg-gray-800 hover:bg-gray-700 text-gray-400'
-              }`}
-            >
-              <Info className="w-4 h-4" />
-              NIV Capabilities
-            </button>
-            <button
               onClick={() => setActiveTab('synthesis')}
               className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
                 activeTab === 'synthesis'
@@ -556,17 +546,6 @@ export default function IntelligenceModule() {
             >
               <Sparkles className="w-4 h-4" />
               Executive Synthesis
-            </button>
-            <button
-              onClick={() => setActiveTab('prompts')}
-              className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-                activeTab === 'prompts'
-                  ? 'bg-purple-500/20 text-purple-400'
-                  : 'bg-gray-800 hover:bg-gray-700 text-gray-400'
-              }`}
-            >
-              <BookOpen className="w-4 h-4" />
-              Prompt Library
             </button>
             <button
               onClick={() => setActiveTab('social')}
@@ -590,129 +569,23 @@ export default function IntelligenceModule() {
               <Activity className="w-4 h-4" />
               Real-Time Monitor
             </button>
+            <button
+              onClick={() => setActiveTab('predictions')}
+              className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+                activeTab === 'predictions'
+                  ? 'bg-purple-500/20 text-purple-400'
+                  : 'bg-gray-800 hover:bg-gray-700 text-gray-400'
+              }`}
+            >
+              <AlertTriangle className="w-4 h-4" />
+              Predictions
+            </button>
           </div>
         </div>
       </div>
 
       {/* Content Area */}
       <div className="flex-1 overflow-hidden">
-        {/* NIV Capabilities Tab */}
-        {activeTab === 'capabilities' && (
-          <div className="p-6 overflow-y-auto h-full">
-            <div className="max-w-4xl space-y-6">
-              <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-xl p-6 border border-purple-500/20">
-                <h3 className="text-2xl font-bold mb-4 text-purple-400">NIV: Your Strategic Intelligence Engine</h3>
-                <p className="text-gray-300 mb-6">
-                  NIV (Neural Intelligence Vault) is your AI-powered strategic orchestration platform that transforms
-                  raw intelligence into actionable campaign strategies.
-                </p>
-              </div>
-
-              <div className="grid gap-6">
-                {/* Research Capabilities */}
-                <div className="bg-gray-800/50 rounded-lg p-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <Search className="w-6 h-6 text-blue-400" />
-                    <h4 className="text-lg font-semibold">Research & Discovery</h4>
-                  </div>
-                  <ul className="space-y-3 text-gray-300">
-                    <li className="flex items-start gap-2">
-                      <ChevronRight className="w-4 h-4 text-green-400 mt-1 flex-shrink-0" />
-                      <span><strong>Multi-Source Intelligence:</strong> Aggregates data from news, social media, patents, research papers, and regulatory filings</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <ChevronRight className="w-4 h-4 text-green-400 mt-1 flex-shrink-0" />
-                      <span><strong>Competitive Monitoring:</strong> Tracks competitor moves, product launches, executive changes, and strategic shifts in real-time</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <ChevronRight className="w-4 h-4 text-green-400 mt-1 flex-shrink-0" />
-                      <span><strong>Trend Detection:</strong> Identifies emerging narratives and weak signals before they become mainstream</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <ChevronRight className="w-4 h-4 text-green-400 mt-1 flex-shrink-0" />
-                      <span><strong>Stakeholder Analysis:</strong> Maps influence networks and stakeholder positions on key issues</span>
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Strategic Framework Generation */}
-                <div className="bg-gray-800/50 rounded-lg p-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <Target className="w-6 h-6 text-purple-400" />
-                    <h4 className="text-lg font-semibold">Strategic Framework Generation</h4>
-                  </div>
-                  <ul className="space-y-3 text-gray-300">
-                    <li className="flex items-start gap-2">
-                      <ChevronRight className="w-4 h-4 text-green-400 mt-1 flex-shrink-0" />
-                      <span><strong>Campaign Blueprints:</strong> Creates comprehensive campaign strategies with objectives, narratives, and proof points</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <ChevronRight className="w-4 h-4 text-green-400 mt-1 flex-shrink-0" />
-                      <span><strong>Content Planning:</strong> Identifies content needs, themes, and distribution strategies</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <ChevronRight className="w-4 h-4 text-green-400 mt-1 flex-shrink-0" />
-                      <span><strong>Media Strategy:</strong> Targets specific journalists, publications, and influencers for maximum impact</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <ChevronRight className="w-4 h-4 text-green-400 mt-1 flex-shrink-0" />
-                      <span><strong>Timeline & Execution:</strong> Provides day-by-day action plans with milestones and success metrics</span>
-                    </li>
-                  </ul>
-                </div>
-
-                {/* How to Use NIV */}
-                <div className="bg-gray-800/50 rounded-lg p-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <Lightbulb className="w-6 h-6 text-yellow-400" />
-                    <h4 className="text-lg font-semibold">How to Use NIV Effectively</h4>
-                  </div>
-                  <div className="space-y-4 text-gray-300">
-                    <div>
-                      <h5 className="font-semibold text-yellow-400 mb-2">1. Start with Clear Objectives</h5>
-                      <p>Be specific about what you want to achieve. Instead of "help with PR", try "create a thought leadership campaign to position us as the AI safety leader".</p>
-                    </div>
-                    <div>
-                      <h5 className="font-semibold text-yellow-400 mb-2">2. Provide Context</h5>
-                      <p>Share your industry, competitors, and any constraints. NIV uses this to tailor strategies to your specific situation.</p>
-                    </div>
-                    <div>
-                      <h5 className="font-semibold text-yellow-400 mb-2">3. Iterate and Refine</h5>
-                      <p>Use follow-up messages to drill deeper into specific areas or adjust the strategy based on your feedback.</p>
-                    </div>
-                    <div>
-                      <h5 className="font-semibold text-yellow-400 mb-2">4. Save to Memory Vault</h5>
-                      <p>Generated frameworks are automatically saved for future reference and can be shared with your team.</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Example Use Cases */}
-                <div className="bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-lg p-6 border border-green-500/20">
-                  <h4 className="text-lg font-semibold mb-4 text-green-400">Example Use Cases</h4>
-                  <div className="grid gap-3">
-                    <div className="bg-gray-900/50 rounded-lg p-4">
-                      <p className="text-sm">
-                        <strong className="text-blue-400">Product Launch:</strong> "We're launching a new AI assistant for healthcare in Q2. Create a strategic framework to position us as the most trusted solution for patient data privacy."
-                      </p>
-                    </div>
-                    <div className="bg-gray-900/50 rounded-lg p-4">
-                      <p className="text-sm">
-                        <strong className="text-purple-400">Competitive Response:</strong> "Our competitor just announced a $100M funding round. Develop a response strategy that shifts focus to our customer success metrics."
-                      </p>
-                    </div>
-                    <div className="bg-gray-900/50 rounded-lg p-4">
-                      <p className="text-sm">
-                        <strong className="text-orange-400">Thought Leadership:</strong> "Position our CEO as the leading voice on ethical AI in financial services. Create a 90-day campaign framework."
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Executive Synthesis Tab */}
         {activeTab === 'synthesis' && (
           <div className="p-6 overflow-y-auto h-full">
@@ -794,75 +667,6 @@ export default function IntelligenceModule() {
               ) : (
                 <IntelligenceSynthesisDisplay synthesis={executiveSynthesis} />
               )}
-            </div>
-          </div>
-        )}
-
-        {/* Prompt Library Tab */}
-        {activeTab === 'prompts' && (
-          <div className="flex h-full">
-            {/* Category Sidebar */}
-            <div className="w-64 bg-gray-800/50 p-4 border-r border-gray-800">
-              <div className="mb-4">
-                <input
-                  type="text"
-                  placeholder="Search prompts..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-900 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-                />
-              </div>
-              <div className="space-y-1">
-                {promptCategories.map(category => (
-                  <button
-                    key={category.id}
-                    onClick={() => setActivePromptCategory(category.id)}
-                    className={`w-full px-3 py-2 rounded-lg text-left transition-colors flex items-center gap-2 ${
-                      activePromptCategory === category.id
-                        ? 'bg-purple-500/20 text-purple-400'
-                        : 'hover:bg-gray-700 text-gray-400'
-                    }`}
-                  >
-                    <span className={category.color}>{category.icon}</span>
-                    <span className="text-sm font-medium">{category.label}</span>
-                    <span className="ml-auto text-xs bg-gray-700 px-2 py-1 rounded">
-                      {prompts.filter(p => p.category === category.id).length}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Prompts Grid */}
-            <div className="flex-1 p-6 overflow-y-auto">
-              <div className="grid gap-4">
-                {filteredPrompts.map(prompt => (
-                  <div
-                    key={prompt.id}
-                    className="bg-gray-800/50 rounded-lg p-4 hover:bg-gray-800/70 transition-colors"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <h4 className="font-semibold text-gray-200">{prompt.title}</h4>
-                      <button
-                        onClick={() => copyToClipboard(prompt.prompt, prompt.id)}
-                        className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
-                      >
-                        {copiedPromptId === prompt.id ? (
-                          <Check className="w-4 h-4 text-green-400" />
-                        ) : (
-                          <Copy className="w-4 h-4 text-gray-400" />
-                        )}
-                      </button>
-                    </div>
-                    {prompt.description && (
-                      <p className="text-sm text-gray-400 mb-3">{prompt.description}</p>
-                    )}
-                    <div className="bg-gray-900/50 rounded-lg p-3">
-                      <p className="text-sm text-gray-300 font-mono">{prompt.prompt}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         )}
@@ -1258,6 +1062,26 @@ export default function IntelligenceModule() {
                   <Activity className="w-16 h-16 text-gray-600 mx-auto mb-4" />
                   <p className="text-gray-400">Click "Run Monitor" to scan for breaking news and alerts</p>
                   <p className="text-gray-500 text-sm mt-2">Monitors {organization?.name || 'your organization'} across news sources</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Predictions Tab */}
+        {activeTab === 'predictions' && (
+          <div className="p-6 overflow-y-auto h-full">
+            <div className="max-w-6xl mx-auto">
+              {/* Import and render the Predictions component */}
+              {organization?.id && (
+                <div className="h-full">
+                  <StakeholderPredictionDashboard organizationId={organization.id} />
+                </div>
+              )}
+              {!organization && (
+                <div className="text-center py-12">
+                  <AlertTriangle className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                  <p className="text-gray-400">Please select an organization to view predictions</p>
                 </div>
               )}
             </div>

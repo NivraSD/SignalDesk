@@ -22,6 +22,7 @@ import StrategicCampaignPlanner from '@/components/prototype/StrategicCampaignPl
 import StakeholderPredictionDashboard from '@/components/predictions/StakeholderPredictionDashboard'
 import { CommandCenterV2 } from '@/components/command-center'
 import { useAppStore } from '@/stores/useAppStore'
+import NIVResourcesPanel from '@/components/niv/NIVResourcesPanel'
 
 interface CanvasState {
   zoom: number
@@ -58,6 +59,8 @@ const COMPONENT_TYPES: ComponentType[] = [
   { id: 'niv-command', label: 'NIV', icon: Brain, color: 'from-purple-600 to-pink-600', defaultWidth: 770, defaultHeight: 525 },
   { id: 'intelligence', label: 'Intelligence', icon: Brain, color: 'from-blue-500 to-cyan-500', defaultWidth: 800, defaultHeight: 600 },
   { id: 'niv', label: 'NIV Strategy', icon: MessageSquare, color: 'from-purple-500 to-pink-500', defaultWidth: 640, defaultHeight: 480 },
+  { id: 'niv-capabilities', label: 'NIV Resources', icon: Brain, color: 'from-purple-500 to-blue-500', defaultWidth: 900, defaultHeight: 700 },
+  { id: 'niv-prompts', label: 'NIV Resources', icon: Brain, color: 'from-purple-500 to-blue-500', defaultWidth: 900, defaultHeight: 700 },
   { id: 'predictions', label: 'Predictions (BETA)', icon: AlertTriangle, color: 'from-yellow-500 to-orange-500', defaultWidth: 900, defaultHeight: 700 },
   { id: 'opportunities', label: 'Opportunities', icon: Target, color: 'from-green-500 to-emerald-500', defaultWidth: 800, defaultHeight: 600 },
   { id: 'execute', label: 'Execute', icon: Zap, color: 'from-yellow-500 to-orange-500', defaultWidth: 800, defaultHeight: 600 },
@@ -86,20 +89,7 @@ export default function InfiniteCanvas({ children }: { children?: React.ReactNod
   const [nextZIndex, setNextZIndex] = useState(10)
   const [activeComponentId, setActiveComponentId] = useState<string | null>(null)
   const [nivBlueprint, setNivBlueprint] = useState<any | null>(null)
-  const [planData, setPlanData] = useState<{ blueprint: any; sessionId: string; orgId: string } | null>(() => {
-    // Initialize from localStorage if available
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('planData')
-      if (saved) {
-        try {
-          return JSON.parse(saved)
-        } catch (e) {
-          console.error('Failed to parse saved plan data:', e)
-        }
-      }
-    }
-    return null
-  })
+  const [planData, setPlanData] = useState<{ blueprint: any; sessionId: string; orgId: string } | null>(null)
 
   // Find next available grid position - 2 column layout
   const findNextPosition = useCallback((width: number, height: number) => {
@@ -368,6 +358,9 @@ export default function InfiniteCanvas({ children }: { children?: React.ReactNod
         return null  // NIV uses its own component
       case 'workspace':
         return null  // Workspace uses its own component
+      case 'niv-capabilities':
+      case 'niv-prompts':
+        return <NIVResourcesPanel />
       case 'campaign-planner':
         return <StrategicCampaignPlanner nivBlueprint={nivBlueprint} />
       case 'predictions':
@@ -404,12 +397,49 @@ export default function InfiniteCanvas({ children }: { children?: React.ReactNod
     }
   }
 
-  // Save planData to localStorage whenever it changes
+  // Load planData from localStorage when organization changes
   useEffect(() => {
-    if (planData) {
-      localStorage.setItem('planData', JSON.stringify(planData))
+    if (organization?.id) {
+      // Clean up old non-organization-aware key on first load
+      if (localStorage.getItem('planData')) {
+        console.log('🧹 Cleaning up old planData localStorage key')
+        localStorage.removeItem('planData')
+      }
+
+      const storageKey = `planData_${organization.id}`
+      const saved = localStorage.getItem(storageKey)
+      if (saved) {
+        try {
+          const data = JSON.parse(saved)
+          // Verify the orgId matches current organization
+          if (data.orgId === organization.id) {
+            console.log('📋 Loading saved plan data for organization:', organization.name)
+            setPlanData(data)
+          } else {
+            // Clear mismatched data
+            localStorage.removeItem(storageKey)
+            setPlanData(null)
+          }
+        } catch (e) {
+          console.error('Failed to parse saved plan data:', e)
+          localStorage.removeItem(storageKey)
+          setPlanData(null)
+        }
+      } else {
+        // No saved data for this org, clear planData
+        setPlanData(null)
+      }
     }
-  }, [planData])
+  }, [organization?.id])
+
+  // Save planData to localStorage whenever it changes (organization-aware)
+  useEffect(() => {
+    if (organization?.id && planData) {
+      const storageKey = `planData_${organization.id}`
+      localStorage.setItem(storageKey, JSON.stringify(planData))
+      console.log('💾 Saved plan data for organization:', organization.name)
+    }
+  }, [planData, organization?.id])
 
   // Check for pending plan data from Campaign Builder on mount
   useEffect(() => {

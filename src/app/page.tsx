@@ -18,7 +18,6 @@ const tabs = [
   { id: 'intelligence', name: 'Intelligence', icon: Brain, color: '#00ffcc' },
   { id: 'opportunities', name: 'Opportunities', icon: Target, color: '#ff00ff' },
   { id: 'campaign-planner', name: 'Campaigns', icon: TrendingUp, color: '#00ddff' },
-  { id: 'plan', name: 'Plan', icon: FileText, color: '#8800ff' },
   { id: 'execute', name: 'Execute', icon: Rocket, color: '#00ff88' },
   { id: 'crisis', name: 'Crisis', icon: Shield, color: '#ff0000' },
   { id: 'memoryvault', name: 'MemoryVault', icon: Database, color: '#ffaa00' },
@@ -224,7 +223,7 @@ export default function Dashboard() {
           </div>
           
           {/* Main Navigation Tabs */}
-          <nav className="flex gap-2" ref={menuRef}>
+          <nav className="flex gap-1 md:gap-2 flex-wrap" ref={menuRef}>
             {tabs.map((tab) => {
               const Icon = tab.icon
               const isActive = openComponents.includes(tab.id) ||
@@ -236,7 +235,7 @@ export default function Dashboard() {
                   <button
                     onClick={() => handleModuleClick(tab.id)}
                     className={`
-                      relative px-4 py-2 rounded-lg flex items-center gap-2 transition-all
+                      relative px-2 py-1.5 md:px-4 md:py-2 rounded-lg flex items-center gap-1 md:gap-2 transition-all text-xs md:text-sm
                       ${isActive
                         ? 'text-black font-semibold'
                         : 'hover:bg-gray-800 text-gray-400 hover:text-gray-200'
@@ -250,8 +249,8 @@ export default function Dashboard() {
                       boxShadow: '0 0 15px rgba(239, 68, 68, 0.5)',
                     } : {}}
                   >
-                    <Icon className="w-4 h-4" />
-                    <span className="text-sm">{tab.name}</span>
+                    <Icon className="w-3 h-3 md:w-4 md:h-4" />
+                    <span className="hidden sm:inline">{tab.name}</span>
                     {tab.id === 'crisis' && hasCrisisAlerts && (
                       <span className="ml-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                     )}
@@ -297,6 +296,43 @@ export default function Dashboard() {
                               <Plus className="w-4 h-4" />
                               Open New Window
                             </button>
+                            <div className="px-4 py-2 text-xs text-gray-500 font-semibold uppercase border-b border-t border-gray-800">
+                              Resources
+                            </div>
+                            {openComponents.includes('niv-capabilities') ? (
+                              <button
+                                onClick={() => handleModuleAction('niv-capabilities', 'view')}
+                                className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
+                              >
+                                <Sparkles className="w-4 h-4 text-purple-400" />
+                                View NIV Capabilities
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleModuleAction('niv-capabilities', 'window')}
+                                className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
+                              >
+                                <Plus className="w-4 h-4" />
+                                NIV Capabilities
+                              </button>
+                            )}
+                            {openComponents.includes('niv-prompts') ? (
+                              <button
+                                onClick={() => handleModuleAction('niv-prompts', 'view')}
+                                className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
+                              >
+                                <FileText className="w-4 h-4 text-purple-400" />
+                                View Prompt Library
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleModuleAction('niv-prompts', 'window')}
+                                className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
+                              >
+                                <Plus className="w-4 h-4" />
+                                Prompt Library
+                              </button>
+                            )}
                           </>
                         ) : tab.id === 'intelligence' ? (
                           <>
@@ -327,60 +363,6 @@ export default function Dashboard() {
                               <Plus className="w-4 h-4" />
                               Open New Window
                             </button>
-                            <div className="px-4 py-2 text-xs text-gray-500 font-semibold uppercase border-b border-t border-gray-800">
-                              NIV Strategic Framework
-                            </div>
-                            {openComponents.includes('niv') ? (
-                              <button
-                                onClick={() => handleModuleAction('niv', 'view')}
-                                className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
-                              >
-                                <Sparkles className="w-4 h-4 text-cyan-400" />
-                                View NIV Framework
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleModuleAction('niv', 'window')}
-                                className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
-                              >
-                                <Plus className="w-4 h-4" />
-                                Open NIV Framework
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleModuleAction('niv', 'window')}
-                              className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm text-gray-400 flex items-center gap-2"
-                            >
-                              <Plus className="w-4 h-4" />
-                              Open New Window
-                            </button>
-                            <div className="px-4 py-2 text-xs text-gray-500 font-semibold uppercase border-b border-t border-gray-800">
-                              Predictions (BETA)
-                            </div>
-                            {openComponents.includes('predictions') ? (
-                              <button
-                                onClick={() => handleModuleAction('predictions', 'view')}
-                                className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
-                              >
-                                <AlertTriangle className="w-4 h-4 text-cyan-400" />
-                                View Predictions
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleModuleAction('predictions', 'window')}
-                                className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
-                              >
-                                <Plus className="w-4 h-4" />
-                                Open Predictions
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleModuleAction('predictions', 'window')}
-                              className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm text-gray-400 flex items-center gap-2"
-                            >
-                              <Plus className="w-4 h-4" />
-                              Open New Window
-                            </button>
                           </>
                         ) : tab.id === 'campaign-planner' ? (
                           <>
@@ -397,6 +379,26 @@ export default function Dashboard() {
                               <TrendingUp className="w-4 h-4 text-cyan-400" />
                               Campaign Builder
                             </button>
+                            <div className="px-4 py-2 text-xs text-gray-500 font-semibold uppercase border-b border-t border-gray-800">
+                              Planning
+                            </div>
+                            {openComponents.includes('plan') ? (
+                              <button
+                                onClick={() => handleModuleAction('plan', 'view')}
+                                className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
+                              >
+                                <FileText className="w-4 h-4 text-cyan-400" />
+                                View Planning
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleModuleAction('plan', 'window')}
+                                className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
+                              >
+                                <Plus className="w-4 h-4" />
+                                Open Planning
+                              </button>
+                            )}
                           </>
                         ) : tab.id === 'crisis' ? (
                           <>
