@@ -1,11 +1,171 @@
 [
 {
-"event_message": "📊 GEO Monitor Summary: {\n total_queries: 10,\n total_signals: 5,\n claude_mentions: 5,\n gemini_mentions: 0,\n schema_gaps: 0,\n competitor_updates: 0,\n critical_signals: 0\n}\n",
+"event_message": "Failed to save signals: {\n code: \"42501\",\n details: null,\n hint: null,\n message: \"permission denied for table geo_intelligence\"\n}\n",
 "event_type": "Log",
 "function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
-"id": "e3ce4003-75ae-4057-8aae-36c50b4555ef",
+"id": "b5bb7b44-a18f-4e30-b586-0a79acc996ee",
+"level": "error",
+"timestamp": 1761618815527000
+},
+{
+"event_message": "📊 GEO Monitor Summary: {\n total_queries: 9,\n total_signals: 5,\n claude_mentions: 5,\n gemini_mentions: 0,\n schema_gaps: 0,\n competitor_updates: 0,\n critical_signals: 0\n}\n",
+"event_type": "Log",
+"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
+"id": "4a3f782c-d980-457b-9f9c-2664f40665a2",
 "level": "info",
-"timestamp": 1761618336835000
+"timestamp": 1761618815527000
+},
+{
+"event_message": "💾 Saving 5 intelligence signals...\n",
+"event_type": "Log",
+"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
+"id": "8bbde705-46ee-492a-b0ed-32cf2102ab3b",
+"level": "info",
+"timestamp": 1761618815148000
+},
+{
+"event_message": "Gemini API error: {\n \"error\": {\n \"code\": 401,\n \"message\": \"Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.\",\n \"status\": \"UNAUTHENTICATED\",\n \"details\": [\n {\n \"@type\": \"type.googleapis.com/google.rpc.ErrorInfo\",\n \"reason\": \"API_KEY_SERVICE_BLOCKED\",\n \"metadata\": {\n \"service\": \"aiplatform.googleapis.com\",\n \"method\": \"google.cloud.aiplatform.v1.PredictionService.GenerateContent\"\n }\n }\n ]\n }\n}\n\n",
+"event_type": "Log",
+"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
+"id": "5bb6cf54-c820-46ce-a2b1-eac999eae357",
+"level": "error",
+"timestamp": 1761618815148000
+},
+{
+"event_message": "Gemini API error: {\n \"error\": {\n \"code\": 401,\n \"message\": \"Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.\",\n \"status\": \"UNAUTHENTICATED\",\n \"details\": [\n {\n \"@type\": \"type.googleapis.com/google.rpc.ErrorInfo\",\n \"reason\": \"API_KEY_SERVICE_BLOCKED\",\n \"metadata\": {\n \"method\": \"google.cloud.aiplatform.v1.PredictionService.GenerateContent\",\n \"service\": \"aiplatform.googleapis.com\"\n }\n }\n ]\n }\n}\n\n",
+"event_type": "Log",
+"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
+"id": "9e3d4fd5-e995-42b8-b8fe-16eef5e741f2",
+"level": "error",
+"timestamp": 1761618815076000
+},
+{
+"event_message": "Gemini API error: {\n \"error\": {\n \"code\": 401,\n \"message\": \"Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.\",\n \"status\": \"UNAUTHENTICATED\",\n \"details\": [\n {\n \"@type\": \"type.googleapis.com/google.rpc.ErrorInfo\",\n \"reason\": \"API_KEY_SERVICE_BLOCKED\",\n \"metadata\": {\n \"method\": \"google.cloud.aiplatform.v1.PredictionService.GenerateContent\",\n \"service\": \"aiplatform.googleapis.com\"\n }\n }\n ]\n }\n}\n\n",
+"event_type": "Log",
+"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
+"id": "b283a9d5-c8a4-4bce-b418-30dd2a7e8486",
+"level": "error",
+"timestamp": 1761618814968000
+},
+{
+"event_message": "Gemini API error: {\n \"error\": {\n \"code\": 401,\n \"message\": \"Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.\",\n \"status\": \"UNAUTHENTICATED\",\n \"details\": [\n {\n \"@type\": \"type.googleapis.com/google.rpc.ErrorInfo\",\n \"reason\": \"API_KEY_SERVICE_BLOCKED\",\n \"metadata\": {\n \"method\": \"google.cloud.aiplatform.v1.PredictionService.GenerateContent\",\n \"service\": \"aiplatform.googleapis.com\"\n }\n }\n ]\n }\n}\n\n",
+"event_type": "Log",
+"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
+"id": "645925cd-3d30-464b-bd9c-d3c78b9eb587",
+"level": "error",
+"timestamp": 1761618814875000
+},
+{
+"event_message": "Gemini API error: {\n \"error\": {\n \"code\": 401,\n \"message\": \"Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.\",\n \"status\": \"UNAUTHENTICATED\",\n \"details\": [\n {\n \"@type\": \"type.googleapis.com/google.rpc.ErrorInfo\",\n \"reason\": \"API_KEY_SERVICE_BLOCKED\",\n \"metadata\": {\n \"service\": \"aiplatform.googleapis.com\",\n \"method\": \"google.cloud.aiplatform.v1.PredictionService.GenerateContent\"\n }\n }\n ]\n }\n}\n\n",
+"event_type": "Log",
+"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
+"id": "24170ae2-69b4-43a2-a68b-2c35a31478b2",
+"level": "error",
+"timestamp": 1761618814764000
+},
+{
+"event_message": "🌟 Testing Gemini visibility...\n",
+"event_type": "Log",
+"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
+"id": "1ade6a12-793b-4777-a4b9-584eb799dde1",
+"level": "info",
+"timestamp": 1761618814708000
+},
+{
+"event_message": "🤖 Testing Claude visibility...\n",
+"event_type": "Log",
+"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
+"id": "2a258924-f6c2-4700-8b9c-c3932f925167",
+"level": "info",
+"timestamp": 1761618729955000
+},
+{
+"event_message": "🔍 Testing 9 queries\n",
+"event_type": "Log",
+"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
+"id": "a46488d2-9846-4574-9ddf-c430ba57dacc",
+"level": "info",
+"timestamp": 1761618729955000
+},
+{
+"event_message": "✅ Query Discovery Complete: 29 queries generated\n",
+"event_type": "Log",
+"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
+"id": "3715ef3d-ab72-4120-b8b0-ef7b0bb2476b",
+"level": "info",
+"timestamp": 1761618729954000
+},
+{
+"event_message": "🏢 Competitors to monitor: 0\n",
+"event_type": "Log",
+"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
+"id": "9b69418e-7cf7-4b18-9d9f-543651795a99",
+"level": "info",
+"timestamp": 1761618701187000
+},
+{
+"event_message": "📈 Organization Industry: Fashion Retail\n",
+"event_type": "Log",
+"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
+"id": "1005b81f-ed81-4aca-bca4-3d517a78a914",
+"level": "info",
+"timestamp": 1761618701187000
+},
+{
+"event_message": "🔍 Calling GEO Query Discovery for intelligent query generation...\n",
+"event_type": "Log",
+"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
+"id": "08ad82d5-8c97-4cdb-9f20-4a1f6771d38f",
+"level": "info",
+"timestamp": 1761618701187000
+},
+{
+"event_message": "📊 Fetching organization profile...\n",
+"event_type": "Log",
+"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
+"id": "1c7187cf-9264-48b1-9950-e63c55869af3",
+"level": "info",
+"timestamp": 1761618701045000
+},
+{
+"event_message": "🎯 GEO Intelligence Monitor Starting: {\n organization_id: \"3fd0f1bf-61cc-4c9b-80fe-126a433a4427\",\n organization_name: \"Zara\",\n industry: \"Fashion Retail\",\n timestamp: \"2025-10-28T02:31:41.041Z\"\n}\n",
+"event_type": "Log",
+"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
+"id": "8fac9048-9273-493f-8683-e279d934687e",
+"level": "info",
+"timestamp": 1761618701043000
+},
+{
+"event_message": "Listening on http://localhost:9999/\n",
+"event_type": "Log",
+"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
+"id": "09fa2939-0f32-413e-bf6a-075404953411",
+"level": "info",
+"timestamp": 1761618701037000
+},
+{
+"event_message": "booted (time: 33ms)",
+"event_type": "Boot",
+"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
+"id": "f1c5ecb0-67fe-4744-8f2a-bddfa5fe89ca",
+"level": "log",
+"timestamp": 1761618701033000
+},
+{
+"event_message": "shutdown",
+"event_type": "Shutdown",
+"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
+"id": "19481d5a-e9dd-4a54-95db-8a72f9c55939",
+"level": "log",
+"timestamp": 1761618412872000
+},
+{
+"event_message": "shutdown",
+"event_type": "Shutdown",
+"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
+"id": "69d3ee14-2983-4d0f-b6d6-c10207bae95a",
+"level": "log",
+"timestamp": 1761618412290000
 },
 {
 "event_message": "Failed to save signals: {\n code: \"42501\",\n details: null,\n hint: null,\n message: \"permission denied for table geo_intelligence\"\n}\n",
@@ -13,6 +173,14 @@
 "function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
 "id": "101f8be7-d1c0-46d4-9abd-7084b3bd9d8a",
 "level": "error",
+"timestamp": 1761618336835000
+},
+{
+"event_message": "📊 GEO Monitor Summary: {\n total_queries: 10,\n total_signals: 5,\n claude_mentions: 5,\n gemini_mentions: 0,\n schema_gaps: 0,\n competitor_updates: 0,\n critical_signals: 0\n}\n",
+"event_type": "Log",
+"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
+"id": "e3ce4003-75ae-4057-8aae-36c50b4555ef",
+"level": "info",
 "timestamp": 1761618336835000
 },
 {
@@ -40,10 +208,10 @@
 "timestamp": 1761618336590000
 },
 {
-"event_message": "🤖 Testing Claude visibility...\n",
+"event_message": "✅ Query Discovery Complete: 30 queries generated\n",
 "event_type": "Log",
 "function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
-"id": "7ebfcc61-c2c8-450e-9d2d-11caab020a18",
+"id": "11aaf6ca-e63f-4f54-bc23-d43167a64e98",
 "level": "info",
 "timestamp": 1761618239426000
 },
@@ -56,20 +224,12 @@
 "timestamp": 1761618239426000
 },
 {
-"event_message": "✅ Query Discovery Complete: 30 queries generated\n",
+"event_message": "🤖 Testing Claude visibility...\n",
 "event_type": "Log",
 "function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
-"id": "11aaf6ca-e63f-4f54-bc23-d43167a64e98",
+"id": "7ebfcc61-c2c8-450e-9d2d-11caab020a18",
 "level": "info",
 "timestamp": 1761618239426000
-},
-{
-"event_message": "🏢 Competitors to monitor: 0\n",
-"event_type": "Log",
-"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
-"id": "aa672be5-5146-4720-b523-4e028388d7a3",
-"level": "info",
-"timestamp": 1761618213116000
 },
 {
 "event_message": "🔍 Calling GEO Query Discovery for intelligent query generation...\n",
@@ -84,6 +244,14 @@
 "event_type": "Log",
 "function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
 "id": "5f8fcde7-e7ed-40fd-a1ff-923eb4c94926",
+"level": "info",
+"timestamp": 1761618213116000
+},
+{
+"event_message": "🏢 Competitors to monitor: 0\n",
+"event_type": "Log",
+"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
+"id": "aa672be5-5146-4720-b523-4e028388d7a3",
 "level": "info",
 "timestamp": 1761618213116000
 },
@@ -152,6 +320,14 @@
 "timestamp": 1761618159838000
 },
 {
+"event_message": "Failed to save signals: {\n code: \"42501\",\n details: null,\n hint: null,\n message: \"permission denied for table geo_intelligence\"\n}\n",
+"event_type": "Log",
+"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
+"id": "25fbc8c2-bd45-42f2-ae4a-9b8ee8430a30",
+"level": "error",
+"timestamp": 1761618119022000
+},
+{
 "event_message": "📊 GEO Monitor Summary: {\n total_queries: 9,\n total_signals: 5,\n claude_mentions: 5,\n gemini_mentions: 0,\n schema_gaps: 0,\n competitor_updates: 0,\n critical_signals: 0\n}\n",
 "event_type": "Log",
 "function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
@@ -160,12 +336,12 @@
 "timestamp": 1761618119022000
 },
 {
-"event_message": "Failed to save signals: {\n code: \"42501\",\n details: null,\n hint: null,\n message: \"permission denied for table geo_intelligence\"\n}\n",
+"event_message": "🌟 Testing Gemini visibility...\n",
 "event_type": "Log",
 "function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
-"id": "25fbc8c2-bd45-42f2-ae4a-9b8ee8430a30",
-"level": "error",
-"timestamp": 1761618119022000
+"id": "d18e537e-0134-47dc-881d-624d82a9b5d2",
+"level": "info",
+"timestamp": 1761618118852000
 },
 {
 "event_message": "⚠️ Vertex AI not configured, skipping Gemini tests\n",
@@ -180,14 +356,6 @@
 "event_type": "Log",
 "function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
 "id": "5885abd0-1d1e-4059-8470-f49f5143cf07",
-"level": "info",
-"timestamp": 1761618118852000
-},
-{
-"event_message": "🌟 Testing Gemini visibility...\n",
-"event_type": "Log",
-"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
-"id": "d18e537e-0134-47dc-881d-624d82a9b5d2",
 "level": "info",
 "timestamp": 1761618118852000
 },
@@ -208,14 +376,6 @@
 "timestamp": 1761618068302000
 },
 {
-"event_message": "🌟 Testing Gemini visibility...\n",
-"event_type": "Log",
-"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
-"id": "080bfeff-77f0-4089-b022-0fe38a89513c",
-"level": "info",
-"timestamp": 1761618068207000
-},
-{
 "event_message": "⚠️ Vertex AI not configured, skipping Gemini tests\n",
 "event_type": "Log",
 "function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
@@ -232,12 +392,12 @@
 "timestamp": 1761618068207000
 },
 {
-"event_message": "🔍 Testing 9 queries\n",
+"event_message": "🌟 Testing Gemini visibility...\n",
 "event_type": "Log",
 "function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
-"id": "f5f68a3b-4aa0-4077-a4c9-7d0f07630bcd",
+"id": "080bfeff-77f0-4089-b022-0fe38a89513c",
 "level": "info",
-"timestamp": 1761618029925000
+"timestamp": 1761618068207000
 },
 {
 "event_message": "🤖 Testing Claude visibility...\n",
@@ -248,12 +408,28 @@
 "timestamp": 1761618029925000
 },
 {
+"event_message": "🔍 Testing 9 queries\n",
+"event_type": "Log",
+"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
+"id": "f5f68a3b-4aa0-4077-a4c9-7d0f07630bcd",
+"level": "info",
+"timestamp": 1761618029925000
+},
+{
 "event_message": "✅ Query Discovery Complete: 30 queries generated\n",
 "event_type": "Log",
 "function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
 "id": "7c4b30ce-17d6-4ec7-b8ed-c0dc7b3ef699",
 "level": "info",
 "timestamp": 1761618029924000
+},
+{
+"event_message": "📈 Organization Industry: Fashion Retail\n",
+"event_type": "Log",
+"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
+"id": "1d78ce44-a2a4-4f96-9fb7-caa2835cfc2e",
+"level": "info",
+"timestamp": 1761618000726000
 },
 {
 "event_message": "🔍 Calling GEO Query Discovery for intelligent query generation...\n",
@@ -268,14 +444,6 @@
 "event_type": "Log",
 "function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
 "id": "dfbeec44-56d0-4fd3-b7cc-68e2352520e3",
-"level": "info",
-"timestamp": 1761618000726000
-},
-{
-"event_message": "📈 Organization Industry: Fashion Retail\n",
-"event_type": "Log",
-"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
-"id": "1d78ce44-a2a4-4f96-9fb7-caa2835cfc2e",
 "level": "info",
 "timestamp": 1761618000726000
 },
@@ -336,10 +504,10 @@
 "timestamp": 1761617983801000
 },
 {
-"event_message": "🏢 Competitors to monitor: 0\n",
+"event_message": "📈 Organization Industry: Trading and Investment\n",
 "event_type": "Log",
 "function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
-"id": "834006b3-e39f-491f-890c-e163a1c5a7b7",
+"id": "452468fe-aa27-472b-bde0-001b604cabff",
 "level": "info",
 "timestamp": 1761617959921000
 },
@@ -352,10 +520,10 @@
 "timestamp": 1761617959921000
 },
 {
-"event_message": "📈 Organization Industry: Trading and Investment\n",
+"event_message": "🏢 Competitors to monitor: 0\n",
 "event_type": "Log",
 "function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
-"id": "452468fe-aa27-472b-bde0-001b604cabff",
+"id": "834006b3-e39f-491f-890c-e163a1c5a7b7",
 "level": "info",
 "timestamp": 1761617959921000
 },
@@ -400,19 +568,19 @@
 "timestamp": 1761617752201000
 },
 {
-"event_message": "Failed to save signals: {\n code: \"42501\",\n details: null,\n hint: null,\n message: \"permission denied for table geo_intelligence\"\n}\n",
-"event_type": "Log",
-"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
-"id": "505ac2ad-fcee-4b40-8dd8-0b8c95de77d1",
-"level": "error",
-"timestamp": 1761617584581000
-},
-{
 "event_message": "📊 GEO Monitor Summary: {\n total_queries: 2,\n total_signals: 2,\n claude_mentions: 1,\n gemini_mentions: 0,\n schema_gaps: 0,\n competitor_updates: 0,\n critical_signals: 0\n}\n",
 "event_type": "Log",
 "function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
 "id": "18d3a508-d8e9-434d-8d62-dacdbed422da",
 "level": "info",
+"timestamp": 1761617584581000
+},
+{
+"event_message": "Failed to save signals: {\n code: \"42501\",\n details: null,\n hint: null,\n message: \"permission denied for table geo_intelligence\"\n}\n",
+"event_type": "Log",
+"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
+"id": "505ac2ad-fcee-4b40-8dd8-0b8c95de77d1",
+"level": "error",
 "timestamp": 1761617584581000
 },
 {
@@ -440,14 +608,6 @@
 "timestamp": 1761617583946000
 },
 {
-"event_message": "📈 Organization Industry: Fashion Retail\n",
-"event_type": "Log",
-"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
-"id": "0b421469-8cfd-44a4-9312-5280f0b4923a",
-"level": "info",
-"timestamp": 1761617552267000
-},
-{
 "event_message": "🔍 Generated 2 test queries\n",
 "event_type": "Log",
 "function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
@@ -468,6 +628,14 @@
 "event_type": "Log",
 "function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
 "id": "74a282ba-31eb-4328-abfc-8863bf07d399",
+"level": "info",
+"timestamp": 1761617552267000
+},
+{
+"event_message": "📈 Organization Industry: Fashion Retail\n",
+"event_type": "Log",
+"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
+"id": "0b421469-8cfd-44a4-9312-5280f0b4923a",
 "level": "info",
 "timestamp": 1761617552267000
 },
@@ -520,6 +688,14 @@
 "timestamp": 1761617524417000
 },
 {
+"event_message": "📊 GEO Monitor Summary: {\n total_queries: 2,\n total_signals: 2,\n claude_mentions: 1,\n gemini_mentions: 0,\n schema_gaps: 0,\n competitor_updates: 0,\n critical_signals: 0\n}\n",
+"event_type": "Log",
+"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
+"id": "1eacf3f7-52f7-4cd4-b528-53a564c32687",
+"level": "info",
+"timestamp": 1761617355846000
+},
+{
 "event_message": "Failed to save signals: {\n code: \"42501\",\n details: null,\n hint: null,\n message: \"permission denied for table geo_intelligence\"\n}\n",
 "event_type": "Log",
 "function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
@@ -528,12 +704,12 @@
 "timestamp": 1761617355846000
 },
 {
-"event_message": "📊 GEO Monitor Summary: {\n total_queries: 2,\n total_signals: 2,\n claude_mentions: 1,\n gemini_mentions: 0,\n schema_gaps: 0,\n competitor_updates: 0,\n critical_signals: 0\n}\n",
+"event_message": "🌟 Testing Gemini visibility...\n",
 "event_type": "Log",
 "function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
-"id": "1eacf3f7-52f7-4cd4-b528-53a564c32687",
+"id": "4ff22723-2d36-4166-a65a-e2053049778b",
 "level": "info",
-"timestamp": 1761617355846000
+"timestamp": 1761617355658000
 },
 {
 "event_message": "💾 Saving 2 intelligence signals...\n",
@@ -552,26 +728,18 @@
 "timestamp": 1761617355658000
 },
 {
-"event_message": "🌟 Testing Gemini visibility...\n",
+"event_message": "🔍 Generated 2 test queries\n",
 "event_type": "Log",
 "function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
-"id": "4ff22723-2d36-4166-a65a-e2053049778b",
+"id": "d79b92e4-7f33-48ac-9921-f74e191ead59",
 "level": "info",
-"timestamp": 1761617355658000
+"timestamp": 1761617324638000
 },
 {
 "event_message": "🤖 Testing Claude visibility...\n",
 "event_type": "Log",
 "function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
 "id": "9bcc44e9-18ea-4a50-9b07-c481df6edb19",
-"level": "info",
-"timestamp": 1761617324638000
-},
-{
-"event_message": "🔍 Generated 2 test queries\n",
-"event_type": "Log",
-"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
-"id": "d79b92e4-7f33-48ac-9921-f74e191ead59",
 "level": "info",
 "timestamp": 1761617324638000
 },
@@ -630,13 +798,5 @@
 "id": "8e5efbbc-2bd4-4dea-8051-669374265524",
 "level": "info",
 "timestamp": 1761617324397000
-},
-{
-"event_message": "booted (time: 47ms)",
-"event_type": "Boot",
-"function_id": "28dc0b8c-2a8f-49f3-a90a-85f5330e3dad",
-"id": "f4fc760d-2a17-4e81-bbd4-3c83a5c1f647",
-"level": "log",
-"timestamp": 1761617324392000
 }
 ]

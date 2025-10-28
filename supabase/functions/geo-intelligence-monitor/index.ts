@@ -345,7 +345,8 @@ async function testClaudeVisibility(
 }
 
 /**
- * Test Gemini visibility (via Vertex AI)
+ * Test Gemini visibility (via Direct Gemini API)
+ * Much simpler than Vertex AI - just uses API key!
  */
 async function testGeminiVisibility(
   queries: any[],
@@ -353,64 +354,25 @@ async function testGeminiVisibility(
 ): Promise<any[]> {
   const signals: any[] = []
 
-  // Use same pattern as vertex-ai-visual function
-  const GOOGLE_CLOUD_PROJECT_ID = 'sigdesk-1753801804417'
-  const GOOGLE_CLOUD_REGION = 'us-central1'
+  // Use Direct Gemini API (simpler than Vertex AI)
+  const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY') || 'AIzaSyBwiqy6i_fB_-u82B0tmJiBLGkg_Zu3lvc'
 
-  // Check if Vertex AI credentials are available
-  const GOOGLE_SERVICE_ACCOUNT = Deno.env.get('GOOGLE_SERVICE_ACCOUNT')
-  const GOOGLE_APPLICATION_CREDENTIALS = Deno.env.get('GOOGLE_APPLICATION_CREDENTIALS')
-  const GOOGLE_ACCESS_TOKEN = Deno.env.get('GOOGLE_ACCESS_TOKEN')
-
-  if (!GOOGLE_SERVICE_ACCOUNT && !GOOGLE_APPLICATION_CREDENTIALS && !GOOGLE_ACCESS_TOKEN) {
-    console.log('⚠️  Vertex AI not configured, skipping Gemini tests')
+  if (!GOOGLE_API_KEY) {
+    console.log('⚠️  Google API key not found, skipping Gemini tests')
     return signals
   }
 
-  // Get access token (use same logic as vertex-ai-visual)
-  let accessToken = GOOGLE_ACCESS_TOKEN
-
-  if (!accessToken && GOOGLE_SERVICE_ACCOUNT) {
-    try {
-      const serviceAccount = JSON.parse(GOOGLE_SERVICE_ACCOUNT)
-      // For now, skip complex token generation - will use simpler approach
-      console.log('⚠️  Service account detected but token generation not implemented, skipping Gemini')
-      return signals
-    } catch (e) {
-      console.log('⚠️  Invalid service account JSON, skipping Gemini')
-      return signals
-    }
-  }
-
-  if (!accessToken && GOOGLE_APPLICATION_CREDENTIALS) {
-    try {
-      const credentials = JSON.parse(GOOGLE_APPLICATION_CREDENTIALS)
-      // Similar - skip for now
-      console.log('⚠️  Credentials detected but token generation not implemented, skipping Gemini')
-      return signals
-    } catch (e) {
-      // Maybe it's already a token
-      if (GOOGLE_APPLICATION_CREDENTIALS.startsWith('ya29.')) {
-        accessToken = GOOGLE_APPLICATION_CREDENTIALS
-      }
-    }
-  }
-
-  if (!accessToken) {
-    console.log('⚠️  No valid access token found, skipping Gemini tests')
-    return signals
-  }
+  console.log('🌟 Using Direct Gemini API (simple API key authentication)')
 
   // Test first 5 queries
   for (const q of queries.slice(0, 5)) {
     try {
-      // Call Vertex AI Gemini API
+      // Call Direct Gemini API (no OAuth needed!)
       const response = await fetch(
-        `https://${GOOGLE_CLOUD_REGION}-aiplatform.googleapis.com/v1/projects/${GOOGLE_CLOUD_PROJECT_ID}/locations/${GOOGLE_CLOUD_REGION}/publishers/google/models/gemini-pro:generateContent`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GOOGLE_API_KEY}`,
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
