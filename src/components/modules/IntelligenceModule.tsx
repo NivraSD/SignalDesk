@@ -590,8 +590,8 @@ export default function IntelligenceModule() {
 
     setSchemaExtracting(true)
     try {
-      // Use domain field from organizations table, or website if it exists
-      const orgUrl = organization.domain || organization.website
+      // Use url field from organizations table (domain is an alias)
+      const orgUrl = organization.url || organization.domain
 
       if (!orgUrl) {
         alert('Please set your organization domain/website in settings first')
