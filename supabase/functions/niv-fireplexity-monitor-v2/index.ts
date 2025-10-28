@@ -56,16 +56,19 @@ serve(async (req) => {
     // STEP 1: Get organization profile
     console.log('\n📋 Step 1: Loading organization profile...')
 
+    // Use organization_name for profile lookup (organization_id is UUID for intelligence_targets)
+    const orgName = organization_name || organization_id
+
     const { data: profileData, error: profileError } = await supabase
       .from('organization_profiles')
       .select('profile_data')
-      .eq('organization_name', organization_id)
+      .eq('organization_name', orgName)
       .single()
 
     if (profileError || !profileData) {
       return new Response(JSON.stringify({
         success: false,
-        error: 'No organization profile found. Please run mcp-discovery first.'
+        error: `No organization profile found for "${orgName}". Please run mcp-discovery first.`
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -73,7 +76,6 @@ serve(async (req) => {
     }
 
     const profile = profileData.profile_data
-    const orgName = organization_name || profile.organization_name || organization_id
 
     console.log(`   ✓ Organization: ${orgName}`)
     console.log(`   ✓ Industry: ${profile.industry || 'Unknown'}`)
