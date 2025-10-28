@@ -1517,6 +1517,18 @@ export default function IntelligenceModule() {
                 )}
               </div>
 
+              {/* Schema Viewer */}
+              {showSchemaViewer && schemaData?.has_schema && schemaData.schema && (
+                <div className="mb-6">
+                  <SchemaViewer
+                    schema={schemaData.schema}
+                    competitorSchemas={schemaData.competitor_schemas || []}
+                    onUpdate={updateSchema}
+                    readonly={false}
+                  />
+                </div>
+              )}
+
               {/* Results Summary */}
               {geoResults && !geoLoading && (
                 <div className="grid grid-cols-6 gap-3 mb-6">
