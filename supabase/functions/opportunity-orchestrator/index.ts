@@ -458,7 +458,27 @@ Create a specific action plan with 3-5 concrete steps. Return ONLY valid JSON:
   if (opportunity.action_items.length === 0) {
     opportunity.action_items = generateFallbackActions(rawOpp, persona, organization)
   }
-  
+
+  // NEW: Fetch relevant journalists for media targeting
+  try {
+    const journalists = await fetchRelevantJournalists(opportunity, organization)
+    if (journalists.length > 0) {
+      opportunity.suggested_journalists = journalists.map((j: any) => ({
+        name: j.name,
+        outlet: j.outlet,
+        beat: j.beat,
+        tier: j.tier,
+        contact_info: j.email || j.twitter,
+        relevance_score: j.outlet_metadata?.influence_score || 5,
+        pitch_angle: `Relevant to ${opportunity.title} - ${j.beat} coverage`
+      }))
+      console.log(`✅ Added ${journalists.length} journalist targets to opportunity`)
+    }
+  } catch (error) {
+    console.warn('Failed to fetch journalists for opportunity:', error)
+    // Don't fail opportunity creation if journalist fetch fails
+  }
+
   return opportunity
 }
 
@@ -486,7 +506,7 @@ function generateFallbackActions(rawOpp: any, persona: any, organization: any): 
 function calculateDeadline(deadlineStr: string): string {
   const now = new Date()
   let hours = 48 // Default
-  
+
   if (deadlineStr.includes('24')) hours = 24
   else if (deadlineStr.includes('48')) hours = 48
   else if (deadlineStr.includes('72')) hours = 72
@@ -495,8 +515,67 @@ function calculateDeadline(deadlineStr: string): string {
     const days = parseInt(deadlineStr.match(/\d+/)?.[0] || '2')
     hours = days * 24
   }
-  
+
   return new Date(now.getTime() + hours * 60 * 60 * 1000).toISOString()
+}
+
+// NEW: Fetch relevant journalists for an opportunity
+async function fetchRelevantJournalists(opportunity: any, organization: any): Promise<any[]> {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+    console.log('⚠️ Cannot fetch journalists - missing Supabase credentials')
+    return []
+  }
+
+  try {
+    // Determine industry and beat based on opportunity type and organization
+    const industry = organization.industry || 'Technology'
+    let beat = 'General Business'
+
+    // Map opportunity types to journalist beats
+    const beatMapping: { [key: string]: string } = {
+      'competitive': 'Business Strategy',
+      'narrative': 'Industry News',
+      'market': 'Markets',
+      'stakeholder': 'Corporate',
+      'cascade': 'Emerging Tech',
+      'pr_opportunist': 'Tech News',
+      'viral_architect': 'Social Media',
+      'power_player': 'Executive Moves'
+    }
+
+    beat = beatMapping[opportunity.opportunity_type] || beatMapping[opportunity.persona] || 'Business'
+
+    console.log(`🎯 Fetching journalists for ${industry} / ${beat}`)
+
+    // Call journalist registry function
+    const response = await fetch(
+      `${SUPABASE_URL}/functions/v1/journalist-registry`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+        },
+        body: JSON.stringify({
+          industry,
+          beat,
+          tier: 'tier1',
+          count: 5
+        })
+      }
+    )
+
+    if (!response.ok) {
+      console.warn('Failed to fetch journalists:', response.status)
+      return []
+    }
+
+    const result = await response.json()
+    return result.journalists || []
+  } catch (error) {
+    console.error('Error fetching journalists:', error)
+    return []
+  }
 }
 
 // PHASE 4: Store Opportunities in Database
@@ -534,6 +613,7 @@ async function storeOpportunities(opportunities: EnhancedOpportunity[]): Promise
         expected_impact: opp.expected_impact || {},
         confidence_factors: opp.confidence_factors || [],
         risks: opp.risks || [],
+        suggested_journalists: opp.suggested_journalists || [],  // NEW: Include media targets
         priority_score: Math.round(opp.confidence * 0.8 + (opp.urgency === 'CRITICAL' ? 20 : opp.urgency === 'HIGH' ? 15 : 10)),
         raw_data: opp
       }
