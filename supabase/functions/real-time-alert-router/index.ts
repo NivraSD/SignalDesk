@@ -139,7 +139,7 @@ serve(async (req) => {
         console.log('⚠️ No recent firecrawl-observer results found');
       }
     } else {
-      console.log('\n📡 Step 1: Calling niv-fireplexity-monitor-v2 (Firecrawl + 100+ sources)...');
+      console.log('\n📡 Step 1: Calling niv-fireplexity-monitor-v2 (Firecrawl + ALL intelligence targets)...');
 
       const searchResponse = await fetch(
         `${SUPABASE_URL}/functions/v1/niv-fireplexity-monitor-v2`,
@@ -151,8 +151,11 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             organization_id: organization_name,
+            organization_name: organization_name,
             recency_window: time_window === '1hour' ? '1hour' :
-                           time_window === '6hours' ? '6hours' : '24hours'
+                           time_window === '6hours' ? '6hours' : '24hours',
+            max_results: 50,
+            skip_deduplication: false
           })
         }
       );
@@ -162,7 +165,7 @@ serve(async (req) => {
       }
 
       const searchData = await searchResponse.json();
-      console.log(`✅ Found ${searchData.results_found} results from RSS monitor (${searchData.execution_time_ms}ms)`);
+      console.log(`✅ Found ${searchData.total_articles || searchData.results_found} results from Firecrawl monitor (${searchData.metadata?.execution_time_ms || searchData.execution_time_ms}ms)`);
 
       // Articles are now returned directly in the response
       searchResults = searchData.articles || [];

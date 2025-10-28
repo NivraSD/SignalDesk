@@ -80,10 +80,10 @@ serve(async (req) => {
 
     const profile = profileData.profile_data;
 
-    // Call niv-fireplexity-monitor for company-specific searches
-    // It already has the smart query generation we just built
+    // Call niv-fireplexity-monitor-v2 for comprehensive monitoring of ALL intelligence targets
+    // V2 uses Firecrawl and queries intelligence_targets table directly
     const searchResponse = await fetch(
-      `${SUPABASE_URL}/functions/v1/niv-fireplexity-monitor`,
+      `${SUPABASE_URL}/functions/v1/niv-fireplexity-monitor-v2`,
       {
         method: 'POST',
         headers: {
@@ -92,10 +92,11 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           organization_id: organization_name,
+          organization_name: organization_name,
           recency_window: time_window === '1hour' ? '1hour' :
                           time_window === '6hours' ? '6hours' : '24hours',
-          relevance_threshold: 60,
-          route_to_opportunity_engine: false // We'll handle routing ourselves
+          max_results: 50,
+          skip_deduplication: false
         })
       }
     );

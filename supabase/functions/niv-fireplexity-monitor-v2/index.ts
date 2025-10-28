@@ -80,10 +80,45 @@ serve(async (req) => {
     console.log(`   ✓ Competitors: ${profile.competition?.direct_competitors?.length || 0}`)
     console.log(`   ✓ Sources: ${profile.sources?.source_priorities?.total_sources || 0}`)
 
+    // STEP 1.5: Load intelligence targets from database (not from stale profile)
+    console.log('\n🎯 Step 1.5: Loading intelligence targets from database...')
+
+    const { data: targetsData } = await supabase
+      .from('intelligence_targets')
+      .select('*')
+      .eq('organization_id', organization_id)
+
+    const discoveryTargets = {
+      competitors: new Set<string>(),
+      stakeholders: new Set<string>(),
+      topics: new Set<string>()
+    }
+
+    if (targetsData && targetsData.length > 0) {
+      targetsData.forEach((target: any) => {
+        if (target.target_type === 'competitor' && target.target_name) {
+          discoveryTargets.competitors.add(target.target_name)
+        } else if (target.target_type === 'stakeholder' && target.target_name) {
+          discoveryTargets.stakeholders.add(target.target_name)
+        } else if (target.target_type === 'topic' && target.target_name) {
+          discoveryTargets.topics.add(target.target_name)
+        }
+      })
+      console.log(`   ✓ Loaded ${discoveryTargets.competitors.size} competitors, ${discoveryTargets.stakeholders.size} stakeholders, ${discoveryTargets.topics.size} topics from intelligence_targets`)
+    } else {
+      // Fallback to profile if no targets set
+      console.log(`   ⚠️ No intelligence_targets found, using profile data`)
+      ;(profile.competition?.direct_competitors || []).forEach((c: string) => discoveryTargets.competitors.add(c))
+      ;(profile.competition?.indirect_competitors || []).forEach((c: string) => discoveryTargets.competitors.add(c))
+      ;(profile.stakeholders?.regulators || []).forEach((s: string) => discoveryTargets.stakeholders.add(s))
+      ;(profile.stakeholders?.major_investors || []).forEach((s: string) => discoveryTargets.stakeholders.add(s))
+      ;(profile.trending?.hot_topics || []).forEach((t: string) => discoveryTargets.topics.add(t))
+    }
+
     // STEP 2: Generate real-time monitoring queries
     console.log('\n🔍 Step 2: Generating real-time queries...')
 
-    const queries = generateRealtimeQueries(profile, orgName, recency_window)
+    const queries = generateRealtimeQueries(profile, orgName, recency_window, discoveryTargets)
     console.log(`   ✓ Generated ${queries.length} queries for real-time monitoring`)
 
     // STEP 3: Execute Firecrawl searches
@@ -103,7 +138,7 @@ serve(async (req) => {
     // STEP 4: Filter and score by relevance
     console.log('\n🎯 Step 4: Scoring article relevance...')
 
-    const scoredArticles = scoreArticlesRelevance(articles, profile, orgName)
+    const scoredArticles = scoreArticlesRelevance(articles, profile, orgName, discoveryTargets)
     console.log(`   ✓ Scored ${scoredArticles.length} relevant articles`)
 
     // STEP 5: Deduplicate against previously processed articles
@@ -137,6 +172,30 @@ serve(async (req) => {
     console.log(`\n⏱️  Total execution time: ${executionTime}ms`)
     console.log(`✅ Returning ${topResults.length} articles to detectors`)
 
+    // Calculate discovery coverage
+    const discoveryCoverage = {
+      competitors_covered: new Set(topResults.flatMap(a => a.discovery_coverage?.competitors || [])).size,
+      stakeholders_covered: new Set(topResults.flatMap(a => a.discovery_coverage?.stakeholders || [])).size,
+      topics_covered: new Set(topResults.flatMap(a => a.discovery_coverage?.topics || [])).size,
+      total_competitors: discoveryTargets.competitors.size,
+      total_stakeholders: discoveryTargets.stakeholders.size,
+      total_topics: discoveryTargets.topics.size
+    }
+
+    // Calculate entity coverage
+    const entityCoverage: Record<string, number> = {}
+    topResults.forEach(article => {
+      ;(article.discovery_coverage?.competitors || []).forEach((entity: string) => {
+        entityCoverage[entity] = (entityCoverage[entity] || 0) + 1
+      })
+      ;(article.discovery_coverage?.stakeholders || []).forEach((entity: string) => {
+        entityCoverage[entity] = (entityCoverage[entity] || 0) + 1
+      })
+    })
+
+    console.log(`📈 Discovery coverage:`, discoveryCoverage)
+    console.log(`🎯 Entity coverage:`, entityCoverage)
+
     // Save monitoring results
     await supabase
       .from('fireplexity_monitoring')
@@ -154,17 +213,39 @@ serve(async (req) => {
         execution_time_ms: executionTime
       })
 
+    // Return monitoring report in same format as monitor-stage-1
     return new Response(JSON.stringify({
       success: true,
-      results_found: topResults.length,
-      execution_time_ms: executionTime,
-      source: 'firecrawl_master_registry',
+      stage: 1,
       articles: topResults,
-      deduplication: {
-        enabled: !skip_deduplication,
-        total_scored: scoredArticles.length,
-        already_processed: skippedCount,
-        new_articles: topResults.length
+      total_articles: topResults.length,
+      social_signals: [], // NIV v2 doesn't collect social signals (can be added later)
+      social_sentiment: null,
+      metadata: {
+        organization: orgName,
+        total_collected: topResults.length,
+        competitors_tracked: discoveryTargets.competitors.size,
+        entity_coverage: entityCoverage,
+        discovery_coverage: discoveryCoverage,
+        discovery_targets: {
+          competitors: Array.from(discoveryTargets.competitors),
+          stakeholders: Array.from(discoveryTargets.stakeholders),
+          topics: Array.from(discoveryTargets.topics)
+        },
+        sources_used: {
+          firecrawl: topResults.length,
+          rss: 0,
+          api: 0
+        },
+        search_mode: 'firecrawl',
+        recency_window,
+        execution_time_ms: executionTime,
+        deduplication: {
+          enabled: !skip_deduplication,
+          total_scored: scoredArticles.length,
+          already_processed: skippedCount,
+          new_articles: topResults.length
+        }
       }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -259,38 +340,101 @@ async function markArticlesAsProcessed(
 }
 
 /**
- * Generate queries optimized for real-time monitoring
- * Focus on: org, top 2 competitors, crisis keywords, opportunity keywords
- * OPTIMIZED: Reduced from 12 to 8 queries for faster execution
+ * Generate queries for comprehensive monitoring of ALL intelligence targets
+ * 24-hour mode: Search for ALL competitors, ALL topics, ALL stakeholders
+ * 6-hour mode: Top 5 competitors + all topics (for realtime)
+ * 1-hour mode: Top 3 competitors + crisis only (ultra-focused)
  */
-function generateRealtimeQueries(profile: any, orgName: string, recencyWindow: string): string[] {
+function generateRealtimeQueries(
+  profile: any,
+  orgName: string,
+  recencyWindow: string,
+  discoveryTargets: { competitors: Set<string>, stakeholders: Set<string>, topics: Set<string> }
+): string[] {
   const queries: string[] = []
 
-  // Query 1: Organization news (combined)
+  // Query 1: Organization news (always included)
   queries.push(`${orgName} news`)
 
-  // Queries 2-3: Top 2 competitors (reduced from 3)
-  const topCompetitors = (profile.competition?.direct_competitors || []).slice(0, 2)
-  topCompetitors.forEach((comp: string) => {
-    queries.push(`${comp} news`)
-  })
+  if (recencyWindow === '24hours') {
+    // 24-HOUR MODE: COMPREHENSIVE - Search ALL intelligence targets
 
-  // Queries 4-5: Crisis detection (most critical only)
-  queries.push(`${orgName} investigation OR lawsuit`)
-  queries.push(`${orgName} recall OR breach`)
+    // ALL competitors (user set these up intentionally)
+    const allCompetitors = Array.from(discoveryTargets.competitors)
+    allCompetitors.forEach((comp: string) => {
+      queries.push(`${comp} news`)
+    })
 
-  // Queries 6-7: Opportunity detection (combined)
-  queries.push(`${orgName} partnership OR acquisition`)
-  queries.push(`${orgName} funding OR investment`)
+    // ALL topics (user set these up intentionally)
+    const allTopics = Array.from(discoveryTargets.topics)
+    allTopics.forEach((topic: string) => {
+      queries.push(`${topic}`)
+    })
 
-  // Query 8: Industry breaking news
-  if (profile.industry) {
-    queries.push(`${profile.industry} breaking news`)
-  }
+    // ALL stakeholders (user set these up intentionally)
+    const allStakeholders = Array.from(discoveryTargets.stakeholders)
+    allStakeholders.forEach((stakeholder: string) => {
+      queries.push(`${stakeholder} news`)
+    })
 
-  // For very short windows (1hour), focus only on most critical
-  if (recencyWindow === '1hour') {
-    return queries.slice(0, 5) // Org + top 2 competitors + 2 crisis queries
+    // Crisis detection
+    queries.push(`${orgName} investigation OR lawsuit OR scandal`)
+    queries.push(`${orgName} recall OR breach OR security`)
+
+    // Opportunity detection
+    queries.push(`${orgName} partnership OR acquisition OR merger`)
+    queries.push(`${orgName} funding OR investment OR expansion`)
+
+    // Industry news
+    if (profile.industry) {
+      queries.push(`${profile.industry} news`)
+    }
+
+  } else if (recencyWindow === '6hours') {
+    // 6-HOUR MODE: Top competitors + all topics (balanced for realtime)
+
+    // Top 5 competitors
+    const topCompetitors = Array.from(discoveryTargets.competitors).slice(0, 5)
+    topCompetitors.forEach((comp: string) => {
+      queries.push(`${comp} news`)
+    })
+
+    // ALL topics (topics are usually fewer, keep all)
+    const allTopics = Array.from(discoveryTargets.topics)
+    allTopics.forEach((topic: string) => {
+      queries.push(`${topic}`)
+    })
+
+    // Crisis detection
+    queries.push(`${orgName} investigation OR lawsuit OR scandal`)
+    queries.push(`${orgName} recall OR breach`)
+
+    // Opportunity detection
+    queries.push(`${orgName} partnership OR acquisition`)
+    queries.push(`${orgName} funding OR investment`)
+
+    // Industry breaking news
+    if (profile.industry) {
+      queries.push(`${profile.industry} breaking news`)
+    }
+
+  } else {
+    // 1-HOUR MODE: Ultra-focused for breaking news only
+
+    // Top 3 competitors only
+    const topCompetitors = Array.from(discoveryTargets.competitors).slice(0, 3)
+    topCompetitors.forEach((comp: string) => {
+      queries.push(`${comp} news`)
+    })
+
+    // Most critical crisis detection
+    queries.push(`${orgName} investigation OR lawsuit`)
+    queries.push(`${orgName} recall OR breach`)
+
+    // Breaking industry news
+    if (profile.industry) {
+      queries.push(`${profile.industry} breaking`)
+    }
   }
 
   return queries
@@ -422,13 +566,17 @@ function extractDomain(url: string): string {
 /**
  * Score articles by relevance for real-time monitoring
  * Higher scores for: org mentions, competitor actions, crisis signals, breaking news
+ * Adds discovery_coverage to track which targets each article covers
  */
-function scoreArticlesRelevance(articles: any[], profile: any, orgName: string): any[] {
-  const competitors = profile.competition?.direct_competitors || []
-  const stakeholders = [
-    ...(profile.stakeholders?.regulators || []),
-    ...(profile.stakeholders?.major_investors || [])
-  ]
+function scoreArticlesRelevance(
+  articles: any[],
+  profile: any,
+  orgName: string,
+  discoveryTargets: { competitors: Set<string>, stakeholders: Set<string>, topics: Set<string> }
+): any[] {
+  const competitors = Array.from(discoveryTargets.competitors)
+  const stakeholders = Array.from(discoveryTargets.stakeholders)
+  const topics = Array.from(discoveryTargets.topics)
   const keywords = profile.monitoring_config?.keywords || []
 
   return articles.map(article => {
@@ -437,6 +585,11 @@ function scoreArticlesRelevance(articles: any[], profile: any, orgName: string):
     const text = `${title} ${content}`
 
     let score = 0
+
+    // Track which targets this article covers
+    const coveredCompetitors: string[] = []
+    const coveredStakeholders: string[] = []
+    const coveredTopics: string[] = []
 
     // Organization in title: +50 (very high priority for real-time)
     if (title.includes(orgName.toLowerCase())) {
@@ -448,15 +601,33 @@ function scoreArticlesRelevance(articles: any[], profile: any, orgName: string):
       score += 20
     }
 
-    // Competitor in title: +40
-    if (competitors.some((comp: string) => comp && title.includes(comp.toLowerCase()))) {
-      score += 40
-    }
+    // Check each competitor
+    competitors.forEach(comp => {
+      if (comp && text.includes(comp.toLowerCase())) {
+        coveredCompetitors.push(comp)
+        if (title.includes(comp.toLowerCase())) {
+          score += 40 // In title
+        } else {
+          score += 15 // In content
+        }
+      }
+    })
 
-    // Competitor in content: +15
-    if (competitors.some((comp: string) => comp && content.includes(comp.toLowerCase()))) {
-      score += 15
-    }
+    // Check each stakeholder
+    stakeholders.forEach(sh => {
+      if (sh && text.includes(sh.toLowerCase())) {
+        coveredStakeholders.push(sh)
+        score += 20
+      }
+    })
+
+    // Check each topic
+    topics.forEach(topic => {
+      if (topic && text.includes(topic.toLowerCase())) {
+        coveredTopics.push(topic)
+        score += 15
+      }
+    })
 
     // Crisis keywords: +30 (urgent)
     const crisisKeywords = ['lawsuit', 'recall', 'investigation', 'breach', 'scandal', 'fine', 'penalty']
@@ -468,11 +639,6 @@ function scoreArticlesRelevance(articles: any[], profile: any, orgName: string):
     const urgentKeywords = ['breaking', 'just in', 'urgent', 'alert', 'announced today']
     if (urgentKeywords.some(kw => text.includes(kw))) {
       score += 25
-    }
-
-    // Stakeholder mentioned: +20
-    if (stakeholders.some((sh: string) => sh && text.includes(sh.toLowerCase()))) {
-      score += 20
     }
 
     // Keywords: +10 each (cap at 30)
@@ -492,12 +658,21 @@ function scoreArticlesRelevance(articles: any[], profile: any, orgName: string):
     else if (hoursAgo < 6) score += 10 // Within 6 hours
     else if (hoursAgo < 24) score += 5 // Within 24 hours
 
+    // Discovery coverage score (how many targets covered)
+    const coverageScore = coveredCompetitors.length * 10 + coveredStakeholders.length * 5 + coveredTopics.length * 5
+
     return {
       ...article,
       relevance_score: score,
       source: sourceName,
       source_tier: sourceTier,
-      published_at: article.publishDate || article.published_at || new Date().toISOString()
+      published_at: article.publishDate || article.published_at || new Date().toISOString(),
+      discovery_coverage: {
+        competitors: coveredCompetitors,
+        stakeholders: coveredStakeholders,
+        topics: coveredTopics,
+        score: coverageScore
+      }
     }
   }).filter(article => article.relevance_score > 0) // Only keep relevant articles
 }

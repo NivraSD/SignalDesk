@@ -59,24 +59,23 @@ export class IntelligenceService {
       onProgress?.('mcp-discovery', 'completed', data)
       
       // mcp-discovery returns { profile, content, success }
-      // monitor-stage-1 expects { organization, profile }
+      // Use niv-fireplexity-monitor-v2 for Firecrawl-based monitoring (better than RSS)
       if (data?.profile) {
-        console.log('Starting monitor-stage-1 with profile (RSS-based with accurate dates)')
-        onProgress?.('monitor-stage-1', 'running')
+        console.log('Starting niv-fireplexity-monitor-v2 with 24-hour monitoring (Firecrawl-based with real-time accuracy)')
+        onProgress?.('niv-fireplexity-monitor-v2', 'running')
 
-        const monitoringResponse = await supabase.functions.invoke('monitor-stage-1', {
+        const monitoringResponse = await supabase.functions.invoke('niv-fireplexity-monitor-v2', {
           body: {
-            organization: orgName,
-            profile: data.profile
-          }
-        }, {
-          headers: {
-            'Content-Type': 'application/json'
+            organization_id: organizationId,
+            organization_name: orgName,
+            recency_window: '24hours',
+            max_results: 100,
+            skip_deduplication: false
           }
         })
 
-        console.log('monitor-stage-1 response:', monitoringResponse)
-        onProgress?.('monitor-stage-1', 'completed', monitoringResponse.data)
+        console.log('niv-fireplexity-monitor-v2 response:', monitoringResponse)
+        onProgress?.('niv-fireplexity-monitor-v2', 'completed', monitoringResponse.data)
 
         // monitor-stage-1 returns { articles, metadata, success }
         // monitor-stage-2-relevance expects { articles, profile, organization_name, top_k }
