@@ -64,9 +64,48 @@ serve(async (req) => {
     console.log(`📈 Organization Industry: ${orgIndustry}`)
     console.log(`🏢 Competitors to monitor: ${orgCompetitors.length}`)
 
-    // Generate industry-specific queries using GEOIntelligenceRegistry pattern
-    const queries = generateIndustryQueries(orgIndustry, organization_name, orgCompetitors)
-    console.log(`🔍 Generated ${queries.length} test queries`)
+    // STEP 1: Use geo-query-discovery to generate intelligent queries
+    console.log('🔍 Calling GEO Query Discovery for intelligent query generation...')
+    let queries: any[] = []
+
+    try {
+      const queryDiscoveryResponse = await fetch(
+        `${supabaseUrl}/functions/v1/geo-query-discovery`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            organization_id,
+            organization_name,
+            industry: orgIndustry,
+            competitors: orgCompetitors
+          })
+        }
+      )
+
+      if (!queryDiscoveryResponse.ok) {
+        throw new Error('Query discovery failed')
+      }
+
+      const queryDiscoveryData = await queryDiscoveryResponse.json()
+      console.log(`✅ Query Discovery Complete: ${queryDiscoveryData.total_queries} queries generated`)
+
+      // Get mix of high-priority queries for testing (limit to 10 for cost control)
+      queries = [
+        ...(queryDiscoveryData.queries?.critical || []).slice(0, 4),
+        ...(queryDiscoveryData.queries?.high || []).slice(0, 4),
+        ...(queryDiscoveryData.queries?.medium || []).slice(0, 2)
+      ]
+    } catch (error) {
+      console.error('Query discovery failed, falling back to simple patterns:', error)
+      // Fallback to simple pattern generation
+      queries = generateIndustryQueries(orgIndustry, organization_name, orgCompetitors)
+    }
+
+    console.log(`🔍 Testing ${queries.length} queries`)
 
     const signals: any[] = []
 
