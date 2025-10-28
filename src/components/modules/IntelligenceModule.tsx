@@ -478,13 +478,42 @@ export default function IntelligenceModule() {
         chatgpt: `${results.chatgpt?.mentions || 0}/${results.chatgpt?.queries_tested || 0}`
       })
 
-      // STEP 3: Synthesize results
-      console.log('🎯 Synthesizing results...')
+      // STEP 3: Transform results into format expected by geo-executive-synthesis
+      // The test functions return signals arrays, but synthesis expects a flat array of test results
+      const transformedResults = []
+
+      // Create a map of queries for easy lookup
+      const queryMap = new Map(queries.map(q => [q.query, q]))
+
+      // Extract and transform signals from each platform
+      for (const [platformName, platformData] of Object.entries(results)) {
+        if (platformData?.signals && Array.isArray(platformData.signals)) {
+          for (const signal of platformData.signals) {
+            // Match signal back to original query to get intent
+            const originalQuery = queryMap.get(signal.data?.query)
+
+            transformedResults.push({
+              query: signal.data?.query || '',
+              intent: originalQuery?.intent || 'unknown',
+              priority: signal.priority || 'medium',
+              platform: platformName as 'claude' | 'gemini' | 'chatgpt' | 'perplexity',
+              response: '', // Not stored in signals, but not used by synthesis
+              brand_mentioned: signal.data?.mentioned || false,
+              rank: signal.data?.position || undefined,
+              context_quality: signal.data?.context ? 'strong' : undefined,
+              competitors_mentioned: signal.data?.competitors_mentioned || []
+            })
+          }
+        }
+      }
+
+      console.log(`🎯 Synthesizing ${transformedResults.length} test results...`)
       const { data: synthesisData, error: synthesisError } = await supabase.functions.invoke('geo-executive-synthesis', {
         body: {
           organization_id: organization.id,
           organization_name: organization.name,
-          geo_results: results  // Fixed: renamed 'results' to 'geo_results' to match backend expectation
+          industry: organization.industry,
+          geo_results: transformedResults  // Now passing properly formatted array
         }
       })
 
