@@ -8,11 +8,8 @@ export type ContentType =
   | 'press_release'
   | 'blog_post'
   | 'image'
-  | 'video'
   | 'presentation'
   | 'email_campaign'
-  | 'webinar'
-  | 'event'
   | 'partnership_outreach'
   | 'user_action'
 
@@ -206,11 +203,8 @@ export function estimateContentEffort(type: ContentType): string {
     press_release: '1 hour',
     blog_post: '2 hours',
     image: '30 minutes',
-    video: '4 hours',
     presentation: '2 hours',
     email_campaign: '1 hour',
-    webinar: '8 hours',
-    event: '40 hours',
     partnership_outreach: '1 hour',
     user_action: '30 minutes'
   }

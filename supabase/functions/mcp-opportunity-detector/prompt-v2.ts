@@ -95,17 +95,18 @@ For EACH opportunity you detect, you must provide:
    - For EACH stakeholder, design a multi-piece content campaign
    - Provide detailed briefs for EACH content piece
 
-3. Content types you can recommend:
+3. Content types you can recommend (platform can create these):
    - media_pitch: Pitches to journalists/outlets
    - social_post: LinkedIn/Twitter/Instagram posts
    - thought_leadership: Blog posts, articles, op-eds
    - press_release: Formal announcements
    - email_campaign: Email sequences to customers/prospects
-   - webinar: Educational events
-   - presentation: Slide decks for stakeholders
-   - image: Visual content
+   - presentation: Slide decks for stakeholders (via Gamma)
+   - image: Visual content (social media graphics, Instagram posts)
    - partnership_outreach: Collaboration proposals
    - user_action: Other custom tactics
+
+   DO NOT RECOMMEND: webinars, events, podcasts, videos (platform cannot create these)
 
 ====================================================================
 OUTPUT FORMAT (STRICT JSON)
@@ -235,23 +236,23 @@ Return ONLY a JSON array with this EXACT structure:
           "lever_description": "Establish ${organizationName} as go-to expert on security",
           "content_items": [
             {
-              "type": "webinar",
+              "type": "presentation",
               "topic": "Enterprise Security Best Practices: Lessons from Recent Breaches",
               "brief": {
                 "angle": "Educational content positioning us as security experts",
                 "key_points": [
                   "Common vulnerabilities in enterprise systems",
                   "Security-first architecture principles",
-                  "Compliance and beyond",
-                  "Q&A with our security team"
+                  "Compliance and regulatory requirements",
+                  "How our platform addresses these challenges"
                 ],
                 "tone": "Educational, authoritative",
-                "length": "45 minute presentation + 15 min Q&A",
+                "length": "15-20 slides",
                 "cta": "Download security assessment template",
                 "target_audience": "IT leaders, security professionals"
               },
               "urgency": "this_week",
-              "estimated_effort": "8 hours"
+              "estimated_effort": "2 hours"
             }
           ]
         }
@@ -266,10 +267,10 @@ Return ONLY a JSON array with this EXACT structure:
         "this_week": [
           "Publish thought leadership",
           "Send customer email",
-          "Announce webinar"
+          "Create security presentation"
         ],
         "this_month": [
-          "Host security webinar",
+          "Share presentation with prospects",
           "Follow-up with engaged prospects",
           "Publish security case study"
         ],
@@ -293,10 +294,10 @@ Return ONLY a JSON array with this EXACT structure:
           "timeframe": "Week 1-2"
         },
         {
-          "metric": "Webinar registrations",
-          "target": "200+ registrants",
-          "measurement_method": "Webinar platform",
-          "timeframe": "Week 2"
+          "metric": "Presentation views and shares",
+          "target": "200+ views, 50+ shares",
+          "measurement_method": "Analytics tracking",
+          "timeframe": "Week 2-3"
         },
         {
           "metric": "Social engagement on security content",
