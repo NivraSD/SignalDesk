@@ -38,6 +38,7 @@ import { supabase } from '@/lib/supabase/client'
 import { useAppStore } from '@/stores/useAppStore'
 import IntelligenceSynthesisDisplay from '@/components/IntelligenceSynthesisDisplay'
 import StakeholderPredictionDashboard from '@/components/predictions/StakeholderPredictionDashboard'
+import SchemaViewer from '@/components/schema/SchemaViewer'
 
 // Import the executive synthesis component if it exists
 // import ExecutiveSynthesisDisplay from '../intelligence/ExecutiveSynthesisDisplay'
@@ -95,6 +96,7 @@ export default function IntelligenceModule() {
   const [schemaData, setSchemaData] = useState<any>(null)
   const [schemaLoading, setSchemaLoading] = useState(false)
   const [schemaExtracting, setSchemaExtracting] = useState(false)
+  const [showSchemaViewer, setShowSchemaViewer] = useState(false)
 
   // Prompt categories with icons
   const promptCategories = [
@@ -620,6 +622,40 @@ export default function IntelligenceModule() {
       alert('Failed to extract schema. Check console for details.')
     } finally {
       setSchemaExtracting(false)
+    }
+  }
+
+  const updateSchema = async (updatedSchema: any) => {
+    if (!organization) return
+
+    try {
+      console.log('💾 Updating schema...', updatedSchema)
+
+      // Update schema in Memory Vault via Supabase
+      const { error } = await supabase
+        .from('content_library')
+        .update({
+          content: updatedSchema.content,
+          metadata: {
+            ...updatedSchema.metadata,
+            version: (updatedSchema.metadata?.version || 1) + 1,
+            last_updated: new Date().toISOString()
+          },
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', updatedSchema.id)
+
+      if (error) throw error
+
+      console.log('✅ Schema updated successfully')
+
+      // Reload schema data
+      await loadSchema()
+
+      alert('Schema updated successfully!')
+    } catch (error) {
+      console.error('Error updating schema:', error)
+      alert('Failed to update schema. Check console for details.')
     }
   }
 
@@ -1393,27 +1429,38 @@ export default function IntelligenceModule() {
                       }
                     </p>
                   </div>
-                  <button
-                    onClick={extractSchema}
-                    disabled={schemaExtracting || !organization}
-                    className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 text-sm font-medium ${
-                      schemaExtracting
-                        ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                        : 'bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-400'
-                    }`}
-                  >
-                    {schemaExtracting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Extracting...
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw className="w-4 h-4" />
-                        {schemaData?.has_schema ? 'Update Schema' : 'Extract Schema'}
-                      </>
+                  <div className="flex items-center gap-2">
+                    {schemaData?.has_schema && (
+                      <button
+                        onClick={() => setShowSchemaViewer(!showSchemaViewer)}
+                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-all flex items-center gap-2 text-sm font-medium"
+                      >
+                        <FileText className="w-4 h-4" />
+                        {showSchemaViewer ? 'Hide Details' : 'View Details'}
+                      </button>
                     )}
-                  </button>
+                    <button
+                      onClick={extractSchema}
+                      disabled={schemaExtracting || !organization}
+                      className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 text-sm font-medium ${
+                        schemaExtracting
+                          ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                          : 'bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-400'
+                      }`}
+                    >
+                      {schemaExtracting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Extracting...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="w-4 h-4" />
+                          {schemaData?.has_schema ? 'Update Schema' : 'Extract Schema'}
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 {schemaData?.has_schema && schemaData.schema && (

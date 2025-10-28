@@ -766,12 +766,47 @@ Return ONLY valid JSON:
     ];
   }
 
+  // Generate purpose and guiding principles
+  const purposePrompt = `For a ${industry} company (${company_size}), write a concise crisis management plan purpose statement and 5-7 guiding principles.
+
+Return ONLY a valid JSON object:
+{
+  "purpose": "2-3 sentences explaining the purpose of this crisis management plan",
+  "guidingPrinciples": [
+    "Principle 1: Clear, actionable principle",
+    "Principle 2: Clear, actionable principle",
+    ...
+  ]
+}`;
+
+  const purposeCompletion = await anthropic.messages.create({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 800,
+    temperature: 0.7,
+    messages: [{ role: 'user', content: purposePrompt }]
+  });
+
+  const purposeText = purposeCompletion.content[0].type === 'text' ? purposeCompletion.content[0].text : '{}';
+  let purpose = 'This crisis management plan provides a structured framework for responding to potential crises.';
+  let guidingPrinciples: string[] = ['Protect people first', 'Communicate transparently', 'Act decisively'];
+
+  try {
+    const jsonMatch = purposeText.match(/\{[\s\S]*\}/);
+    const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { purpose: '', guidingPrinciples: [] };
+    if (parsed.purpose) purpose = parsed.purpose;
+    if (parsed.guidingPrinciples?.length > 0) guidingPrinciples = parsed.guidingPrinciples;
+  } catch (e) {
+    console.error('Failed to parse purpose/principles:', e);
+  }
+
   // Build complete crisis plan
   const crisisPlan = {
     industry,
     company_size,
     organization_id,
     generatedDate: new Date().toLocaleDateString(),
+    purpose,
+    guidingPrinciples,
     scenarios: [...scenarios.map((s: any) => ({ ...s, isUniversal: false })), ...universalScenarios],
     stakeholders,
     communicationPlans,

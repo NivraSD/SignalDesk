@@ -156,27 +156,28 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan }: Crisis
         <div className="flex-1 overflow-y-auto p-6">
           {activeTab === 'overview' && (
             <div className="space-y-6">
-              <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
-                <h3 className="text-lg font-bold text-white mb-4">Plan Summary</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div>
-                    <div className="text-sm text-gray-400">Industry</div>
-                    <div className="text-lg font-semibold text-white">{plan.industry}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-400">Company Size</div>
-                    <div className="text-lg font-semibold text-white capitalize">{plan.company_size}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-400">Scenarios</div>
-                    <div className="text-lg font-semibold text-white">{plan.scenarios?.length || 0}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-400">Team Members</div>
-                    <div className="text-lg font-semibold text-white">{plan.crisisTeam?.length || 0}</div>
-                  </div>
+              {plan.purpose && (
+                <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
+                  <h3 className="text-lg font-bold text-white mb-4">Purpose of Plan</h3>
+                  <p className="text-gray-300 leading-relaxed">{plan.purpose}</p>
                 </div>
-              </div>
+              )}
+
+              {plan.guidingPrinciples && plan.guidingPrinciples.length > 0 && (
+                <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
+                  <h3 className="text-lg font-bold text-white mb-4">Guiding Principles</h3>
+                  <ul className="space-y-3">
+                    {plan.guidingPrinciples.map((principle: string, idx: number) => (
+                      <li key={idx} className="flex items-start gap-3">
+                        <div className="w-6 h-6 rounded-full bg-purple-500/10 border border-purple-500/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <span className="text-xs font-bold text-purple-400">{idx + 1}</span>
+                        </div>
+                        <span className="text-gray-300 leading-relaxed">{principle}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               {plan.keyConcerns?.length > 0 && (
                 <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
