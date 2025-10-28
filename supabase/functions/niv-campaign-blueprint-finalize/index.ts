@@ -174,10 +174,11 @@ serve(async (req) => {
       }
     }
 
-    // Update progress to completed
+    // Update progress to completed AND save the complete blueprint
     await supabase
       .from('campaign_builder_sessions')
       .update({
+        blueprint: completeBlueprint,  // Save the complete blueprint so it appears in Strategic Planning
         blueprint_progress: {
           base: 'completed',
           orchestration: 'completed',
