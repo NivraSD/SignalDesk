@@ -424,26 +424,19 @@ export default function IntelligenceModule() {
     try {
       console.log('🌍 Starting GEO Intelligence Monitor for', organization.name)
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/geo-intelligence-monitor`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke('geo-intelligence-monitor', {
+        body: {
           organization_id: organization.id,
           organization_name: organization.name,
           industry: organization.industry
-        })
+        }
       })
 
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('GEO monitor error response:', errorText)
-        throw new Error(`GEO monitor failed: ${response.status}`)
+      if (error) {
+        console.error('GEO monitor error:', error)
+        throw new Error(error.message || 'GEO monitor failed')
       }
 
-      const data = await response.json()
       console.log('GEO monitor response:', data)
 
       if (!data.success) {
