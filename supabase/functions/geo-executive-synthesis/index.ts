@@ -43,6 +43,25 @@ serve(async (req) => {
       throw new Error('organization_id, organization_name, and geo_results required')
     }
 
+    if (!Array.isArray(geo_results) || geo_results.length === 0) {
+      console.log('⚠️  No GEO results provided, returning empty synthesis')
+      return new Response(
+        JSON.stringify({
+          success: true,
+          synthesis: {
+            overview: 'No GEO testing results available yet. Run GEO testing first to generate insights.',
+            visibility_score: 0,
+            critical_issues: [],
+            opportunities: [],
+            recommendations: []
+          }
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
     console.log('📊 GEO Executive Synthesis Starting:', {
       organization: organization_name,
       industry,

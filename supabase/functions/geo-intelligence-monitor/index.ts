@@ -288,38 +288,43 @@ serve(async (req) => {
           competitors_mentioned: []
         }))
 
-      // Fetch geo_targets for context
-      const { data: geoTargets } = await supabase
-        .from('geo_targets')
-        .select('*')
-        .eq('organization_id', organization_id)
-        .eq('active', true)
-        .single()
-
-      const synthesisResponse = await fetch(
-        `${supabaseUrl}/functions/v1/geo-executive-synthesis`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${supabaseKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            organization_id,
-            organization_name,
-            industry: orgIndustry,
-            geo_results: geoResults,
-            geo_targets: geoTargets
-          })
-        }
-      )
-
-      if (synthesisResponse.ok) {
-        const synthesisData = await synthesisResponse.json()
-        synthesis = synthesisData.synthesis
-        console.log('✅ Executive synthesis generated')
+      // Skip synthesis if no results to analyze
+      if (geoResults.length === 0) {
+        console.log('⚠️  No GEO results to synthesize, skipping executive synthesis')
       } else {
-        console.error('Synthesis generation failed:', await synthesisResponse.text())
+        // Fetch geo_targets for context
+        const { data: geoTargets } = await supabase
+          .from('geo_targets')
+          .select('*')
+          .eq('organization_id', organization_id)
+          .eq('active', true)
+          .single()
+
+        const synthesisResponse = await fetch(
+          `${supabaseUrl}/functions/v1/geo-executive-synthesis`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${supabaseKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              organization_id,
+              organization_name,
+              industry: orgIndustry,
+              geo_results: geoResults,
+              geo_targets: geoTargets
+            })
+          }
+        )
+
+        if (synthesisResponse.ok) {
+          const synthesisData = await synthesisResponse.json()
+          synthesis = synthesisData.synthesis
+          console.log('✅ Executive synthesis generated')
+        } else {
+          console.error('Synthesis generation failed:', await synthesisResponse.text())
+        }
       }
     } catch (error) {
       console.error('Failed to generate synthesis:', error)
