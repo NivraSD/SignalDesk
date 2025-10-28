@@ -84,15 +84,6 @@ serve(async (req) => {
       .eq('metadata->>schema_type', schemaToStore['@type'])
       .single()
 
-    // Prepare intelligence data (will be added if column exists)
-    const intelligenceData = {
-      schemaType: schemaToStore['@type'],
-      fields: Object.keys(schemaToStore).filter(k => !k.startsWith('@')),
-      lastExtracted: new Date().toISOString(),
-      source: schemaToStore ? 'extracted' : 'generated',
-      extractionMethod: schemaToStore ? extractionMethod : 'generated'
-    }
-
     if (existingSchema && !checkError) {
       // Update existing schema
       const updateData: any = {
@@ -105,13 +96,6 @@ serve(async (req) => {
           extracted_from: normalizedUrl
         },
         updated_at: new Date().toISOString()
-      }
-
-      // Try to add intelligence if column exists
-      try {
-        updateData.intelligence = intelligenceData
-      } catch (e) {
-        console.log('Intelligence column not available, skipping')
       }
 
       const { error: updateError } = await supabase
@@ -133,15 +117,7 @@ serve(async (req) => {
           platform_optimized: 'all',
           version: 1,
           extracted_from: normalizedUrl
-        },
-        salience: 1.0
-      }
-
-      // Try to add intelligence if column exists
-      try {
-        insertData.intelligence = intelligenceData
-      } catch (e) {
-        console.log('Intelligence column not available, skipping')
+        }
       }
 
       const { error: insertError } = await supabase
@@ -180,21 +156,7 @@ serve(async (req) => {
                 competitor: true,
                 competitor_url: normalizedCompUrl,
                 extracted_from: normalizedCompUrl
-              },
-              salience: 0.8
-            }
-
-            // Try to add intelligence if column exists
-            try {
-              compInsertData.intelligence = {
-                schemaType: compSchema['@type'],
-                fields: Object.keys(compSchema).filter(k => !k.startsWith('@')),
-                lastExtracted: new Date().toISOString(),
-                source: 'extracted',
-                extractionMethod: compMethod
               }
-            } catch (e) {
-              console.log('Intelligence column not available, skipping')
             }
 
             const { error: compError } = await supabase
