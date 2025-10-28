@@ -334,8 +334,25 @@ export default function SchemaViewer({
                 <div className={`text-lg font-bold ${perf.mentioned ? 'text-green-400' : 'text-red-400'}`}>
                   {perf.mentioned ? '✓' : '✗'}
                 </div>
-                {perf.rank && (
-                  <div className="text-xs text-gray-400 mt-1">Rank: {perf.rank}</div>
+                {perf.mention_rate !== undefined && (
+                  <div className="text-xs text-gray-400 mt-1">
+                    {perf.mention_rate.toFixed(0)}% mention rate
+                  </div>
+                )}
+                {perf.avg_rank && perf.avg_rank < 999 && (
+                  <div className="text-xs text-gray-400">
+                    Avg rank: {perf.avg_rank.toFixed(1)}
+                  </div>
+                )}
+                {perf.total_tests && (
+                  <div className="text-xs text-gray-500 mt-1">
+                    {perf.total_tests} tests
+                  </div>
+                )}
+                {perf.last_tested && (
+                  <div className="text-xs text-gray-500">
+                    {new Date(perf.last_tested).toLocaleDateString()}
+                  </div>
                 )}
               </div>
             ))}

@@ -170,6 +170,79 @@ serve(async (req) => {
       signals.push(...schemaResults)
     }
 
+    // TRACK SCHEMA PERFORMANCE
+    if (activeSchema) {
+      console.log('📊 Updating schema performance data...')
+      try {
+        const intelligence = activeSchema.intelligence || {}
+        const platforms = intelligence.platforms || {}
+        const performanceHistory = intelligence.performance_history || []
+
+        // Calculate performance for each platform
+        for (const [platform, results] of Object.entries(platformPerformance)) {
+          const mentionedCount = results.filter(r => r.data?.mentioned).length
+          const totalTests = results.length
+
+          if (totalTests > 0) {
+            const avgRank = results
+              .filter(r => r.data?.position && r.data.position < 999)
+              .reduce((sum, r) => sum + (r.data.position || 0), 0) / (mentionedCount || 1)
+
+            platforms[platform] = {
+              mentioned: mentionedCount > 0,
+              mention_rate: totalTests > 0 ? (mentionedCount / totalTests) * 100 : 0,
+              avg_rank: avgRank || null,
+              total_tests: totalTests,
+              last_tested: new Date().toISOString()
+            }
+
+            // Add to performance history
+            results.forEach(result => {
+              performanceHistory.push({
+                date: new Date().toISOString(),
+                platform,
+                query: result.data?.query || '',
+                mentioned: result.data?.mentioned || false,
+                rank: result.data?.position,
+                context_quality: result.data?.mentioned ? 'strong' : 'weak'
+              })
+            })
+          }
+        }
+
+        // Keep only last 100 performance records
+        const recentHistory = performanceHistory.slice(-100)
+
+        // Update schema with performance data
+        const { error: schemaUpdateError } = await supabase
+          .from('content_library')
+          .update({
+            intelligence: {
+              ...intelligence,
+              platforms,
+              performance_history: recentHistory,
+              lastTested: new Date().toISOString()
+            },
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', activeSchema.id)
+
+        if (schemaUpdateError) {
+          console.error('Failed to update schema performance:', schemaUpdateError)
+        } else {
+          console.log('✅ Schema performance updated successfully')
+
+          // Log performance summary
+          console.log('📊 Performance Summary:')
+          Object.entries(platforms).forEach(([platform, perf]: [string, any]) => {
+            console.log(`  ${platform}: ${perf.mention_rate.toFixed(1)}% mention rate, avg rank: ${perf.avg_rank?.toFixed(1) || 'N/A'}`)
+          })
+        }
+      } catch (error) {
+        console.error('Error tracking schema performance:', error)
+      }
+    }
+
     // Save signals to database
     console.log(`💾 Saving ${signals.length} intelligence signals...`)
 
