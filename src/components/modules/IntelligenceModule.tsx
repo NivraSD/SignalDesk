@@ -590,7 +590,16 @@ export default function IntelligenceModule() {
 
     setSchemaExtracting(true)
     try {
-      console.log('🔍 Extracting schema from', organization.website || organization.name)
+      // Use domain field from organizations table, or website if it exists
+      const orgUrl = organization.domain || organization.website
+
+      if (!orgUrl) {
+        alert('Please set your organization domain/website in settings first')
+        setSchemaExtracting(false)
+        return
+      }
+
+      console.log('🔍 Extracting schema from', orgUrl)
 
       const response = await fetch('/api/schema/extract', {
         method: 'POST',
@@ -599,7 +608,7 @@ export default function IntelligenceModule() {
         },
         body: JSON.stringify({
           organization_id: organization.id,
-          organization_url: organization.website || `https://${organization.name.toLowerCase().replace(/\s+/g, '')}.com`,
+          organization_url: orgUrl,
           organization_name: organization.name,
           industry: organization.industry,
           extract_competitors: false
