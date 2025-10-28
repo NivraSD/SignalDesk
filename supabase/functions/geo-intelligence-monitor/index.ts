@@ -457,12 +457,7 @@ async function testGeminiVisibility(
             },
             // ENABLE SEARCH GROUNDING TO GET SOURCES!
             tools: [{
-              googleSearchRetrieval: {
-                dynamicRetrievalConfig: {
-                  mode: 'MODE_DYNAMIC',
-                  dynamicThreshold: 0.3
-                }
-              }
+              google_search: {}
             }]
           })
         }
