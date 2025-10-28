@@ -87,6 +87,7 @@ serve(async (req) => {
     if (existingSchema && !checkError) {
       // Update existing schema
       const updateData: any = {
+        title: `${organization_name} - ${schemaToStore['@type']} Schema`,
         content: schemaToStore,
         metadata: {
           schema_type: schemaToStore['@type'],
@@ -109,6 +110,7 @@ serve(async (req) => {
       // Insert new schema
       const insertData: any = {
         organization_id,
+        title: `${organization_name} - ${schemaToStore['@type']} Schema`,
         content_type: 'schema',
         folder: 'Schemas/Active/',
         content: schemaToStore,
@@ -148,6 +150,7 @@ serve(async (req) => {
             // Store competitor schema
             const compInsertData: any = {
               organization_id,
+              title: `${compName} - ${compSchema['@type']} Schema (Competitor)`,
               content_type: 'schema',
               folder: `Schemas/Competitors/${compName}/`,
               content: compSchema,
