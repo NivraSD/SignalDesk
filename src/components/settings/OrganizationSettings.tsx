@@ -95,21 +95,35 @@ export default function OrganizationSettings({
 
       setSuccess('Organization updated successfully')
 
-      // Update global organization state with new data
+      // Update global organization state with new data (use set directly to bypass ID check)
       const { useAppStore } = await import('@/stores/useAppStore')
-      const setOrganization = useAppStore.getState().setOrganization
       const currentOrg = useAppStore.getState().organization
 
       if (currentOrg?.id === organizationId && data.organization) {
-        setOrganization({
+        // Use set() directly to update without triggering setOrganization's ID check
+        const updatedOrg = {
           ...currentOrg,
           name: data.organization.name,
           url: data.organization.url,
           domain: data.organization.url,
           industry: data.organization.industry,
           size: data.organization.size
+        }
+
+        useAppStore.setState({
+          organization: updatedOrg
         })
-        console.log('✅ Updated global organization state with new URL:', data.organization.url)
+
+        console.log('✅ Updated global organization state:', updatedOrg)
+
+        // Also update localStorage directly to persist immediately
+        const stored = localStorage.getItem('signaldesk-v3-storage')
+        if (stored) {
+          const parsedStore = JSON.parse(stored)
+          parsedStore.state.organization = updatedOrg
+          localStorage.setItem('signaldesk-v3-storage', JSON.stringify(parsedStore))
+          console.log('✅ Updated localStorage with new organization data')
+        }
       }
 
       // Call onUpdate callback to refresh parent state
