@@ -54,6 +54,14 @@ serve(async (req) => {
             critical_issues: [],
             opportunities: [],
             recommendations: []
+          },
+          summary: {
+            total_queries: 0,
+            claude_mentions: 0,
+            gemini_mentions: 0,
+            perplexity_mentions: 0,
+            chatgpt_mentions: 0,
+            critical_signals: 0
           }
         }),
         {
@@ -154,6 +162,16 @@ serve(async (req) => {
       }
     }
 
+    // Build summary metrics for UI display
+    const summary = {
+      total_queries: analysis.total_queries,
+      claude_mentions: analysis.mentions_by_platform.claude || 0,
+      gemini_mentions: analysis.mentions_by_platform.gemini || 0,
+      perplexity_mentions: analysis.mentions_by_platform.perplexity || 0,
+      chatgpt_mentions: analysis.mentions_by_platform.chatgpt || 0,
+      critical_signals: analysis.critical_gaps.length
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -163,7 +181,8 @@ serve(async (req) => {
           organization_name,
           industry,
           generated_at: new Date().toISOString()
-        }
+        },
+        summary  // Add summary for UI display
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
