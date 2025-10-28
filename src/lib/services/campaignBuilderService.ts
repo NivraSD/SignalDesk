@@ -143,8 +143,40 @@ export class CampaignBuilderService {
       console.log('🧪 Step 3: Synthesizing intelligence brief...')
       onProgress?.('synthesis', 'running')
 
+      // Filter research data to reduce payload size
+      // Fireplexity results can have up to 15k chars of content per result
+      // We only need key fields for synthesis, not full content
+      const filterResults = (data: any) => {
+        if (!data?.results || !Array.isArray(data.results)) return data
+
+        return {
+          ...data,
+          results: data.results.map((r: any) => ({
+            title: r.title,
+            description: r.description,
+            url: r.url,
+            source: r.source,
+            sourceType: r.sourceType,
+            publishDate: r.publishDate,
+            relevanceScore: r.relevanceScore,
+            // Truncate content from 15k to 500 chars max
+            content: r.content?.substring(0, 500) || '',
+            matchedQuery: r.matchedQuery
+          }))
+        }
+      }
+
+      // Filter each research dimension to reduce payload
+      const filteredResearch = {
+        discovery: gatheredData.discovery,
+        stakeholder: filterResults(gatheredData.stakeholder),
+        narrative: filterResults(gatheredData.narrative),
+        channel: gatheredData.channel, // Channel data is already compact
+        historical: filterResults(gatheredData.historical)
+      }
+
       const synthesisBody = {
-        compiledResearch: gatheredData,
+        compiledResearch: filteredResearch,
         campaignGoal,
         organizationContext: {
           name: organizationName,
@@ -153,6 +185,7 @@ export class CampaignBuilderService {
       }
 
       console.log('Synthesis body size:', JSON.stringify(synthesisBody).length, 'bytes')
+      console.log('Original body size would have been:', JSON.stringify({ compiledResearch: gatheredData, campaignGoal, organizationContext: { name: organizationName, industry: industryHint } }).length, 'bytes')
 
       const synthesisResponse = await supabase.functions.invoke('niv-campaign-research-synthesis', {
         body: synthesisBody

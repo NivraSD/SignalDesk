@@ -55,7 +55,6 @@ export function CampaignBuilderWizard() {
     stages: {
       base: 'pending' | 'running' | 'completed' | 'failed'
       orchestration: 'pending' | 'running' | 'completed' | 'failed'
-      pattern: 'pending' | 'running' | 'completed' | 'failed'
       execution: 'pending' | 'running' | 'completed' | 'failed'
       merging: 'pending' | 'running' | 'completed' | 'failed'
     }
@@ -64,7 +63,6 @@ export function CampaignBuilderWizard() {
     stages: {
       base: 'pending',
       orchestration: 'pending',
-      pattern: 'pending',
       execution: 'pending',
       merging: 'pending'
     }
@@ -255,6 +253,13 @@ export function CampaignBuilderWizard() {
     }
   }
 
+  // Positioning generation progress tracking (simulated)
+  const [positioningProgress, setPositioningProgress] = useState<{
+    stage: 'analysis' | 'framing' | 'generation' | 'complete'
+  }>({
+    stage: 'analysis'
+  })
+
   // Handle research confirmation - generate positioning options directly
   const handleResearchConfirm = async () => {
     console.log('✅ Research confirmed, generating positioning options...')
@@ -266,6 +271,19 @@ export function CampaignBuilderWizard() {
 
     setIsLoading(true)
     setError(null)
+
+    // Simulate progress through positioning stages
+    setPositioningProgress({ stage: 'analysis' })
+
+    // After 10 seconds, move to framing stage
+    const framingTimeout = setTimeout(() => {
+      setPositioningProgress({ stage: 'framing' })
+    }, 10000)
+
+    // After 25 seconds, move to generation stage
+    const generationTimeout = setTimeout(() => {
+      setPositioningProgress({ stage: 'generation' })
+    }, 25000)
 
     try {
       console.log('📊 Calling positioning with research data:', {
@@ -287,6 +305,11 @@ export function CampaignBuilderWizard() {
           campaignGoal: session.campaignGoal
         })
       })
+
+      // Clear timeouts in case API completes early
+      clearTimeout(framingTimeout)
+      clearTimeout(generationTimeout)
+      setPositioningProgress({ stage: 'complete' })
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
@@ -482,7 +505,6 @@ export function CampaignBuilderWizard() {
       stages: {
         base: 'running',
         orchestration: 'pending',
-        pattern: 'pending',
         execution: 'pending',
         merging: 'pending'
       }
@@ -495,18 +517,11 @@ export function CampaignBuilderWizard() {
         if (data?.blueprint_progress) {
           const progress = data.blueprint_progress
 
-          // Determine pattern stage based on orchestration progress
-          // Pattern runs in parallel with orchestration, so it should follow orchestration state
-          const patternStage = progress.orchestration === 'running' || progress.orchestration === 'completed'
-            ? progress.orchestration
-            : 'pending'
-
           setBlueprintProgress({
             currentStage: getCurrentProgressStage(progress),
             stages: {
               base: progress.base || 'pending',
               orchestration: progress.orchestration || 'pending',
-              pattern: patternStage,
               execution: progress.execution || 'pending',
               merging: progress.merging || 'pending'
             }
@@ -635,7 +650,6 @@ export function CampaignBuilderWizard() {
         stages: {
           base: 'completed',
           orchestration: 'completed',
-          pattern: 'completed',
           execution: 'completed',
           merging: 'completed'
         }
@@ -672,7 +686,6 @@ export function CampaignBuilderWizard() {
         stages: {
           base: 'failed',
           orchestration: 'failed',
-          pattern: 'failed',
           execution: 'failed',
           merging: 'failed'
         }
@@ -918,8 +931,16 @@ export function CampaignBuilderWizard() {
                 <div className="space-y-4">
                   {/* Analysis Stage */}
                   <div className="flex items-center gap-4">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center bg-blue-600 animate-pulse">
-                      <span className="text-white">⋯</span>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      positioningProgress.stage === 'complete' || positioningProgress.stage === 'framing' || positioningProgress.stage === 'generation'
+                        ? 'bg-emerald-600'
+                        : positioningProgress.stage === 'analysis'
+                        ? 'bg-blue-600 animate-pulse'
+                        : 'bg-zinc-700'
+                    }`}>
+                      <span className="text-white">
+                        {positioningProgress.stage === 'complete' || positioningProgress.stage === 'framing' || positioningProgress.stage === 'generation' ? '✓' : positioningProgress.stage === 'analysis' ? '⋯' : '○'}
+                      </span>
                     </div>
                     <div className="flex-1">
                       <div className="font-medium text-white">Analyzing Research Data</div>
@@ -929,8 +950,16 @@ export function CampaignBuilderWizard() {
 
                   {/* Strategic Framing */}
                   <div className="flex items-center gap-4">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-700">
-                      <span className="text-gray-400">○</span>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      positioningProgress.stage === 'complete' || positioningProgress.stage === 'generation'
+                        ? 'bg-emerald-600'
+                        : positioningProgress.stage === 'framing'
+                        ? 'bg-blue-600 animate-pulse'
+                        : 'bg-zinc-700'
+                    }`}>
+                      <span className="text-white">
+                        {positioningProgress.stage === 'complete' || positioningProgress.stage === 'generation' ? '✓' : positioningProgress.stage === 'framing' ? '⋯' : '○'}
+                      </span>
                     </div>
                     <div className="flex-1">
                       <div className="font-medium text-white">Strategic Framing</div>
@@ -940,8 +969,16 @@ export function CampaignBuilderWizard() {
 
                   {/* Option Generation */}
                   <div className="flex items-center gap-4">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-700">
-                      <span className="text-gray-400">○</span>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      positioningProgress.stage === 'complete'
+                        ? 'bg-emerald-600'
+                        : positioningProgress.stage === 'generation'
+                        ? 'bg-blue-600 animate-pulse'
+                        : 'bg-zinc-700'
+                    }`}>
+                      <span className="text-white">
+                        {positioningProgress.stage === 'complete' ? '✓' : positioningProgress.stage === 'generation' ? '⋯' : '○'}
+                      </span>
                     </div>
                     <div className="flex-1">
                       <div className="font-medium text-white">Creating Options</div>
@@ -951,7 +988,12 @@ export function CampaignBuilderWizard() {
                 </div>
 
                 <div className="mt-6 text-center text-sm text-gray-500">
-                  <p>Expected time: ~30-45 seconds</p>
+                  <p>Currently: <span className="text-blue-400">
+                    {positioningProgress.stage === 'analysis' ? 'Analyzing research data' :
+                     positioningProgress.stage === 'framing' ? 'Strategic framing' :
+                     positioningProgress.stage === 'generation' ? 'Creating options' : 'Complete'}
+                  </span></p>
+                  <p className="mt-2">Expected time: ~30-45 seconds</p>
                 </div>
               </div>
             </div>
@@ -1189,7 +1231,7 @@ export function CampaignBuilderWizard() {
                     </div>
                   </div>
 
-                  {/* Orchestration (Parallel with Pattern) */}
+                  {/* Orchestration (includes patterns) */}
                   <div className="flex items-center gap-4">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                       blueprintProgress.stages.orchestration === 'completed' ? 'bg-emerald-600' :
@@ -1202,26 +1244,8 @@ export function CampaignBuilderWizard() {
                        blueprintProgress.stages.orchestration === 'failed' ? '✗' : '○'}
                     </div>
                     <div className="flex-1">
-                      <div className="font-medium text-white">Four-Pillar Orchestration Strategy</div>
-                      <div className="text-sm text-gray-400">Owned Actions • Relationships • Events • Media Engagement</div>
-                    </div>
-                  </div>
-
-                  {/* Pattern (Parallel) */}
-                  <div className="flex items-center gap-4">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      blueprintProgress.stages.pattern === 'completed' ? 'bg-emerald-600' :
-                      blueprintProgress.stages.pattern === 'running' ? 'bg-blue-600 animate-pulse' :
-                      blueprintProgress.stages.pattern === 'failed' ? 'bg-red-600' :
-                      'bg-zinc-700'
-                    }`}>
-                      {blueprintProgress.stages.pattern === 'completed' ? '✓' :
-                       blueprintProgress.stages.pattern === 'running' ? '⋯' :
-                       blueprintProgress.stages.pattern === 'failed' ? '✗' : '○'}
-                    </div>
-                    <div className="flex-1">
-                      <div className="font-medium text-white">Pattern Guidance</div>
-                      <div className="text-sm text-gray-400">CASCADE • CONVERGENCE • SIEGE pattern strategies</div>
+                      <div className="font-medium text-white">Stakeholder Orchestration Strategy</div>
+                      <div className="text-sm text-gray-400">Four-Pillar Orchestration • Pattern Analysis • Influence Levers</div>
                     </div>
                   </div>
 
@@ -1266,7 +1290,7 @@ export function CampaignBuilderWizard() {
                   {blueprintProgress.currentStage && (
                     <p>Currently running: <span className="text-blue-400">{blueprintProgress.currentStage}</span></p>
                   )}
-                  <p className="mt-2">Expected time: ~90-110 seconds</p>
+                  <p className="mt-2">Expected time: ~60-90 seconds</p>
                 </div>
               </div>
             </div>

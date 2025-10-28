@@ -42,19 +42,28 @@ serve(async (req) => {
         const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.39.3')
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-        const progress = {
-          base: stage === 'base' ? status : (stage === 'orchestration' || stage === 'execution' || stage === 'merging' ? 'completed' : 'pending'),
-          orchestration: stage === 'orchestration' ? status : (stage === 'execution' || stage === 'merging' ? 'completed' : 'pending'),
-          execution: stage === 'execution' ? status : (stage === 'merging' ? 'completed' : 'pending'),
-          merging: stage === 'merging' ? status : 'pending'
-        }
+        // Define stage order
+        const stageOrder = ['base', 'orchestration', 'execution', 'merging']
+        const currentIndex = stageOrder.indexOf(stage)
+
+        // Build progress object: completed for past stages, current status for current stage, pending for future stages
+        const progress: any = {}
+        stageOrder.forEach((s, idx) => {
+          if (idx < currentIndex) {
+            progress[s] = 'completed'
+          } else if (idx === currentIndex) {
+            progress[s] = status
+          } else {
+            progress[s] = 'pending'
+          }
+        })
 
         await supabase
           .from('campaign_builder_sessions')
           .update({ blueprint_progress: progress })
           .eq('id', payload.sessionId)
 
-        console.log(`📊 Progress updated: ${stage} = ${status}`)
+        console.log(`📊 Progress updated: ${stage} = ${status}`, progress)
       } catch (err) {
         console.error('Progress update failed (non-critical):', err)
       }

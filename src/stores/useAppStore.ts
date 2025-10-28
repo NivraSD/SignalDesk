@@ -112,7 +112,40 @@ export const useAppStore = create<AppState>()(
 
       // Actions
       setUser: (user: any) => set({ user }),
-      setOrganization: (organization: any) => set({ organization }),
+
+      setOrganization: (organization: Organization | null) => {
+        const currentOrg = get().organization
+
+        // Prevent unnecessary reloads if same org
+        if (currentOrg?.id === organization?.id) {
+          console.log('⚠️ Same organization selected, skipping reload')
+          return
+        }
+
+        console.log(`🔄 Switching from ${currentOrg?.name || 'none'} to ${organization?.name || 'none'}`)
+
+        // Clear all org-specific state
+        set({
+          organization,
+          intelligenceData: null,
+          opportunities: [],
+          activeCampaigns: [],
+          error: null
+        })
+
+        // Emit org-change event for components to listen to
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('organization-changed', {
+            detail: {
+              from: currentOrg,
+              to: organization
+            }
+          }))
+        }
+
+        console.log(`✅ Organization switched to ${organization?.name}`)
+      },
+
       setFramework: (framework: any) => set({ framework }),
       
       loadIntelligence: async () => {

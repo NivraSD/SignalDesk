@@ -46,6 +46,23 @@ export default function NIVPanel({ embedded = false, onCampaignGenerated, onOppo
     }])
   }, [])
 
+  // Clear conversation when organization changes
+  useEffect(() => {
+    if (organization) {
+      console.log(`🔄 NIVPanel: Organization changed to ${organization.name}, clearing conversation`)
+      setMessages([{
+        id: '1',
+        role: 'niv',
+        content: `Hi, I'm NIV - how can I help you with ${organization.name} today?`,
+        timestamp: new Date(),
+        type: 'text'
+      }])
+      setInput('')
+      setIsProcessing(false)
+      setCurrentTool(null)
+    }
+  }, [organization?.id])
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }

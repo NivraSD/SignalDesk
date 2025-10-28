@@ -116,6 +116,23 @@ export default function ExecuteTabProduction({
   // Use ref to maintain content across re-renders
   const currentContentRef = useRef<ContentItem | null>(null)
 
+  // Clear state when organization changes
+  useEffect(() => {
+    if (organization) {
+      console.log(`🔄 ExecuteTabProduction: Organization changed to ${organization.name}, clearing state`)
+      setSelectedContentType('')
+      setGeneratedContent([])
+      setShowWorkspace(false)
+      setCurrentContent(null)
+      currentContentRef.current = null
+      setQueueItems([])
+      setShowQueue(false)
+      setShowLibrary(false)
+      setShowPrompts(false)
+      setExpandedCategories(new Set<string>())
+    }
+  }, [organization?.id])
+
   // Listen for openInExecute events from Memory Vault
   useEffect(() => {
     const handleOpenInExecute = (event: CustomEvent) => {

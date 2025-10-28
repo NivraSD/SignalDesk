@@ -112,7 +112,24 @@ export default function CrisisCommandCenter() {
   const [potentialCrisisAlerts, setPotentialCrisisAlerts] = useState<any[]>([])
   const [hasActiveCrisisAlerts, setHasActiveCrisisAlerts] = useState(false)
 
-  // Load active crisis on mount
+  // Clear state when organization changes
+  useEffect(() => {
+    if (organization) {
+      console.log(`🔄 CrisisCommandCenter: Organization changed to ${organization.name}, clearing state`)
+      setActiveCrisis(null)
+      setActiveView('dashboard')
+      setLoading(false)
+      setShowPlanGenerator(false)
+      setShowPlanViewer(false)
+      setShowScenarioSelector(false)
+      setShowDeactivateConfirm(false)
+      setElapsedTime('')
+      setPotentialCrisisAlerts([])
+      setHasActiveCrisisAlerts(false)
+    }
+  }, [organization?.id])
+
+  // Load active crisis on mount and when org changes
   useEffect(() => {
     if (organization) {
       loadActiveCrisis()

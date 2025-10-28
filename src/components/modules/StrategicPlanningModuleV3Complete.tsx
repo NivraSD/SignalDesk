@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabase/client'
 import { ContentViewerModal } from '@/components/execution/ContentViewerModal'
 import { buildGenerationContext } from '@/lib/memoryVaultIntegration'
 import { BlueprintV3Presentation } from '@/components/campaign-builder/BlueprintV3Presentation'
+import { useAppStore } from '@/stores/useAppStore'
 
 interface BlueprintData {
   overview?: {
@@ -87,6 +88,7 @@ export default function StrategicPlanningModuleV3Complete({
   sessionId: initialSessionId,
   orgId: initialOrgId
 }: StrategicPlanningModuleV3Props) {
+  const { organization } = useAppStore()
   const [viewMode, setViewMode] = useState<ViewMode>('execution')
   const [contentItems, setContentItems] = useState<ContentItem[]>([])
   const [expandedPriorities, setExpandedPriorities] = useState<Set<number>>(new Set([1]))
@@ -108,16 +110,40 @@ export default function StrategicPlanningModuleV3Complete({
   const blueprint = currentBlueprint
   const orgId = currentOrgId
 
-  // Load available campaigns on mount
+  // Update orgId when organization changes in global store
+  useEffect(() => {
+    if (organization?.id && organization.id !== currentOrgId) {
+      console.log(`🔄 Strategic Planning: Organization changed from ${currentOrgId} to ${organization.id}, clearing and reloading`)
+      setCurrentOrgId(organization.id)
+
+      // Clear all campaign-specific state
+      setCurrentBlueprint(null as any)
+      setCurrentSessionId('')
+      setContentItems([])
+      setAvailableCampaigns([])
+      setError(null)
+      setLoading(false)
+      setViewMode('execution')
+      setExpandedPriorities(new Set([1]))
+      setExpandedStakeholders(new Set())
+      setGenerating(new Set())
+      setViewingItem(null)
+      setEditingResultFor(null)
+
+      // Will trigger campaign reload via the existing useEffect on currentOrgId
+    }
+  }, [organization?.id])
+
+  // Load available campaigns on mount and when orgId changes
   useEffect(() => {
     loadAvailableCampaigns()
-  }, [initialOrgId])
+  }, [currentOrgId])
 
   const loadAvailableCampaigns = async () => {
     const { data, error } = await supabase
       .from('campaign_builder_sessions')
       .select('id, campaign_goal, created_at, blueprint')
-      .eq('org_id', initialOrgId)
+      .eq('org_id', currentOrgId)
       .not('blueprint', 'is', null)
       .order('created_at', { ascending: false })
       .limit(10)
@@ -190,6 +216,13 @@ export default function StrategicPlanningModuleV3Complete({
   }
 
   const initializeItemsFromBlueprint = async () => {
+    // Guard against null blueprint
+    if (!blueprint) {
+      console.log('⚠️ Blueprint is null, cannot initialize items')
+      setLoading(false)
+      return
+    }
+
     const items = parseBlueprint(blueprint)
 
     // Double-check that items don't already exist before inserting
@@ -272,7 +305,10 @@ export default function StrategicPlanningModuleV3Complete({
     setLoading(false)
   }
 
-  const parseBlueprint = (blueprint: BlueprintData): ContentItem[] => {
+  const parseBlueprint = (blueprint: BlueprintData | null): ContentItem[] => {
+    if (!blueprint) {
+      return []
+    }
     const items: ContentItem[] = []
     const plans = blueprint.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans || []
 
@@ -926,6 +962,22 @@ export default function StrategicPlanningModuleV3Complete({
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <p className="text-white font-semibold mb-2">Error</p>
           <p className="text-gray-400 text-sm">{error}</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!blueprint || !sessionId) {
+    return (
+      <div className="h-full flex items-center justify-center bg-gray-900">
+        <div className="text-center">
+          <Target className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+          <p className="text-white font-semibold mb-2">No Campaign Selected</p>
+          <p className="text-gray-400 text-sm">
+            {availableCampaigns.length > 0
+              ? 'Select a campaign from the dropdown above or create a new one in Campaign Builder'
+              : 'Create a campaign in Campaign Builder to get started'}
+          </p>
         </div>
       </div>
     )
