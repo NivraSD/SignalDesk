@@ -53,14 +53,14 @@ export async function PUT(request: Request) {
 
     console.log('✅ Current org settings:', currentOrg?.settings)
 
-    // Update organization with URL in settings JSONB field
+    // Update organization - store size in settings JSONB along with url
     const updateData = {
       name: name.trim(),
       industry: industry?.trim() || null,
-      size: size || null,
       settings: {
         ...(currentOrg?.settings || {}),
-        url: domain.trim()
+        url: domain.trim(),
+        size: size || null
       },
       updated_at: new Date().toISOString()
     }
@@ -88,6 +88,7 @@ export async function PUT(request: Request) {
     const flatOrg = {
       ...data,
       url: data.settings?.url,
+      size: data.settings?.size,
       description: data.settings?.description
     }
 

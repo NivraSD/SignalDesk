@@ -35,6 +35,7 @@ export async function GET(req: NextRequest) {
       const flatOrg = {
         ...org,
         url: org.settings?.url,
+        size: org.settings?.size,
         description: org.settings?.description
       }
 
@@ -62,6 +63,7 @@ export async function GET(req: NextRequest) {
     const flatOrgs = organizations?.map(org => ({
       ...org,
       url: org.settings?.url,
+      size: org.settings?.size,
       description: org.settings?.description
     })) || []
 
@@ -138,6 +140,7 @@ export async function POST(req: NextRequest) {
     const flatOrg = {
       ...org,
       url: org.settings?.url,
+      size: org.settings?.size,
       description: org.settings?.description
     }
 
