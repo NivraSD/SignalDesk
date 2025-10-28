@@ -36,9 +36,29 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // If no targets exist, return default empty structure
+    if (!data) {
+      return NextResponse.json({
+        success: true,
+        geo_targets: {
+          organization_id: organizationId,
+          service_lines: [],
+          geographic_focus: [],
+          industry_verticals: [],
+          priority_queries: [],
+          geo_competitors: [],
+          query_types: ['comparison', 'competitive', 'transactional'],
+          target_platforms: ['claude', 'gemini', 'chatgpt', 'perplexity'],
+          positioning_goals: {},
+          negative_keywords: [],
+          active: true
+        }
+      })
+    }
+
     return NextResponse.json({
       success: true,
-      geo_targets: data || null
+      geo_targets: data
     })
   } catch (error: any) {
     console.error('GET /api/organizations/geo-targets error:', error)

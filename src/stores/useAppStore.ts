@@ -13,7 +13,9 @@ interface User {
 interface Organization {
   id: string
   name: string
+  domain?: string
   industry?: string
+  size?: string
   config?: any
 }
 

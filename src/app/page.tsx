@@ -9,7 +9,7 @@ import { useAppStore } from '@/stores/useAppStore'
 import InfiniteCanvas from '@/components/canvas/InfiniteCanvas'
 import IntelligenceModule from '@/components/modules/IntelligenceModule'
 import OrganizationOnboarding from '@/components/onboarding/OrganizationOnboarding'
-import TargetManagement from '@/components/targets/TargetManagement'
+import OrganizationSettings from '@/components/settings/OrganizationSettings'
 import OrgManagementDashboard from '@/components/admin/OrgManagementDashboard'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -30,7 +30,7 @@ export default function Dashboard() {
   const [showProjectMenu, setShowProjectMenu] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
-  const [showTargetManagement, setShowTargetManagement] = useState(false)
+  const [showOrgSettings, setShowOrgSettings] = useState(false)
   const [showOrgDashboard, setShowOrgDashboard] = useState(false)
   const [currentTime, setCurrentTime] = useState<string>('')
   const [openComponents, setOpenComponents] = useState<string[]>([])
@@ -57,7 +57,9 @@ export default function Dashboard() {
           setOrganization({
             id: firstOrg.id,
             name: firstOrg.name,
+            domain: firstOrg.domain,
             industry: firstOrg.industry,
+            size: firstOrg.size,
             config: {}
           })
         }
@@ -92,7 +94,9 @@ export default function Dashboard() {
           setOrganization({
             id: remainingOrgs[0].id,
             name: remainingOrgs[0].name,
+            domain: remainingOrgs[0].domain,
             industry: remainingOrgs[0].industry,
+            size: remainingOrgs[0].size,
             config: {}
           })
         } else {
@@ -615,12 +619,12 @@ export default function Dashboard() {
                         <button
                           onClick={() => {
                             setShowProjectMenu(false)
-                            setShowTargetManagement(true)
+                            setShowOrgSettings(true)
                           }}
                           className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm text-white flex items-center gap-2"
                         >
-                          <Target className="w-4 h-4" />
-                          Manage Targets
+                          <Building2 className="w-4 h-4" />
+                          Organization Settings
                         </button>
                       )}
                       <button
@@ -763,13 +767,17 @@ export default function Dashboard() {
         )}
       </AnimatePresence>
 
-      {/* Target Management Modal */}
+      {/* Organization Settings Modal */}
       {organization && (
-        <TargetManagement
-          isOpen={showTargetManagement}
-          onClose={() => setShowTargetManagement(false)}
+        <OrganizationSettings
+          isOpen={showOrgSettings}
+          onClose={() => setShowOrgSettings(false)}
           organizationId={organization.id}
           organizationName={organization.name}
+          onUpdate={() => {
+            // Reload organization data after update
+            loadOrganizations()
+          }}
         />
       )}
 
@@ -793,10 +801,12 @@ export default function Dashboard() {
           setOrganization({
             id: org.id,
             name: org.name,
+            domain: org.domain,
             industry: org.industry,
+            size: org.size,
             config: {}
           })
-          setShowTargetManagement(true)
+          setShowOrgSettings(true)
         }}
         onDeleteOrg={(org) => {
           setOrgToDelete(org)
