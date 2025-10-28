@@ -29,7 +29,8 @@ import {
   Instagram,
   Hash,
   ExternalLink,
-  RefreshCw
+  RefreshCw,
+  Globe
 } from 'lucide-react'
 import { IntelligenceService } from '@/lib/services/intelligenceService'
 import { supabase } from '@/lib/supabase/client'
@@ -61,7 +62,7 @@ interface PipelineStage {
 
 export default function IntelligenceModule() {
   const { organization } = useAppStore()
-  const [activeTab, setActiveTab] = useState<'synthesis' | 'social' | 'realtime' | 'predictions'>('synthesis')
+  const [activeTab, setActiveTab] = useState<'synthesis' | 'social' | 'realtime' | 'predictions' | 'geo'>('synthesis')
   const [activePromptCategory, setActivePromptCategory] = useState('quick-wins')
   const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -84,6 +85,12 @@ export default function IntelligenceModule() {
   const [realtimeAlerts, setRealtimeAlerts] = useState<any[]>([])
   const [routeToOpportunities, setRouteToOpportunities] = useState(true)
   const [routeToCrisis, setRouteToCrisis] = useState(true)
+
+  // GEO Monitor state
+  const [geoLoading, setGeoLoading] = useState(false)
+  const [geoResults, setGeoResults] = useState<any>(null)
+  const [geoSignals, setGeoSignals] = useState<any[]>([])
+  const [geoError, setGeoError] = useState<string | null>(null)
 
   // Prompt categories with icons
   const promptCategories = [
@@ -403,6 +410,78 @@ export default function IntelligenceModule() {
     }
   }
 
+  const runGeoMonitor = async () => {
+    if (!organization) return
+
+    setGeoLoading(true)
+    setGeoError(null)
+    setGeoResults(null)
+
+    try {
+      console.log('🌍 Starting GEO Intelligence Monitor for', organization.name)
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/geo-intelligence-monitor`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({
+          organization_id: organization.id,
+          organization_name: organization.name,
+          industry: organization.industry
+        })
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('GEO monitor error response:', errorText)
+        throw new Error(`GEO monitor failed: ${response.status}`)
+      }
+
+      const data = await response.json()
+      console.log('GEO monitor response:', data)
+
+      if (!data.success) {
+        throw new Error(data.error || 'GEO monitor returned unsuccessful response')
+      }
+
+      setGeoResults(data)
+
+      // Load GEO signals from database
+      await loadGeoSignals()
+
+      console.log('✅ GEO monitor complete')
+      console.log(`   - ${data.summary?.total_queries || 0} queries tested`)
+      console.log(`   - ${data.summary?.total_signals || 0} signals generated`)
+      console.log(`   - ${data.summary?.critical_signals || 0} critical signals`)
+    } catch (error) {
+      console.error('GEO monitor error:', error)
+      setGeoError(error instanceof Error ? error.message : 'GEO monitor failed')
+    } finally {
+      setGeoLoading(false)
+    }
+  }
+
+  const loadGeoSignals = async () => {
+    if (!organization) return
+
+    try {
+      const { data, error } = await supabase
+        .from('geo_intelligence')
+        .select('*')
+        .eq('organization_id', organization.id)
+        .order('created_at', { ascending: false })
+        .limit(50)
+
+      if (error) throw error
+
+      setGeoSignals(data || [])
+    } catch (error) {
+      console.error('Error loading GEO signals:', error)
+    }
+  }
+
   // Clear synthesis when organization changes
   useEffect(() => {
     if (organization?.id) {
@@ -414,6 +493,8 @@ export default function IntelligenceModule() {
       setSocialSignals([])
       setRealtimeResults(null)
       setRealtimeAlerts([])
+      setGeoResults(null)
+      setGeoError(null)
 
       // Load latest synthesis from database
       IntelligenceService.getLatestSynthesis(organization.id).then(synthesis => {
@@ -429,6 +510,9 @@ export default function IntelligenceModule() {
         console.error('Failed to load synthesis:', error)
         setExecutiveSynthesis(null)
       })
+
+      // Load GEO signals
+      loadGeoSignals()
     }
   }, [organization?.id])
 
@@ -579,6 +663,17 @@ export default function IntelligenceModule() {
             >
               <AlertTriangle className="w-4 h-4" />
               Predictions
+            </button>
+            <button
+              onClick={() => setActiveTab('geo')}
+              className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+                activeTab === 'geo'
+                  ? 'bg-purple-500/20 text-purple-400'
+                  : 'bg-gray-800 hover:bg-gray-700 text-gray-400'
+              }`}
+            >
+              <Globe className="w-4 h-4" />
+              GEO Monitor
             </button>
           </div>
         </div>
@@ -1082,6 +1177,237 @@ export default function IntelligenceModule() {
                 <div className="text-center py-12">
                   <AlertTriangle className="w-16 h-16 text-gray-600 mx-auto mb-4" />
                   <p className="text-gray-400">Please select an organization to view predictions</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* GEO Monitor Tab */}
+        {activeTab === 'geo' && (
+          <div className="p-6 overflow-y-auto h-full">
+            <div className="max-w-6xl mx-auto">
+              {/* Header */}
+              <div className="bg-gray-800/50 rounded-lg p-6 mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-green-400 flex items-center gap-2">
+                      <Globe className="w-6 h-6" />
+                      GEO Intelligence Monitor
+                    </h3>
+                    <p className="text-gray-300 mt-2">
+                      Test AI visibility across Claude, Gemini, and ChatGPT. Extract competitor schemas and get actionable GEO recommendations.
+                    </p>
+                  </div>
+                  <button
+                    onClick={runGeoMonitor}
+                    disabled={geoLoading || !organization}
+                    className={`px-6 py-3 rounded-lg transition-all flex items-center gap-2 font-medium ${
+                      geoLoading
+                        ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                        : 'bg-green-500 hover:bg-green-600 text-white'
+                    }`}
+                  >
+                    {geoLoading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Running Monitor...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-5 h-5" />
+                        Run GEO Monitor
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Info box */}
+                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mt-4">
+                  <div className="flex items-start gap-3">
+                    <Info className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-gray-300">
+                      <p className="font-medium text-blue-400 mb-1">What is GEO?</p>
+                      <p>Generative Experience Optimization (GEO) tests how AI platforms like Claude, Gemini, and ChatGPT respond to queries about your brand. It monitors competitor schemas and provides recommendations to improve your AI visibility.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Results Summary */}
+              {geoResults && !geoLoading && (
+                <div className="grid grid-cols-4 gap-4 mb-6">
+                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                    <div className="text-blue-400 text-3xl font-bold">{geoResults.summary?.total_queries || 0}</div>
+                    <div className="text-gray-400 text-sm mt-1">Queries Tested</div>
+                  </div>
+                  <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                    <div className="text-green-400 text-3xl font-bold">{geoResults.summary?.claude_mentions || 0}</div>
+                    <div className="text-gray-400 text-sm mt-1">Claude Mentions</div>
+                  </div>
+                  <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
+                    <div className="text-purple-400 text-3xl font-bold">{geoResults.summary?.gemini_mentions || 0}</div>
+                    <div className="text-gray-400 text-sm mt-1">Gemini Mentions</div>
+                  </div>
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                    <div className="text-red-400 text-3xl font-bold">{geoResults.summary?.critical_signals || 0}</div>
+                    <div className="text-gray-400 text-sm mt-1">Critical Signals</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Loading State */}
+              {geoLoading && (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-green-400" />
+                  <span className="ml-3 text-gray-400">Testing AI visibility...</span>
+                </div>
+              )}
+
+              {/* Error State */}
+              {geoError && !geoLoading && (
+                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-6 mb-6">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-red-400 font-semibold mb-1">Error Running GEO Monitor</h4>
+                      <p className="text-gray-300 text-sm">{geoError}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* GEO Signals */}
+              {!geoLoading && geoSignals.length > 0 && (
+                <div className="space-y-4">
+                  <h4 className="text-lg font-semibold text-gray-300 mb-4 flex items-center gap-2">
+                    <Lightbulb className="w-5 h-5 text-green-400" />
+                    Intelligence Signals ({geoSignals.length})
+                  </h4>
+
+                  {geoSignals.map((signal, idx) => {
+                    const priorityColors = {
+                      critical: 'bg-red-500/10 border-red-500/30',
+                      high: 'bg-orange-500/10 border-orange-500/30',
+                      medium: 'bg-yellow-500/10 border-yellow-500/30',
+                      low: 'bg-blue-500/10 border-blue-500/30'
+                    }
+
+                    const platformIcons: Record<string, string> = {
+                      claude: '🤖',
+                      gemini: '🌟',
+                      chatgpt: '💬',
+                      perplexity: '🔮',
+                      firecrawl: '🔥'
+                    }
+
+                    const signalTypeLabels: Record<string, string> = {
+                      ai_visibility: 'AI Visibility',
+                      visibility_gap: 'Visibility Gap',
+                      competitor_update: 'Competitor Schema',
+                      schema_gap: 'Schema Gap',
+                      performance_drop: 'Performance Drop',
+                      new_opportunity: 'New Opportunity'
+                    }
+
+                    return (
+                      <div
+                        key={signal.id}
+                        className={`rounded-lg p-5 border ${priorityColors[signal.priority as keyof typeof priorityColors] || priorityColors.medium}`}
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl">{platformIcons[signal.platform] || '🌐'}</span>
+                            <div>
+                              <h5 className="text-white font-semibold flex items-center gap-2">
+                                {signalTypeLabels[signal.signal_type] || signal.signal_type}
+                                <span className="text-xs px-2 py-1 rounded bg-gray-900/50 uppercase font-bold text-gray-300">
+                                  {signal.priority}
+                                </span>
+                              </h5>
+                              <div className="text-sm text-gray-400 mt-1 capitalize">
+                                Platform: {signal.platform}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {new Date(signal.created_at).toLocaleDateString()}
+                          </div>
+                        </div>
+
+                        {/* Signal Data */}
+                        {signal.data && (
+                          <div className="bg-gray-900/50 rounded p-3 mb-3">
+                            <div className="text-sm space-y-1">
+                              {signal.data.query && (
+                                <div>
+                                  <span className="text-gray-400">Query:</span>{' '}
+                                  <span className="text-white">{signal.data.query}</span>
+                                </div>
+                              )}
+                              {signal.data.mentioned !== undefined && (
+                                <div>
+                                  <span className="text-gray-400">Mentioned:</span>{' '}
+                                  <span className={signal.data.mentioned ? 'text-green-400' : 'text-red-400'}>
+                                    {signal.data.mentioned ? 'Yes' : 'No'}
+                                  </span>
+                                  {signal.data.position && (
+                                    <span className="text-gray-400 ml-2">(Position: {signal.data.position})</span>
+                                  )}
+                                </div>
+                              )}
+                              {signal.data.context && (
+                                <div>
+                                  <span className="text-gray-400">Context:</span>{' '}
+                                  <span className="text-gray-300 text-xs italic">"{signal.data.context}"</span>
+                                </div>
+                              )}
+                              {signal.data.schemas_found && (
+                                <div>
+                                  <span className="text-gray-400">Schemas Found:</span>{' '}
+                                  <span className="text-white">{signal.data.schemas_found}</span>
+                                </div>
+                              )}
+                              {signal.data.schema_types && signal.data.schema_types.length > 0 && (
+                                <div>
+                                  <span className="text-gray-400">Schema Types:</span>{' '}
+                                  <span className="text-white">{signal.data.schema_types.join(', ')}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Recommendation */}
+                        {signal.recommendation && signal.recommendation.action && (
+                          <div className="bg-green-500/10 rounded p-3">
+                            <div className="flex items-start gap-2">
+                              <Lightbulb className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
+                              <div className="text-sm">
+                                <div className="font-medium text-green-400 mb-1">
+                                  Recommendation: {signal.recommendation.action}
+                                </div>
+                                {signal.recommendation.reasoning && (
+                                  <div className="text-gray-300">{signal.recommendation.reasoning}</div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* Empty State */}
+              {!geoLoading && !geoError && geoSignals.length === 0 && (
+                <div className="text-center py-12">
+                  <Globe className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                  <p className="text-gray-400">Click "Run GEO Monitor" to test AI visibility</p>
+                  <p className="text-gray-500 text-sm mt-2">
+                    Tests Claude, Gemini, and ChatGPT visibility for {organization?.name || 'your organization'}
+                  </p>
                 </div>
               )}
             </div>
