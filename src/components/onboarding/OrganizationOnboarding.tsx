@@ -51,10 +51,22 @@ export default function OrganizationOnboarding({
   const [newTopic, setNewTopic] = useState('')
   const [newStakeholder, setNewStakeholder] = useState('')
 
-  // Step 5: Memory Vault
+  // Step 5: GEO Targets
+  const [serviceLines, setServiceLines] = useState<string[]>([])
+  const [geographicFocus, setGeographicFocus] = useState<string[]>([])
+  const [industryVerticals, setIndustryVerticals] = useState<string[]>([])
+  const [priorityQueries, setPriorityQueries] = useState<string[]>([])
+  const [geoCompetitors, setGeoCompetitors] = useState<string[]>([])
+  const [newServiceLine, setNewServiceLine] = useState('')
+  const [newGeoFocus, setNewGeoFocus] = useState('')
+  const [newIndustryVertical, setNewIndustryVertical] = useState('')
+  const [newPriorityQuery, setNewPriorityQuery] = useState('')
+  const [newGeoCompetitor, setNewGeoCompetitor] = useState('')
+
+  // Step 6: Memory Vault
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
 
-  const totalSteps = 5
+  const totalSteps = 6
 
   const handleBasicInfoSubmit = async () => {
     if (!orgName || !website) {
@@ -191,7 +203,34 @@ export default function OrganizationOnboarding({
         // with user customizations if needed
       }
 
-      // 4. Upload Memory Vault files (if any)
+      // 4. Save GEO targets (if configured)
+      if (serviceLines.length > 0 || geographicFocus.length > 0 || industryVerticals.length > 0 || priorityQueries.length > 0) {
+        console.log('🎯 Saving GEO targets...')
+
+        const geoTargetsResponse = await fetch('/api/organizations/geo-targets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            organization_id: organization.id,
+            service_lines: serviceLines,
+            geographic_focus: geographicFocus,
+            industry_verticals: industryVerticals,
+            priority_queries: priorityQueries,
+            geo_competitors: geoCompetitors.length > 0 ? geoCompetitors : Array.from(selectedCompetitors),
+            active: true
+          })
+        })
+
+        const geoTargetsData = await geoTargetsResponse.json()
+
+        if (!geoTargetsData.success) {
+          console.warn('Failed to save GEO targets:', geoTargetsData.error)
+        } else {
+          console.log('✅ GEO targets saved')
+        }
+      }
+
+      // 5. Upload Memory Vault files (if any)
       if (uploadedFiles.length > 0) {
         console.log(`📤 Uploading ${uploadedFiles.length} files to Memory Vault...`)
 
@@ -720,10 +759,265 @@ export default function OrganizationOnboarding({
               </motion.div>
             )}
 
-            {/* Step 5: Memory Vault (Optional) */}
+            {/* Step 5: GEO Targets (Optional) */}
             {step === 5 && (
               <motion.div
                 key="step5"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-6"
+              >
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <Globe className="w-6 h-6 text-cyan-400" />
+                    <h3 className="text-xl font-semibold text-white">GEO Optimization Targets</h3>
+                  </div>
+                  <p className="text-gray-400 text-sm">
+                    Configure how you want to appear in AI platforms like Claude, ChatGPT, and Gemini. These targets will generate intelligent test queries specific to your positioning goals.
+                  </p>
+                  <p className="text-purple-400 text-xs mt-1">
+                    <Sparkles className="w-3 h-3 inline mr-1" />
+                    Optional - Skip if you want to use general industry patterns
+                  </p>
+                </div>
+
+                {/* Service Lines */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Service Lines / Specializations
+                    <span className="text-gray-500 text-xs ml-2">(What you want to be found for)</span>
+                  </label>
+                  {serviceLines.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {serviceLines.map((line, idx) => (
+                        <div
+                          key={idx}
+                          className="px-3 py-1 bg-cyan-900/30 border border-cyan-700 rounded-full text-sm text-cyan-300 flex items-center gap-2"
+                        >
+                          {line}
+                          <button
+                            onClick={() => setServiceLines(serviceLines.filter((_, i) => i !== idx))}
+                            className="hover:bg-cyan-800 rounded-full p-0.5"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newServiceLine}
+                      onChange={(e) => setNewServiceLine(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && newServiceLine.trim()) {
+                          setServiceLines([...serviceLines, newServiceLine.trim()])
+                          setNewServiceLine('')
+                        }
+                      }}
+                      placeholder="e.g., Crisis Communications, Litigation PR, M&A Communications"
+                      className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+                    />
+                    <button
+                      onClick={() => {
+                        if (newServiceLine.trim()) {
+                          setServiceLines([...serviceLines, newServiceLine.trim()])
+                          setNewServiceLine('')
+                        }
+                      }}
+                      disabled={!newServiceLine.trim()}
+                      className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Geographic Focus */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Geographic Focus Areas
+                    <span className="text-gray-500 text-xs ml-2">(Where you operate or want visibility)</span>
+                  </label>
+                  {geographicFocus.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {geographicFocus.map((geo, idx) => (
+                        <div
+                          key={idx}
+                          className="px-3 py-1 bg-blue-900/30 border border-blue-700 rounded-full text-sm text-blue-300 flex items-center gap-2"
+                        >
+                          {geo}
+                          <button
+                            onClick={() => setGeographicFocus(geographicFocus.filter((_, i) => i !== idx))}
+                            className="hover:bg-blue-800 rounded-full p-0.5"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newGeoFocus}
+                      onChange={(e) => setNewGeoFocus(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && newGeoFocus.trim()) {
+                          setGeographicFocus([...geographicFocus, newGeoFocus.trim()])
+                          setNewGeoFocus('')
+                        }
+                      }}
+                      placeholder="e.g., Middle East, GCC, Dubai, UAE, Saudi Arabia"
+                      className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                    />
+                    <button
+                      onClick={() => {
+                        if (newGeoFocus.trim()) {
+                          setGeographicFocus([...geographicFocus, newGeoFocus.trim()])
+                          setNewGeoFocus('')
+                        }
+                      }}
+                      disabled={!newGeoFocus.trim()}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Industry Verticals */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Industry Verticals
+                    <span className="text-gray-500 text-xs ml-2">(Industries you serve)</span>
+                  </label>
+                  {industryVerticals.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {industryVerticals.map((vertical, idx) => (
+                        <div
+                          key={idx}
+                          className="px-3 py-1 bg-green-900/30 border border-green-700 rounded-full text-sm text-green-300 flex items-center gap-2"
+                        >
+                          {vertical}
+                          <button
+                            onClick={() => setIndustryVerticals(industryVerticals.filter((_, i) => i !== idx))}
+                            className="hover:bg-green-800 rounded-full p-0.5"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newIndustryVertical}
+                      onChange={(e) => setNewIndustryVertical(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && newIndustryVertical.trim()) {
+                          setIndustryVerticals([...industryVerticals, newIndustryVertical.trim()])
+                          setNewIndustryVertical('')
+                        }
+                      }}
+                      placeholder="e.g., Financial Services, Technology, Energy, Government"
+                      className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
+                    />
+                    <button
+                      onClick={() => {
+                        if (newIndustryVertical.trim()) {
+                          setIndustryVerticals([...industryVerticals, newIndustryVertical.trim()])
+                          setNewIndustryVertical('')
+                        }
+                      }}
+                      disabled={!newIndustryVertical.trim()}
+                      className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Priority Queries */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Priority Queries
+                    <span className="text-gray-500 text-xs ml-2">(Specific searches you want to rank for)</span>
+                  </label>
+                  {priorityQueries.length > 0 && (
+                    <div className="space-y-2 mb-3">
+                      {priorityQueries.map((query, idx) => (
+                        <div
+                          key={idx}
+                          className="px-3 py-2 bg-purple-900/30 border border-purple-700 rounded-lg text-sm text-purple-300 flex items-center justify-between"
+                        >
+                          <span>"{query}"</span>
+                          <button
+                            onClick={() => setPriorityQueries(priorityQueries.filter((_, i) => i !== idx))}
+                            className="hover:bg-purple-800 rounded p-1"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newPriorityQuery}
+                      onChange={(e) => setNewPriorityQuery(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && newPriorityQuery.trim()) {
+                          setPriorityQueries([...priorityQueries, newPriorityQuery.trim()])
+                          setNewPriorityQuery('')
+                        }
+                      }}
+                      placeholder='e.g., "crisis PR agency Middle East", "litigation communications Dubai"'
+                      className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                    />
+                    <button
+                      onClick={() => {
+                        if (newPriorityQuery.trim()) {
+                          setPriorityQueries([...priorityQueries, newPriorityQuery.trim()])
+                          setNewPriorityQuery('')
+                        }
+                      }}
+                      disabled={!newPriorityQuery.trim()}
+                      className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Summary */}
+                <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+                  <div className="text-sm text-gray-400">
+                    <p className="font-medium text-gray-300 mb-2">GEO Targets Summary:</p>
+                    <ul className="space-y-1">
+                      <li>• {serviceLines.length} service lines configured</li>
+                      <li>• {geographicFocus.length} geographic regions</li>
+                      <li>• {industryVerticals.length} industry verticals</li>
+                      <li>• {priorityQueries.length} priority queries</li>
+                      {(serviceLines.length > 0 || geographicFocus.length > 0) && (
+                        <li className="text-cyan-400 mt-2">
+                          ✓ Will generate ~{Math.min(30, (serviceLines.length * geographicFocus.length * 2) + priorityQueries.length)} intelligent test queries
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Step 6: Memory Vault (Optional) */}
+            {step === 6 && (
+              <motion.div
+                key="step6"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}

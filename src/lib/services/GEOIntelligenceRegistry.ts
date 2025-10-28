@@ -26,7 +26,20 @@ interface PlatformPreference {
   optimizationFocus: string[]
 }
 
+interface IndustryPriorities {
+  // What this industry cares about most in AI visibility
+  primary_concerns: string[] // e.g., ["price", "quality", "speed"]
+  positioning_focus: string[] // e.g., ["expertise", "reliability", "innovation"]
+  query_framing: {
+    comparison: string[]  // How to frame comparison queries
+    expertise: string[]   // How to show expertise
+    transactional: string[] // How to frame buying intent
+  }
+  avoid_terms: string[] // Terms to avoid in positioning
+}
+
 interface IndustryGEO {
+  priorities: IndustryPriorities // NEW - What this industry cares about
   schemas: SchemaType[]
   queries: QueryPattern[]
   platforms: PlatformPreference[]
@@ -41,6 +54,16 @@ export class GEOIntelligenceRegistry {
     this.industries = {
       // TECHNOLOGY INDUSTRY
       technology: {
+        priorities: {
+          primary_concerns: ['features', 'integration', 'ease of use', 'pricing', 'support', 'scalability'],
+          positioning_focus: ['innovation', 'reliability', 'technical excellence', 'developer experience'],
+          query_framing: {
+            comparison: ['best {category} for {use_case}', '{product} vs {competitor} features', 'top {category} tools for {team_size}'],
+            expertise: ['how to {task} with {product}', '{product} {advanced_feature} tutorial', '{product} best practices'],
+            transactional: ['{product} pricing plans', '{product} free trial', 'buy {product} for {use_case}']
+          },
+          avoid_terms: ['cheap', 'basic', 'limited', 'outdated']
+        },
         schemas: [
           {
             type: 'SoftwareApplication',
@@ -99,6 +122,16 @@ export class GEOIntelligenceRegistry {
 
       // FINANCE INDUSTRY
       finance: {
+        priorities: {
+          primary_concerns: ['security', 'compliance', 'fees', 'returns', 'transparency', 'reputation'],
+          positioning_focus: ['trust', 'expertise', 'regulatory compliance', 'track record', 'financial stability'],
+          query_framing: {
+            comparison: ['best {service} for {investor_type}', '{product} vs {competitor} fees', 'top rated {financial_service}'],
+            expertise: ['{firm} investment philosophy', '{advisor} credentials', '{service} regulatory compliance'],
+            transactional: ['{product} minimum investment', '{service} account types', 'open {product} account']
+          },
+          avoid_terms: ['risky', 'unregulated', 'guaranteed returns', 'get rich quick']
+        },
         schemas: [
           {
             type: 'FinancialProduct',
@@ -204,6 +237,16 @@ export class GEOIntelligenceRegistry {
 
       // E-COMMERCE & RETAIL
       ecommerce: {
+        priorities: {
+          primary_concerns: ['price', 'quality', 'shipping', 'customer reviews', 'return policy', 'product availability'],
+          positioning_focus: ['value', 'customer experience', 'product selection', 'fast delivery', 'easy returns'],
+          query_framing: {
+            comparison: ['best {product} under ${price}', '{brand} vs {competitor} quality', 'cheapest {category} with free shipping'],
+            expertise: ['{brand} {product_type} guide', 'how to choose {product}', '{product} buying guide'],
+            transactional: ['buy {product}', '{product} on sale', 'where to buy {product}', '{brand} discount code']
+          },
+          avoid_terms: ['overpriced', 'poor quality', 'slow shipping', 'bad customer service']
+        },
         schemas: [
           {
             type: 'Product',
@@ -317,6 +360,16 @@ export class GEOIntelligenceRegistry {
 
       // PROFESSIONAL SERVICES
       professional_services: {
+        priorities: {
+          primary_concerns: ['expertise', 'credentials', 'experience', 'industry knowledge', 'client results', 'reputation'],
+          positioning_focus: ['thought leadership', 'specialization', 'proven track record', 'client testimonials', 'industry recognition'],
+          query_framing: {
+            comparison: ['best {service} firm for {industry}', 'top {specialty} consultants', '{firm} vs {competitor} expertise'],
+            expertise: ['{firm} {specialty} experience', '{service} case studies', '{firm} industry insights'],
+            transactional: ['{service} consultation', 'hire {firm} for {project}', '{service} pricing']
+          },
+          avoid_terms: ['cheap', 'inexperienced', 'generalist', 'junior']
+        },
         schemas: [
           {
             type: 'ProfessionalService',
@@ -866,6 +919,73 @@ export class GEOIntelligenceRegistry {
     }
 
     return stats
+  }
+
+  /**
+   * Get industry-specific priorities for intelligent query generation
+   */
+  getIndustryPriorities(industry: string): IndustryPriorities | null {
+    const data = this.getIndustryGEO(industry)
+    return data?.priorities || null
+  }
+
+  /**
+   * Generate industry-aware query suggestions based on priorities
+   * This helps create more relevant queries than generic patterns
+   */
+  generateIndustryAwareQuerySuggestions(
+    industry: string,
+    organizationName: string,
+    serviceLines: string[] = [],
+    geographicFocus: string[] = []
+  ): string[] {
+    const priorities = this.getIndustryPriorities(industry)
+    if (!priorities) return []
+
+    const suggestions: string[] = []
+
+    // Use industry-specific query framing
+    if (serviceLines.length > 0 && geographicFocus.length > 0) {
+      // Combine service lines with geographic focus
+      serviceLines.slice(0, 3).forEach(service => {
+        geographicFocus.slice(0, 2).forEach(geo => {
+          suggestions.push(`best ${service.toLowerCase()} in ${geo}`)
+          suggestions.push(`${service.toLowerCase()} firm ${geo}`)
+          suggestions.push(`top ${service.toLowerCase()} ${geo}`)
+        })
+      })
+    }
+
+    // Add comparison queries based on industry priorities
+    if (priorities.query_framing.comparison.length > 0) {
+      priorities.query_framing.comparison.slice(0, 3).forEach(template => {
+        const query = template
+          .replace('{organization}', organizationName)
+          .replace('{brand}', organizationName)
+          .replace('{firm}', organizationName)
+          .replace('{product}', organizationName)
+
+        if (!query.includes('{')) { // Only add if all placeholders were replaced
+          suggestions.push(query)
+        }
+      })
+    }
+
+    // Add expertise queries
+    if (priorities.query_framing.expertise.length > 0) {
+      priorities.query_framing.expertise.slice(0, 3).forEach(template => {
+        const query = template
+          .replace('{organization}', organizationName)
+          .replace('{firm}', organizationName)
+          .replace('{brand}', organizationName)
+
+        if (!query.includes('{')) {
+          suggestions.push(query)
+        }
+      })
+    }
+
+    return suggestions.slice(0, 15) // Return top 15 suggestions
   }
 }
 

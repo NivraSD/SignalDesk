@@ -101,12 +101,13 @@ For EACH opportunity you detect, you must provide:
    - thought_leadership: Blog posts, articles, op-eds
    - press_release: Formal announcements
    - email_campaign: Email sequences to customers/prospects
-   - presentation: Slide decks for stakeholders (via Gamma)
    - image: Visual content (social media graphics, Instagram posts)
    - partnership_outreach: Collaboration proposals
    - user_action: Other custom tactics
 
-   DO NOT RECOMMEND: webinars, events, podcasts, videos (platform cannot create these)
+   DO NOT RECOMMEND:
+   - presentation (opportunity itself automatically becomes a Gamma presentation)
+   - webinars, events, podcasts, videos (platform cannot create these)
 
 ====================================================================
 OUTPUT FORMAT (STRICT JSON)
@@ -236,22 +237,23 @@ Return ONLY a JSON array with this EXACT structure:
           "lever_description": "Establish ${organizationName} as go-to expert on security",
           "content_items": [
             {
-              "type": "presentation",
-              "topic": "Enterprise Security Best Practices: Lessons from Recent Breaches",
+              "type": "press_release",
+              "topic": "Enhanced Security Measures and Zero-Breach Track Record",
               "brief": {
-                "angle": "Educational content positioning us as security experts",
+                "angle": "Proactive announcement of security leadership in wake of industry events",
                 "key_points": [
-                  "Common vulnerabilities in enterprise systems",
-                  "Security-first architecture principles",
-                  "Compliance and regulatory requirements",
-                  "How our platform addresses these challenges"
+                  "Our proven security track record and certifications",
+                  "Recent security infrastructure investments",
+                  "Third-party security audit results",
+                  "Commitment to customer data protection",
+                  "Available for media commentary on security best practices"
                 ],
-                "tone": "Educational, authoritative",
-                "length": "15-20 slides",
-                "cta": "Download security assessment template",
-                "target_audience": "IT leaders, security professionals"
+                "tone": "Professional, confident, transparent",
+                "length": "400-500 words",
+                "cta": "Contact us for security briefings and expert interviews",
+                "target_audience": "Media, analysts, prospects"
               },
-              "urgency": "this_week",
+              "urgency": "immediate",
               "estimated_effort": "2 hours"
             }
           ]
@@ -262,17 +264,18 @@ Return ONLY a JSON array with this EXACT structure:
         "immediate": [
           "Social posts on security commitment",
           "Media pitches to tier-1 outlets",
-          "Thought leadership article draft"
+          "Thought leadership article draft",
+          "Press release on security leadership"
         ],
         "this_week": [
           "Publish thought leadership",
           "Send customer email",
-          "Create security presentation"
+          "Distribute press release to media"
         ],
         "this_month": [
-          "Share presentation with prospects",
           "Follow-up with engaged prospects",
-          "Publish security case study"
+          "Publish security case study",
+          "Host security briefing for customers"
         ],
         "ongoing": [
           "Monitor competitor security narrative",
@@ -294,10 +297,10 @@ Return ONLY a JSON array with this EXACT structure:
           "timeframe": "Week 1-2"
         },
         {
-          "metric": "Presentation views and shares",
-          "target": "200+ views, 50+ shares",
-          "measurement_method": "Analytics tracking",
-          "timeframe": "Week 2-3"
+          "metric": "Press release pickup and distribution",
+          "target": "10+ media outlets covering",
+          "measurement_method": "Media monitoring and analytics",
+          "timeframe": "Week 1-2"
         },
         {
           "metric": "Social engagement on security content",

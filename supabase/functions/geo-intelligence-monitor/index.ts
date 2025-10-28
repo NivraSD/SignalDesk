@@ -114,12 +114,22 @@ serve(async (req) => {
     const claudeResults = await testClaudeVisibility(queries, organization_name)
     signals.push(...claudeResults)
 
-    // TEST 2: Gemini AI Visibility (via Vertex AI)
+    // TEST 2: Gemini AI Visibility
     console.log('🌟 Testing Gemini visibility...')
     const geminiResults = await testGeminiVisibility(queries, organization_name)
     signals.push(...geminiResults)
 
-    // TEST 3: Competitor Schema Extraction (via Firecrawl)
+    // TEST 3: Perplexity AI Visibility (Sonar model with sources)
+    console.log('🔮 Testing Perplexity visibility...')
+    const perplexityResults = await testPerplexityVisibility(queries, organization_name)
+    signals.push(...perplexityResults)
+
+    // TEST 4: ChatGPT AI Visibility (GPT-4o)
+    console.log('💬 Testing ChatGPT visibility...')
+    const chatgptResults = await testChatGPTVisibility(queries, organization_name)
+    signals.push(...chatgptResults)
+
+    // TEST 5: Competitor Schema Extraction (via Firecrawl)
     if (orgCompetitors.length > 0) {
       console.log('🔎 Extracting competitor schemas...')
       const schemaResults = await extractCompetitorSchemas(orgCompetitors.slice(0, 3)) // Top 3 competitors
@@ -151,12 +161,71 @@ serve(async (req) => {
       }
     }
 
+    // STEP 4: Generate Executive Synthesis
+    console.log('🎯 Generating executive synthesis from GEO results...')
+    let synthesis = null
+
+    try {
+      // Convert signals to GEOTestResult format for synthesis
+      const geoResults = signals
+        .filter(s => s.type === 'ai_visibility' || s.type === 'visibility_gap')
+        .map(signal => ({
+          query: signal.data?.query || '',
+          intent: 'unknown', // Could enhance this
+          priority: signal.priority,
+          platform: signal.platform,
+          response: signal.data?.context || '',
+          brand_mentioned: signal.data?.mentioned || false,
+          rank: signal.data?.position,
+          context_quality: signal.data?.mentioned ? 'strong' : 'weak',
+          competitors_mentioned: []
+        }))
+
+      // Fetch geo_targets for context
+      const { data: geoTargets } = await supabase
+        .from('geo_targets')
+        .select('*')
+        .eq('organization_id', organization_id)
+        .eq('active', true)
+        .single()
+
+      const synthesisResponse = await fetch(
+        `${supabaseUrl}/functions/v1/geo-executive-synthesis`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            organization_id,
+            organization_name,
+            industry: orgIndustry,
+            geo_results: geoResults,
+            geo_targets: geoTargets
+          })
+        }
+      )
+
+      if (synthesisResponse.ok) {
+        const synthesisData = await synthesisResponse.json()
+        synthesis = synthesisData.synthesis
+        console.log('✅ Executive synthesis generated')
+      } else {
+        console.error('Synthesis generation failed:', await synthesisResponse.text())
+      }
+    } catch (error) {
+      console.error('Failed to generate synthesis:', error)
+    }
+
     // Generate summary
     const summary = {
       total_queries: queries.length,
       total_signals: signals.length,
       claude_mentions: signals.filter(s => s.platform === 'claude' && s.data?.mentioned).length,
       gemini_mentions: signals.filter(s => s.platform === 'gemini' && s.data?.mentioned).length,
+      perplexity_mentions: signals.filter(s => s.platform === 'perplexity' && s.data?.mentioned).length,
+      chatgpt_mentions: signals.filter(s => s.platform === 'chatgpt' && s.data?.mentioned).length,
       schema_gaps: signals.filter(s => s.type === 'schema_gap').length,
       competitor_updates: signals.filter(s => s.type === 'competitor_update').length,
       critical_signals: signals.filter(s => s.priority === 'critical').length
@@ -169,7 +238,8 @@ serve(async (req) => {
         success: true,
         summary,
         signals: signals.slice(0, 10), // Return top 10 signals
-        queries_tested: queries.length
+        queries_tested: queries.length,
+        synthesis // Include executive synthesis
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -379,12 +449,21 @@ async function testGeminiVisibility(
           body: JSON.stringify({
             contents: [{
               role: 'user',
-              parts: [{ text: `${q.query}\n\nProvide comprehensive recommendations.` }]
+              parts: [{ text: `${q.query}\n\nProvide comprehensive recommendations with sources.` }]
             }],
             generationConfig: {
               temperature: 0.7,
               maxOutputTokens: 1024
-            }
+            },
+            // ENABLE SEARCH GROUNDING TO GET SOURCES!
+            tools: [{
+              googleSearchRetrieval: {
+                dynamicRetrievalConfig: {
+                  mode: 'MODE_DYNAMIC',
+                  dynamicThreshold: 0.3
+                }
+              }
+            }]
           })
         }
       )
@@ -396,6 +475,19 @@ async function testGeminiVisibility(
 
       const data = await response.json()
       const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+
+      // EXTRACT GROUNDING SOURCES (the goldmine for PR!)
+      const groundingMetadata = data.candidates?.[0]?.groundingMetadata
+      const sources = groundingMetadata?.groundingChunks?.map((chunk: any) => ({
+        url: chunk.web?.uri || '',
+        title: chunk.web?.title || '',
+        snippet: chunk.web?.snippet || ''
+      })) || []
+
+      console.log(`  📚 Gemini cited ${sources.length} sources for "${q.query}"`)
+      if (sources.length > 0) {
+        console.log(`     Sources: ${sources.map((s: any) => s.url).join(', ')}`)
+      }
 
       const mentioned = responseText.toLowerCase().includes(organizationName.toLowerCase())
       const position = extractMentionPosition(responseText, organizationName)
@@ -409,11 +501,14 @@ async function testGeminiVisibility(
             query: q.query,
             mentioned: true,
             position,
-            context: extractContext(responseText, organizationName)
+            context: extractContext(responseText, organizationName),
+            sources: sources,
+            source_count: sources.length,
+            source_domains: sources.map(s => new URL(s.url).hostname).filter(h => h)
           },
           recommendation: {
             action: position > 3 ? 'improve_ranking' : 'maintain_visibility',
-            reasoning: `Brand mentioned in position ${position} on Gemini`
+            reasoning: `Brand mentioned in position ${position} on Gemini${sources.length > 0 ? `. Sources cited: ${sources.map(s => new URL(s.url).hostname).join(', ')}` : ''}`
           }
         })
       } else {
@@ -423,17 +518,250 @@ async function testGeminiVisibility(
           priority: q.priority === 'critical' ? 'critical' : 'high',
           data: {
             query: q.query,
-            mentioned: false
+            mentioned: false,
+            sources: sources,
+            source_count: sources.length,
+            source_domains: sources.map(s => new URL(s.url).hostname).filter(h => h)
           },
           recommendation: {
             action: 'improve_schema',
-            reasoning: `Not visible on Gemini for: "${q.query}"`
+            reasoning: `Not visible on Gemini for: "${q.query}"${sources.length > 0 ? `. Target these publications for PR: ${sources.slice(0, 3).map(s => new URL(s.url).hostname).join(', ')}` : ''}`
           }
         })
       }
 
     } catch (error) {
       console.error('Gemini API error:', error)
+    }
+  }
+
+  return signals
+}
+
+/**
+ * Test Perplexity AI Visibility (Sonar model with built-in sources)
+ */
+async function testPerplexityVisibility(queries: any[], organizationName: string): Promise<any[]> {
+  const signals: any[] = []
+  const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY')
+
+  if (!PERPLEXITY_API_KEY) {
+    console.log('⚠️  Perplexity not configured, skipping')
+    return signals
+  }
+
+  // Test subset of queries (Perplexity is more expensive)
+  const testQueries = queries.slice(0, 5)
+
+  for (const q of testQueries) {
+    try {
+      console.log(`  🔮 Testing: "${q.query}"`)
+
+      // Call Perplexity API (OpenAI-compatible format)
+      // Using sonar model which provides citations
+      const response = await fetch(
+        'https://api.perplexity.ai/chat/completions',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${PERPLEXITY_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: 'sonar', // or 'sonar-pro' for better quality
+            messages: [{
+              role: 'user',
+              content: `${q.query}\n\nProvide a comprehensive answer with sources.`
+            }],
+            temperature: 0.7,
+            max_tokens: 1024,
+            return_citations: true, // Enable citations
+            return_images: false
+          })
+        }
+      )
+
+      if (!response.ok) {
+        console.error('Perplexity API error:', await response.text())
+        continue
+      }
+
+      const data = await response.json()
+      const responseText = data.choices?.[0]?.message?.content || ''
+
+      // EXTRACT CITATIONS (Perplexity's killer feature!)
+      const citations = data.citations || []
+      const sources = citations.map((url: string) => {
+        try {
+          const urlObj = new URL(url)
+          return {
+            url: url,
+            title: urlObj.hostname,
+            snippet: ''
+          }
+        } catch {
+          return { url, title: url, snippet: '' }
+        }
+      })
+
+      console.log(`  📚 Perplexity cited ${sources.length} sources for "${q.query}"`)
+      if (sources.length > 0) {
+        console.log(`     Sources: ${sources.map((s: any) => s.url).join(', ')}`)
+      }
+
+      const mentioned = responseText.toLowerCase().includes(organizationName.toLowerCase())
+      const position = extractMentionPosition(responseText, organizationName)
+
+      if (mentioned) {
+        signals.push({
+          type: 'ai_visibility',
+          platform: 'perplexity',
+          priority: position <= 3 ? 'high' : 'medium',
+          data: {
+            query: q.query,
+            mentioned: true,
+            position,
+            context: extractContext(responseText, organizationName),
+            sources: sources,
+            source_count: sources.length,
+            source_domains: sources.map(s => {
+              try {
+                return new URL(s.url).hostname
+              } catch {
+                return s.url
+              }
+            }).filter(h => h)
+          },
+          recommendation: {
+            action: position > 3 ? 'improve_ranking' : 'maintain_visibility',
+            reasoning: `Brand mentioned in position ${position} on Perplexity${sources.length > 0 ? `. Sources cited: ${sources.slice(0, 3).map(s => new URL(s.url).hostname).join(', ')}` : ''}`
+          }
+        })
+      } else {
+        signals.push({
+          type: 'visibility_gap',
+          platform: 'perplexity',
+          priority: q.priority === 'critical' ? 'critical' : 'high',
+          data: {
+            query: q.query,
+            mentioned: false,
+            sources: sources,
+            source_count: sources.length,
+            source_domains: sources.map(s => {
+              try {
+                return new URL(s.url).hostname
+              } catch {
+                return s.url
+              }
+            }).filter(h => h)
+          },
+          recommendation: {
+            action: 'improve_schema',
+            reasoning: `Not visible on Perplexity for: "${q.query}"${sources.length > 0 ? `. Target these publications for PR: ${sources.slice(0, 3).map(s => {
+              try {
+                return new URL(s.url).hostname
+              } catch {
+                return s.url
+              }
+            }).join(', ')}` : ''}`
+          }
+        })
+      }
+
+    } catch (error) {
+      console.error('Perplexity API error:', error)
+    }
+  }
+
+  return signals
+}
+
+/**
+ * Test ChatGPT AI Visibility (GPT-4o)
+ */
+async function testChatGPTVisibility(queries: any[], organizationName: string): Promise<any[]> {
+  const signals: any[] = []
+  const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
+
+  if (!OPENAI_API_KEY) {
+    console.log('⚠️  OpenAI not configured, skipping ChatGPT testing')
+    return signals
+  }
+
+  for (const q of queries) {
+    try {
+      console.log(`  💬 Testing: "${q.query}"`)
+
+      // Call OpenAI API with GPT-4o
+      const response = await fetch(
+        'https://api.openai.com/v1/chat/completions',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${OPENAI_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o',
+            messages: [{
+              role: 'user',
+              content: `${q.query}\n\nProvide a comprehensive answer.`
+            }],
+            temperature: 0.7,
+            max_tokens: 1024
+          })
+        }
+      )
+
+      if (!response.ok) {
+        console.error('OpenAI API error:', await response.text())
+        continue
+      }
+
+      const data = await response.json()
+      const responseText = data.choices?.[0]?.message?.content || ''
+
+      // Note: ChatGPT API doesn't provide sources natively
+      // Would need to use web search plugins/extensions which require special access
+
+      const mentioned = responseText.toLowerCase().includes(organizationName.toLowerCase())
+      const position = extractMentionPosition(responseText, organizationName)
+
+      if (mentioned) {
+        signals.push({
+          type: 'ai_visibility',
+          platform: 'chatgpt',
+          priority: position <= 3 ? 'high' : 'medium',
+          data: {
+            query: q.query,
+            mentioned: true,
+            position,
+            context: extractContext(responseText, organizationName),
+            response_length: responseText.length
+          },
+          recommendation: {
+            action: position > 3 ? 'improve_ranking' : 'maintain_visibility',
+            reasoning: `Brand mentioned in position ${position} on ChatGPT (GPT-4o)`
+          }
+        })
+      } else {
+        signals.push({
+          type: 'visibility_gap',
+          platform: 'chatgpt',
+          priority: q.priority === 'critical' ? 'critical' : 'high',
+          data: {
+            query: q.query,
+            mentioned: false
+          },
+          recommendation: {
+            action: 'improve_schema',
+            reasoning: `Not visible on ChatGPT (GPT-4o) for: "${q.query}"`
+          }
+        })
+      }
+
+    } catch (error) {
+      console.error('OpenAI API error:', error)
     }
   }
 

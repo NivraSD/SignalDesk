@@ -61,7 +61,24 @@ serve(async (req) => {
     console.log(`🏭 Industry: ${orgIndustry}`)
     console.log(`🏢 Competitors: ${orgCompetitors.length}`)
 
-    // Get GEO Intelligence Registry patterns for this industry
+    // Get organization-specific GEO targets (if configured)
+    const { data: geoTargets } = await supabase
+      .from('geo_targets')
+      .select('*')
+      .eq('organization_id', organization_id)
+      .eq('active', true)
+      .single()
+
+    if (geoTargets) {
+      console.log(`🎯 Using organization-specific GEO targets`)
+      console.log(`   - Service Lines: ${geoTargets.service_lines?.length || 0}`)
+      console.log(`   - Geographic Focus: ${geoTargets.geographic_focus?.length || 0}`)
+      console.log(`   - Priority Queries: ${geoTargets.priority_queries?.length || 0}`)
+    } else {
+      console.log(`📚 No GEO targets configured, using industry patterns`)
+    }
+
+    // Get GEO Intelligence Registry patterns for this industry (fallback)
     const industryPatterns = getIndustryPatterns(orgIndustry)
     console.log(`📚 Found ${industryPatterns.length} industry patterns`)
 
@@ -76,7 +93,8 @@ serve(async (req) => {
       competitors: orgCompetitors,
       description: orgDescription,
       recentNews: recent_news,
-      industryPatterns
+      industryPatterns,
+      geoTargets
     })
 
     console.log('🤖 Calling Claude for query generation...')
@@ -109,7 +127,14 @@ serve(async (req) => {
         industry: orgIndustry,
         total_queries: queries.length,
         queries: categorizedQueries,
-        industry_patterns_used: industryPatterns.length,
+        geo_targets_used: !!geoTargets,
+        geo_targets_summary: geoTargets ? {
+          service_lines: geoTargets.service_lines?.length || 0,
+          geographic_focus: geoTargets.geographic_focus?.length || 0,
+          priority_queries: geoTargets.priority_queries?.length || 0,
+          industry_verticals: geoTargets.industry_verticals?.length || 0
+        } : null,
+        industry_patterns_used: !geoTargets ? industryPatterns.length : 0,
         generated_at: new Date().toISOString()
       }),
       {
@@ -210,6 +235,66 @@ function getIndustryPatterns(industry: string): string[] {
 }
 
 /**
+ * Get industry-specific priorities for query generation
+ */
+function getIndustryPriorities(industry: string): {
+  primary_concerns: string[]
+  positioning_focus: string[]
+  query_framing: { comparison: string[], expertise: string[], transactional: string[] }
+} | null {
+  const priorities: Record<string, any> = {
+    technology: {
+      primary_concerns: ['features', 'integration', 'ease of use', 'pricing', 'support'],
+      positioning_focus: ['innovation', 'reliability', 'technical excellence'],
+      query_framing: {
+        comparison: ['best for {use_case}', 'vs competitor features'],
+        expertise: ['how to', 'tutorial', 'best practices'],
+        transactional: ['pricing plans', 'free trial']
+      }
+    },
+    finance: {
+      primary_concerns: ['security', 'compliance', 'fees', 'returns', 'transparency'],
+      positioning_focus: ['trust', 'expertise', 'track record', 'regulatory compliance'],
+      query_framing: {
+        comparison: ['best for {investor_type}', 'vs competitor fees', 'top rated'],
+        expertise: ['investment philosophy', 'credentials', 'compliance'],
+        transactional: ['minimum investment', 'account types']
+      }
+    },
+    professional_services: {
+      primary_concerns: ['expertise', 'credentials', 'experience', 'client results'],
+      positioning_focus: ['thought leadership', 'specialization', 'track record'],
+      query_framing: {
+        comparison: ['best firm for {industry}', 'top consultants', 'vs competitor expertise'],
+        expertise: ['{specialty} experience', 'case studies', 'industry insights'],
+        transactional: ['consultation', 'pricing']
+      }
+    },
+    ecommerce: {
+      primary_concerns: ['price', 'quality', 'shipping', 'reviews', 'return policy'],
+      positioning_focus: ['value', 'customer experience', 'fast delivery'],
+      query_framing: {
+        comparison: ['best under ${price}', 'vs competitor quality', 'with free shipping'],
+        expertise: ['buying guide', 'how to choose'],
+        transactional: ['buy', 'on sale', 'discount code']
+      }
+    },
+    saas: {
+      primary_concerns: ['features', 'pricing', 'integrations', 'support', 'ease of use'],
+      positioning_focus: ['innovation', 'reliability', 'customer success'],
+      query_framing: {
+        comparison: ['best for {use_case}', 'vs alternatives', 'comparison'],
+        expertise: ['how to', 'tutorials', 'documentation'],
+        transactional: ['pricing', 'plans', 'trial']
+      }
+    }
+  }
+
+  const normalized = industry.toLowerCase().replace(/[^a-z]/g, '')
+  return priorities[normalized] || priorities.technology
+}
+
+/**
  * Build prompt for Claude to generate intelligent queries
  */
 function buildQueryDiscoveryPrompt(context: {
@@ -219,9 +304,61 @@ function buildQueryDiscoveryPrompt(context: {
   description: string
   recentNews: string[]
   industryPatterns: string[]
+  geoTargets?: any
 }): string {
   const currentDate = new Date().toISOString().split('T')[0] // YYYY-MM-DD format
   const currentYear = new Date().getFullYear()
+
+  // Get industry-specific priorities
+  const industryPriorities = getIndustryPriorities(context.industry)
+  let industryPrioritiesSection = ''
+  if (industryPriorities) {
+    industryPrioritiesSection = `
+📊 INDUSTRY-SPECIFIC PRIORITIES (${context.industry.toUpperCase()}):
+This industry cares most about: ${industryPriorities.primary_concerns.join(', ')}
+Positioning should focus on: ${industryPriorities.positioning_focus.join(', ')}
+
+Query Generation Guidelines for ${context.industry}:
+- Comparison queries: ${industryPriorities.query_framing.comparison.join(', ')}
+- Expertise queries: ${industryPriorities.query_framing.expertise.join(', ')}
+- Transactional queries: ${industryPriorities.query_framing.transactional.join(', ')}
+`
+  }
+
+  // Build GEO targets section if available
+  let geoTargetsSection = ''
+  if (context.geoTargets) {
+    geoTargetsSection = `
+🎯 ORGANIZATION-SPECIFIC GEO TARGETS (HIGH PRIORITY):
+This organization has configured specific GEO optimization goals. PRIORITIZE these when generating queries:
+
+${context.geoTargets.service_lines?.length > 0 ? `**Service Lines/Specializations**:
+${context.geoTargets.service_lines.map((s: string) => `- ${s}`).join('\n')}
+` : ''}
+${context.geoTargets.geographic_focus?.length > 0 ? `**Geographic Focus Areas**:
+${context.geoTargets.geographic_focus.map((g: string) => `- ${g}`).join('\n')}
+` : ''}
+${context.geoTargets.industry_verticals?.length > 0 ? `**Industry Verticals Served**:
+${context.geoTargets.industry_verticals.map((i: string) => `- ${i}`).join('\n')}
+` : ''}
+${context.geoTargets.priority_queries?.length > 0 ? `**Priority Queries (MUST INCLUDE)**:
+${context.geoTargets.priority_queries.map((q: string) => `- "${q}"`).join('\n')}
+` : ''}
+${context.geoTargets.geo_competitors?.length > 0 ? `**GEO Competitors (for benchmarking)**:
+${context.geoTargets.geo_competitors.map((c: string) => `- ${c}`).join('\n')}
+` : ''}
+${context.geoTargets.positioning_goals && Object.keys(context.geoTargets.positioning_goals).length > 0 ? `**Positioning Goals**:
+${Object.entries(context.geoTargets.positioning_goals).map(([key, value]) => `- ${key}: "${value}"`).join('\n')}
+` : ''}
+
+INSTRUCTIONS FOR GEO TARGETS:
+1. Include ALL priority_queries exactly as specified
+2. Generate additional queries that combine service_lines + geographic_focus
+3. Generate queries about service_lines + industry_verticals
+4. Include comparison queries against geo_competitors
+5. Ensure queries align with positioning_goals
+`
+  }
 
   return `You are a GEO (Generative Experience Optimization) expert. Your task is to generate high-value test queries that will reveal how AI platforms (Claude, ChatGPT, Gemini, Perplexity) respond to questions about this organization.
 
@@ -236,12 +373,21 @@ ORGANIZATION CONTEXT:
 - Description: ${context.description || 'N/A'}
 - Competitors: ${context.competitors.slice(0, 5).join(', ') || 'N/A'}
 - Recent News: ${context.recentNews.slice(0, 3).join(', ') || 'N/A'}
-
-INDUSTRY QUERY PATTERNS:
-${context.industryPatterns.map(p => `- ${p}`).join('\n')}
+${industryPrioritiesSection}
+${geoTargetsSection}
+${!context.geoTargets ? `INDUSTRY QUERY PATTERNS (FALLBACK - No GEO Targets Configured):
+${context.industryPatterns.map(p => `- ${p}`).join('\n')}` : ''}
 
 TASK:
-Generate 25-30 diverse test queries that someone might ask an AI about this organization or its industry. Mix query types:
+Generate 25-30 diverse test queries that someone might ask an AI about this organization or its industry.
+
+**IMPORTANT**: Use the industry priorities above to frame queries around what this industry ACTUALLY cares about. For example:
+- Retail/Ecommerce: Focus on price, quality, reviews, shipping
+- Finance: Focus on security, fees, returns, trust
+- Professional Services: Focus on expertise, credentials, case studies
+- Technology: Focus on features, integrations, ease of use
+
+Mix query types:
 
 1. **Comparison Queries** (30%): "best X", "X vs Y", "top X platforms"
 2. **Competitive Queries** (25%): "alternatives to X", "X or Y", "is X better than Y"

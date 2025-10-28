@@ -30,7 +30,8 @@ import {
   Hash,
   ExternalLink,
   RefreshCw,
-  Globe
+  Globe,
+  Settings
 } from 'lucide-react'
 import { IntelligenceService } from '@/lib/services/intelligenceService'
 import { supabase } from '@/lib/supabase/client'
@@ -479,6 +480,46 @@ export default function IntelligenceModule() {
       setGeoSignals(data || [])
     } catch (error) {
       console.error('Error loading GEO signals:', error)
+    }
+  }
+
+  const executeSchemaRecommendation = async (recommendation: any) => {
+    if (!organization) return
+
+    console.log('⚡ Executing schema recommendation:', recommendation.title)
+
+    try {
+      // In a full implementation, this would:
+      // 1. Fetch the current schema from content_library
+      // 2. Apply the changes specified in recommendation.changes
+      // 3. Update the schema in content_library
+      // 4. Update the recommendation status to 'executed'
+      // 5. Track before/after metrics
+
+      // For now, we'll just update the recommendation status in the database
+      const response = await fetch('/api/schema-recommendations/execute', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          organization_id: organization.id,
+          recommendation
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to execute recommendation')
+      }
+
+      const result = await response.json()
+      console.log('✅ Recommendation executed:', result)
+
+      // Reload GEO results to reflect the execution
+      await runGeoMonitor()
+    } catch (error) {
+      console.error('Error executing recommendation:', error)
+      alert('Failed to execute recommendation. Check console for details.')
     }
   }
 
@@ -1236,23 +1277,158 @@ export default function IntelligenceModule() {
 
               {/* Results Summary */}
               {geoResults && !geoLoading && (
-                <div className="grid grid-cols-4 gap-4 mb-6">
+                <div className="grid grid-cols-6 gap-3 mb-6">
                   <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
                     <div className="text-blue-400 text-3xl font-bold">{geoResults.summary?.total_queries || 0}</div>
                     <div className="text-gray-400 text-sm mt-1">Queries Tested</div>
                   </div>
                   <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
                     <div className="text-green-400 text-3xl font-bold">{geoResults.summary?.claude_mentions || 0}</div>
-                    <div className="text-gray-400 text-sm mt-1">Claude Mentions</div>
+                    <div className="text-gray-400 text-sm mt-1">Claude</div>
                   </div>
                   <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
                     <div className="text-purple-400 text-3xl font-bold">{geoResults.summary?.gemini_mentions || 0}</div>
-                    <div className="text-gray-400 text-sm mt-1">Gemini Mentions</div>
+                    <div className="text-gray-400 text-sm mt-1">Gemini</div>
+                  </div>
+                  <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-4">
+                    <div className="text-cyan-400 text-3xl font-bold">{geoResults.summary?.perplexity_mentions || 0}</div>
+                    <div className="text-gray-400 text-sm mt-1">Perplexity</div>
+                  </div>
+                  <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+                    <div className="text-yellow-400 text-3xl font-bold">{geoResults.summary?.chatgpt_mentions || 0}</div>
+                    <div className="text-gray-400 text-sm mt-1">ChatGPT</div>
                   </div>
                   <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
                     <div className="text-red-400 text-3xl font-bold">{geoResults.summary?.critical_signals || 0}</div>
-                    <div className="text-gray-400 text-sm mt-1">Critical Signals</div>
+                    <div className="text-gray-400 text-sm mt-1">Critical</div>
                   </div>
+                </div>
+              )}
+
+              {/* Executive Synthesis */}
+              {geoResults?.synthesis && !geoLoading && (
+                <div className="mb-6 space-y-4">
+                  {/* Executive Summary */}
+                  <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20 rounded-lg p-6">
+                    <div className="flex items-start gap-3 mb-3">
+                      <TrendingUp className="w-6 h-6 text-purple-400 flex-shrink-0 mt-1" />
+                      <div>
+                        <h4 className="text-xl font-bold text-purple-400 mb-2">Executive Summary</h4>
+                        <p className="text-gray-300 text-base leading-relaxed">{geoResults.synthesis.executive_summary}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Key Findings */}
+                  {geoResults.synthesis.key_findings && geoResults.synthesis.key_findings.length > 0 && (
+                    <div className="bg-gray-800/30 border border-gray-700/50 rounded-lg p-6">
+                      <h4 className="text-lg font-bold text-blue-400 mb-4 flex items-center gap-2">
+                        <Lightbulb className="w-5 h-5" />
+                        Key Findings
+                      </h4>
+                      <ul className="space-y-3">
+                        {geoResults.synthesis.key_findings.map((finding: string, idx: number) => (
+                          <li key={idx} className="flex items-start gap-3">
+                            <span className="text-blue-400 font-bold mt-1">•</span>
+                            <span className="text-gray-300">{finding}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Critical Actions */}
+                  {geoResults.synthesis.critical_actions && geoResults.synthesis.critical_actions.length > 0 && (
+                    <div className="bg-gray-800/30 border border-gray-700/50 rounded-lg p-6">
+                      <h4 className="text-lg font-bold text-orange-400 mb-4 flex items-center gap-2">
+                        <AlertCircle className="w-5 h-5" />
+                        Critical Actions
+                      </h4>
+                      <div className="space-y-4">
+                        {geoResults.synthesis.critical_actions.map((action: any, idx: number) => {
+                          const priorityColors = {
+                            critical: 'border-red-500/30 bg-red-500/10',
+                            high: 'border-orange-500/30 bg-orange-500/10',
+                            medium: 'border-yellow-500/30 bg-yellow-500/10'
+                          }
+                          return (
+                            <div key={idx} className={`rounded-lg p-4 border ${priorityColors[action.priority as keyof typeof priorityColors] || priorityColors.medium}`}>
+                              <div className="flex items-start justify-between mb-2">
+                                <h5 className="text-white font-semibold">{action.action}</h5>
+                                <span className="text-xs px-2 py-1 rounded bg-gray-900/50 uppercase font-bold">
+                                  {action.priority}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-400 mb-2">{action.expected_impact}</p>
+                              {action.platform && (
+                                <div className="text-xs text-gray-500">Platform: {action.platform}</div>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Schema Recommendations */}
+                  {geoResults.synthesis.recommendations && geoResults.synthesis.recommendations.length > 0 && (
+                    <div className="bg-gray-800/30 border border-gray-700/50 rounded-lg p-6">
+                      <h4 className="text-lg font-bold text-green-400 mb-4 flex items-center gap-2">
+                        <Settings className="w-5 h-5" />
+                        Schema Recommendations ({geoResults.synthesis.recommendations.length})
+                      </h4>
+                      <div className="space-y-4">
+                        {geoResults.synthesis.recommendations.slice(0, 5).map((rec: any, idx: number) => (
+                          <div key={idx} className="bg-gray-900/50 border border-gray-700/30 rounded-lg p-4">
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex-1">
+                                <h5 className="text-white font-semibold flex items-center gap-2">
+                                  {rec.title}
+                                  {rec.auto_executable && (
+                                    <span className="text-xs px-2 py-1 rounded bg-green-500/20 text-green-400 font-bold">
+                                      ⚡ Auto-Execute
+                                    </span>
+                                  )}
+                                </h5>
+                                <div className="flex items-center gap-2 mt-1 text-xs">
+                                  <span className="text-gray-400">Schema: {rec.schema_type}</span>
+                                  <span className="text-gray-600">•</span>
+                                  <span className="text-gray-400">Priority: {rec.priority}</span>
+                                  {rec.platform && (
+                                    <>
+                                      <span className="text-gray-600">•</span>
+                                      <span className="text-gray-400">Platform: {rec.platform}</span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                              {rec.auto_executable && (
+                                <button
+                                  onClick={() => executeSchemaRecommendation(rec)}
+                                  className="ml-4 px-3 py-1.5 bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 rounded text-green-400 text-sm font-medium transition-colors flex items-center gap-2"
+                                >
+                                  <Zap className="w-4 h-4" />
+                                  Execute
+                                </button>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-300 mb-2">{rec.description}</p>
+                            {rec.reasoning && (
+                              <p className="text-sm text-gray-400 italic mb-2">Reasoning: {rec.reasoning}</p>
+                            )}
+                            {rec.expected_impact && (
+                              <p className="text-sm text-green-400 italic">Impact: {rec.expected_impact}</p>
+                            )}
+                          </div>
+                        ))}
+                        {geoResults.synthesis.recommendations.length > 5 && (
+                          <p className="text-sm text-gray-500 text-center">
+                            + {geoResults.synthesis.recommendations.length - 5} more recommendations
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
