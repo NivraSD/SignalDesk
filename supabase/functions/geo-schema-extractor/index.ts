@@ -36,6 +36,9 @@ serve(async (req) => {
       throw new Error('organization_id and organization_url required')
     }
 
+    // Normalize URL - add https:// if missing and handle special characters
+    const normalizedUrl = normalizeUrl(organization_url)
+
     console.log('🔍 Schema Extraction Starting:', {
       organization_id,
       organization_url,
@@ -54,16 +57,16 @@ serve(async (req) => {
     }
 
     // STEP 1: Extract organization schema
-    console.log(`📡 Scraping ${organization_url}...`)
+    console.log(`📡 Scraping ${normalizedUrl}...`)
 
-    const orgSchema = await extractSchemaFromUrl(organization_url, firecrawlApiKey)
+    const orgSchema = await extractSchemaFromUrl(normalizedUrl, firecrawlApiKey)
 
     let schemaToStore = orgSchema
 
     // STEP 2: If no schema found, generate basic one
     if (!orgSchema) {
       console.log('⚠️  No schema found, generating basic Organization schema...')
-      schemaToStore = generateBasicOrganizationSchema(organization_name, organization_url, industry)
+      schemaToStore = generateBasicOrganizationSchema(organization_name, normalizedUrl, industry)
     } else {
       console.log('✅ Found existing schema:', orgSchema['@type'])
     }
@@ -80,54 +83,68 @@ serve(async (req) => {
       .eq('metadata->>schema_type', schemaToStore['@type'])
       .single()
 
+    // Prepare intelligence data (will be added if column exists)
+    const intelligenceData = {
+      schemaType: schemaToStore['@type'],
+      fields: Object.keys(schemaToStore).filter(k => !k.startsWith('@')),
+      lastExtracted: new Date().toISOString(),
+      source: orgSchema ? 'extracted' : 'generated'
+    }
+
     if (existingSchema && !checkError) {
       // Update existing schema
+      const updateData: any = {
+        content: schemaToStore,
+        metadata: {
+          schema_type: schemaToStore['@type'],
+          platform_optimized: 'all',
+          version: 1,
+          last_updated: new Date().toISOString(),
+          extracted_from: normalizedUrl
+        },
+        updated_at: new Date().toISOString()
+      }
+
+      // Try to add intelligence if column exists
+      try {
+        updateData.intelligence = intelligenceData
+      } catch (e) {
+        console.log('Intelligence column not available, skipping')
+      }
+
       const { error: updateError } = await supabase
         .from('content_library')
-        .update({
-          content: schemaToStore,
-          metadata: {
-            schema_type: schemaToStore['@type'],
-            platform_optimized: 'all',
-            version: 1,
-            last_updated: new Date().toISOString(),
-            extracted_from: organization_url
-          },
-          intelligence: {
-            schemaType: schemaToStore['@type'],
-            fields: Object.keys(schemaToStore).filter(k => !k.startsWith('@')),
-            lastExtracted: new Date().toISOString(),
-            source: orgSchema ? 'extracted' : 'generated'
-          },
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', existingSchema.id)
 
       if (updateError) throw updateError
       console.log('✅ Updated existing schema')
     } else {
       // Insert new schema
+      const insertData: any = {
+        organization_id,
+        content_type: 'schema',
+        folder: 'Schemas/Active/',
+        content: schemaToStore,
+        metadata: {
+          schema_type: schemaToStore['@type'],
+          platform_optimized: 'all',
+          version: 1,
+          extracted_from: normalizedUrl
+        },
+        salience: 1.0
+      }
+
+      // Try to add intelligence if column exists
+      try {
+        insertData.intelligence = intelligenceData
+      } catch (e) {
+        console.log('Intelligence column not available, skipping')
+      }
+
       const { error: insertError } = await supabase
         .from('content_library')
-        .insert({
-          organization_id,
-          content_type: 'schema',
-          folder: 'Schemas/Active/',
-          content: schemaToStore,
-          metadata: {
-            schema_type: schemaToStore['@type'],
-            platform_optimized: 'all',
-            version: 1,
-            extracted_from: organization_url
-          },
-          intelligence: {
-            schemaType: schemaToStore['@type'],
-            fields: Object.keys(schemaToStore).filter(k => !k.startsWith('@')),
-            lastExtracted: new Date().toISOString(),
-            source: orgSchema ? 'extracted' : 'generated'
-          },
-          salience: 1.0
-        })
+        .insert(insertData)
 
       if (insertError) throw insertError
       console.log('✅ Inserted new schema')
@@ -141,34 +158,43 @@ serve(async (req) => {
 
       for (const compUrl of competitor_urls.slice(0, 3)) { // Limit to 3
         try {
-          console.log(`  Scraping ${compUrl}...`)
-          const compSchema = await extractSchemaFromUrl(compUrl, firecrawlApiKey)
+          const normalizedCompUrl = normalizeUrl(compUrl)
+          console.log(`  Scraping ${normalizedCompUrl}...`)
+          const compSchema = await extractSchemaFromUrl(normalizedCompUrl, firecrawlApiKey)
 
           if (compSchema) {
-            const compName = new URL(compUrl).hostname.replace('www.', '')
+            const compName = new URL(normalizedCompUrl).hostname.replace('www.', '')
 
             // Store competitor schema
+            const compInsertData: any = {
+              organization_id,
+              content_type: 'schema',
+              folder: `Schemas/Competitors/${compName}/`,
+              content: compSchema,
+              metadata: {
+                schema_type: compSchema['@type'],
+                competitor: true,
+                competitor_url: normalizedCompUrl,
+                extracted_from: normalizedCompUrl
+              },
+              salience: 0.8
+            }
+
+            // Try to add intelligence if column exists
+            try {
+              compInsertData.intelligence = {
+                schemaType: compSchema['@type'],
+                fields: Object.keys(compSchema).filter(k => !k.startsWith('@')),
+                lastExtracted: new Date().toISOString(),
+                source: 'extracted'
+              }
+            } catch (e) {
+              console.log('Intelligence column not available, skipping')
+            }
+
             const { error: compError } = await supabase
               .from('content_library')
-              .insert({
-                organization_id,
-                content_type: 'schema',
-                folder: `Schemas/Competitors/${compName}/`,
-                content: compSchema,
-                metadata: {
-                  schema_type: compSchema['@type'],
-                  competitor: true,
-                  competitor_url: compUrl,
-                  extracted_from: compUrl
-                },
-                intelligence: {
-                  schemaType: compSchema['@type'],
-                  fields: Object.keys(compSchema).filter(k => !k.startsWith('@')),
-                  lastExtracted: new Date().toISOString(),
-                  source: 'extracted'
-                },
-                salience: 0.8
-              })
+              .insert(compInsertData)
 
             if (!compError) {
               console.log(`  ✅ Stored schema for ${compName}`)
@@ -325,4 +351,32 @@ function generateBasicOrganizationSchema(
   }
 
   return schema
+}
+
+/**
+ * Normalize URL - add https:// if missing and handle edge cases
+ */
+function normalizeUrl(url: string): string {
+  if (!url) return ''
+
+  let normalized = url.trim()
+
+  // Remove spaces (common user input error)
+  normalized = normalized.replace(/\s+/g, '')
+
+  // Handle URLs with periods in brand names like "e.l.f.cosmetics.com"
+  // Just ensure it has a protocol
+  if (!normalized.startsWith('http://') && !normalized.startsWith('https://')) {
+    normalized = `https://${normalized}`
+  }
+
+  try {
+    // Validate URL format
+    const urlObj = new URL(normalized)
+    return urlObj.href
+  } catch (error) {
+    console.error('Invalid URL format:', normalized, error)
+    // Return as-is and let Firecrawl handle the error
+    return normalized
+  }
 }
