@@ -368,9 +368,9 @@ async function testGeminiVisibility(
   for (const q of queries.slice(0, 5)) {
     try {
       // Call Direct Gemini API (no OAuth needed!)
-      // Use gemini-1.5-flash-latest (stable model with -latest suffix)
+      // Use gemini-2.0-flash-001 (Gemini 2.0 Flash model)
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GOOGLE_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${GOOGLE_API_KEY}`,
         {
           method: 'POST',
           headers: {
