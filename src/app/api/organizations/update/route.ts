@@ -9,6 +9,8 @@ export async function PUT(request: Request) {
     const body = await request.json()
     const { id, name, domain, industry, size } = body
 
+    console.log('📝 Update request:', { id, name, domain, industry, size })
+
     if (!id) {
       return NextResponse.json(
         { error: 'Organization ID required' },
@@ -30,9 +32,11 @@ export async function PUT(request: Request) {
       )
     }
 
+    console.log('🔑 Creating Supabase client...')
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // First, get current organization to preserve existing settings
+    console.log('📖 Fetching current organization...')
     const { data: currentOrg, error: fetchError } = await supabase
       .from('organizations')
       .select('settings')
@@ -40,37 +44,45 @@ export async function PUT(request: Request) {
       .single()
 
     if (fetchError) {
-      console.error('Error fetching current organization:', fetchError)
+      console.error('❌ Error fetching current organization:', fetchError)
       return NextResponse.json(
         { error: 'Failed to fetch organization', details: fetchError.message },
         { status: 500 }
       )
     }
 
+    console.log('✅ Current org settings:', currentOrg?.settings)
+
     // Update organization with URL in settings JSONB field
+    const updateData = {
+      name: name.trim(),
+      industry: industry?.trim() || null,
+      size: size || null,
+      settings: {
+        ...(currentOrg?.settings || {}),
+        url: domain.trim()
+      },
+      updated_at: new Date().toISOString()
+    }
+
+    console.log('💾 Updating with data:', updateData)
+
     const { data, error } = await supabase
       .from('organizations')
-      .update({
-        name: name.trim(),
-        industry: industry?.trim() || null,
-        size: size || null,
-        settings: {
-          ...(currentOrg?.settings || {}),
-          url: domain.trim()
-        },
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', id)
       .select()
       .single()
 
     if (error) {
-      console.error('Database error updating organization:', error)
+      console.error('❌ Database error updating organization:', error)
       return NextResponse.json(
-        { error: 'Failed to update organization', details: error.message },
+        { error: 'Failed to update organization', details: error.message, code: error.code },
         { status: 500 }
       )
     }
+
+    console.log('✅ Organization updated successfully')
 
     // Flatten settings for easier access
     const flatOrg = {
