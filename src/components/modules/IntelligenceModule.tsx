@@ -92,6 +92,9 @@ export default function IntelligenceModule() {
   const [geoResults, setGeoResults] = useState<any>(null)
   const [geoSignals, setGeoSignals] = useState<any[]>([])
   const [geoError, setGeoError] = useState<string | null>(null)
+  const [schemaData, setSchemaData] = useState<any>(null)
+  const [schemaLoading, setSchemaLoading] = useState(false)
+  const [schemaExtracting, setSchemaExtracting] = useState(false)
 
   // Prompt categories with icons
   const promptCategories = [
@@ -523,6 +526,64 @@ export default function IntelligenceModule() {
     }
   }
 
+  const loadSchema = async () => {
+    if (!organization) return
+
+    setSchemaLoading(true)
+    try {
+      const response = await fetch(`/api/schema/extract?organization_id=${organization.id}`)
+      const data = await response.json()
+
+      if (data.success) {
+        setSchemaData(data)
+      }
+    } catch (error) {
+      console.error('Error loading schema:', error)
+    } finally {
+      setSchemaLoading(false)
+    }
+  }
+
+  const extractSchema = async () => {
+    if (!organization) return
+
+    setSchemaExtracting(true)
+    try {
+      console.log('🔍 Extracting schema from', organization.website || organization.name)
+
+      const response = await fetch('/api/schema/extract', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          organization_id: organization.id,
+          organization_url: organization.website || `https://${organization.name.toLowerCase().replace(/\s+/g, '')}.com`,
+          organization_name: organization.name,
+          industry: organization.industry,
+          extract_competitors: false
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Schema extraction failed')
+      }
+
+      const result = await response.json()
+      console.log('✅ Schema extracted:', result)
+
+      // Reload schema data
+      await loadSchema()
+
+      alert(`Schema ${result.organization_schema.source === 'extracted' ? 'extracted' : 'generated'} successfully!`)
+    } catch (error) {
+      console.error('Error extracting schema:', error)
+      alert('Failed to extract schema. Check console for details.')
+    } finally {
+      setSchemaExtracting(false)
+    }
+  }
+
   // Clear synthesis when organization changes
   useEffect(() => {
     if (organization?.id) {
@@ -536,6 +597,9 @@ export default function IntelligenceModule() {
       setRealtimeAlerts([])
       setGeoResults(null)
       setGeoError(null)
+
+      // Load schema data
+      loadSchema()
 
       // Load latest synthesis from database
       IntelligenceService.getLatestSynthesis(organization.id).then(synthesis => {
@@ -1273,6 +1337,98 @@ export default function IntelligenceModule() {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* Schema Status Card */}
+              <div className="bg-gray-800/30 border border-gray-700/50 rounded-lg p-6 mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h4 className="text-lg font-bold text-purple-400 flex items-center gap-2">
+                      <FileText className="w-5 h-5" />
+                      Schema.org Markup
+                    </h4>
+                    <p className="text-sm text-gray-400 mt-1">
+                      {schemaData?.has_schema
+                        ? `Schema extracted from your website (${schemaData.schema?.intelligence?.fields?.length || 0} fields)`
+                        : 'No schema found - extract or generate one to optimize AI visibility'
+                      }
+                    </p>
+                  </div>
+                  <button
+                    onClick={extractSchema}
+                    disabled={schemaExtracting || !organization}
+                    className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 text-sm font-medium ${
+                      schemaExtracting
+                        ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                        : 'bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-400'
+                    }`}
+                  >
+                    {schemaExtracting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Extracting...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-4 h-4" />
+                        {schemaData?.has_schema ? 'Update Schema' : 'Extract Schema'}
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {schemaData?.has_schema && schemaData.schema && (
+                  <div className="mt-4 space-y-3">
+                    <div className="bg-gray-900/50 rounded-lg p-4">
+                      <div className="grid grid-cols-3 gap-4 mb-3">
+                        <div>
+                          <div className="text-xs text-gray-500 mb-1">Schema Type</div>
+                          <div className="text-sm text-white font-medium">{schemaData.schema.metadata?.schema_type || 'Organization'}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-gray-500 mb-1">Source</div>
+                          <div className="text-sm text-white font-medium capitalize">{schemaData.schema.intelligence?.source || 'extracted'}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-gray-500 mb-1">Last Updated</div>
+                          <div className="text-sm text-white font-medium">
+                            {schemaData.schema.updated_at
+                              ? new Date(schemaData.schema.updated_at).toLocaleDateString()
+                              : 'N/A'
+                            }
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-500 mb-2">Fields ({schemaData.schema.intelligence?.fields?.length || 0})</div>
+                        <div className="flex flex-wrap gap-2">
+                          {schemaData.schema.intelligence?.fields?.slice(0, 8).map((field: string, idx: number) => (
+                            <span key={idx} className="text-xs px-2 py-1 bg-purple-500/10 border border-purple-500/20 rounded text-purple-300">
+                              {field}
+                            </span>
+                          ))}
+                          {(schemaData.schema.intelligence?.fields?.length || 0) > 8 && (
+                            <span className="text-xs px-2 py-1 text-gray-500">
+                              +{schemaData.schema.intelligence.fields.length - 8} more
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {!schemaData?.has_schema && !schemaLoading && (
+                  <div className="mt-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+                      <div className="text-sm text-gray-300">
+                        <p className="font-medium text-yellow-400 mb-1">No Schema Found</p>
+                        <p>Click "Extract Schema" to scrape your website for schema.org markup. If none exists, we'll generate a basic Organization schema from your profile.</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Results Summary */}
