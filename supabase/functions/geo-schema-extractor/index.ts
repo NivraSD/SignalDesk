@@ -59,16 +59,17 @@ serve(async (req) => {
     // STEP 1: Extract organization schema
     console.log(`📡 Scraping ${normalizedUrl}...`)
 
-    const orgSchema = await extractSchemaFromUrl(normalizedUrl, firecrawlApiKey)
+    const extractionResult = await extractSchemaFromUrl(normalizedUrl, firecrawlApiKey)
 
-    let schemaToStore = orgSchema
+    let schemaToStore = extractionResult?.schema
+    const extractionMethod = extractionResult?.method || 'none'
 
     // STEP 2: If no schema found, generate basic one
-    if (!orgSchema) {
+    if (!schemaToStore) {
       console.log('⚠️  No schema found, generating basic Organization schema...')
       schemaToStore = generateBasicOrganizationSchema(organization_name, normalizedUrl, industry)
     } else {
-      console.log('✅ Found existing schema:', orgSchema['@type'])
+      console.log('✅ Found existing schema:', schemaToStore['@type'], `(via ${extractionMethod})`)
     }
 
     // STEP 3: Store in Memory Vault
@@ -88,7 +89,8 @@ serve(async (req) => {
       schemaType: schemaToStore['@type'],
       fields: Object.keys(schemaToStore).filter(k => !k.startsWith('@')),
       lastExtracted: new Date().toISOString(),
-      source: orgSchema ? 'extracted' : 'generated'
+      source: schemaToStore ? 'extracted' : 'generated',
+      extractionMethod: schemaToStore ? extractionMethod : 'generated'
     }
 
     if (existingSchema && !checkError) {
@@ -160,9 +162,11 @@ serve(async (req) => {
         try {
           const normalizedCompUrl = normalizeUrl(compUrl)
           console.log(`  Scraping ${normalizedCompUrl}...`)
-          const compSchema = await extractSchemaFromUrl(normalizedCompUrl, firecrawlApiKey)
+          const compResult = await extractSchemaFromUrl(normalizedCompUrl, firecrawlApiKey)
 
-          if (compSchema) {
+          if (compResult?.schema) {
+            const compSchema = compResult.schema
+            const compMethod = compResult.method
             const compName = new URL(normalizedCompUrl).hostname.replace('www.', '')
 
             // Store competitor schema
@@ -186,7 +190,8 @@ serve(async (req) => {
                 schemaType: compSchema['@type'],
                 fields: Object.keys(compSchema).filter(k => !k.startsWith('@')),
                 lastExtracted: new Date().toISOString(),
-                source: 'extracted'
+                source: 'extracted',
+                extractionMethod: compMethod
               }
             } catch (e) {
               console.log('Intelligence column not available, skipping')
@@ -216,13 +221,14 @@ serve(async (req) => {
         success: true,
         organization_schema: {
           type: schemaToStore['@type'],
-          source: orgSchema ? 'extracted' : 'generated',
+          source: schemaToStore ? 'extracted' : 'generated',
+          extraction_method: extractionMethod,
           fields: Object.keys(schemaToStore).filter(k => !k.startsWith('@')),
           schema: schemaToStore
         },
         competitor_schemas: competitorSchemas,
-        message: orgSchema
-          ? 'Schema extracted and stored successfully'
+        message: schemaToStore && extractionMethod !== 'none'
+          ? `Schema extracted and stored successfully via ${extractionMethod} method`
           : 'No schema found - generated basic schema from organization profile'
       }),
       {
@@ -247,8 +253,41 @@ serve(async (req) => {
 
 /**
  * Extract schema.org JSON-LD from a URL using Firecrawl
+ * Tries regex extraction first (fast), then AI extraction (smart) as fallback
+ * Returns { schema, method } where method is 'regex', 'ai', or null
  */
-async function extractSchemaFromUrl(url: string, apiKey: string): Promise<any | null> {
+async function extractSchemaFromUrl(url: string, apiKey: string): Promise<{ schema: any; method: string } | null> {
+  try {
+    // STEP 1: Try fast regex-based extraction from HTML
+    console.log('  Attempting regex extraction...')
+    const regexSchema = await extractSchemaFromHTML(url, apiKey)
+
+    if (regexSchema) {
+      console.log('  ✅ Regex extraction successful')
+      return { schema: regexSchema, method: 'regex' }
+    }
+
+    // STEP 2: Fallback to AI-powered extraction
+    console.log('  ⚠️  No schema found in HTML, trying AI extraction...')
+    const aiSchema = await extractSchemaWithAI(url, apiKey)
+
+    if (aiSchema) {
+      console.log('  ✅ AI extraction successful')
+      return { schema: aiSchema, method: 'ai' }
+    }
+
+    console.log('  ❌ No schema found with either method')
+    return null
+  } catch (error) {
+    console.error('Error extracting schema:', error)
+    return null
+  }
+}
+
+/**
+ * Extract schema from HTML using regex (fast, deterministic)
+ */
+async function extractSchemaFromHTML(url: string, apiKey: string): Promise<any | null> {
   try {
     const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
       method: 'POST',
@@ -264,7 +303,7 @@ async function extractSchemaFromUrl(url: string, apiKey: string): Promise<any | 
     })
 
     if (!response.ok) {
-      console.error('Firecrawl error:', await response.text())
+      console.error('Firecrawl scrape error:', await response.text())
       return null
     }
 
@@ -316,7 +355,119 @@ async function extractSchemaFromUrl(url: string, apiKey: string): Promise<any | 
 
     return null
   } catch (error) {
-    console.error('Error extracting schema:', error)
+    console.error('Error extracting schema from HTML:', error)
+    return null
+  }
+}
+
+/**
+ * Extract schema using Firecrawl's AI-powered /extract endpoint
+ * More robust but slower and more expensive - use as fallback
+ */
+async function extractSchemaWithAI(url: string, apiKey: string): Promise<any | null> {
+  try {
+    const response = await fetch('https://api.firecrawl.dev/v1/extract', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        urls: [url],
+        prompt: 'Extract the organization\'s schema.org structured data including name, url, logo, description, social media profiles, contact information, and any other relevant organization details. Look for this data anywhere on the page, not just in JSON-LD markup.',
+        schema: {
+          type: 'object',
+          properties: {
+            '@context': {
+              type: 'string',
+              description: 'Should be https://schema.org'
+            },
+            '@type': {
+              type: 'string',
+              description: 'Should be Organization or a subtype like Corporation, LocalBusiness, etc.'
+            },
+            name: {
+              type: 'string',
+              description: 'Organization name'
+            },
+            url: {
+              type: 'string',
+              description: 'Organization website URL'
+            },
+            logo: {
+              type: 'string',
+              description: 'URL to organization logo'
+            },
+            description: {
+              type: 'string',
+              description: 'Organization description or mission'
+            },
+            sameAs: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Social media profile URLs'
+            },
+            contactPoint: {
+              type: 'object',
+              properties: {
+                '@type': { type: 'string' },
+                telephone: { type: 'string' },
+                email: { type: 'string' },
+                contactType: { type: 'string' }
+              }
+            },
+            address: {
+              type: 'object',
+              properties: {
+                '@type': { type: 'string' },
+                streetAddress: { type: 'string' },
+                addressLocality: { type: 'string' },
+                addressRegion: { type: 'string' },
+                postalCode: { type: 'string' },
+                addressCountry: { type: 'string' }
+              }
+            },
+            foundingDate: { type: 'string' },
+            founder: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            keywords: { type: 'string' },
+            slogan: { type: 'string' }
+          },
+          required: ['@context', '@type', 'name', 'url']
+        }
+      })
+    })
+
+    if (!response.ok) {
+      console.error('Firecrawl extract error:', await response.text())
+      return null
+    }
+
+    const data = await response.json()
+
+    // Extract endpoint returns data in different format
+    const extractedData = data.data
+
+    if (!extractedData || (Array.isArray(extractedData) && extractedData.length === 0)) {
+      return null
+    }
+
+    // Get first result if array
+    const schema = Array.isArray(extractedData) ? extractedData[0] : extractedData
+
+    // Ensure @context and @type are set
+    if (!schema['@context']) {
+      schema['@context'] = 'https://schema.org'
+    }
+    if (!schema['@type']) {
+      schema['@type'] = 'Organization'
+    }
+
+    return schema
+  } catch (error) {
+    console.error('Error with AI extraction:', error)
     return null
   }
 }
