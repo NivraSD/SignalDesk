@@ -1898,6 +1898,8 @@ IMPORTANT:
                       ...msg.metadata,
                       status: 'completed',
                       url: data.gammaUrl,
+                      gamma_url: data.gammaUrl,  // For Memory Vault display
+                      pptx_url: data.exportUrls?.pptx || null,  // For Memory Vault PPTX export
                       presentationTopic: topic,
                       showAutoExecuteActions: true  // Enable action buttons
                     }
@@ -2166,6 +2168,8 @@ IMPORTANT:
                                 },
                                 metadata: {
                                   url: msg.metadata?.url,
+                                  gamma_url: msg.metadata?.gamma_url || msg.metadata?.url,
+                                  pptx_url: msg.metadata?.pptx_url,
                                   slides: msg.metadata?.slides,
                                   organizationId: organization?.id,
                                   source: 'niv-content-v2'
