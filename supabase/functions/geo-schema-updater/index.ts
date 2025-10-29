@@ -39,7 +39,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // STEP 1: Fetch current schema from content_library
+    // STEP 1: Try to fetch current schema from content_library
     const { data: schemaData, error: fetchError } = await supabase
       .from('content_library')
       .select('*')
@@ -49,27 +49,59 @@ serve(async (req) => {
       .eq('metadata->>schema_type', recommendation.schema_type || 'Organization')
       .order('created_at', { ascending: false })
       .limit(1)
-      .single()
+      .maybeSingle()
 
-    if (fetchError) {
-      console.error('Schema not found:', fetchError)
-      throw new Error(`Schema not found for type: ${recommendation.schema_type || 'Organization'}`)
+    let updatedSchema: any
+    let beforeSchema: any
+    let schemaId: string
+    let isNewSchema = false
+
+    if (!schemaData || fetchError) {
+      // Schema doesn't exist - CREATE NEW
+      console.log(`📝 Schema not found for type "${recommendation.schema_type}", creating new schema...`)
+      isNewSchema = true
+
+      // Get organization details for schema
+      const { data: orgData } = await supabase
+        .from('organizations')
+        .select('name, metadata')
+        .eq('id', organization_id)
+        .single()
+
+      const schemaType = recommendation.schema_type || 'Organization'
+
+      // Create base schema structure
+      const baseSchema = {
+        '@context': 'https://schema.org',
+        '@type': schemaType,
+        'name': orgData?.name || 'Organization',
+      }
+
+      beforeSchema = null
+      const changes = recommendation.changes || {}
+
+      // Apply changes to base schema
+      updatedSchema = applySchemaChange(baseSchema, changes)
+
+      console.log('🔧 Applied changes to new schema:', changes)
+    } else {
+      // Schema exists - UPDATE EXISTING
+      console.log('📄 Current schema loaded:', schemaData.id)
+      schemaId = schemaData.id
+
+      // STEP 2: Apply changes to schema
+      // Parse the schema content if it's a string
+      const currentSchema = typeof schemaData.content === 'string'
+        ? JSON.parse(schemaData.content)
+        : schemaData.content
+      const changes = recommendation.changes || {}
+      beforeSchema = JSON.parse(JSON.stringify(currentSchema)) // Deep clone
+
+      console.log('🔧 Applying change:', changes)
+
+      // Apply the change based on action
+      updatedSchema = applySchemaChange(currentSchema, changes)
     }
-
-    console.log('📄 Current schema loaded:', schemaData.id)
-
-    // STEP 2: Apply changes to schema
-    // Parse the schema content if it's a string
-    const currentSchema = typeof schemaData.content === 'string'
-      ? JSON.parse(schemaData.content)
-      : schemaData.content
-    const changes = recommendation.changes || {}
-    const beforeSchema = JSON.parse(JSON.stringify(currentSchema)) // Deep clone
-
-    console.log('🔧 Applying change:', changes)
-
-    // Apply the change based on action
-    const updatedSchema = applySchemaChange(currentSchema, changes)
 
     // STEP 3: Validate the updated schema
     if (!updatedSchema['@context'] || !updatedSchema['@type']) {
@@ -78,27 +110,59 @@ serve(async (req) => {
 
     console.log('✅ Schema validated')
 
-    // STEP 4: Save updated schema back to content_library
-    const { error: updateError } = await supabase
-      .from('content_library')
-      .update({
-        content: JSON.stringify(updatedSchema), // Stringify to match database format
-        metadata: {
-          ...schemaData.metadata,
-          last_updated: new Date().toISOString(),
-          version: (schemaData.metadata?.version || 0) + 1,
-          last_recommendation: recommendation.title
-        },
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', schemaData.id)
+    // STEP 4: Save schema to content_library
+    if (isNewSchema) {
+      // Insert new schema
+      const { data: newSchema, error: insertError } = await supabase
+        .from('content_library')
+        .insert({
+          organization_id,
+          content_type: 'schema',
+          title: `${recommendation.schema_type} Schema`,
+          content: JSON.stringify(updatedSchema),
+          folder: 'Schemas/Active/',
+          status: 'published',
+          metadata: {
+            version: 1,
+            schema_type: recommendation.schema_type || 'Organization',
+            last_updated: new Date().toISOString(),
+            last_recommendation: recommendation.title,
+            platform_optimized: 'all'
+          }
+        })
+        .select('id')
+        .single()
 
-    if (updateError) {
-      console.error('Failed to update schema:', updateError)
-      throw updateError
+      if (insertError) {
+        console.error('Failed to create schema:', insertError)
+        throw insertError
+      }
+
+      schemaId = newSchema.id
+      console.log('💾 New schema created successfully:', schemaId)
+    } else {
+      // Update existing schema
+      const { error: updateError } = await supabase
+        .from('content_library')
+        .update({
+          content: JSON.stringify(updatedSchema), // Stringify to match database format
+          metadata: {
+            ...schemaData.metadata,
+            last_updated: new Date().toISOString(),
+            version: (schemaData.metadata?.version || 0) + 1,
+            last_recommendation: recommendation.title
+          },
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', schemaData.id)
+
+      if (updateError) {
+        console.error('Failed to update schema:', updateError)
+        throw updateError
+      }
+
+      console.log('💾 Schema updated successfully')
     }
-
-    console.log('💾 Schema updated successfully')
 
     // STEP 5: Mark recommendation as executed
     // Try to find and update the recommendation in the database
@@ -121,7 +185,7 @@ serve(async (req) => {
           execution_result: {
             executed_via: 'ui',
             timestamp: new Date().toISOString(),
-            schema_id: schemaData.id,
+            schema_id: schemaId,
             change_applied: changes,
             before_value: beforeSchema[changes.field],
             after_value: updatedSchema[changes.field]
@@ -151,7 +215,7 @@ serve(async (req) => {
           execution_result: {
             executed_via: 'ui',
             timestamp: new Date().toISOString(),
-            schema_id: schemaData.id,
+            schema_id: schemaId,
             change_applied: changes,
             before_value: beforeSchema[changes.field],
             after_value: updatedSchema[changes.field]
@@ -164,15 +228,16 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        schema_id: schemaData.id,
+        schema_id: schemaId,
         schema_type: updatedSchema['@type'],
+        is_new_schema: isNewSchema,
         change_applied: {
-          field: changes.field,
-          action: changes.action,
-          before: beforeSchema[changes.field],
-          after: updatedSchema[changes.field]
+          field: recommendation.changes?.field,
+          action: recommendation.changes?.action,
+          before: beforeSchema?.[recommendation.changes?.field],
+          after: updatedSchema[recommendation.changes?.field]
         },
-        message: 'Schema recommendation applied successfully'
+        message: isNewSchema ? 'Schema created successfully' : 'Schema recommendation applied successfully'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
