@@ -47,7 +47,12 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')!
+    const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')
+
+    if (!anthropicKey) {
+      throw new Error('ANTHROPIC_API_KEY not configured in Supabase secrets')
+    }
+
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     // STEP 1: Gather strategic intelligence
@@ -119,7 +124,7 @@ serve(async (req) => {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 4000,
         temperature: 0.3,
         messages: [{
@@ -130,7 +135,13 @@ serve(async (req) => {
     })
 
     if (!claudeResponse.ok) {
-      throw new Error(`Claude API error: ${claudeResponse.status}`)
+      const errorText = await claudeResponse.text()
+      console.error('Claude API error:', {
+        status: claudeResponse.status,
+        statusText: claudeResponse.statusText,
+        body: errorText
+      })
+      throw new Error(`Claude API error: ${claudeResponse.status} - ${errorText}`)
     }
 
     const claudeResult = await claudeResponse.json()
