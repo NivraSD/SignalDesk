@@ -40,7 +40,7 @@ import IntelligenceSynthesisDisplay from '@/components/IntelligenceSynthesisDisp
 import StakeholderPredictionDashboard from '@/components/predictions/StakeholderPredictionDashboard'
 import SchemaViewer from '@/components/schema/SchemaViewer'
 
-// Import the executive synthesis component if it exists
+// Import the executive report component if it exists
 // import ExecutiveSynthesisDisplay from '../intelligence/ExecutiveSynthesisDisplay'
 
 interface PromptTemplate {
@@ -305,12 +305,12 @@ export default function IntelligenceModule() {
   }
 
   const pipelineStages: PipelineStage[] = [
-    { id: 'mcp-discovery', name: 'Discovery', status: 'pending', icon: Brain },
-    { id: 'monitor-stage-1', name: 'PR Filtering', status: 'pending', icon: Activity },
-    { id: 'monitor-stage-2-relevance', name: 'Relevance Scoring', status: 'pending', icon: Target },
-    { id: 'monitoring-stage-2-enrichment', name: 'Entity Extraction', status: 'pending', icon: Users },
-    { id: 'mcp-executive-synthesis', name: 'Executive Synthesis', status: 'pending', icon: Zap },
-    { id: 'mcp-opportunity-detector', name: 'Opportunity Detection', status: 'pending', icon: AlertCircle }
+    { id: 'mcp-discovery', name: 'Preparing Targets', status: 'pending', icon: Brain },
+    { id: 'monitor-stage-1', name: 'Scanning', status: 'pending', icon: Activity },
+    { id: 'monitor-stage-2-relevance', name: 'Organizing Results', status: 'pending', icon: Target },
+    { id: 'monitoring-stage-2-enrichment', name: 'Synthesizing', status: 'pending', icon: Users },
+    { id: 'mcp-executive-synthesis', name: 'Structuring Opportunities', status: 'pending', icon: Zap },
+    { id: 'mcp-opportunity-detector', name: 'Finalizing', status: 'pending', icon: AlertCircle }
   ]
 
   const [stages, setStages] = useState(pipelineStages)
@@ -798,11 +798,11 @@ export default function IntelligenceModule() {
         console.log('🔍 pipelineData.executiveSynthesis:', pipelineData?.executiveSynthesis)
         console.log('🔍 pipelineData keys:', pipelineData ? Object.keys(pipelineData) : 'null')
 
-        // Check if we have executive synthesis or synthesis
+        // Check if we have executive report or synthesis
         const synthesisData = pipelineData?.synthesis || pipelineData?.executiveSynthesis
         console.log('🔍 synthesisData after OR:', synthesisData)
         if (synthesisData) {
-          console.log('Executive Synthesis received:', synthesisData)
+          console.log('Executive Report received:', synthesisData)
           setExecutiveSynthesis(synthesisData)
 
           // Mark all stages as complete
@@ -855,7 +855,7 @@ export default function IntelligenceModule() {
               }`}
             >
               <Sparkles className="w-4 h-4" />
-              Executive Synthesis
+              Executive Report
             </button>
             <button
               onClick={() => setActiveTab('social')}
@@ -907,24 +907,24 @@ export default function IntelligenceModule() {
 
       {/* Content Area */}
       <div className="flex-1 overflow-hidden">
-        {/* Executive Synthesis Tab */}
+        {/* Executive Report Tab */}
         {activeTab === 'synthesis' && (
           <div className="p-6 overflow-y-auto h-full">
             <div className="max-w-4xl mx-auto">
-              {/* Start Synthesis Button - Always visible at top */}
+              {/* Start Report Button - Always visible at top */}
               <div className="mb-6 flex justify-between items-center">
-                <h3 className="text-xl font-bold text-yellow-400">Executive Synthesis</h3>
+                <h3 className="text-xl font-bold text-yellow-400">Executive Report</h3>
                 <button
                   onClick={runPipeline}
                   disabled={isRunning || !organization}
                   className="px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg hover:from-yellow-600 hover:to-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   <Sparkles className="w-4 h-4" />
-                  {executiveSynthesis ? 'Run New Synthesis' : 'Start Synthesis'}
+                  {executiveSynthesis ? 'Generate New Report' : 'Generate Report'}
                 </button>
               </div>
 
-              {/* Executive Synthesis Component */}
+              {/* Executive Report Component */}
               {!executiveSynthesis ? (
                 <div className="bg-gray-800/30 rounded-lg p-8 border-2 border-dashed border-gray-700">
                   <div className="text-center">
@@ -938,7 +938,7 @@ export default function IntelligenceModule() {
                           disabled={isRunning || !organization}
                           className="px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg hover:from-yellow-600 hover:to-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          Retry Synthesis
+                          Retry Report Generation
                         </button>
                       </>
                     ) : isRunning ? (
@@ -979,7 +979,7 @@ export default function IntelligenceModule() {
                       <>
                         <Sparkles className="w-12 h-12 mx-auto mb-4 text-yellow-400" />
                         <p className="text-gray-400">
-                          {!organization ? 'Please select an organization first' : 'Click "Start Synthesis" above to transform research into strategic insights'}
+                          {!organization ? 'Please select an organization first' : 'Click "Generate Report" above to transform research into strategic insights'}
                         </p>
                       </>
                     )}
