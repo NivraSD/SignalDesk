@@ -164,6 +164,10 @@ export default function TargetManagement({
     }
   }
 
+  const updateTargetPriority = async (targetId: string, newPriority: IntelligenceTarget['priority']) => {
+    await updateTarget(targetId, { priority: newPriority })
+  }
+
   const deleteTarget = async (targetId: string) => {
     if (!confirm('Are you sure you want to delete this target?')) return
 
@@ -597,9 +601,17 @@ export default function TargetManagement({
                               <div className="flex-1">
                                 <div className="flex items-center gap-3">
                                   <h4 className="text-white font-medium">{target.name}</h4>
-                                  <span className={`text-sm font-medium ${getPriorityColor(target.priority)}`}>
-                                    {target.priority.toUpperCase()}
-                                  </span>
+                                  <select
+                                    value={target.priority}
+                                    onChange={(e) => updateTargetPriority(target.id, e.target.value as IntelligenceTarget['priority'])}
+                                    disabled={saving}
+                                    className={`px-2 py-1 text-xs font-medium rounded border bg-gray-900 focus:outline-none focus:ring-2 focus:ring-cyan-500 disabled:opacity-50 ${getPriorityColor(target.priority)}`}
+                                  >
+                                    <option value="low" className="bg-gray-900 text-gray-400">LOW</option>
+                                    <option value="medium" className="bg-gray-900 text-yellow-400">MEDIUM</option>
+                                    <option value="high" className="bg-gray-900 text-orange-400">HIGH</option>
+                                    <option value="critical" className="bg-gray-900 text-red-400">CRITICAL</option>
+                                  </select>
                                   {target.prediction_count !== undefined && target.prediction_count > 0 && (
                                     <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full flex items-center gap-1">
                                       🔮 {target.prediction_count} {target.prediction_count === 1 ? 'prediction' : 'predictions'}
