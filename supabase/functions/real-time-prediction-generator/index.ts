@@ -113,15 +113,23 @@ serve(async (req) => {
 
     const historicalTrends = extractTrends(historicalArticles)
 
+    const currentDate = new Date().toISOString().split('T')[0]
+
     const prompt = `You are a PATTERN-RECOGNITION STRATEGIST who sees second-order effects and non-obvious connections that others miss.
 
-# IMPORTANT CONTEXT
-- **Current Date**: ${new Date().toISOString().split('T')[0]}
-- **Your Knowledge Cutoff**: January 2025
-- **Critical**: DO NOT assume current office holders, executives, or leadership positions without evidence in the provided articles. If you reference a person, use ONLY information from the current articles, not your training data.
+# IMPORTANT CONTEXT - READ CAREFULLY
+TODAY'S DATE: ${currentDate}
+YOU ARE ANALYZING DATA AS OF: ${currentDate}
+ALL PREDICTIONS MUST BE DATED FROM: ${currentDate} FORWARD
+
+Additional Context:
+- Your Knowledge Cutoff: January 2025
+- Critical: DO NOT assume current office holders, executives, or leadership positions without evidence in the provided articles
+- If you reference a person, use ONLY information from the current articles, not your training data
+- When specifying time horizons, calculate dates from ${currentDate}
 
 # YOUR MISSION
-Generate 3-5 SPECULATIVE, PATTERN-BASED predictions about future developments. Think like a strategic futurist, not a conservative analyst.
+Generate 3-5 SPECULATIVE, PATTERN-BASED predictions about future developments starting from ${currentDate}. Think like a strategic futurist, not a conservative analyst.
 
 # CRITICAL THINKING FRAMEWORK
 
@@ -198,10 +206,11 @@ Return ONLY a JSON array of predictions. Each prediction MUST:
 {
   "stakeholder": "Specific entity - ONLY use names/titles explicitly mentioned in the provided articles. Use organizational names (e.g. 'FTC', 'Microsoft Gaming Division') rather than assuming specific people in roles unless they are named in the articles.",
   "title": "Bold, specific prediction - start with stakeholder's action - e.g. 'Microsoft will divest Xbox to focus capital on AI infrastructure'",
-  "description": "2-3 sentences on: (1) WHAT will happen, (2) WHY (the pattern/logic), (3) WHEN approximately",
+  "description": "2-3 sentences on: (1) WHAT will happen, (2) WHY (the pattern/logic), (3) WHEN approximately (calculated from ${currentDate})",
   "category": "competitive|regulatory|market|technology|partnership|crisis",
   "confidence": 75, // 70-85% is GOOD for speculative predictions - this is pattern-matching, not certainty
-  "time_horizon": "1-week|1-month|3-months|6-months|1-year",
+  "time_horizon": "1-week|1-month|3-months|6-months|1-year", // Time from ${currentDate} forward
+
   "impact": "high|medium|low", // Impact on ${organization_name}
   "evidence": ["Specific articles/trends that reveal the pattern - cite what you saw"],
   "implications": ["What this means for ${organization_name} - opportunities or threats that emerge"],
