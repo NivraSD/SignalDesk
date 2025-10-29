@@ -51,22 +51,37 @@ export default function CrisisScenarioSelector({ onClose, onScenarioSelected }: 
 
     setLoading(true)
     try {
-      console.log('🚨 Loading intelligent crisis scenarios for', organization.name)
+      console.log('🚨 Loading crisis scenarios from plan for', organization.name)
 
-      const { data, error } = await supabase.functions.invoke('mcp-crisis-scenario-generator', {
-        body: {
-          organization_id: organization.id,
-          organization_name: organization.name
-        }
-      })
+      // Load scenarios from the crisis plan instead of generating dynamically
+      const { data: planData, error: planError } = await supabase
+        .from('content_library')
+        .select('*')
+        .eq('organization_id', organization.name)
+        .eq('content_type', 'crisis-plan')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
 
-      if (error) {
-        console.error('Failed to load scenarios:', error)
-        // Fall back to empty array
+      if (planError || !planData) {
+        console.error('Failed to load crisis plan:', planError)
         setScenarios([])
       } else {
-        console.log('✅ Loaded scenarios:', data.scenarios?.length || 0)
-        setScenarios(data.scenarios || [])
+        const plan = JSON.parse(planData.content)
+        console.log('✅ Loaded crisis plan with scenarios:', plan.scenarios?.length || 0)
+
+        // Convert crisis plan scenarios to selector format
+        const convertedScenarios = (plan.scenarios || []).map((scenario: any) => ({
+          category: scenario.type || 'general',
+          title: scenario.title,
+          description: scenario.description,
+          trigger_signals: scenario.triggerSignals || [],
+          severity: mapImpactToSeverity(scenario.impact),
+          icon: getIconForScenario(scenario),
+          immediate_actions: scenario.immediateActions || []
+        }))
+
+        setScenarios(convertedScenarios)
       }
     } catch (err) {
       console.error('Error loading scenarios:', err)
@@ -75,6 +90,31 @@ export default function CrisisScenarioSelector({ onClose, onScenarioSelected }: 
       setLoading(false)
     }
   }
+
+  // Helper function to map impact levels to severity
+  const mapImpactToSeverity = (impact: string): 'critical' | 'high' | 'medium' => {
+    if (!impact) return 'medium'
+    const impactLower = impact.toLowerCase()
+    if (impactLower === 'critical' || impactLower === 'major') return 'critical'
+    if (impactLower === 'moderate') return 'high'
+    return 'medium'
+  }
+
+  // Helper function to get appropriate icon for scenario
+  const getIconForScenario = (scenario: any): string => {
+    const title = scenario.title?.toLowerCase() || ''
+    const type = scenario.type?.toLowerCase() || ''
+
+    if (title.includes('security') || title.includes('breach') || title.includes('cyber')) return 'shield'
+    if (title.includes('financial') || title.includes('revenue')) return 'dollar-sign'
+    if (title.includes('reputation') || title.includes('pr') || title.includes('media')) return 'activity'
+    if (title.includes('legal') || title.includes('compliance') || title.includes('regulatory')) return 'scale'
+    if (title.includes('employee') || title.includes('workforce') || title.includes('hr')) return 'users'
+    if (title.includes('product') || title.includes('service') || title.includes('operational')) return 'target'
+    if (type.includes('fire') || title.includes('fire')) return 'flame'
+
+    return 'alert-triangle'
+  }
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-6">
       <div className="bg-gray-900 border border-gray-800 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
@@ -82,7 +122,7 @@ export default function CrisisScenarioSelector({ onClose, onScenarioSelected }: 
           <div>
             <h2 className="text-xl font-bold text-white">Select Crisis Scenario</h2>
             <p className="text-sm text-gray-400 mt-1">
-              {loading ? 'Analyzing intelligence data...' : `${scenarios.length} scenarios based on your organization's intelligence`}
+              {loading ? 'Loading scenarios from crisis plan...' : `${scenarios.length} scenarios from your crisis plan`}
             </p>
           </div>
           <button
@@ -96,13 +136,14 @@ export default function CrisisScenarioSelector({ onClose, onScenarioSelected }: 
         {loading ? (
           <div className="p-12 flex flex-col items-center justify-center">
             <Loader className="w-8 h-8 text-blue-400 animate-spin mb-4" />
-            <p className="text-gray-400">Generating intelligent crisis scenarios...</p>
-            <p className="text-sm text-gray-500 mt-2">Analyzing competitors, stakeholders, and strategic topics</p>
+            <p className="text-gray-400">Loading crisis scenarios from your plan...</p>
+            <p className="text-sm text-gray-500 mt-2">Retrieving pre-configured crisis scenarios</p>
           </div>
         ) : scenarios.length === 0 ? (
           <div className="p-12 text-center">
             <AlertTriangle className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
-            <p className="text-gray-400">No scenarios could be generated. Try running intelligence first.</p>
+            <p className="text-gray-400 mb-2">No scenarios found in crisis plan.</p>
+            <p className="text-sm text-gray-500">Generate a crisis plan first to create scenarios.</p>
           </div>
         ) : (
           <div className="p-6 grid grid-cols-2 gap-4">
