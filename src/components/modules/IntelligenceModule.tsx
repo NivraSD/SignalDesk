@@ -306,7 +306,6 @@ export default function IntelligenceModule() {
 
   const pipelineStages: PipelineStage[] = [
     { id: 'mcp-discovery', name: 'Preparing Targets', status: 'pending', icon: Brain },
-    { id: 'monitor-stage-1', name: 'Scanning', status: 'pending', icon: Activity },
     { id: 'monitor-stage-2-relevance', name: 'Organizing Results', status: 'pending', icon: Target },
     { id: 'monitoring-stage-2-enrichment', name: 'Synthesizing', status: 'pending', icon: Users },
     { id: 'mcp-executive-synthesis', name: 'Structuring Opportunities', status: 'pending', icon: Zap },
