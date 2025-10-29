@@ -561,37 +561,44 @@ export default function IntelligenceModule() {
     console.log('⚡ Executing schema recommendation:', recommendation.title)
 
     try {
-      // In a full implementation, this would:
-      // 1. Fetch the current schema from content_library
-      // 2. Apply the changes specified in recommendation.changes
-      // 3. Update the schema in content_library
-      // 4. Update the recommendation status to 'executed'
-      // 5. Track before/after metrics
-
-      // For now, we'll just update the recommendation status in the database
-      const response = await fetch('/api/schema-recommendations/execute', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
+      // Call the geo-schema-updater edge function to actually apply the changes
+      const { data, error } = await supabase.functions.invoke('geo-schema-updater', {
+        body: {
           organization_id: organization.id,
           recommendation
-        })
+        }
       })
 
-      if (!response.ok) {
-        throw new Error('Failed to execute recommendation')
+      if (error) {
+        throw error
       }
 
-      const result = await response.json()
-      console.log('✅ Recommendation executed:', result)
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to execute recommendation')
+      }
 
-      // Reload GEO results to reflect the execution
-      await runGeoMonitor()
-    } catch (error) {
+      console.log('✅ Schema updated:', data)
+
+      // Show success message
+      alert(`✅ Schema updated successfully!\n\nChanged: ${data.change_applied.field}\nFrom: ${JSON.stringify(data.change_applied.before)}\nTo: ${JSON.stringify(data.change_applied.after)}`)
+
+      // Remove the executed recommendation from the UI
+      if (geoResults?.synthesis?.recommendations) {
+        const updatedRecommendations = geoResults.synthesis.recommendations.filter(
+          (r: any) => r.title !== recommendation.title
+        )
+        setGeoResults({
+          ...geoResults,
+          synthesis: {
+            ...geoResults.synthesis,
+            recommendations: updatedRecommendations
+          }
+        })
+      }
+
+    } catch (error: any) {
       console.error('Error executing recommendation:', error)
-      alert('Failed to execute recommendation. Check console for details.')
+      alert(`Failed to execute recommendation: ${error.message || 'Unknown error'}`)
     }
   }
 
