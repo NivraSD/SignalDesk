@@ -110,7 +110,7 @@ function extractIntelligenceData(enrichedData: any, organizationName: string) {
 
   const discoveryTargets = {
     competitors: intelligenceTargets?.filter(t => t.type === 'competitor').map(t => t.name) || [],
-    stakeholders: intelligenceTargets?.filter(t => t.type === 'stakeholder').map(t => t.name) || [],
+    stakeholders: intelligenceTargets?.filter(t => t.type === 'stakeholder' || t.type === 'influencer').map(t => t.name) || [],
     topics: intelligenceTargets?.filter(t => t.type === 'topic' || t.type === 'keyword').map(t => t.name) || []
   };
 
