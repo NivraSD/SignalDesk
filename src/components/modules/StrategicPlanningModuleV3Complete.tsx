@@ -575,10 +575,10 @@ export default function StrategicPlanningModuleV3Complete({
       // Get campaign name for folder structure
       const campaignName = blueprint?.overview?.campaignName || 'Untitled Campaign'
 
-      // Insert into content_library (this is the FIRST time we save it)
-      const { error: insertError } = await supabase
+      // Upsert into content_library (handles both insert and update)
+      const { error: upsertError } = await supabase
         .from('content_library')
-        .insert({
+        .upsert({
           id: item.id,
           session_id: sessionId,
           organization_id: orgId,
@@ -597,12 +597,13 @@ export default function StrategicPlanningModuleV3Complete({
           },
           tags: ['campaign', `priority-${item.stakeholderPriority}`, item.stakeholder],
           intelligence_status: 'draft',
-          created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'id'
         })
 
-      if (insertError) {
-        console.error('Error saving generated content:', insertError)
+      if (upsertError) {
+        console.error('Error saving generated content:', upsertError)
       }
 
     } catch (error: any) {
@@ -752,10 +753,10 @@ export default function StrategicPlanningModuleV3Complete({
           // Get campaign name for folder structure
           const campaignName = blueprint?.overview?.campaignName || 'Untitled Campaign'
 
-          // Insert into content_library (this is the FIRST time we save it)
+          // Upsert into content_library (handles both insert and update)
           await supabase
             .from('content_library')
-            .insert({
+            .upsert({
               id: item.id,
               session_id: sessionId,
               organization_id: orgId,
@@ -774,8 +775,9 @@ export default function StrategicPlanningModuleV3Complete({
               },
               tags: ['campaign', `priority-${item.stakeholderPriority}`, item.stakeholder],
               intelligence_status: 'draft',
-              created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
+            }, {
+              onConflict: 'id'
             })
 
           return { item, success: true }
