@@ -96,8 +96,8 @@ export async function POST(req: NextRequest) {
     const targetsToInsert = targets.map((target: any) => ({
       organization_id,
       name: target.name,
-      target_type: target.type, // Fixed: map to correct column 'target_type'
-      category: target.category || (target.type === 'stakeholder' ? target.stakeholderType : undefined), // stakeholder, regulator, influencer, etc.
+      type: target.type,
+      category: target.category || (target.type === 'stakeholder' ? target.stakeholderType : undefined),
       priority: target.priority || 'medium',
       active: target.active !== false,
       keywords: target.keywords || [],

@@ -102,6 +102,13 @@ export default function OrganizationOnboarding({
       // Pre-select all discovered items
       setSelectedCompetitors(new Set(data.discovered.competitors))
       setSelectedTopics(new Set(data.discovered.topics))
+      // Pre-select stakeholders too (regulators, influencers, customers)
+      const allStakeholders = [
+        ...(data.discovered.stakeholders?.regulators || []),
+        ...(data.discovered.stakeholders?.influencers || []),
+        ...(data.discovered.stakeholders?.major_customers || [])
+      ]
+      setSelectedStakeholders(new Set(allStakeholders))
 
       console.log('✅ Discovery complete')
       setStep(2)
