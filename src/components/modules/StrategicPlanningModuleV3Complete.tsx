@@ -267,39 +267,10 @@ export default function StrategicPlanningModuleV3Complete({
       return
     }
 
-    // Get campaign name for folder structure
-    const campaignName = blueprint.overview?.campaignName || 'Untitled Campaign'
-
-    // Save to content_library with folder structure
-    const dbItems = items.map(item => ({
-      id: item.id,
-      session_id: sessionId,
-      organization_id: orgId,
-      content_type: item.type,
-      title: item.topic,
-      content: '', // Will be filled when generated
-      status: 'pending',
-      folder: `Campaigns/${campaignName}/Priority ${item.stakeholderPriority}/${item.stakeholder}`,
-      metadata: {
-        stakeholder: item.stakeholder,
-        stakeholder_priority: item.stakeholderPriority,
-        lever_name: item.leverName,
-        lever_priority: item.leverPriority,
-        target: item.target,
-        details: item.details
-      },
-      tags: ['campaign', `priority-${item.stakeholderPriority}`, item.stakeholder],
-      intelligence_status: 'pending'
-    }))
-
-    const { error: insertError } = await supabase
-      .from('content_library')
-      .insert(dbItems)
-
-    if (insertError) {
-      console.error('Error saving items:', insertError)
-      setError('Failed to initialize execution items')
-    }
+    // IMPORTANT: Do NOT save empty items to database yet!
+    // Items will be saved to content_library only when they are GENERATED
+    // This prevents empty tactical content from polluting Memory Vault
+    console.log(`✅ Initialized ${items.length} content items in local state (NOT saved to database yet)`)
 
     setContentItems(items)
     setLoading(false)
@@ -601,15 +572,38 @@ export default function StrategicPlanningModuleV3Complete({
         i.id === item.id ? updatedItem : i
       ))
 
-      // Update content_library with generated content
-      await supabase
+      // Get campaign name for folder structure
+      const campaignName = blueprint?.overview?.campaignName || 'Untitled Campaign'
+
+      // Insert into content_library (this is the FIRST time we save it)
+      const { error: insertError } = await supabase
         .from('content_library')
-        .update({
+        .insert({
+          id: item.id,
+          session_id: sessionId,
+          organization_id: orgId,
+          content_type: item.type,
+          title: item.topic,
           content: generatedContent,
           status: 'draft',
+          folder: `Campaigns/${campaignName}/Priority ${item.stakeholderPriority}/${item.stakeholder}`,
+          metadata: {
+            stakeholder: item.stakeholder,
+            stakeholder_priority: item.stakeholderPriority,
+            lever_name: item.leverName,
+            lever_priority: item.leverPriority,
+            target: item.target,
+            details: item.details
+          },
+          tags: ['campaign', `priority-${item.stakeholderPriority}`, item.stakeholder],
+          intelligence_status: 'draft',
+          created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
-        .eq('id', item.id)
+
+      if (insertError) {
+        console.error('Error saving generated content:', insertError)
+      }
 
     } catch (error: any) {
       console.error('Generation error:', error)
@@ -620,13 +614,7 @@ export default function StrategicPlanningModuleV3Complete({
           : i
       ))
 
-      // Save error to database
-      await supabase
-        .from('content_library')
-        .update({
-          status: 'failed'
-        })
-        .eq('id', item.id)
+      // Don't save failed items to database - they only exist in local state
     } finally {
       setGenerating(prev => {
         const newSet = new Set(prev)
@@ -761,15 +749,34 @@ export default function StrategicPlanningModuleV3Complete({
               : i
           ))
 
-          // Update content_library with generated content
+          // Get campaign name for folder structure
+          const campaignName = blueprint?.overview?.campaignName || 'Untitled Campaign'
+
+          // Insert into content_library (this is the FIRST time we save it)
           await supabase
             .from('content_library')
-            .update({
+            .insert({
+              id: item.id,
+              session_id: sessionId,
+              organization_id: orgId,
+              content_type: item.type,
+              title: item.topic,
               content: generatedContent,
               status: 'draft',
+              folder: `Campaigns/${campaignName}/Priority ${item.stakeholderPriority}/${item.stakeholder}`,
+              metadata: {
+                stakeholder: item.stakeholder,
+                stakeholder_priority: item.stakeholderPriority,
+                lever_name: item.leverName,
+                lever_priority: item.leverPriority,
+                target: item.target,
+                details: item.details
+              },
+              tags: ['campaign', `priority-${item.stakeholderPriority}`, item.stakeholder],
+              intelligence_status: 'draft',
+              created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             })
-            .eq('id', item.id)
 
           return { item, success: true }
         } catch (error: any) {
