@@ -68,6 +68,74 @@ serve(withCors(async (req) => {
 
     const startTime = Date.now();
 
+    // ==================== PRE-SUMMARIZATION STEP ====================
+    // Summarize each research section separately to reduce final payload size
+    console.log('📝 Pre-summarizing research sections to reduce payload size...');
+
+    const summarizeResearchSection = async (sectionName: string, sectionData: any, focus: string) => {
+      if (!sectionData || (!sectionData.results && !sectionData.journalists)) {
+        return `No ${sectionName} data available.`;
+      }
+
+      const summarizationPrompt = `Summarize the following ${sectionName} research data concisely (max 400 words).
+
+Focus on: ${focus}
+
+Research Data:
+${JSON.stringify(sectionData, null, 2)}
+
+Provide a clear, structured summary that captures:
+- Key findings and patterns
+- Most important entities, names, and data points
+- Critical insights relevant to campaign planning
+
+Be concise but preserve all important specific details (names, numbers, outlets, etc.).`;
+
+      try {
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': ANTHROPIC_API_KEY!,
+            'anthropic-version': '2023-06-01'
+          },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 1000,
+            temperature: 0.3,
+            messages: [{
+              role: 'user',
+              content: summarizationPrompt
+            }]
+          })
+        });
+
+        if (!response.ok) {
+          console.error(`Failed to summarize ${sectionName}`);
+          return `Summary unavailable for ${sectionName}`;
+        }
+
+        const data = await response.json();
+        return data.content[0].text;
+      } catch (error) {
+        console.error(`Error summarizing ${sectionName}:`, error);
+        return `Summary unavailable for ${sectionName}`;
+      }
+    };
+
+    // Summarize each section in parallel
+    const [stakeholderSummary, narrativeSummary, channelSummary, historicalSummary] = await Promise.all([
+      summarizeResearchSection('Stakeholder', stakeholderResearch, 'stakeholder profiles, psychology, decision journeys, and influence pathways'),
+      summarizeResearchSection('Narrative', narrativeResearch, 'dominant narratives, narrative vacuums, and messaging opportunities'),
+      summarizeResearchSection('Channel', channelResearch, 'journalists (names, outlets, beats, tiers), publications, and media landscape'),
+      summarizeResearchSection('Historical', historicalResearch, 'patterns, trends, successful tactics, and timing insights')
+    ]);
+
+    console.log('✅ Pre-summarization complete');
+    console.log(`📏 Summary sizes - Stakeholder: ${stakeholderSummary.length}, Narrative: ${narrativeSummary.length}, Channel: ${channelSummary.length}, Historical: ${historicalSummary.length}`);
+
+    // ==================== BUILD FINAL SYNTHESIS PROMPT ====================
+
     // Build the system prompt with exact JSON schema
     const systemPrompt = `You are synthesizing campaign research into a CampaignIntelligenceBrief for a VECTOR campaign.
 
@@ -234,7 +302,7 @@ IMPORTANT SYNTHESIS GUIDELINES:
 
 Return ONLY the JSON object. No markdown, no explanation, just pure JSON.`;
 
-    // Build the user prompt with ALL research data
+    // Build the user prompt with SUMMARIZED research data (much smaller payload)
     const userPrompt = `Campaign Goal: ${campaignGoal}
 Organization: ${organizationContext.name || 'Unknown'}
 Industry: ${organizationContext.industry || 'General'}
@@ -243,20 +311,22 @@ ${refinementRequest ? `Refinement: ${refinementRequest}` : ''}
 ===== ORGANIZATION PROFILE =====
 ${JSON.stringify(compiledResearch?.discovery?.profile, null, 2)}
 
-===== STAKEHOLDER RESEARCH =====
-${JSON.stringify(stakeholderResearch, null, 2)}
+===== STAKEHOLDER RESEARCH SUMMARY =====
+${stakeholderSummary}
 
-===== NARRATIVE RESEARCH =====
-${JSON.stringify(narrativeResearch, null, 2)}
+===== NARRATIVE RESEARCH SUMMARY =====
+${narrativeSummary}
 
-===== CHANNEL RESEARCH =====
-${JSON.stringify(channelResearch, null, 2)}
+===== CHANNEL RESEARCH SUMMARY =====
+${channelSummary}
 
-===== HISTORICAL RESEARCH =====
-${JSON.stringify(historicalResearch, null, 2)}
+===== HISTORICAL RESEARCH SUMMARY =====
+${historicalSummary}
 
 ===== SYNTHESIS TASK =====
-Synthesize ALL of the above research into a complete CampaignIntelligenceBrief with the exact JSON structure specified in the system prompt.
+Synthesize ALL of the above pre-summarized research into a complete CampaignIntelligenceBrief with the exact JSON structure specified in the system prompt.
+
+The summaries above were created from extensive raw research data and contain all the key insights, specific names, numbers, and patterns.
 
 Focus on creating actionable, detailed intelligence that will enable:
 1. Strategic positioning decisions (Stage 3)
@@ -272,7 +342,7 @@ Return ONLY the JSON object.`;
     // Call Claude for synthesis with timeout and error handling
     const claudeRequestBody = {
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 32000,  // Increased for comprehensive synthesis with all research data
+      max_tokens: 16000,  // Reduced from 32k since we're using pre-summarized data
       system: systemPrompt,
       messages: [
         {
@@ -284,9 +354,9 @@ Return ONLY the JSON object.`;
 
     console.log(`🚀 Sending request to Claude API...`);
 
-    // Add timeout to prevent hanging (5 minutes for large research synthesis with extensive data)
+    // Timeout protection (3 minutes should be sufficient with pre-summarized data)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutes instead of 2
+    const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minutes
 
     let response;
     try {
@@ -307,8 +377,8 @@ Return ONLY the JSON object.`;
     } catch (fetchError: any) {
       clearTimeout(timeoutId);
       if (fetchError.name === 'AbortError') {
-        console.error('❌ Claude API request timed out after 5 minutes');
-        throw new Error('Claude API request timed out after 5 minutes - research payload may be too large or Claude is overloaded');
+        console.error('❌ Claude API request timed out after 3 minutes');
+        throw new Error('Claude API request timed out after 3 minutes - synthesis may be taking longer than expected');
       }
       console.error('❌ Fetch error calling Claude API:', fetchError);
       throw new Error(`Failed to call Claude API: ${fetchError.message}`);
