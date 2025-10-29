@@ -1,5 +1,28 @@
 // Strategic Framework Generator for NIV
 
+// Helper: Clean and format article for display
+function formatArticleForDisplay(article: any): string | null {
+  const rawTitle = article.title || article.headline
+  if (!rawTitle) return null
+
+  // Clean title - remove extra whitespace, special chars
+  const title = rawTitle
+    .replace(/\s+/g, ' ')
+    .replace(/[^\w\s\-\.,&]/g, '')
+    .trim()
+
+  // Clean and truncate description if available
+  const description = (article.description || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .substring(0, 200)
+
+  // Format: **Title** - Description
+  return description
+    ? `**${title}** - ${description}${description.length >= 200 ? '...' : ''}`
+    : `**${title}**`
+}
+
 // Type definition for structured framework
 export interface NivStrategicFramework {
   id: string
@@ -172,13 +195,12 @@ export function generateStructuredFramework(
         keyFindings.push(research.results.intelligencePipeline.synthesis)
       }
 
-      // Also extract article titles as findings if we still have none
+      // Also extract clean article findings if we still have none
       if (keyFindings.length === 0 && research.results?.intelligencePipeline?.articles) {
         console.log(`    Extracting findings from ${research.results.intelligencePipeline.articles.length} articles`)
         research.results.intelligencePipeline.articles.forEach((article: any) => {
-          if (article.title || article.headline) {
-            keyFindings.push(article.title || article.headline)
-          }
+          const formatted = formatArticleForDisplay(article)
+          if (formatted) keyFindings.push(formatted)
         })
       }
 
@@ -197,11 +219,10 @@ export function generateStructuredFramework(
     console.log(`  Found ${toolResults.intelligencePipeline.articles.length} articles in current toolResults`)
     allArticles.push(...toolResults.intelligencePipeline.articles)
 
-    // Also extract titles as findings from current request
+    // Also extract clean findings from current request
     toolResults.intelligencePipeline.articles.forEach((article: any) => {
-      if (article.title || article.headline) {
-        keyFindings.push(article.title || article.headline)
-      }
+      const formatted = formatArticleForDisplay(article)
+      if (formatted) keyFindings.push(formatted)
     })
   }
   if (toolResults?.fireplexityData) {

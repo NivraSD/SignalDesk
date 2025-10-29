@@ -1463,7 +1463,28 @@ ${campaignContext.timeline || 'Not specified'}
 
     if (needsResearch) {
       console.log('🔍 Research needed...')
-      researchResults = await executeResearch(message, organizationId)
+
+      // Construct proper search query from understanding, not user's conversational message
+      const entities = understanding.understanding?.entities || []
+      const topics = understanding.understanding?.topics || []
+
+      // Build search query from entities + topics
+      let researchQuery = ''
+      if (entities.length > 0) {
+        researchQuery = entities.join(' ')
+      }
+      if (topics.length > 0) {
+        researchQuery += ' ' + topics.slice(0, 3).join(' ')  // Top 3 topics
+      }
+
+      // Fallback to message if we have no entities/topics
+      if (!researchQuery.trim()) {
+        researchQuery = message
+      }
+
+      console.log(`🔍 Research query: "${researchQuery.trim()}"`)
+
+      researchResults = await executeResearch(researchQuery.trim(), organizationId)
 
       // Check if research actually returned results
       if (researchResults.articles?.length > 0) {
@@ -1987,6 +2008,49 @@ ${campaignContext.timeline || 'Not specified'}
 
         if (content.additional_journalists) {
           displayMessage += `\n\n---\n\n${content.additional_journalists}`
+        }
+
+        // Auto-save media list to Memory Vault
+        const mediaListFolder = 'Media Lists/'
+        console.log(`💾 Auto-saving media list to folder: ${mediaListFolder}`)
+
+        try {
+          const mediaListContent = {
+            focus_area: focusArea,
+            tier: tier,
+            total_count: allJournalists.length,
+            journalists: allJournalists.map(j => ({
+              name: j.name,
+              outlet: j.outlet,
+              title: j.title,
+              beat: j.beat || j.coverage_area,
+              email: j.email,
+              twitter: j.twitter_handle || j.twitter,
+              linkedin: j.linkedin_url
+            })),
+            generated_at: new Date().toISOString()
+          }
+
+          await supabase.from('content_library').insert({
+            id: crypto.randomUUID(),
+            organization_id: organizationId,
+            content_type: 'media-list',
+            title: `Media List - ${focusArea} (${tier})`,
+            content: mediaListContent,
+            folder: mediaListFolder,
+            metadata: {
+              focus_area: focusArea,
+              tier: tier,
+              journalist_count: allJournalists.length,
+              source: content.source,
+              generated_by: 'niv-content'
+            }
+          })
+
+          console.log(`✅ Auto-saved media list to ${mediaListFolder}`)
+        } catch (saveError) {
+          console.error('❌ Error auto-saving media list:', saveError)
+          // Don't fail the request if save fails
         }
 
         return new Response(JSON.stringify({
@@ -3479,14 +3543,17 @@ async function callClaude(
     const researchContext = []
 
     if (research.synthesis) {
-      researchContext.push(`**Overview:** ${research.synthesis}`)
+      researchContext.push(`**Research Overview:**`)
+      researchContext.push(research.synthesis)
+      researchContext.push('')  // Empty line for spacing
     }
 
     if (research.keyFindings && research.keyFindings.length > 0) {
-      researchContext.push(`\n**Key Facts & Insights:**`)
+      researchContext.push(`**Sources Found:**`)
       research.keyFindings.forEach((finding: string, i: number) => {
         researchContext.push(`${i + 1}. ${finding}`)
       })
+      researchContext.push('')  // Empty line for spacing
     }
 
     // Different instructions based on whether we should present findings first
@@ -3507,24 +3574,50 @@ Would you like me to proceed with creating the presentation outline using strate
 
 ${context}`
       } else {
-        currentUserMessage = `**RESEARCH RESULTS:**
+        currentUserMessage = `**RESEARCH COMPLETED**
+
 ${researchContext.join('\n')}
 
-**IMPORTANT - RESEARCH PRESENTATION MODE:**
-Present these research findings to the user objectively and clearly.
-Summarize the key insights and data points you found (2-3 main themes).
-Then ask: "Based on these findings, would you like me to create the presentation outline, or would you like to explore any specific areas further?"
+**INSTRUCTIONS FOR PRESENTING RESEARCH:**
+Your job now is to synthesize these findings into a clear, scannable summary for the user:
 
-DO NOT create the presentation outline yet - present findings first and wait for user confirmation.
+1. **Start with a brief context** (1-2 sentences about what you researched)
+2. **Present 2-4 key themes/insights** - synthesize the sources above into clear takeaways
+3. **Format for readability:**
+   - Use clear headers like "Key Trends:", "Market Context:", "Competitive Landscape:"
+   - Use bullets or short numbered lists
+   - Keep each insight to 1-2 sentences
+4. **Then propose 2-3 strategic angles** based on the research
+5. **Ask which approach the user prefers**
+
+DO NOT:
+- Dump raw source data
+- Create the presentation outline yet
+- Call any generation tools
+
+Example format:
+"I researched [topic]. Here's what I found:
+
+**Key Trends:**
+- [Insight 1]
+- [Insight 2]
+- [Insight 3]
+
+**Strategic Angles:**
+1. [Approach 1] - [Why it works]
+2. [Approach 2] - [Why it works]
+
+Which resonates with your goals?"
 
 ${context}`
       }
 
     } else {
-      currentUserMessage = `**RESEARCH RESULTS:**
+      currentUserMessage = `**RESEARCH AVAILABLE:**
+
 ${researchContext.join('\n')}
 
-Use these findings to create data-informed slides with specific facts and statistics.
+Use these sources to inform your response with specific facts, statistics, and insights. Synthesize the findings naturally into your answer.
 
 ${context}`
     }
@@ -3604,10 +3697,24 @@ async function executeResearch(query: string, organizationId: string) {
 
     console.log(`✅ Research complete: ${data.results?.length || 0} articles`)
 
-    // Build keyFindings from top results (like orchestrator-robust)
-    const keyFindings = data.results?.slice(0, 5).map((r: any) =>
-      `${r.title}: ${r.description}`
-    ) || []
+    // Build clean, readable keyFindings from top results
+    const keyFindings = data.results?.slice(0, 5).map((r: any) => {
+      // Clean title - remove extra whitespace, special chars
+      const title = (r.title || 'Article')
+        .replace(/\s+/g, ' ')
+        .replace(/[^\w\s\-\.,&]/g, '')
+        .trim()
+
+      // Clean and truncate description
+      const description = (r.description || '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .substring(0, 200)  // Max 200 chars
+
+      return description
+        ? `**${title}** - ${description}${description.length >= 200 ? '...' : ''}`
+        : `**${title}**`
+    }).filter(f => f) || []
 
     console.log(`📊 Research data: keyFindings=${keyFindings.length}`)
     if (keyFindings.length > 0) {

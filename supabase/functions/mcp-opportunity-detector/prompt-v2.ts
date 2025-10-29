@@ -188,7 +188,7 @@ Return ONLY a JSON array with this EXACT structure:
             {
               "type": "media_pitch",
               "topic": "CEO available for expert commentary on enterprise security trends",
-              "target": "WSJ, Bloomberg, Reuters, Axios",
+              "target": "WSJ, Bloomberg, Reuters, Axios, TechCrunch",
               "brief": {
                 "angle": "Industry expert perspective on preventing security failures",
                 "key_points": [
@@ -340,15 +340,20 @@ CRITICAL REQUIREMENTS
 3. Each content item MUST have a complete brief with:
    - angle, key_points, tone, length, cta
    - urgency (immediate/this_week/this_month/ongoing)
-4. **URGENCY VALUES:**
+4. **MEDIA PITCHES MUST INCLUDE OUTLET NAMES:**
+   - Every media_pitch content item MUST include 3-5 specific outlet names in the "target" field
+   - Example: "target": "WSJ, Bloomberg, TechCrunch, The Verge, Axios"
+   - Use tier-1 outlets appropriate for the opportunity and organization size
+   - DO NOT use generic descriptions like "major tech outlets" - be specific
+5. **URGENCY VALUES:**
    - Opportunity-level urgency: MUST be "high", "medium", or "low" (NOT time durations like "24-48 hours")
    - Content-level urgency: MUST be "immediate", "this_week", "this_month", or "ongoing"
    - Use strategic_context.time_window for time-based descriptions like "3-5 days"
-5. Content briefs must be SPECIFIC and ACTIONABLE
-6. Reference SPECIFIC events from the data provided
-7. Map 80% of content to competitor/market events (not internal)
-8. Be realistic about time windows and execution effort
-9. Score opportunities: impact (40%) + time sensitivity (30%) + feasibility (30%)
+6. Content briefs must be SPECIFIC and ACTIONABLE
+7. Reference SPECIFIC events from the data provided
+8. Map 80% of content to competitor/market events (not internal)
+9. Be realistic about time windows and execution effort
+10. Score opportunities: impact (40%) + time sensitivity (30%) + feasibility (30%)
 
 CONTENT BRIEF QUALITY CHECKLIST:
 ✅ Angle is specific and differentiated

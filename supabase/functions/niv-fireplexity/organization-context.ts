@@ -181,19 +181,48 @@ export async function getOrganizationContext(
  * Uses industry competitor data and intelligent defaults
  */
 async function createMinimalContext(organizationId: string): Promise<OrganizationContext> {
-  // Determine industry and competitors based on organization
-  const { industry, subIndustry, competitors } = identifyIndustryAndCompetitors(organizationId)
+  // Fetch actual organization name from database
+  let organizationName = organizationId // Fallback to ID
+  let industryFromDb = undefined
 
-  // Generate smart keywords based on organization
-  const keywords = generateKeywords(organizationId, industry)
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+    if (supabaseUrl && supabaseKey) {
+      const supabase = createClient(supabaseUrl, supabaseKey)
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('name, industry')
+        .eq('id', organizationId)
+        .single()
+
+      if (org) {
+        organizationName = org.name
+        industryFromDb = org.industry
+        console.log(`✅ Fetched org name: ${organizationName}`)
+      }
+    }
+  } catch (error) {
+    console.log(`⚠️ Could not fetch org name, using ID: ${error.message}`)
+  }
+
+  // Determine industry and competitors based on organization name
+  const { industry, subIndustry, competitors } = identifyIndustryAndCompetitors(organizationName)
+
+  // Use industry from database if available
+  const finalIndustry = industryFromDb || industry
+
+  // Generate smart keywords based on organization name
+  const keywords = generateKeywords(organizationName, finalIndustry)
 
   // Select appropriate news sources from master-source-registry
-  const sources = await selectNewsSources(industry, subIndustry)
+  const sources = await selectNewsSources(finalIndustry, subIndustry)
 
   return {
     organizationId,
-    organizationName: organizationId,
-    industry,
+    organizationName,
+    industry: finalIndustry,
     subIndustry,
     directCompetitors: competitors.direct,
     indirectCompetitors: competitors.indirect,

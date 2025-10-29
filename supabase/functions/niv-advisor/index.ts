@@ -1237,11 +1237,29 @@ async function executeTargetedFireplexity(searchQuery: string, organizationId: s
       // Have Claude assess quality of results
       console.log(`✅ Found ${articles.length} articles, assessing quality...`)
 
-      // Extract key findings from articles
+      // Extract clean, readable key findings from articles
       const keyFindings: string[] = []
       articles.forEach((article: any) => {
-        if (article.title || article.headline) {
-          keyFindings.push(article.title || article.headline)
+        const rawTitle = article.title || article.headline
+        if (rawTitle) {
+          // Clean title - remove extra whitespace, special chars
+          const title = rawTitle
+            .replace(/\s+/g, ' ')
+            .replace(/[^\w\s\-\.,&]/g, '')
+            .trim()
+
+          // Clean and truncate description if available
+          const description = (article.description || '')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .substring(0, 200)
+
+          // Format: **Title** - Description
+          const formatted = description
+            ? `**${title}** - ${description}${description.length >= 200 ? '...' : ''}`
+            : `**${title}**`
+
+          keyFindings.push(formatted)
         }
       })
 
@@ -2826,6 +2844,29 @@ function formatNivResponse(rawResponse: string, organizationName: string = 'your
 // DO NOT generate frameworks locally
 
 // Better extraction and packaging of research for framework generation
+// Helper: Clean and format article for display
+function formatArticleForDisplay(article: any): string | null {
+  const rawTitle = article.title || article.headline
+  if (!rawTitle) return null
+
+  // Clean title - remove extra whitespace, special chars
+  const title = rawTitle
+    .replace(/\s+/g, ' ')
+    .replace(/[^\w\s\-\.,&]/g, '')
+    .trim()
+
+  // Clean and truncate description if available
+  const description = (article.description || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .substring(0, 200)
+
+  // Format: **Title** - Description
+  return description
+    ? `**${title}** - ${description}${description.length >= 200 ? '...' : ''}`
+    : `**${title}**`
+}
+
 function extractAndPackageResearch(conceptState: any, toolResults: any): any {
   const research = {
     articles: [] as any[],
@@ -2945,12 +2986,11 @@ function extractAndPackageResearch(conceptState: any, toolResults: any): any {
     }
   })
 
-  // If no key findings but we have articles, generate them from article titles
+  // If no key findings but we have articles, generate clean findings from articles
   if (research.keyFindings.length === 0 && research.articles.length > 0) {
     research.articles.slice(0, 10).forEach((article: any) => {
-      if (article.title) {
-        research.keyFindings.push(article.title)
-      }
+      const formatted = formatArticleForDisplay(article)
+      if (formatted) research.keyFindings.push(formatted)
     })
   }
 
@@ -4309,12 +4349,30 @@ Respond with JSON only:
         }
       })
 
-      // Extract key findings from orchestrated articles if not already present
+      // Extract clean key findings from orchestrated articles if not already present
       if ((!toolResults.keyFindings || toolResults.keyFindings.length === 0) && toolResults.intelligencePipeline.articles.length > 0) {
         toolResults.keyFindings = []
         toolResults.intelligencePipeline.articles.forEach((article: any) => {
-          if (article.title || article.headline) {
-            toolResults.keyFindings.push(article.title || article.headline)
+          const rawTitle = article.title || article.headline
+          if (rawTitle) {
+            // Clean title - remove extra whitespace, special chars
+            const title = rawTitle
+              .replace(/\s+/g, ' ')
+              .replace(/[^\w\s\-\.,&]/g, '')
+              .trim()
+
+            // Clean and truncate description if available
+            const description = (article.description || '')
+              .replace(/\s+/g, ' ')
+              .trim()
+              .substring(0, 200)
+
+            // Format: **Title** - Description
+            const formatted = description
+              ? `**${title}** - ${description}${description.length >= 200 ? '...' : ''}`
+              : `**${title}**`
+
+            toolResults.keyFindings.push(formatted)
           }
         })
         console.log(`📋 Extracted ${toolResults.keyFindings.length} key findings from orchestrated articles`)
