@@ -111,7 +111,8 @@ serve(async (req) => {
         if (target.type === 'competitor' && target.name) {
           discoveryTargets.competitors.add(target.name)
           targetsByPriority.competitors[priority].push(target.name)
-        } else if (target.type === 'stakeholder' && target.name) {
+        } else if ((target.type === 'stakeholder' || target.type === 'influencer') && target.name) {
+          // Handle both 'stakeholder' and 'influencer' types (UI uses 'influencer')
           discoveryTargets.stakeholders.add(target.name)
           targetsByPriority.stakeholders[priority].push(target.name)
         } else if (target.type === 'topic' && target.name) {
