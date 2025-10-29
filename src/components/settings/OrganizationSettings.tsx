@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { X, Building2, Target, Globe, Loader, Save, AlertCircle } from 'lucide-react'
+import { X, Building2, Target, Globe, Loader, Save, AlertCircle, RefreshCw, CheckCircle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import TargetManagementTab from './TargetManagementTab'
 import GeoTargetsTab from './GeoTargetsTab'
@@ -37,10 +37,16 @@ export default function OrganizationSettings({
     size: ''
   })
 
+  // Schema extraction state
+  const [schemaExtracting, setSchemaExtracting] = useState(false)
+  const [schemaData, setSchemaData] = useState<any>(null)
+  const [schemaLoading, setSchemaLoading] = useState(false)
+
   // Load organization data
   useEffect(() => {
     if (isOpen && organizationId) {
       loadOrganizationData()
+      loadSchema()
     }
   }, [isOpen, organizationId])
 
@@ -138,6 +144,72 @@ export default function OrganizationSettings({
       setError(err.message)
     } finally {
       setSaving(false)
+    }
+  }
+
+  const loadSchema = async () => {
+    try {
+      setSchemaLoading(true)
+      const response = await fetch(`/api/schema/extract?organization_id=${organizationId}`)
+      const data = await response.json()
+
+      if (response.ok) {
+        setSchemaData(data)
+      }
+    } catch (err) {
+      console.error('Failed to load schema:', err)
+    } finally {
+      setSchemaLoading(false)
+    }
+  }
+
+  const extractSchema = async () => {
+    setSchemaExtracting(true)
+    setError(null)
+    setSuccess(null)
+
+    try {
+      if (!orgData.domain) {
+        setError('Please enter a website URL first')
+        setSchemaExtracting(false)
+        return
+      }
+
+      console.log('🔍 Extracting schema from', orgData.domain)
+
+      const response = await fetch('/api/schema/extract', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          organization_id: organizationId,
+          organization_url: orgData.domain,
+          organization_name: orgData.name,
+          industry: orgData.industry,
+          extract_competitors: false
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Schema extraction failed')
+      }
+
+      const result = await response.json()
+      console.log('✅ Schema extracted:', result)
+
+      setSuccess('Schema extracted successfully! You can now use GEO Intelligence to optimize it.')
+
+      // Reload schema data
+      await loadSchema()
+
+      // Clear success message after 5 seconds
+      setTimeout(() => setSuccess(null), 5000)
+    } catch (err: any) {
+      console.error('Failed to extract schema:', err)
+      setError(err.message || 'Failed to extract schema')
+    } finally {
+      setSchemaExtracting(false)
     }
   }
 
@@ -299,6 +371,61 @@ export default function OrganizationSettings({
                       <option value="1001-5000">1001-5000 employees</option>
                       <option value="5001+">5001+ employees</option>
                     </select>
+                  </div>
+
+                  {/* Schema.org Setup Section */}
+                  <div className="pt-6 border-t border-gray-700">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h3 className="text-sm font-medium text-gray-300">Schema.org Markup</h3>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Extract schema.org markup from your website for GEO Intelligence optimization
+                        </p>
+                      </div>
+                      <button
+                        onClick={extractSchema}
+                        disabled={schemaExtracting || !orgData.domain}
+                        className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 text-sm font-medium ${
+                          schemaExtracting
+                            ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                            : schemaData?.has_schema
+                            ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30 hover:bg-blue-500/20'
+                            : 'bg-blue-500 text-white hover:bg-blue-600'
+                        }`}
+                      >
+                        {schemaExtracting ? (
+                          <>
+                            <Loader className="w-4 h-4 animate-spin" />
+                            Extracting...
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCw className="w-4 h-4" />
+                            {schemaData?.has_schema ? 'Update Schema' : 'Extract Schema'}
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {schemaData?.has_schema && (
+                      <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg flex items-start gap-3">
+                        <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+                        <div className="text-sm text-gray-300">
+                          <p className="font-medium text-green-400 mb-1">Schema Active</p>
+                          <p>Schema.org markup is configured. Use GEO Intelligence to test and optimize it.</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {!schemaData?.has_schema && !schemaLoading && (
+                      <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg flex items-start gap-3">
+                        <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+                        <div className="text-sm text-gray-300">
+                          <p className="font-medium text-yellow-400 mb-1">No Schema Found</p>
+                          <p>Click "Extract Schema" to scrape your website for schema.org markup. If none exists, we'll generate a basic Organization schema from your profile.</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex justify-end gap-3 pt-4 border-t border-gray-700">

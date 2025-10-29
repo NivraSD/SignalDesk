@@ -1492,25 +1492,11 @@ export default function IntelligenceModule() {
                       </button>
                     )}
                     <button
-                      onClick={extractSchema}
-                      disabled={schemaExtracting || !organization}
-                      className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 text-sm font-medium ${
-                        schemaExtracting
-                          ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                          : 'bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-400'
-                      }`}
+                      onClick={() => setShowSettings(true)}
+                      className="px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-400 rounded-lg transition-all flex items-center gap-2 text-sm font-medium"
                     >
-                      {schemaExtracting ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Extracting...
-                        </>
-                      ) : (
-                        <>
-                          <RefreshCw className="w-4 h-4" />
-                          {schemaData?.has_schema ? 'Update Schema' : 'Extract Schema'}
-                        </>
-                      )}
+                      <Settings className="w-4 h-4" />
+                      {schemaData?.has_schema ? 'Update in Settings' : 'Configure in Settings'}
                     </button>
                   </div>
                 </div>
@@ -1562,7 +1548,7 @@ export default function IntelligenceModule() {
                       <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
                       <div className="text-sm text-gray-300">
                         <p className="font-medium text-yellow-400 mb-1">No Schema Found</p>
-                        <p>Click "Extract Schema" to scrape your website for schema.org markup. If none exists, we'll generate a basic Organization schema from your profile.</p>
+                        <p>Click "Configure in Settings" to extract schema.org markup from your website. If none exists, we'll generate a basic Organization schema from your profile.</p>
                       </div>
                     </div>
                   </div>
