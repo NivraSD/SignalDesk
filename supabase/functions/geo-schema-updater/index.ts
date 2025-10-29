@@ -186,9 +186,9 @@ serve(async (req) => {
             executed_via: 'ui',
             timestamp: new Date().toISOString(),
             schema_id: schemaId,
-            change_applied: changes,
-            before_value: beforeSchema[changes.field],
-            after_value: updatedSchema[changes.field]
+            change_applied: recommendation.changes,
+            before_value: beforeSchema?.[recommendation.changes?.field],
+            after_value: updatedSchema[recommendation.changes?.field]
           }
         })
         .eq('id', existingRec.id)
@@ -216,9 +216,9 @@ serve(async (req) => {
             executed_via: 'ui',
             timestamp: new Date().toISOString(),
             schema_id: schemaId,
-            change_applied: changes,
-            before_value: beforeSchema[changes.field],
-            after_value: updatedSchema[changes.field]
+            change_applied: recommendation.changes,
+            before_value: beforeSchema?.[recommendation.changes?.field],
+            after_value: updatedSchema[recommendation.changes?.field]
           }
         })
 
