@@ -798,20 +798,20 @@ BE SPECIFIC with names. Real companies, real regulators, real people.
   };
 
   // Generate intelligence context for downstream stages
+  // NEW ALLOCATION: 10 competitors, 5 stakeholders, 0 topics (proven effective)
   const generateIntelligenceContext = () => {
-    const topCompetitors = enhancedData.competition.direct_competitors.slice(0, 5);
+    const topCompetitors = enhancedData.competition.direct_competitors.slice(0, 10); // Increased from 5 to 10
     const topRegulators = enhancedData.stakeholders?.regulators?.slice(0, 3) || [];
-    const topTopics = enhancedData.trending?.hot_topics?.slice(0, 5) || [];
+    const topTopics = []; // Removed topics - 0% effectiveness in monitoring
     const keyStakeholders = [
-      ...(enhancedData.stakeholders?.major_investors?.slice(0, 2) || []),
       ...(enhancedData.stakeholders?.influencers?.slice(0, 2) || [])
+      // Removed investors - less relevant for most companies
     ].filter(Boolean);
 
     return {
       monitoring_prompt: `We are monitoring ${organization_name}, a ${enhancedData.industry} company${enhancedData.sub_industry ? ` specializing in ${enhancedData.sub_industry}` : ''}. Focus on:
         - Direct competitive movements from: ${topCompetitors.join(', ')}
         - Regulatory developments from: ${topRegulators.join(', ')}
-        - Market dynamics around: ${topTopics.join(', ')}
         - Key stakeholder actions from: ${keyStakeholders.join(', ')}
 
         We're looking for:
@@ -847,11 +847,7 @@ BE SPECIFIC with names. Real companies, real regulators, real people.
         }
       },
 
-      topics: [
-        ...(enhancedData.trending?.hot_topics || []),
-        ...(enhancedData.monitoring_config?.keywords || []),
-        ...(enhancedData.trending?.emerging_technologies || [])
-      ].filter(Boolean),
+      topics: [], // Topics removed - 0% monitoring effectiveness
 
       extraction_focus: [
         'executive quotes and statements',
@@ -1015,9 +1011,23 @@ async function fillGapsWithWebSearch(profile: any, organization_name: string) {
       ...yahooCompetitors
     ])];
     
-    profile.competition.direct_competitors = allCompetitors.slice(0, 15);
+    profile.competition.direct_competitors = allCompetitors.slice(0, 10); // Limit to 10 for onboarding (staying under 15 target limit)
   }
-  
+
+  // Limit stakeholders to 5 total (3 regulators + 2 influencers)
+  if (profile.stakeholders) {
+    profile.stakeholders.regulators = (profile.stakeholders.regulators || []).slice(0, 3);
+    profile.stakeholders.influencers = (profile.stakeholders.influencers || []).slice(0, 2);
+    // Remove investors - less relevant for most companies
+    profile.stakeholders.major_investors = [];
+  }
+
+  // Remove topics from trending - 0% monitoring effectiveness
+  if (profile.trending) {
+    profile.trending.hot_topics = [];
+    profile.trending.emerging_technologies = [];
+  }
+
   return profile;
 }
 

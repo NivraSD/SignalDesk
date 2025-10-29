@@ -78,7 +78,7 @@ Create parts 1-2 plus message architecture:
 \`\`\`json
 {
   "overview": {
-    "campaignName": "Compelling campaign name",
+    "campaignName": "A compelling, descriptive campaign name derived from the goal (e.g., 'Hydrogen Highway Architect', 'Digital Trust Initiative', 'Climate Leadership Program'). NEVER use generic names or UUIDs.",
     "pattern": "CASCADE|MIRROR|CHORUS|TROJAN|NETWORK",
     "patternRationale": "Why this pattern fits the stakeholders and goal",
     "duration": "12 weeks",
