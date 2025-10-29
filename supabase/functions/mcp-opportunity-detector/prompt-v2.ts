@@ -101,13 +101,12 @@ For EACH opportunity you detect, you must provide:
    - thought_leadership: Blog posts, articles, op-eds
    - press_release: Formal announcements
    - email_campaign: Email sequences to customers/prospects
+   - presentation: Slide decks for stakeholders (via Gamma)
    - image: Visual content (social media graphics, Instagram posts)
    - partnership_outreach: Collaboration proposals
    - user_action: Other custom tactics
 
-   DO NOT RECOMMEND:
-   - presentation (opportunity itself automatically becomes a Gamma presentation)
-   - webinars, events, podcasts, videos (platform cannot create these)
+   DO NOT RECOMMEND: webinars, events, podcasts, videos (platform cannot create these)
 
 ====================================================================
 OUTPUT FORMAT (STRICT JSON)
@@ -188,7 +187,7 @@ Return ONLY a JSON array with this EXACT structure:
             {
               "type": "media_pitch",
               "topic": "CEO available for expert commentary on enterprise security trends",
-              "target": "WSJ, Bloomberg, Reuters, Axios, TechCrunch",
+              "target": "WSJ, Bloomberg, Reuters, Axios",
               "brief": {
                 "angle": "Industry expert perspective on preventing security failures",
                 "key_points": [
@@ -237,23 +236,22 @@ Return ONLY a JSON array with this EXACT structure:
           "lever_description": "Establish ${organizationName} as go-to expert on security",
           "content_items": [
             {
-              "type": "press_release",
-              "topic": "Enhanced Security Measures and Zero-Breach Track Record",
+              "type": "presentation",
+              "topic": "Enterprise Security Best Practices: Lessons from Recent Breaches",
               "brief": {
-                "angle": "Proactive announcement of security leadership in wake of industry events",
+                "angle": "Educational content positioning us as security experts",
                 "key_points": [
-                  "Our proven security track record and certifications",
-                  "Recent security infrastructure investments",
-                  "Third-party security audit results",
-                  "Commitment to customer data protection",
-                  "Available for media commentary on security best practices"
+                  "Common vulnerabilities in enterprise systems",
+                  "Security-first architecture principles",
+                  "Compliance and regulatory requirements",
+                  "How our platform addresses these challenges"
                 ],
-                "tone": "Professional, confident, transparent",
-                "length": "400-500 words",
-                "cta": "Contact us for security briefings and expert interviews",
-                "target_audience": "Media, analysts, prospects"
+                "tone": "Educational, authoritative",
+                "length": "15-20 slides",
+                "cta": "Download security assessment template",
+                "target_audience": "IT leaders, security professionals"
               },
-              "urgency": "immediate",
+              "urgency": "this_week",
               "estimated_effort": "2 hours"
             }
           ]
@@ -264,18 +262,17 @@ Return ONLY a JSON array with this EXACT structure:
         "immediate": [
           "Social posts on security commitment",
           "Media pitches to tier-1 outlets",
-          "Thought leadership article draft",
-          "Press release on security leadership"
+          "Thought leadership article draft"
         ],
         "this_week": [
           "Publish thought leadership",
           "Send customer email",
-          "Distribute press release to media"
+          "Create security presentation"
         ],
         "this_month": [
+          "Share presentation with prospects",
           "Follow-up with engaged prospects",
-          "Publish security case study",
-          "Host security briefing for customers"
+          "Publish security case study"
         ],
         "ongoing": [
           "Monitor competitor security narrative",
@@ -297,10 +294,10 @@ Return ONLY a JSON array with this EXACT structure:
           "timeframe": "Week 1-2"
         },
         {
-          "metric": "Press release pickup and distribution",
-          "target": "10+ media outlets covering",
-          "measurement_method": "Media monitoring and analytics",
-          "timeframe": "Week 1-2"
+          "metric": "Presentation views and shares",
+          "target": "200+ views, 50+ shares",
+          "measurement_method": "Analytics tracking",
+          "timeframe": "Week 2-3"
         },
         {
           "metric": "Social engagement on security content",
@@ -340,15 +337,11 @@ CRITICAL REQUIREMENTS
 3. Each content item MUST have a complete brief with:
    - angle, key_points, tone, length, cta
    - urgency (immediate/this_week/this_month/ongoing)
-4. **MEDIA PITCHES MUST INCLUDE OUTLET NAMES:**
-   - Every media_pitch content item MUST include 3-5 specific outlet names in the target field
-   - Example: target: WSJ, Bloomberg, TechCrunch, The Verge, Axios
-   - Use tier-1 outlets appropriate for the opportunity and organization size
-   - DO NOT use generic descriptions like major tech outlets - be specific
+4. **MEDIA PITCHES:** Every media_pitch must include 3-5 specific outlet names (WSJ, Bloomberg, TechCrunch, etc) not generic descriptions
 5. **URGENCY VALUES:**
-   - Opportunity-level urgency: MUST be high, medium, or low (NOT time durations like 24-48 hours)
-   - Content-level urgency: MUST be immediate, this_week, this_month, or ongoing
-   - Use strategic_context.time_window for time-based descriptions like 3-5 days
+   - Opportunity-level urgency: MUST be "high", "medium", or "low" (NOT time durations like "24-48 hours")
+   - Content-level urgency: MUST be "immediate", "this_week", "this_month", or "ongoing"
+   - Use strategic_context.time_window for time-based descriptions like "3-5 days"
 6. Content briefs must be SPECIFIC and ACTIONABLE
 7. Reference SPECIFIC events from the data provided
 8. Map 80% of content to competitor/market events (not internal)
