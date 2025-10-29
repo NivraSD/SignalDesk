@@ -210,7 +210,7 @@ serve(async (req) => {
       console.log('   🎯 Routing to opportunity detector...');
 
       detectionPromises.push(
-        fetch(`${SUPABASE_URL}/functions/v1/mcp-opportunity-detector`, {
+        fetch(`${SUPABASE_URL}/functions/v1/mcp-opportunity-detector-v2`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

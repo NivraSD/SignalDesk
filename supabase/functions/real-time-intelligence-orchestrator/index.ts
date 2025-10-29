@@ -396,7 +396,7 @@ Create a CONCISE real-time intelligence brief focused on actionable insights:
         const detectorTimeout = setTimeout(() => detectorController.abort(), 30000); // 30s timeout
 
         const detectorResponse = await fetch(
-          `${SUPABASE_URL}/functions/v1/mcp-opportunity-detector`,
+          `${SUPABASE_URL}/functions/v1/mcp-opportunity-detector-v2`,
           {
             method: 'POST',
             headers: {

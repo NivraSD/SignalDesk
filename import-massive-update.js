@@ -2,12 +2,24 @@ const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 const path = require('path');
 
-// Read journalistupdate.md
-const updateFilePath = path.join(__dirname, 'journalistupdate.md');
+// Load .env.local
+const envPath = path.join(__dirname, '.env.local');
+if (fs.existsSync(envPath)) {
+  const envConfig = fs.readFileSync(envPath, 'utf-8');
+  envConfig.split('\n').forEach(line => {
+    const match = line.match(/^([A-Z_]+)=(.*)$/);
+    if (match) {
+      process.env[match[1]] = match[2];
+    }
+  });
+}
+
+// Read JournalistUpdate.md
+const updateFilePath = path.join(__dirname, 'JournalistUpdate.md');
 const content = fs.readFileSync(updateFilePath, 'utf-8');
 
 // Initialize Supabase client
-const supabaseUrl = process.env.SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co';
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseKey) {

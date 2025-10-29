@@ -175,10 +175,10 @@ export class IntelligenceService {
             onProgress?.('mcp-executive-synthesis', 'completed', synthesisResponse.data)
 
             // STEP 4: Call opportunity detector with formatted data
-            console.log('Starting mcp-opportunity-detector')
+            console.log('Starting mcp-opportunity-detector-v2')
             onProgress?.('mcp-opportunity-detector', 'running')
 
-            const opportunityDetectorResponse = await supabase.functions.invoke('mcp-opportunity-detector', {
+            const opportunityDetectorResponse = await supabase.functions.invoke('mcp-opportunity-detector-v2', {
               body: {
                 organization_id: organizationId,
                 organization_name: orgName,
