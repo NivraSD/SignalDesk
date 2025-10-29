@@ -618,7 +618,7 @@ serve(async (req) => {
           
           const detectorResponse = await callStage(
             'Opportunity Detector',
-            'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/mcp-opportunity-detector-v2',
+            'https://zskaxjtyuaqazydouifp.supabase.co/functions/v1/mcp-opportunity-detector',
             {
               organization_id: orgData.name || organization_name || organization_id || '1',  // Use org name as unique ID
               organization_name: orgData.name || organization_name,

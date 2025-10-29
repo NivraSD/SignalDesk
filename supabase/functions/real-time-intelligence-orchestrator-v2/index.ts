@@ -342,7 +342,7 @@ Respond in JSON format:
       detectionPromises.push(
         (async () => {
           try {
-            const detectorResponse = await fetch(`${SUPABASE_URL}/functions/v1/mcp-opportunity-detector-v2`, {
+            const detectorResponse = await fetch(`${SUPABASE_URL}/functions/v1/mcp-opportunity-detector`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
