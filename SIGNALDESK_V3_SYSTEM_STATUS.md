@@ -2950,6 +2950,12 @@ Campaign Intel    Content Gen    Strategic Planning
 - Fixed currentContent undefined errors
 - Corrected organization ID column type mismatches
 - Prevented message array resets on content type changes
+- Fixed GEO schema updater JSON parsing error (Oct 29, 2025):
+  - Schema content stored as JSON string but code expected parsed object
+  - Added JSON.parse() when reading schemas from database
+  - Added JSON.stringify() when saving updated schemas
+  - Resolved "Invalid schema: missing @context or @type" validation error
+  - Function: geo-schema-updater
 
 ## Security & Compliance
 
@@ -3020,7 +3026,7 @@ Campaign Intel    Content Gen    Strategic Planning
 - Core NIV: 7 functions
 - Memory Vault V2: 5 functions (NEW - Oct 24-26)
 - Intelligence Pipeline: 8 functions
-- GEO Intelligence: 2 functions (NEW - Oct 27, 2025)
+- GEO Intelligence: 3 functions (NEW - Oct 27, 2025)
 - Real-Time Intelligence: 3 functions
 - Crisis Management: 3 functions
 - Content Generation: 7 functions
@@ -3075,6 +3081,7 @@ Intelligence Pipeline:
 GEO Intelligence (Production Ready - Oct 27, 2025):
 - geo-query-discovery (Claude-powered query generation - 30 queries)
 - geo-intelligence-monitor (AI visibility testing - Claude + Gemini)
+- geo-schema-updater (applies schema recommendations to Memory Vault schemas)
 
 Real-Time Intelligence (Oct 2025):
 - real-time-synthesis (UI-optimized breaking summary + alerts)
@@ -3223,6 +3230,7 @@ Intelligence Pipeline:
 GEO Intelligence:
 /api/supabase/functions/geo-query-discovery - Query generation (Claude)
 /api/supabase/functions/geo-intelligence-monitor - Visibility testing (Claude + Gemini)
+/api/supabase/functions/geo-schema-updater - Schema recommendation application
 /api/supabase/functions/mcp-executive-synthesis - C-suite analysis
 /api/supabase/functions/mcp-opportunity-detector - Opportunity detection
 /api/supabase/functions/opportunity-orchestrator-v2 - Creative enhancement
