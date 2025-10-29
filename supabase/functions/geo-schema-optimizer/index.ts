@@ -81,6 +81,24 @@ serve(async (req) => {
       .order('created_at', { ascending: false })
       .limit(5)
 
+    // Get positive coverage/news articles for subjectOf links
+    const { data: positiveCoverage } = await supabase
+      .from('intelligence_events')
+      .select('title, url, summary, event_date, source_outlet, relevance_score, metadata')
+      .eq('organization_id', organization_id)
+      .gte('relevance_score', 70) // High relevance = positive/important
+      .order('event_date', { ascending: false })
+      .limit(10)
+
+    // Get achievements/awards from content
+    const { data: achievements } = await supabase
+      .from('content_library')
+      .select('title, content, metadata')
+      .eq('organization_id', organization_id)
+      .eq('content_type', 'achievement')
+      .order('created_at', { ascending: false })
+      .limit(5)
+
     // Check for existing schema
     const { data: existingSchema } = await supabase
       .from('content_library')
@@ -109,6 +127,8 @@ serve(async (req) => {
       industry,
       targets,
       recentContent,
+      positiveCoverage,
+      achievements,
       websiteContent: website_content,
       url
     })
@@ -267,6 +287,19 @@ function buildStrategicContext(data: any): any {
       type: c.metadata?.content_type,
       key_points: c.metadata?.key_points
     })) || [],
+    positive_coverage: data.positiveCoverage?.map((c: any) => ({
+      title: c.title,
+      url: c.url,
+      summary: c.summary,
+      date: c.event_date,
+      outlet: c.source_outlet,
+      relevance: c.relevance_score
+    })) || [],
+    achievements: data.achievements?.map((a: any) => ({
+      title: a.title,
+      content: a.content,
+      metadata: a.metadata
+    })) || [],
     website_content: data.websiteContent?.substring(0, 2000) // Sample for context
   }
 }
@@ -292,6 +325,11 @@ ${context.stakeholders.length > 0 ? `Key stakeholders: ${context.stakeholders.sl
 **STRATEGIC POSITIONING:**
 ${context.strategic_content.length > 0 ? context.strategic_content.map((c: any) => `- ${c.title}`).join('\n') : 'No strategic content available'}
 
+**POSITIVE COVERAGE & ACHIEVEMENTS:**
+${context.positive_coverage.length > 0 ? 'Recent positive coverage:\n' + context.positive_coverage.slice(0, 5).map((c: any) => `- "${c.title}" (${c.outlet}, ${c.date}) - ${c.url}`).join('\n') : 'No coverage data'}
+
+${context.achievements.length > 0 ? '\nAchievements/Awards:\n' + context.achievements.map((a: any) => `- ${a.title}`).join('\n') : ''}
+
 **YOUR TASK:**
 Generate a comprehensive schema.org package optimized for AI visibility and understanding. This schema will be the organization's primary structured data for Claude, Gemini, ChatGPT, and other AI systems.
 
@@ -310,6 +348,8 @@ Generate a comprehensive schema.org package optimized for AI visibility and unde
    - Relationships: subOrganization, parentOrganization, memberOf
    - Industry: industry, keywords, knowsAbout, serviceType
    - Scale: numberOfEmployees, awards, certifications
+   - Coverage: subjectOf (array of NewsArticle schemas linking to positive coverage)
+   - Recognition: award (array of achievements/awards)
 
 3. **Strategic Content** - NOT generic descriptions:
    - Description should highlight unique positioning and value
@@ -325,6 +365,12 @@ Generate a comprehensive schema.org package optimized for AI visibility and unde
    - What expertise should AI associate?
    - What problems does this org solve?
 
+6. **Positive Coverage Integration** - Frame organization with credibility:
+   - Use subjectOf property to link NewsArticle schemas for each major piece of positive coverage
+   - Include headline, datePublished, url, publisher
+   - Prioritize high-relevance stories (70+ relevance score)
+   - Add award property for achievements/recognition
+
 **OUTPUT FORMAT:**
 Return a JSON object with this structure:
 {
@@ -332,7 +378,22 @@ Return a JSON object with this structure:
     {
       "@context": "https://schema.org",
       "@type": "Organization",
-      ... (all fields)
+      "name": "...",
+      "description": "...",
+      "subjectOf": [
+        {
+          "@type": "NewsArticle",
+          "headline": "Article title from coverage data",
+          "datePublished": "YYYY-MM-DD",
+          "url": "article URL",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Outlet name"
+          }
+        }
+      ],
+      "award": ["Award 1", "Award 2"],
+      ... (all other fields)
     },
     {
       "@context": "https://schema.org",
