@@ -284,9 +284,9 @@ Return ONLY the JSON object.`;
 
     console.log(`🚀 Sending request to Claude API...`);
 
-    // Add timeout to prevent hanging (120 seconds for large research synthesis)
+    // Add timeout to prevent hanging (5 minutes for large research synthesis with extensive data)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 120000);
+    const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutes instead of 2
 
     let response;
     try {
@@ -307,8 +307,8 @@ Return ONLY the JSON object.`;
     } catch (fetchError: any) {
       clearTimeout(timeoutId);
       if (fetchError.name === 'AbortError') {
-        console.error('❌ Claude API request timed out after 120 seconds');
-        throw new Error('Claude API request timed out after 120 seconds - research payload may be too large');
+        console.error('❌ Claude API request timed out after 5 minutes');
+        throw new Error('Claude API request timed out after 5 minutes - research payload may be too large or Claude is overloaded');
       }
       console.error('❌ Fetch error calling Claude API:', fetchError);
       throw new Error(`Failed to call Claude API: ${fetchError.message}`);

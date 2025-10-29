@@ -2,153 +2,193 @@
 {
 "event_message": "shutdown",
 "event_type": "Shutdown",
-"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
-"id": "4c05fdf0-7bff-4998-943d-b5ade2322b23",
+"function_id": "3ba9dd41-9b49-4d26-b812-fc46534833ae",
+"id": "e79d672d-1ce1-45c9-962e-dae6e603c5bb",
 "level": "log",
-"timestamp": 1761755953348000
+"timestamp": 1761767145580000
 },
 {
 "event_message": "shutdown",
 "event_type": "Shutdown",
-"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
-"id": "c1e268a2-d31a-4873-9f24-2d687ed3a354",
+"function_id": "3ba9dd41-9b49-4d26-b812-fc46534833ae",
+"id": "a94aa2b5-f450-45fc-ba4f-8d837eccbc29",
 "level": "log",
-"timestamp": 1761755953078000
+"timestamp": 1761767145335000
 },
 {
-"event_message": "Prompt length: 23679 characters\n",
+"event_message": "❌ Synthesis error: Error: Claude API request timed out after 120 seconds - research payload may be too large\n at file:///Users/jonathanliebowitz/Desktop/signaldesk-v3/supabase/functions/niv-campaign-research-synthesis/index.ts:284:15\n at eventLoopTick (ext:core/01_core.js:175:7)\n at async Server.<anonymous> (file:///Users/jonathanliebowitz/Desktop/signaldesk-v3/supabase/functions/_shared/cors.ts:53:24)\n at async Server.#respond (https://deno.land/std@0.177.0/http/server.ts:220:18)\n",
 "event_type": "Log",
-"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
-"id": "be633f2f-2268-4b2a-9f7a-66ff7a977c71",
-"level": "info",
-"timestamp": 1761755753392000
+"function_id": "3ba9dd41-9b49-4d26-b812-fc46534833ae",
+"id": "52fd9d56-58f9-482f-9270-2f2f82ff5aa6",
+"level": "error",
+"timestamp": 1761767065571000
 },
 {
-"event_message": "Calling Claude Sonnet 4 for V2 opportunity generation...\n",
+"event_message": "❌ Claude API request timed out after 120 seconds\n",
 "event_type": "Log",
-"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
-"id": "78765f6d-ccb8-4ebf-a9b5-8360cb675bba",
-"level": "info",
-"timestamp": 1761755753392000
+"function_id": "3ba9dd41-9b49-4d26-b812-fc46534833ae",
+"id": "e3edd0e3-729b-4cd1-9a2b-c86f921fe90b",
+"level": "error",
+"timestamp": 1761767065569000
 },
 {
-"event_message": "📊 Intelligence Data Extraction: {\n totalEvents: 56,\n eventsAboutOrg: 0,\n eventsAboutCompetitors: 56,\n entities: 114,\n topics: 11,\n quotes: 12,\n competitors: 20\n}\n",
+"event_message": " - Stakeholder: 0 results\n",
 "event_type": "Log",
-"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
-"id": "f7f6f333-bd00-4613-b030-d9aa3212f173",
+"function_id": "3ba9dd41-9b49-4d26-b812-fc46534833ae",
+"id": "ad7c0f2c-7860-4f15-a316-5bb07de06886",
 "level": "info",
-"timestamp": 1761755753391000
+"timestamp": 1761766945567000
 },
 {
-"event_message": "🚀 V2 Opportunity Detection - Building execution-ready opportunities...\n",
+"event_message": "📏 Total prompt size: 73704 chars\n",
 "event_type": "Log",
-"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
-"id": "40a48a61-e7ab-429b-9500-1e2855454b45",
+"function_id": "3ba9dd41-9b49-4d26-b812-fc46534833ae",
+"id": "fc5f421e-b154-4493-b9b4-f76f1af2277c",
 "level": "info",
-"timestamp": 1761755753391000
+"timestamp": 1761766945567000
 },
 {
-"event_message": "🎯 Using V2 Opportunity Detection Engine...\n",
+"event_message": "⏱️ Research collection took N/Ams\n",
 "event_type": "Log",
-"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
-"id": "8a1e2ba3-2d88-47d3-b9f7-a2f913e5fe5c",
+"function_id": "3ba9dd41-9b49-4d26-b812-fc46534833ae",
+"id": "047261f0-9c3d-41bd-9e6b-18a51554b3d3",
 "level": "info",
-"timestamp": 1761755753391000
+"timestamp": 1761766945567000
 },
 {
-"event_message": "📊 Input data check: {\n has_enriched_data: true,\n has_search_results: false,\n search_results_count: 0,\n organized_events: 56,\n extracted_data_events: 56,\n has_executive_synthesis: true,\n social_signals_count: 0,\n has_profile: true,\n enriched_articles: 100,\n knowledge_graph_entities: 0\n}\n",
+"event_message": " - Historical: 0 results\n",
 "event_type": "Log",
-"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
-"id": "318bf402-fdfc-4747-b588-c01a9782ab8f",
+"function_id": "3ba9dd41-9b49-4d26-b812-fc46534833ae",
+"id": "44ba42e7-2599-41e6-8488-0619c05a08dc",
 "level": "info",
-"timestamp": 1761755753390000
+"timestamp": 1761766945567000
 },
 {
-"event_message": "📌 Sample events from enriched data:\n",
+"event_message": "📏 User prompt size: 69129 chars\n",
 "event_type": "Log",
-"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
-"id": "961c3b74-e627-4b44-949c-a9dfe0cc917f",
+"function_id": "3ba9dd41-9b49-4d26-b812-fc46534833ae",
+"id": "328db22b-7fca-4fea-8f77-260a92df38f5",
 "level": "info",
-"timestamp": 1761755753390000
+"timestamp": 1761766945567000
 },
 {
-"event_message": " 1. [partnership] Indian Oil Corporation Ltd: Indian Oil Corporation Ltd is preparing to launch a trading joint venture with Vitol in Singapore in\n",
+"event_message": "📏 System prompt size: 4575 chars\n",
 "event_type": "Log",
-"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
-"id": "6c2de49f-38a9-4e8d-8fc4-5fb11bd9bf98",
+"function_id": "3ba9dd41-9b49-4d26-b812-fc46534833ae",
+"id": "448f2c4c-392f-4ade-b37b-7de6c824f1c3",
 "level": "info",
-"timestamp": 1761755753390000
+"timestamp": 1761766945567000
 },
 {
-"event_message": " 2. [partnership] Mitsubishi Corporation: Wheeler Bio announced strategic partnership with Mitsubishi Corporation to expand commercial reach a\n",
+"event_message": "📦 Received research from N/A tool calls\n",
 "event_type": "Log",
-"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
-"id": "c6c58d49-eaa3-4122-af9a-69e2f5110078",
+"function_id": "3ba9dd41-9b49-4d26-b812-fc46534833ae",
+"id": "24682a4a-371f-41f2-8912-2506754ccfdd",
 "level": "info",
-"timestamp": 1761755753390000
+"timestamp": 1761766945567000
 },
 {
-"event_message": "🎯 PR Opportunity Detection for Mitsui & Co.\n",
+"event_message": "🤖 Calling Claude for final synthesis...\n",
 "event_type": "Log",
-"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
-"id": "67c0c6f6-e4c2-4fbb-903f-6d8b41cc7153",
+"function_id": "3ba9dd41-9b49-4d26-b812-fc46534833ae",
+"id": "1917c9b0-b60b-4176-90c0-c2475bb0d2ed",
 "level": "info",
-"timestamp": 1761755753390000
+"timestamp": 1761766945567000
 },
 {
-"event_message": " 3. [regulatory] Cargill: Tyson Foods will pay $55 million and Cargill $32.5 million to settle a beef price fixing lawsuit fil\n",
+"event_message": " - Channel: 0 journalists\n",
 "event_type": "Log",
-"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
-"id": "2a97e05a-0421-44cd-aff1-51a333e3c7af",
+"function_id": "3ba9dd41-9b49-4d26-b812-fc46534833ae",
+"id": "7d2da6b0-fd40-4fbf-aac1-a96ddd7636ad",
 "level": "info",
-"timestamp": 1761755753390000
+"timestamp": 1761766945567000
+},
+{
+"event_message": " - Narrative: 5 results\n",
+"event_type": "Log",
+"function_id": "3ba9dd41-9b49-4d26-b812-fc46534833ae",
+"id": "d23ad36f-8bb8-4e2a-b034-b6db7e8ed2f8",
+"level": "info",
+"timestamp": 1761766945567000
+},
+{
+"event_message": "🚀 Sending request to Claude API...\n",
+"event_type": "Log",
+"function_id": "3ba9dd41-9b49-4d26-b812-fc46534833ae",
+"id": "cc4942a5-5131-4b6a-bf6d-ecc61c6f54c0",
+"level": "info",
+"timestamp": 1761766945567000
+},
+{
+"event_message": "📊 Research data sizes:\n",
+"event_type": "Log",
+"function_id": "3ba9dd41-9b49-4d26-b812-fc46534833ae",
+"id": "4aea680f-eb4b-40be-b980-4e267d84fae5",
+"level": "info",
+"timestamp": 1761766945567000
+},
+{
+"event_message": "Raw body length: 91086\n",
+"event_type": "Log",
+"function_id": "3ba9dd41-9b49-4d26-b812-fc46534833ae",
+"id": "b778e709-ae5e-49d5-b4a6-46a167f5c7a0",
+"level": "info",
+"timestamp": 1761766945566000
+},
+{
+"event_message": "Raw body preview: {\"compiledResearch\":{\"discovery\":{\"success\":true,\"profile\":{\"organization_name\":\"Mitsui & Co.\",\"organization\":\"Mitsui & Co.\",\"industry\":\"General Trading Company / Sogo Shosha\",\"sub_industry\":\"Integrat\n",
+"event_type": "Log",
+"function_id": "3ba9dd41-9b49-4d26-b812-fc46534833ae",
+"id": "dce212fc-e2a5-47ae-9b56-8ef0e83b6a1d",
+"level": "info",
+"timestamp": 1761766945566000
+},
+{
+"event_message": "Content-Type: application/json\n",
+"event_type": "Log",
+"function_id": "3ba9dd41-9b49-4d26-b812-fc46534833ae",
+"id": "ef2879a0-8b15-4b53-a4cb-dfc7bdd59bf9",
+"level": "info",
+"timestamp": 1761766945565000
+},
+{
+"event_message": "🧪 Campaign Research Synthesis - Final Synthesis\n",
+"event_type": "Log",
+"function_id": "3ba9dd41-9b49-4d26-b812-fc46534833ae",
+"id": "3dea6689-7de0-498d-901b-725a65b090e0",
+"level": "info",
+"timestamp": 1761766945564000
 },
 {
 "event_message": "Listening on http://localhost:9999/\n",
 "event_type": "Log",
-"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
-"id": "517ecacd-7318-414f-bef5-d607ca47717d",
+"function_id": "3ba9dd41-9b49-4d26-b812-fc46534833ae",
+"id": "dade26de-2edf-4b68-b81b-68df8d7c6220",
 "level": "info",
-"timestamp": 1761755753336000
+"timestamp": 1761766945562000
 },
 {
-"event_message": "🔑 Environment check: {\n has_url: true,\n has_service_key: true,\n has_anthropic: true,\n key_length: 219\n}\n",
-"event_type": "Log",
-"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
-"id": "a4383d66-5efb-48ab-9fbf-e9987469b83c",
-"level": "info",
-"timestamp": 1761755753335000
-},
-{
-"event_message": "booted (time: 31ms)",
+"event_message": "booted (time: 23ms)",
 "event_type": "Boot",
-"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
-"id": "ae63ba24-929b-4766-827e-5778b4800511",
+"function_id": "3ba9dd41-9b49-4d26-b812-fc46534833ae",
+"id": "c5313523-b30f-4dd7-b95b-dd187532cd14",
 "level": "log",
-"timestamp": 1761755753332000
+"timestamp": 1761766945561000
 },
 {
 "event_message": "Listening on http://localhost:9999/\n",
 "event_type": "Log",
-"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
-"id": "e3f2fc10-59b8-465c-b632-f51eafbf3e59",
+"function_id": "3ba9dd41-9b49-4d26-b812-fc46534833ae",
+"id": "cb4d9384-c7fa-4306-bd90-30b53e69e1f0",
 "level": "info",
-"timestamp": 1761755753067000
+"timestamp": 1761766945323000
 },
 {
-"event_message": "🔑 Environment check: {\n has_url: true,\n has_service_key: true,\n has_anthropic: true,\n key_length: 219\n}\n",
-"event_type": "Log",
-"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
-"id": "644d58c5-8d14-4070-802e-e1135a606eb7",
-"level": "info",
-"timestamp": 1761755753066000
-},
-{
-"event_message": "booted (time: 30ms)",
+"event_message": "booted (time: 27ms)",
 "event_type": "Boot",
-"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
-"id": "8b5c90d7-377a-4753-b4c8-2c9918ae23b4",
+"function_id": "3ba9dd41-9b49-4d26-b812-fc46534833ae",
+"id": "bbaecbfb-76ef-4cbb-9526-cccbf4364d6e",
 "level": "log",
-"timestamp": 1761755753062000
+"timestamp": 1761766945322000
 }
 ]

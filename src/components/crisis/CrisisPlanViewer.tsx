@@ -39,6 +39,14 @@ export default function CrisisPlanViewer({ onClose, plan: providedPlan }: Crisis
         console.error('Failed to load plan:', error)
       } else if (data) {
         const parsedPlan = JSON.parse(data.content)
+        console.log('📋 Crisis Plan loaded:', {
+          hasPurpose: !!parsedPlan.purpose,
+          hasGuidingPrinciples: !!parsedPlan.guidingPrinciples,
+          guidingPrinciplesCount: parsedPlan.guidingPrinciples?.length || 0,
+          hasScenarios: !!parsedPlan.scenarios,
+          scenariosCount: parsedPlan.scenarios?.length || 0,
+          keys: Object.keys(parsedPlan)
+        })
         setPlan(parsedPlan)
       }
     } catch (err) {

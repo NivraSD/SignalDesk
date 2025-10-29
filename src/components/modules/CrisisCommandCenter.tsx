@@ -171,11 +171,40 @@ export default function CrisisCommandCenter() {
     if (!organization) return
 
     try {
-      // Get recent intelligence briefs (last 24 hours)
+      const alerts: any[] = []
       const oneDayAgo = new Date()
       oneDayAgo.setHours(oneDayAgo.getHours() - 24)
 
-      const { data: briefs, error } = await supabase
+      // METHOD 1: Check crisis_events table for 'monitoring' status crises (from real-time detection)
+      const { data: monitoringCrises, error: crisisError } = await supabase
+        .from('crisis_events')
+        .select('*')
+        .eq('organization_id', organization.id)
+        .eq('status', 'monitoring')
+        .gte('started_at', oneDayAgo.toISOString())
+        .order('started_at', { ascending: false })
+        .limit(10)
+
+      if (monitoringCrises && !crisisError) {
+        // Convert monitoring crises to alert format for display
+        monitoringCrises.forEach(crisis => {
+          const warningSignals = crisis.trigger_data?.warning_signals || []
+          alerts.push({
+            severity: crisis.severity,
+            title: crisis.title,
+            summary: crisis.description || `${warningSignals.join(', ')}`,
+            category: 'crisis',
+            type: 'crisis_detection',
+            detected_at: crisis.started_at,
+            crisis_id: crisis.id,
+            risk_level: crisis.trigger_data?.risk_level || 0,
+            signals: warningSignals
+          })
+        })
+      }
+
+      // METHOD 2: Also check intelligence briefs for critical alerts (legacy/alternative source)
+      const { data: briefs, error: briefsError } = await supabase
         .from('real_time_intelligence_briefs')
         .select('critical_alerts, created_at')
         .eq('organization_id', organization.id)
@@ -183,33 +212,30 @@ export default function CrisisCommandCenter() {
         .order('created_at', { ascending: false })
         .limit(5)
 
-      if (error) {
-        console.error('Error checking for crisis alerts:', error)
-        return
+      if (briefs && !briefsError) {
+        briefs.forEach(brief => {
+          if (brief.critical_alerts && Array.isArray(brief.critical_alerts)) {
+            brief.critical_alerts.forEach((alert: any) => {
+              // Filter for critical/high severity and crisis-related alerts
+              if (
+                alert.severity === 'critical' ||
+                (alert.severity === 'high' && (
+                  alert.category?.toLowerCase().includes('crisis') ||
+                  alert.title?.toLowerCase().includes('crisis') ||
+                  alert.type?.toLowerCase().includes('crisis')
+                ))
+              ) {
+                alerts.push({
+                  ...alert,
+                  detected_at: brief.created_at
+                })
+              }
+            })
+          }
+        })
       }
 
-      // Extract critical alerts
-      const alerts: any[] = []
-      briefs?.forEach(brief => {
-        if (brief.critical_alerts && Array.isArray(brief.critical_alerts)) {
-          brief.critical_alerts.forEach((alert: any) => {
-            // Filter for critical/high severity and crisis-related alerts
-            if (
-              alert.severity === 'critical' ||
-              (alert.severity === 'high' && (
-                alert.category?.toLowerCase().includes('crisis') ||
-                alert.title?.toLowerCase().includes('crisis') ||
-                alert.type?.toLowerCase().includes('crisis')
-              ))
-            ) {
-              alerts.push({
-                ...alert,
-                detected_at: brief.created_at
-              })
-            }
-          })
-        }
-      })
+      console.log(`🚨 Potential crisis alerts found: ${alerts.length}`)
 
       setPotentialCrisisAlerts(alerts)
       setHasActiveCrisisAlerts(alerts.length > 0)

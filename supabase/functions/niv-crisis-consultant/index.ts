@@ -34,7 +34,8 @@ serve(async (req) => {
     const {
       message,
       organization_name,
-      conversation_history = []
+      conversation_history = [],
+      crisis = null
     } = await req.json()
 
     if (!message) {
@@ -42,6 +43,25 @@ serve(async (req) => {
         JSON.stringify({ error: 'Message is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
+    }
+
+    // Build crisis context string
+    let crisisContext = ''
+    if (crisis && crisis.id !== 'preview') {
+      crisisContext = `\n\nACTIVE CRISIS CONTEXT:
+- Crisis Type: ${crisis.crisis_type || 'Unknown'}
+- Title: ${crisis.title || 'Unknown'}
+- Severity: ${crisis.severity || 'medium'} (${crisis.severity === 'critical' ? '🔴 CRITICAL' : crisis.severity === 'high' ? '🟠 HIGH' : crisis.severity === 'medium' ? '🟡 MEDIUM' : '🟢 LOW'})
+- Status: ${crisis.status || 'active'}
+- Duration: ${crisis.started_at ? getElapsedTime(crisis.started_at) : 'Unknown'}
+- Trigger: ${crisis.trigger_source === 'manual' ? 'Manually activated' : crisis.trigger_source || 'Unknown'}
+
+Timeline Events: ${crisis.timeline?.length || 0} events recorded
+Decisions Made: ${crisis.decisions?.length || 0} decisions
+Communications Sent: ${crisis.communications?.length || 0} communications
+Active Tasks: ${crisis.tasks?.filter((t: any) => t.status !== 'completed').length || 0} tasks
+
+Provide guidance specific to THIS active crisis situation.`
     }
 
     // Build messages array with context
@@ -56,10 +76,14 @@ serve(async (req) => {
       }
     ]
 
-    // Add organization context to system prompt if provided
-    const systemPrompt = organization_name
-      ? `${CONSULTANT_SYSTEM_PROMPT}\n\nYou are consulting for: ${organization_name}`
-      : CONSULTANT_SYSTEM_PROMPT
+    // Add organization and crisis context to system prompt
+    let systemPrompt = CONSULTANT_SYSTEM_PROMPT
+    if (organization_name) {
+      systemPrompt += `\n\nYou are consulting for: ${organization_name}`
+    }
+    if (crisisContext) {
+      systemPrompt += crisisContext
+    }
 
     // Call Claude API
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -106,3 +130,23 @@ serve(async (req) => {
     )
   }
 })
+
+// Helper function to calculate elapsed time
+function getElapsedTime(startedAt: string): string {
+  const start = new Date(startedAt)
+  const now = new Date()
+  const diffMs = now.getTime() - start.getTime()
+  const diffMins = Math.floor(diffMs / 60000)
+
+  if (diffMins < 60) {
+    return `${diffMins} minutes`
+  } else if (diffMins < 1440) {
+    const hours = Math.floor(diffMins / 60)
+    const mins = diffMins % 60
+    return `${hours}h ${mins}m`
+  } else {
+    const days = Math.floor(diffMins / 1440)
+    const hours = Math.floor((diffMins % 1440) / 60)
+    return `${days}d ${hours}h`
+  }
+}

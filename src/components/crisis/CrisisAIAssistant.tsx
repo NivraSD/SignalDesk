@@ -59,12 +59,13 @@ export default function CrisisAIAssistant({ crisis, onUpdate }: CrisisAIAssistan
         history: historyToSend
       })
 
-      // Call the crisis consultant edge function
+      // Call the crisis consultant edge function with crisis context
       const { data, error: apiError } = await supabase.functions.invoke('niv-crisis-consultant', {
         body: {
           message: userMessage,
           organization_name: organization.name,
-          conversation_history: historyToSend
+          conversation_history: historyToSend,
+          crisis: crisis  // Pass the full crisis object for context
         }
       })
 
@@ -107,9 +108,9 @@ export default function CrisisAIAssistant({ crisis, onUpdate }: CrisisAIAssistan
   ]
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl flex flex-col h-full">
+    <div className="bg-gray-900 border border-gray-800 rounded-xl flex flex-col h-full max-h-[800px]">
       {/* Header */}
-      <div className="p-4 border-b border-gray-800">
+      <div className="p-4 border-b border-gray-800 flex-shrink-0">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
             <Bot className="w-6 h-6 text-white" />
@@ -122,7 +123,7 @@ export default function CrisisAIAssistant({ crisis, onUpdate }: CrisisAIAssistan
       </div>
 
       {/* Messages */}
-      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
         {conversation.length === 0 && (
           <div className="text-center py-12">
             <Bot className="w-12 h-12 text-gray-600 mx-auto mb-4" />
@@ -182,7 +183,7 @@ export default function CrisisAIAssistant({ crisis, onUpdate }: CrisisAIAssistan
       </div>
 
       {/* Input */}
-      <div className="p-4 border-t border-gray-800">
+      <div className="p-4 border-t border-gray-800 flex-shrink-0">
         <div className="flex space-x-2">
           <input
             type="text"
