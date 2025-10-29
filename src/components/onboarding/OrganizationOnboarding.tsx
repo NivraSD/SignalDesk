@@ -237,7 +237,41 @@ export default function OrganizationOnboarding({
         }
       }
 
-      // 5. Upload Memory Vault files (if any)
+      // 5. Generate comprehensive schema package
+      console.log('🎯 Generating comprehensive schema package...')
+
+      try {
+        const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+        const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+        const schemaResponse = await fetch(`${SUPABASE_URL}/functions/v1/geo-schema-optimizer`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            organization_id: organization.id,
+            organization_name: organization.name,
+            industry: discovered?.industry || industry,
+            url: website
+          })
+        })
+
+        if (schemaResponse.ok) {
+          const schemaData = await schemaResponse.json()
+          console.log('✅ Schema package generated:', {
+            schemas: schemaData.schemas_created,
+            fields: schemaData.field_count
+          })
+        } else {
+          console.warn('Schema generation failed (non-blocking):', await schemaResponse.text())
+        }
+      } catch (schemaError) {
+        console.warn('Schema generation error (non-blocking):', schemaError)
+      }
+
+      // 6. Upload Memory Vault files (if any)
       if (uploadedFiles.length > 0) {
         console.log(`📤 Uploading ${uploadedFiles.length} files to Memory Vault...`)
 
