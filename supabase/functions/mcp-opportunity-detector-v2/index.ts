@@ -74,7 +74,7 @@ interface DetectedOpportunity {
  * Extract and structure data from enriched_data for Claude
  * Similar to prepareSynthesisContext in mcp-executive-synthesis
  */
-function extractIntelligenceData(enrichedData: any, organizationName: string) {
+async function extractIntelligenceData(enrichedData: any, organizationName: string, organizationId: string) {
   // Use organized_intelligence as primary source, fall back to extracted_data
   const organizedData = enrichedData?.organized_intelligence || {};
   const extractedData = enrichedData?.extracted_data || {};
@@ -717,7 +717,7 @@ serve(async (req) => {
     }
 
     // Extract intelligence data
-    const extractedData = extractIntelligenceData(enriched_data, organization_name);
+    const extractedData = await extractIntelligenceData(enriched_data, organization_name, organization_id);
 
     // V2: Detect opportunities with execution plans
     console.log('🎯 Using V2 Opportunity Detection Engine...')
