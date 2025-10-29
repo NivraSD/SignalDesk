@@ -59,7 +59,10 @@ serve(async (req) => {
     console.log('📄 Current schema loaded:', schemaData.id)
 
     // STEP 2: Apply changes to schema
-    const currentSchema = schemaData.content
+    // Parse the schema content if it's a string
+    const currentSchema = typeof schemaData.content === 'string'
+      ? JSON.parse(schemaData.content)
+      : schemaData.content
     const changes = recommendation.changes || {}
     const beforeSchema = JSON.parse(JSON.stringify(currentSchema)) // Deep clone
 
@@ -79,7 +82,7 @@ serve(async (req) => {
     const { error: updateError } = await supabase
       .from('content_library')
       .update({
-        content: updatedSchema,
+        content: JSON.stringify(updatedSchema), // Stringify to match database format
         metadata: {
           ...schemaData.metadata,
           last_updated: new Date().toISOString(),
