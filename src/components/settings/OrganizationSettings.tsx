@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { X, Building2, Target, Globe, Loader, Save, AlertCircle, RefreshCw, CheckCircle } from 'lucide-react'
+import { X, Building2, Target, Globe, Loader, Save, AlertCircle, RefreshCw, CheckCircle, FileText, Copy } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import TargetManagementTab from './TargetManagementTab'
 import GeoTargetsTab from './GeoTargetsTab'
@@ -41,6 +41,7 @@ export default function OrganizationSettings({
   const [schemaExtracting, setSchemaExtracting] = useState(false)
   const [schemaData, setSchemaData] = useState<any>(null)
   const [schemaLoading, setSchemaLoading] = useState(false)
+  const [showSchemaViewer, setShowSchemaViewer] = useState(false)
 
   // Load organization data
   useEffect(() => {
@@ -175,30 +176,36 @@ export default function OrganizationSettings({
         return
       }
 
-      console.log('🔍 Extracting schema from', orgData.domain)
+      console.log('🎯 Generating comprehensive schema package...')
 
-      const response = await fetch('/api/schema/extract', {
+      // Use the new geo-schema-optimizer for strategic schema generation
+      const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/geo-schema-optimizer`, {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           organization_id: organizationId,
-          organization_url: orgData.domain,
           organization_name: orgData.name,
           industry: orgData.industry,
-          extract_competitors: false
+          url: orgData.domain,
+          force_regenerate: schemaData?.has_schema || false
         })
       })
 
       if (!response.ok) {
-        throw new Error('Schema extraction failed')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Schema generation failed')
       }
 
       const result = await response.json()
-      console.log('✅ Schema extracted:', result)
+      console.log('✅ Schema package generated:', result)
 
-      setSuccess('Schema extracted successfully! You can now use GEO Intelligence to optimize it.')
+      setSuccess(`Schema package generated! Created ${result.schemas_created} schema(s) with ${result.field_count} fields.`)
 
       // Reload schema data
       await loadSchema()
@@ -206,8 +213,8 @@ export default function OrganizationSettings({
       // Clear success message after 5 seconds
       setTimeout(() => setSuccess(null), 5000)
     } catch (err: any) {
-      console.error('Failed to extract schema:', err)
-      setError(err.message || 'Failed to extract schema')
+      console.error('Failed to generate schema:', err)
+      setError(err.message || 'Failed to generate schema')
     } finally {
       setSchemaExtracting(false)
     }
@@ -377,43 +384,107 @@ export default function OrganizationSettings({
                   <div className="pt-6 border-t border-gray-700">
                     <div className="flex items-center justify-between mb-4">
                       <div>
-                        <h3 className="text-sm font-medium text-gray-300">Schema.org Markup</h3>
+                        <h3 className="text-sm font-medium text-gray-300">AI Presence Architecture</h3>
                         <p className="text-xs text-gray-500 mt-1">
-                          Extract schema.org markup from your website for GEO Intelligence optimization
+                          Comprehensive schema.org optimization for maximum AI visibility
                         </p>
                       </div>
-                      <button
-                        onClick={extractSchema}
-                        disabled={schemaExtracting || !orgData.domain}
-                        className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 text-sm font-medium ${
-                          schemaExtracting
-                            ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                            : schemaData?.has_schema
-                            ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30 hover:bg-blue-500/20'
-                            : 'bg-blue-500 text-white hover:bg-blue-600'
-                        }`}
-                      >
-                        {schemaExtracting ? (
-                          <>
-                            <Loader className="w-4 h-4 animate-spin" />
-                            Extracting...
-                          </>
-                        ) : (
-                          <>
-                            <RefreshCw className="w-4 h-4" />
-                            {schemaData?.has_schema ? 'Update Schema' : 'Extract Schema'}
-                          </>
+                      <div className="flex items-center gap-2">
+                        {schemaData?.has_schema && (
+                          <button
+                            onClick={() => setShowSchemaViewer(!showSchemaViewer)}
+                            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-all flex items-center gap-2 text-sm font-medium"
+                          >
+                            <FileText className="w-4 h-4" />
+                            {showSchemaViewer ? 'Hide' : 'View'} Schema
+                          </button>
                         )}
-                      </button>
+                        <button
+                          onClick={extractSchema}
+                          disabled={schemaExtracting || !orgData.domain}
+                          className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 text-sm font-medium ${
+                            schemaExtracting
+                              ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                              : schemaData?.has_schema
+                              ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30 hover:bg-blue-500/20'
+                              : 'bg-blue-500 text-white hover:bg-blue-600'
+                          }`}
+                        >
+                          {schemaExtracting ? (
+                            <>
+                              <Loader className="w-4 h-4 animate-spin" />
+                              Generating...
+                            </>
+                          ) : (
+                            <>
+                              <RefreshCw className="w-4 h-4" />
+                              {schemaData?.has_schema ? 'Regenerate' : 'Generate Schema'}
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
 
-                    {schemaData?.has_schema && (
-                      <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg flex items-start gap-3">
-                        <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                        <div className="text-sm text-gray-300">
-                          <p className="font-medium text-green-400 mb-1">Schema Active</p>
-                          <p>Schema.org markup is configured. Use GEO Intelligence to test and optimize it.</p>
+                    {schemaData?.has_schema && schemaData.schema && (
+                      <div className="space-y-3">
+                        <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+                          <div className="flex items-start gap-3">
+                            <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                              <p className="font-medium text-green-400 mb-1">Schema Package Active</p>
+                              <p className="text-sm text-gray-300 mb-3">
+                                Comprehensive AI-optimized schema with {schemaData.schema.intelligence?.fields?.length || 0} fields
+                              </p>
+                              <div className="grid grid-cols-3 gap-3 text-xs">
+                                <div>
+                                  <div className="text-gray-500 mb-1">Schema Type</div>
+                                  <div className="text-white font-medium">{schemaData.schema.metadata?.schema_type || 'Organization'}</div>
+                                </div>
+                                <div>
+                                  <div className="text-gray-500 mb-1">Generated By</div>
+                                  <div className="text-white font-medium">{schemaData.schema.metadata?.generated_by === 'geo-schema-optimizer' ? 'AI Optimizer' : 'Extracted'}</div>
+                                </div>
+                                <div>
+                                  <div className="text-gray-500 mb-1">Last Updated</div>
+                                  <div className="text-white font-medium">
+                                    {schemaData.schema.updated_at
+                                      ? new Date(schemaData.schema.updated_at).toLocaleDateString()
+                                      : 'N/A'
+                                    }
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                         </div>
+
+                        {showSchemaViewer && (
+                          <div className="p-4 bg-gray-900/50 rounded-lg border border-gray-700">
+                            <div className="flex items-center justify-between mb-3">
+                              <h4 className="text-sm font-medium text-gray-300">Schema Preview</h4>
+                              <button
+                                onClick={() => {
+                                  const schemaContent = typeof schemaData.schema.content === 'string'
+                                    ? schemaData.schema.content
+                                    : JSON.stringify(schemaData.schema.content, null, 2)
+                                  navigator.clipboard.writeText(schemaContent)
+                                  setSuccess('Schema copied to clipboard!')
+                                  setTimeout(() => setSuccess(null), 2000)
+                                }}
+                                className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                              >
+                                <Copy className="w-3 h-3" />
+                                Copy JSON
+                              </button>
+                            </div>
+                            <pre className="text-xs text-gray-400 overflow-x-auto max-h-96 overflow-y-auto">
+                              {typeof schemaData.schema.content === 'string'
+                                ? JSON.stringify(JSON.parse(schemaData.schema.content), null, 2)
+                                : JSON.stringify(schemaData.schema.content, null, 2)
+                              }
+                            </pre>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -421,8 +492,8 @@ export default function OrganizationSettings({
                       <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg flex items-start gap-3">
                         <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
                         <div className="text-sm text-gray-300">
-                          <p className="font-medium text-yellow-400 mb-1">No Schema Found</p>
-                          <p>Click "Extract Schema" to scrape your website for schema.org markup. If none exists, we'll generate a basic Organization schema from your profile.</p>
+                          <p className="font-medium text-yellow-400 mb-1">No Schema Package</p>
+                          <p>Click "Generate Schema" to create a comprehensive, AI-optimized schema package. Our system will analyze your industry and create strategic structured data that 70% of companies don't have.</p>
                         </div>
                       </div>
                     )}
