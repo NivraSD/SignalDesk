@@ -288,7 +288,26 @@ serve(async (req) => {
   }
 
   try {
-    const { articles, profile, organization_name, top_k = 50, coverage_report } = await req.json();
+    console.log('🎯 Starting monitor-stage-2-relevance...')
+    console.log('📦 Request method:', req.method)
+    console.log('📊 Content-Type:', req.headers.get('content-type'))
+
+    let requestBody
+    try {
+      requestBody = await req.json()
+    } catch (jsonError) {
+      console.error('❌ JSON parsing failed:', jsonError)
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Failed to parse request body',
+        details: jsonError.message
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    const { articles, profile, organization_name, top_k = 50, coverage_report } = requestBody
     
     console.log('🎯 RELEVANCE SCORING STAGE 2');
     console.log(`Organization: ${organization_name}`);

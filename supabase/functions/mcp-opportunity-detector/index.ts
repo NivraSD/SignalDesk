@@ -100,24 +100,25 @@ function extractIntelligenceData(enrichedData: any, organizationName: string) {
     return !entityLower.includes(orgNameLower) && entityLower !== orgNameLower;
   });
 
-  // Get discovery targets from profile
+  // Get discovery targets from intelligence_targets table (new schema)
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+  const { data: intelligenceTargets } = await supabase
+    .from('intelligence_targets')
+    .select('*')
+    .eq('organization_id', organizationId)
+    .eq('active', true);
+
   const discoveryTargets = {
-    competitors: [
-      ...(profile?.competition?.direct_competitors || []),
-      ...(profile?.competition?.indirect_competitors || []),
-      ...(profile?.competition?.emerging_threats || [])
-    ].filter(Boolean),
-    stakeholders: [
-      ...(profile?.stakeholders?.regulators || []),
-      ...(profile?.stakeholders?.major_investors || []),
-      ...(profile?.stakeholders?.executives || [])
-    ].filter(Boolean),
-    topics: [
-      ...(profile?.trending?.hot_topics || []),
-      ...(profile?.keywords || []),
-      ...(profile?.monitoring_config?.keywords || [])
-    ].filter(Boolean)
+    competitors: intelligenceTargets?.filter(t => t.type === 'competitor').map(t => t.name) || [],
+    stakeholders: intelligenceTargets?.filter(t => t.type === 'stakeholder').map(t => t.name) || [],
+    topics: intelligenceTargets?.filter(t => t.type === 'topic' || t.type === 'keyword').map(t => t.name) || []
   };
+
+  console.log('📊 Discovery Targets from intelligence_targets table:', {
+    competitors: discoveryTargets.competitors.length,
+    stakeholders: discoveryTargets.stakeholders.length,
+    topics: discoveryTargets.topics.length
+  });
 
   console.log('📊 Intelligence Data Extraction:', {
     totalEvents: events.length,

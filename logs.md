@@ -1,194 +1,154 @@
 [
 {
-"event_message": " ✓ Saved: Organization Schema Enhancement\n",
-"event_type": "Log",
-"function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "7d393a3e-c147-4c2c-b7c3-e738904ce334",
-"level": "info",
-"timestamp": 1761685518275000
+"event_message": "shutdown",
+"event_type": "Shutdown",
+"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
+"id": "4c05fdf0-7bff-4998-943d-b5ade2322b23",
+"level": "log",
+"timestamp": 1761755953348000
 },
 {
-"event_message": " ✓ Saved: HowTo Schema for Makeup Tutorials\n",
-"event_type": "Log",
-"function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "1f77036c-2f41-4532-8ffe-5b005789721f",
-"level": "info",
-"timestamp": 1761685518202000
+"event_message": "shutdown",
+"event_type": "Shutdown",
+"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
+"id": "c1e268a2-d31a-4873-9f24-2d687ed3a354",
+"level": "log",
+"timestamp": 1761755953078000
 },
 {
-"event_message": " ✓ Saved: Enhanced Product Schema for Skincare Line\n",
+"event_message": "Prompt length: 23679 characters\n",
 "event_type": "Log",
-"function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "a3bb6d31-332a-4a4a-919b-30b6b8adfa66",
+"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
+"id": "be633f2f-2268-4b2a-9f7a-66ff7a977c71",
 "level": "info",
-"timestamp": 1761685518138000
+"timestamp": 1761755753392000
 },
 {
-"event_message": "💾 Saving 3 recommendations to database...\n",
+"event_message": "Calling Claude Sonnet 4 for V2 opportunity generation...\n",
 "event_type": "Log",
-"function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "a75bc19b-de87-4325-90c2-b807996487d4",
+"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
+"id": "78765f6d-ccb8-4ebf-a9b5-8360cb675bba",
 "level": "info",
-"timestamp": 1761685517660000
+"timestamp": 1761755753392000
 },
 {
-"event_message": "✅ Synthesis Generated: { key_findings: 3, recommendations: 3, critical_actions: 3 }\n",
+"event_message": "📊 Intelligence Data Extraction: {\n totalEvents: 56,\n eventsAboutOrg: 0,\n eventsAboutCompetitors: 56,\n entities: 114,\n topics: 11,\n quotes: 12,\n competitors: 20\n}\n",
 "event_type": "Log",
-"function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "506290dd-a5f9-4473-ad1c-b16912897ad8",
+"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
+"id": "f7f6f333-bd00-4613-b030-d9aa3212f173",
 "level": "info",
-"timestamp": 1761685517659000
+"timestamp": 1761755753391000
 },
 {
-"event_message": "🤖 Calling Claude for executive synthesis...\n",
+"event_message": "🚀 V2 Opportunity Detection - Building execution-ready opportunities...\n",
 "event_type": "Log",
-"function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "c4755a67-0111-49b7-a707-741001de2589",
+"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
+"id": "40a48a61-e7ab-429b-9500-1e2855454b45",
 "level": "info",
-"timestamp": 1761685495880000
+"timestamp": 1761755753391000
 },
 {
-"event_message": "📈 Analysis Complete: {\n total_queries: 15,\n mention_rate: 80,\n critical_gaps: 3,\n opportunities: 0\n}\n",
+"event_message": "🎯 Using V2 Opportunity Detection Engine...\n",
 "event_type": "Log",
-"function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "8e68855e-2a6c-4edd-a8c7-7cfcbb72dc25",
+"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
+"id": "8a1e2ba3-2d88-47d3-b9f7-a2f913e5fe5c",
 "level": "info",
-"timestamp": 1761685495879000
+"timestamp": 1761755753391000
 },
 {
-"event_message": "📊 GEO Executive Synthesis Starting: {\n organization: \"e.l.f. cosmetics\",\n industry: \"Beauty and Personal Care\",\n results_count: 15,\n timestamp: \"2025-10-28T21:04:55.875Z\"\n}\n",
+"event_message": "📊 Input data check: {\n has_enriched_data: true,\n has_search_results: false,\n search_results_count: 0,\n organized_events: 56,\n extracted_data_events: 56,\n has_executive_synthesis: true,\n social_signals_count: 0,\n has_profile: true,\n enriched_articles: 100,\n knowledge_graph_entities: 0\n}\n",
 "event_type": "Log",
-"function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "185abfc6-aa97-4469-99ac-35565f5a97a7",
+"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
+"id": "318bf402-fdfc-4747-b588-c01a9782ab8f",
 "level": "info",
-"timestamp": 1761685495876000
+"timestamp": 1761755753390000
+},
+{
+"event_message": "📌 Sample events from enriched data:\n",
+"event_type": "Log",
+"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
+"id": "961c3b74-e627-4b44-949c-a9dfe0cc917f",
+"level": "info",
+"timestamp": 1761755753390000
+},
+{
+"event_message": " 1. [partnership] Indian Oil Corporation Ltd: Indian Oil Corporation Ltd is preparing to launch a trading joint venture with Vitol in Singapore in\n",
+"event_type": "Log",
+"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
+"id": "6c2de49f-38a9-4e8d-8fc4-5fb11bd9bf98",
+"level": "info",
+"timestamp": 1761755753390000
+},
+{
+"event_message": " 2. [partnership] Mitsubishi Corporation: Wheeler Bio announced strategic partnership with Mitsubishi Corporation to expand commercial reach a\n",
+"event_type": "Log",
+"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
+"id": "c6c58d49-eaa3-4122-af9a-69e2f5110078",
+"level": "info",
+"timestamp": 1761755753390000
+},
+{
+"event_message": "🎯 PR Opportunity Detection for Mitsui & Co.\n",
+"event_type": "Log",
+"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
+"id": "67c0c6f6-e4c2-4fbb-903f-6d8b41cc7153",
+"level": "info",
+"timestamp": 1761755753390000
+},
+{
+"event_message": " 3. [regulatory] Cargill: Tyson Foods will pay $55 million and Cargill $32.5 million to settle a beef price fixing lawsuit fil\n",
+"event_type": "Log",
+"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
+"id": "2a97e05a-0421-44cd-aff1-51a333e3c7af",
+"level": "info",
+"timestamp": 1761755753390000
 },
 {
 "event_message": "Listening on http://localhost:9999/\n",
 "event_type": "Log",
-"function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "5750cfa4-38b7-41b4-b607-492ef313b277",
+"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
+"id": "517ecacd-7318-414f-bef5-d607ca47717d",
 "level": "info",
-"timestamp": 1761685495872000
+"timestamp": 1761755753336000
+},
+{
+"event_message": "🔑 Environment check: {\n has_url: true,\n has_service_key: true,\n has_anthropic: true,\n key_length: 219\n}\n",
+"event_type": "Log",
+"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
+"id": "a4383d66-5efb-48ab-9fbf-e9987469b83c",
+"level": "info",
+"timestamp": 1761755753335000
 },
 {
 "event_message": "booted (time: 31ms)",
 "event_type": "Boot",
-"function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "24adfb83-ff3a-45b9-a433-f3926da1ef3d",
+"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
+"id": "ae63ba24-929b-4766-827e-5778b4800511",
 "level": "log",
-"timestamp": 1761685495869000
-},
-{
-"event_message": "shutdown",
-"event_type": "Shutdown",
-"function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "006a668c-d1ae-4dac-a255-13a637dc4eb9",
-"level": "log",
-"timestamp": 1761685012377000
-},
-{
-"event_message": "⚠️ No GEO results provided, returning empty synthesis\n",
-"event_type": "Log",
-"function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "e053b5ef-48d0-4da6-bf37-f08293146803",
-"level": "info",
-"timestamp": 1761684812364000
+"timestamp": 1761755753332000
 },
 {
 "event_message": "Listening on http://localhost:9999/\n",
 "event_type": "Log",
-"function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "a00823ff-b8c5-45d9-a9d3-4d188c7cb9c5",
+"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
+"id": "e3f2fc10-59b8-465c-b632-f51eafbf3e59",
 "level": "info",
-"timestamp": 1761684812360000
+"timestamp": 1761755753067000
 },
 {
-"event_message": "booted (time: 32ms)",
+"event_message": "🔑 Environment check: {\n has_url: true,\n has_service_key: true,\n has_anthropic: true,\n key_length: 219\n}\n",
+"event_type": "Log",
+"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
+"id": "644d58c5-8d14-4070-802e-e1135a606eb7",
+"level": "info",
+"timestamp": 1761755753066000
+},
+{
+"event_message": "booted (time: 30ms)",
 "event_type": "Boot",
-"function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "01996a6b-cae9-420d-96db-ede2bc6748bd",
+"function_id": "eeb44f1b-8917-4429-8560-f4ec74024fdb",
+"id": "8b5c90d7-377a-4753-b4c8-2c9918ae23b4",
 "level": "log",
-"timestamp": 1761684812357000
-},
-{
-"event_message": "shutdown",
-"event_type": "Shutdown",
-"function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "842298ed-5744-4931-843b-29584e7ad640",
-"level": "log",
-"timestamp": 1761684158713000
-},
-{
-"event_message": "⚠️ No GEO results provided, returning empty synthesis\n",
-"event_type": "Log",
-"function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "673b19ea-ed46-4f3e-b6e2-92664dfd18a7",
-"level": "info",
-"timestamp": 1761683958705000
-},
-{
-"event_message": "Listening on http://localhost:9999/\n",
-"event_type": "Log",
-"function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "76138be6-90d2-47c1-8a11-83aa67510fe4",
-"level": "info",
-"timestamp": 1761683958701000
-},
-{
-"event_message": "booted (time: 31ms)",
-"event_type": "Boot",
-"function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "837bfae5-1e78-4193-b6da-485b09aeb22a",
-"level": "log",
-"timestamp": 1761683958698000
-},
-{
-"event_message": "shutdown",
-"event_type": "Shutdown",
-"function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "524d729b-9c98-4fff-96aa-16e6449dca21",
-"level": "log",
-"timestamp": 1761682138175000
-},
-{
-"event_message": "shutdown",
-"event_type": "Shutdown",
-"function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "8b8b15cb-05d3-4681-9a1d-bb94836d940a",
-"level": "log",
-"timestamp": 1761681942087000
-},
-{
-"event_message": "shutdown",
-"event_type": "Shutdown",
-"function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "9752e7ab-d85d-4f90-b088-0af964f1a3a1",
-"level": "log",
-"timestamp": 1761681941887000
-},
-{
-"event_message": "❌ GEO Executive Synthesis Error: Error: organization_id, organization_name, and geo_results required\n at Server.<anonymous> (file:///var/tmp/sb-compile-edge-runtime/functions/geo-executive-synthesis/index.ts:15:13)\n at eventLoopTick (ext:core/01_core.js:175:7)\n at async Server.#respond (https://deno.land/std@0.168.0/http/server.ts:221:18)\n",
-"event_type": "Log",
-"function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "978a8d94-4436-4e5b-8a03-e1528bf47207",
-"level": "error",
-"timestamp": 1761681938146000
-},
-{
-"event_message": "Listening on http://localhost:9999/\n",
-"event_type": "Log",
-"function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "bca8eb1f-bd24-4347-beb8-b6f63e50e2d7",
-"level": "info",
-"timestamp": 1761681938140000
-},
-{
-"event_message": "booted (time: 31ms)",
-"event_type": "Boot",
-"function_id": "4b0a9f1e-f9e2-46eb-951b-0bd14a69fb2c",
-"id": "6ac92915-1c8b-4540-94f9-b35ab6286e14",
-"level": "log",
-"timestamp": 1761681938137000
+"timestamp": 1761755753062000
 }
 ]
