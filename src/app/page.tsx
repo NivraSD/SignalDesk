@@ -377,7 +377,7 @@ export default function Dashboard() {
                             </div>
                             <button
                               onClick={() => {
-                                router.push('/campaign-builder')
+                                window.open('/campaign-builder', '_blank')
                                 setShowModuleMenu(null)
                               }}
                               className="w-full text-left px-4 py-2 hover:bg-gray-800 text-sm flex items-center gap-2"
