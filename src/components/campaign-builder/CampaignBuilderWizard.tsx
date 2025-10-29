@@ -401,6 +401,9 @@ export function CampaignBuilderWizard() {
 
     if (!session) return
 
+    // Show loading state
+    setIsLoading(true)
+
     // Save positioning selection to database
     try {
       await CampaignBuilderService.updateSession(session.sessionId, {
@@ -434,6 +437,9 @@ export function CampaignBuilderWizard() {
         stage: 'approach'
       }
     ])
+
+    // Clear loading state
+    setIsLoading(false)
   }
 
   // Handle approach selection (PR vs VECTOR)
@@ -510,27 +516,37 @@ export function CampaignBuilderWizard() {
       }
     })
 
-    // Start polling for progress updates
-    const progressPollInterval = setInterval(async () => {
-      try {
-        const data = await CampaignBuilderService.getSession(session.sessionId)
-        if (data?.blueprint_progress) {
-          const progress = data.blueprint_progress
+    // Simulate realistic progress through stages (better UX than database polling)
+    const progressSimulation = {
+      timeouts: [] as NodeJS.Timeout[]
+    }
 
-          setBlueprintProgress({
-            currentStage: getCurrentProgressStage(progress),
-            stages: {
-              base: progress.base || 'pending',
-              orchestration: progress.orchestration || 'pending',
-              execution: progress.execution || 'pending',
-              merging: progress.merging || 'pending'
-            }
-          })
-        }
-      } catch (err) {
-        console.error('Failed to poll progress:', err)
-      }
-    }, 2000) // Poll every 2 seconds
+    // After 10s, mark base complete and start orchestration
+    progressSimulation.timeouts.push(setTimeout(() => {
+      setBlueprintProgress(prev => ({
+        ...prev,
+        currentStage: 'orchestration',
+        stages: { ...prev.stages, base: 'completed', orchestration: 'running' }
+      }))
+    }, 10000))
+
+    // After 30s, mark orchestration complete and start execution
+    progressSimulation.timeouts.push(setTimeout(() => {
+      setBlueprintProgress(prev => ({
+        ...prev,
+        currentStage: 'execution',
+        stages: { ...prev.stages, orchestration: 'completed', execution: 'running' }
+      }))
+    }, 30000))
+
+    // After 50s, mark execution complete and start merging
+    progressSimulation.timeouts.push(setTimeout(() => {
+      setBlueprintProgress(prev => ({
+        ...prev,
+        currentStage: 'merging',
+        stages: { ...prev.stages, execution: 'completed', merging: 'running' }
+      }))
+    }, 50000))
 
     try {
       const startTime = Date.now()
@@ -641,8 +657,8 @@ export function CampaignBuilderWizard() {
         // Continue anyway - we have it in state
       }
 
-      // Clear progress polling
-      clearInterval(progressPollInterval)
+      // Clear progress simulation timeouts
+      progressSimulation.timeouts.forEach(clearTimeout)
 
       // Mark all stages as complete
       setBlueprintProgress({
@@ -677,8 +693,8 @@ export function CampaignBuilderWizard() {
       console.error('❌ Failed to generate blueprint:', err)
       setError(err.message || 'Failed to generate campaign blueprint')
 
-      // Clear progress polling
-      clearInterval(progressPollInterval)
+      // Clear progress simulation timeouts
+      progressSimulation.timeouts.forEach(clearTimeout)
 
       // Mark as failed
       setBlueprintProgress(prev => ({
@@ -1025,8 +1041,15 @@ export function CampaignBuilderWizard() {
                   key={option.id}
                   onClick={() => handlePositioningSelect(option)}
                   disabled={isLoading}
-                  className="w-full p-6 bg-zinc-900 border border-zinc-800 rounded-lg hover:border-blue-500 transition-all text-left disabled:opacity-50 group"
+                  className="w-full p-6 bg-zinc-900 border border-zinc-800 rounded-lg hover:border-blue-500 transition-all text-left disabled:opacity-50 disabled:cursor-not-allowed group relative"
                 >
+                  {/* Loading Spinner Overlay */}
+                  {isLoading && (
+                    <div className="absolute inset-0 bg-zinc-900/90 rounded-lg flex items-center justify-center">
+                      <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
+                    </div>
+                  )}
+
                   {/* Header */}
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
