@@ -337,16 +337,15 @@ CRITICAL REQUIREMENTS
 3. Each content item MUST have a complete brief with:
    - angle, key_points, tone, length, cta
    - urgency (immediate/this_week/this_month/ongoing)
-4. **MEDIA PITCHES:** Every media_pitch must include 3-5 specific outlet names (WSJ, Bloomberg, TechCrunch, etc) not generic descriptions
-5. **URGENCY VALUES:**
+4. **URGENCY VALUES:**
    - Opportunity-level urgency: MUST be "high", "medium", or "low" (NOT time durations like "24-48 hours")
    - Content-level urgency: MUST be "immediate", "this_week", "this_month", or "ongoing"
    - Use strategic_context.time_window for time-based descriptions like "3-5 days"
-6. Content briefs must be SPECIFIC and ACTIONABLE
-7. Reference SPECIFIC events from the data provided
-8. Map 80% of content to competitor/market events (not internal)
-9. Be realistic about time windows and execution effort
-10. Score opportunities: impact (40%) + time sensitivity (30%) + feasibility (30%)
+5. Content briefs must be SPECIFIC and ACTIONABLE
+6. Reference SPECIFIC events from the data provided
+7. Map 80% of content to competitor/market events (not internal)
+8. Be realistic about time windows and execution effort
+9. Score opportunities: impact (40%) + time sensitivity (30%) + feasibility (30%)
 
 CONTENT BRIEF QUALITY CHECKLIST:
 ✅ Angle is specific and differentiated

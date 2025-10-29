@@ -114,12 +114,6 @@ function extractIntelligenceData(enrichedData: any, organizationName: string) {
     topics: intelligenceTargets?.filter(t => t.type === 'topic' || t.type === 'keyword').map(t => t.name) || []
   };
 
-  console.log('📊 Discovery Targets from intelligence_targets table:', {
-    competitors: discoveryTargets.competitors.length,
-    stakeholders: discoveryTargets.stakeholders.length,
-    topics: discoveryTargets.topics.length
-  });
-
   console.log('📊 Intelligence Data Extraction:', {
     totalEvents: events.length,
     eventsAboutOrg: eventsAboutOrg.length,
