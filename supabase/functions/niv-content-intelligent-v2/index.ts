@@ -183,85 +183,6 @@ const CONTENT_GENERATION_TOOLS = [
     }
   },
   {
-    name: "create_signaldeck_outline",
-    description: "Create a detailed presentation outline for SignalDeck (our AI PowerPoint builder with charts, timelines, diagrams, and AI-generated images). Use this when user requests a presentation, deck, or slides. Creates structured outline with sections, talking points, and visual suggestions that the user can review and refine. Better than Gamma for data-driven presentations with professional charts and timelines.",
-    input_schema: {
-      type: "object",
-      properties: {
-        topic: {
-          type: "string",
-          description: "Main presentation topic"
-        },
-        audience: {
-          type: "string",
-          description: "Target audience (executives, customers, technical team, investors, board, etc.)"
-        },
-        purpose: {
-          type: "string",
-          description: "Presentation purpose (pitch, quarterly update, education, sales, strategic planning, etc.)"
-        },
-        key_messages: {
-          type: "array",
-          items: { type: "string" },
-          description: "3-5 key messages to convey"
-        },
-        slide_count: {
-          type: "number",
-          description: "Approximate number of slides desired",
-          default: 10
-        },
-        sections: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              title: { type: "string" },
-              talking_points: { type: "array", items: { type: "string" } },
-              visual_suggestion: {
-                type: "string",
-                description: "Visual element suggestion. Examples: 'Bar chart showing Q4 revenue vs Q3', 'Timeline of product launches from Jan-Dec', 'Diagram of sales process flow', 'Photo of diverse team collaborating', 'Modern office workspace image'"
-              }
-            }
-          },
-          description: "Detailed outline sections with talking points and visual suggestions"
-        }
-      },
-      required: ["topic", "audience", "purpose", "key_messages", "sections"]
-    }
-  },
-  {
-    name: "generate_signaldeck",
-    description: "Generate a PowerPoint presentation using SignalDeck based on APPROVED outline. ONLY use after user approves the outline from create_signaldeck_outline. Creates professional .pptx with charts, timelines, diagrams, and custom layouts. Saves to MemoryVault automatically.",
-    input_schema: {
-      type: "object",
-      properties: {
-        approved_outline: {
-          type: "object",
-          description: "The complete approved presentation outline from create_signaldeck_outline"
-        },
-        theme: {
-          type: "object",
-          description: "Theme colors (optional, uses defaults if not provided)",
-          properties: {
-            primary: { type: "string", description: "Primary color hex (e.g., '1a1a2e')" },
-            secondary: { type: "string", description: "Secondary color hex" },
-            accent: { type: "string", description: "Accent color hex" }
-          }
-        },
-        include_speaker_notes: {
-          type: "boolean",
-          description: "Include speaker notes for each slide",
-          default: true
-        },
-        organization_id: {
-          type: "string",
-          description: "Organization ID for saving to MemoryVault"
-        }
-      },
-      required: ["approved_outline"]
-    }
-  },
-  {
     name: "generate_media_list",
     description: "Generate a media/journalist contact list with names, outlets, and contact information. ALWAYS use this tool when user asks for: 'media list', 'journalist list', 'reporter list', 'media contacts', 'journalists', 'reporters', 'PR contacts'. This queries a verified database of 149+ real journalists across 18 industries and fills gaps automatically if needed.",
     input_schema: {
@@ -1374,27 +1295,9 @@ ${campaignContext.timeline || 'Not specified'}
     console.log('💬 Full stage: Natural conversation...')
 
     // STEP 1: UNDERSTANDING - Like orchestrator-robust, analyze what user wants
-    // OPTIMIZATION: Skip understanding call for SignalDeck to avoid timeout
     console.log('🧠 Understanding user request...')
-    const isSignalDeckRequest = message.toLowerCase().includes('signal deck') ||
-                               message.toLowerCase().includes('signaldeck')
 
-    let understanding
-    if (isSignalDeckRequest && conversationHistory.length === 0) {
-      // Fast path for initial SignalDeck request - skip Claude understanding call
-      console.log('⚡ Fast path: Skipping understanding call for SignalDeck')
-      understanding = {
-        understanding: {
-          content_type: 'signaldeck',
-          requires_fresh_data: true,
-          entities: [],
-          topics: []
-        },
-        acknowledgment: `I understand you need a SignalDeck presentation. Let me gather the research first.`
-      }
-    } else {
-      understanding = await getClaudeUnderstanding(message, conversationHistory, orgProfile, conversationState)
-    }
+    const understanding = await getClaudeUnderstanding(message, conversationHistory, orgProfile, conversationState)
     console.log('✅ Understanding:', understanding)
 
     // Update conversation state with understanding
@@ -1411,9 +1314,6 @@ ${campaignContext.timeline || 'Not specified'}
     // Skip research for simple media list requests
     const isSimpleMediaList = message.toLowerCase().includes('media list') &&
                               !message.toLowerCase().includes('media plan');
-    const isSignalDeck = message.toLowerCase().includes('signal deck') ||
-                         message.toLowerCase().includes('signaldeck') ||
-                         understanding.understanding?.content_type === 'signaldeck';
 
     // Trust the understanding - if Claude says it needs fresh data, do research
     // Access the nested understanding object
@@ -1502,11 +1402,9 @@ ${campaignContext.timeline || 'Not specified'}
       }
     }
 
-    // If we just completed fresh research OR research timed out for a presentation/signaldeck, present findings FIRST
+    // If we just completed fresh research OR research timed out for a presentation, present findings FIRST
     // Don't create outline yet - let user review research and confirm approach
-    const isPresentationRequest = understanding.understanding?.content_type === 'presentation' ||
-                                  understanding.understanding?.content_type === 'signaldeck' ||
-                                  isSignalDeck
+    const isPresentationRequest = understanding.understanding?.content_type === 'presentation'
     const shouldPresentResearchFirst = (freshResearch || researchTimedOut) && isPresentationRequest &&
                                        conversationState.stage === 'research_review'
 
@@ -2954,150 +2852,6 @@ ${section.talking_points.map((point: string) => `- ${point}`).join('\n')}
           return new Response(JSON.stringify({
             success: false,
             error: 'Failed to generate presentation with Gamma',
-            details: error instanceof Error ? error.message : 'Unknown error'
-          }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 })
-        }
-      }
-
-      // Handle SignalDeck outline creation
-      if (toolUse && toolUse.name === 'create_signaldeck_outline') {
-        console.log('📊 Claude created SignalDeck outline')
-        console.log('📊 Outline:', JSON.stringify(toolUse.input, null, 2))
-
-        // Update state to outline review
-        conversationState.stage = 'strategy_review'
-        conversationState.approvedStrategy = toolUse.input
-
-        const researchData = conversationState.researchResults || null
-
-        // Format the outline for display with visual suggestions
-        let outline = `# SignalDeck Presentation: ${toolUse.input.topic}
-
-**Audience:** ${toolUse.input.audience}
-**Purpose:** ${toolUse.input.purpose}
-**Slides:** ${toolUse.input.slide_count || 10}
-
-## Key Messages
-${toolUse.input.key_messages.map((m: string, i: number) => `${i + 1}. ${m}`).join('\n')}
-
-## Slide Structure
-
-${toolUse.input.sections.map((section: any, i: number) => {
-  const visualSuggestion = section.visual_suggestion || 'Content slide'
-
-  // Add visual icons based on keywords in suggestion
-  let icon = '📄'
-  const lower = visualSuggestion.toLowerCase()
-  if (lower.includes('chart') || lower.includes('graph')) icon = '📊'
-  else if (lower.includes('timeline') || lower.includes('roadmap')) icon = '📅'
-  else if (lower.includes('diagram') || lower.includes('flow') || lower.includes('process')) icon = '📐'
-  else if (lower.includes('photo') || lower.includes('image') || lower.includes('picture')) icon = '🖼️'
-  else if (lower.includes('quote')) icon = '💬'
-  else if (lower.includes('table') || lower.includes('data')) icon = '📋'
-
-  return `**Slide ${i + 1}: ${section.title}**
-${section.talking_points.map((p: string) => `  • ${p}`).join('\n')}
-  Visual: ${icon} ${visualSuggestion}
-`
-}).join('\n')}
-
----
-
-*This will be a professional PowerPoint presentation with charts, timelines, diagrams, and AI-generated images.*
-*Once you're happy with this outline, I'll create your SignalDeck presentation!*`
-
-        return new Response(JSON.stringify({
-          success: true,
-          mode: 'signaldeck_outline',
-          message: outline,
-          signaldeckOutline: toolUse.input,
-          researchData: researchData,
-          conversationId
-        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-      }
-
-      // Handle SignalDeck generation (with approved outline)
-      if (toolUse && toolUse.name === 'generate_signaldeck' && toolUse.input.approved_outline) {
-        console.log('🎨 Claude triggered SignalDeck generation')
-        console.log('📊 Approved outline:', JSON.stringify(toolUse.input.approved_outline, null, 2))
-
-        conversationState.stage = 'generation'
-        conversationState.approvedStrategy = toolUse.input.approved_outline
-
-        const outline = toolUse.input.approved_outline
-
-        // Validate outline
-        if (!outline.topic || !outline.sections || outline.sections.length === 0) {
-          console.error('❌ Invalid outline structure:', outline)
-          throw new Error('Outline missing required fields (topic or sections)')
-        }
-
-        try {
-          const requestBody = {
-            approved_outline: outline,
-            theme: toolUse.input.theme || {
-              primary: '1a1a2e',
-              secondary: '16213e',
-              accent: '0f3460'
-            },
-            include_speaker_notes: toolUse.input.include_speaker_notes !== false,
-            organization_id: organizationId
-          }
-
-          console.log('📤 Sending to SignalDeck:', {
-            topic: outline.topic,
-            slideCount: outline.slide_count,
-            hasTheme: !!requestBody.theme
-          })
-
-          // Call SignalDeck presentation service
-          const signaldeckResponse = await fetch(`${SUPABASE_URL}/functions/v1/signaldeck-presentation`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
-            },
-            body: JSON.stringify(requestBody)
-          })
-
-          console.log('📥 SignalDeck response status:', signaldeckResponse.status)
-
-          if (!signaldeckResponse.ok) {
-            const errorText = await signaldeckResponse.text()
-            console.error('❌ SignalDeck error response:', errorText)
-            throw new Error(`SignalDeck API error (${signaldeckResponse.status}): ${errorText}`)
-          }
-
-          const signaldeckData = await signaldeckResponse.json()
-          console.log('✅ SignalDeck generation started:', JSON.stringify(signaldeckData, null, 2))
-
-          // Return with generationId for frontend to poll
-          return new Response(JSON.stringify({
-            success: true,
-            mode: 'signaldeck_generating',
-            contentType: 'signaldeck',
-            message: `Your PowerPoint presentation is being created! This usually takes 15-30 seconds. I'll let you know when it's ready to download.`,
-            generationId: signaldeckData.generationId,
-            status: 'pending',
-            pollUrl: `${SUPABASE_URL}/functions/v1/signaldeck-presentation/status/${signaldeckData.generationId}`,
-            metadata: {
-              topic: outline.topic,
-              slides: outline.slide_count,
-              format: 'signaldeck',
-              contentType: 'signaldeck',
-              hasCharts: outline.sections.some((s: any) => s.visual_element?.type === 'chart'),
-              hasTimelines: outline.sections.some((s: any) => s.visual_element?.type === 'timeline'),
-              estimatedTime: '15-30 seconds',
-              saved_to_vault: true
-            },
-            conversationId
-          }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-
-        } catch (error) {
-          console.error('SignalDeck presentation error:', error)
-          return new Response(JSON.stringify({
-            success: false,
-            error: 'Failed to generate presentation with SignalDeck',
             details: error instanceof Error ? error.message : 'Unknown error'
           }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 })
         }

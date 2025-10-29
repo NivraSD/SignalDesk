@@ -24,7 +24,6 @@ import {
 import type { NivStrategicFramework } from '@/types/niv-strategic-framework'
 import type { ContentItem } from '@/types/content'
 import { useAppStore } from '@/stores/useAppStore'
-import { SignalDeckOrchestrator } from '@/components/signaldeck/SignalDeckOrchestrator'
 
 // Content Routing Map - Maps content types to services
 const CONTENT_ROUTING_MAP: Record<string, {
@@ -57,16 +56,6 @@ const CONTENT_ROUTING_MAP: Record<string, {
     complexity: 'medium',
     workflow: 'direct',
     api: 'gamma'
-  },
-  'signaldeck': {
-    service: 'niv-content-intelligent-v2',
-    complexity: 'complex',
-    workflow: 'orchestrated'
-  },
-  'powerpoint': {
-    service: 'niv-content-intelligent-v2',
-    complexity: 'complex',
-    workflow: 'orchestrated'
   },
   'image': {
     service: 'vertex-ai-visual',
@@ -1198,53 +1187,6 @@ export default function NIVContentOrchestratorProduction({
           }
         }])
       }
-      else if (response.mode === 'signaldeck_outline') {
-        console.log('📊 SIGNALDECK OUTLINE - Displaying for review')
-
-        // Store the SignalDeck outline for later use
-        setConceptState(prev => ({
-          ...prev,
-          orchestrationContext: {
-            ...prev.orchestrationContext,
-            signaldeckOutline: response.signaldeckOutline
-          }
-        }))
-
-        // Display the outline with SignalDeckOrchestrator component
-        setMessages(prev => [...prev, {
-          id: `msg-${Date.now()}`,
-          role: 'assistant',
-          content: response.message,
-          timestamp: new Date(),
-          metadata: {
-            type: 'signaldeck_outline',
-            signaldeckOutline: response.signaldeckOutline,
-            awaitingApproval: true
-          }
-        }])
-      }
-      else if (response.mode === 'signaldeck_generating') {
-        console.log('⏳ SIGNALDECK GENERATING - Starting to poll')
-
-        // Show initial message
-        const pollingMessageId = `msg-${Date.now()}`
-        setMessages(prev => [...prev, {
-          id: pollingMessageId,
-          role: 'assistant',
-          content: response.message,
-          timestamp: new Date(),
-          metadata: {
-            type: 'signaldeck_generating',
-            status: 'generating',
-            generationId: response.generationId,
-            pollUrl: response.pollUrl
-          }
-        }])
-
-        // Start polling for completion
-        const topic = response.metadata?.topic || 'your presentation'
-        pollSignalDeckStatus(response.generationId, pollingMessageId, topic)
-      }
       else if (response.mode === 'generation_complete') {
         console.log('✅ GENERATION COMPLETE - Displaying content pieces:', response.generatedContent?.length)
 
@@ -2000,85 +1942,6 @@ IMPORTANT:
     }, 3000) // Poll every 3 seconds
   }
 
-  // Poll SignalDeck PowerPoint status
-  const pollSignalDeckStatus = async (generationId: string, messageId: string, topic: string) => {
-    let attempts = 0
-    const maxAttempts = 40 // 40 attempts * 3 seconds = 2 minutes max
-
-    const pollInterval = setInterval(async () => {
-      attempts++
-
-      try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/signaldeck-presentation/status/${generationId}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`
-            }
-          }
-        )
-
-        if (response.ok) {
-          const data = await response.json()
-          console.log(`📊 SignalDeck Poll ${attempts}/${maxAttempts}:`, data.status)
-
-          const downloadUrl = data.downloadUrl || data.fileUrl
-          if (data.status === 'completed' && downloadUrl) {
-            clearInterval(pollInterval)
-
-            // Update the message with download link
-            setMessages(prev => prev.map(msg =>
-              msg.id === messageId
-                ? {
-                    ...msg,
-                    content: `✅ Your PowerPoint presentation "${topic}" is ready!\n\n[Download PowerPoint](${downloadUrl})`,
-                    metadata: {
-                      ...msg.metadata,
-                      status: 'completed',
-                      downloadUrl: downloadUrl,
-                      presentationTopic: topic
-                    }
-                  }
-                : msg
-            ))
-
-            console.log('🎯 SignalDeck PowerPoint complete!')
-          } else if (data.status === 'failed' || data.status === 'error') {
-            clearInterval(pollInterval)
-
-            setMessages(prev => prev.map(msg =>
-              msg.id === messageId
-                ? {
-                    ...msg,
-                    content: `❌ PowerPoint generation failed: ${data.message || data.error || 'Unknown error'}`,
-                    error: true
-                  }
-                : msg
-            ))
-          }
-        }
-
-        if (attempts >= maxAttempts) {
-          clearInterval(pollInterval)
-          setMessages(prev => prev.map(msg =>
-            msg.id === messageId
-              ? {
-                  ...msg,
-                  content: `⏱️ PowerPoint is still generating. This may take a few more moments for complex presentations with many slides.`,
-                  metadata: {
-                    ...msg.metadata,
-                    status: 'timeout'
-                  }
-                }
-              : msg
-          ))
-        }
-      } catch (error) {
-        console.error('SignalDeck polling error:', error)
-      }
-    }, 3000) // Poll every 3 seconds
-  }
-
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -2267,48 +2130,6 @@ IMPORTANT:
                         Save to Vault
                       </button>
                     </div>
-                  </div>
-                )}
-
-                {/* Show SignalDeck Outline */}
-                {msg.metadata?.type === 'signaldeck_outline' && msg.metadata?.signaldeckOutline && (
-                  <div className="mt-4">
-                    <SignalDeckOrchestrator
-                      outline={msg.metadata.signaldeckOutline}
-                      mode="outline"
-                      onApprove={async () => {
-                        // Call NIV to generate the PowerPoint
-                        try {
-                          const response = await fetch('/api/supabase/functions/niv-content-intelligent-v2', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                              message: 'Generate PowerPoint',
-                              organizationId: organization?.id,
-                              conversationHistory: messages.map(m => ({ role: m.role, content: m.content })),
-                              context: {
-                                approvedOutline: msg.metadata.signaldeckOutline
-                              }
-                            })
-                          })
-                          const data = await response.json()
-                          console.log('SignalDeck generation initiated:', data)
-                        } catch (error) {
-                          console.error('Failed to generate SignalDeck:', error)
-                        }
-                      }}
-                    />
-                  </div>
-                )}
-
-                {/* Show SignalDeck Generating */}
-                {msg.metadata?.type === 'signaldeck_generating' && msg.metadata?.status !== 'completed' && msg.metadata?.generationId && (
-                  <div className="mt-4">
-                    <SignalDeckOrchestrator
-                      outline={null}
-                      mode="generating"
-                      generationId={msg.metadata.generationId}
-                    />
                   </div>
                 )}
 
