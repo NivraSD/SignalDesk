@@ -369,9 +369,10 @@ async function runResearchPipeline(session: SessionState): Promise<OrchestratorR
           'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
         },
         body: JSON.stringify({
-          query: `${orgContext.name} stakeholders customers target audience`,
-          timeWindow: '7d',
-          maxResults: 10
+          query: `${orgContext.name} ${orgContext.industry} stakeholders customers target audience`,
+          searchMode: 'focused',
+          organizationId: orgContext.name,
+          context: { tbs: 'qdr:w' } // Past week
         })
       }).then(r => r.json()).then(d => ({ type: 'stakeholder', data: d })),
 
@@ -383,9 +384,10 @@ async function runResearchPipeline(session: SessionState): Promise<OrchestratorR
           'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
         },
         body: JSON.stringify({
-          query: `${orgContext.industry} trends narrative 2025`,
-          timeWindow: '7d',
-          maxResults: 10
+          query: `${orgContext.industry} trends narrative discourse 2025`,
+          searchMode: 'focused',
+          organizationId: orgContext.name,
+          context: { tbs: 'qdr:w' } // Past week
         })
       }).then(r => r.json()).then(d => ({ type: 'narrative', data: d })),
 
@@ -411,9 +413,9 @@ async function runResearchPipeline(session: SessionState): Promise<OrchestratorR
           'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
         },
         body: JSON.stringify({
-          query: `${orgContext.industry} successful campaigns case studies`,
+          pattern: 'CASCADE', // Request CASCADE pattern knowledge
           research_area: 'case_studies',
-          limit: 10
+          tags: [orgContext.industry, 'successful_campaigns', 'pr_campaigns']
         })
       }).then(r => r.json()).then(d => ({ type: 'historical', data: d }))
     ])

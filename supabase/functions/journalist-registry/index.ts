@@ -6,6 +6,42 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Industry alias mapping for flexible queries
+const INDUSTRY_ALIASES: { [key: string]: string[] } = {
+  "energy": ["hydrogen", "oil", "gas", "renewable", "solar", "wind", "nuclear", "battery"],
+  "technology": ["tech", "software", "saas", "ai", "artificial_intelligence", "machine_learning", "cloud"],
+  "automotive": ["electric_vehicles", "ev", "autonomous", "mobility"],
+  "healthcare": ["health", "medical", "pharma", "biotech", "life_sciences"],
+  "fintech": ["finance", "banking", "payments", "crypto", "cryptocurrency", "blockchain"],
+  "artificial_intelligence": ["ai", "machine_learning", "ml", "deep_learning"],
+  "cybersecurity": ["security", "infosec", "cyber"],
+  "climate": ["environment", "sustainability", "esg"],
+  "cryptocurrency": ["crypto", "blockchain", "web3", "defi"],
+  "real_estate": ["property", "housing", "commercial_real_estate"]
+};
+
+// Resolve industry aliases to canonical industry name
+function resolveIndustry(requestedIndustry: string): string[] {
+  if (!requestedIndustry) return [];
+
+  const normalized = requestedIndustry.toLowerCase().trim();
+
+  // Check if this is a canonical industry
+  if (INDUSTRY_ALIASES[normalized]) {
+    return [normalized];
+  }
+
+  // Check if this is an alias
+  for (const [canonical, aliases] of Object.entries(INDUSTRY_ALIASES)) {
+    if (aliases.includes(normalized)) {
+      return [canonical];
+    }
+  }
+
+  // No match found, return original
+  return [normalized];
+}
+
 // Publication tier metadata for enriching journalist results
 const OUTLET_METADATA: { [key: string]: any } = {
   "New York Times": { tier: "tier1", category: "elite", influence_score: 10, reach: "global" },
@@ -111,13 +147,17 @@ serve(async (req) => {
 
     console.log('📊 Journalist Registry Request:', { industry, beat, outlet, tier, count, search, mode });
 
+    // Resolve industry aliases
+    const resolvedIndustries = industry ? resolveIndustry(industry) : [];
+    console.log(`🔍 Industry resolution: "${industry}" → [${resolvedIndustries.join(', ')}]`);
+
     // Build query
     let query = supabaseClient
       .from('journalist_registry')
       .select('*');
 
-    if (industry) {
-      query = query.eq('industry', industry);
+    if (resolvedIndustries.length > 0) {
+      query = query.in('industry', resolvedIndustries);
     }
 
     if (beat) {

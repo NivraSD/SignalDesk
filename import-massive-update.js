@@ -155,7 +155,7 @@ function parseOutletSection(content, tier, journalists) {
  */
 function parseVerticalPublications(content, journalists) {
   // Match: 'Outlet Name': { journalists: [...] }
-  const outletRegex = /'([^']+)':\s*\{\s*domain:\s*'[^']*',\s*(?:format:\s*'[^']*',\s*)?journalists:\s*\[([\s\S]*?)\]\s*\}/g;
+  const outletRegex = /'([^']+)':\s*\{[\s\S]*?journalists:\s*\[([\s\S]*?)\]\s*\}/g;
   let outletMatch;
 
   while ((outletMatch = outletRegex.exec(content)) !== null) {
@@ -164,7 +164,8 @@ function parseVerticalPublications(content, journalists) {
 
     console.log(`  📄 ${outlet}`);
 
-    const journalistRegex = /\{\s*name:\s*'([^']+)',\s*beat:\s*'([^']+)'(?:,\s*twitter:\s*'(@[^']+)')?(?:,\s*email:\s*'([^']+)')?\s*\}/g;
+    // Match both single-line AND multi-line formats
+    const journalistRegex = /\{\s*name:\s*'([^']+)'[\s\S]*?beat:\s*'([^']+)'[\s\S]*?(?:twitter:\s*'(@[^']+)')?[\s\S]*?(?:email:\s*'([^']+)')?\s*\}/g;
     let journalistMatch;
 
     while ((journalistMatch = journalistRegex.exec(journalistsArray)) !== null) {
@@ -190,14 +191,15 @@ function parseVerticalPublications(content, journalists) {
  */
 function parseFlatJournalistArrays(content, tier, journalists) {
   // Match: industry: [ { name, outlet, beat, ... }, ... ]
-  const industryRegex = /(\w+):\s*\[([\s\S]*?)\]/g;
+  const industryRegex = /(\w+):\s*\[([\s\S]*?)\n\]/g;
   let industryMatch;
 
   while ((industryMatch = industryRegex.exec(content)) !== null) {
     const industry = industryMatch[1];
     const journalistsArray = industryMatch[2];
 
-    const journalistRegex = /\{\s*name:\s*'([^']+)',\s*outlet:\s*'([^']+)',\s*beat:\s*'([^']+)'(?:,\s*twitter:\s*'(@[^']+)')?(?:,\s*email:\s*'([^']+)')?(?:,\s*(?:podcast|newsletter):\s*'[^']*')?(?:,\s*verified:\s*\w+)?\s*\}/g;
+    // Match both single-line AND multi-line formats
+    const journalistRegex = /\{\s*name:\s*'([^']+)'[\s\S]*?outlet:\s*'([^']+)'[\s\S]*?beat:\s*'([^']+)'[\s\S]*?(?:twitter:\s*'(@[^']+)')?[\s\S]*?(?:email:\s*'([^']+)')?\s*\}/g;
     let journalistMatch;
 
     while ((journalistMatch = journalistRegex.exec(journalistsArray)) !== null) {
@@ -261,7 +263,7 @@ function parseRegionalPress(content, journalists) {
  * Parse simple outlet format (European/Asia press)
  */
 function parseSimpleOutletFormat(content, tier, journalists) {
-  const outletRegex = /'([^']+)':\s*\{\s*domain:\s*'[^']*',\s*(?:format:\s*'[^']*',\s*)?journalists:\s*\[([\s\S]*?)\]\s*\}/g;
+  const outletRegex = /'([^']+)':\s*\{[\s\S]*?journalists:\s*\[([\s\S]*?)\]\s*\}/g;
   let outletMatch;
 
   while ((outletMatch = outletRegex.exec(content)) !== null) {
@@ -270,7 +272,8 @@ function parseSimpleOutletFormat(content, tier, journalists) {
 
     console.log(`  📄 ${outlet}`);
 
-    const journalistRegex = /\{\s*name:\s*'([^']+)',\s*beat:\s*'([^']+)'(?:,\s*twitter:\s*'(@[^']+)')?(?:,\s*email:\s*'([^']+)')?\s*\}/g;
+    // Match both single-line AND multi-line formats
+    const journalistRegex = /\{\s*name:\s*'([^']+)'[\s\S]*?beat:\s*'([^']+)'[\s\S]*?(?:twitter:\s*'(@[^']+)')?[\s\S]*?(?:email:\s*'([^']+)')?\s*\}/g;
     let journalistMatch;
 
     while ((journalistMatch = journalistRegex.exec(journalistsArray)) !== null) {
@@ -293,7 +296,8 @@ function parseSimpleOutletFormat(content, tier, journalists) {
  * Parse YouTube journalists
  */
 function parseYouTubeJournalists(content, journalists) {
-  const journalistRegex = /\{\s*name:\s*'([^']+)',\s*outlet:\s*'([^']+)',\s*beat:\s*'([^']+)'(?:,\s*twitter:\s*'(@[^']+)')?(?:,\s*email:\s*'([^']+)')?(?:,\s*subscribers:\s*'([^']*)')?(?:,\s*notes:\s*'([^']*)')?\s*\}/g;
+  // Match both single-line AND multi-line formats
+  const journalistRegex = /\{\s*name:\s*'([^']+)'[\s\S]*?outlet:\s*'([^']+)'[\s\S]*?beat:\s*'([^']+)'[\s\S]*?(?:twitter:\s*'(@[^']+)')?[\s\S]*?(?:email:\s*'([^']+)')?\s*\}/g;
   let journalistMatch;
 
   while ((journalistMatch = journalistRegex.exec(content)) !== null) {
@@ -400,8 +404,20 @@ async function populateDatabase(journalists) {
 
   console.log(`📈 Current database count: ${beforeCount || 0}`);
 
-  // DON'T clear - we're ADDING to existing journalists
-  console.log(`➕ Adding ${journalists.length} new journalists to existing ${beforeCount || 0}...`);
+  // CLEAR existing data for fresh import with fixed parsing
+  console.log(`🗑️ Clearing existing journalists...`);
+  const { error: deleteError } = await supabase
+    .from('journalist_registry')
+    .delete()
+    .neq('id', '00000000-0000-0000-0000-000000000000');
+
+  if (deleteError) {
+    console.error('⚠️ Error clearing table:', deleteError);
+  } else {
+    console.log('✅ Table cleared');
+  }
+
+  console.log(`➕ Inserting ${journalists.length} journalists...`);
 
   // Insert in batches
   const batchSize = 100;

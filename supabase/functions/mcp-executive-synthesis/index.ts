@@ -1,5 +1,9 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 import { corsHeaders } from '../_shared/cors.ts';
+
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 // Try both API key names like NIV does
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') || Deno.env.get('CLAUDE_API_KEY');
@@ -161,7 +165,7 @@ function getDiscoveryMatches(events: any[], targets: string[]): string {
 }
 
 async function synthesizeExecutiveIntelligence(args: any) {
-  const { enriched_data, organization, analysis_depth = 'comprehensive', synthesis_focus = null } = args;
+  const { enriched_data, organization, organization_id, analysis_depth = 'comprehensive', synthesis_focus = null } = args;
 
   // Extract discovery profile and intelligence context for target alignment
   const profile = enriched_data?.profile || {};
@@ -173,32 +177,81 @@ async function synthesizeExecutiveIntelligence(args: any) {
     topics: []
   };
   let synthesisMetadata = null; // Declare at function scope to avoid reference error
-  
+
   try {
-    discoveryTargets = {
-      competitors: [
-        ...(profile?.competition?.direct_competitors || []),
-        ...(profile?.competition?.indirect_competitors || []),
-        ...(profile?.competition?.emerging_threats || [])
-      ].filter(Boolean),
-      stakeholders: [
-        ...(profile?.stakeholders?.regulators || []),
-        ...(profile?.stakeholders?.major_investors || []),
-        ...(profile?.stakeholders?.executives || [])
-      ].filter(Boolean),
-      topics: [
-        ...(profile?.trending?.hot_topics || []),
-        ...(profile?.trending?.emerging_technologies || []),
-        ...(profile?.keywords || []),
-        ...(profile?.monitoring_config?.keywords || [])
-      ].filter(Boolean) || []
-    };
-    
-    console.log('🎯 Discovery Targets to Track:', {
+    // CRITICAL FIX: Load targets from intelligence_targets table instead of old profile
+    // This ensures we see stakeholders like Donald Trump who are marked high priority
+    if (organization_id) {
+      console.log(`🎯 Loading intelligence targets from database for org: ${organization_id}`);
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+      const { data: intelligenceTargets } = await supabase
+        .from('intelligence_targets')
+        .select('*')
+        .eq('organization_id', organization_id)
+        .eq('active', true);
+
+      if (intelligenceTargets && intelligenceTargets.length > 0) {
+        discoveryTargets = {
+          competitors: intelligenceTargets.filter(t => t.type === 'competitor').map(t => t.name),
+          stakeholders: intelligenceTargets.filter(t => t.type === 'stakeholder' || t.type === 'influencer').map(t => t.name),
+          topics: intelligenceTargets.filter(t => t.type === 'topic' || t.type === 'keyword').map(t => t.name)
+        };
+        console.log('✅ Loaded from intelligence_targets:', {
+          competitors: discoveryTargets.competitors.length,
+          stakeholders: discoveryTargets.stakeholders.length,
+          topics: discoveryTargets.topics.length,
+          stakeholder_names: discoveryTargets.stakeholders
+        });
+      } else {
+        console.log('⚠️ No intelligence_targets found, falling back to profile');
+        // Fallback to old profile format if no targets in database
+        discoveryTargets = {
+          competitors: [
+            ...(profile?.competition?.direct_competitors || []),
+            ...(profile?.competition?.indirect_competitors || []),
+            ...(profile?.competition?.emerging_threats || [])
+          ].filter(Boolean),
+          stakeholders: [
+            ...(profile?.stakeholders?.regulators || []),
+            ...(profile?.stakeholders?.major_investors || []),
+            ...(profile?.stakeholders?.executives || [])
+          ].filter(Boolean),
+          topics: [
+            ...(profile?.trending?.hot_topics || []),
+            ...(profile?.trending?.emerging_technologies || []),
+            ...(profile?.keywords || []),
+            ...(profile?.monitoring_config?.keywords || [])
+          ].filter(Boolean) || []
+        };
+      }
+    } else {
+      // No org_id provided, use profile fallback
+      discoveryTargets = {
+        competitors: [
+          ...(profile?.competition?.direct_competitors || []),
+          ...(profile?.competition?.indirect_competitors || []),
+          ...(profile?.competition?.emerging_threats || [])
+        ].filter(Boolean),
+        stakeholders: [
+          ...(profile?.stakeholders?.regulators || []),
+          ...(profile?.stakeholders?.major_investors || []),
+          ...(profile?.stakeholders?.executives || [])
+        ].filter(Boolean),
+        topics: [
+          ...(profile?.trending?.hot_topics || []),
+          ...(profile?.trending?.emerging_technologies || []),
+          ...(profile?.keywords || []),
+          ...(profile?.monitoring_config?.keywords || [])
+        ].filter(Boolean) || []
+      };
+    }
+
+    console.log('🎯 Final Discovery Targets to Track:', {
       competitors: discoveryTargets.competitors.length,
       stakeholders: discoveryTargets.stakeholders.length,
       topics: discoveryTargets.topics.length,
       sampleCompetitors: discoveryTargets.competitors.slice(0, 5),
+      sampleStakeholders: discoveryTargets.stakeholders.slice(0, 5),
       sampleTopics: discoveryTargets.topics.slice(0, 5)
     });
   } catch (e) {
