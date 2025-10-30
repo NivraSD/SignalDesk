@@ -1432,7 +1432,7 @@ export default function OrganizationOnboarding({
             </button>
 
             <div className="flex items-center gap-3">
-              {step < totalSteps ? (
+              {step < totalSteps - 1 ? (
               <button
                 onClick={() => {
                   if (step === 1) {
@@ -1456,7 +1456,7 @@ export default function OrganizationOnboarding({
                   </>
                 )}
               </button>
-            ) : (
+            ) : step === 5 ? (
               <button
                 onClick={handleCreateOrganization}
                 disabled={loading}
@@ -1474,7 +1474,7 @@ export default function OrganizationOnboarding({
                   </>
                 )}
               </button>
-            )}
+            ) : null}
             </div>
           </div>
         )}
