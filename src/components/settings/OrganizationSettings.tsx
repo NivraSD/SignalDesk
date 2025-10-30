@@ -178,11 +178,57 @@ export default function OrganizationSettings({
 
       console.log('🎯 Generating comprehensive schema package...')
 
-      // Use the new geo-schema-optimizer for strategic schema generation
       const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
       const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/geo-schema-optimizer`, {
+      // Call services individually to avoid timeouts
+      // STEP 1: Entity Extraction
+      console.log('🌐 Step 1: Website Entity Extraction')
+      const entityResponse = await fetch(`${SUPABASE_URL}/functions/v1/website-entity-scraper`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          organization_id: organizationId,
+          organization_name: orgData.name,
+          website_url: orgData.domain
+        })
+      })
+
+      if (entityResponse.ok) {
+        const entityData = await entityResponse.json()
+        console.log(`✓ Extracted ${entityData.summary?.total_entities || 0} entities`)
+      } else {
+        console.warn('Entity extraction failed:', await entityResponse.text())
+      }
+
+      // STEP 2: Positive Coverage Scraping
+      console.log('🏆 Step 2: Positive Coverage Scraping')
+      const coverageResponse = await fetch(`${SUPABASE_URL}/functions/v1/positive-coverage-scraper`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          organization_id: organizationId,
+          organization_name: orgData.name,
+          recency_window: '90days'
+        })
+      })
+
+      if (coverageResponse.ok) {
+        const coverageData = await coverageResponse.json()
+        console.log(`✓ Found ${coverageData.summary?.recent_articles || 0} articles`)
+      } else {
+        console.warn('Coverage scraping failed:', await coverageResponse.text())
+      }
+
+      // STEP 3: Schema Graph Generation
+      console.log('📊 Step 3: Schema Graph Generation')
+      const schemaResponse = await fetch(`${SUPABASE_URL}/functions/v1/schema-graph-generator`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
@@ -192,20 +238,19 @@ export default function OrganizationSettings({
           organization_id: organizationId,
           organization_name: orgData.name,
           industry: orgData.industry,
-          url: orgData.domain,
-          force_regenerate: schemaData?.has_schema || false
+          url: orgData.domain
         })
       })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Schema generation failed')
+      if (!schemaResponse.ok) {
+        const errorText = await schemaResponse.text()
+        throw new Error(`Schema generation failed: ${errorText}`)
       }
 
-      const result = await response.json()
+      const result = await schemaResponse.json()
       console.log('✅ Schema package generated:', result)
 
-      setSuccess(`Schema package generated! Created ${result.schemas_created} schema(s) with ${result.field_count} fields.`)
+      setSuccess(`Schema package generated successfully!`)
 
       // Reload schema data
       await loadSchema()
