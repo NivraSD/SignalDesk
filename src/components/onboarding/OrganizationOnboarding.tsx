@@ -397,11 +397,13 @@ export default function OrganizationOnboarding({
         })
       })
 
+      let extractedEntities = null
       if (!entityResponse.ok) {
         console.warn('Entity extraction failed:', await entityResponse.text())
       } else {
         const entityData = await entityResponse.json()
         console.log(`✓ Extracted ${entityData.summary?.total_entities || 0} entities`)
+        extractedEntities = entityData.entities
       }
 
       // STEP 2: Positive Coverage Scraping
@@ -426,11 +428,13 @@ export default function OrganizationOnboarding({
         })
       })
 
+      let coverageArticles = null
       if (!coverageResponse.ok) {
         console.warn('Coverage scraping failed:', await coverageResponse.text())
       } else {
         const coverageData = await coverageResponse.json()
-        console.log(`✓ Found ${coverageData.summary?.recent_articles || 0} articles`)
+        console.log(`✓ Found ${coverageData.summary?.final_articles || coverageData.summary?.recent_articles || 0} articles`)
+        coverageArticles = coverageData.articles
       }
 
       // STEP 3: Schema Graph Generation
@@ -452,7 +456,10 @@ export default function OrganizationOnboarding({
           organization_id: orgId,
           organization_name: orgNameToUse,
           industry: discovered?.industry || industry,
-          url: website
+          url: website,
+          // Pass extracted data directly instead of querying database
+          entities: extractedEntities,
+          coverage: coverageArticles
         })
       })
 
