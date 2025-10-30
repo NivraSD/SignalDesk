@@ -117,28 +117,35 @@ export default function StrategicPlanningModuleV3Complete({
   const orgId = currentOrgId
 
   // Update orgId when organization changes in global store
+  // BUT: Don't auto-switch if we just loaded from Campaign Builder with a specific orgId
   useEffect(() => {
     if (organization?.id && organization.id !== currentOrgId) {
-      console.log(`🔄 Strategic Planning: Organization changed from ${currentOrgId} to ${organization.id}, clearing and reloading`)
-      setCurrentOrgId(organization.id)
+      // Only auto-switch if this looks like a user-initiated org change (not initial load)
+      // Check if we have existing content - if so, this is a real switch
+      if (contentItems.length > 0) {
+        console.log(`🔄 Strategic Planning: Organization changed from ${currentOrgId} to ${organization.id}, clearing and reloading`)
+        setCurrentOrgId(organization.id)
 
-      // Clear all campaign-specific state
-      setCurrentBlueprint(null as any)
-      setCurrentSessionId('')
-      setContentItems([])
-      setAvailableCampaigns([])
-      setError(null)
-      setLoading(false)
-      setViewMode('execution')
-      setExpandedPriorities(new Set([1]))
-      setExpandedStakeholders(new Set())
-      setGenerating(new Set())
-      setViewingItem(null)
-      setEditingResultFor(null)
+        // Clear all campaign-specific state
+        setCurrentBlueprint(null as any)
+        setCurrentSessionId('')
+        setContentItems([])
+        setAvailableCampaigns([])
+        setError(null)
+        setLoading(false)
+        setViewMode('execution')
+        setExpandedPriorities(new Set([1]))
+        setExpandedStakeholders(new Set())
+        setGenerating(new Set())
+        setViewingItem(null)
+        setEditingResultFor(null)
 
-      // Will trigger campaign reload via the existing useEffect on currentOrgId
+        // Will trigger campaign reload via the existing useEffect on currentOrgId
+      } else {
+        console.log(`ℹ️ Strategic Planning: Organization in store (${organization.id}) differs from campaign org (${currentOrgId}), but no content loaded yet - using campaign org`)
+      }
     }
-  }, [organization?.id])
+  }, [organization?.id, contentItems.length])
 
   // Load available campaigns on mount and when orgId changes
   useEffect(() => {
@@ -304,12 +311,17 @@ export default function StrategicPlanningModuleV3Complete({
           leverName: req.purpose || 'PR Campaign',
           leverPriority: req.priority === 'high' ? 1 : req.priority === 'medium' ? 2 : 3,
           topic: req.type.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
-          target: req.targetAudience,
+          target: req.type === 'social-post' && req.specifications?.platform
+            ? `${req.targetAudience} on ${req.specifications.platform}`
+            : req.targetAudience,
           details: {
             purpose: req.purpose,
             keyPoints: req.keyPoints,
             specifications: req.specifications,
-            priority: req.priority
+            priority: req.priority,
+            platform: req.specifications?.platform, // Extract platform for social posts
+            format: req.specifications?.format,
+            tone: req.specifications?.tone
           },
           status: 'pending'
         })
@@ -498,18 +510,43 @@ export default function StrategicPlanningModuleV3Complete({
       // Use campaign_generation stage for direct content generation
       console.log('📤 Calling NIV with campaign_generation mode')
 
-      // Build campaignSummary from blueprint - this is what NIV actually wants
-      const campaignSummary = {
-        organizationName: context.orgProfile?.name || 'Unknown',
-        industry: context.orgProfile?.industry || 'Unknown',
-        campaignGoal: blueprint.part1_goalFramework?.primaryObjective || blueprint.part1_strategicFoundation?.campaignGoal || '',
-        positioning: blueprint.messageArchitecture?.coreMessage || blueprint.part1_strategicFoundation?.positioning?.tagline || '',
-        coreNarrative: blueprint.messageArchitecture?.messageRationale || blueprint.part1_strategicFoundation?.positioning?.description || '',
-        keyMessages: blueprint.part2_stakeholderMapping?.segments?.find(
-          (seg: any) => seg.stakeholder === item.stakeholder
-        )?.keyMessagesForThisStakeholder || blueprint.part1_strategicFoundation?.positioning?.keyMessages || [],
-        researchInsights: context.researchInsights || [],
-        phases: [] // Could add phase-specific info if needed
+      // Build campaignSummary from blueprint - handle both VECTOR and PR campaigns
+      let campaignSummary: any
+
+      // Check if this is a PR campaign (has contentRequirements field)
+      if (blueprint.contentRequirements) {
+        console.log('📰 Building campaign context from PR brief')
+        campaignSummary = {
+          organizationName: context.orgProfile?.name || blueprint.organization || 'Unknown',
+          industry: context.orgProfile?.industry || blueprint.industry || 'Unknown',
+          campaignGoal: blueprint.campaignGoal || '',
+          positioning: blueprint.positioning || '',
+          coreNarrative: blueprint.messaging?.core_narrative || '',
+          keyMessages: blueprint.messaging?.key_messages || [],
+          proofPoints: blueprint.messaging?.proof_points || [],
+          hooks: blueprint.messaging?.hooks || [],
+          targetMedia: blueprint.targetMedia || {},
+          researchInsights: [
+            ...(blueprint.researchInsights?.competitive_landscape || []),
+            ...(blueprint.researchInsights?.narrative_opportunities || [])
+          ],
+          phases: [] // PR campaigns don't have phases
+        }
+      } else {
+        // VECTOR campaign
+        console.log('📊 Building campaign context from VECTOR blueprint')
+        campaignSummary = {
+          organizationName: context.orgProfile?.name || 'Unknown',
+          industry: context.orgProfile?.industry || 'Unknown',
+          campaignGoal: blueprint.part1_goalFramework?.primaryObjective || blueprint.part1_strategicFoundation?.campaignGoal || '',
+          positioning: blueprint.messageArchitecture?.coreMessage || blueprint.part1_strategicFoundation?.positioning?.tagline || '',
+          coreNarrative: blueprint.messageArchitecture?.messageRationale || blueprint.part1_strategicFoundation?.positioning?.description || '',
+          keyMessages: blueprint.part2_stakeholderMapping?.segments?.find(
+            (seg: any) => seg.stakeholder === item.stakeholder
+          )?.keyMessagesForThisStakeholder || blueprint.part1_strategicFoundation?.positioning?.keyMessages || [],
+          researchInsights: context.researchInsights || [],
+          phases: [] // Could add phase-specific info if needed
+        }
       }
 
       // Build content requirement based on NIV's expected structure
@@ -531,9 +568,11 @@ export default function StrategicPlanningModuleV3Complete({
         ownedContent = [{
           type: 'social_post',
           stakeholder: item.stakeholder,
-          purpose: item.topic,
-          keyPoints: item.details.keyMessages || [],
-          platform: item.details.platform,
+          purpose: item.details.purpose || item.topic,
+          keyPoints: item.details.keyPoints || item.details.keyMessages || [],
+          platform: item.details.platform || item.details.specifications?.platform || 'LinkedIn',
+          format: item.details.format || item.details.specifications?.format,
+          tone: item.details.tone || item.details.specifications?.tone,
           who: item.details.who
         }]
       } else if (item.type === 'thought_leadership') {

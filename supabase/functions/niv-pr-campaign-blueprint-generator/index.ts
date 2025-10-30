@@ -212,8 +212,35 @@ Generate a comprehensive PR campaign brief in the following JSON structure. Retu
       "keyPoints": ["Key achievement", "Impact", "Call to action"],
       "specifications": {
         "format": "linkedin-post",
+        "platform": "LinkedIn",
         "length": "150-200 words",
         "tone": "professional and engaging"
+      }
+    },
+    {
+      "type": "social-post",
+      "purpose": "Twitter thread announcement",
+      "targetAudience": "Broader tech/industry community",
+      "priority": "high",
+      "keyPoints": ["Key hook", "Core value prop", "Call to action"],
+      "specifications": {
+        "format": "twitter-thread",
+        "platform": "Twitter",
+        "length": "5-7 tweets, 280 chars each",
+        "tone": "conversational and engaging"
+      }
+    },
+    {
+      "type": "social-post",
+      "purpose": "Instagram announcement",
+      "targetAudience": "Visual-first audience and brand followers",
+      "priority": "medium",
+      "keyPoints": ["Visual hook", "Brand story", "Engagement prompt"],
+      "specifications": {
+        "format": "instagram-post",
+        "platform": "Instagram",
+        "length": "150-200 words caption",
+        "tone": "authentic and visual"
       }
     },
     {
@@ -258,7 +285,9 @@ Generate a comprehensive PR campaign brief in the following JSON structure. Retu
 5. Ensure key messages are differentiated and compelling
 6. Content requirements should be comprehensive but focused (5-8 pieces)
 7. All dates should be realistic based on typical PR campaign timelines
-8. Return ONLY the JSON object, nothing else`
+8. MUST include social posts for LinkedIn, Twitter, AND Instagram (minimum one per platform)
+9. Each social post must include "platform" field in specifications
+10. Return ONLY the JSON object, nothing else`
 
     console.log('🤖 Calling Claude to generate PR brief...')
 
