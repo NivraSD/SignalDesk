@@ -203,11 +203,48 @@ export default function OrganizationOnboarding({
         console.warn('Failed to save targets:', targetsData.error)
       }
 
-      // 3. Save org profile to organization_profiles table
+      // 3. Save org profile to mcp_discovery table
       if (fullProfile) {
-        console.log('💾 Saving organization profile...')
-        // The MCP discovery function should have saved it, but we can update it
-        // with user customizations if needed
+        console.log('💾 Saving organization profile to mcp_discovery...')
+        try {
+          // Merge user's customized selections into the profile
+          const customizedProfile = {
+            ...fullProfile,
+            organization_id: organization.id,
+            organization_name: organization.name,
+            competition: {
+              ...fullProfile.competition,
+              direct_competitors: allCompetitors
+            },
+            trending: {
+              ...fullProfile.trending,
+              hot_topics: allTopics
+            }
+          }
+
+          // Insert directly into mcp_discovery table
+          const { error: profileError } = await supabase
+            .from('mcp_discovery')
+            .upsert({
+              organization_id: organization.id,
+              organization_name: organization.name,
+              // Flatten the profile structure for database storage
+              ...customizedProfile,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }, {
+              onConflict: 'organization_id'
+            })
+
+          if (profileError) {
+            console.error('Failed to save profile to mcp_discovery:', profileError)
+          } else {
+            console.log('✅ Profile saved to mcp_discovery table')
+          }
+        } catch (profileError) {
+          console.error('Error saving profile:', profileError)
+          // Non-fatal - continue with onboarding
+        }
       }
 
       // 4. Save GEO targets (if configured)
