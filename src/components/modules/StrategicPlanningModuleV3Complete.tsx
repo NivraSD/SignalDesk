@@ -281,6 +281,37 @@ export default function StrategicPlanningModuleV3Complete({
       return []
     }
     const items: ContentItem[] = []
+
+    // Check if this is a PR campaign (has contentRequirements)
+    if (blueprint.contentRequirements && Array.isArray(blueprint.contentRequirements)) {
+      console.log('✓ Parsing PR campaign blueprint with contentRequirements')
+      blueprint.contentRequirements.forEach((req: any, index: number) => {
+        items.push({
+          id: crypto.randomUUID(),
+          type: req.type === 'press-release' ? 'press_release' :
+                req.type === 'media-pitch' ? 'media_pitch' :
+                req.type === 'social-post' ? 'social_post' :
+                req.type === 'qa-document' ? 'user_action' :
+                req.type === 'talking-points' ? 'user_action' : 'content',
+          stakeholder: req.targetAudience || 'General Audience',
+          stakeholderPriority: req.priority === 'high' ? 1 : req.priority === 'medium' ? 2 : 3,
+          leverName: req.purpose || 'PR Campaign',
+          leverPriority: req.priority === 'high' ? 1 : req.priority === 'medium' ? 2 : 3,
+          topic: req.type.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+          target: req.targetAudience,
+          details: {
+            purpose: req.purpose,
+            keyPoints: req.keyPoints,
+            specifications: req.specifications,
+            priority: req.priority
+          },
+          status: 'pending'
+        })
+      })
+      return items
+    }
+
+    // VECTOR campaign parsing (original logic)
     const plans = blueprint.part3_stakeholderOrchestration?.stakeholderOrchestrationPlans || []
 
     plans.forEach(plan => {
