@@ -328,16 +328,18 @@ export default function OrganizationOnboarding({
         }
       }
 
-      console.log('✅ Organization created successfully!')
+      console.log('✅ Organization created successfully!', organization)
 
       // Store the organization for schema generation
       setCreatedOrganization(organization)
+      console.log('📝 Stored organization in state:', organization.id)
 
       // Turn off loading before moving to step 6
       setLoading(false)
 
       // Move to Step 6 for schema generation
       setStep(6)
+      console.log('➡️ Moved to step 6, createdOrganization should now be:', organization.id)
 
       // Don't auto-start - let user click the button
     } catch (err: any) {
