@@ -1250,8 +1250,16 @@ export default function OrganizationOnboarding({
                     Finalizing Your Organization
                   </h3>
                   <p className="text-sm text-gray-400 mb-6">
-                    Building comprehensive schema and extracting intelligence...
+                    Generate a comprehensive schema package with entity extraction and positive coverage discovery.
                   </p>
+
+                  {/* Debug info - remove later */}
+                  {process.env.NODE_ENV === 'development' && (
+                    <div className="mb-4 p-2 bg-gray-900 rounded text-xs text-gray-500">
+                      Debug: createdOrganization={createdOrganization ? createdOrganization.id : 'null'},
+                      started={schemaGenerationStarted ? 'true' : 'false'}
+                    </div>
+                  )}
 
                   <div className="space-y-4">
                     {/* Entity Extraction */}
@@ -1348,13 +1356,13 @@ export default function OrganizationOnboarding({
                       </button>
                     )}
 
-                    {(schemaProgress.schemaGeneration === 'failed' || !schemaGenerationStarted) && (
+                    {(schemaProgress.schemaGeneration === 'failed' || !schemaGenerationStarted) && createdOrganization && (
                       <button
                         onClick={() => {
                           onComplete({
-                            id: orgName,
-                            name: orgName,
-                            industry: industry,
+                            id: createdOrganization.id,
+                            name: createdOrganization.name,
+                            industry: createdOrganization.industry,
                             config: {}
                           })
                           resetForm()
