@@ -555,14 +555,30 @@ export default function StrategicPlanningModuleV3Complete({
 
       if (item.type === 'media_pitch') {
         // Media pitch goes in media array with specific structure
-        mediaContent = [{
-          type: 'media_pitch',
-          story: item.topic,  // NIV expects 'story' not 'purpose'
-          journalists: [item.details.who],  // NIV expects array of journalists
-          outlet: item.details.outlet,
-          beat: item.details.beat,
-          keyPoints: item.details.keyMessages || []
-        }]
+        // For PR campaigns, we need to use targetMedia from the brief
+        if (blueprint.contentRequirements && blueprint.targetMedia) {
+          // PR Campaign: Extract from targetMedia tier1_outlets
+          const tier1Outlets = blueprint.targetMedia.tier1_outlets || []
+          mediaContent = [{
+            type: 'media_pitch',
+            story: item.details.purpose || item.topic,
+            journalists: tier1Outlets.map((outlet: any) => outlet.journalist).filter(Boolean),
+            outlets: tier1Outlets.map((outlet: any) => outlet.outlet).filter(Boolean),
+            beats: tier1Outlets.map((outlet: any) => outlet.beat).filter(Boolean),
+            pitch_angles: tier1Outlets.map((outlet: any) => outlet.pitch_angle).filter(Boolean),
+            keyPoints: item.details.keyPoints || []
+          }]
+        } else {
+          // VECTOR Campaign: Use item details
+          mediaContent = [{
+            type: 'media_pitch',
+            story: item.topic,
+            journalists: [item.details.who],
+            outlet: item.details.outlet,
+            beat: item.details.beat,
+            keyPoints: item.details.keyMessages || []
+          }]
+        }
       } else if (item.type === 'social_post') {
         // Social post goes in owned array
         ownedContent = [{
