@@ -4,6 +4,7 @@ import {
   Building2, Globe, Sparkles, Check, X, Plus, Trash2,
   ChevronRight, ChevronLeft, Upload, Loader, AlertCircle
 } from 'lucide-react'
+import { supabase } from '@/lib/supabase/client'
 
 interface DiscoveredItems {
   competitors: string[]
@@ -66,7 +67,15 @@ export default function OrganizationOnboarding({
   // Step 5: Memory Vault
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
 
-  const totalSteps = 5  // Removed topics step - not effective for monitoring
+  // Step 6: Schema Generation Progress
+  const [schemaProgress, setSchemaProgress] = useState({
+    entityExtraction: 'pending', // pending, processing, completed, failed
+    coverageScraping: 'pending',
+    schemaGeneration: 'pending',
+    message: ''
+  })
+
+  const totalSteps = 6  // Added schema generation step
   const MAX_TOTAL_TARGETS = 20  // Hard limit: 15 from discovery + up to 5 custom
 
   // Helper function to calculate total targets
@@ -275,41 +284,7 @@ export default function OrganizationOnboarding({
         }
       }
 
-      // 5. Generate comprehensive schema package
-      console.log('🎯 Generating comprehensive schema package...')
-
-      try {
-        const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-        const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-        const schemaResponse = await fetch(`${SUPABASE_URL}/functions/v1/geo-schema-optimizer`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            organization_id: organization.id,
-            organization_name: organization.name,
-            industry: discovered?.industry || industry,
-            url: website
-          })
-        })
-
-        if (schemaResponse.ok) {
-          const schemaData = await schemaResponse.json()
-          console.log('✅ Schema package generated:', {
-            schemas: schemaData.schemas_created,
-            fields: schemaData.field_count
-          })
-        } else {
-          console.warn('Schema generation failed (non-blocking):', await schemaResponse.text())
-        }
-      } catch (schemaError) {
-        console.warn('Schema generation error (non-blocking):', schemaError)
-      }
-
-      // 6. Upload Memory Vault files (if any)
+      // 5. Upload Memory Vault files (if any)
       if (uploadedFiles.length > 0) {
         console.log(`📤 Uploading ${uploadedFiles.length} files to Memory Vault...`)
 
@@ -353,22 +328,94 @@ export default function OrganizationOnboarding({
 
       console.log('✅ Organization created successfully!')
 
-      // Return the created organization
-      onComplete({
-        id: organization.id,
-        name: organization.name,
-        industry: organization.industry,
-        config: {}
-      })
+      // Move to Step 6 for schema generation
+      setStep(6)
 
-      // Reset and close
-      resetForm()
-      onClose()
+      // Start schema generation process
+      await handleSchemaGeneration(organization)
     } catch (err: any) {
       console.error('Create organization error:', err)
       setError(err.message || 'Failed to create organization')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleSchemaGeneration = async (organization: any) => {
+    try {
+      const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+      // Update progress: Starting entity extraction
+      setSchemaProgress({
+        entityExtraction: 'processing',
+        coverageScraping: 'pending',
+        schemaGeneration: 'pending',
+        message: 'Extracting entities from website...'
+      })
+
+      console.log('🎯 Generating comprehensive schema package...')
+
+      const schemaResponse = await fetch(`${SUPABASE_URL}/functions/v1/geo-schema-optimizer`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          organization_id: organization.id,
+          organization_name: organization.name,
+          industry: discovered?.industry || industry,
+          url: website
+        })
+      })
+
+      if (schemaResponse.ok) {
+        const schemaData = await schemaResponse.json()
+        console.log('✅ Schema package generated:', schemaData)
+
+        // Update progress: All complete
+        setSchemaProgress({
+          entityExtraction: 'completed',
+          coverageScraping: 'completed',
+          schemaGeneration: 'completed',
+          message: 'Schema generation complete!'
+        })
+
+        // Wait a moment for user to see completion
+        setTimeout(() => {
+          // Complete onboarding
+          onComplete({
+            id: organization.id,
+            name: organization.name,
+            industry: organization.industry,
+            config: {}
+          })
+
+          // Reset and close
+          resetForm()
+          onClose()
+        }, 2000)
+      } else {
+        const errorText = await schemaResponse.text()
+        console.error('Schema generation failed:', errorText)
+
+        setSchemaProgress({
+          entityExtraction: 'failed',
+          coverageScraping: 'failed',
+          schemaGeneration: 'failed',
+          message: 'Schema generation failed. You can continue anyway.'
+        })
+      }
+    } catch (schemaError) {
+      console.error('Schema generation error:', schemaError)
+
+      setSchemaProgress({
+        entityExtraction: 'failed',
+        coverageScraping: 'failed',
+        schemaGeneration: 'failed',
+        message: 'Schema generation failed. You can continue anyway.'
+      })
     }
   }
 
@@ -386,6 +433,12 @@ export default function OrganizationOnboarding({
     setNewCompetitor('')
     setNewTopic('')
     setUploadedFiles([])
+    setSchemaProgress({
+      entityExtraction: 'pending',
+      coverageScraping: 'pending',
+      schemaGeneration: 'pending',
+      message: ''
+    })
     setError(null)
   }
 
@@ -1119,6 +1172,126 @@ export default function OrganizationOnboarding({
                 </div>
               </motion.div>
             )}
+
+            {/* Step 6: Schema Generation Progress */}
+            {step === 6 && (
+              <motion.div
+                key="step6"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-6"
+              >
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-2">
+                    Finalizing Your Organization
+                  </h3>
+                  <p className="text-sm text-gray-400 mb-6">
+                    Building comprehensive schema and extracting intelligence...
+                  </p>
+
+                  <div className="space-y-4">
+                    {/* Entity Extraction */}
+                    <div className="flex items-center gap-4 p-4 bg-gray-800/50 rounded-lg">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        schemaProgress.entityExtraction === 'completed' ? 'bg-green-500/20' :
+                        schemaProgress.entityExtraction === 'processing' ? 'bg-cyan-500/20' :
+                        schemaProgress.entityExtraction === 'failed' ? 'bg-red-500/20' :
+                        'bg-gray-700'
+                      }`}>
+                        {schemaProgress.entityExtraction === 'completed' ? (
+                          <Check className="w-5 h-5 text-green-400" />
+                        ) : schemaProgress.entityExtraction === 'processing' ? (
+                          <Loader className="w-5 h-5 text-cyan-400 animate-spin" />
+                        ) : schemaProgress.entityExtraction === 'failed' ? (
+                          <X className="w-5 h-5 text-red-400" />
+                        ) : (
+                          <Globe className="w-5 h-5 text-gray-500" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-white">Website Entity Extraction</p>
+                        <p className="text-xs text-gray-400">Discovering products, services, and team members</p>
+                      </div>
+                    </div>
+
+                    {/* Coverage Scraping */}
+                    <div className="flex items-center gap-4 p-4 bg-gray-800/50 rounded-lg">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        schemaProgress.coverageScraping === 'completed' ? 'bg-green-500/20' :
+                        schemaProgress.coverageScraping === 'processing' ? 'bg-cyan-500/20' :
+                        schemaProgress.coverageScraping === 'failed' ? 'bg-red-500/20' :
+                        'bg-gray-700'
+                      }`}>
+                        {schemaProgress.coverageScraping === 'completed' ? (
+                          <Check className="w-5 h-5 text-green-400" />
+                        ) : schemaProgress.coverageScraping === 'processing' ? (
+                          <Loader className="w-5 h-5 text-cyan-400 animate-spin" />
+                        ) : schemaProgress.coverageScraping === 'failed' ? (
+                          <X className="w-5 h-5 text-red-400" />
+                        ) : (
+                          <Sparkles className="w-5 h-5 text-gray-500" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-white">Positive Coverage Discovery</p>
+                        <p className="text-xs text-gray-400">Finding awards, achievements, and recognition</p>
+                      </div>
+                    </div>
+
+                    {/* Schema Generation */}
+                    <div className="flex items-center gap-4 p-4 bg-gray-800/50 rounded-lg">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        schemaProgress.schemaGeneration === 'completed' ? 'bg-green-500/20' :
+                        schemaProgress.schemaGeneration === 'processing' ? 'bg-cyan-500/20' :
+                        schemaProgress.schemaGeneration === 'failed' ? 'bg-red-500/20' :
+                        'bg-gray-700'
+                      }`}>
+                        {schemaProgress.schemaGeneration === 'completed' ? (
+                          <Check className="w-5 h-5 text-green-400" />
+                        ) : schemaProgress.schemaGeneration === 'processing' ? (
+                          <Loader className="w-5 h-5 text-cyan-400 animate-spin" />
+                        ) : schemaProgress.schemaGeneration === 'failed' ? (
+                          <X className="w-5 h-5 text-red-400" />
+                        ) : (
+                          <Building2 className="w-5 h-5 text-gray-500" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-white">Schema Graph Generation</p>
+                        <p className="text-xs text-gray-400">Building comprehensive organization profile</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {schemaProgress.message && (
+                    <div className="mt-4 p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg">
+                      <p className="text-sm text-cyan-300">{schemaProgress.message}</p>
+                    </div>
+                  )}
+
+                  {schemaProgress.schemaGeneration === 'failed' && (
+                    <div className="mt-4">
+                      <button
+                        onClick={() => {
+                          onComplete({
+                            id: orgName,
+                            name: orgName,
+                            industry: industry,
+                            config: {}
+                          })
+                          resetForm()
+                          onClose()
+                        }}
+                        className="w-full px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                      >
+                        Continue Anyway
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
           </AnimatePresence>
 
           {/* Error display */}
@@ -1137,21 +1310,22 @@ export default function OrganizationOnboarding({
           )}
         </div>
 
-        {/* Footer */}
-        <div className="px-8 py-4 border-t border-gray-700 bg-gray-800/50 flex items-center justify-between">
-          <button
-            onClick={() => {
-              if (step > 1) setStep(step - 1)
-            }}
-            disabled={step === 1 || loading}
-            className="px-4 py-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            Back
-          </button>
+        {/* Footer - Hide on step 6 */}
+        {step !== 6 && (
+          <div className="px-8 py-4 border-t border-gray-700 bg-gray-800/50 flex items-center justify-between">
+            <button
+              onClick={() => {
+                if (step > 1) setStep(step - 1)
+              }}
+              disabled={step === 1 || loading}
+              className="px-4 py-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Back
+            </button>
 
-          <div className="flex items-center gap-3">
-            {step < totalSteps ? (
+            <div className="flex items-center gap-3">
+              {step < totalSteps ? (
               <button
                 onClick={() => {
                   if (step === 1) {
@@ -1194,8 +1368,9 @@ export default function OrganizationOnboarding({
                 )}
               </button>
             )}
+            </div>
           </div>
-        </div>
+        )}
       </motion.div>
     </div>
   )

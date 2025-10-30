@@ -298,10 +298,10 @@ async function extractWithFirecrawl(
         urls: [url],
         prompt,
         schema,
-        // Allow searching beyond the main domain for comprehensive data
-        allowExternalLinks: false,
-        // Limit to main domain only
-        limit: 10
+        // Enable web search to find relevant pages beyond the homepage
+        enableWebSearch: true,
+        // Limit number of pages to extract from
+        limit: 5
       })
     })
 
