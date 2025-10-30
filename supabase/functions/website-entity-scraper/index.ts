@@ -54,10 +54,10 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // STEP 1: Map the website to discover relevant URLs (2-3 seconds)
-    console.log('🗺️  Step 1: Mapping website structure...')
+    // STEP 1: Discover relevant URLs by testing common patterns
+    console.log('🗺️  Step 1: Discovering relevant pages...')
     const relevantUrls = await discoverRelevantUrls(firecrawlApiKey, website_url)
-    console.log(`   ✓ Found ${relevantUrls.length} relevant pages to scrape`)
+    console.log(`   ✓ Will scrape ${relevantUrls.length} pages`)
 
     // STEP 2: Batch scrape all relevant URLs with extraction (via mcp-firecrawl)
     console.log('🔍 Step 2: Extracting entities from all pages...')
@@ -209,78 +209,99 @@ serve(async (req) => {
 })
 
 /**
- * Discover relevant URLs using Firecrawl /map endpoint
+ * Discover relevant URLs by trying common patterns
+ * This is more reliable than the /map endpoint for extracting entities
  */
 async function discoverRelevantUrls(apiKey: string, baseUrl: string): Promise<string[]> {
-  try {
-    const response = await fetch('https://api.firecrawl.dev/v1/map', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        url: baseUrl,
-        limit: 100 // Get up to 100 URLs
+  // Parse base URL to get the domain
+  const url = new URL(baseUrl)
+  const baseWithoutTrailingSlash = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl
+
+  // Common URL patterns that typically contain entity information
+  const pathPatterns = [
+    '', // Homepage
+    '/about',
+    '/about-us',
+    '/company',
+    '/who-we-are',
+    '/team',
+    '/leadership',
+    '/management',
+    '/executives',
+    '/people',
+    '/our-team',
+    '/products',
+    '/services',
+    '/solutions',
+    '/what-we-do',
+    '/offerings',
+    '/locations',
+    '/offices',
+    '/contact',
+    '/contact-us'
+  ]
+
+  // Build candidate URLs
+  const candidateUrls = pathPatterns.map(path => `${baseWithoutTrailingSlash}${path}`)
+
+  console.log(`   → Testing ${candidateUrls.length} common URL patterns...`)
+
+  // Test each URL to see if it exists (parallel HEAD requests)
+  const validationPromises = candidateUrls.map(async (testUrl) => {
+    try {
+      const response = await fetch(testUrl, {
+        method: 'HEAD',
+        redirect: 'follow'
       })
-    })
+      return response.ok ? testUrl : null
+    } catch {
+      return null
+    }
+  })
 
-    if (!response.ok) {
-      console.error('   ⚠️  Map failed, using homepage only')
-      return [baseUrl]
+  const validationResults = await Promise.all(validationPromises)
+  const validUrls = validationResults.filter((url): url is string => url !== null)
+
+  console.log(`   → Found ${validUrls.length} valid URLs`)
+
+  // Prioritize URLs
+  const priorityPatterns = [
+    '',           // Homepage (highest priority)
+    'team',
+    'leadership',
+    'products',
+    'services',
+    'about',
+    'locations'
+  ]
+
+  const scoredUrls = validUrls.map(url => {
+    let score = 0
+    const urlLower = url.toLowerCase()
+
+    for (let i = 0; i < priorityPatterns.length; i++) {
+      if (urlLower.includes(priorityPatterns[i])) {
+        score += (priorityPatterns.length - i) * 10
+      }
     }
 
-    const data = await response.json()
-    const allUrls = data.links || []
+    return { url, score }
+  })
 
-    // Filter for relevant pages
-    const relevantKeywords = [
-      'about', 'team', 'leadership', 'executives', 'management',
-      'products', 'services', 'solutions', 'offerings',
-      'locations', 'offices', 'contact',
-      'company', 'who-we-are', 'our-story'
-    ]
+  // Sort by score and take top 8 URLs (more comprehensive than before)
+  const topUrls = scoredUrls
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 8)
+    .map(item => item.url)
 
-    const scoredUrls = allUrls.map((url: string) => {
-      const urlLower = url.toLowerCase()
-      let score = 0
-
-      // Homepage gets high priority
-      if (url === baseUrl || urlLower.endsWith('/') || urlLower === baseUrl + '/') {
-        score = 100
-      }
-
-      // Score based on relevant keywords
-      for (const keyword of relevantKeywords) {
-        if (urlLower.includes(keyword)) {
-          score += 10
-        }
-      }
-
-      // Penalize very long URLs (likely not top-level pages)
-      const pathDepth = url.split('/').length - 3
-      score -= pathDepth * 2
-
-      return { url, score }
-    })
-
-    // Sort by score and take top 5
-    const topUrls = scoredUrls
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 5)
-      .map(item => item.url)
-
-    // Always include homepage if not already included
-    if (!topUrls.includes(baseUrl)) {
-      topUrls.unshift(baseUrl)
-    }
-
-    return topUrls.slice(0, 5) // Max 5 pages
-
-  } catch (error) {
-    console.error('   ⚠️  Map error, using homepage only:', error)
-    return [baseUrl]
+  // If no valid URLs found, at least try homepage
+  if (topUrls.length === 0) {
+    console.log('   ⚠️  No valid URLs found, using homepage only')
+    return [baseWithoutTrailingSlash]
   }
+
+  console.log(`   ✓ Will scrape ${topUrls.length} pages`)
+  return topUrls
 }
 
 /**
