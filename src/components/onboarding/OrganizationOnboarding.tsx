@@ -67,6 +67,19 @@ export default function OrganizationOnboarding({
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
 
   const totalSteps = 5  // Removed topics step - not effective for monitoring
+  const MAX_TOTAL_TARGETS = 15  // Hard limit for total targets (competitors + stakeholders)
+
+  // Helper function to calculate total targets
+  const getTotalTargets = () => {
+    const competitorCount = selectedCompetitors.size + customCompetitors.length
+    const stakeholderCount = selectedStakeholders.size + customStakeholders.length
+    return competitorCount + stakeholderCount
+  }
+
+  // Helper function to check if we can add more targets
+  const canAddMoreTargets = () => {
+    return getTotalTargets() < MAX_TOTAL_TARGETS
+  }
 
   const handleBasicInfoSubmit = async () => {
     if (!orgName || !website) {
@@ -380,10 +393,14 @@ export default function OrganizationOnboarding({
     const newSelected = new Set(selectedCompetitors)
     if (newSelected.has(competitor)) {
       newSelected.delete(competitor)
-    } else {
+      setSelectedCompetitors(newSelected)
+    } else if (canAddMoreTargets()) {
       newSelected.add(competitor)
+      setSelectedCompetitors(newSelected)
+    } else {
+      setError(`Maximum of ${MAX_TOTAL_TARGETS} total targets reached`)
+      setTimeout(() => setError(null), 3000)
     }
-    setSelectedCompetitors(newSelected)
   }
 
   const toggleTopic = (topic: string) => {
@@ -397,9 +414,12 @@ export default function OrganizationOnboarding({
   }
 
   const addCustomCompetitor = () => {
-    if (newCompetitor.trim()) {
+    if (newCompetitor.trim() && canAddMoreTargets()) {
       setCustomCompetitors([...customCompetitors, newCompetitor.trim()])
       setNewCompetitor('')
+    } else if (!canAddMoreTargets()) {
+      setError(`Maximum of ${MAX_TOTAL_TARGETS} total targets reached`)
+      setTimeout(() => setError(null), 3000)
     }
   }
 
@@ -422,16 +442,23 @@ export default function OrganizationOnboarding({
     const newSelected = new Set(selectedStakeholders)
     if (newSelected.has(stakeholder)) {
       newSelected.delete(stakeholder)
-    } else {
+      setSelectedStakeholders(newSelected)
+    } else if (canAddMoreTargets()) {
       newSelected.add(stakeholder)
+      setSelectedStakeholders(newSelected)
+    } else {
+      setError(`Maximum of ${MAX_TOTAL_TARGETS} total targets reached`)
+      setTimeout(() => setError(null), 3000)
     }
-    setSelectedStakeholders(newSelected)
   }
 
   const addCustomStakeholder = () => {
-    if (newStakeholder.trim()) {
+    if (newStakeholder.trim() && canAddMoreTargets()) {
       setCustomStakeholders([...customStakeholders, newStakeholder.trim()])
       setNewStakeholder('')
+    } else if (!canAddMoreTargets()) {
+      setError(`Maximum of ${MAX_TOTAL_TARGETS} total targets reached`)
+      setTimeout(() => setError(null), 3000)
     }
   }
 
@@ -615,23 +642,30 @@ export default function OrganizationOnboarding({
                     </div>
                   )}
 
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={newCompetitor}
-                      onChange={(e) => setNewCompetitor(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && addCustomCompetitor()}
-                      placeholder="Add custom competitor"
-                      className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
-                    />
-                    <button
-                      onClick={addCustomCompetitor}
-                      disabled={!newCompetitor.trim()}
-                      className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg transition-colors flex items-center gap-2"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Add
-                    </button>
+                  <div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newCompetitor}
+                        onChange={(e) => setNewCompetitor(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && addCustomCompetitor()}
+                        placeholder="Add custom competitor"
+                        className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+                      />
+                      <button
+                        onClick={addCustomCompetitor}
+                        disabled={!newCompetitor.trim() || !canAddMoreTargets()}
+                        className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg transition-colors flex items-center gap-2"
+                        title={!canAddMoreTargets() ? `Maximum of ${MAX_TOTAL_TARGETS} targets reached` : ''}
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add
+                      </button>
+                    </div>
+                    <p className={`text-xs mt-2 ${getTotalTargets() >= MAX_TOTAL_TARGETS ? 'text-amber-400' : 'text-gray-500'}`}>
+                      {getTotalTargets()}/{MAX_TOTAL_TARGETS} targets selected
+                      {getTotalTargets() >= MAX_TOTAL_TARGETS && ' (Maximum reached)'}
+                    </p>
                   </div>
                 </div>
               </motion.div>
@@ -711,8 +745,9 @@ export default function OrganizationOnboarding({
                     />
                     <button
                       onClick={addCustomStakeholder}
-                      disabled={!newStakeholder.trim()}
+                      disabled={!newStakeholder.trim() || !canAddMoreTargets()}
                       className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg transition-colors flex items-center gap-2"
+                      title={!canAddMoreTargets() ? `Maximum of ${MAX_TOTAL_TARGETS} targets reached` : ''}
                     >
                       <Plus className="w-4 h-4" />
                       Add
@@ -726,6 +761,10 @@ export default function OrganizationOnboarding({
                     <ul className="space-y-1">
                       <li>• {selectedCompetitors.size + customCompetitors.length} competitors selected</li>
                       <li>• {selectedStakeholders.size + customStakeholders.length} stakeholders selected</li>
+                      <li className={getTotalTargets() >= MAX_TOTAL_TARGETS ? 'text-amber-400 font-medium' : ''}>
+                        • Total targets: {getTotalTargets()}/{MAX_TOTAL_TARGETS}
+                        {getTotalTargets() >= MAX_TOTAL_TARGETS && ' (Maximum reached)'}
+                      </li>
                       <li>• Industry: {discovered.industry}</li>
                     </ul>
                   </div>
