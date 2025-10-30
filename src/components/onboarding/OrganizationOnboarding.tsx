@@ -1432,7 +1432,7 @@ export default function OrganizationOnboarding({
             </button>
 
             <div className="flex items-center gap-3">
-              {step < totalSteps - 1 ? (
+              {step <= 5 ? (
               <button
                 onClick={() => {
                   if (step === 1) {
