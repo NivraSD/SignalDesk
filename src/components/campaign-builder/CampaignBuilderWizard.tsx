@@ -6,6 +6,7 @@ import { IntentCapture } from './IntentCapture'
 import { ResearchPresentation } from './ResearchPresentation'
 import { BlueprintPresentation } from './BlueprintPresentation'
 import { BlueprintV3Presentation } from './BlueprintV3Presentation'
+import { PRBriefPresentation } from './PRBriefPresentation'
 import { ExecutionManager } from './ExecutionManager'
 import { useAppStore } from '@/stores/useAppStore'
 import { CampaignBuilderService } from '@/lib/services/campaignBuilderService'
@@ -551,8 +552,74 @@ export function CampaignBuilderWizard() {
     try {
       const startTime = Date.now()
 
+      // PR campaigns have simple brief generation (no polling needed)
+      if (approach === 'PR_CAMPAIGN') {
+        console.log('📰 Generating PR campaign brief...')
+
+        const response = await fetch('/api/generate-blueprint', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            sessionId: session.sessionId,
+            blueprintType: approach,
+            researchData: session.researchData,
+            selectedPositioning: session.selectedPositioning,
+            campaignGoal: session.campaignGoal,
+            organizationContext: {
+              name: organization.name,
+              industry: organization.industry || 'Technology'
+            }
+          })
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(errorData.error || `PR brief generation failed: ${response.status}`)
+        }
+
+        const result = await response.json()
+        console.log('✅ PR brief generated:', result)
+
+        // Clear progress simulation timeouts
+        progressSimulation.timeouts.forEach(clearTimeout)
+
+        // Mark all stages as complete
+        setBlueprintProgress({
+          currentStage: 'complete',
+          stages: {
+            base: 'completed',
+            orchestration: 'completed',
+            execution: 'completed',
+            merging: 'completed'
+          }
+        })
+
+        console.log('✅ PR brief generated in', Date.now() - startTime, 'ms')
+
+        setSession(prev => ({
+          ...prev!,
+          blueprint: result.brief
+        }))
+
+        setConversationHistory(prev => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: 'PR campaign brief generated successfully!',
+            stage: 'blueprint',
+            data: result.brief
+          }
+        ])
+
+        setIsLoading(false)
+        return
+      }
+
+      // VECTOR campaigns use complex orchestration with polling
       // STEP 1: Start blueprint generation (returns partial result)
-      console.log('📋 Step 1: Starting blueprint base generation...')
+      console.log('📋 Step 1: Starting VECTOR blueprint base generation...')
 
       const response = await fetch('/api/generate-blueprint', {
         method: 'POST',
@@ -766,7 +833,8 @@ export function CampaignBuilderWizard() {
     sessionStorage.setItem('pendingPlanData', JSON.stringify({
       blueprint: session.blueprint,
       sessionId: session.sessionId,
-      orgId: organization.id
+      orgId: organization.id,
+      campaignType: session.selectedApproach || 'VECTOR_CAMPAIGN' // Include campaign type!
     }))
 
     console.log('✅ Blueprint stored for Strategic Planning module')
@@ -1211,7 +1279,20 @@ export function CampaignBuilderWizard() {
             )
           }
 
-          // Use legacy BlueprintPresentation for PR campaigns
+          // Use PRBriefPresentation for PR campaigns
+          if (session.selectedApproach === 'PR_CAMPAIGN') {
+            return (
+              <PRBriefPresentation
+                brief={session.blueprint}
+                onRefine={handleBlueprintRefine}
+                onExport={handleBlueprintExport}
+                onExecute={handleExecutionStart}
+                isRefining={isLoading}
+              />
+            )
+          }
+
+          // Fallback for legacy PR campaigns
           return (
             <BlueprintPresentation
               blueprint={session.blueprint}

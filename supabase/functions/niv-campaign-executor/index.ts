@@ -403,8 +403,130 @@ serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
 
+    } else if (campaignType === 'PR_CAMPAIGN' && blueprint.contentRequirements) {
+      // PR CAMPAIGN: Parallel orchestration (similar to VECTOR)
+      console.log('📰 Using PR campaign parallel orchestration architecture')
+
+      // Create campaign folder
+      const campaignFolderName = generateCampaignFolderName(
+        sessionData.campaign_goal,
+        blueprintId
+      )
+      const campaignFolder = `campaigns/${campaignFolderName}`
+
+      console.log(`📁 Campaign folder: ${campaignFolder}`)
+
+      // Save brief to Memory Vault with folder
+      try {
+        await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/niv-campaign-memory?action=save-blueprint`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+          },
+          body: JSON.stringify({
+            blueprintId,
+            blueprint,
+            campaignType,
+            orgId,
+            sessionData: {
+              campaignGoal: sessionData.campaign_goal,
+              researchFindings: research_data,
+              selectedPositioning: sessionData.selected_positioning
+            },
+            folder: campaignFolder,
+            metadata: {
+              industry: organizationContext.industry,
+              timelineWeeks: 2
+            }
+          })
+        })
+        console.log('✅ PR brief saved to Memory Vault')
+      } catch (memError) {
+        console.error('⚠️ Memory Vault brief save failed (non-critical):', memError)
+      }
+
+      // Call NIV Content Intelligence V2 with structured brief
+      console.log(`🎨 Generating ${blueprint.contentRequirements.length} content pieces in PARALLEL...`)
+
+      const response = await fetch(
+        `${Deno.env.get('SUPABASE_URL')}/functions/v1/niv-content-intelligent-v2`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+          },
+          body: JSON.stringify({
+            message: `Generate PR campaign content`,
+            organizationContext: {
+              organizationId: organizationContext.name,
+              organizationName: organizationContext.name,
+              industry: organizationContext.industry
+            },
+            stage: 'campaign_generation',
+            campaignContext: {
+              blueprintId,
+              campaignType: 'PR_CAMPAIGN',
+              campaignFolder,
+              positioning: positioning,
+              brief: {
+                goal: blueprint.campaignGoal,
+                positioning: blueprint.positioning,
+                targetMedia: blueprint.targetMedia,
+                messaging: blueprint.messaging,
+                contentRequirements: blueprint.contentRequirements,
+                researchInsights: blueprint.researchInsights
+              },
+              keyMessages: blueprint.messaging?.key_messages || [],
+              researchInsights: blueprint.researchInsights || {},
+              currentDate: new Date().toISOString().split('T')[0]
+            }
+          })
+        }
+      )
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error(`❌ PR campaign generation failed:`, errorText)
+        throw new Error(`PR campaign generation failed: ${response.status}`)
+      }
+
+      const result = await response.json()
+      console.log(`✅ PR campaign complete: ${result.generatedContent?.length || 0} pieces`)
+
+      const generatedContent = result.generatedContent || []
+
+      // Save to strategic planning
+      try {
+        await saveToStrategicCampaignsPR(
+          supabaseClient,
+          sessionId,
+          blueprintId,
+          blueprint,
+          sessionData,
+          generatedContent,
+          organizationContext,
+          positioning,
+          campaignFolder
+        )
+      } catch (saveError) {
+        console.error('⚠️ Strategic campaigns save failed (non-critical):', saveError)
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          architecture: 'pr-parallel-orchestration',
+          campaignFolder,
+          totalContentPieces: generatedContent.length,
+          content: generatedContent
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+
     } else {
-      // FALLBACK: Use old per-piece architecture for PR campaigns or legacy blueprints
+      // FALLBACK: Use old per-piece architecture for legacy blueprints
       console.log('📝 Using legacy per-piece content generation')
 
       const contentInventory = extractContentInventory(blueprint, campaignType)
@@ -1488,4 +1610,88 @@ async function saveGeneratedContent(
   }
 
   return data
+}
+
+// Save PR campaign to strategic_campaigns table
+async function saveToStrategicCampaignsPR(
+  supabase: any,
+  sessionId: string,
+  blueprintId: string,
+  blueprint: any,
+  sessionData: any,
+  generatedContent: any[],
+  organizationContext: any,
+  positioning: string,
+  campaignFolder: string
+) {
+  console.log('💎 Saving PR campaign to strategic_campaigns table...')
+
+  const campaignName = sessionData.campaign_goal?.substring(0, 100) || 'PR Campaign'
+
+  // Get org UUID (not name)
+  const { data: org } = await supabase
+    .from('organizations')
+    .select('id')
+    .eq('name', organizationContext.name)
+    .maybeSingle()
+
+  if (!org) {
+    console.warn('⚠️ Organization not found, skipping strategic_campaigns save')
+    return
+  }
+
+  // Build content array from generated content
+  const content = generatedContent.map(c => ({
+    id: crypto.randomUUID(),
+    type: c.type,
+    purpose: c.purpose || '',
+    brief: c.brief || '',
+    content: c.content,
+    status: 'draft',
+    folder: campaignFolder,
+    generatedAt: new Date().toISOString()
+  }))
+
+  // Calculate timeline
+  const startDate = new Date().toISOString().split('T')[0]
+  const duration = blueprint.timeline?.duration || '2-3 weeks'
+  const durationWeeks = parseInt(duration) || 2
+  const endDate = new Date(Date.now() + (durationWeeks * 7 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0]
+
+  const { error } = await supabase.from('strategic_campaigns').insert({
+    organization_id: org.id,
+    blueprint_id: sessionId,
+    campaign_name: campaignName,
+    campaign_goal: blueprint.campaignGoal || sessionData.campaign_goal,
+    industry: organizationContext.industry,
+    positioning: positioning,
+    core_narrative: blueprint.messaging?.core_narrative || '',
+    start_date: startDate,
+    end_date: endDate,
+    blueprint: blueprint,
+    phases: [{
+      phase: 'execution',
+      phaseNumber: 1,
+      startDate: startDate,
+      endDate: endDate,
+      status: 'in-progress',
+      objective: blueprint.campaignGoal,
+      narrative: blueprint.messaging?.core_narrative || '',
+      keyMessages: blueprint.messaging?.key_messages || [],
+      content: content
+    }],
+    research_insights: Object.values(blueprint.researchInsights || {}).flat().slice(0, 10),
+    key_messages: blueprint.messaging?.key_messages || [],
+    target_stakeholders: blueprint.targetMedia?.tier1_outlets?.map((o: any) => o.outlet) || [],
+    architecture: 'PR_CAMPAIGN',
+    status: 'in-progress',
+    total_content_pieces: generatedContent.length,
+    phases_completed: 0
+  })
+
+  if (error) {
+    console.error('❌ Failed to save to strategic_campaigns:', error)
+  } else {
+    console.log('✅ Saved PR campaign to strategic_campaigns table')
+  }
 }

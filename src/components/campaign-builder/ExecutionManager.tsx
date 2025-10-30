@@ -119,6 +119,27 @@ export function ExecutionManager({
     const pieces: ContentPiece[] = []
 
     if (type === 'PR_CAMPAIGN') {
+      // NEW: Check for contentRequirements structure (from niv-pr-campaign-blueprint-generator)
+      if (bp.contentRequirements && Array.isArray(bp.contentRequirements)) {
+        console.log('✓ Found new PR brief structure with contentRequirements')
+        bp.contentRequirements.forEach((req: any, idx: number) => {
+          pieces.push({
+            id: `pr_content_${idx}`,
+            type: req.type.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+            targetAudience: req.targetAudience,
+            status: 'pending',
+            metadata: {
+              priority: req.priority,
+              purpose: req.purpose,
+              keyPoints: req.keyPoints,
+              specifications: req.specifications
+            }
+          })
+        })
+        return pieces
+      }
+
+      // FALLBACK: Old PR campaign structure
       if (bp.pressReleaseStrategy?.primaryRelease) {
         pieces.push({
           id: 'press_release_primary',

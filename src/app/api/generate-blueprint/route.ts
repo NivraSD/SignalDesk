@@ -22,10 +22,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Use orchestrator to coordinate split functions (prevents timeouts)
-    const functionName = 'niv-campaign-blueprint-orchestrator'
+    // Route to appropriate blueprint generator based on campaign type
+    const functionName = blueprintType === 'PR_CAMPAIGN'
+      ? 'niv-pr-campaign-blueprint-generator'
+      : 'niv-campaign-blueprint-orchestrator'
 
-    console.log(`📋 Proxying ${functionName} request...`)
+    console.log(`📋 Proxying ${functionName} request (${blueprintType})...`)
 
     // Forward to Supabase edge function with 5-minute timeout
     const controller = new AbortController()

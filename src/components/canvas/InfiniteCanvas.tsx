@@ -455,7 +455,8 @@ export default function InfiniteCanvas({ children }: { children?: React.ReactNod
           setPlanData({
             blueprint: data.blueprint,
             sessionId: data.sessionId,
-            orgId: data.orgId
+            orgId: data.orgId,
+            campaignType: data.campaignType || 'VECTOR_CAMPAIGN' // Preserve campaign type
           })
 
           // Open the Plan module
