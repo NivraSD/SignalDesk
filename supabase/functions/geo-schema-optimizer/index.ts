@@ -83,11 +83,11 @@ serve(async (req) => {
 
     // Get positive coverage/news articles for subjectOf links
     const { data: positiveCoverage } = await supabase
-      .from('intelligence_events')
-      .select('title, url, summary, event_date, source_outlet, relevance_score, metadata')
+      .from('intelligence_findings')
+      .select('title, url, content, published_at, source, relevance_score, metadata')
       .eq('organization_id', organization_id)
       .gte('relevance_score', 70) // High relevance = positive/important
-      .order('event_date', { ascending: false })
+      .order('published_at', { ascending: false })
       .limit(10)
 
     // Get achievements/awards from content
@@ -290,9 +290,9 @@ function buildStrategicContext(data: any): any {
     positive_coverage: data.positiveCoverage?.map((c: any) => ({
       title: c.title,
       url: c.url,
-      summary: c.summary,
-      date: c.event_date,
-      outlet: c.source_outlet,
+      summary: c.content?.substring(0, 200), // First 200 chars of content
+      date: c.published_at,
+      outlet: c.source,
       relevance: c.relevance_score
     })) || [],
     achievements: data.achievements?.map((a: any) => ({
