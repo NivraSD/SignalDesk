@@ -145,6 +145,9 @@ export default function OrganizationOnboarding({
   }
 
   const handleCreateOrganization = async () => {
+    console.log('🚀 handleCreateOrganization CALLED - START OF FUNCTION')
+    console.log('Organization details:', { orgName, website, industry })
+
     setLoading(true)
     setError(null)
 
