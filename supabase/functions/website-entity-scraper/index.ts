@@ -341,7 +341,7 @@ async function pollFirecrawlJob(apiKey: string, jobId: string, maxAttempts = 30)
   for (let i = 0; i < maxAttempts; i++) {
     await new Promise(resolve => setTimeout(resolve, 2000)) // Wait 2 seconds
 
-    const response = await fetch(`https://api.firecrawl.dev/v1/extract/${jobId}`, {
+    const response = await fetch(`https://api.firecrawl.dev/v2/extract/${jobId}`, {
       headers: {
         'Authorization': `Bearer ${apiKey}`
       }
