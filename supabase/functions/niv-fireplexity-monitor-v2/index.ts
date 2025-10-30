@@ -676,6 +676,35 @@ function scoreArticlesRelevance(
     const content = (article.content || article.description || '').toLowerCase()
     const text = `${title} ${content}`
 
+    // CRITICAL: Context disambiguation for organizations with ambiguous names
+    // Filter out wrong context (e.g., KKR cricket team vs KKR & Co Inc private equity)
+    const wrongContextKeywords = {
+      'kkr': ['cricket', 'ipl', 'indian premier league', 'kolkata knight riders', 'head coach', 'batsman', 'bowler', 'wicket', 'match', 'tournament', 'team', 'player', 'squad'],
+      // Add more organizations with name conflicts as needed
+    }
+
+    const orgNameLower = orgName.toLowerCase()
+    const conflictKeywords = wrongContextKeywords[orgNameLower]
+
+    if (conflictKeywords) {
+      // Check if article mentions the organization name in wrong context
+      const hasOrgMention = text.includes(orgNameLower)
+      const hasWrongContext = conflictKeywords.some(kw => text.includes(kw))
+
+      // If mentions org AND has wrong context keywords, check for right context
+      if (hasOrgMention && hasWrongContext) {
+        // Right context keywords for private equity/finance
+        const rightContextKeywords = ['private equity', 'investment', 'portfolio', 'fund', 'acquisition', 'billion', 'stake', 'investor', 'capital', 'buyout', 'financial', 'asset management']
+        const hasRightContext = rightContextKeywords.some(kw => text.includes(kw))
+
+        // If NO right context but HAS wrong context, this is probably the wrong entity
+        if (!hasRightContext) {
+          console.log(`   ⚠️  Filtered out wrong context: "${title.substring(0, 100)}"`)
+          return { ...article, relevance_score: 0 } // Filtered out
+        }
+      }
+    }
+
     let score = 0
 
     // Track which targets this article covers
