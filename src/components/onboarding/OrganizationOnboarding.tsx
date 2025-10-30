@@ -344,11 +344,12 @@ export default function OrganizationOnboarding({
   }
 
   const handleSchemaGeneration = async (organization: any) => {
-    try {
-      const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-      const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-      // Update progress: Starting entity extraction
+    try {
+      // STEP 1: Entity Extraction
+      console.log('🌐 Step 1: Website Entity Extraction')
       setSchemaProgress({
         entityExtraction: 'processing',
         coverageScraping: 'pending',
@@ -356,30 +357,65 @@ export default function OrganizationOnboarding({
         message: 'Extracting entities from website...'
       })
 
-      // Simulate progress updates since we can't get real-time progress from the function
-      // Entity extraction typically takes 10-15 seconds
-      setTimeout(() => {
-        setSchemaProgress({
-          entityExtraction: 'completed',
-          coverageScraping: 'processing',
-          schemaGeneration: 'pending',
-          message: 'Searching for positive coverage and awards...'
+      const entityResponse = await fetch(`${SUPABASE_URL}/functions/v1/website-entity-scraper`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          organization_id: organization.id,
+          organization_name: organization.name,
+          website_url: website
         })
-      }, 12000)
+      })
 
-      // Coverage scraping typically takes 30-40 seconds
-      setTimeout(() => {
-        setSchemaProgress({
-          entityExtraction: 'completed',
-          coverageScraping: 'completed',
-          schemaGeneration: 'processing',
-          message: 'Building comprehensive schema graph...'
+      if (!entityResponse.ok) {
+        console.warn('Entity extraction failed:', await entityResponse.text())
+      } else {
+        const entityData = await entityResponse.json()
+        console.log(`✓ Extracted ${entityData.summary?.total_entities || 0} entities`)
+      }
+
+      // STEP 2: Positive Coverage Scraping
+      console.log('🏆 Step 2: Positive Coverage Scraping')
+      setSchemaProgress({
+        entityExtraction: 'completed',
+        coverageScraping: 'processing',
+        schemaGeneration: 'pending',
+        message: 'Searching for awards and positive coverage...'
+      })
+
+      const coverageResponse = await fetch(`${SUPABASE_URL}/functions/v1/positive-coverage-scraper`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          organization_id: organization.id,
+          organization_name: organization.name,
+          recency_window: '90days'
         })
-      }, 45000)
+      })
 
-      console.log('🎯 Generating comprehensive schema package...')
+      if (!coverageResponse.ok) {
+        console.warn('Coverage scraping failed:', await coverageResponse.text())
+      } else {
+        const coverageData = await coverageResponse.json()
+        console.log(`✓ Found ${coverageData.summary?.recent_articles || 0} articles`)
+      }
 
-      const schemaResponse = await fetch(`${SUPABASE_URL}/functions/v1/geo-schema-optimizer`, {
+      // STEP 3: Schema Graph Generation
+      console.log('📊 Step 3: Schema Graph Generation')
+      setSchemaProgress({
+        entityExtraction: 'completed',
+        coverageScraping: 'completed',
+        schemaGeneration: 'processing',
+        message: 'Building comprehensive schema graph...'
+      })
+
+      const schemaResponse = await fetch(`${SUPABASE_URL}/functions/v1/schema-graph-generator`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
@@ -397,7 +433,6 @@ export default function OrganizationOnboarding({
         const schemaData = await schemaResponse.json()
         console.log('✅ Schema package generated:', schemaData)
 
-        // Update progress: All complete
         setSchemaProgress({
           entityExtraction: 'completed',
           coverageScraping: 'completed',
@@ -407,7 +442,6 @@ export default function OrganizationOnboarding({
 
         // Wait a moment for user to see completion
         setTimeout(() => {
-          // Complete onboarding
           onComplete({
             id: organization.id,
             name: organization.name,
@@ -415,7 +449,6 @@ export default function OrganizationOnboarding({
             config: {}
           })
 
-          // Reset and close
           resetForm()
           onClose()
         }, 2000)
@@ -424,14 +457,14 @@ export default function OrganizationOnboarding({
         console.error('Schema generation failed:', errorText)
 
         setSchemaProgress({
-          entityExtraction: 'failed',
-          coverageScraping: 'failed',
+          entityExtraction: 'completed',
+          coverageScraping: 'completed',
           schemaGeneration: 'failed',
           message: 'Schema generation failed. You can continue anyway.'
         })
       }
-    } catch (schemaError) {
-      console.error('Schema generation error:', schemaError)
+    } catch (error) {
+      console.error('Schema generation error:', error)
 
       setSchemaProgress({
         entityExtraction: 'failed',
