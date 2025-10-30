@@ -67,7 +67,7 @@ export default function OrganizationOnboarding({
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
 
   const totalSteps = 5  // Removed topics step - not effective for monitoring
-  const MAX_TOTAL_TARGETS = 15  // Hard limit for total targets (competitors + stakeholders)
+  const MAX_TOTAL_TARGETS = 20  // Hard limit: 15 from discovery + up to 5 custom
 
   // Helper function to calculate total targets
   const getTotalTargets = () => {
