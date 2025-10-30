@@ -328,15 +328,17 @@ export default function OrganizationOnboarding({
 
       console.log('✅ Organization created successfully!')
 
+      // Turn off loading before moving to step 6
+      setLoading(false)
+
       // Move to Step 6 for schema generation
       setStep(6)
 
-      // Start schema generation process
-      await handleSchemaGeneration(organization)
+      // Start schema generation process (runs independently)
+      handleSchemaGeneration(organization)
     } catch (err: any) {
       console.error('Create organization error:', err)
       setError(err.message || 'Failed to create organization')
-    } finally {
       setLoading(false)
     }
   }
@@ -353,6 +355,27 @@ export default function OrganizationOnboarding({
         schemaGeneration: 'pending',
         message: 'Extracting entities from website...'
       })
+
+      // Simulate progress updates since we can't get real-time progress from the function
+      // Entity extraction typically takes 10-15 seconds
+      setTimeout(() => {
+        setSchemaProgress({
+          entityExtraction: 'completed',
+          coverageScraping: 'processing',
+          schemaGeneration: 'pending',
+          message: 'Searching for positive coverage and awards...'
+        })
+      }, 12000)
+
+      // Coverage scraping typically takes 30-40 seconds
+      setTimeout(() => {
+        setSchemaProgress({
+          entityExtraction: 'completed',
+          coverageScraping: 'completed',
+          schemaGeneration: 'processing',
+          message: 'Building comprehensive schema graph...'
+        })
+      }, 45000)
 
       console.log('🎯 Generating comprehensive schema package...')
 
