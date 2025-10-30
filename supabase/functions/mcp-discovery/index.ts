@@ -634,15 +634,7 @@ NOW, provide your COMPREHENSIVE profile in this JSON format:
     "market_barriers": ["What limits growth"],
     "geographic_focus": ["Key geographic markets"]
   },
-  
-  "trending": {
-    "hot_topics": ["5-7 current hot topics in the industry"],
-    "emerging_technologies": ["Technologies disrupting the industry"],
-    "regulatory_changes": ["Upcoming or recent regulatory changes"],
-    "market_shifts": ["Recent changes in market dynamics"],
-    "social_issues": ["ESG or social topics affecting the industry"]
-  },
-  
+
   "forward_looking": {
     "technology_disruptions": ["Technologies that could disrupt"],
     "regulatory_horizon": ["Upcoming regulations to monitor"],
@@ -889,10 +881,11 @@ BE SPECIFIC with names. Real companies, real regulators, real people.
     competition: {
       ...enhancedData.competition,
       // Prioritize our registry competitors but add Claude's additions
+      // LIMIT TO 10 for onboarding (out of 15 total target limit)
       direct_competitors: [...new Set([
         ...industryData.competitors.slice(0, 10),
         ...(enhancedData.competition.direct_competitors || [])
-      ])].slice(0, 15)
+      ])].slice(0, 10)
     },
 
     // Enhanced monitoring configuration
@@ -1015,11 +1008,15 @@ async function fillGapsWithWebSearch(profile: any, organization_name: string) {
   }
 
   // Limit stakeholders to 5 total (3 regulators + 2 influencers)
+  // Remove other stakeholder types that are less relevant
   if (profile.stakeholders) {
     profile.stakeholders.regulators = (profile.stakeholders.regulators || []).slice(0, 3);
     profile.stakeholders.influencers = (profile.stakeholders.influencers || []).slice(0, 2);
-    // Remove investors - less relevant for most companies
+    // Remove other types - less relevant for most companies
     profile.stakeholders.major_investors = [];
+    profile.stakeholders.major_customers = [];
+    profile.stakeholders.partners = [];
+    profile.stakeholders.critics = [];
   }
 
   // Remove topics from trending - 0% monitoring effectiveness
@@ -1035,14 +1032,8 @@ async function fillGapsWithWebSearch(profile: any, organization_name: string) {
 function structureFinalProfile(profileData: any, organization_name: string) {
   const sources = profileData.sources || {};
 
-  // Aggregate all topics for easy access
-  const allTopics = [
-    ...(profileData.trending?.hot_topics || []),
-    ...(profileData.monitoring_config?.keywords || []),
-    ...(profileData.trending?.emerging_technologies || []),
-    ...(profileData.intelligence_context?.topics || [])
-  ].filter(Boolean);
-  const uniqueTopics = [...new Set(allTopics)];
+  // Topics removed - 0% monitoring effectiveness
+  // Keywords are in monitoring_config instead
 
   return {
     organization_name,
@@ -1051,8 +1042,8 @@ function structureFinalProfile(profileData: any, organization_name: string) {
     sub_industry: profileData.sub_industry,
     description: profileData.description,
 
-    // NEW: Top-level topics field for easy access
-    topics: uniqueTopics,
+    // Topics removed - not effective for monitoring
+    topics: [],
     
     // Competition tab
     competition: {
@@ -1090,13 +1081,11 @@ function structureFinalProfile(profileData: any, organization_name: string) {
       ]
     },
     
-    // Trending tab
+    // Trending tab (topics removed - 0% monitoring effectiveness)
     trending: {
       ...profileData.trending,
       sources: sources.specialized || [],
-      monitoring_queries: profileData.trending.hot_topics.map(topic => 
-        `${topic} ${profileData.industry}`
-      )
+      monitoring_queries: []  // Topics removed - not effective for monitoring
     },
     
     // Forward looking tab
@@ -1203,15 +1192,15 @@ async function getOrganizationProfile(args: any) {
   };
 }
 
-// Generate monitoring keywords
+// Generate monitoring keywords (topics removed - not effective)
 function generateKeywords(organization_name: string, analysisData: any): string[] {
   const keywords = [
     organization_name,
     ...analysisData.monitoring_config?.keywords || [],
-    ...analysisData.competition?.direct_competitors?.slice(0, 5) || [],
-    ...analysisData.trending?.hot_topics?.slice(0, 5) || []
+    ...analysisData.competition?.direct_competitors?.slice(0, 5) || []
+    // Topics removed - 0% monitoring effectiveness
   ];
-  
+
   return [...new Set(keywords)];
 }
 

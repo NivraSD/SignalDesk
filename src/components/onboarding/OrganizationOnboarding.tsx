@@ -63,10 +63,10 @@ export default function OrganizationOnboarding({
   const [newPriorityQuery, setNewPriorityQuery] = useState('')
   const [newGeoCompetitor, setNewGeoCompetitor] = useState('')
 
-  // Step 6: Memory Vault
+  // Step 5: Memory Vault
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
 
-  const totalSteps = 6
+  const totalSteps = 5  // Removed topics step - not effective for monitoring
 
   const handleBasicInfoSubmit = async () => {
     if (!orgName || !website) {
@@ -152,15 +152,11 @@ export default function OrganizationOnboarding({
         throw new Error('No organization data returned from API')
       }
 
-      // 2. Save targets
+      // 2. Save targets (topics removed - not effective)
       console.log('🎯 Saving targets...')
       const allCompetitors = [
         ...Array.from(selectedCompetitors),
         ...customCompetitors
-      ]
-      const allTopics = [
-        ...Array.from(selectedTopics),
-        ...customTopics
       ]
       const allStakeholders = [
         ...Array.from(selectedStakeholders),
@@ -174,12 +170,7 @@ export default function OrganizationOnboarding({
           priority: 'high',
           active: true
         })),
-        ...allTopics.map(name => ({
-          name,
-          type: 'topic',
-          priority: 'medium',
-          active: true
-        })),
+        // Topics removed - 0% monitoring effectiveness
         ...allStakeholders.map(name => ({
           name,
           type: 'influencer',
@@ -215,11 +206,8 @@ export default function OrganizationOnboarding({
             competition: {
               ...fullProfile.competition,
               direct_competitors: allCompetitors
-            },
-            trending: {
-              ...fullProfile.trending,
-              hot_topics: allTopics
             }
+            // Topics removed - not effective for monitoring
           }
 
           // Insert directly into mcp_discovery table
@@ -560,7 +548,7 @@ export default function OrganizationOnboarding({
                         AI-Powered Discovery
                       </p>
                       <p className="text-xs text-cyan-400/70 mt-1">
-                        We'll analyze your organization and discover competitors, trending topics,
+                        We'll analyze your organization and discover competitors
                         and key stakeholders automatically
                       </p>
                     </div>
@@ -649,99 +637,8 @@ export default function OrganizationOnboarding({
               </motion.div>
             )}
 
-            {/* Step 3: Discovery Results - Topics */}
+            {/* Step 3: Stakeholders (Topics removed - not effective) */}
             {step === 3 && discovered && (
-              <motion.div
-                key="step3"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="space-y-6"
-              >
-                <div>
-                  <h3 className="text-lg font-semibold text-white mb-2">
-                    Trending Topics
-                  </h3>
-                  <p className="text-sm text-gray-400 mb-4">
-                    Select topics to monitor. These help us identify opportunities and trends.
-                  </p>
-
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    {discovered.topics.map((topic) => (
-                      <button
-                        key={topic}
-                        onClick={() => toggleTopic(topic)}
-                        className={`px-4 py-3 rounded-lg border transition-all text-left ${
-                          selectedTopics.has(topic)
-                            ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300'
-                            : 'bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-600'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">{topic}</span>
-                          {selectedTopics.has(topic) && (
-                            <Check className="w-4 h-4 text-cyan-400" />
-                          )}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Custom topics */}
-                  {customTopics.length > 0 && (
-                    <div className="space-y-2 mb-4">
-                      {customTopics.map((topic, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg"
-                        >
-                          <span className="text-sm text-gray-300">{topic}</span>
-                          <button
-                            onClick={() => removeCustomTopic(index)}
-                            className="p-1 hover:bg-gray-700 rounded"
-                          >
-                            <Trash2 className="w-4 h-4 text-red-400" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={newTopic}
-                      onChange={(e) => setNewTopic(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && addCustomTopic()}
-                      placeholder="Add custom topic"
-                      className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
-                    />
-                    <button
-                      onClick={addCustomTopic}
-                      disabled={!newTopic.trim()}
-                      className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg transition-colors flex items-center gap-2"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Add
-                    </button>
-                  </div>
-                </div>
-
-                <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
-                  <div className="text-sm text-gray-400">
-                    <p className="font-medium text-gray-300 mb-2">Progress:</p>
-                    <ul className="space-y-1">
-                      <li>• {selectedCompetitors.size + customCompetitors.length} competitors selected</li>
-                      <li>• {selectedTopics.size + customTopics.length} topics selected</li>
-                      <li>• Next: Select stakeholders to monitor</li>
-                    </ul>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Step 4: Stakeholders */}
-            {step === 4 && discovered && (
               <motion.div
                 key="step4"
                 initial={{ opacity: 0, x: 20 }}
@@ -828,7 +725,6 @@ export default function OrganizationOnboarding({
                     <p className="font-medium text-gray-300 mb-2">Summary:</p>
                     <ul className="space-y-1">
                       <li>• {selectedCompetitors.size + customCompetitors.length} competitors selected</li>
-                      <li>• {selectedTopics.size + customTopics.length} topics selected</li>
                       <li>• {selectedStakeholders.size + customStakeholders.length} stakeholders selected</li>
                       <li>• Industry: {discovered.industry}</li>
                     </ul>
@@ -837,8 +733,8 @@ export default function OrganizationOnboarding({
               </motion.div>
             )}
 
-            {/* Step 5: GEO Targets (Optional) */}
-            {step === 5 && (
+            {/* Step 4: GEO Targets (Optional) */}
+            {step === 4 && (
               <motion.div
                 key="step5"
                 initial={{ opacity: 0, x: 20 }}
@@ -1092,8 +988,8 @@ export default function OrganizationOnboarding({
               </motion.div>
             )}
 
-            {/* Step 6: Memory Vault (Optional) */}
-            {step === 6 && (
+            {/* Step 5: Memory Vault (Optional) */}
+            {step === 5 && (
               <motion.div
                 key="step6"
                 initial={{ opacity: 0, x: 20 }}
