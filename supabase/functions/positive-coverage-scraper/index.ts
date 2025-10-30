@@ -56,11 +56,10 @@ serve(async (req) => {
     const queries = generatePositiveCoverageQueries(organization_name)
     console.log(`   ✓ Generated ${queries.length} search queries`)
 
-    // STEP 2: Search with niv-fireplexity
-    console.log('🌐 Step 2: Searching with niv-fireplexity...')
-    const allArticles: any[] = []
+    // STEP 2: Search with niv-fireplexity (IN PARALLEL)
+    console.log('🌐 Step 2: Searching with niv-fireplexity (parallel)...')
 
-    for (const query of queries) {
+    const searchPromises = queries.map(async (query) => {
       try {
         console.log(`   🔍 Searching: "${query.query}"`)
 
@@ -74,16 +73,16 @@ serve(async (req) => {
             },
             body: JSON.stringify({
               query: query.query,
-              searchMode: 'focused', // Focused search for specific coverage
+              searchMode: 'quick', // Quick mode for faster results
               organizationId: organization_id,
-              useCache: false // Don't cache positive coverage searches
+              useCache: false
             })
           }
         )
 
         if (!searchResponse.ok) {
           console.error(`   ✗ Search failed for "${query.query}"`)
-          continue
+          return []
         }
 
         const searchData = await searchResponse.json()
@@ -98,12 +97,16 @@ serve(async (req) => {
           result.query_type = query.type
         })
 
-        allArticles.push(...results.slice(0, max_results_per_query))
+        return results.slice(0, max_results_per_query)
 
       } catch (error) {
         console.error(`   ✗ Error searching "${query.query}":`, error)
+        return []
       }
-    }
+    })
+
+    const searchResults = await Promise.all(searchPromises)
+    const allArticles = searchResults.flat()
 
     console.log(`   ✓ Total articles found: ${allArticles.length}`)
 
@@ -117,12 +120,19 @@ serve(async (req) => {
     const recentArticles = filterByRecency(uniqueArticles, recency_window)
     console.log(`   ✓ Filtered: ${uniqueArticles.length} → ${recentArticles.length} articles within ${recency_window}`)
 
-    // STEP 5: Return for compilation
+    // STEP 5: Limit to 5 most recent articles (for schema generation we don't need more)
+    const limitedArticles = recentArticles.slice(0, 5)
+    if (limitedArticles.length < recentArticles.length) {
+      console.log(`   ✓ Limited to 5 most recent: ${recentArticles.length} → ${limitedArticles.length}`)
+    }
+
+    // STEP 6: Return for compilation
     const summary = {
       total_searches: queries.length,
       raw_articles_found: allArticles.length,
       unique_articles: uniqueArticles.length,
       recent_articles: recentArticles.length,
+      final_articles: limitedArticles.length,
       recency_window,
       queries_executed: queries.map(q => q.query)
     }
@@ -132,7 +142,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        articles: recentArticles,
+        articles: limitedArticles, // Return only 5 articles
         summary
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

@@ -22,6 +22,8 @@ interface GeneratorRequest {
   organization_name: string
   industry?: string
   url?: string
+  entities?: any // Entities passed directly from scraper
+  coverage?: any[] // Coverage articles passed directly from scraper
 }
 
 serve(async (req) => {
@@ -34,7 +36,9 @@ serve(async (req) => {
       organization_id,
       organization_name,
       industry,
-      url
+      url,
+      entities: passedEntities,
+      coverage: passedCoverage
     }: GeneratorRequest = await req.json()
 
     if (!organization_id || !organization_name) {
@@ -44,71 +48,107 @@ serve(async (req) => {
     console.log('📊 Schema Graph Generator Starting:', {
       organization_name,
       industry,
-      url
+      url,
+      has_entities: !!passedEntities,
+      has_coverage: !!passedCoverage
     })
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // STEP 1: Gather all entities from content_library
-    console.log('📚 Step 1: Gathering entities from content_library...')
+    // STEP 1: Get entities (use passed data or query database)
+    console.log('📚 Step 1: Getting entities...')
 
-    const { data: products } = await supabase
-      .from('content_library')
-      .select('*')
-      .eq('organization_id', organization_id)
-      .eq('content_type', 'product')
-      .eq('status', 'published')
+    let products, services, locations, subsidiaries, team
 
-    const { data: services } = await supabase
-      .from('content_library')
-      .select('*')
-      .eq('organization_id', organization_id)
-      .eq('content_type', 'service')
-      .eq('status', 'published')
+    if (passedEntities) {
+      // Use entities passed directly from scraper
+      products = passedEntities.products || []
+      services = passedEntities.services || []
+      locations = passedEntities.locations || []
+      subsidiaries = passedEntities.subsidiaries || []
+      team = passedEntities.team || []
+      console.log(`   ✓ Using passed entities:`, {
+        products: products.length,
+        services: services.length,
+        locations: locations.length,
+        subsidiaries: subsidiaries.length,
+        team: team.length
+      })
+    } else {
+      // Fallback: query from content_library
+      console.log('   → Querying content_library...')
+      const { data: dbProducts } = await supabase
+        .from('content_library')
+        .select('*')
+        .eq('organization_id', organization_id)
+        .eq('content_type', 'product')
+        .eq('status', 'published')
 
-    const { data: locations } = await supabase
-      .from('content_library')
-      .select('*')
-      .eq('organization_id', organization_id)
-      .eq('content_type', 'location')
-      .eq('status', 'published')
+      const { data: dbServices } = await supabase
+        .from('content_library')
+        .select('*')
+        .eq('organization_id', organization_id)
+        .eq('content_type', 'service')
+        .eq('status', 'published')
 
-    const { data: subsidiaries } = await supabase
-      .from('content_library')
-      .select('*')
-      .eq('organization_id', organization_id)
-      .eq('content_type', 'subsidiary')
-      .eq('status', 'published')
+      const { data: dbLocations } = await supabase
+        .from('content_library')
+        .select('*')
+        .eq('organization_id', organization_id)
+        .eq('content_type', 'location')
+        .eq('status', 'published')
 
-    const { data: team } = await supabase
-      .from('content_library')
-      .select('*')
-      .eq('organization_id', organization_id)
-      .eq('content_type', 'person')
-      .eq('status', 'published')
+      const { data: dbSubsidiaries } = await supabase
+        .from('content_library')
+        .select('*')
+        .eq('organization_id', organization_id)
+        .eq('content_type', 'subsidiary')
+        .eq('status', 'published')
 
-    console.log(`   ✓ Found entities:`, {
-      products: products?.length || 0,
-      services: services?.length || 0,
-      locations: locations?.length || 0,
-      subsidiaries: subsidiaries?.length || 0,
-      team: team?.length || 0
-    })
+      const { data: dbTeam } = await supabase
+        .from('content_library')
+        .select('*')
+        .eq('organization_id', organization_id)
+        .eq('content_type', 'person')
+        .eq('status', 'published')
 
-    // STEP 2: Get positive coverage from intelligence_findings
-    console.log('🏆 Step 2: Gathering positive coverage...')
+      products = dbProducts || []
+      services = dbServices || []
+      locations = dbLocations || []
+      subsidiaries = dbSubsidiaries || []
+      team = dbTeam || []
 
-    const { data: positiveCoverage } = await supabase
-      .from('intelligence_findings')
-      .select('*')
-      .eq('organization_id', organization_id)
-      .gte('relevance_score', 70)
-      .order('published_at', { ascending: false })
-      .limit(10)
+      console.log(`   ✓ Found entities from database:`, {
+        products: products.length,
+        services: services.length,
+        locations: locations.length,
+        subsidiaries: subsidiaries.length,
+        team: team.length
+      })
+    }
 
-    console.log(`   ✓ Found ${positiveCoverage?.length || 0} pieces of positive coverage`)
+    // STEP 2: Get positive coverage (use passed data or query database)
+    console.log('🏆 Step 2: Getting positive coverage...')
+
+    let positiveCoverage
+
+    if (passedCoverage) {
+      positiveCoverage = passedCoverage
+      console.log(`   ✓ Using passed coverage: ${positiveCoverage.length} articles`)
+    } else {
+      const { data: dbCoverage } = await supabase
+        .from('intelligence_findings')
+        .select('*')
+        .eq('organization_id', organization_id)
+        .gte('relevance_score', 70)
+        .order('published_at', { ascending: false })
+        .limit(10)
+
+      positiveCoverage = dbCoverage || []
+      console.log(`   ✓ Found coverage from database: ${positiveCoverage.length} articles`)
+    }
 
     // STEP 3: Get organization data
     console.log('🏢 Step 3: Getting organization data...')

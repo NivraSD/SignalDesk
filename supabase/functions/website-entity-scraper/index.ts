@@ -54,207 +54,139 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    const extractedEntities: any = {
-      products: [],
-      services: [],
-      locations: [],
-      subsidiaries: [],
-      team: []
-    }
+    // STEP 1: Map the website to discover relevant URLs (2-3 seconds)
+    console.log('🗺️  Step 1: Mapping website structure...')
+    const relevantUrls = await discoverRelevantUrls(firecrawlApiKey, website_url)
+    console.log(`   ✓ Found ${relevantUrls.length} relevant pages to scrape`)
 
-    // STEP 1: Extract Products/Services
-    if (entity_types.includes('products') || entity_types.includes('services')) {
-      console.log('📦 Extracting products and services...')
+    // STEP 2: Batch scrape all relevant URLs with extraction (via mcp-firecrawl)
+    console.log('🔍 Step 2: Extracting entities from all pages...')
 
-      const productsSchema = {
-        type: 'object',
-        properties: {
-          products: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                name: { type: 'string' },
-                description: { type: 'string' },
-                category: { type: 'string' },
-                url: { type: 'string' },
-                price_range: { type: 'string' },
-                features: { type: 'array', items: { type: 'string' } }
-              }
+    const consolidatedSchema = {
+      type: 'object',
+      properties: {
+        products: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              description: { type: 'string' },
+              category: { type: 'string' },
+              url: { type: 'string' },
+              price_range: { type: 'string' },
+              features: { type: 'array', items: { type: 'string' } }
             }
-          },
-          services: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                name: { type: 'string' },
-                description: { type: 'string' },
-                category: { type: 'string' },
-                url: { type: 'string' },
-                service_type: { type: 'string' }
-              }
+          }
+        },
+        services: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              description: { type: 'string' },
+              category: { type: 'string' },
+              url: { type: 'string' },
+              service_type: { type: 'string' }
+            }
+          }
+        },
+        locations: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              type: { type: 'string' },
+              address: { type: 'string' },
+              city: { type: 'string' },
+              state: { type: 'string' },
+              country: { type: 'string' },
+              postal_code: { type: 'string' },
+              phone: { type: 'string' },
+              email: { type: 'string' }
+            }
+          }
+        },
+        subsidiaries: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              description: { type: 'string' },
+              type: { type: 'string' },
+              industry: { type: 'string' },
+              url: { type: 'string' }
+            }
+          }
+        },
+        team: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              title: { type: 'string' },
+              role: { type: 'string' },
+              bio: { type: 'string' },
+              image_url: { type: 'string' },
+              linkedin_url: { type: 'string' }
             }
           }
         }
       }
-
-      const productsResult = await extractWithFirecrawl(
-        firecrawlApiKey,
-        website_url,
-        'Extract all products and services offered by this company. Include product names, descriptions, categories, and any relevant details.',
-        productsSchema
-      )
-
-      if (productsResult) {
-        extractedEntities.products = productsResult.products || []
-        extractedEntities.services = productsResult.services || []
-        console.log(`   ✓ Found ${extractedEntities.products.length} products, ${extractedEntities.services.length} services`)
-      }
     }
 
-    // STEP 2: Extract Locations
-    if (entity_types.includes('locations')) {
-      console.log('📍 Extracting locations...')
+    // Call Firecrawl directly for each URL in parallel
+    const extractionPromises = relevantUrls.map(url =>
+      extractEntitiesFromUrl(firecrawlApiKey, url, consolidatedSchema)
+    )
 
-      const locationsSchema = {
-        type: 'object',
-        properties: {
-          locations: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                name: { type: 'string' },
-                type: { type: 'string' }, // headquarters, office, store, etc.
-                address: { type: 'string' },
-                city: { type: 'string' },
-                state: { type: 'string' },
-                country: { type: 'string' },
-                postal_code: { type: 'string' },
-                phone: { type: 'string' },
-                email: { type: 'string' }
-              }
-            }
-          }
-        }
-      }
+    const extractionResults = await Promise.all(extractionPromises)
 
-      const locationsResult = await extractWithFirecrawl(
-        firecrawlApiKey,
-        website_url,
-        'Extract all physical locations, offices, stores, or facilities mentioned on this website. Include addresses and contact information.',
-        locationsSchema
-      )
+    // Merge entities from all pages
+    const entities = mergeExtractedEntities(extractionResults)
 
-      if (locationsResult) {
-        extractedEntities.locations = locationsResult.locations || []
-        console.log(`   ✓ Found ${extractedEntities.locations.length} locations`)
-      }
-    }
-
-    // STEP 3: Extract Subsidiaries/Business Units
-    if (entity_types.includes('subsidiaries')) {
-      console.log('🏢 Extracting subsidiaries and business units...')
-
-      const subsidiariesSchema = {
-        type: 'object',
-        properties: {
-          subsidiaries: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                name: { type: 'string' },
-                description: { type: 'string' },
-                type: { type: 'string' }, // subsidiary, division, business_unit
-                industry: { type: 'string' },
-                url: { type: 'string' }
-              }
-            }
-          }
-        }
-      }
-
-      const subsidiariesResult = await extractWithFirecrawl(
-        firecrawlApiKey,
-        website_url,
-        'Extract all subsidiaries, divisions, business units, or child organizations mentioned. Include their names, what they do, and any relevant URLs.',
-        subsidiariesSchema
-      )
-
-      if (subsidiariesResult) {
-        extractedEntities.subsidiaries = subsidiariesResult.subsidiaries || []
-        console.log(`   ✓ Found ${extractedEntities.subsidiaries.length} subsidiaries`)
-      }
-    }
-
-    // STEP 4: Extract Team/Leadership
-    if (entity_types.includes('team')) {
-      console.log('👥 Extracting leadership team...')
-
-      const teamSchema = {
-        type: 'object',
-        properties: {
-          team: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                name: { type: 'string' },
-                title: { type: 'string' },
-                role: { type: 'string' },
-                bio: { type: 'string' },
-                image_url: { type: 'string' },
-                linkedin_url: { type: 'string' }
-              }
-            }
-          }
-        }
-      }
-
-      const teamResult = await extractWithFirecrawl(
-        firecrawlApiKey,
-        website_url,
-        'Extract leadership team members, executives, and key personnel. Include names, titles, roles, and any biographical information.',
-        teamSchema
-      )
-
-      if (teamResult) {
-        extractedEntities.team = teamResult.team || []
-        console.log(`   ✓ Found ${extractedEntities.team.length} team members`)
-      }
-    }
+    console.log(`   ✓ Extraction complete:`, {
+      pages_scraped: extractionResults.filter(r => r !== null).length,
+      products: entities.products.length,
+      services: entities.services.length,
+      locations: entities.locations.length,
+      subsidiaries: entities.subsidiaries.length,
+      team: entities.team.length
+    })
 
     // Calculate totals
     const totalEntities =
-      extractedEntities.products.length +
-      extractedEntities.services.length +
-      extractedEntities.locations.length +
-      extractedEntities.subsidiaries.length +
-      extractedEntities.team.length
+      entities.products.length +
+      entities.services.length +
+      entities.locations.length +
+      entities.subsidiaries.length +
+      entities.team.length
 
     console.log('✅ Website Entity Scraper Complete:', {
       total_entities: totalEntities,
-      products: extractedEntities.products.length,
-      services: extractedEntities.services.length,
-      locations: extractedEntities.locations.length,
-      subsidiaries: extractedEntities.subsidiaries.length,
-      team: extractedEntities.team.length
+      products: entities.products.length,
+      services: entities.services.length,
+      locations: entities.locations.length,
+      subsidiaries: entities.subsidiaries.length,
+      team: entities.team.length
     })
 
     return new Response(
       JSON.stringify({
         success: true,
-        entities: extractedEntities,
+        entities: entities,
         summary: {
           total_entities: totalEntities,
           by_type: {
-            products: extractedEntities.products.length,
-            services: extractedEntities.services.length,
-            locations: extractedEntities.locations.length,
-            subsidiaries: extractedEntities.subsidiaries.length,
-            team: extractedEntities.team.length
+            products: entities.products.length,
+            services: entities.services.length,
+            locations: entities.locations.length,
+            subsidiaries: entities.subsidiaries.length,
+            team: entities.team.length
           }
         }
       }),
@@ -277,96 +209,185 @@ serve(async (req) => {
 })
 
 /**
- * Extract data using Firecrawl Extract API
+ * Discover relevant URLs using Firecrawl /map endpoint
  */
-async function extractWithFirecrawl(
-  apiKey: string,
-  url: string,
-  prompt: string,
-  schema: any
-): Promise<any> {
+async function discoverRelevantUrls(apiKey: string, baseUrl: string): Promise<string[]> {
   try {
-    console.log(`   🔍 Firecrawl Extract: ${url}`)
-
-    const response = await fetch('https://api.firecrawl.dev/v1/extract', {
+    const response = await fetch('https://api.firecrawl.dev/v1/map', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        urls: [url],
-        prompt,
-        schema,
-        // Enable web search to find relevant pages beyond the homepage
-        enableWebSearch: true,
-        // Limit number of pages to extract from
-        limit: 5
+        url: baseUrl,
+        limit: 100 // Get up to 100 URLs
+      })
+    })
+
+    if (!response.ok) {
+      console.error('   ⚠️  Map failed, using homepage only')
+      return [baseUrl]
+    }
+
+    const data = await response.json()
+    const allUrls = data.links || []
+
+    // Filter for relevant pages
+    const relevantKeywords = [
+      'about', 'team', 'leadership', 'executives', 'management',
+      'products', 'services', 'solutions', 'offerings',
+      'locations', 'offices', 'contact',
+      'company', 'who-we-are', 'our-story'
+    ]
+
+    const scoredUrls = allUrls.map((url: string) => {
+      const urlLower = url.toLowerCase()
+      let score = 0
+
+      // Homepage gets high priority
+      if (url === baseUrl || urlLower.endsWith('/') || urlLower === baseUrl + '/') {
+        score = 100
+      }
+
+      // Score based on relevant keywords
+      for (const keyword of relevantKeywords) {
+        if (urlLower.includes(keyword)) {
+          score += 10
+        }
+      }
+
+      // Penalize very long URLs (likely not top-level pages)
+      const pathDepth = url.split('/').length - 3
+      score -= pathDepth * 2
+
+      return { url, score }
+    })
+
+    // Sort by score and take top 5
+    const topUrls = scoredUrls
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5)
+      .map(item => item.url)
+
+    // Always include homepage if not already included
+    if (!topUrls.includes(baseUrl)) {
+      topUrls.unshift(baseUrl)
+    }
+
+    return topUrls.slice(0, 5) // Max 5 pages
+
+  } catch (error) {
+    console.error('   ⚠️  Map error, using homepage only:', error)
+    return [baseUrl]
+  }
+}
+
+/**
+ * Extract entities from a single URL using Firecrawl v1 scrape API
+ */
+async function extractEntitiesFromUrl(
+  apiKey: string,
+  url: string,
+  schema: any
+): Promise<any> {
+  try {
+    console.log(`   🔍 Scraping: ${url}`)
+
+    const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        url: url,
+        formats: ['extract'],
+        extract: {
+          schema: schema,
+          prompt: 'Extract comprehensive company information including products, services, locations, subsidiaries, and team members.'
+        }
       })
     })
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('   ✗ Firecrawl error:', errorText)
+      console.error(`   ✗ Scrape failed for ${url}:`, errorText)
       return null
     }
 
     const data = await response.json()
 
-    // Check if it's an async job
-    if (data.success && data.id) {
-      console.log(`   ⏳ Job started: ${data.id}, polling for results...`)
-      // Poll for results
-      return await pollFirecrawlJob(apiKey, data.id)
+    if (data.success && data.data?.extract) {
+      console.log(`   ✓ Extracted from ${url}`)
+      return data.data.extract
     }
 
-    // Immediate result
-    if (data.success && data.data) {
-      return data.data
-    }
-
-    console.error('   ✗ Unexpected Firecrawl response format')
+    console.error(`   ✗ No extraction data for ${url}`)
     return null
 
   } catch (error) {
-    console.error('   ✗ Firecrawl Extract error:', error)
+    console.error(`   ✗ Error scraping ${url}:`, error)
     return null
   }
 }
 
 /**
- * Poll Firecrawl job for completion
+ * Merge entities from multiple extractions
  */
-async function pollFirecrawlJob(apiKey: string, jobId: string, maxAttempts = 30): Promise<any> {
-  for (let i = 0; i < maxAttempts; i++) {
-    await new Promise(resolve => setTimeout(resolve, 2000)) // Wait 2 seconds
-
-    const response = await fetch(`https://api.firecrawl.dev/v2/extract/${jobId}`, {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`
-      }
-    })
-
-    if (!response.ok) {
-      console.error('   ✗ Job polling error')
-      return null
-    }
-
-    const data = await response.json()
-
-    if (data.status === 'completed' && data.data) {
-      console.log('   ✓ Extraction complete')
-      return data.data
-    }
-
-    if (data.status === 'failed') {
-      console.error('   ✗ Extraction failed')
-      return null
-    }
-
-    console.log(`   ⏳ Job status: ${data.status} (attempt ${i + 1}/${maxAttempts})`)
+function mergeExtractedEntities(extractionResults: any[]): any {
+  const merged = {
+    products: [],
+    services: [],
+    locations: [],
+    subsidiaries: [],
+    team: []
   }
 
-  console.error('   ✗ Job timeout')
-  return null
+  for (const extracted of extractionResults) {
+    if (!extracted) continue
+
+    // Merge arrays, avoiding duplicates by name
+    if (extracted.products) {
+      for (const product of extracted.products) {
+        if (product.name && !merged.products.find(p => p.name === product.name)) {
+          merged.products.push(product)
+        }
+      }
+    }
+
+    if (extracted.services) {
+      for (const service of extracted.services) {
+        if (service.name && !merged.services.find(s => s.name === service.name)) {
+          merged.services.push(service)
+        }
+      }
+    }
+
+    if (extracted.locations) {
+      for (const location of extracted.locations) {
+        if (location.name && !merged.locations.find(l => l.name === location.name)) {
+          merged.locations.push(location)
+        }
+      }
+    }
+
+    if (extracted.subsidiaries) {
+      for (const subsidiary of extracted.subsidiaries) {
+        if (subsidiary.name && !merged.subsidiaries.find(s => s.name === subsidiary.name)) {
+          merged.subsidiaries.push(subsidiary)
+        }
+      }
+    }
+
+    if (extracted.team) {
+      for (const member of extracted.team) {
+        if (member.name && !merged.team.find(m => m.name === member.name)) {
+          merged.team.push(member)
+        }
+      }
+    }
+  }
+
+  return merged
 }
