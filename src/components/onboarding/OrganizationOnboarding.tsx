@@ -18,6 +18,14 @@ interface DiscoveredItems {
   description: string
 }
 
+interface PositiveCoverageItem {
+  title: string
+  url: string
+  summary: string
+  source: string
+  search_query: string
+}
+
 interface OrganizationOnboardingProps {
   isOpen: boolean
   onClose: () => void
@@ -41,6 +49,7 @@ export default function OrganizationOnboarding({
   // Step 2-4: Discovery Results & Customization
   const [discovered, setDiscovered] = useState<DiscoveredItems | null>(null)
   const [fullProfile, setFullProfile] = useState<any>(null)
+  const [positiveCoverage, setPositiveCoverage] = useState<PositiveCoverageItem[]>([])
   const [selectedCompetitors, setSelectedCompetitors] = useState<Set<string>>(new Set())
   const [selectedTopics, setSelectedTopics] = useState<Set<string>>(new Set())
   const [selectedStakeholders, setSelectedStakeholders] = useState<Set<string>>(new Set())
@@ -98,6 +107,7 @@ export default function OrganizationOnboarding({
 
       setDiscovered(data.discovered)
       setFullProfile(data.full_profile)
+      setPositiveCoverage(data.positive_coverage || [])
 
       // Pre-select all discovered items
       setSelectedCompetitors(new Set(data.discovered.competitors))
@@ -210,7 +220,48 @@ export default function OrganizationOnboarding({
         // with user customizations if needed
       }
 
-      // 4. Save GEO targets (if configured)
+      // 4. Save positive coverage to intelligence_findings
+      if (positiveCoverage.length > 0) {
+        console.log(`🏆 Saving ${positiveCoverage.length} positive coverage items...`)
+
+        try {
+          const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+          const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+          for (const coverage of positiveCoverage) {
+            await fetch(`${SUPABASE_URL}/rest/v1/intelligence_findings`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_ANON_KEY,
+                'Prefer': 'return=minimal'
+              },
+              body: JSON.stringify({
+                organization_id: organization.id,
+                title: coverage.title,
+                url: coverage.url,
+                content: coverage.summary,
+                source: coverage.source,
+                relevance_score: 80, // High relevance for positive coverage
+                sentiment_score: 0.8, // Positive sentiment
+                published_at: new Date().toISOString(),
+                metadata: {
+                  search_query: coverage.search_query,
+                  source_type: 'positive_coverage',
+                  discovered_during_onboarding: true
+                }
+              })
+            })
+          }
+
+          console.log('✅ Positive coverage saved to intelligence_findings')
+        } catch (coverageError) {
+          console.warn('Failed to save positive coverage (non-blocking):', coverageError)
+        }
+      }
+
+      // 5. Save GEO targets (if configured)
       if (serviceLines.length > 0 || geographicFocus.length > 0 || industryVerticals.length > 0 || priorityQueries.length > 0) {
         console.log('🎯 Saving GEO targets...')
 
@@ -237,7 +288,7 @@ export default function OrganizationOnboarding({
         }
       }
 
-      // 5. Generate comprehensive schema package
+      // 6. Generate comprehensive schema package
       console.log('🎯 Generating comprehensive schema package...')
 
       try {
@@ -271,7 +322,7 @@ export default function OrganizationOnboarding({
         console.warn('Schema generation error (non-blocking):', schemaError)
       }
 
-      // 6. Upload Memory Vault files (if any)
+      // 7. Upload Memory Vault files (if any)
       if (uploadedFiles.length > 0) {
         console.log(`📤 Uploading ${uploadedFiles.length} files to Memory Vault...`)
 

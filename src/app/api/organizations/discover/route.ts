@@ -81,10 +81,58 @@ export async function POST(req: NextRequest) {
     console.log(`   - ${discoveredItems.topics.length} topics`)
     console.log(`   - ${discoveredItems.stakeholders.regulators.length} regulators`)
 
+    // Search for positive coverage (awards, achievements, positive press)
+    console.log(`🏆 Searching for positive coverage...`)
+    let positiveCoverage: any[] = []
+
+    try {
+      const coverageSearches = [
+        `${organization_name} awards`,
+        `${organization_name} achievements`,
+        `${organization_name} recognition`,
+        `${organization_name} industry leader`
+      ]
+
+      for (const searchQuery of coverageSearches) {
+        const searchResponse = await fetch(
+          `${SUPABASE_URL}/functions/v1/web-search`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+            },
+            body: JSON.stringify({
+              query: searchQuery,
+              max_results: 3
+            })
+          }
+        )
+
+        if (searchResponse.ok) {
+          const searchData = await searchResponse.json()
+          if (searchData.success && searchData.results) {
+            positiveCoverage.push(...searchData.results.map((r: any) => ({
+              title: r.title,
+              url: r.url,
+              summary: r.snippet,
+              source: r.source || 'Web',
+              search_query: searchQuery
+            })))
+          }
+        }
+      }
+
+      console.log(`✅ Found ${positiveCoverage.length} positive coverage items`)
+    } catch (coverageError) {
+      console.warn('Positive coverage search failed (non-blocking):', coverageError)
+    }
+
     return NextResponse.json({
       success: true,
       discovered: discoveredItems,
-      full_profile: profile // Include full profile for later saving
+      full_profile: profile, // Include full profile for later saving
+      positive_coverage: positiveCoverage // Include positive coverage for schema generation
     })
   } catch (error: any) {
     console.error('Discovery API error:', error)
