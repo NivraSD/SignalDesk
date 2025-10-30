@@ -74,6 +74,8 @@ export default function OrganizationOnboarding({
     schemaGeneration: 'pending',
     message: ''
   })
+  const [schemaGenerationStarted, setSchemaGenerationStarted] = useState(false)
+  const [createdOrganization, setCreatedOrganization] = useState<any>(null)
 
   const totalSteps = 6  // Added schema generation step
   const MAX_TOTAL_TARGETS = 20  // Hard limit: 15 from discovery + up to 5 custom
@@ -328,14 +330,16 @@ export default function OrganizationOnboarding({
 
       console.log('✅ Organization created successfully!')
 
+      // Store the organization for schema generation
+      setCreatedOrganization(organization)
+
       // Turn off loading before moving to step 6
       setLoading(false)
 
       // Move to Step 6 for schema generation
       setStep(6)
 
-      // Start schema generation process (runs independently)
-      handleSchemaGeneration(organization)
+      // Don't auto-start - let user click the button
     } catch (err: any) {
       console.error('Create organization error:', err)
       setError(err.message || 'Failed to create organization')
@@ -344,6 +348,7 @@ export default function OrganizationOnboarding({
   }
 
   const handleSchemaGeneration = async (organization: any) => {
+    setSchemaGenerationStarted(true)
     const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
     const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
@@ -495,6 +500,8 @@ export default function OrganizationOnboarding({
       schemaGeneration: 'pending',
       message: ''
     })
+    setSchemaGenerationStarted(false)
+    setCreatedOrganization(null)
     setError(null)
   }
 
@@ -1326,8 +1333,22 @@ export default function OrganizationOnboarding({
                     </div>
                   )}
 
-                  {schemaProgress.schemaGeneration === 'failed' && (
-                    <div className="mt-4">
+                  {/* Show button if generation failed OR hasn't started */}
+                  <div className="mt-6 flex gap-3">
+                    {!schemaGenerationStarted && createdOrganization && (
+                      <button
+                        onClick={() => {
+                          console.log('🎯 Starting schema generation for:', createdOrganization.name)
+                          handleSchemaGeneration(createdOrganization)
+                        }}
+                        className="flex-1 px-6 py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Sparkles className="w-5 h-5" />
+                        Generate Schema Package
+                      </button>
+                    )}
+
+                    {(schemaProgress.schemaGeneration === 'failed' || !schemaGenerationStarted) && (
                       <button
                         onClick={() => {
                           onComplete({
@@ -1339,12 +1360,12 @@ export default function OrganizationOnboarding({
                           resetForm()
                           onClose()
                         }}
-                        className="w-full px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                        className="flex-1 px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
                       >
-                        Continue Anyway
+                        {schemaProgress.schemaGeneration === 'failed' ? 'Continue Anyway' : 'Skip Schema Generation'}
                       </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </motion.div>
             )}
