@@ -1275,12 +1275,6 @@ export default function OrganizationOnboarding({
                     Generate a comprehensive schema package with entity extraction and positive coverage discovery.
                   </p>
 
-                  {/* Debug info */}
-                  <div className="mb-4 p-2 bg-gray-900 rounded text-xs text-gray-500">
-                    Debug: createdOrganization={createdOrganization ? createdOrganization.id : 'NULL - BUTTON WILL BE DISABLED'},
-                    started={schemaGenerationStarted ? 'true' : 'false'}
-                  </div>
-
                   <div className="space-y-4">
                     {/* Entity Extraction */}
                     <div className="flex items-center gap-4 p-4 bg-gray-800/50 rounded-lg">
