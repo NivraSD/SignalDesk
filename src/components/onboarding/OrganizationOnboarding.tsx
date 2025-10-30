@@ -1437,6 +1437,9 @@ export default function OrganizationOnboarding({
                 onClick={() => {
                   if (step === 1) {
                     handleBasicInfoSubmit()
+                  } else if (step === 5) {
+                    // Step 5 -> Create org and move to step 6
+                    handleCreateOrganization()
                   } else {
                     setStep(step + 1)
                   }
@@ -1447,30 +1450,12 @@ export default function OrganizationOnboarding({
                 {loading ? (
                   <>
                     <Loader className="w-4 h-4 animate-spin" />
-                    {step === 1 ? 'Discovering...' : 'Loading...'}
+                    {step === 1 ? 'Discovering...' : step === 5 ? 'Creating...' : 'Loading...'}
                   </>
                 ) : (
                   <>
                     {step === 1 ? 'Run Discovery' : 'Next'}
                     <ChevronRight className="w-4 h-4" />
-                  </>
-                )}
-              </button>
-            ) : step === 5 ? (
-              <button
-                onClick={handleCreateOrganization}
-                disabled={loading}
-                className="px-6 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg transition-colors flex items-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <Loader className="w-4 h-4 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <Check className="w-4 h-4" />
-                    Create Organization
                   </>
                 )}
               </button>
