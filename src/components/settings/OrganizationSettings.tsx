@@ -181,9 +181,9 @@ export default function OrganizationSettings({
       const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
       const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-      // Call services individually to avoid timeouts
       // STEP 1: Entity Extraction
       console.log('🌐 Step 1: Website Entity Extraction')
+      let extractedEntities = null
       const entityResponse = await fetch(`${SUPABASE_URL}/functions/v1/website-entity-scraper`, {
         method: 'POST',
         headers: {
@@ -200,12 +200,14 @@ export default function OrganizationSettings({
       if (entityResponse.ok) {
         const entityData = await entityResponse.json()
         console.log(`✓ Extracted ${entityData.summary?.total_entities || 0} entities`)
+        extractedEntities = entityData.entities // STORE ENTITIES
       } else {
         console.warn('Entity extraction failed:', await entityResponse.text())
       }
 
       // STEP 2: Positive Coverage Scraping
       console.log('🏆 Step 2: Positive Coverage Scraping')
+      let coverageArticles = null
       const coverageResponse = await fetch(`${SUPABASE_URL}/functions/v1/positive-coverage-scraper`, {
         method: 'POST',
         headers: {
@@ -221,12 +223,13 @@ export default function OrganizationSettings({
 
       if (coverageResponse.ok) {
         const coverageData = await coverageResponse.json()
-        console.log(`✓ Found ${coverageData.summary?.recent_articles || 0} articles`)
+        console.log(`✓ Found ${coverageData.summary?.final_articles || 0} articles`)
+        coverageArticles = coverageData.articles // STORE COVERAGE
       } else {
         console.warn('Coverage scraping failed:', await coverageResponse.text())
       }
 
-      // STEP 3: Schema Graph Generation
+      // STEP 3: Schema Graph Generation (with direct data passing)
       console.log('📊 Step 3: Schema Graph Generation')
       const schemaResponse = await fetch(`${SUPABASE_URL}/functions/v1/schema-graph-generator`, {
         method: 'POST',
@@ -238,7 +241,9 @@ export default function OrganizationSettings({
           organization_id: organizationId,
           organization_name: orgData.name,
           industry: orgData.industry,
-          url: orgData.domain
+          url: orgData.domain,
+          entities: extractedEntities, // PASS ENTITIES DIRECTLY
+          coverage: coverageArticles    // PASS COVERAGE DIRECTLY
         })
       })
 
