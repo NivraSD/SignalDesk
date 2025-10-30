@@ -1515,6 +1515,52 @@ async function getMcpDiscovery(organizationInput: string = '7a2835cb-11ee-4512-a
 
       if (!idError && profileById) {
         console.log(`✅ Found profile by organization_id: ${profileById.organization_name}`)
+
+        // If profile has default "Technology" industry, update it with AI detection
+        if (profileById.industry === 'Technology' && profileById.organization_name !== 'Technology') {
+          console.log(`🔄 Profile has default industry, detecting actual industry for: ${profileById.organization_name}`)
+          try {
+            const industryPrompt = `What is the primary industry for the company "${profileById.organization_name}"?
+
+Respond with ONLY the industry name (1-3 words max). Examples:
+- "Technology"
+- "Financial Services"
+- "Trading & Distribution"
+- "Manufacturing"
+- "Healthcare"
+- "Energy"
+- "Retail"
+
+Company: ${profileById.organization_name}
+Industry:`
+
+            const industryResponse = await anthropic.messages.create({
+              model: 'claude-sonnet-4-20250514',
+              max_tokens: 50,
+              temperature: 0.3,
+              messages: [{ role: 'user', content: industryPrompt }]
+            })
+
+            const detectedIndustry = industryResponse.content[0].text.trim()
+            console.log(`🏭 AI-detected industry: ${detectedIndustry}`)
+
+            // Update the profile in database
+            const { data: updatedProfile, error: updateError } = await supabase
+              .from('mcp_discovery')
+              .update({ industry: detectedIndustry })
+              .eq('organization_id', profileById.organization_id)
+              .select()
+              .single()
+
+            if (updatedProfile && !updateError) {
+              console.log(`✅ Updated profile industry to: ${detectedIndustry}`)
+              return updatedProfile
+            }
+          } catch (error) {
+            console.error('⚠️ Failed to update industry, using existing profile:', error)
+          }
+        }
+
         return profileById
       } else if (idError && idError.code !== 'PGRST116') {
         console.error('❌ Database error searching by organization_id:', idError)
@@ -1531,6 +1577,52 @@ async function getMcpDiscovery(organizationInput: string = '7a2835cb-11ee-4512-a
 
     if (!nameError && profile) {
       console.log(`✅ Found profile by organization_name: ${profile.organization_name}`)
+
+      // If profile has default "Technology" industry, update it with AI detection
+      if (profile.industry === 'Technology' && profile.organization_name !== 'Technology') {
+        console.log(`🔄 Profile has default industry, detecting actual industry for: ${profile.organization_name}`)
+        try {
+          const industryPrompt = `What is the primary industry for the company "${profile.organization_name}"?
+
+Respond with ONLY the industry name (1-3 words max). Examples:
+- "Technology"
+- "Financial Services"
+- "Trading & Distribution"
+- "Manufacturing"
+- "Healthcare"
+- "Energy"
+- "Retail"
+
+Company: ${profile.organization_name}
+Industry:`
+
+          const industryResponse = await anthropic.messages.create({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 50,
+            temperature: 0.3,
+            messages: [{ role: 'user', content: industryPrompt }]
+          })
+
+          const detectedIndustry = industryResponse.content[0].text.trim()
+          console.log(`🏭 AI-detected industry: ${detectedIndustry}`)
+
+          // Update the profile in database
+          const { data: updatedProfile, error: updateError } = await supabase
+            .from('mcp_discovery')
+            .update({ industry: detectedIndustry })
+            .eq('organization_name', profile.organization_name)
+            .select()
+            .single()
+
+          if (updatedProfile && !updateError) {
+            console.log(`✅ Updated profile industry to: ${detectedIndustry}`)
+            return updatedProfile
+          }
+        } catch (error) {
+          console.error('⚠️ Failed to update industry, using existing profile:', error)
+        }
+      }
+
       return profile
     } else if (nameError && nameError.code !== 'PGRST116') {
       console.error('❌ Database error searching by organization_name:', nameError)
@@ -1547,19 +1639,96 @@ async function getMcpDiscovery(organizationInput: string = '7a2835cb-11ee-4512-a
 
       if (!idError && profileById) {
         console.log(`✅ Found profile by organization_id: ${profileById.organization_name}`)
+
+        // If profile has default "Technology" industry, update it with AI detection
+        if (profileById.industry === 'Technology' && profileById.organization_name !== 'Technology') {
+          console.log(`🔄 Profile has default industry, detecting actual industry for: ${profileById.organization_name}`)
+          try {
+            const industryPrompt = `What is the primary industry for the company "${profileById.organization_name}"?
+
+Respond with ONLY the industry name (1-3 words max). Examples:
+- "Technology"
+- "Financial Services"
+- "Trading & Distribution"
+- "Manufacturing"
+- "Healthcare"
+- "Energy"
+- "Retail"
+
+Company: ${profileById.organization_name}
+Industry:`
+
+            const industryResponse = await anthropic.messages.create({
+              model: 'claude-sonnet-4-20250514',
+              max_tokens: 50,
+              temperature: 0.3,
+              messages: [{ role: 'user', content: industryPrompt }]
+            })
+
+            const detectedIndustry = industryResponse.content[0].text.trim()
+            console.log(`🏭 AI-detected industry: ${detectedIndustry}`)
+
+            // Update the profile in database
+            const { data: updatedProfile, error: updateError } = await supabase
+              .from('mcp_discovery')
+              .update({ industry: detectedIndustry })
+              .eq('organization_id', profileById.organization_id)
+              .select()
+              .single()
+
+            if (updatedProfile && !updateError) {
+              console.log(`✅ Updated profile industry to: ${detectedIndustry}`)
+              return updatedProfile
+            }
+          } catch (error) {
+            console.error('⚠️ Failed to update industry, using existing profile:', error)
+          }
+        }
+
         return profileById
       } else if (idError && idError.code !== 'PGRST116') {
         console.error('❌ Database error searching by organization_id:', idError)
       }
     }
 
-    // If still not found, create a new entry
+    // If still not found, create a new entry with AI-detected industry
     console.log(`📝 Creating new discovery profile for: ${organizationInput}`)
+
+    // Use Claude to intelligently detect the industry
+    let detectedIndustry = 'Technology' // Default fallback
+    try {
+      const industryPrompt = `What is the primary industry for the company "${organizationInput}"?
+
+Respond with ONLY the industry name (1-3 words max). Examples:
+- "Technology"
+- "Financial Services"
+- "Trading & Distribution"
+- "Manufacturing"
+- "Healthcare"
+- "Energy"
+- "Retail"
+
+Company: ${organizationInput}
+Industry:`
+
+      const industryResponse = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 50,
+        temperature: 0.3,
+        messages: [{ role: 'user', content: industryPrompt }]
+      })
+
+      detectedIndustry = industryResponse.content[0].text.trim()
+      console.log(`🏭 AI-detected industry: ${detectedIndustry}`)
+    } catch (error) {
+      console.error('⚠️ Failed to detect industry, using default:', error)
+    }
+
     try {
       const newProfileData = {
         organization_id: organizationInput,
         organization_name: organizationInput,
-        industry: 'Technology',
+        industry: detectedIndustry,
         competition: {
           direct_competitors: [],
           indirect_competitors: []
