@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabase/client'
 import { ContentViewerModal } from '@/components/execution/ContentViewerModal'
 import { buildGenerationContext } from '@/lib/memoryVaultIntegration'
 import { BlueprintV3Presentation } from '@/components/campaign-builder/BlueprintV3Presentation'
+import { PRBriefPresentation } from '@/components/campaign-builder/PRBriefPresentation'
 import { useAppStore } from '@/stores/useAppStore'
 
 interface BlueprintData {
@@ -27,6 +28,11 @@ interface BlueprintData {
   part3_stakeholderOrchestration?: {
     stakeholderOrchestrationPlans?: StakeholderOrchestrationPlan[]
   }
+  // PR Campaign fields
+  contentRequirements?: any[]
+  campaignGoal?: string
+  targetMedia?: any
+  messaging?: any
 }
 
 interface StakeholderOrchestrationPlan {
@@ -1271,14 +1277,28 @@ export default function StrategicPlanningModuleV3Complete({
 
           {/* Blueprint View */}
           {viewMode === 'blueprint' && blueprint && (
-            <BlueprintV3Presentation
-              blueprint={blueprint}
-              blueprintType="VECTOR_CAMPAIGN"
-              onRefine={() => {}}
-              onExport={() => {}}
-              onExecute={() => {}}
-              isRefining={false}
-            />
+            <>
+              {blueprint.contentRequirements ? (
+                // PR Campaign
+                <PRBriefPresentation
+                  brief={blueprint}
+                  onRefine={() => {}}
+                  onExport={() => {}}
+                  onExecute={() => {}}
+                  isRefining={false}
+                />
+              ) : (
+                // VECTOR Campaign
+                <BlueprintV3Presentation
+                  blueprint={blueprint}
+                  blueprintType="VECTOR_CAMPAIGN"
+                  onRefine={() => {}}
+                  onExport={() => {}}
+                  onExecute={() => {}}
+                  isRefining={false}
+                />
+              )}
+            </>
           )}
 
           {/* Progress View */}
