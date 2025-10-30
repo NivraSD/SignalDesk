@@ -337,12 +337,14 @@ export default function OrganizationOnboarding({
       setCreatedOrganization(organization)
       console.log('📝 Stored organization in state:', organization.id)
 
-      // Turn off loading before moving to step 6
+      // Turn off loading
       setLoading(false)
 
-      // Move to Step 6 for schema generation
-      setStep(6)
-      console.log('➡️ Moved to step 6, createdOrganization should now be:', organization.id)
+      // Use setTimeout to ensure state updates before moving to next step
+      setTimeout(() => {
+        setStep(6)
+        console.log('➡️ Moved to step 6, createdOrganization should now be:', organization.id)
+      }, 0)
 
       // Don't auto-start - let user click the button
     } catch (err: any) {
