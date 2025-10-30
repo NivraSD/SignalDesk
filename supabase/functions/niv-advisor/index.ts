@@ -4013,7 +4013,20 @@ serve(async (req) => {
       organizationId = organizationId.trim()
     }
 
-    console.log(`🏢 Organization context: "${organizationId}" (validated)`)
+    // Load organization profile FIRST to get the name
+    let orgProfile = null
+    let organizationName = organizationId
+
+    try {
+      orgProfile = await getMcpDiscovery(organizationId)
+      organizationName = orgProfile?.organization_name || organizationId
+      console.log(`✅ Loaded organization profile: ${organizationName}`)
+    } catch (error) {
+      console.error('⚠️ Failed to load organization profile:', error)
+      organizationName = organizationId
+    }
+
+    console.log(`🏢 Organization context: "${organizationName}" (validated)`)
 
     // Get module-specific persona
     const persona = getModulePersona(context.activeModule)
@@ -4044,7 +4057,7 @@ ${conversationHistory.map(msg => `${msg.role === 'user' ? 'User' : 'NIV'}: ${msg
 ` : ''}
 
 Current User Query: "${userMessage}"
-Organization Context: ${organizationId}
+Organization Context: ${organizationName}
 Current Module: ${context.activeModule || 'intelligence'}
 
 Think step by step:
@@ -4493,25 +4506,11 @@ Respond with JSON only:
 
     } // Close the else block for non-orchestrated path
 
-    // ALWAYS get organization profile for context (needed for ALL paths - orchestrated and non-orchestrated)
-    // Use the validated organizationId from earlier
-    console.log(`🎯 Getting organization profile for: ${organizationId}`)
-
-    let orgProfile = null
-    let organizationName = organizationId
-
-    try {
-      orgProfile = await getMcpDiscovery(organizationId)
-      organizationName = orgProfile?.organization_name || organizationId
-      console.log(`✅ Successfully loaded organization profile for: ${organizationName}`)
-      console.log(`  Industry: ${orgProfile?.industry}`)
-      console.log(`  Keywords: ${orgProfile?.keywords?.slice(0, 5).join(', ')}`)
-      console.log(`  Competitors: ${orgProfile?.competition?.direct_competitors?.slice(0, 3).join(', ')}`)
-    } catch (error) {
-      console.error(`❌ Error loading organization profile for "${organizationId}":`, error)
-      console.log(`🔄 Continuing with default organization name: ${organizationId}`)
-      // Continue execution with default values
-    }
+    // Organization profile already loaded earlier (at the start of the function)
+    console.log(`🎯 Using organization profile: ${organizationName}`)
+    console.log(`  Industry: ${orgProfile?.industry}`)
+    console.log(`  Keywords: ${orgProfile?.keywords?.slice(0, 5).join(', ')}`)
+    console.log(`  Competitors: ${orgProfile?.competition?.direct_competitors?.slice(0, 3).join(', ')}`)
 
     if (orgProfile) {
       toolResults.discoveryData = {
