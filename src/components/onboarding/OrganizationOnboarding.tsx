@@ -347,10 +347,25 @@ export default function OrganizationOnboarding({
     }
   }
 
-  const handleSchemaGeneration = async (organization: any) => {
+  const handleSchemaGeneration = async () => {
     setSchemaGenerationStarted(true)
     const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
     const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    // Use the organization we just created (stored in state) or the data from step 1
+    const orgId = createdOrganization?.id
+    const orgNameToUse = createdOrganization?.name || orgName
+
+    if (!orgId) {
+      console.error('❌ No organization ID available for schema generation')
+      setSchemaProgress({
+        entityExtraction: 'failed',
+        coverageScraping: 'failed',
+        schemaGeneration: 'failed',
+        message: 'Organization not found. Please try again.'
+      })
+      return
+    }
 
     try {
       // STEP 1: Entity Extraction
@@ -369,8 +384,8 @@ export default function OrganizationOnboarding({
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          organization_id: organization.id,
-          organization_name: organization.name,
+          organization_id: orgId,
+          organization_name: orgNameToUse,
           website_url: website
         })
       })
@@ -398,8 +413,8 @@ export default function OrganizationOnboarding({
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          organization_id: organization.id,
-          organization_name: organization.name,
+          organization_id: orgId,
+          organization_name: orgNameToUse,
           recency_window: '90days'
         })
       })
@@ -427,8 +442,8 @@ export default function OrganizationOnboarding({
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          organization_id: organization.id,
-          organization_name: organization.name,
+          organization_id: orgId,
+          organization_name: orgNameToUse,
           industry: discovered?.industry || industry,
           url: website
         })
@@ -1343,32 +1358,36 @@ export default function OrganizationOnboarding({
 
                   {/* Show button if generation failed OR hasn't started */}
                   <div className="mt-6 flex gap-3">
-                    {!schemaGenerationStarted && createdOrganization && (
+                    {!schemaGenerationStarted && (
                       <button
                         onClick={() => {
-                          console.log('🎯 Starting schema generation for:', createdOrganization.name)
-                          handleSchemaGeneration(createdOrganization)
+                          console.log('🎯 Starting schema generation')
+                          handleSchemaGeneration()
                         }}
-                        className="flex-1 px-6 py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                        disabled={!createdOrganization}
+                        className="flex-1 px-6 py-3 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center justify-center gap-2"
                       >
                         <Sparkles className="w-5 h-5" />
                         Generate Schema Package
                       </button>
                     )}
 
-                    {(schemaProgress.schemaGeneration === 'failed' || !schemaGenerationStarted) && createdOrganization && (
+                    {(schemaProgress.schemaGeneration === 'failed' || !schemaGenerationStarted) && (
                       <button
                         onClick={() => {
-                          onComplete({
-                            id: createdOrganization.id,
-                            name: createdOrganization.name,
-                            industry: createdOrganization.industry,
-                            config: {}
-                          })
+                          if (createdOrganization) {
+                            onComplete({
+                              id: createdOrganization.id,
+                              name: createdOrganization.name,
+                              industry: createdOrganization.industry,
+                              config: {}
+                            })
+                          }
                           resetForm()
                           onClose()
                         }}
-                        className="flex-1 px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                        disabled={!createdOrganization}
+                        className="flex-1 px-6 py-3 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
                       >
                         {schemaProgress.schemaGeneration === 'failed' ? 'Continue Anyway' : 'Skip Schema Generation'}
                       </button>
