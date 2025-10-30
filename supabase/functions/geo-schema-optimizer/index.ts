@@ -3,25 +3,33 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
 /**
- * GEO SCHEMA OPTIMIZER
+ * GEO SCHEMA OPTIMIZER v2.0
  *
- * Strategic schema.org optimization based on:
- * - Industry analysis and best practices
- * - Competitive intelligence
- * - Organization strategic positioning
- * - AI visibility goals
+ * Orchestrates comprehensive schema generation system:
  *
- * Generates comprehensive schema packages (Organization + Service/Product)
- * with rich, strategic content optimized for AI understanding.
+ * SYSTEM 1: Website Entity Discovery
+ *  → website-entity-scraper (Firecrawl Extract)
+ *  → website-entity-compiler (Claude validation)
+ *
+ * SYSTEM 2: Positive Coverage Discovery
+ *  → positive-coverage-scraper (Web search)
+ *  → positive-coverage-compiler (Claude filtering)
+ *
+ * SYSTEM 3: Schema Graph Generation
+ *  → schema-graph-generator (Combines everything into @graph)
+ *
+ * This function orchestrates all three systems to generate a complete,
+ * comprehensive schema.org graph for the organization.
  */
 
 interface SchemaOptimizationRequest {
   organization_id: string
   organization_name: string
-  industry: string
+  industry?: string
   url?: string
-  website_content?: string
   force_regenerate?: boolean
+  skip_entity_extraction?: boolean // For testing
+  skip_positive_coverage?: boolean // For testing
 }
 
 serve(async (req) => {
@@ -35,69 +43,25 @@ serve(async (req) => {
       organization_name,
       industry,
       url,
-      website_content,
-      force_regenerate = false
+      force_regenerate = false,
+      skip_entity_extraction = false,
+      skip_positive_coverage = false
     } = await req.json() as SchemaOptimizationRequest
 
     if (!organization_id || !organization_name) {
       throw new Error('organization_id and organization_name required')
     }
 
-    console.log('🎯 Starting strategic schema optimization for:', organization_name)
+    console.log('🎯 GEO Schema Optimizer v2.0 Starting:', {
+      organization_name,
+      industry,
+      url,
+      force_regenerate
+    })
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')
-
-    if (!anthropicKey) {
-      throw new Error('ANTHROPIC_API_KEY not configured in Supabase secrets')
-    }
-
     const supabase = createClient(supabaseUrl, supabaseKey)
-
-    // STEP 1: Gather strategic intelligence
-    console.log('📊 Gathering strategic intelligence...')
-
-    // Get organization profile
-    const { data: orgData } = await supabase
-      .from('organizations')
-      .select('*')
-      .eq('id', organization_id)
-      .single()
-
-    // Get intelligence targets (competitors, stakeholders)
-    const { data: targets } = await supabase
-      .from('intelligence_targets')
-      .select('*')
-      .eq('organization_id', organization_id)
-      .eq('active', true)
-
-    // Get recent content from Memory Vault for context
-    const { data: recentContent } = await supabase
-      .from('content_library')
-      .select('title, content, metadata')
-      .eq('organization_id', organization_id)
-      .in('content_type', ['strategic_framework', 'positioning', 'messaging'])
-      .order('created_at', { ascending: false })
-      .limit(5)
-
-    // Get positive coverage/news articles for subjectOf links
-    const { data: positiveCoverage } = await supabase
-      .from('intelligence_findings')
-      .select('title, url, content, published_at, source, relevance_score, metadata')
-      .eq('organization_id', organization_id)
-      .gte('relevance_score', 70) // High relevance = positive/important
-      .order('published_at', { ascending: false })
-      .limit(10)
-
-    // Get achievements/awards from content
-    const { data: achievements } = await supabase
-      .from('content_library')
-      .select('title, content, metadata')
-      .eq('organization_id', organization_id)
-      .eq('content_type', 'achievement')
-      .order('created_at', { ascending: false })
-      .limit(5)
 
     // Check for existing schema
     const { data: existingSchema } = await supabase
@@ -121,136 +85,182 @@ serve(async (req) => {
       )
     }
 
-    // STEP 2: Build strategic context for Claude
-    const strategicContext = buildStrategicContext({
-      organization: orgData,
-      industry,
-      targets,
-      recentContent,
-      positiveCoverage,
-      achievements,
-      websiteContent: website_content,
-      url
-    })
+    // SYSTEM 1: Website Entity Discovery
+    if (!skip_entity_extraction && url) {
+      console.log('\n🌐 SYSTEM 1: Website Entity Discovery')
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
 
-    console.log('🤖 Generating comprehensive schema with Claude...')
+      try {
+        // Step 1A: Scrape website entities
+        console.log('📡 Step 1A: Scraping website entities...')
+        const scraperResponse = await fetch(
+          `${supabaseUrl}/functions/v1/website-entity-scraper`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${supabaseKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              organization_id,
+              organization_name,
+              website_url: url
+            })
+          }
+        )
 
-    // STEP 3: Call Claude for strategic schema generation
-    const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': anthropicKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4000,
-        temperature: 0.3,
-        messages: [{
-          role: 'user',
-          content: generateSchemaOptimizationPrompt(strategicContext)
-        }]
-      })
-    })
+        if (scraperResponse.ok) {
+          const scraperData = await scraperResponse.json()
+          console.log(`   ✓ Scraped ${scraperData.summary?.total_entities || 0} entities`)
 
-    if (!claudeResponse.ok) {
-      const errorText = await claudeResponse.text()
-      console.error('Claude API error:', {
-        status: claudeResponse.status,
-        statusText: claudeResponse.statusText,
-        body: errorText
-      })
-      throw new Error(`Claude API error: ${claudeResponse.status} - ${errorText}`)
-    }
+          // Step 1B: Compile entities
+          if (scraperData.entities && scraperData.summary.total_entities > 0) {
+            console.log('🔨 Step 1B: Compiling entities...')
+            const compilerResponse = await fetch(
+              `${supabaseUrl}/functions/v1/website-entity-compiler`,
+              {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${supabaseKey}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  organization_id,
+                  organization_name,
+                  entities: scraperData.entities
+                })
+              }
+            )
 
-    const claudeResult = await claudeResponse.json()
-    const schemaPackage = parseSchemaResponse(claudeResult.content[0].text)
-
-    console.log('✅ Schema package generated:', {
-      schemas: schemaPackage.schemas?.length || 0,
-      primaryType: schemaPackage.schemas?.[0]?.['@type']
-    })
-
-    // STEP 4: Save primary schema to Memory Vault
-    const primarySchema = schemaPackage.schemas[0]
-
-    const { data: savedSchema, error: saveError } = await supabase
-      .from('content_library')
-      .upsert({
-        id: existingSchema?.id, // Update if exists, insert if new
-        organization_id,
-        content_type: 'schema',
-        title: `${organization_name} - ${primarySchema['@type']} Schema`,
-        content: JSON.stringify(primarySchema),
-        folder: 'Schemas/Active/',
-        status: 'published',
-        metadata: {
-          version: (existingSchema?.metadata?.version || 0) + 1,
-          schema_type: primarySchema['@type'],
-          generated_by: 'geo-schema-optimizer',
-          optimization_date: new Date().toISOString(),
-          platform_optimized: 'all',
-          industry,
-          field_count: Object.keys(primarySchema).length,
-          strategy: schemaPackage.optimization_strategy
-        },
-        intelligence: {
-          source: 'generated',
-          fields: Object.keys(primarySchema),
-          schemas_in_package: schemaPackage.schemas?.length || 1
-        }
-      }, { onConflict: 'id' })
-      .select()
-      .single()
-
-    if (saveError) {
-      console.error('Failed to save schema:', saveError)
-      throw saveError
-    }
-
-    // Save additional schemas (Service, Product, etc.) to companion folder
-    if (schemaPackage.schemas.length > 1) {
-      const additionalSchemas = schemaPackage.schemas.slice(1)
-
-      for (const schema of additionalSchemas) {
-        await supabase
-          .from('content_library')
-          .insert({
-            organization_id,
-            content_type: 'schema',
-            title: `${organization_name} - ${schema['@type']} Schema`,
-            content: JSON.stringify(schema),
-            folder: 'Schemas/Companion/',
-            status: 'published',
-            metadata: {
-              version: 1,
-              schema_type: schema['@type'],
-              generated_by: 'geo-schema-optimizer',
-              companion_to: savedSchema.id,
-              platform_optimized: 'all'
+            if (compilerResponse.ok) {
+              const compilerData = await compilerResponse.json()
+              console.log(`   ✓ Compiled and saved ${compilerData.saved_count} entities`)
+            } else {
+              console.warn('   ⚠️ Entity compilation failed (non-blocking)')
             }
-          })
+          }
+        } else {
+          console.warn('   ⚠️ Entity scraping failed (non-blocking):', await scraperResponse.text())
+        }
+      } catch (error) {
+        console.warn('   ⚠️ Website entity discovery failed (non-blocking):', error)
       }
-
-      console.log(`✅ Saved ${additionalSchemas.length} companion schemas`)
+    } else {
+      console.log('\n⏭️  SYSTEM 1: Skipped (no URL or skip_entity_extraction=true)')
     }
+
+    // SYSTEM 2: Positive Coverage Discovery
+    if (!skip_positive_coverage) {
+      console.log('\n🏆 SYSTEM 2: Positive Coverage Discovery')
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+
+      try {
+        // Step 2A: Scrape positive coverage
+        console.log('📡 Step 2A: Scraping positive coverage...')
+        const scraperResponse = await fetch(
+          `${supabaseUrl}/functions/v1/positive-coverage-scraper`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${supabaseKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              organization_id,
+              organization_name,
+              recency_window: '90days'
+            })
+          }
+        )
+
+        if (scraperResponse.ok) {
+          const scraperData = await scraperResponse.json()
+          console.log(`   ✓ Found ${scraperData.summary?.recent_articles || 0} articles`)
+
+          // Step 2B: Compile coverage
+          if (scraperData.articles && scraperData.articles.length > 0) {
+            console.log('🔨 Step 2B: Compiling positive coverage...')
+            const compilerResponse = await fetch(
+              `${supabaseUrl}/functions/v1/positive-coverage-compiler`,
+              {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${supabaseKey}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  organization_id,
+                  organization_name,
+                  articles: scraperData.articles
+                })
+              }
+            )
+
+            if (compilerResponse.ok) {
+              const compilerData = await compilerResponse.json()
+              console.log(`   ✓ Compiled and saved ${compilerData.saved_count} coverage items`)
+            } else {
+              console.warn('   ⚠️ Coverage compilation failed (non-blocking)')
+            }
+          }
+        } else {
+          console.warn('   ⚠️ Coverage scraping failed (non-blocking):', await scraperResponse.text())
+        }
+      } catch (error) {
+        console.warn('   ⚠️ Positive coverage discovery failed (non-blocking):', error)
+      }
+    } else {
+      console.log('\n⏭️  SYSTEM 2: Skipped (skip_positive_coverage=true)')
+    }
+
+    // SYSTEM 3: Schema Graph Generation
+    console.log('\n📊 SYSTEM 3: Schema Graph Generation')
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+
+    console.log('🔨 Generating comprehensive schema graph...')
+    const generatorResponse = await fetch(
+      `${supabaseUrl}/functions/v1/schema-graph-generator`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          organization_id,
+          organization_name,
+          industry,
+          url
+        })
+      }
+    )
+
+    if (!generatorResponse.ok) {
+      const errorText = await generatorResponse.text()
+      console.error('Schema graph generation failed:', errorText)
+      throw new Error(`Schema graph generation failed: ${errorText}`)
+    }
+
+    const generatorData = await generatorResponse.json()
+    console.log(`   ✓ Generated schema graph with ${generatorData.entity_count} entities`)
+
+    console.log('\n✅ GEO Schema Optimizer Complete!')
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('Summary:', generatorData.summary)
 
     return new Response(
       JSON.stringify({
         success: true,
-        schema_id: savedSchema.id,
-        schema_package: schemaPackage,
-        schemas_created: schemaPackage.schemas?.length || 1,
-        field_count: Object.keys(primarySchema).length,
-        optimization_strategy: schemaPackage.optimization_strategy,
-        message: 'Comprehensive schema package generated successfully'
+        schema_graph: generatorData.schema_graph,
+        entity_count: generatorData.entity_count,
+        summary: generatorData.summary,
+        message: 'Comprehensive schema graph generated successfully'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
   } catch (error: any) {
-    console.error('❌ Schema Optimization Error:', error)
+    console.error('❌ GEO Schema Optimizer Error:', error)
     return new Response(
       JSON.stringify({
         error: error.message,
@@ -263,214 +273,3 @@ serve(async (req) => {
     )
   }
 })
-
-/**
- * Build strategic context from gathered intelligence
- */
-function buildStrategicContext(data: any): any {
-  const competitors = data.targets?.filter((t: any) => t.type === 'competitor') || []
-  const stakeholders = data.targets?.filter((t: any) => t.type === 'stakeholder') || []
-
-  return {
-    organization: {
-      name: data.organization?.name,
-      industry: data.industry,
-      url: data.url || data.organization?.url,
-      size: data.organization?.size,
-      description: data.organization?.description
-    },
-    industry: data.industry,
-    competitors: competitors.map((c: any) => c.name),
-    stakeholders: stakeholders.map((s: any) => ({ name: s.name, category: s.category })),
-    strategic_content: data.recentContent?.map((c: any) => ({
-      title: c.title,
-      type: c.metadata?.content_type,
-      key_points: c.metadata?.key_points
-    })) || [],
-    positive_coverage: data.positiveCoverage?.map((c: any) => ({
-      title: c.title,
-      url: c.url,
-      summary: c.content?.substring(0, 200), // First 200 chars of content
-      date: c.published_at,
-      outlet: c.source,
-      relevance: c.relevance_score
-    })) || [],
-    achievements: data.achievements?.map((a: any) => ({
-      title: a.title,
-      content: a.content,
-      metadata: a.metadata
-    })) || [],
-    website_content: data.websiteContent?.substring(0, 2000) // Sample for context
-  }
-}
-
-/**
- * Generate comprehensive schema optimization prompt for Claude
- */
-function generateSchemaOptimizationPrompt(context: any): string {
-  return `You are a strategic schema.org optimization expert. Your goal is to create the most comprehensive, AI-optimized schema markup possible for this organization.
-
-**ORGANIZATION INTELLIGENCE:**
-Name: ${context.organization.name}
-Industry: ${context.industry}
-Website: ${context.organization.url || 'Not provided'}
-Size: ${context.organization.size || 'Not provided'}
-
-**COMPETITIVE CONTEXT:**
-${context.competitors.length > 0 ? `Competitors: ${context.competitors.slice(0, 5).join(', ')}` : 'No competitor data'}
-
-**STAKEHOLDER CONTEXT:**
-${context.stakeholders.length > 0 ? `Key stakeholders: ${context.stakeholders.slice(0, 5).map((s: any) => s.name).join(', ')}` : 'No stakeholder data'}
-
-**STRATEGIC POSITIONING:**
-${context.strategic_content.length > 0 ? context.strategic_content.map((c: any) => `- ${c.title}`).join('\n') : 'No strategic content available'}
-
-**POSITIVE COVERAGE & ACHIEVEMENTS:**
-${context.positive_coverage.length > 0 ? 'Recent positive coverage:\n' + context.positive_coverage.slice(0, 5).map((c: any) => `- "${c.title}" (${c.outlet}, ${c.date}) - ${c.url}`).join('\n') : 'No coverage data'}
-
-${context.achievements.length > 0 ? '\nAchievements/Awards:\n' + context.achievements.map((a: any) => `- ${a.title}`).join('\n') : ''}
-
-**YOUR TASK:**
-Generate a comprehensive schema.org package optimized for AI visibility and understanding. This schema will be the organization's primary structured data for Claude, Gemini, ChatGPT, and other AI systems.
-
-**REQUIREMENTS:**
-
-1. **Multiple Schema Types** - Create 2-3 related schemas:
-   - Primary: Organization schema (comprehensive)
-   - Secondary: Service/Product/FinancialService (based on industry)
-   - Optional: Additional relevant types
-
-2. **Rich Field Population** - Include ALL relevant fields:
-   - Core: name, url, description, logo, foundingDate
-   - Contact: contactPoint (multiple), telephone, email
-   - Social: sameAs (LinkedIn, Twitter, etc.)
-   - Location: address, areaServed
-   - Relationships: subOrganization, parentOrganization, memberOf
-   - Industry: industry, keywords, knowsAbout, serviceType
-   - Scale: numberOfEmployees, awards, certifications
-   - Coverage: subjectOf (array of NewsArticle schemas linking to positive coverage)
-   - Recognition: award (array of achievements/awards)
-
-3. **Strategic Content** - NOT generic descriptions:
-   - Description should highlight unique positioning and value
-   - knowsAbout should reflect actual expertise and domains
-   - keywords should be strategically chosen for AI queries
-   - Use industry-specific terminology
-
-4. **Industry Optimization** - Tailor to industry best practices:
-   ${getIndustryGuidance(context.industry)}
-
-5. **AI Query Optimization** - Structure for discoverability:
-   - What queries should return this org?
-   - What expertise should AI associate?
-   - What problems does this org solve?
-
-6. **Positive Coverage Integration** - Frame organization with credibility:
-   - Use subjectOf property to link NewsArticle schemas for each major piece of positive coverage
-   - Include headline, datePublished, url, publisher
-   - Prioritize high-relevance stories (70+ relevance score)
-   - Add award property for achievements/recognition
-
-**OUTPUT FORMAT:**
-Return a JSON object with this structure:
-{
-  "schemas": [
-    {
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      "name": "...",
-      "description": "...",
-      "subjectOf": [
-        {
-          "@type": "NewsArticle",
-          "headline": "Article title from coverage data",
-          "datePublished": "YYYY-MM-DD",
-          "url": "article URL",
-          "publisher": {
-            "@type": "Organization",
-            "name": "Outlet name"
-          }
-        }
-      ],
-      "award": ["Award 1", "Award 2"],
-      ... (all other fields)
-    },
-    {
-      "@context": "https://schema.org",
-      "@type": "Service",
-      ... (secondary schema)
-    }
-  ],
-  "optimization_strategy": {
-    "primary_queries": ["query 1", "query 2", ...],
-    "positioning": "one-sentence positioning",
-    "differentiators": ["diff 1", "diff 2", ...]
-  },
-  "implementation_notes": "Any special considerations"
-}
-
-Generate the most comprehensive, strategic schema package possible. This is the organization's AI presence - make it exceptional.`
-}
-
-/**
- * Industry-specific guidance for schema optimization
- */
-function getIndustryGuidance(industry: string): string {
-  const guidance: { [key: string]: string } = {
-    'Trading and Investment': `
-- Use FinancialService as secondary schema
-- Focus on: serviceType, areaServed, featureList
-- Highlight: trading capabilities, investment sectors, global reach
-- Include: subOrganization for divisions/funds`,
-
-    'Technology': `
-- Use SoftwareApplication or Product as secondary schema
-- Focus on: applicationCategory, offers, featureList
-- Highlight: technical capabilities, integrations, platforms
-- Include: products/services catalog`,
-
-    'Healthcare': `
-- Use MedicalOrganization as secondary schema
-- Focus on: medicalSpecialty, availableService, healthcareReporting
-- Highlight: specialties, certifications, patient services
-- Include: locations, departments`,
-
-    'default': `
-- Choose appropriate secondary schema based on primary business
-- Focus on core services and value proposition
-- Highlight unique capabilities and market position`
-  }
-
-  return guidance[industry] || guidance['default']
-}
-
-/**
- * Parse Claude's schema response
- */
-function parseSchemaResponse(response: string): any {
-  try {
-    // Try to find JSON in response
-    const jsonMatch = response.match(/\{[\s\S]*\}/)
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0])
-    }
-
-    // Fallback: basic schema structure
-    return {
-      schemas: [{
-        "@context": "https://schema.org",
-        "@type": "Organization",
-        "name": "Organization",
-        "description": "Schema generation failed - manual review needed"
-      }],
-      optimization_strategy: {
-        primary_queries: [],
-        positioning: "Unable to generate",
-        differentiators: []
-      }
-    }
-  } catch (error) {
-    console.error('Error parsing schema response:', error)
-    throw new Error('Failed to parse schema response from Claude')
-  }
-}
