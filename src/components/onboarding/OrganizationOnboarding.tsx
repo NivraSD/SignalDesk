@@ -477,9 +477,9 @@ export default function OrganizationOnboarding({
         // Wait a moment for user to see completion
         setTimeout(() => {
           onComplete({
-            id: organization.id,
-            name: organization.name,
-            industry: organization.industry,
+            id: createdOrganization.id,
+            name: createdOrganization.name,
+            industry: createdOrganization.industry,
             config: {}
           })
 
