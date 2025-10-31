@@ -31,13 +31,24 @@ serve(async (req) => {
   }
 
   try {
+    let requestBody
+    try {
+      requestBody = await req.json()
+    } catch (parseError) {
+      console.error('Failed to parse request body:', parseError)
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON in request body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const {
       organization_id,
       organization_name,
       website_url,
       industry,
       skip_geo_discovery = false
-    }: OrchestratorRequest = await req.json()
+    }: OrchestratorRequest = requestBody
 
     if (!organization_id || !organization_name || !website_url) {
       throw new Error('organization_id, organization_name, and website_url required')
