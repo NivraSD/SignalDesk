@@ -20,6 +20,7 @@ import { corsHeaders } from '../_shared/cors.ts'
  */
 
 serve(async (req) => {
+  // Always handle CORS
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -32,7 +33,15 @@ serve(async (req) => {
     } = await req.json()
 
     if (!organization_id || !organization_name) {
-      throw new Error('organization_id and organization_name required')
+      return new Response(
+        JSON.stringify({
+          error: 'organization_id and organization_name required'
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
     }
 
     console.log('🎯 GEO Intelligence Monitor Starting:', {
