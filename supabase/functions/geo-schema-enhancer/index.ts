@@ -150,10 +150,16 @@ Guidelines:
 
     const responseText = message.content[0].type === 'text' ? message.content[0].text : '{}'
 
+    // Clean markdown code blocks if present (Claude sometimes wraps JSON in ```json...```)
+    let cleanedResponse = responseText.trim()
+    if (cleanedResponse.startsWith('```')) {
+      cleanedResponse = cleanedResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+    }
+
     // Parse the JSON response
     let enhancements
     try {
-      enhancements = JSON.parse(responseText)
+      enhancements = JSON.parse(cleanedResponse)
     } catch (parseError) {
       console.error('Failed to parse Claude response:', parseError)
       console.error('Response was:', responseText)
