@@ -42,6 +42,11 @@ serve(async (req) => {
       throw new Error('Only V2 opportunities with execution plans can generate presentations')
     }
 
+    // Create clean folder name (same logic as OpportunitiesModule)
+    const cleanTitle = opportunity.title.replace(/^Opportunity:\s*/i, '').trim()
+    const campaignFolder = `Opportunities/${cleanTitle}`
+    console.log(`📁 Campaign folder: ${campaignFolder}`)
+
     // 2. Transform opportunity to Gamma content
     console.log('🔄 Transforming opportunity to presentation format...')
     const presentationContent = opportunityToGammaContent(opportunity)
@@ -67,6 +72,7 @@ serve(async (req) => {
         capture: true, // Auto-saves to campaign_presentations table
         organization_id: organization_id,
         campaign_id: opportunity_id, // Link to opportunity
+        campaign_folder: campaignFolder, // Pass the clean folder path
         options: {
           imageSource: 'ai',
           tone: 'professional',

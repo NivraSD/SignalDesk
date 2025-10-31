@@ -183,16 +183,19 @@ serve(async (req) => {
         '@id': `${baseUrl}#product-${idx}`
       }))
 
-      // Add Product schemas to graph
+      // Add Product schemas to graph (only if they have a name)
       products.forEach((p, idx) => {
-        graph.push({
-          '@type': 'Product',
-          '@id': `${baseUrl}#product-${idx}`,
-          'name': p.title,
-          'description': p.content,
-          'category': p.metadata?.category,
-          'url': p.metadata?.url
-        })
+        const productName = p.name || p.title
+        if (productName) {
+          graph.push({
+            '@type': 'Product',
+            '@id': `${baseUrl}#product-${idx}`,
+            'name': productName,
+            'description': p.description || p.content,
+            'category': p.category || p.metadata?.category,
+            'url': p.url || p.metadata?.url
+          })
+        }
       })
     }
 

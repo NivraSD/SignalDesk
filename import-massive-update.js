@@ -193,10 +193,12 @@ function parseFlatJournalistArrays(content, tier, journalists) {
   // Match: industry: [ { name, outlet, beat, ... }, ... ]
   const industryRegex = /(\w+):\s*\[([\s\S]*?)\n\]/g;
   let industryMatch;
+  let totalFound = 0;
 
   while ((industryMatch = industryRegex.exec(content)) !== null) {
     const industry = industryMatch[1];
     const journalistsArray = industryMatch[2];
+    let count = 0;
 
     // Match both single-line AND multi-line formats
     const journalistRegex = /\{\s*name:\s*'([^']+)'[\s\S]*?outlet:\s*'([^']+)'[\s\S]*?beat:\s*'([^']+)'[\s\S]*?(?:twitter:\s*'(@[^']+)')?[\s\S]*?(?:email:\s*'([^']+)')?\s*\}/g;
@@ -214,8 +216,16 @@ function parseFlatJournalistArrays(content, tier, journalists) {
         topics: [journalistMatch[3], normalizeIndustry(industry)],
         enrichment_status: journalistMatch[5] ? 'complete' : 'pending'
       });
+      count++;
+    }
+
+    if (count > 0) {
+      console.log(`  ✓ ${industry}: ${count} journalists`);
+      totalFound += count;
     }
   }
+
+  return totalFound;
 }
 
 /**

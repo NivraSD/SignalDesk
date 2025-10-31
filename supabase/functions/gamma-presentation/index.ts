@@ -26,6 +26,7 @@ interface PresentationRequest {
   capture?: boolean  // Enable capture to campaign_presentations table
   campaign_id?: string  // Link to campaign
   organization_id?: string  // Required for capture
+  campaign_folder?: string  // Optional: Pre-computed folder path for opportunity content
   // Export options are provided by Gamma after generation, not requested upfront
   options?: {
     numCards?: number
@@ -336,12 +337,31 @@ async function capturePresentation(
       // Build folder path based on opportunity linkage
       let folderPath: string
       if (request.campaign_id) {
-        // Store within opportunity folder in Memory Vault using the opportunity TITLE
-        // This matches how other execution content is organized - all content for an opportunity
-        // appears in Opportunities/{OpportunityTitle}/ alongside press releases, pitches, etc.
-        // IMPORTANT: Use capital "O" to match Memory Vault template folder
-        folderPath = `Opportunities/${presentationTitle}`
-        console.log(`📁 Opportunity presentation - saving to: ${folderPath}`)
+        // If campaign_folder was passed, use it directly
+        // Otherwise, fetch the opportunity to get its clean title
+        if (request.campaign_folder) {
+          folderPath = request.campaign_folder
+          console.log(`📁 Using provided campaign folder: ${folderPath}`)
+        } else {
+          // Fetch opportunity to get its title and create clean folder name
+          console.log(`📁 Fetching opportunity to determine folder: ${request.campaign_id}`)
+          const { data: opportunity, error: oppError } = await supabase
+            .from('opportunities')
+            .select('title')
+            .eq('id', request.campaign_id)
+            .single()
+
+          if (oppError || !opportunity) {
+            console.error('Failed to fetch opportunity for folder name:', oppError)
+            // Fallback to presentation title
+            folderPath = `Opportunities/${presentationTitle}`
+          } else {
+            // Clean the opportunity title (remove "Opportunity: " prefix if exists)
+            const cleanTitle = opportunity.title.replace(/^Opportunity:\s*/i, '').trim()
+            folderPath = `Opportunities/${cleanTitle}`
+            console.log(`📁 Determined folder from opportunity title: ${folderPath}`)
+          }
+        }
       } else {
         // Standalone presentation folder
         folderPath = `presentations`

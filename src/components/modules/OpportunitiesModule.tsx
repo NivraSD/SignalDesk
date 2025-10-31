@@ -439,6 +439,7 @@ ${opp.execution_plan?.success_metrics?.map((m: any) => `- ${JSON.stringify(m)}`)
                 capture: true,
                 organization_id: opp.organization_id || '7a2835cb-11ee-4512-acc3-b6caf8eb03ff',
                 campaign_id: opp.id,
+                campaign_folder: `Opportunities/${folderName}`,  // Pass the folder path for capture
                 title: opp.title
               }
             })

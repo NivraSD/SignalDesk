@@ -2,12 +2,24 @@ const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 const path = require('path');
 
+// Load .env.local
+const envPath = path.join(__dirname, '.env.local');
+if (fs.existsSync(envPath)) {
+  const envConfig = fs.readFileSync(envPath, 'utf-8');
+  envConfig.split('\n').forEach(line => {
+    const match = line.match(/^([A-Z_]+)=(.*)$/);
+    if (match) {
+      process.env[match[1]] = match[2];
+    }
+  });
+}
+
 // Read JournalistsExpanded.md
 const journalistsExpandedPath = path.join(__dirname, 'JournalistsExpanded.md');
 const content = fs.readFileSync(journalistsExpandedPath, 'utf-8');
 
 // Initialize Supabase client
-const supabaseUrl = process.env.SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co';
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseKey) {
@@ -216,19 +228,15 @@ function normalizeIndustry(industry) {
  * Populate database with journalists
  */
 async function populateDatabase(journalists) {
-  console.log(`\n📊 Preparing to insert ${journalists.length} journalists...`);
+  console.log(`\n📊 Preparing to ADD ${journalists.length} journalists...`);
 
-  // Clear existing data
-  const { error: deleteError } = await supabase
+  // Check current count
+  const { count: beforeCount } = await supabase
     .from('journalist_registry')
-    .delete()
-    .neq('id', '00000000-0000-0000-0000-000000000000');
+    .select('*', { count: 'exact', head: true });
 
-  if (deleteError) {
-    console.error('⚠️ Error clearing table:', deleteError);
-  } else {
-    console.log('🗑️ Cleared existing data');
-  }
+  console.log(`📈 Current database count: ${beforeCount || 0}`);
+  console.log(`➕ Adding ${journalists.length} to existing ${beforeCount || 0}...`);
 
   // Insert in batches
   const batchSize = 100;

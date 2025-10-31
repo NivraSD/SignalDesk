@@ -1,25 +1,21 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
 /**
- * WEBSITE ENTITY SCRAPER
+ * WEBSITE SCRAPER (Simplified for Pipeline)
  *
- * Extracts structured entities from company website using Firecrawl Extract API:
- * - Products/Services offered
- * - Business units/service lines
- * - Physical locations/offices
- * - Subsidiaries/child organizations
- * - Leadership team
+ * Stage 1 of Schema Generation Pipeline
  *
- * Uses Firecrawl Extract with structured schemas to get clean data
+ * Scrapes clean text/markdown content from key pages using Firecrawl v2 Scrape API.
+ * Simple, fast, and reliable - just extracts text without complex LLM processing.
+ * Entity extraction happens in the next stage (entity-extractor).
  */
 
 interface ScraperRequest {
   organization_id: string
   organization_name: string
   website_url: string
-  entity_types?: string[] // Which entities to extract
+  pages_to_scrape?: string[] // Optional: specific pages to scrape
 }
 
 serve(async (req) => {
@@ -32,17 +28,16 @@ serve(async (req) => {
       organization_id,
       organization_name,
       website_url,
-      entity_types = ['products', 'services', 'locations', 'subsidiaries', 'team']
+      pages_to_scrape
     }: ScraperRequest = await req.json()
 
     if (!organization_id || !organization_name || !website_url) {
       throw new Error('organization_id, organization_name, and website_url required')
     }
 
-    console.log('🌐 Website Entity Scraper Starting:', {
+    console.log('🌐 Website Scraper Starting:', {
       organization_name,
-      website_url,
-      entity_types
+      website_url
     })
 
     const firecrawlApiKey = Deno.env.get('FIRECRAWL_API_KEY')
@@ -50,215 +45,76 @@ serve(async (req) => {
       throw new Error('FIRECRAWL_API_KEY not configured')
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    // Determine which pages to scrape
+    const pagesToScrape = pages_to_scrape || inferKeyPages(website_url)
+    console.log(`🔍 Scraping ${pagesToScrape.length} pages...`)
 
-    const extractedEntities: any = {
-      products: [],
-      services: [],
-      locations: [],
-      subsidiaries: [],
-      team: []
-    }
+    const scrapedPages: any[] = []
 
-    // Run all extractions in PARALLEL for speed
-    console.log('🔍 Starting parallel entity extraction...')
+    // Scrape each page in parallel
+    const scrapePromises = pagesToScrape.map(async (pageUrl) => {
+      try {
+        console.log(`   📄 Scraping: ${pageUrl}`)
 
-    // STEP 1: Products/Services Schema
-    const productsSchema = {
-        type: 'object',
-        properties: {
-          products: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                name: { type: 'string' },
-                description: { type: 'string' },
-                category: { type: 'string' },
-                url: { type: 'string' },
-                price_range: { type: 'string' },
-                features: { type: 'array', items: { type: 'string' } }
-              }
-            }
+        const response = await fetch('https://api.firecrawl.dev/v2/scrape', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${firecrawlApiKey}`,
+            'Content-Type': 'application/json'
           },
-          services: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                name: { type: 'string' },
-                description: { type: 'string' },
-                category: { type: 'string' },
-                url: { type: 'string' },
-                service_type: { type: 'string' }
-              }
-            }
-          }
+          body: JSON.stringify({
+            url: pageUrl,
+            formats: ['markdown', 'html'],
+            onlyMainContent: true
+          })
+        })
+
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.error(`   ✗ Failed to scrape ${pageUrl}:`, errorText)
+          return null
         }
-      }
 
-    // STEP 2: Locations Schema
-    const locationsSchema = {
-        type: 'object',
-        properties: {
-          locations: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                name: { type: 'string' },
-                type: { type: 'string' }, // headquarters, office, store, etc.
-                address: { type: 'string' },
-                city: { type: 'string' },
-                state: { type: 'string' },
-                country: { type: 'string' },
-                postal_code: { type: 'string' },
-                phone: { type: 'string' },
-                email: { type: 'string' }
-              }
-            }
-          }
+        const data = await response.json()
+
+        return {
+          url: pageUrl,
+          title: data.data?.metadata?.title || '',
+          markdown: data.data?.markdown || '',
+          html: data.data?.html || '',
+          metadata: data.data?.metadata || {},
+          success: true
         }
+      } catch (error) {
+        console.error(`   ✗ Error scraping ${pageUrl}:`, error)
+        return null
       }
-
-    // STEP 3: Subsidiaries Schema
-    const subsidiariesSchema = {
-        type: 'object',
-        properties: {
-          subsidiaries: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                name: { type: 'string' },
-                description: { type: 'string' },
-                type: { type: 'string' }, // subsidiary, division, business_unit
-                industry: { type: 'string' },
-                url: { type: 'string' }
-              }
-            }
-          }
-        }
-      }
-
-    // STEP 4: Team Schema
-    const teamSchema = {
-        type: 'object',
-        properties: {
-          team: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                name: { type: 'string' },
-                title: { type: 'string' },
-                role: { type: 'string' },
-                bio: { type: 'string' },
-                image_url: { type: 'string' },
-                linkedin_url: { type: 'string' }
-              }
-            }
-          }
-        }
-      }
-
-    // Run all 4 extractions in PARALLEL
-    const [productsResult, locationsResult, subsidiariesResult, teamResult] = await Promise.all([
-      entity_types.includes('products') || entity_types.includes('services')
-        ? extractWithFirecrawl(
-            firecrawlApiKey,
-            website_url,
-            'Extract all products and services offered by this company. Include product names, descriptions, categories, and any relevant details.',
-            productsSchema
-          )
-        : null,
-      entity_types.includes('locations')
-        ? extractWithFirecrawl(
-            firecrawlApiKey,
-            website_url,
-            'Extract all physical locations, offices, stores, or facilities mentioned on this website. Include addresses and contact information.',
-            locationsSchema
-          )
-        : null,
-      entity_types.includes('subsidiaries')
-        ? extractWithFirecrawl(
-            firecrawlApiKey,
-            website_url,
-            'Extract all subsidiaries, divisions, business units, or child organizations mentioned. Include their names, what they do, and any relevant URLs.',
-            subsidiariesSchema
-          )
-        : null,
-      entity_types.includes('team')
-        ? extractWithFirecrawl(
-            firecrawlApiKey,
-            website_url,
-            'Extract leadership team members, executives, and key personnel. Include names, titles, roles, and any biographical information.',
-            teamSchema
-          )
-        : null
-    ])
-
-    // Process results
-    if (productsResult) {
-      extractedEntities.products = productsResult.products || []
-      extractedEntities.services = productsResult.services || []
-      console.log(`   ✓ Found ${extractedEntities.products.length} products, ${extractedEntities.services.length} services`)
-    }
-
-    if (locationsResult) {
-      extractedEntities.locations = locationsResult.locations || []
-      console.log(`   ✓ Found ${extractedEntities.locations.length} locations`)
-    }
-
-    if (subsidiariesResult) {
-      extractedEntities.subsidiaries = subsidiariesResult.subsidiaries || []
-      console.log(`   ✓ Found ${extractedEntities.subsidiaries.length} subsidiaries`)
-    }
-
-    if (teamResult) {
-      extractedEntities.team = teamResult.team || []
-      console.log(`   ✓ Found ${extractedEntities.team.length} team members`)
-    }
-
-    // Calculate totals
-    const totalEntities =
-      extractedEntities.products.length +
-      extractedEntities.services.length +
-      extractedEntities.locations.length +
-      extractedEntities.subsidiaries.length +
-      extractedEntities.team.length
-
-    console.log('✅ Website Entity Scraper Complete:', {
-      total_entities: totalEntities,
-      products: extractedEntities.products.length,
-      services: extractedEntities.services.length,
-      locations: extractedEntities.locations.length,
-      subsidiaries: extractedEntities.subsidiaries.length,
-      team: extractedEntities.team.length
     })
+
+    const results = await Promise.all(scrapePromises)
+    const successfulPages = results.filter(r => r !== null)
+
+    console.log(`✅ Scraped ${successfulPages.length}/${pagesToScrape.length} pages successfully`)
+
+    // Calculate total text length
+    const totalTextLength = successfulPages.reduce((sum, page) => sum + (page.markdown?.length || 0), 0)
 
     return new Response(
       JSON.stringify({
         success: true,
-        entities: extractedEntities,
+        pages: successfulPages,
         summary: {
-          total_entities: totalEntities,
-          by_type: {
-            products: extractedEntities.products.length,
-            services: extractedEntities.services.length,
-            locations: extractedEntities.locations.length,
-            subsidiaries: extractedEntities.subsidiaries.length,
-            team: extractedEntities.team.length
-          }
+          total_pages: successfulPages.length,
+          pages_attempted: pagesToScrape.length,
+          total_text_length: totalTextLength,
+          urls_scraped: successfulPages.map(p => p.url)
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
   } catch (error: any) {
-    console.error('❌ Website Entity Scraper Error:', error)
+    console.error('❌ Website Scraper Error:', error)
     return new Response(
       JSON.stringify({
         error: error.message,
@@ -273,96 +129,21 @@ serve(async (req) => {
 })
 
 /**
- * Extract data using Firecrawl Extract API
+ * Infer key pages to scrape based on common patterns
  */
-async function extractWithFirecrawl(
-  apiKey: string,
-  url: string,
-  prompt: string,
-  schema: any
-): Promise<any> {
-  try {
-    console.log(`   🔍 Firecrawl Extract: ${url}`)
+function inferKeyPages(baseUrl: string): string[] {
+  const normalizedUrl = baseUrl.replace(/\/$/, '') // Remove trailing slash
 
-    const response = await fetch('https://api.firecrawl.dev/v1/extract', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        urls: [url],
-        prompt,
-        schema,
-        // Enable web search to find relevant pages beyond the homepage
-        enableWebSearch: true,
-        // Limit number of pages to extract from
-        limit: 5
-      })
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('   ✗ Firecrawl error:', errorText)
-      return null
-    }
-
-    const data = await response.json()
-
-    // Check if it's an async job
-    if (data.success && data.id) {
-      console.log(`   ⏳ Job started: ${data.id}, polling for results...`)
-      // Poll for results
-      return await pollFirecrawlJob(apiKey, data.id)
-    }
-
-    // Immediate result
-    if (data.success && data.data) {
-      return data.data
-    }
-
-    console.error('   ✗ Unexpected Firecrawl response format')
-    return null
-
-  } catch (error) {
-    console.error('   ✗ Firecrawl Extract error:', error)
-    return null
-  }
-}
-
-/**
- * Poll Firecrawl job for completion
- */
-async function pollFirecrawlJob(apiKey: string, jobId: string, maxAttempts = 30): Promise<any> {
-  for (let i = 0; i < maxAttempts; i++) {
-    await new Promise(resolve => setTimeout(resolve, 2000)) // Wait 2 seconds
-
-    const response = await fetch(`https://api.firecrawl.dev/v2/extract/${jobId}`, {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`
-      }
-    })
-
-    if (!response.ok) {
-      console.error('   ✗ Job polling error')
-      return null
-    }
-
-    const data = await response.json()
-
-    if (data.status === 'completed' && data.data) {
-      console.log('   ✓ Extraction complete')
-      return data.data
-    }
-
-    if (data.status === 'failed') {
-      console.error('   ✗ Extraction failed')
-      return null
-    }
-
-    console.log(`   ⏳ Job status: ${data.status} (attempt ${i + 1}/${maxAttempts})`)
-  }
-
-  console.error('   ✗ Job timeout')
-  return null
+  return [
+    normalizedUrl, // Homepage
+    `${normalizedUrl}/about`,
+    `${normalizedUrl}/about-us`,
+    `${normalizedUrl}/team`,
+    `${normalizedUrl}/leadership`,
+    `${normalizedUrl}/products`,
+    `${normalizedUrl}/services`,
+    `${normalizedUrl}/solutions`,
+    `${normalizedUrl}/locations`,
+    `${normalizedUrl}/contact`
+  ]
 }

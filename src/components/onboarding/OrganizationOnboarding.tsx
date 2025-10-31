@@ -67,17 +67,26 @@ export default function OrganizationOnboarding({
   // Step 5: Memory Vault
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
 
-  // Step 6: Schema Generation Progress
+  // Step 6: GEO Discovery Results (NEW)
+  const [geoResults, setGeoResults] = useState<any>(null)
+  const [geoDiscoveryStarted, setGeoDiscoveryStarted] = useState(false)
+  const [showGeoResults, setShowGeoResults] = useState(false)
+
+  // Step 7: Schema Generation Progress (Enhanced Pipeline)
   const [schemaProgress, setSchemaProgress] = useState({
-    entityExtraction: 'pending', // pending, processing, completed, failed
-    coverageScraping: 'pending',
-    schemaGeneration: 'pending',
+    schemaDiscovery: 'pending', // pending, processing, completed, failed
+    geoDiscovery: 'pending',
+    websiteScraping: 'pending',
+    entityExtraction: 'pending',
+    entityEnrichment: 'pending',
+    coverageDiscovery: 'pending',
+    schemaSynthesis: 'pending',
     message: ''
   })
   const [schemaGenerationStarted, setSchemaGenerationStarted] = useState(false)
   const [createdOrganization, setCreatedOrganization] = useState<any>(null)
 
-  const totalSteps = 6  // Added schema generation step
+  const totalSteps = 7  // Added GEO discovery step
   const MAX_TOTAL_TARGETS = 20  // Hard limit: 15 from discovery + up to 5 custom
 
   // Helper function to calculate total targets
@@ -333,24 +342,67 @@ export default function OrganizationOnboarding({
 
       console.log('✅ Organization created successfully!', organization)
 
-      // Store the organization for schema generation
+      // Store the organization for GEO discovery and schema generation
       setCreatedOrganization(organization)
       console.log('📝 Stored organization in state:', organization.id)
 
       // Turn off loading
       setLoading(false)
 
-      // Use setTimeout to ensure state updates before moving to next step
+      // Move to Step 6: GEO Discovery
       setTimeout(() => {
         setStep(6)
-        console.log('➡️ Moved to step 6, createdOrganization should now be:', organization.id)
+        console.log('➡️ Moved to step 6 (GEO Discovery)')
       }, 0)
-
-      // Don't auto-start - let user click the button
     } catch (err: any) {
       console.error('Create organization error:', err)
       setError(err.message || 'Failed to create organization')
       setLoading(false)
+    }
+  }
+
+  const handleGeoDiscovery = async () => {
+    setGeoDiscoveryStarted(true)
+    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    const orgId = createdOrganization?.id
+    const orgNameToUse = createdOrganization?.name || orgName
+
+    if (!orgId) {
+      console.error('❌ No organization ID available for GEO discovery')
+      return
+    }
+
+    try {
+      console.log('🎯 Running GEO Discovery...')
+
+      const geoResponse = await fetch(`${SUPABASE_URL}/functions/v1/geo-intelligence-monitor`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          organization_id: orgId,
+          organization_name: orgNameToUse,
+          industry: discovered?.industry || industry
+        })
+      })
+
+      if (geoResponse.ok) {
+        const geoData = await geoResponse.json()
+        console.log('✅ GEO Discovery Complete:', geoData.summary)
+        setGeoResults(geoData)
+        setShowGeoResults(true)
+      } else {
+        const errorText = await geoResponse.text()
+        console.error('GEO Discovery failed:', errorText)
+        setGeoResults({ error: 'GEO Discovery failed' })
+      }
+    } catch (error) {
+      console.error('GEO Discovery error:', error)
+      setGeoResults({ error: 'GEO Discovery failed' })
     }
   }
 
@@ -359,32 +411,23 @@ export default function OrganizationOnboarding({
     const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
     const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-    // Use the organization we just created (stored in state) or the data from step 1
     const orgId = createdOrganization?.id
     const orgNameToUse = createdOrganization?.name || orgName
 
     if (!orgId) {
       console.error('❌ No organization ID available for schema generation')
       setSchemaProgress({
-        entityExtraction: 'failed',
-        coverageScraping: 'failed',
-        schemaGeneration: 'failed',
+        ...schemaProgress,
         message: 'Organization not found. Please try again.'
       })
       return
     }
 
     try {
-      // STEP 1: Entity Extraction
-      console.log('🌐 Step 1: Website Entity Extraction')
-      setSchemaProgress({
-        entityExtraction: 'processing',
-        coverageScraping: 'pending',
-        schemaGeneration: 'pending',
-        message: 'Extracting entities from website...'
-      })
+      console.log('🚀 Starting Schema Onboarding Pipeline...')
 
-      const entityResponse = await fetch(`${SUPABASE_URL}/functions/v1/website-entity-scraper`, {
+      // Call the orchestrator
+      const orchestratorResponse = await fetch(`${SUPABASE_URL}/functions/v1/schema-onboarding-orchestrator`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
@@ -393,85 +436,26 @@ export default function OrganizationOnboarding({
         body: JSON.stringify({
           organization_id: orgId,
           organization_name: orgNameToUse,
-          website_url: website
-        })
-      })
-
-      let extractedEntities = null
-      if (!entityResponse.ok) {
-        console.warn('Entity extraction failed:', await entityResponse.text())
-      } else {
-        const entityData = await entityResponse.json()
-        console.log(`✓ Extracted ${entityData.summary?.total_entities || 0} entities`)
-        extractedEntities = entityData.entities
-      }
-
-      // STEP 2: Positive Coverage Scraping
-      console.log('🏆 Step 2: Positive Coverage Scraping')
-      setSchemaProgress({
-        entityExtraction: 'completed',
-        coverageScraping: 'processing',
-        schemaGeneration: 'pending',
-        message: 'Searching for awards and positive coverage...'
-      })
-
-      const coverageResponse = await fetch(`${SUPABASE_URL}/functions/v1/positive-coverage-scraper`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          organization_id: orgId,
-          organization_name: orgNameToUse,
-          recency_window: '90days'
-        })
-      })
-
-      let coverageArticles = null
-      if (!coverageResponse.ok) {
-        console.warn('Coverage scraping failed:', await coverageResponse.text())
-      } else {
-        const coverageData = await coverageResponse.json()
-        console.log(`✓ Found ${coverageData.summary?.final_articles || coverageData.summary?.recent_articles || 0} articles`)
-        coverageArticles = coverageData.articles
-      }
-
-      // STEP 3: Schema Graph Generation
-      console.log('📊 Step 3: Schema Graph Generation')
-      setSchemaProgress({
-        entityExtraction: 'completed',
-        coverageScraping: 'completed',
-        schemaGeneration: 'processing',
-        message: 'Building comprehensive schema graph...'
-      })
-
-      const schemaResponse = await fetch(`${SUPABASE_URL}/functions/v1/schema-graph-generator`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          organization_id: orgId,
-          organization_name: orgNameToUse,
+          website_url: website,
           industry: discovered?.industry || industry,
-          url: website,
-          // Pass extracted data directly instead of querying database
-          entities: extractedEntities,
-          coverage: coverageArticles
+          skip_geo_discovery: !!geoResults // Skip if we already ran it
         })
       })
 
-      if (schemaResponse.ok) {
-        const schemaData = await schemaResponse.json()
-        console.log('✅ Schema package generated:', schemaData)
+      if (orchestratorResponse.ok) {
+        const orchestratorData = await orchestratorResponse.json()
+        console.log('✅ Schema Onboarding Pipeline Complete:', orchestratorData.summary)
 
+        // Mark all stages as completed
         setSchemaProgress({
+          schemaDiscovery: 'completed',
+          geoDiscovery: geoResults ? 'completed' : 'skipped',
+          websiteScraping: 'completed',
           entityExtraction: 'completed',
-          coverageScraping: 'completed',
-          schemaGeneration: 'completed',
-          message: 'Schema generation complete!'
+          entityEnrichment: 'completed',
+          coverageDiscovery: 'completed',
+          schemaSynthesis: 'completed',
+          message: 'Schema onboarding complete!'
         })
 
         // Wait a moment for user to see completion
@@ -487,13 +471,12 @@ export default function OrganizationOnboarding({
           onClose()
         }, 2000)
       } else {
-        const errorText = await schemaResponse.text()
-        console.error('Schema generation failed:', errorText)
+        const errorText = await orchestratorResponse.text()
+        console.error('Schema onboarding failed:', errorText)
 
         setSchemaProgress({
-          entityExtraction: 'completed',
-          coverageScraping: 'completed',
-          schemaGeneration: 'failed',
+          ...schemaProgress,
+          schemaSynthesis: 'failed',
           message: 'Schema generation failed. You can continue anyway.'
         })
       }
@@ -501,9 +484,8 @@ export default function OrganizationOnboarding({
       console.error('Schema generation error:', error)
 
       setSchemaProgress({
-        entityExtraction: 'failed',
-        coverageScraping: 'failed',
-        schemaGeneration: 'failed',
+        ...schemaProgress,
+        schemaSynthesis: 'failed',
         message: 'Schema generation failed. You can continue anyway.'
       })
     }
@@ -523,10 +505,17 @@ export default function OrganizationOnboarding({
     setNewCompetitor('')
     setNewTopic('')
     setUploadedFiles([])
+    setGeoResults(null)
+    setGeoDiscoveryStarted(false)
+    setShowGeoResults(false)
     setSchemaProgress({
+      schemaDiscovery: 'pending',
+      geoDiscovery: 'pending',
+      websiteScraping: 'pending',
       entityExtraction: 'pending',
-      coverageScraping: 'pending',
-      schemaGeneration: 'pending',
+      entityEnrichment: 'pending',
+      coverageDiscovery: 'pending',
+      schemaSynthesis: 'pending',
       message: ''
     })
     setSchemaGenerationStarted(false)
@@ -1265,10 +1254,10 @@ export default function OrganizationOnboarding({
               </motion.div>
             )}
 
-            {/* Step 6: Schema Generation Progress */}
+            {/* Step 6: GEO Discovery Results */}
             {step === 6 && (
               <motion.div
-                key="step6"
+                key="step6-geo"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
@@ -1276,15 +1265,166 @@ export default function OrganizationOnboarding({
               >
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-2">
-                    Finalizing Your Organization
+                    GEO Discovery & AI Visibility Analysis
                   </h3>
                   <p className="text-sm text-gray-400 mb-6">
-                    Generate a comprehensive schema package with entity extraction and positive coverage discovery.
+                    Discover how your organization appears across AI platforms before generating your schema.
                   </p>
 
-                  <div className="space-y-4">
-                    {/* Entity Extraction */}
-                    <div className="flex items-center gap-4 p-4 bg-gray-800/50 rounded-lg">
+                  {!geoDiscoveryStarted && (
+                    <div className="space-y-4">
+                      <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-4">
+                        <div className="flex gap-3">
+                          <Sparkles className="w-5 h-5 text-cyan-400 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-sm text-cyan-300 font-medium">
+                              AI Visibility Testing
+                            </p>
+                            <p className="text-xs text-cyan-400/70 mt-1">
+                              We'll test how your organization appears in Claude, ChatGPT, Gemini, and Perplexity.
+                              This helps identify gaps and opportunities before building your schema.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={handleGeoDiscovery}
+                        disabled={!createdOrganization}
+                        className="w-full px-6 py-3 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Globe className="w-5 h-5" />
+                        Run GEO Discovery
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setGeoResults({ skipped: true })
+                          setStep(7)
+                        }}
+                        className="w-full px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                      >
+                        Skip GEO Discovery
+                      </button>
+                    </div>
+                  )}
+
+                  {geoDiscoveryStarted && !showGeoResults && (
+                    <div className="flex flex-col items-center justify-center py-12">
+                      <Loader className="w-12 h-12 text-cyan-400 animate-spin mb-4" />
+                      <p className="text-gray-400">Running AI visibility tests across multiple platforms...</p>
+                      <p className="text-xs text-gray-500 mt-2">This may take 30-40 seconds</p>
+                    </div>
+                  )}
+
+                  {showGeoResults && geoResults && !geoResults.error && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                          <p className="text-xs text-gray-400 mb-1">Claude Mentions</p>
+                          <p className="text-2xl font-bold text-white">{geoResults.summary?.claude_mentions || 0}</p>
+                        </div>
+                        <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                          <p className="text-xs text-gray-400 mb-1">ChatGPT Mentions</p>
+                          <p className="text-2xl font-bold text-white">{geoResults.summary?.chatgpt_mentions || 0}</p>
+                        </div>
+                        <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                          <p className="text-xs text-gray-400 mb-1">Gemini Mentions</p>
+                          <p className="text-2xl font-bold text-white">{geoResults.summary?.gemini_mentions || 0}</p>
+                        </div>
+                        <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                          <p className="text-xs text-gray-400 mb-1">Perplexity Mentions</p>
+                          <p className="text-2xl font-bold text-white">{geoResults.summary?.perplexity_mentions || 0}</p>
+                        </div>
+                      </div>
+
+                      <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                        <p className="text-sm text-green-300 font-medium">
+                          ✓ GEO Discovery Complete
+                        </p>
+                        <p className="text-xs text-green-400/70 mt-1">
+                          Found {geoResults.summary?.total_signals || 0} intelligence signals.
+                          These insights will inform your schema generation.
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={() => setStep(7)}
+                        className="w-full px-6 py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                      >
+                        Continue to Schema Generation
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+
+                  {geoResults?.error && (
+                    <div className="space-y-4">
+                      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                        <p className="text-sm text-red-300 font-medium">
+                          GEO Discovery Failed
+                        </p>
+                        <p className="text-xs text-red-400/70 mt-1">
+                          Don't worry - you can still proceed with schema generation.
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={() => setStep(7)}
+                        className="w-full px-6 py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors"
+                      >
+                        Continue Anyway
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Step 7: Schema Generation Progress (Enhanced Pipeline) */}
+            {step === 7 && (
+              <motion.div
+                key="step7"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-6"
+              >
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-2">
+                    Building Your Optimal Schema
+                  </h3>
+                  <p className="text-sm text-gray-400 mb-6">
+                    Running our 6-stage GEO-optimized pipeline to create the best possible schema for AI visibility.
+                  </p>
+
+                  <div className="space-y-3">
+                    {/* Stage 1: Website Scraping */}
+                    <div className="flex items-center gap-4 p-3 bg-gray-800/50 rounded-lg">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        schemaProgress.websiteScraping === 'completed' ? 'bg-green-500/20' :
+                        schemaProgress.websiteScraping === 'processing' ? 'bg-cyan-500/20' :
+                        schemaProgress.websiteScraping === 'failed' ? 'bg-red-500/20' :
+                        'bg-gray-700'
+                      }`}>
+                        {schemaProgress.websiteScraping === 'completed' ? (
+                          <Check className="w-4 h-4 text-green-400" />
+                        ) : schemaProgress.websiteScraping === 'processing' ? (
+                          <Loader className="w-4 h-4 text-cyan-400 animate-spin" />
+                        ) : schemaProgress.websiteScraping === 'failed' ? (
+                          <X className="w-4 h-4 text-red-400" />
+                        ) : (
+                          <Globe className="w-4 h-4 text-gray-500" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-white">Website Scraping</p>
+                        <p className="text-xs text-gray-400">Collecting clean text from key pages</p>
+                      </div>
+                    </div>
+
+                    {/* Stage 2: Entity Extraction */}
+                    <div className="flex items-center gap-4 p-3 bg-gray-800/50 rounded-lg">
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                         schemaProgress.entityExtraction === 'completed' ? 'bg-green-500/20' :
                         schemaProgress.entityExtraction === 'processing' ? 'bg-cyan-500/20' :
@@ -1292,66 +1432,90 @@ export default function OrganizationOnboarding({
                         'bg-gray-700'
                       }`}>
                         {schemaProgress.entityExtraction === 'completed' ? (
-                          <Check className="w-5 h-5 text-green-400" />
+                          <Check className="w-4 h-4 text-green-400" />
                         ) : schemaProgress.entityExtraction === 'processing' ? (
-                          <Loader className="w-5 h-5 text-cyan-400 animate-spin" />
+                          <Loader className="w-4 h-4 text-cyan-400 animate-spin" />
                         ) : schemaProgress.entityExtraction === 'failed' ? (
-                          <X className="w-5 h-5 text-red-400" />
+                          <X className="w-4 h-4 text-red-400" />
                         ) : (
-                          <Globe className="w-5 h-5 text-gray-500" />
+                          <Sparkles className="w-4 h-4 text-gray-500" />
                         )}
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-white">Website Entity Extraction</p>
-                        <p className="text-xs text-gray-400">Discovering products, services, and team members</p>
+                        <p className="text-sm font-medium text-white">Entity Extraction</p>
+                        <p className="text-xs text-gray-400">Identifying products, services, team, locations</p>
                       </div>
                     </div>
 
-                    {/* Coverage Scraping */}
-                    <div className="flex items-center gap-4 p-4 bg-gray-800/50 rounded-lg">
+                    {/* Stage 3: Entity Enrichment */}
+                    <div className="flex items-center gap-4 p-3 bg-gray-800/50 rounded-lg">
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                        schemaProgress.coverageScraping === 'completed' ? 'bg-green-500/20' :
-                        schemaProgress.coverageScraping === 'processing' ? 'bg-cyan-500/20' :
-                        schemaProgress.coverageScraping === 'failed' ? 'bg-red-500/20' :
+                        schemaProgress.entityEnrichment === 'completed' ? 'bg-green-500/20' :
+                        schemaProgress.entityEnrichment === 'processing' ? 'bg-cyan-500/20' :
+                        schemaProgress.entityEnrichment === 'failed' ? 'bg-red-500/20' :
                         'bg-gray-700'
                       }`}>
-                        {schemaProgress.coverageScraping === 'completed' ? (
-                          <Check className="w-5 h-5 text-green-400" />
-                        ) : schemaProgress.coverageScraping === 'processing' ? (
-                          <Loader className="w-5 h-5 text-cyan-400 animate-spin" />
-                        ) : schemaProgress.coverageScraping === 'failed' ? (
-                          <X className="w-5 h-5 text-red-400" />
+                        {schemaProgress.entityEnrichment === 'completed' ? (
+                          <Check className="w-4 h-4 text-green-400" />
+                        ) : schemaProgress.entityEnrichment === 'processing' ? (
+                          <Loader className="w-4 h-4 text-cyan-400 animate-spin" />
+                        ) : schemaProgress.entityEnrichment === 'failed' ? (
+                          <X className="w-4 h-4 text-red-400" />
                         ) : (
-                          <Sparkles className="w-5 h-5 text-gray-500" />
+                          <Sparkles className="w-4 h-4 text-gray-500" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-white">Entity Enrichment</p>
+                        <p className="text-xs text-gray-400">Validating, deduplicating, and prioritizing</p>
+                      </div>
+                    </div>
+
+                    {/* Stage 4: Coverage Discovery */}
+                    <div className="flex items-center gap-4 p-3 bg-gray-800/50 rounded-lg">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        schemaProgress.coverageDiscovery === 'completed' ? 'bg-green-500/20' :
+                        schemaProgress.coverageDiscovery === 'processing' ? 'bg-cyan-500/20' :
+                        schemaProgress.coverageDiscovery === 'failed' ? 'bg-red-500/20' :
+                        'bg-gray-700'
+                      }`}>
+                        {schemaProgress.coverageDiscovery === 'completed' ? (
+                          <Check className="w-4 h-4 text-green-400" />
+                        ) : schemaProgress.coverageDiscovery === 'processing' ? (
+                          <Loader className="w-4 h-4 text-cyan-400 animate-spin" />
+                        ) : schemaProgress.coverageDiscovery === 'failed' ? (
+                          <X className="w-4 h-4 text-red-400" />
+                        ) : (
+                          <Sparkles className="w-4 h-4 text-gray-500" />
                         )}
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-medium text-white">Positive Coverage Discovery</p>
-                        <p className="text-xs text-gray-400">Finding awards, achievements, and recognition</p>
+                        <p className="text-xs text-gray-400">Finding awards, achievements, recognition</p>
                       </div>
                     </div>
 
-                    {/* Schema Generation */}
-                    <div className="flex items-center gap-4 p-4 bg-gray-800/50 rounded-lg">
+                    {/* Stage 5: Schema Synthesis */}
+                    <div className="flex items-center gap-4 p-3 bg-gray-800/50 rounded-lg">
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                        schemaProgress.schemaGeneration === 'completed' ? 'bg-green-500/20' :
-                        schemaProgress.schemaGeneration === 'processing' ? 'bg-cyan-500/20' :
-                        schemaProgress.schemaGeneration === 'failed' ? 'bg-red-500/20' :
+                        schemaProgress.schemaSynthesis === 'completed' ? 'bg-green-500/20' :
+                        schemaProgress.schemaSynthesis === 'processing' ? 'bg-cyan-500/20' :
+                        schemaProgress.schemaSynthesis === 'failed' ? 'bg-red-500/20' :
                         'bg-gray-700'
                       }`}>
-                        {schemaProgress.schemaGeneration === 'completed' ? (
-                          <Check className="w-5 h-5 text-green-400" />
-                        ) : schemaProgress.schemaGeneration === 'processing' ? (
-                          <Loader className="w-5 h-5 text-cyan-400 animate-spin" />
-                        ) : schemaProgress.schemaGeneration === 'failed' ? (
-                          <X className="w-5 h-5 text-red-400" />
+                        {schemaProgress.schemaSynthesis === 'completed' ? (
+                          <Check className="w-4 h-4 text-green-400" />
+                        ) : schemaProgress.schemaSynthesis === 'processing' ? (
+                          <Loader className="w-4 h-4 text-cyan-400 animate-spin" />
+                        ) : schemaProgress.schemaSynthesis === 'failed' ? (
+                          <X className="w-4 h-4 text-red-400" />
                         ) : (
-                          <Building2 className="w-5 h-5 text-gray-500" />
+                          <Building2 className="w-4 h-4 text-gray-500" />
                         )}
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-white">Schema Graph Generation</p>
-                        <p className="text-xs text-gray-400">Building comprehensive organization profile</p>
+                        <p className="text-sm font-medium text-white">Schema Synthesis</p>
+                        <p className="text-xs text-gray-400">Generating optimal schema.org graph</p>
                       </div>
                     </div>
                   </div>
@@ -1362,23 +1526,23 @@ export default function OrganizationOnboarding({
                     </div>
                   )}
 
-                  {/* Show button if generation failed OR hasn't started */}
+                  {/* Show buttons if generation hasn't started or failed */}
                   <div className="mt-6 flex gap-3">
                     {!schemaGenerationStarted && (
                       <button
                         onClick={() => {
-                          console.log('🎯 Starting schema generation')
+                          console.log('🚀 Starting schema onboarding pipeline')
                           handleSchemaGeneration()
                         }}
                         disabled={!createdOrganization}
                         className="flex-1 px-6 py-3 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center justify-center gap-2"
                       >
                         <Sparkles className="w-5 h-5" />
-                        Generate Schema Package
+                        Start Pipeline
                       </button>
                     )}
 
-                    {(schemaProgress.schemaGeneration === 'failed' || !schemaGenerationStarted) && (
+                    {(schemaProgress.schemaSynthesis === 'failed' || !schemaGenerationStarted) && (
                       <button
                         onClick={() => {
                           if (createdOrganization) {
@@ -1395,7 +1559,7 @@ export default function OrganizationOnboarding({
                         disabled={!createdOrganization}
                         className="flex-1 px-6 py-3 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
                       >
-                        {schemaProgress.schemaGeneration === 'failed' ? 'Continue Anyway' : 'Skip Schema Generation'}
+                        {schemaProgress.schemaSynthesis === 'failed' ? 'Continue Anyway' : 'Skip Schema Generation'}
                       </button>
                     )}
                   </div>
@@ -1420,8 +1584,8 @@ export default function OrganizationOnboarding({
           )}
         </div>
 
-        {/* Footer - Hide on step 6 */}
-        {step !== 6 && (
+        {/* Footer - Hide on steps 6 and 7 (GEO Discovery & Schema Generation) */}
+        {step !== 6 && step !== 7 && (
           <div className="px-8 py-4 border-t border-gray-700 bg-gray-800/50 flex items-center justify-between">
             <button
               onClick={() => {
