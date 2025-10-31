@@ -377,11 +377,13 @@ export default function OrganizationOnboarding({
 
       // STEP 1: Generate intelligent queries using geo-query-discovery
       console.log('🔍 Generating queries...')
-      const { data: queryData, error: queryError } = await supabase.functions.invoke('geo-query-discovery', {
+      const { data: queryData, error: queryError} = await supabase.functions.invoke('geo-query-discovery', {
         body: {
           organization_id: orgId,
           organization_name: orgNameToUse,
-          industry: discovered?.industry || industry
+          industry: discovered?.industry || industry,
+          competitors: Array.from(selectedCompetitors).concat(customCompetitors),
+          mcp_profile: fullProfile  // Pass MCP discovery data for better query generation
         }
       })
 

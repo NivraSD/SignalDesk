@@ -28,7 +28,8 @@ serve(async (req) => {
       organization_name,
       industry,
       competitors = [],
-      recent_news = []
+      recent_news = [],
+      mcp_profile = null  // NEW: Accept MCP discovery data from onboarding
     } = await req.json()
 
     if (!organization_id || !organization_name) {
@@ -39,6 +40,7 @@ serve(async (req) => {
       organization_name,
       industry,
       competitors: competitors.length,
+      has_mcp_profile: !!mcp_profile,
       timestamp: new Date().toISOString()
     })
 
@@ -53,13 +55,17 @@ serve(async (req) => {
       .eq('id', organization_id)
       .single()
 
-    const orgIndustry = industry || org?.industry || 'technology'
-    const orgCompetitors = competitors.length > 0 ? competitors : (org?.competitors || [])
-    const orgDescription = org?.description || ''
+    const orgIndustry = industry || org?.industry || mcp_profile?.industry || 'technology'
+    const orgCompetitors = competitors.length > 0 ? competitors : (org?.competitors || mcp_profile?.competition?.direct_competitors || [])
+    const orgDescription = org?.description || mcp_profile?.description || ''
+
+    // Extract service lines/business lines from MCP profile
+    const serviceLines = mcp_profile?.service_lines || mcp_profile?.products_services?.map((p: any) => p.name || p) || []
 
     console.log(`📊 Organization: ${organization_name}`)
     console.log(`🏭 Industry: ${orgIndustry}`)
     console.log(`🏢 Competitors: ${orgCompetitors.length}`)
+    console.log(`🎯 Service Lines from MCP: ${serviceLines.length}`)
 
     // Get organization-specific GEO targets (if configured)
     const { data: geoTargets } = await supabase
@@ -94,7 +100,9 @@ serve(async (req) => {
       description: orgDescription,
       recentNews: recent_news,
       industryPatterns,
-      geoTargets
+      geoTargets,
+      serviceLines,  // NEW: Pass service lines from MCP
+      mcpProfile: mcp_profile  // NEW: Pass full MCP profile
     })
 
     console.log('🤖 Calling Claude for query generation...')
@@ -305,6 +313,8 @@ function buildQueryDiscoveryPrompt(context: {
   recentNews: string[]
   industryPatterns: string[]
   geoTargets?: any
+  serviceLines?: string[]  // NEW
+  mcpProfile?: any  // NEW
 }): string {
   const currentDate = new Date().toISOString().split('T')[0] // YYYY-MM-DD format
   const currentYear = new Date().getFullYear()
@@ -325,12 +335,43 @@ Query Generation Guidelines for ${context.industry}:
 `
   }
 
-  // Build GEO targets section if available
+  // Build MCP-based business context (NEW - prioritize over GEO targets if available)
+  let mcpContextSection = ''
+  if (context.mcpProfile || context.serviceLines?.length > 0) {
+    const services = context.serviceLines || []
+    const productCategories = context.mcpProfile?.products_services?.map((p: any) => p.category || p.type).filter((c: string) => c) || []
+
+    mcpContextSection = `
+🔍 BUSINESS INTELLIGENCE FROM MCP DISCOVERY (PRIMARY SOURCE):
+The following was automatically discovered about this organization's business:
+
+${services.length > 0 ? `**Service Lines/Products** (USE THESE FOR CATEGORY QUERIES):
+${services.map((s: string) => `- ${s}`).join('\n')}
+` : ''}
+${productCategories.length > 0 ? `**Product Categories**:
+${[...new Set(productCategories)].map((c: string) => `- ${c}`).join('\n')}
+` : ''}
+${context.mcpProfile?.target_customers?.length > 0 ? `**Target Customers**:
+${context.mcpProfile.target_customers.map((t: string) => `- ${t}`).join('\n')}
+` : ''}
+${context.mcpProfile?.key_differentiators?.length > 0 ? `**Key Differentiators**:
+${context.mcpProfile.key_differentiators.map((d: string) => `- ${d}`).join('\n')}
+` : ''}
+
+**CRITICAL QUERY GENERATION RULES**:
+1. Use SERVICE LINES and PRODUCT CATEGORIES for generic queries (NOT the company name)
+2. Example GOOD queries: "best CRM software", "enterprise project management tools"
+3. Example BAD queries: "best ${context.organizationName} software" (too easy to find!)
+4. Only use company name for competitive queries: "${context.organizationName} vs Competitor"
+`
+  }
+
+  // Build GEO targets section if available (lower priority than MCP)
   let geoTargetsSection = ''
-  if (context.geoTargets) {
+  if (context.geoTargets && !mcpContextSection) {
     geoTargetsSection = `
-🎯 ORGANIZATION-SPECIFIC GEO TARGETS (HIGH PRIORITY):
-This organization has configured specific GEO optimization goals. PRIORITIZE these when generating queries:
+🎯 ORGANIZATION-SPECIFIC GEO TARGETS:
+This organization has configured specific GEO optimization goals:
 
 ${context.geoTargets.service_lines?.length > 0 ? `**Service Lines/Specializations**:
 ${context.geoTargets.service_lines.map((s: string) => `- ${s}`).join('\n')}
@@ -344,19 +385,6 @@ ${context.geoTargets.industry_verticals.map((i: string) => `- ${i}`).join('\n')}
 ${context.geoTargets.priority_queries?.length > 0 ? `**Priority Queries (MUST INCLUDE)**:
 ${context.geoTargets.priority_queries.map((q: string) => `- "${q}"`).join('\n')}
 ` : ''}
-${context.geoTargets.geo_competitors?.length > 0 ? `**GEO Competitors (for benchmarking)**:
-${context.geoTargets.geo_competitors.map((c: string) => `- ${c}`).join('\n')}
-` : ''}
-${context.geoTargets.positioning_goals && Object.keys(context.geoTargets.positioning_goals).length > 0 ? `**Positioning Goals**:
-${Object.entries(context.geoTargets.positioning_goals).map(([key, value]) => `- ${key}: "${value}"`).join('\n')}
-` : ''}
-
-INSTRUCTIONS FOR GEO TARGETS:
-1. Include ALL priority_queries exactly as specified
-2. Generate additional queries that combine service_lines + geographic_focus
-3. Generate queries about service_lines + industry_verticals
-4. Include comparison queries against geo_competitors
-5. Ensure queries align with positioning_goals
 `
   }
 
@@ -374,34 +402,48 @@ ORGANIZATION CONTEXT:
 - Competitors: ${context.competitors.slice(0, 5).join(', ') || 'N/A'}
 - Recent News: ${context.recentNews.slice(0, 3).join(', ') || 'N/A'}
 ${industryPrioritiesSection}
+${mcpContextSection}
 ${geoTargetsSection}
-${!context.geoTargets ? `INDUSTRY QUERY PATTERNS (FALLBACK - No GEO Targets Configured):
+${!context.geoTargets && !mcpContextSection ? `INDUSTRY QUERY PATTERNS (FALLBACK):
 ${context.industryPatterns.map(p => `- ${p}`).join('\n')}` : ''}
 
 TASK:
-Generate 25-30 diverse test queries that someone might ask an AI about this organization or its industry.
+Generate 25-30 diverse test queries that real customers would use when researching solutions in this industry.
 
-**IMPORTANT**: Use the industry priorities above to frame queries around what this industry ACTUALLY cares about. For example:
-- Retail/Ecommerce: Focus on price, quality, reviews, shipping
-- Finance: Focus on security, fees, returns, trust
-- Professional Services: Focus on expertise, credentials, case studies
-- Technology: Focus on features, integrations, ease of use
+**CRITICAL RULES FOR QUERY GENERATION**:
+
+1. **DO NOT include "${context.organizationName}" in generic queries** - this makes it too easy to find!
+   ✅ GOOD: "best CRM for enterprise", "project management software comparison"
+   ❌ BAD: "best ${context.organizationName} CRM", "${context.organizationName} features"
+
+2. **ONLY use company name for competitive queries**:
+   ✅ GOOD: "${context.organizationName} vs Salesforce", "alternatives to ${context.organizationName}"
+
+3. **Focus on CATEGORIES and USE CASES**, not brand names:
+   - Use service lines/product categories from MCP discovery above
+   - Think like a customer who doesn't know ${context.organizationName} yet
+   - Example: If they sell "AI writing tools", generate queries about "AI writing tools", not "${context.organizationName} writing"
+
+**Industry-Specific Focus**: Use the industry priorities above to frame queries around what this industry ACTUALLY cares about:
+- Retail/Ecommerce: price, quality, reviews, shipping
+- Finance: security, fees, returns, trust
+- Professional Services: expertise, credentials, case studies
+- Technology: features, integrations, ease of use
 
 Mix query types:
 
-1. **Comparison Queries** (30%): "best X", "X vs Y", "top X platforms"
-2. **Competitive Queries** (25%): "alternatives to X", "X or Y", "is X better than Y"
-3. **Transactional Queries** (20%): "buy X", "X pricing", "X discount"
-4. **Informational Queries** (15%): "how to X", "what is X", "X features"
-5. **Research Queries** (10%): "X reviews", "is X good", "X pros and cons"
+1. **Category/Comparison Queries** (40%): "best [category]", "top [category] tools", "[category] comparison"
+2. **Use Case Queries** (25%): "how to [solve problem]", "[category] for [use case]"
+3. **Competitive Queries** (20%): "${context.organizationName} vs [competitor]", "alternatives to [competitor]"
+4. **Transactional Queries** (10%): "[category] pricing", "[category] free trial"
+5. **Research Queries** (5%): "[category] reviews", "is [category] worth it"
 
 REQUIREMENTS:
-- Use natural language (how real people search)
-- Include competitor names in some queries
-- Mix broad and specific queries
-- Include both brand name and category queries
-- Consider current trends and user intent
-- Make queries testable (AI can answer them)
+- Use natural language (how real people actually search)
+- Focus on customer problems and use cases
+- Mix broad category queries with specific feature queries
+- Include competitor names (but NOT ${context.organizationName} except in vs queries)
+- Make queries testable by AIs with current knowledge
 
 OUTPUT FORMAT:
 Return queries as a JSON array with this structure:
