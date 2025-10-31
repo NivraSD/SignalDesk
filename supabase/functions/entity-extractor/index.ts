@@ -57,10 +57,19 @@ serve(async (req) => {
 
     // Combine all page content
     const combinedContent = scraped_pages
-      .map(page => `# ${page.title || page.url}\n\n${page.markdown}`)
+      .map(page => {
+        const pageContent = `# ${page.title || page.url}\n\n${page.markdown}`
+        console.log(`   - Page: ${page.url} → ${page.markdown?.length || 0} chars`)
+        return pageContent
+      })
       .join('\n\n---\n\n')
 
-    console.log(`📄 Processing ${combinedContent.length} characters of text`)
+    console.log(`📄 Processing ${combinedContent.length} characters of text from ${scraped_pages.length} pages`)
+
+    if (combinedContent.length < 500) {
+      console.warn(`⚠️  WARNING: Very little content (${combinedContent.length} chars) - extraction will likely fail`)
+      console.log(`First 500 chars of content:`, combinedContent.substring(0, 500))
+    }
 
     // Extract entities using Claude with structured output
     const message = await anthropic.messages.create({

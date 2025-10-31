@@ -76,6 +76,17 @@ serve(async (req) => {
         subsidiaries: subsidiaries.length,
         team: team.length
       })
+
+      // Debug: Log first entity of each type to verify format
+      if (products.length > 0) {
+        console.log(`   📦 Sample product:`, JSON.stringify(products[0]).substring(0, 200))
+      }
+      if (services.length > 0) {
+        console.log(`   🔧 Sample service:`, JSON.stringify(services[0]).substring(0, 200))
+      }
+      if (team.length > 0) {
+        console.log(`   👤 Sample team member:`, JSON.stringify(team[0]).substring(0, 200))
+      }
     } else {
       // Fallback: query from content_library
       console.log('   → Querying content_library...')
@@ -185,6 +196,7 @@ serve(async (req) => {
 
       // Add Product schemas to graph (only if they have a name)
       products.forEach((p, idx) => {
+        // Support both enriched entity format (name, description) and DB format (title, content)
         const productName = p.name || p.title
         if (productName) {
           graph.push({
@@ -210,16 +222,20 @@ serve(async (req) => {
 
       // Add Service schemas to graph
       services.forEach((s, idx) => {
-        graph.push({
-          '@type': 'Service',
-          '@id': `${baseUrl}#service-${idx}`,
-          'name': s.title,
-          'description': s.content,
-          'serviceType': s.metadata?.service_type,
-          'provider': {
-            '@id': `${baseUrl}#organization`
-          }
-        })
+        // Support both enriched entity format (name, description) and DB format (title, content)
+        const serviceName = s.name || s.title
+        if (serviceName) {
+          graph.push({
+            '@type': 'Service',
+            '@id': `${baseUrl}#service-${idx}`,
+            'name': serviceName,
+            'description': s.description || s.content,
+            'serviceType': s.service_type || s.metadata?.service_type,
+            'provider': {
+              '@id': `${baseUrl}#organization`
+            }
+          })
+        }
       })
     }
 
@@ -231,21 +247,25 @@ serve(async (req) => {
 
       // Add Place schemas to graph
       locations.forEach((l, idx) => {
-        graph.push({
-          '@type': 'Place',
-          '@id': `${baseUrl}#location-${idx}`,
-          'name': l.title,
-          'address': {
-            '@type': 'PostalAddress',
-            'streetAddress': l.metadata?.address,
-            'addressLocality': l.metadata?.city,
-            'addressRegion': l.metadata?.state,
-            'postalCode': l.metadata?.postal_code,
-            'addressCountry': l.metadata?.country
-          },
-          'telephone': l.metadata?.phone,
-          'email': l.metadata?.email
-        })
+        // Support both enriched entity format (name, address, city) and DB format (title, metadata)
+        const locationName = l.name || l.title
+        if (locationName) {
+          graph.push({
+            '@type': 'Place',
+            '@id': `${baseUrl}#location-${idx}`,
+            'name': locationName,
+            'address': {
+              '@type': 'PostalAddress',
+              'streetAddress': l.address || l.metadata?.address,
+              'addressLocality': l.city || l.metadata?.city,
+              'addressRegion': l.state || l.metadata?.state,
+              'postalCode': l.postal_code || l.metadata?.postal_code,
+              'addressCountry': l.country || l.metadata?.country
+            },
+            'telephone': l.phone || l.metadata?.phone,
+            'email': l.email || l.metadata?.email
+          })
+        }
       })
     }
 
@@ -257,15 +277,19 @@ serve(async (req) => {
 
       // Add SubOrganization schemas to graph
       subsidiaries.forEach((s, idx) => {
-        graph.push({
-          '@type': 'Organization',
-          '@id': `${baseUrl}#subsidiary-${idx}`,
-          'name': s.title,
-          'description': s.content,
-          'parentOrganization': {
-            '@id': `${baseUrl}#organization`
-          }
-        })
+        // Support both enriched entity format (name, description) and DB format (title, content)
+        const subsidiaryName = s.name || s.title
+        if (subsidiaryName) {
+          graph.push({
+            '@type': 'Organization',
+            '@id': `${baseUrl}#subsidiary-${idx}`,
+            'name': subsidiaryName,
+            'description': s.description || s.content,
+            'parentOrganization': {
+              '@id': `${baseUrl}#organization`
+            }
+          })
+        }
       })
     }
 
@@ -277,18 +301,22 @@ serve(async (req) => {
 
       // Add Person schemas to graph
       team.forEach((t, idx) => {
-        graph.push({
-          '@type': 'Person',
-          '@id': `${baseUrl}#person-${idx}`,
-          'name': t.title,
-          'jobTitle': t.metadata?.title,
-          'description': t.content,
-          'image': t.metadata?.image_url,
-          'sameAs': t.metadata?.linkedin_url,
-          'worksFor': {
-            '@id': `${baseUrl}#organization`
-          }
-        })
+        // Support both enriched entity format (name, title, bio) and DB format (title as name, metadata)
+        const personName = t.name || t.title
+        if (personName) {
+          graph.push({
+            '@type': 'Person',
+            '@id': `${baseUrl}#person-${idx}`,
+            'name': personName,
+            'jobTitle': t.title || t.metadata?.title, // job title from 'title' field in enriched format
+            'description': t.bio || t.role || t.content,
+            'image': t.image_url || t.metadata?.image_url,
+            'sameAs': t.linkedin_url || t.metadata?.linkedin_url,
+            'worksFor': {
+              '@id': `${baseUrl}#organization`
+            }
+          })
+        }
       })
     }
 
@@ -326,15 +354,26 @@ serve(async (req) => {
       '@graph': graph
     }
 
+    // Count actual items added to graph (not just input counts)
+    const graphCounts = {
+      organization: 1,
+      products: graph.filter(g => g['@type'] === 'Product').length,
+      services: graph.filter(g => g['@type'] === 'Service').length,
+      locations: graph.filter(g => g['@type'] === 'Place').length,
+      subsidiaries: graph.filter(g => g['@type'] === 'Organization' && g['@id'].includes('subsidiary')).length,
+      team: graph.filter(g => g['@type'] === 'Person').length,
+      coverage: graph.filter(g => g['@type'] === 'NewsArticle').length
+    }
+
     console.log('✅ Schema graph generated:', {
       total_entities: graph.length,
-      organization: 1,
-      products: products?.length || 0,
-      services: services?.length || 0,
-      locations: locations?.length || 0,
-      subsidiaries: subsidiaries?.length || 0,
-      team: team?.length || 0,
-      coverage: positiveCoverage?.length || 0
+      breakdown: graphCounts,
+      input_vs_output: {
+        products: `${products?.length || 0} → ${graphCounts.products}`,
+        services: `${services?.length || 0} → ${graphCounts.services}`,
+        team: `${team?.length || 0} → ${graphCounts.team}`,
+        locations: `${locations?.length || 0} → ${graphCounts.locations}`
+      }
     })
 
     // STEP 5: Save to content_library

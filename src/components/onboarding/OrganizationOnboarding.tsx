@@ -547,21 +547,8 @@ export default function OrganizationOnboarding({
             : 'Schema generated but no entities extracted - website may need manual review'
         })
 
-        // Only auto-close if we have good data, otherwise let user review
-        if (hasData) {
-          setTimeout(() => {
-            onComplete({
-              id: createdOrganization.id,
-              name: createdOrganization.name,
-              industry: createdOrganization.industry,
-              config: {}
-            })
-
-            resetForm()
-            onClose()
-          }, 3000)
-        } else {
-          // Show warning but don't auto-close
+        // Don't auto-close - let user review and manually finish
+        if (!hasData) {
           console.warn('⚠️ Schema generated but no entities extracted')
         }
       } else {

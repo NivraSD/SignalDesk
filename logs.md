@@ -1,288 +1,424 @@
-hook.js:608 Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
-overrideMethod @ hook.js:608
-858-23c03b66c33493b8.js?dpl=dpl_8PwHtHJ1Tbz9PFXNa82SYbaUQSYB:1 ⚠️ Same organization selected, skipping reload
-page-beba6a5dcb28d326.js?dpl=dpl_8PwHtHJ1Tbz9PFXNa82SYbaUQSYB:1 🔍 Running MCP discovery...
-page-beba6a5dcb28d326.js?dpl=dpl_8PwHtHJ1Tbz9PFXNa82SYbaUQSYB:1 ✅ Discovery complete
-page-beba6a5dcb28d326.js?dpl=dpl_8PwHtHJ1Tbz9PFXNa82SYbaUQSYB:1 🚀 handleCreateOrganization CALLED - START OF FUNCTION
-page-beba6a5dcb28d326.js?dpl=dpl_8PwHtHJ1Tbz9PFXNa82SYbaUQSYB:1 Organization details: Object
-page-beba6a5dcb28d326.js?dpl=dpl_8PwHtHJ1Tbz9PFXNa82SYbaUQSYB:1 📝 Creating organization...
-page-beba6a5dcb28d326.js?dpl=dpl_8PwHtHJ1Tbz9PFXNa82SYbaUQSYB:1 🎯 Saving targets...
-page-beba6a5dcb28d326.js?dpl=dpl_8PwHtHJ1Tbz9PFXNa82SYbaUQSYB:1 💾 Saving organization profile to mcp_discovery...
-zskaxjtyuaqazydouifp.supabase.co/rest/v1/mcp_discovery?on_conflict=organization_id:1 Failed to load resource: the server responded with a status of 400 ()
-hook.js:608 Failed to save profile to mcp_discovery: Object
-overrideMethod @ hook.js:608
-page-beba6a5dcb28d326.js?dpl=dpl_8PwHtHJ1Tbz9PFXNa82SYbaUQSYB:1 ✅ Organization created successfully! Object
-page-beba6a5dcb28d326.js?dpl=dpl_8PwHtHJ1Tbz9PFXNa82SYbaUQSYB:1 📝 Stored organization in state: 40246f57-98e0-45a0-91d7-d538296afb0f
-page-beba6a5dcb28d326.js?dpl=dpl_8PwHtHJ1Tbz9PFXNa82SYbaUQSYB:1 ➡️ Moved to step 6 (GEO Discovery)
-page-beba6a5dcb28d326.js?dpl=dpl_8PwHtHJ1Tbz9PFXNa82SYbaUQSYB:1 🎯 Running GEO Discovery...
-page-beba6a5dcb28d326.js?dpl=dpl_8PwHtHJ1Tbz9PFXNa82SYbaUQSYB:1 🔍 Generating queries...
-page-beba6a5dcb28d326.js?dpl=dpl_8PwHtHJ1Tbz9PFXNa82SYbaUQSYB:1 ✅ Generated 5 queries for testing
-page-beba6a5dcb28d326.js?dpl=dpl_8PwHtHJ1Tbz9PFXNa82SYbaUQSYB:1 🚀 Testing all platforms in parallel...
-page-beba6a5dcb28d326.js?dpl=dpl_8PwHtHJ1Tbz9PFXNa82SYbaUQSYB:1 ✅ All platform tests complete: Object
-page-beba6a5dcb28d326.js?dpl=dpl_8PwHtHJ1Tbz9PFXNa82SYbaUQSYB:1 🎯 Synthesizing 20 test results...
-page-beba6a5dcb28d326.js?dpl=dpl_8PwHtHJ1Tbz9PFXNa82SYbaUQSYB:1 ✅ GEO Discovery Complete: Object
-page-beba6a5dcb28d326.js?dpl=dpl_8PwHtHJ1Tbz9PFXNa82SYbaUQSYB:1 🚀 Starting schema onboarding pipeline
-page-beba6a5dcb28d326.js?dpl=dpl_8PwHtHJ1Tbz9PFXNa82SYbaUQSYB:1 🚀 Starting Schema Onboarding Pipeline...
-page-beba6a5dcb28d326.js?dpl=dpl_8PwHtHJ1Tbz9PFXNa82SYbaUQSYB:1 ✅ Schema Onboarding Pipeline Complete: Object
-858-23c03b66c33493b8.js?dpl=dpl_8PwHtHJ1Tbz9PFXNa82SYbaUQSYB:1 🔄 Switching from Mitsui & Co. to KARV
-858-23c03b66c33493b8.js?dpl=dpl_8PwHtHJ1Tbz9PFXNa82SYbaUQSYB:1 ✅ Organization switched to KARV
-
-{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://www.karv.global/#organization","name":"KARV","url":"https://www.karv.global/","industry":"Public Relations & Communications Services","hasOfferCatalog":{"@type":"OfferCatalog","itemListElement":[{"@id":"https://www.karv.global/#service-0"},{"@id":"https://www.karv.global/#service-1"},{"@id":"https://www.karv.global/#service-2"},{"@id":"https://www.karv.global/#service-3"},{"@id":"https://www.karv.global/#service-4"}]},"location":[{"@id":"https://www.karv.global/#location-0"},{"@id":"https://www.karv.global/#location-1"},{"@id":"https://www.karv.global/#location-2"},{"@id":"https://www.karv.global/#location-3"}],"employee":[{"@id":"https://www.karv.global/#person-0"},{"@id":"https://www.karv.global/#person-1"},{"@id":"https://www.karv.global/#person-2"},{"@id":"https://www.karv.global/#person-3"},{"@id":"https://www.karv.global/#person-4"},{"@id":"https://www.karv.global/#person-5"},{"@id":"https://www.karv.global/#person-6"},{"@id":"https://www.karv.global/#person-7"},{"@id":"https://www.karv.global/#person-8"}]},{"@type":"Service","@id":"https://www.karv.global/#service-0","provider":{"@id":"https://www.karv.global/#organization"}},{"@type":"Service","@id":"https://www.karv.global/#service-1","provider":{"@id":"https://www.karv.global/#organization"}},{"@type":"Service","@id":"https://www.karv.global/#service-2","provider":{"@id":"https://www.karv.global/#organization"}},{"@type":"Service","@id":"https://www.karv.global/#service-3","provider":{"@id":"https://www.karv.global/#organization"}},{"@type":"Service","@id":"https://www.karv.global/#service-4","provider":{"@id":"https://www.karv.global/#organization"}},{"@type":"Place","@id":"https://www.karv.global/#location-0","address":{"@type":"PostalAddress"}},{"@type":"Place","@id":"https://www.karv.global/#location-1","address":{"@type":"PostalAddress"}},{"@type":"Place","@id":"https://www.karv.global/#location-2","address":{"@type":"PostalAddress"}},{"@type":"Place","@id":"https://www.karv.global/#location-3","address":{"@type":"PostalAddress"}},{"@type":"Person","@id":"https://www.karv.global/#person-0","name":null,"worksFor":{"@id":"https://www.karv.global/#organization"}},{"@type":"Person","@id":"https://www.karv.global/#person-1","name":null,"worksFor":{"@id":"https://www.karv.global/#organization"}},{"@type":"Person","@id":"https://www.karv.global/#person-2","name":null,"worksFor":{"@id":"https://www.karv.global/#organization"}},{"@type":"Person","@id":"https://www.karv.global/#person-3","name":null,"worksFor":{"@id":"https://www.karv.global/#organization"}},{"@type":"Person","@id":"https://www.karv.global/#person-4","name":null,"worksFor":{"@id":"https://www.karv.global/#organization"}},{"@type":"Person","@id":"https://www.karv.global/#person-5","name":null,"worksFor":{"@id":"https://www.karv.global/#organization"}},{"@type":"Person","@id":"https://www.karv.global/#person-6","name":null,"worksFor":{"@id":"https://www.karv.global/#organization"}},{"@type":"Person","@id":"https://www.karv.global/#person-7","name":null,"worksFor":{"@id":"https://www.karv.global/#organization"}},{"@type":"Person","@id":"https://www.karv.global/#person-8","name":null,"worksFor":{"@id":"https://www.karv.global/#organization"}}]}
 [
 {
 "event_message": "shutdown",
 "event_type": "Shutdown",
-"function_id": "3d75192b-869e-4549-b23a-faed21f6e1e8",
-"id": "9d86b9e4-7468-48be-aa04-ef8f3685db07",
+"function_id": "075e42eb-5b48-47ff-b5a5-521fe5fcaf40",
+"id": "9a049b59-5adf-496f-bba6-10527ec7dd39",
 "level": "log",
-"timestamp": 1761924512859000
+"timestamp": 1761924524029000
 },
 {
-"event_message": "✅ Scraped 10/10 pages successfully\n",
+"event_message": "✅ Entity Extraction Complete: {\n total_entities: 18,\n products: 0,\n services: 5,\n team: 9,\n locations: 4,\n subsidiaries: 0\n}\n",
 "event_type": "Log",
-"function_id": "3d75192b-869e-4549-b23a-faed21f6e1e8",
-"id": "b2fb749a-c5a7-438c-a6fe-38eae2891e23",
+"function_id": "075e42eb-5b48-47ff-b5a5-521fe5fcaf40",
+"id": "0a5c4859-21d1-4e22-9a5d-898f57b16456",
 "level": "info",
-"timestamp": 1761924323842000
+"timestamp": 1761924353212000
 },
 {
-"event_message": " 📄 Scraping: https://www.karv.global/contact\n",
+"event_message": "✅ Entity Extraction Complete: {\n total_entities: 18,\n products: 0,\n services: 5,\n team: 9,\n locations: 4,\n subsidiaries: 0\n}\n",
 "event_type": "Log",
-"function_id": "3d75192b-869e-4549-b23a-faed21f6e1e8",
-"id": "396da97c-aa67-4370-a57f-d35ce0ba96de",
+"function_id": "075e42eb-5b48-47ff-b5a5-521fe5fcaf40",
+"id": "2effd06d-667a-418e-b32e-9c59fc902e93",
 "level": "info",
-"timestamp": 1761924312850000
-},
-{
-"event_message": " 📄 Scraping: https://www.karv.global/locations\n",
-"event_type": "Log",
-"function_id": "3d75192b-869e-4549-b23a-faed21f6e1e8",
-"id": "564a99c7-f1a2-4dc8-a4d3-b8afded87bd4",
-"level": "info",
-"timestamp": 1761924312850000
-},
-{
-"event_message": " 📄 Scraping: https://www.karv.global/solutions\n",
-"event_type": "Log",
-"function_id": "3d75192b-869e-4549-b23a-faed21f6e1e8",
-"id": "c527ea0d-7ef0-4f1c-8253-2ad4b3c4d9d1",
-"level": "info",
-"timestamp": 1761924312850000
-},
-{
-"event_message": " 📄 Scraping: https://www.karv.global/team\n",
-"event_type": "Log",
-"function_id": "3d75192b-869e-4549-b23a-faed21f6e1e8",
-"id": "f6db1143-7db4-4939-ba43-525e406cf9f3",
-"level": "info",
-"timestamp": 1761924312849000
-},
-{
-"event_message": " 📄 Scraping: https://www.karv.global/services\n",
-"event_type": "Log",
-"function_id": "3d75192b-869e-4549-b23a-faed21f6e1e8",
-"id": "cd7d3fbd-c756-4321-bc6a-1fb542c4d9d6",
-"level": "info",
-"timestamp": 1761924312849000
-},
-{
-"event_message": " 📄 Scraping: https://www.karv.global/products\n",
-"event_type": "Log",
-"function_id": "3d75192b-869e-4549-b23a-faed21f6e1e8",
-"id": "c471dcde-8df0-4c14-9b6f-b050778b5b3b",
-"level": "info",
-"timestamp": 1761924312849000
-},
-{
-"event_message": " 📄 Scraping: https://www.karv.global/leadership\n",
-"event_type": "Log",
-"function_id": "3d75192b-869e-4549-b23a-faed21f6e1e8",
-"id": "74f816ef-a8f8-419e-ab20-bfcc7e5cd19a",
-"level": "info",
-"timestamp": 1761924312849000
-},
-{
-"event_message": " 📄 Scraping: https://www.karv.global/about-us\n",
-"event_type": "Log",
-"function_id": "3d75192b-869e-4549-b23a-faed21f6e1e8",
-"id": "da45c419-8d75-4214-b2f9-e9891065b477",
-"level": "info",
-"timestamp": 1761924312848000
-},
-{
-"event_message": " 📄 Scraping: https://www.karv.global/about\n",
-"event_type": "Log",
-"function_id": "3d75192b-869e-4549-b23a-faed21f6e1e8",
-"id": "dcdab0c5-cc5a-40f2-aa45-153dd2c2d96e",
-"level": "info",
-"timestamp": 1761924312848000
-},
-{
-"event_message": "🌐 Website Scraper Starting: { organization_name: \"KARV\", website_url: \"https://www.karv.global/\" }\n",
-"event_type": "Log",
-"function_id": "3d75192b-869e-4549-b23a-faed21f6e1e8",
-"id": "c7a06d00-3da9-43a1-9c10-6c424ce3ef05",
-"level": "info",
-"timestamp": 1761924312846000
-},
-{
-"event_message": "🔍 Scraping 10 pages...\n",
-"event_type": "Log",
-"function_id": "3d75192b-869e-4549-b23a-faed21f6e1e8",
-"id": "d6dc274f-6b74-460e-9ab4-13aa20bc94f9",
-"level": "info",
-"timestamp": 1761924312846000
-},
-{
-"event_message": " 📄 Scraping: https://www.karv.global\n",
-"event_type": "Log",
-"function_id": "3d75192b-869e-4549-b23a-faed21f6e1e8",
-"id": "4d11a67f-0cff-41a1-8b89-481b9496a469",
-"level": "info",
-"timestamp": 1761924312846000
-},
-{
-"event_message": "Listening on http://localhost:9999/\n",
-"event_type": "Log",
-"function_id": "3d75192b-869e-4549-b23a-faed21f6e1e8",
-"id": "1d8aaa69-a686-4fa4-a4a9-b928d12d71ac",
-"level": "info",
-"timestamp": 1761924312843000
-},
-{
-"event_message": "booted (time: 23ms)",
-"event_type": "Boot",
-"function_id": "3d75192b-869e-4549-b23a-faed21f6e1e8",
-"id": "0af3e5c4-516c-4cc3-bcdd-fcefd26d0572",
-"level": "log",
-"timestamp": 1761924312841000
+"timestamp": 1761924353212000
 },
 {
 "event_message": "shutdown",
 "event_type": "Shutdown",
-"function_id": "3d75192b-869e-4549-b23a-faed21f6e1e8",
-"id": "b6169e41-b17a-44e7-9c4c-7ae7dc0be779",
+"function_id": "075e42eb-5b48-47ff-b5a5-521fe5fcaf40",
+"id": "4b0c995c-6a38-4f5a-a6e1-cd4d3db6fac7",
 "level": "log",
-"timestamp": 1761922424957000
+"timestamp": 1761922452665000
 },
 {
-"event_message": "✅ Scraped 10/10 pages successfully\n",
+"event_message": "✅ Entity Extraction Complete: {\n total_entities: 18,\n products: 0,\n services: 5,\n team: 9,\n locations: 4,\n subsidiaries: 0\n}\n",
 "event_type": "Log",
-"function_id": "3d75192b-869e-4549-b23a-faed21f6e1e8",
-"id": "1df628a5-0a23-4b11-8d09-6cef77992a47",
+"function_id": "075e42eb-5b48-47ff-b5a5-521fe5fcaf40",
+"id": "fd0348c2-3689-4efb-b8af-e495715a2ef3",
 "level": "info",
-"timestamp": 1761922252473000
+"timestamp": 1761922286967000
 },
 {
-"event_message": " 📄 Scraping: https://www.karv.global/team\n",
+"event_message": "📄 Processing 19696 characters of text\n",
 "event_type": "Log",
-"function_id": "3d75192b-869e-4549-b23a-faed21f6e1e8",
-"id": "72df561b-a6a1-410f-a625-43e875c9f8b7",
+"function_id": "075e42eb-5b48-47ff-b5a5-521fe5fcaf40",
+"id": "6fb74e3a-08a5-4172-8dad-7cc56df17596",
 "level": "info",
-"timestamp": 1761922224951000
+"timestamp": 1761922252657000
 },
 {
-"event_message": " 📄 Scraping: https://www.karv.global/leadership\n",
+"event_message": "🔍 Entity Extractor Starting: { organization_name: \"KARV\", pages_count: 10 }\n",
 "event_type": "Log",
-"function_id": "3d75192b-869e-4549-b23a-faed21f6e1e8",
-"id": "4036a8ec-c659-4320-80f9-d8c69c906999",
+"function_id": "075e42eb-5b48-47ff-b5a5-521fe5fcaf40",
+"id": "11b326a2-1fc0-456d-9168-f9c2c3bd1e7d",
 "level": "info",
-"timestamp": 1761922224951000
-},
-{
-"event_message": " 📄 Scraping: https://www.karv.global/contact\n",
-"event_type": "Log",
-"function_id": "3d75192b-869e-4549-b23a-faed21f6e1e8",
-"id": "44ec0278-3130-4808-86ab-e728f132a2dd",
-"level": "info",
-"timestamp": 1761922224951000
-},
-{
-"event_message": " 📄 Scraping: https://www.karv.global/about\n",
-"event_type": "Log",
-"function_id": "3d75192b-869e-4549-b23a-faed21f6e1e8",
-"id": "7a056911-643b-45ac-a232-bdc8407e5d87",
-"level": "info",
-"timestamp": 1761922224951000
-},
-{
-"event_message": " 📄 Scraping: https://www.karv.global/locations\n",
-"event_type": "Log",
-"function_id": "3d75192b-869e-4549-b23a-faed21f6e1e8",
-"id": "1a5f0ab4-6467-4e94-838c-d20f5700ad3b",
-"level": "info",
-"timestamp": 1761922224951000
-},
-{
-"event_message": " 📄 Scraping: https://www.karv.global/products\n",
-"event_type": "Log",
-"function_id": "3d75192b-869e-4549-b23a-faed21f6e1e8",
-"id": "f831f0b9-10e0-477c-95c7-c0247cae69e9",
-"level": "info",
-"timestamp": 1761922224951000
-},
-{
-"event_message": " 📄 Scraping: https://www.karv.global/solutions\n",
-"event_type": "Log",
-"function_id": "3d75192b-869e-4549-b23a-faed21f6e1e8",
-"id": "20c0a154-043d-4043-973d-11b75977b408",
-"level": "info",
-"timestamp": 1761922224951000
-},
-{
-"event_message": " 📄 Scraping: https://www.karv.global/services\n",
-"event_type": "Log",
-"function_id": "3d75192b-869e-4549-b23a-faed21f6e1e8",
-"id": "e7a05f79-7e1a-49ac-85cb-8b79e931debb",
-"level": "info",
-"timestamp": 1761922224951000
-},
-{
-"event_message": " 📄 Scraping: https://www.karv.global/about-us\n",
-"event_type": "Log",
-"function_id": "3d75192b-869e-4549-b23a-faed21f6e1e8",
-"id": "dd0567bc-b7e4-4dbd-a456-84152677f0e8",
-"level": "info",
-"timestamp": 1761922224951000
-},
-{
-"event_message": "🔍 Scraping 10 pages...\n",
-"event_type": "Log",
-"function_id": "3d75192b-869e-4549-b23a-faed21f6e1e8",
-"id": "922ee283-db89-4835-bf7b-70696694ce5a",
-"level": "info",
-"timestamp": 1761922224948000
-},
-{
-"event_message": " 📄 Scraping: https://www.karv.global\n",
-"event_type": "Log",
-"function_id": "3d75192b-869e-4549-b23a-faed21f6e1e8",
-"id": "e76cd2d9-dbf4-4cd1-99ff-0c4a0c02566f",
-"level": "info",
-"timestamp": 1761922224948000
-},
-{
-"event_message": "🌐 Website Scraper Starting: { organization_name: \"KARV\", website_url: \"https://www.karv.global/\" }\n",
-"event_type": "Log",
-"function_id": "3d75192b-869e-4549-b23a-faed21f6e1e8",
-"id": "fc1c2935-a2db-40c8-b66e-3de073b5aac1",
-"level": "info",
-"timestamp": 1761922224947000
+"timestamp": 1761922252657000
 },
 {
 "event_message": "Listening on http://localhost:9999/\n",
 "event_type": "Log",
-"function_id": "3d75192b-869e-4549-b23a-faed21f6e1e8",
-"id": "1b09927a-488c-4907-a75f-3ce5cf9ff5e5",
+"function_id": "075e42eb-5b48-47ff-b5a5-521fe5fcaf40",
+"id": "8d4db807-0d8b-498f-80e6-969b8d86eb6b",
 "level": "info",
-"timestamp": 1761922224941000
+"timestamp": 1761922252650000
+},
+{
+"event_message": "booted (time: 28ms)",
+"event_type": "Boot",
+"function_id": "075e42eb-5b48-47ff-b5a5-521fe5fcaf40",
+"id": "da959475-c8d6-457b-8399-775ade07672c",
+"level": "log",
+"timestamp": 1761922252648000
+}
+]
+
+[
+{
+"event_message": "shutdown",
+"event_type": "Shutdown",
+"function_id": "5b7a7e18-df8f-4b30-b0b2-c2f282ae60d5",
+"id": "eb36fe4c-91f7-40a7-8373-cd321ad5e8a1",
+"level": "log",
+"timestamp": 1761924553406000
+},
+{
+"event_message": "✅ Entity Enrichment Complete: {\n total_enriched: 18,\n products: 0,\n services: 5,\n team: 9,\n locations: 4,\n subsidiaries: 0\n}\n",
+"event_type": "Log",
+"function_id": "5b7a7e18-df8f-4b30-b0b2-c2f282ae60d5",
+"id": "d8bd17c8-ec57-42fa-8892-e29e6c48d357",
+"level": "info",
+"timestamp": 1761924353399000
+},
+{
+"event_message": "🔄 Deduplication complete: {\n products: \"0 → 0\",\n services: \"5 → 5\",\n team: \"9 → 9\",\n locations: \"4 → 4\",\n subsidiaries: \"0 → 0\"\n}\n",
+"event_type": "Log",
+"function_id": "5b7a7e18-df8f-4b30-b0b2-c2f282ae60d5",
+"id": "047c3b7b-d7a2-4b27-8e1b-a19a0ccb4cc1",
+"level": "info",
+"timestamp": 1761924353399000
+},
+{
+"event_message": "✅ Entity Enrichment Complete: {\n total_enriched: 18,\n products: 0,\n services: 5,\n team: 9,\n locations: 4,\n subsidiaries: 0\n}\n",
+"event_type": "Log",
+"function_id": "5b7a7e18-df8f-4b30-b0b2-c2f282ae60d5",
+"id": "7c1d8eef-2a36-464c-ac5a-2f2dcbaf6dc8",
+"level": "info",
+"timestamp": 1761924353399000
+},
+{
+"event_message": "🔄 Deduplication complete: {\n products: \"0 → 0\",\n services: \"5 → 5\",\n team: \"9 → 9\",\n locations: \"4 → 4\",\n subsidiaries: \"0 → 0\"\n}\n",
+"event_type": "Log",
+"function_id": "5b7a7e18-df8f-4b30-b0b2-c2f282ae60d5",
+"id": "00ab1b38-0f29-44c2-8fff-6bedaa95dcdb",
+"level": "info",
+"timestamp": 1761924353399000
+},
+{
+"event_message": "✨ Entity Enricher Starting: {\n organization_name: \"KARV\",\n input_totals: { products: 0, services: 5, team: 9, locations: 4, subsidiaries: 0 }\n}\n",
+"event_type": "Log",
+"function_id": "5b7a7e18-df8f-4b30-b0b2-c2f282ae60d5",
+"id": "65a37af5-a1ad-4b9d-8cab-854c63d34d04",
+"level": "info",
+"timestamp": 1761924353398000
+},
+{
+"event_message": "✨ Entity Enricher Starting: {\n organization_name: \"KARV\",\n input_totals: { products: 0, services: 5, team: 9, locations: 4, subsidiaries: 0 }\n}\n",
+"event_type": "Log",
+"function_id": "5b7a7e18-df8f-4b30-b0b2-c2f282ae60d5",
+"id": "8b2de091-33dd-4cb8-99d0-78a045d288f0",
+"level": "info",
+"timestamp": 1761924353398000
+},
+{
+"event_message": "Listening on http://localhost:9999/\n",
+"event_type": "Log",
+"function_id": "5b7a7e18-df8f-4b30-b0b2-c2f282ae60d5",
+"id": "54384c95-78ce-45d9-b3c5-b87e6645cbde",
+"level": "info",
+"timestamp": 1761924353395000
+},
+{
+"event_message": "Listening on http://localhost:9999/\n",
+"event_type": "Log",
+"function_id": "5b7a7e18-df8f-4b30-b0b2-c2f282ae60d5",
+"id": "c8ec5cdf-2317-448a-9915-1f5b6d87fd2a",
+"level": "info",
+"timestamp": 1761924353395000
+},
+{
+"event_message": "booted (time: 22ms)",
+"event_type": "Boot",
+"function_id": "5b7a7e18-df8f-4b30-b0b2-c2f282ae60d5",
+"id": "2b9a369a-9d17-4ab9-8630-d0eb060b83c1",
+"level": "log",
+"timestamp": 1761924353394000
+},
+{
+"event_message": "booted (time: 22ms)",
+"event_type": "Boot",
+"function_id": "5b7a7e18-df8f-4b30-b0b2-c2f282ae60d5",
+"id": "de58ec2b-c0a7-471b-8aa7-869b69af702c",
+"level": "log",
+"timestamp": 1761924353394000
+},
+{
+"event_message": "shutdown",
+"event_type": "Shutdown",
+"function_id": "5b7a7e18-df8f-4b30-b0b2-c2f282ae60d5",
+"id": "d8dc4f73-d186-48cd-92c0-44c39e013d02",
+"level": "log",
+"timestamp": 1761922487103000
+},
+{
+"event_message": "✅ Entity Enrichment Complete: {\n total_enriched: 18,\n products: 0,\n services: 5,\n team: 9,\n locations: 4,\n subsidiaries: 0\n}\n",
+"event_type": "Log",
+"function_id": "5b7a7e18-df8f-4b30-b0b2-c2f282ae60d5",
+"id": "f295eb1a-a563-45b1-85f8-ed8b67597bf7",
+"level": "info",
+"timestamp": 1761922287096000
+},
+{
+"event_message": "🔄 Deduplication complete: {\n products: \"0 → 0\",\n services: \"5 → 5\",\n team: \"9 → 9\",\n locations: \"4 → 4\",\n subsidiaries: \"0 → 0\"\n}\n",
+"event_type": "Log",
+"function_id": "5b7a7e18-df8f-4b30-b0b2-c2f282ae60d5",
+"id": "8b7a4923-b266-4e80-be48-f1f6c6e208cb",
+"level": "info",
+"timestamp": 1761922287096000
+},
+{
+"event_message": "✨ Entity Enricher Starting: {\n organization_name: \"KARV\",\n input_totals: { products: 0, services: 5, team: 9, locations: 4, subsidiaries: 0 }\n}\n",
+"event_type": "Log",
+"function_id": "5b7a7e18-df8f-4b30-b0b2-c2f282ae60d5",
+"id": "b2b37593-88e1-4b2f-bf14-1ab975a058aa",
+"level": "info",
+"timestamp": 1761922287095000
+},
+{
+"event_message": "Listening on http://localhost:9999/\n",
+"event_type": "Log",
+"function_id": "5b7a7e18-df8f-4b30-b0b2-c2f282ae60d5",
+"id": "aa25ddc9-89b3-4f6f-a400-b3687560eed0",
+"level": "info",
+"timestamp": 1761922287092000
 },
 {
 "event_message": "booted (time: 23ms)",
 "event_type": "Boot",
-"function_id": "3d75192b-869e-4549-b23a-faed21f6e1e8",
-"id": "536c61b8-24b5-4707-b0f9-4cac9ca5f72b",
+"function_id": "5b7a7e18-df8f-4b30-b0b2-c2f282ae60d5",
+"id": "db36914a-cfb2-43a7-9981-e0eb39ecd296",
 "level": "log",
-"timestamp": 1761922224940000
+"timestamp": 1761922287091000
+}
+]
+
+[
+{
+"event_message": "shutdown",
+"event_type": "Shutdown",
+"function_id": "6286e138-3573-4daf-9317-3d1ee0659af3",
+"id": "b243302e-1346-4b47-bd66-1d5a22a63ce3",
+"level": "log",
+"timestamp": 1761924568428000
+},
+{
+"event_message": "✅ Schema Graph Generator Complete\n",
+"event_type": "Log",
+"function_id": "6286e138-3573-4daf-9317-3d1ee0659af3",
+"id": "50d7c1ba-c617-4e0d-ac43-623d59ee87c8",
+"level": "info",
+"timestamp": 1761924368672000
+},
+{
+"event_message": "✅ Schema graph generated: {\n total_entities: 19,\n organization: 1,\n products: 0,\n services: 5,\n locations: 4,\n subsidiaries: 0,\n team: 9,\n coverage: 0\n}\n",
+"event_type": "Log",
+"function_id": "6286e138-3573-4daf-9317-3d1ee0659af3",
+"id": "e4ee44a6-2e87-406f-83eb-be2d46779ba3",
+"level": "info",
+"timestamp": 1761924368511000
+},
+{
+"event_message": "💾 Step 5: Saving schema graph...\n",
+"event_type": "Log",
+"function_id": "6286e138-3573-4daf-9317-3d1ee0659af3",
+"id": "cec79776-d099-491d-8ffb-78238aa4efb7",
+"level": "info",
+"timestamp": 1761924368511000
+},
+{
+"event_message": "🔨 Step 4: Building schema graph...\n",
+"event_type": "Log",
+"function_id": "6286e138-3573-4daf-9317-3d1ee0659af3",
+"id": "e52b9020-f94c-45a6-91ea-c758a37db917",
+"level": "info",
+"timestamp": 1761924368511000
+},
+{
+"event_message": " ✓ Using passed entities: { products: 0, services: 5, locations: 4, subsidiaries: 0, team: 9 }\n",
+"event_type": "Log",
+"function_id": "6286e138-3573-4daf-9317-3d1ee0659af3",
+"id": "75f19e35-43d1-46af-9739-96fe440d106c",
+"level": "info",
+"timestamp": 1761924368428000
+},
+{
+"event_message": "🏆 Step 2: Getting positive coverage...\n",
+"event_type": "Log",
+"function_id": "6286e138-3573-4daf-9317-3d1ee0659af3",
+"id": "cb7a5e67-2881-43c2-a610-35f3356ff3bc",
+"level": "info",
+"timestamp": 1761924368428000
+},
+{
+"event_message": "📚 Step 1: Getting entities...\n",
+"event_type": "Log",
+"function_id": "6286e138-3573-4daf-9317-3d1ee0659af3",
+"id": "fe8d4cc6-f360-4840-a5b8-016973254d9b",
+"level": "info",
+"timestamp": 1761924368428000
+},
+{
+"event_message": " ✓ Using passed coverage: 0 articles\n",
+"event_type": "Log",
+"function_id": "6286e138-3573-4daf-9317-3d1ee0659af3",
+"id": "e744c8eb-c27a-4d03-9e02-0a3be0be764a",
+"level": "info",
+"timestamp": 1761924368428000
+},
+{
+"event_message": "🏢 Step 3: Getting organization data...\n",
+"event_type": "Log",
+"function_id": "6286e138-3573-4daf-9317-3d1ee0659af3",
+"id": "568e8750-bf6c-4594-b428-f3c652b25bdd",
+"level": "info",
+"timestamp": 1761924368428000
+},
+{
+"event_message": "📊 Schema Graph Generator Starting: {\n organization_name: \"KARV\",\n industry: \"Public Relations & Communications Services\",\n url: \"https://www.karv.global/\",\n has_entities: true,\n has_coverage: true\n}\n",
+"event_type": "Log",
+"function_id": "6286e138-3573-4daf-9317-3d1ee0659af3",
+"id": "6a5af294-eedd-4272-a658-2dfb5a9d62bf",
+"level": "info",
+"timestamp": 1761924368425000
+},
+{
+"event_message": "Listening on http://localhost:9999/\n",
+"event_type": "Log",
+"function_id": "6286e138-3573-4daf-9317-3d1ee0659af3",
+"id": "bf4ed2a5-0b53-4a16-a95a-8d9a5dc25afb",
+"level": "info",
+"timestamp": 1761924368420000
+},
+{
+"event_message": "booted (time: 32ms)",
+"event_type": "Boot",
+"function_id": "6286e138-3573-4daf-9317-3d1ee0659af3",
+"id": "be1b4bb3-2171-434d-87e1-9f8c7dcc368e",
+"level": "log",
+"timestamp": 1761924368416000
+},
+{
+"event_message": "shutdown",
+"event_type": "Shutdown",
+"function_id": "6286e138-3573-4daf-9317-3d1ee0659af3",
+"id": "391698ed-2a0c-430b-8172-23778bdb61f7",
+"level": "log",
+"timestamp": 1761922500021000
+},
+{
+"event_message": "✅ Schema Graph Generator Complete\n",
+"event_type": "Log",
+"function_id": "6286e138-3573-4daf-9317-3d1ee0659af3",
+"id": "eabba276-a885-45ef-9174-084ca6b2df2a",
+"level": "info",
+"timestamp": 1761922300247000
+},
+{
+"event_message": "✅ Schema graph generated: {\n total_entities: 19,\n organization: 1,\n products: 0,\n services: 5,\n locations: 4,\n subsidiaries: 0,\n team: 9,\n coverage: 0\n}\n",
+"event_type": "Log",
+"function_id": "6286e138-3573-4daf-9317-3d1ee0659af3",
+"id": "88f4acac-7dda-4927-8082-31683e41097e",
+"level": "info",
+"timestamp": 1761922300082000
+},
+{
+"event_message": "🔨 Step 4: Building schema graph...\n",
+"event_type": "Log",
+"function_id": "6286e138-3573-4daf-9317-3d1ee0659af3",
+"id": "5f0ceb53-6b21-4d14-afff-48b40da77be4",
+"level": "info",
+"timestamp": 1761922300082000
+},
+{
+"event_message": "💾 Step 5: Saving schema graph...\n",
+"event_type": "Log",
+"function_id": "6286e138-3573-4daf-9317-3d1ee0659af3",
+"id": "8eb1c397-83a0-4a6e-b451-97feeecb8e3a",
+"level": "info",
+"timestamp": 1761922300082000
+},
+{
+"event_message": " ✓ Using passed coverage: 0 articles\n",
+"event_type": "Log",
+"function_id": "6286e138-3573-4daf-9317-3d1ee0659af3",
+"id": "6647ec53-ac30-47f5-8fc0-0ad2cdd18b6e",
+"level": "info",
+"timestamp": 1761922300009000
+},
+{
+"event_message": " ✓ Using passed entities: { products: 0, services: 5, locations: 4, subsidiaries: 0, team: 9 }\n",
+"event_type": "Log",
+"function_id": "6286e138-3573-4daf-9317-3d1ee0659af3",
+"id": "6398a2f8-a3e0-46eb-a2e6-e78c0bdc6c08",
+"level": "info",
+"timestamp": 1761922300009000
+},
+{
+"event_message": "🏢 Step 3: Getting organization data...\n",
+"event_type": "Log",
+"function_id": "6286e138-3573-4daf-9317-3d1ee0659af3",
+"id": "c305a786-c215-49e6-a632-bb833793da38",
+"level": "info",
+"timestamp": 1761922300009000
+},
+{
+"event_message": "🏆 Step 2: Getting positive coverage...\n",
+"event_type": "Log",
+"function_id": "6286e138-3573-4daf-9317-3d1ee0659af3",
+"id": "d3537551-41c4-4405-b09b-cfcf5530fba3",
+"level": "info",
+"timestamp": 1761922300009000
+},
+{
+"event_message": "📚 Step 1: Getting entities...\n",
+"event_type": "Log",
+"function_id": "6286e138-3573-4daf-9317-3d1ee0659af3",
+"id": "8b8a770f-4b73-4373-8933-735884d57391",
+"level": "info",
+"timestamp": 1761922300009000
+},
+{
+"event_message": "📊 Schema Graph Generator Starting: {\n organization_name: \"KARV\",\n industry: \"public-relations\",\n url: \"https://www.karv.global/\",\n has_entities: true,\n has_coverage: true\n}\n",
+"event_type": "Log",
+"function_id": "6286e138-3573-4daf-9317-3d1ee0659af3",
+"id": "cf2f5583-9e68-4d9b-98f9-6905c8e8ecb9",
+"level": "info",
+"timestamp": 1761922300006000
+},
+{
+"event_message": "Listening on http://localhost:9999/\n",
+"event_type": "Log",
+"function_id": "6286e138-3573-4daf-9317-3d1ee0659af3",
+"id": "39db9f5a-60f8-4584-bab2-ae0d7ef782ee",
+"level": "info",
+"timestamp": 1761922300002000
+},
+{
+"event_message": "booted (time: 32ms)",
+"event_type": "Boot",
+"function_id": "6286e138-3573-4daf-9317-3d1ee0659af3",
+"id": "cd95101c-f64f-4b42-8fef-77767fa32254",
+"level": "log",
+"timestamp": 1761922299998000
 }
 ]
