@@ -310,7 +310,7 @@ serve(async (req) => {
           organization_name,
           industry: industry,
           base_schema: schemaData.schema_graph,
-          coverage_articles: coverageData?.articles || [],
+          coverage_articles: [], // No coverage articles - users provide links manually
           entities: enrichData.enriched_entities || {}
         })
       }
