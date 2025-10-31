@@ -156,15 +156,83 @@ export default function WorkspaceCanvasComponent({
     try {
       const contextText = selectedText || editorContent;
 
+      // Detect if we're working with Schema.org JSON-LD
+      const isSchema = currentContent?.content_type === 'schema' ||
+                      editorContent.trim().startsWith('{') ||
+                      editorContent.trim().startsWith('[');
+
       let systemPrompt = '';
       let userMessage = '';
 
       if (mode === 'edit') {
-        systemPrompt = 'You are an expert PR and marketing content editor. Edit the content to improve clarity, impact, and professional tone. Return ONLY the edited content, no explanations.';
-        userMessage = `Edit this content:\n\n${contextText}`;
+        if (isSchema) {
+          systemPrompt = `You are a Schema.org expert. You help edit Schema.org JSON-LD markup.
+
+CRITICAL RULES:
+1. ONLY return valid JSON - no explanations, no markdown, no text
+2. If adding something new (award, FAQ, etc), return ONLY the new entity/entities to add
+3. If modifying existing content, return the COMPLETE updated schema
+4. Always use proper Schema.org types (@type, @id)
+5. Follow Schema.org standards exactly
+
+For example:
+- Adding an award: Return just the Award object
+- Adding a FAQ: Return just the Question object
+- Updating description: Return the full schema with the updated field`;
+          userMessage = `User request: ${aiPrompt || 'Edit this content'}
+
+Current Schema:
+${contextText}
+
+Return ONLY valid JSON with no explanations.`;
+        } else {
+          systemPrompt = 'You are an expert PR and marketing content editor. Edit the content to improve clarity, impact, and professional tone. Return ONLY the edited content, no explanations.';
+          userMessage = `Edit this content:\n\n${contextText}`;
+        }
       } else {
-        systemPrompt = 'You are an expert PR and marketing content strategist. Provide specific, actionable recommendations to improve this content. Be concise and practical.';
-        userMessage = `${aiPrompt}\n\nContent:\n${contextText}`;
+        if (isSchema) {
+          systemPrompt = `You are a Schema.org expert. You help edit Schema.org JSON-LD markup.
+
+CRITICAL RULES:
+1. ONLY return valid JSON - no explanations, no markdown, no text
+2. If the user wants to ADD something (award, FAQ, person, service, etc), return ONLY the new entity/entities as JSON
+3. If the user wants to MODIFY something, return the COMPLETE updated schema
+4. Always use proper Schema.org types (@type, @id, etc)
+5. Use proper Schema.org properties (name, description, url, etc)
+6. Generate proper @id values using the organization URL as base
+
+Examples:
+User: "Add that we won the PR News Platinum award in 2024"
+You return: {
+  "@type": "Award",
+  "@id": "https://www.company.com/#award-prnews-2024",
+  "name": "PR News Platinum Award",
+  "dateAwarded": "2024",
+  "awarder": {
+    "@type": "Organization",
+    "name": "PR News"
+  }
+}
+
+User: "Add a FAQ about our pricing"
+You return: {
+  "@type": "Question",
+  "name": "What are your pricing options?",
+  "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "We offer custom pricing based on..."
+  }
+}`;
+          userMessage = `User request: ${aiPrompt}
+
+Current Schema:
+${contextText}
+
+Return ONLY valid JSON with no explanations or markdown.`;
+        } else {
+          systemPrompt = 'You are an expert PR and marketing content strategist. Provide specific, actionable recommendations to improve this content. Be concise and practical.';
+          userMessage = `${aiPrompt}\n\nContent:\n${contextText}`;
+        }
       }
 
       const response = await fetch('/api/claude-direct', {
@@ -221,15 +289,20 @@ export default function WorkspaceCanvasComponent({
         if (isSchema) {
           // For schemas: Try to merge AI recommendations
           try {
+            // Clean AI response - remove markdown code blocks if present
+            let cleanedResponse = aiResponse.trim();
+            if (cleanedResponse.startsWith('```')) {
+              cleanedResponse = cleanedResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+            }
+
             const existingSchema = JSON.parse(editorContent);
-            const aiSuggestion = JSON.parse(aiResponse);
+            const aiSuggestion = JSON.parse(cleanedResponse);
 
             // Merge strategies based on what AI returned
             let mergedSchema = { ...existingSchema };
 
-            // If AI returned a full schema with @graph, merge the graphs
+            // CASE 1: AI returned a full schema with @graph - merge the graphs
             if (aiSuggestion['@graph'] && existingSchema['@graph']) {
-              // Find new entities in AI suggestion
               const existingIds = new Set(
                 existingSchema['@graph'].map((e: any) => e['@id']).filter(Boolean)
               );
@@ -240,24 +313,71 @@ export default function WorkspaceCanvasComponent({
 
               mergedSchema['@graph'] = [...existingSchema['@graph'], ...newEntities];
 
-              // Also merge top-level properties from AI suggestion
+              // Merge top-level properties from AI suggestion
               Object.keys(aiSuggestion).forEach(key => {
                 if (key !== '@graph' && key !== '@context') {
                   mergedSchema[key] = aiSuggestion[key];
                 }
               });
-            } else if (aiSuggestion['@graph']) {
-              // AI returned a new graph structure - append to existing
+            }
+            // CASE 2: AI returned a single entity (Award, Question, Person, etc) - add to @graph
+            else if (aiSuggestion['@type'] && existingSchema['@graph']) {
+              // Single entity - add it to the graph
+              mergedSchema['@graph'] = [...existingSchema['@graph'], aiSuggestion];
+
+              // Special handling: If it's an Award, add awards property to Organization
+              if (aiSuggestion['@type'] === 'Award') {
+                const orgEntity = mergedSchema['@graph'].find((e: any) => e['@type'] === 'Organization');
+                if (orgEntity) {
+                  if (!orgEntity.award) {
+                    orgEntity.award = [];
+                  }
+                  if (Array.isArray(orgEntity.award)) {
+                    orgEntity.award.push({ '@id': aiSuggestion['@id'] });
+                  }
+                }
+              }
+
+              // Special handling: If it's a Question, add to FAQPage or create one
+              if (aiSuggestion['@type'] === 'Question') {
+                let faqPage = mergedSchema['@graph'].find((e: any) => e['@type'] === 'FAQPage');
+                if (!faqPage) {
+                  // Create FAQPage if it doesn't exist
+                  const orgEntity = mergedSchema['@graph'].find((e: any) => e['@type'] === 'Organization');
+                  const orgUrl = orgEntity?.url || 'https://www.example.com';
+                  faqPage = {
+                    '@type': 'FAQPage',
+                    '@id': `${orgUrl}#faqpage`,
+                    'mainEntity': []
+                  };
+                  mergedSchema['@graph'].push(faqPage);
+
+                  // Link FAQPage to Organization
+                  if (orgEntity) {
+                    orgEntity.mainEntity = [{ '@id': faqPage['@id'] }];
+                  }
+                }
+
+                // Add question to FAQPage
+                if (faqPage.mainEntity && Array.isArray(faqPage.mainEntity)) {
+                  faqPage.mainEntity.push(aiSuggestion);
+                }
+              }
+            }
+            // CASE 3: AI returned a new graph structure - append to existing
+            else if (aiSuggestion['@graph']) {
               mergedSchema['@graph'] = [...(existingSchema['@graph'] || []), ...aiSuggestion['@graph']];
-            } else {
-              // AI returned individual properties/enhancements - merge them
+            }
+            // CASE 4: AI returned property updates - merge them
+            else {
               mergedSchema = { ...existingSchema, ...aiSuggestion };
             }
 
             setEditorContent(JSON.stringify(mergedSchema, null, 2));
           } catch (e) {
-            // If parsing fails, append AI response as comment/note
-            setEditorContent(editorContent + '\n\n/* AI Suggestion:\n' + aiResponse + '\n*/');
+            console.error('Schema merge error:', e);
+            // If parsing fails, append AI response as comment
+            setEditorContent(editorContent + '\n\n/* AI Suggestion (failed to parse):\n' + aiResponse + '\n*/');
           }
         } else {
           // For non-schema content: Append AI response
