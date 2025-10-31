@@ -33,7 +33,7 @@ serve(async (req) => {
     const {
       organization_id,
       organization_name,
-      recency_window = '90days', // Look back 90 days for positive coverage
+      recency_window = '2years', // Look back 2 years for positive coverage (we only take 5 anyway)
       max_results_per_query = 5
     }: ScraperRequest = await req.json()
 
@@ -229,7 +229,8 @@ function filterByRecency(articles: any[], recencyWindow: string): any[] {
     '30days': 30 * 24 * 60 * 60 * 1000,
     '90days': 90 * 24 * 60 * 60 * 1000,
     '180days': 180 * 24 * 60 * 60 * 1000,
-    '1year': 365 * 24 * 60 * 60 * 1000
+    '1year': 365 * 24 * 60 * 60 * 1000,
+    '2years': 730 * 24 * 60 * 60 * 1000
   }
 
   const windowMs = windowMap[recencyWindow] || windowMap['90days']

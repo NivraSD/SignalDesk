@@ -524,11 +524,24 @@ async function analyzeAndEnhanceProfile(
   industry_hint?: string
 ) {
   const analysisPrompt = `
-You are creating a COMPREHENSIVE intelligence monitoring profile for ${organization_name}.
+You are creating a PR/COMMUNICATIONS INTELLIGENCE monitoring profile for ${organization_name}.
+
+🎯 CRITICAL: THIS IS A PR/STRATEGIC INTELLIGENCE SYSTEM
+This is NOT a generic news monitor. Every target must be justified by PR/strategic value:
+- How does monitoring this target impact ${organization_name}'s NARRATIVE?
+- How does it affect ${organization_name}'s REPUTATION?
+- How does it inform ${organization_name}'s STRATEGIC POSITIONING?
 
 CONTEXT:
+- Organization: ${organization_name}
 - Industry: ${industryData.industry} ${industryData.subCategory ? `(${industryData.subCategory})` : ''}
 - Known Competitors: ${industryData.competitors.slice(0, 10).join(', ')}
+
+⚠️ FOR REGULATORS/STAKEHOLDERS:
+- Only include if their activity DIRECTLY impacts ${organization_name}'s industry/reputation
+- Provide clear monitoring_context explaining WHY from a PR perspective
+- Include relevance_filter to prevent noise from unrelated enforcement/activity
+- Example: For a PR firm, "SEC" is only relevant for PR industry regulations, NOT general financial enforcement
 
 ═══════════════════════════════════════════════════════════
 🔍 AVAILABLE INTELLIGENCE SOURCES (Your Monitoring Tools)
@@ -612,19 +625,46 @@ NOW, provide your COMPREHENSIVE profile in this JSON format:
   "description": "2-3 sentences about the organization and its market position",
   
   "competition": {
-    "direct_competitors": ["List 10-15 SPECIFIC company names that directly compete"],
+    "direct_competitors": [
+      {
+        "name": "Competitor company name",
+        "monitoring_context": "What specific competitive dynamics to track - client wins/losses, positioning changes, strategic moves that affect our narrative",
+        "industry_context": "${organization_name}'s industry - helps disambiguate (e.g., 'Ketchum PR firm' not 'Ketchum Idaho city')"
+      }
+    ],
     "indirect_competitors": ["5-10 companies that could become competitors"],
     "emerging_threats": ["3-5 startups or new entrants to watch"],
     "competitive_dynamics": "Key competitive factors in this market"
   },
   
   "stakeholders": {
-    "regulators": ["SPECIFIC regulatory bodies (e.g., SEC, FDA, EPA)"],
+    "regulators": [
+      {
+        "name": "SPECIFIC regulatory body name",
+        "monitoring_context": "WHY monitor this regulator from a PR/Communications perspective - how does their activity impact the org's narrative, reputation, or strategic positioning?",
+        "relevance_filter": {
+          "include_patterns": ["industry-specific regulations", "communications rules", "disclosure requirements"],
+          "exclude_patterns": ["general enforcement unrelated to org's industry"],
+          "strategic_angle": "Only relevant when it affects org's industry, not general regulatory activity"
+        },
+        "industry_context": "${organization_name}'s industry context for disambiguation"
+      }
+    ],
     "major_customers": ["Key customer segments or specific major customers"],
     "major_investors": ["Institutional investors, VCs, or major shareholders"],
     "partners": ["Key suppliers, distributors, or strategic partners"],
     "critics": ["Activist groups, analysts, or vocal critics"],
-    "influencers": ["Industry analysts, thought leaders, journalists"]
+    "influencers": [
+      {
+        "name": "Analyst/journalist/thought leader name",
+        "monitoring_context": "WHY this person matters to the org's narrative and reputation",
+        "relevance_filter": {
+          "include_patterns": ["topics this person covers that relate to org"],
+          "exclude_patterns": ["their work on unrelated industries/topics"],
+          "strategic_angle": "How their voice impacts org's positioning"
+        }
+      }
+    ]
   },
   
   "market": {
@@ -686,7 +726,41 @@ NOW, provide your COMPREHENSIVE profile in this JSON format:
 ${industry_hint ? `\nIndustry context: ${industry_hint}` : ''}
 ${industryData.competitors.length > 0 ? `\nKnown competitors: ${industryData.competitors.join(', ')}` : ''}
 
-REMEMBER: Your keywords must match what these sources actually publish, not what you think they should publish.
+═══════════════════════════════════════════════════════════
+📚 EXAMPLES OF GOOD VS BAD STAKEHOLDER MONITORING
+═══════════════════════════════════════════════════════════
+
+❌ BAD Example (PR firm monitoring SEC):
+{
+  "name": "SEC",
+  "monitoring_context": "Regulates financial disclosures",
+  "relevance_filter": null
+}
+PROBLEM: Will match ALL SEC news including irrelevant financial enforcement
+
+✅ GOOD Example (PR firm monitoring SEC):
+{
+  "name": "SEC",
+  "monitoring_context": "Monitor ONLY SEC communications/disclosure regulations affecting PR industry - e.g., new investor relations rules, earnings call regulations, disclosure requirements that impact how PR firms advise clients. NOT general enforcement actions.",
+  "relevance_filter": {
+    "include_patterns": ["investor relations", "disclosure requirements", "communications regulations", "earnings guidance", "social media disclosure"],
+    "exclude_patterns": ["broker-dealer", "AML violations", "trading violations", "general enforcement", "fines unrelated to communications"],
+    "strategic_angle": "Only relevant when SEC rules change how companies communicate publicly or how PR firms advise on investor relations"
+  },
+  "industry_context": "Public Relations & Communications Services"
+}
+
+✅ GOOD Example (Competitor with disambiguation):
+{
+  "name": "Ketchum",
+  "monitoring_context": "Major global PR firm competitor - monitor for client wins/losses, executive hires, crisis work, strategic positioning changes",
+  "industry_context": "Public Relations & Communications - Ketchum PR firm, NOT Ketchum Idaho city"
+}
+
+REMEMBER:
+- Keywords must match what these sources actually publish
+- Every stakeholder needs monitoring_context explaining WHY from a PR/strategic perspective
+- Use relevance_filter to prevent noise
 BE SPECIFIC with names. Real companies, real regulators, real people.
 `;
 
@@ -731,7 +805,8 @@ BE SPECIFIC with names. Real companies, real regulators, real people.
     // Add regulatory queries based on industry
     if (enhancedData.stakeholders?.regulators) {
       enhancedData.stakeholders.regulators.slice(0, 5).forEach(reg => {
-        queries.regulatory_queries.push(`${reg} ${organization_name}`, `${reg} ${enhancedData.industry}`);
+        const regName = typeof reg === 'string' ? reg : reg.name;
+        queries.regulatory_queries.push(`${regName} ${organization_name}`, `${regName} ${enhancedData.industry}`);
       });
     }
     
@@ -759,7 +834,10 @@ BE SPECIFIC with names. Real companies, real regulators, real people.
     high_value_patterns: [
       `${organization_name} announces`,
       'breaking:', 'exclusive:', 'first:', 'major',
-      ...enhancedData.competition.direct_competitors.slice(0, 5).map(c => c.toLowerCase())
+      ...enhancedData.competition.direct_competitors.slice(0, 5).map(c => {
+        const name = typeof c === 'string' ? c : c.name;
+        return name.toLowerCase();
+      })
     ],
     noise_patterns: [
       'sponsored content', 'advertisement', 'promoted',
@@ -779,11 +857,12 @@ BE SPECIFIC with names. Real companies, real regulators, real people.
   const generateCompetitorPriorities = () => {
     const priorities = {};
     enhancedData.competition.direct_competitors.slice(0, 10).forEach(comp => {
-      priorities[comp] = [
-        `${comp} product launches`,
-        `${comp} executive changes`,
-        `${comp} financial performance`,
-        `${comp} strategic moves`
+      const compName = typeof comp === 'string' ? comp : comp.name;
+      priorities[compName] = [
+        `${compName} product launches`,
+        `${compName} executive changes`,
+        `${compName} financial performance`,
+        `${compName} strategic moves`
       ];
     });
     return priorities;
@@ -792,13 +871,16 @@ BE SPECIFIC with names. Real companies, real regulators, real people.
   // Generate intelligence context for downstream stages
   // NEW ALLOCATION: 10 competitors, 5 stakeholders, 0 topics (proven effective)
   const generateIntelligenceContext = () => {
-    const topCompetitors = enhancedData.competition.direct_competitors.slice(0, 10); // Increased from 5 to 10
-    const topRegulators = enhancedData.stakeholders?.regulators?.slice(0, 3) || [];
+    // Handle both string arrays (old format) and object arrays (new format with monitoring_context)
+    const extractNames = (items: any[]) => items.map(item => typeof item === 'string' ? item : item.name);
+
+    const topCompetitors = extractNames((enhancedData.competition.direct_competitors || []).slice(0, 10));
+    const topRegulators = extractNames((enhancedData.stakeholders?.regulators || []).slice(0, 3));
     const topTopics = []; // Removed topics - 0% effectiveness in monitoring
-    const keyStakeholders = [
-      ...(enhancedData.stakeholders?.influencers?.slice(0, 2) || [])
+    const keyStakeholders = extractNames([
+      ...(enhancedData.stakeholders?.influencers || []).slice(0, 2)
       // Removed investors - less relevant for most companies
-    ].filter(Boolean);
+    ].filter(Boolean));
 
     return {
       monitoring_prompt: `We are monitoring ${organization_name}, a ${enhancedData.industry} company${enhancedData.sub_industry ? ` specializing in ${enhancedData.sub_industry}` : ''}. Focus on:

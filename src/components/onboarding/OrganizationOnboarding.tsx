@@ -81,6 +81,7 @@ export default function OrganizationOnboarding({
     entityEnrichment: 'pending',
     coverageDiscovery: 'pending',
     schemaSynthesis: 'pending',
+    schemaEnhancement: 'pending', // NEW: Stage 7
     message: ''
   })
   const [schemaGenerationStarted, setSchemaGenerationStarted] = useState(false)
@@ -132,16 +133,16 @@ export default function OrganizationOnboarding({
       setDiscovered(data.discovered)
       setFullProfile(data.full_profile)
 
-      // Pre-select all discovered items
-      setSelectedCompetitors(new Set(data.discovered.competitors))
+      // Pre-select ONLY competitors (users should review stakeholders for relevance)
+      setSelectedCompetitors(new Set(data.discovered.competitors.map(c =>
+        typeof c === 'string' ? c : c.name
+      )))
       setSelectedTopics(new Set(data.discovered.topics))
-      // Pre-select stakeholders too (regulators, influencers, customers)
-      const allStakeholders = [
-        ...(data.discovered.stakeholders?.regulators || []),
-        ...(data.discovered.stakeholders?.influencers || []),
-        ...(data.discovered.stakeholders?.major_customers || [])
-      ]
-      setSelectedStakeholders(new Set(allStakeholders))
+
+      // DO NOT auto-select stakeholders - they need strategic review
+      // Regulators especially can create noise if not properly scoped
+      // Users will manually select which stakeholders are strategically relevant
+      setSelectedStakeholders(new Set())
 
       console.log('✅ Discovery complete')
       setStep(2)
@@ -199,19 +200,61 @@ export default function OrganizationOnboarding({
         ...customStakeholders
       ]
 
+      // Helper to find monitoring context from discovery data
+      const findTargetContext = (name: string, type: 'competitor' | 'stakeholder') => {
+        if (type === 'competitor') {
+          const competitor = fullProfile?.competition?.direct_competitors?.find(
+            (c: any) => (typeof c === 'string' ? c : c.name) === name
+          )
+          if (competitor && typeof competitor === 'object') {
+            return {
+              monitoring_context: competitor.monitoring_context,
+              industry_context: competitor.industry_context,
+              relevance_filter: competitor.relevance_filter
+            }
+          }
+        } else {
+          // Check regulators, influencers, etc.
+          const regulator = fullProfile?.stakeholders?.regulators?.find(
+            (r: any) => (typeof r === 'string' ? r : r.name) === name
+          )
+          if (regulator && typeof regulator === 'object') {
+            return {
+              monitoring_context: regulator.monitoring_context,
+              industry_context: regulator.industry_context,
+              relevance_filter: regulator.relevance_filter
+            }
+          }
+
+          const influencer = fullProfile?.stakeholders?.influencers?.find(
+            (i: any) => (typeof i === 'string' ? i : i.name) === name
+          )
+          if (influencer && typeof influencer === 'object') {
+            return {
+              monitoring_context: influencer.monitoring_context,
+              industry_context: influencer.industry_context,
+              relevance_filter: influencer.relevance_filter
+            }
+          }
+        }
+        return {}
+      }
+
       const targets = [
         ...allCompetitors.map(name => ({
           name,
           type: 'competitor',
           priority: 'high',
-          active: true
+          active: true,
+          ...findTargetContext(name, 'competitor')
         })),
         // Topics removed - 0% monitoring effectiveness
         ...allStakeholders.map(name => ({
           name,
-          type: 'influencer',
+          type: 'stakeholder',
           priority: 'medium',
-          active: true
+          active: true,
+          ...findTargetContext(name, 'stakeholder')
         }))
       ]
 
@@ -542,8 +585,9 @@ export default function OrganizationOnboarding({
           entityEnrichment: 'completed',
           coverageDiscovery: 'completed',
           schemaSynthesis: 'completed',
+          schemaEnhancement: orchestratorData.summary?.schema_enhanced ? 'completed' : 'failed',
           message: hasData
-            ? `Schema generated with ${entitiesExtracted} entities!`
+            ? `Schema generated with ${entitiesExtracted} entities, ${orchestratorData.summary?.faq_questions_added || 0} FAQs, ${orchestratorData.summary?.awards_added || 0} awards!`
             : 'Schema generated but no entities extracted - website may need manual review'
         })
 
@@ -900,33 +944,45 @@ export default function OrganizationOnboarding({
                     Key Stakeholders
                   </h3>
                   <p className="text-sm text-gray-400 mb-4">
-                    Select stakeholders to monitor. These include regulators, influencers, and major customers.
+                    Review stakeholders carefully. Only select those that are strategically relevant to your organization's narrative and reputation.
                   </p>
 
                   {/* Combine all stakeholder types from discovery */}
-                  <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="grid grid-cols-1 gap-3 mb-4">
                     {[
                       ...(discovered.stakeholders?.regulators || []),
                       ...(discovered.stakeholders?.influencers || []),
                       ...(discovered.stakeholders?.major_customers || [])
-                    ].map((stakeholder) => (
-                      <button
-                        key={stakeholder}
-                        onClick={() => toggleStakeholder(stakeholder)}
-                        className={`px-4 py-3 rounded-lg border transition-all text-left ${
-                          selectedStakeholders.has(stakeholder)
-                            ? 'bg-purple-500/20 border-purple-500 text-purple-300'
-                            : 'bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-600'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">{stakeholder}</span>
-                          {selectedStakeholders.has(stakeholder) && (
-                            <Check className="w-4 h-4 text-purple-400" />
-                          )}
-                        </div>
-                      </button>
-                    ))}
+                    ].map((stakeholder) => {
+                      const name = typeof stakeholder === 'string' ? stakeholder : stakeholder.name
+                      const context = typeof stakeholder === 'object' ? stakeholder.monitoring_context : null
+
+                      return (
+                        <button
+                          key={name}
+                          onClick={() => toggleStakeholder(name)}
+                          className={`px-4 py-3 rounded-lg border transition-all text-left ${
+                            selectedStakeholders.has(name)
+                              ? 'bg-purple-500/20 border-purple-500 text-purple-300'
+                              : 'bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-600'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1">
+                              <span className="text-sm font-medium block mb-1">{name}</span>
+                              {context && (
+                                <span className="text-xs text-gray-400 block leading-relaxed">
+                                  {context}
+                                </span>
+                              )}
+                            </div>
+                            {selectedStakeholders.has(name) && (
+                              <Check className="w-4 h-4 text-purple-400 flex-shrink-0 mt-0.5" />
+                            )}
+                          </div>
+                        </button>
+                      )
+                    })}
                   </div>
 
                   {/* Custom stakeholders */}
@@ -1476,7 +1532,7 @@ export default function OrganizationOnboarding({
                     Building Your Optimal Schema
                   </h3>
                   <p className="text-sm text-gray-400 mb-6">
-                    Running our 6-stage GEO-optimized pipeline to create the best possible schema for AI visibility.
+                    Running our 7-stage GEO-optimized pipeline to create the best possible schema for AI visibility.
                   </p>
 
                   <div className="space-y-3">
@@ -1596,7 +1652,31 @@ export default function OrganizationOnboarding({
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-medium text-white">Schema Synthesis</p>
-                        <p className="text-xs text-gray-400">Generating optimal schema.org graph</p>
+                        <p className="text-xs text-gray-400">Building basic schema.org graph</p>
+                      </div>
+                    </div>
+
+                    {/* Stage 6: GEO Enhancement */}
+                    <div className="flex items-center gap-4 p-3 bg-gray-800/50 rounded-lg">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        schemaProgress.schemaEnhancement === 'completed' ? 'bg-green-500/20' :
+                        schemaProgress.schemaEnhancement === 'processing' ? 'bg-cyan-500/20' :
+                        schemaProgress.schemaEnhancement === 'failed' ? 'bg-red-500/20' :
+                        'bg-gray-700'
+                      }`}>
+                        {schemaProgress.schemaEnhancement === 'completed' ? (
+                          <Check className="w-4 h-4 text-green-400" />
+                        ) : schemaProgress.schemaEnhancement === 'processing' ? (
+                          <Loader className="w-4 h-4 text-cyan-400 animate-spin" />
+                        ) : schemaProgress.schemaEnhancement === 'failed' ? (
+                          <X className="w-4 h-4 text-red-400" />
+                        ) : (
+                          <Sparkles className="w-4 h-4 text-gray-500" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-white">GEO Enhancement</p>
+                        <p className="text-xs text-gray-400">Adding FAQs, awards, compelling descriptions</p>
                       </div>
                     </div>
                   </div>
@@ -1610,20 +1690,64 @@ export default function OrganizationOnboarding({
                   {/* Show buttons if generation hasn't started or failed */}
                   <div className="mt-6 flex gap-3">
                     {!schemaGenerationStarted && (
+                      <>
+                        <button
+                          onClick={() => {
+                            console.log('🚀 Starting schema onboarding pipeline')
+                            handleSchemaGeneration()
+                          }}
+                          disabled={!createdOrganization}
+                          className="flex-1 px-6 py-3 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                        >
+                          <Sparkles className="w-5 h-5" />
+                          Start Pipeline
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (createdOrganization) {
+                              onComplete({
+                                id: createdOrganization.id,
+                                name: createdOrganization.name,
+                                industry: createdOrganization.industry,
+                                config: {}
+                              })
+                            }
+                            resetForm()
+                            onClose()
+                          }}
+                          disabled={!createdOrganization}
+                          className="flex-1 px-6 py-3 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                        >
+                          Skip Schema Generation
+                        </button>
+                      </>
+                    )}
+
+                    {/* Show completion button when schema generation completes successfully */}
+                    {schemaProgress.schemaSynthesis === 'completed' && (
                       <button
                         onClick={() => {
-                          console.log('🚀 Starting schema onboarding pipeline')
-                          handleSchemaGeneration()
+                          if (createdOrganization) {
+                            onComplete({
+                              id: createdOrganization.id,
+                              name: createdOrganization.name,
+                              industry: createdOrganization.industry,
+                              config: {}
+                            })
+                          }
+                          resetForm()
+                          onClose()
                         }}
                         disabled={!createdOrganization}
-                        className="flex-1 px-6 py-3 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                        className="flex-1 px-6 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-all flex items-center justify-center gap-2 font-medium"
                       >
-                        <Sparkles className="w-5 h-5" />
-                        Start Pipeline
+                        <Check className="w-5 h-5" />
+                        Complete Onboarding
                       </button>
                     )}
 
-                    {(schemaProgress.schemaSynthesis === 'failed' || !schemaGenerationStarted || (schemaProgress.schemaSynthesis === 'completed' && schemaProgress.message?.includes('no entities'))) && (
+                    {/* Show "Continue Anyway" button if failed */}
+                    {schemaProgress.schemaSynthesis === 'failed' && (
                       <button
                         onClick={() => {
                           if (createdOrganization) {
@@ -1640,7 +1764,7 @@ export default function OrganizationOnboarding({
                         disabled={!createdOrganization}
                         className="flex-1 px-6 py-3 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
                       >
-                        {schemaProgress.schemaSynthesis === 'failed' || schemaProgress.message?.includes('no entities') ? 'Continue Anyway' : 'Skip Schema Generation'}
+                        Continue Anyway
                       </button>
                     )}
                   </div>

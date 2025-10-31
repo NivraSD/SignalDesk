@@ -13,7 +13,8 @@ import { corsHeaders } from '../_shared/cors.ts'
  * Stage 3: Entity Extraction - Claude-based extraction (entity-extractor)
  * Stage 4: Entity Enrichment - Validation & dedup (entity-enricher)
  * Stage 5: Coverage Discovery - Positive news (positive-coverage-scraper)
- * Stage 6: Schema Synthesis - Final schema (schema-graph-generator)
+ * Stage 6: Schema Synthesis - Basic schema (schema-graph-generator)
+ * Stage 7: GEO Enhancement - FAQs, awards, optimization (geo-schema-enhancer)
  */
 
 interface OrchestratorRequest {
@@ -261,7 +262,7 @@ serve(async (req) => {
         body: JSON.stringify({
           organization_id,
           organization_name,
-          recency_window: '90days'
+          recency_window: '2years' // Search last 2 years for best stories
         })
       }
     )
@@ -317,8 +318,50 @@ serve(async (req) => {
       schema_generated: true
     }
 
-    console.log(`   ✓ Schema generated with ${results.stages.schema_synthesis.entity_count} total entities`)
+    console.log(`   ✓ Basic schema generated with ${results.stages.schema_synthesis.entity_count} total entities`)
     results.timings.schema_synthesis = Date.now() - stage6Start
+
+    // ========================================
+    // STAGE 7: GEO Schema Enhancement
+    // ========================================
+    console.log('\n✨ STAGE 7: GEO Schema Enhancement')
+    const stage7Start = Date.now()
+
+    const enhancerResponse = await fetch(
+      `${supabaseUrl}/functions/v1/geo-schema-enhancer`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          organization_id,
+          organization_name,
+          industry: industry,
+          base_schema: schemaData.schema_graph,
+          coverage_articles: coverageData?.articles || [],
+          entities: enrichData.enriched_entities || {}
+        })
+      }
+    )
+
+    if (enhancerResponse.ok) {
+      const enhancerData = await enhancerResponse.json()
+      results.stages.schema_enhancement = {
+        success: true,
+        faq_questions_added: enhancerData.summary?.faq_questions_added || 0,
+        awards_count: enhancerData.enhancements_applied?.awards_count || 0,
+        keywords_count: enhancerData.enhancements_applied?.keywords_count || 0,
+        final_entity_count: enhancerData.summary?.enhanced_entity_count || 0
+      }
+      console.log(`   ✓ Schema enhanced with ${results.stages.schema_enhancement.faq_questions_added} FAQs, ${results.stages.schema_enhancement.awards_count} awards`)
+    } else {
+      console.warn('   ⚠ Schema enhancement failed (non-blocking):', await enhancerResponse.text())
+      results.stages.schema_enhancement = { success: false }
+    }
+
+    results.timings.schema_enhancement = Date.now() - stage7Start
 
     // ========================================
     // SUMMARY
@@ -342,7 +385,10 @@ serve(async (req) => {
           geo_insights_generated: !skip_geo_discovery && results.stages.geo_discovery?.success,
           entities_extracted: results.stages.entity_enrichment?.total_entities || 0,
           coverage_articles: results.stages.coverage_discovery?.articles_found || 0,
-          schema_generated: results.stages.schema_synthesis?.success || false
+          schema_generated: results.stages.schema_synthesis?.success || false,
+          schema_enhanced: results.stages.schema_enhancement?.success || false,
+          faq_questions_added: results.stages.schema_enhancement?.faq_questions_added || 0,
+          awards_added: results.stages.schema_enhancement?.awards_count || 0
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
