@@ -667,6 +667,13 @@ NOW, provide your COMPREHENSIVE profile in this JSON format:
     ]
   },
   
+  "service_lines": [
+    "Key service offering 1 (e.g., 'Crisis Communications', 'Cloud Infrastructure', 'Investment Banking')",
+    "Key service offering 2",
+    "Key service offering 3",
+    "3-5 core services/products that define what the organization does"
+  ],
+
   "market": {
     "market_size": "Current market size and growth rate",
     "key_metrics": ["3-5 metrics that matter in this industry"],
@@ -1123,6 +1130,7 @@ function structureFinalProfile(profileData: any, organization_name: string) {
     industry: profileData.industry,
     sub_industry: profileData.sub_industry,
     description: profileData.description,
+    service_lines: profileData.service_lines || [], // NEW: For GEO optimization
 
     // Topics removed - not effective for monitoring
     topics: [],

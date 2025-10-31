@@ -144,6 +144,12 @@ export default function OrganizationOnboarding({
       // Users will manually select which stakeholders are strategically relevant
       setSelectedStakeholders(new Set())
 
+      // Pre-populate GEO service lines from MCP discovery
+      if (data.full_profile?.service_lines && Array.isArray(data.full_profile.service_lines)) {
+        setServiceLines(data.full_profile.service_lines)
+        console.log('✅ Pre-populated GEO service lines from MCP:', data.full_profile.service_lines)
+      }
+
       console.log('✅ Discovery complete')
       setStep(2)
     } catch (err: any) {
