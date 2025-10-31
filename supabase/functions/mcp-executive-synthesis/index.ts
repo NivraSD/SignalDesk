@@ -459,8 +459,27 @@ async function synthesizeExecutiveIntelligence(args: any) {
 This is the complete output from our monitoring and enrichment pipeline.
 The events below are ALL from TODAY'S news monitoring - they are NOT hypothetical.
 
-ORGANIZATION: ${organization?.name}
-MONITORING TARGETS: ${discoveryTargets.competitors.slice(0, 10).join(', ')}
+═══════════════════════════════════════════════════════════
+🎯 CRITICAL: UNDERSTAND THE MONITORING CONTEXT
+═══════════════════════════════════════════════════════════
+
+ORGANIZATION CONTEXT:
+- Organization: ${organization?.name}
+- Industry: ${organization?.industry || 'Unknown'}
+- What ${organization?.name} Does: ${organization?.description || 'Strategic communications and PR services'}
+
+${organization?.name}'s DIRECT COMPETITORS (companies in the SAME industry):
+${discoveryTargets.competitors.slice(0, 10).join(', ')}
+
+MONITORING TARGETS (entities we're tracking - may be outside our industry):
+- Competitors: ${discoveryTargets.competitors.slice(0, 5).join(', ')}
+- Stakeholders: ${discoveryTargets.stakeholders.slice(0, 5).join(', ')}
+
+⚠️ CRITICAL DISTINCTION:
+- When analyzing "competitive moves", focus on ${organization?.name}'s INDUSTRY COMPETITORS
+- When analyzing "stakeholder dynamics", that's about the monitoring targets
+- DO NOT confuse stakeholder/regulatory news with competitive moves unless it directly impacts ${organization?.industry}
+
 MONITORING DATE: ${new Date().toISOString().split('T')[0]}
 
 PRE-ANALYZED ARTICLES (${context.totalArticlesAnalyzed} articles processed by our AI):
@@ -493,22 +512,29 @@ SYNTHESIS REQUIREMENTS:
 4. Focus on the VARIETY of developments across different competitors
 5. If major competitors are missing from the events, note this as an intelligence gap
 
+⚠️ CRITICAL SYNTHESIS RULES:
+- "competitive_moves" = Actions by ${organization?.name}'s INDUSTRY COMPETITORS (other ${organization?.industry} companies)
+- "stakeholder_dynamics" = News about regulators/investors/analysts we're monitoring (may be outside our industry)
+- DO NOT put regulatory news in "competitive_moves" unless it directly affects ${organization?.industry} competition
+- Example: For a PR firm, SEC enforcement on broker-dealers goes in "stakeholder_dynamics", NOT "competitive_moves"
+- Example: For a PR firm, Edelman winning a client is a "competitive_move", SEC updating disclosure rules is "stakeholder_dynamics"
+
 Generate comprehensive PR intelligence synthesis as valid JSON:
 
 {
   "synthesis": {
-    "executive_summary": "A single string containing 2-3 paragraphs summarizing ONLY what we found in today's monitoring. Reference specific articles, companies, and events from the list above. What are the 2-3 most important things from TODAY'S articles that the PR team needs to know? Use \\n\\n to separate paragraphs.",
+    "executive_summary": "A single string containing 2-3 paragraphs summarizing ONLY what we found in today's monitoring. Focus on ${organization?.industry} industry dynamics and what matters for ${organization?.name}'s strategic positioning. Use \\n\\n to separate paragraphs.",
 
     "competitive_moves": {
-      "immediate_threats": ["Specific competitor actions that require PR response"],
-      "opportunities": ["Competitor weaknesses or gaps we can exploit through PR"],
-      "narrative_gaps": ["Stories competitors aren't telling that we could own"]
+      "immediate_threats": ["Actions by OTHER ${organization?.industry} COMPANIES that threaten ${organization?.name}'s position - NOT regulatory news"],
+      "opportunities": ["Weaknesses or gaps in OTHER ${organization?.industry} COMPANIES' positioning that ${organization?.name} can exploit"],
+      "narrative_gaps": ["Stories in the ${organization?.industry} industry that competitors aren't telling but ${organization?.name} could own"]
     },
 
     "stakeholder_dynamics": {
-      "key_movements": ["Executive/investor/regulator actions affecting the landscape"],
-      "influence_shifts": ["Who gained/lost power and what it means for ${organization?.name}"],
-      "engagement_opportunities": ["Specific stakeholders to engage now and why"]
+      "key_movements": ["Actions by regulators, analysts, investors, or other monitoring targets - NOT direct competitors"],
+      "influence_shifts": ["Changes in stakeholder influence that affect ${organization?.industry} landscape"],
+      "engagement_opportunities": ["Specific monitoring targets (regulators, analysts, etc.) to engage and why"]
     },
 
     "media_landscape": {

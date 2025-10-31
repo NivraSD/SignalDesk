@@ -346,6 +346,8 @@ serve(async (req) => {
       }
     )
 
+    let finalSchema = schemaData.schema_graph // Default to base schema
+
     if (enhancerResponse.ok) {
       const enhancerData = await enhancerResponse.json()
       results.stages.schema_enhancement = {
@@ -356,6 +358,29 @@ serve(async (req) => {
         final_entity_count: enhancerData.summary?.enhanced_entity_count || 0
       }
       console.log(`   ✓ Schema enhanced with ${results.stages.schema_enhancement.faq_questions_added} FAQs, ${results.stages.schema_enhancement.awards_count} awards`)
+
+      // IMPORTANT: Use the enhanced schema, not the base one!
+      if (enhancerData.enhanced_schema) {
+        finalSchema = enhancerData.enhanced_schema
+        console.log(`   ✓ Using enhanced schema with ${finalSchema['@graph']?.length || 0} total entities`)
+
+        // Update the schema in the database
+        const { error: updateError } = await supabase
+          .from('content_library')
+          .update({
+            content: finalSchema,
+            updated_at: new Date().toISOString()
+          })
+          .eq('organization_id', organization_id)
+          .eq('content_type', 'schema')
+          .eq('folder', 'Schemas/Active/')
+
+        if (updateError) {
+          console.error('   ⚠️ Failed to update schema with enhancements:', updateError)
+        } else {
+          console.log('   ✅ Schema updated with enhancements in database')
+        }
+      }
     } else {
       console.warn('   ⚠ Schema enhancement failed (non-blocking):', await enhancerResponse.text())
       results.stages.schema_enhancement = { success: false }
