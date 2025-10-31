@@ -424,19 +424,49 @@ Generate 25-30 diverse test queries that real customers would use when researchi
    - Think like a customer who doesn't know ${context.organizationName} yet
    - Example: If they sell "AI writing tools", generate queries about "AI writing tools", not "${context.organizationName} writing"
 
-**Industry-Specific Focus**: Use the industry priorities above to frame queries around what this industry ACTUALLY cares about:
-- Retail/Ecommerce: price, quality, reviews, shipping
-- Finance: security, fees, returns, trust
-- Professional Services: expertise, credentials, case studies
-- Technology: features, integrations, ease of use
+**🎯 PRIMARY FOCUS: DISCOVERY & SUPERLATIVE QUERIES**
+These are the HIGHEST VALUE queries - people discovering options without a vendor in mind yet.
 
-Mix query types:
+**QUERY TEMPLATES TO USE** (Follow these patterns):
 
-1. **Category/Comparison Queries** (40%): "best [category]", "top [category] tools", "[category] comparison"
-2. **Use Case Queries** (25%): "how to [solve problem]", "[category] for [use case]"
-3. **Competitive Queries** (20%): "${context.organizationName} vs [competitor]", "alternatives to [competitor]"
-4. **Transactional Queries** (10%): "[category] pricing", "[category] free trial"
-5. **Research Queries** (5%): "[category] reviews", "is [category] worth it"
+**Discovery/Superlative Templates** (50% of queries - MOST IMPORTANT):
+- "best {industry/service_line} companies"
+- "top {industry/service_line} firms"
+- "leading {service_line} providers"
+- "largest {industry} companies"
+- "top rated {service_line}"
+- "#1 {industry} company"
+- "industry leading {service_line}"
+- "best {service_line} in {region}"
+- "top {industry} companies ${currentYear}"
+
+**Solution-Seeking Templates** (30% of queries):
+- "who provides {service_line}"
+- "best {service_line} for {use_case}"
+- "{industry} companies in {region}"
+- "how to choose {service_line} provider"
+- "what companies offer {service_line}"
+
+**Comparison Templates** (20% of queries):
+- "${context.organizationName} vs {competitor}"
+- "{competitor} vs {competitor2}"
+- "alternatives to {competitor}"
+- "companies like {competitor}"
+
+**EXAMPLES FOR THIS ORGANIZATION**:
+${context.serviceLines?.length > 0 ? `
+Using service lines: ${context.serviceLines.slice(0, 3).join(', ')}
+
+Good queries:
+- "best ${context.serviceLines[0].toLowerCase()} companies"
+- "top ${context.serviceLines[0].toLowerCase()} firms"
+- "leading ${context.industry.toLowerCase()} providers"
+- "largest ${context.industry.toLowerCase()} companies"
+` : ''}
+**AVOID these patterns** - too specific, low volume:
+❌ "how to optimize ${context.industry} operations"
+❌ "strategies for improving ${context.industry} efficiency"
+❌ "${context.organizationName} ${context.serviceLines?.[0]}" (except in vs queries)
 
 REQUIREMENTS:
 - Use natural language (how real people actually search)
