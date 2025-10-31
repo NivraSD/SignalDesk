@@ -246,41 +246,11 @@ serve(async (req) => {
     results.timings.entity_enrichment = Date.now() - stage4Start
 
     // ========================================
-    // STAGE 5: Coverage Discovery
+    // STAGE 5: Coverage Discovery - SKIPPED
     // ========================================
-    console.log('\n🏆 STAGE 5: Coverage Discovery')
-    const stage5Start = Date.now()
-
-    const coverageResponse = await fetch(
-      `${supabaseUrl}/functions/v1/positive-coverage-scraper`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          organization_id,
-          organization_name,
-          recency_window: '2years' // Search last 2 years for best stories
-        })
-      }
-    )
-
-    let coverageData = null
-    if (coverageResponse.ok) {
-      coverageData = await coverageResponse.json()
-      results.stages.coverage_discovery = {
-        success: true,
-        articles_found: coverageData.summary?.final_articles || 0
-      }
-      console.log(`   ✓ Found ${results.stages.coverage_discovery.articles_found} articles`)
-    } else {
-      console.warn('   ⚠ Coverage discovery failed')
-      results.stages.coverage_discovery = { success: false }
-    }
-
-    results.timings.coverage_discovery = Date.now() - stage5Start
+    // NOTE: Positive coverage scraping removed - users will provide target links manually
+    console.log('\n⏭️  STAGE 5: Coverage Discovery (SKIPPED - manual links preferred)')
+    const compiledCoverage = [] // Empty for now, will be populated from user-provided links
 
     // ========================================
     // STAGE 6: Schema Synthesis
@@ -302,7 +272,7 @@ serve(async (req) => {
           industry: industry,
           url: website_url,
           entities: enrichData.enriched_entities || {},
-          coverage: coverageData?.articles || []
+          coverage: compiledCoverage // Use Claude-filtered articles, not raw
         })
       }
     )

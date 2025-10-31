@@ -146,20 +146,52 @@ serve(async (req) => {
 
 /**
  * Infer key pages to scrape based on common patterns
+ * Handles any URL format and extracts proper base URL
  */
-function inferKeyPages(baseUrl: string): string[] {
-  const normalizedUrl = baseUrl.replace(/\/$/, '') // Remove trailing slash
+function inferKeyPages(inputUrl: string): string[] {
+  try {
+    const url = new URL(inputUrl)
 
-  return [
-    normalizedUrl, // Homepage
-    `${normalizedUrl}/about`,
-    `${normalizedUrl}/about-us`,
-    `${normalizedUrl}/team`,
-    `${normalizedUrl}/leadership`,
-    `${normalizedUrl}/products`,
-    `${normalizedUrl}/services`,
-    `${normalizedUrl}/solutions`,
-    `${normalizedUrl}/locations`,
-    `${normalizedUrl}/contact`
-  ]
+    // Extract base URL (protocol + hostname + path up to the directory)
+    let baseUrl = `${url.protocol}//${url.hostname}`
+
+    // If there's a path, use it as the base (but remove any file like index.html)
+    if (url.pathname && url.pathname !== '/') {
+      // Remove trailing slash and any file extensions
+      let pathBase = url.pathname.replace(/\/[^\/]*\.(html|htm|php|asp|aspx|jsp)$/i, '')
+      pathBase = pathBase.replace(/\/$/, '')
+      baseUrl = `${baseUrl}${pathBase}`
+    }
+
+    console.log(`   🔧 Base URL extracted: ${baseUrl} (from input: ${inputUrl})`)
+
+    return [
+      inputUrl, // Original URL (homepage/main page)
+      `${baseUrl}/about`,
+      `${baseUrl}/about-us`,
+      `${baseUrl}/team`,
+      `${baseUrl}/leadership`,
+      `${baseUrl}/products`,
+      `${baseUrl}/services`,
+      `${baseUrl}/solutions`,
+      `${baseUrl}/locations`,
+      `${baseUrl}/contact`
+    ]
+  } catch (error) {
+    console.error(`   ⚠️  Failed to parse URL: ${inputUrl}, using as-is`)
+    // Fallback to simple string manipulation if URL parsing fails
+    const normalizedUrl = inputUrl.replace(/\/$/, '')
+    return [
+      normalizedUrl,
+      `${normalizedUrl}/about`,
+      `${normalizedUrl}/about-us`,
+      `${normalizedUrl}/team`,
+      `${normalizedUrl}/leadership`,
+      `${normalizedUrl}/products`,
+      `${normalizedUrl}/services`,
+      `${normalizedUrl}/solutions`,
+      `${normalizedUrl}/locations`,
+      `${normalizedUrl}/contact`
+    ]
+  }
 }

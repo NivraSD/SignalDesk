@@ -79,9 +79,8 @@ export default function OrganizationOnboarding({
     websiteScraping: 'pending',
     entityExtraction: 'pending',
     entityEnrichment: 'pending',
-    coverageDiscovery: 'pending',
     schemaSynthesis: 'pending',
-    schemaEnhancement: 'pending', // NEW: Stage 7
+    schemaEnhancement: 'pending', // Stage 7
     message: ''
   })
   const [schemaGenerationStarted, setSchemaGenerationStarted] = useState(false)
@@ -589,7 +588,6 @@ export default function OrganizationOnboarding({
           websiteScraping: 'completed',
           entityExtraction: 'completed',
           entityEnrichment: 'completed',
-          coverageDiscovery: 'completed',
           schemaSynthesis: 'completed',
           schemaEnhancement: orchestratorData.summary?.schema_enhanced ? 'completed' : 'failed',
           message: hasData
@@ -645,8 +643,8 @@ export default function OrganizationOnboarding({
       websiteScraping: 'pending',
       entityExtraction: 'pending',
       entityEnrichment: 'pending',
-      coverageDiscovery: 'pending',
       schemaSynthesis: 'pending',
+      schemaEnhancement: 'pending',
       message: ''
     })
     setSchemaGenerationStarted(false)
@@ -1626,31 +1624,7 @@ export default function OrganizationOnboarding({
                       </div>
                     </div>
 
-                    {/* Stage 4: Coverage Discovery */}
-                    <div className="flex items-center gap-4 p-3 bg-gray-800/50 rounded-lg">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                        schemaProgress.coverageDiscovery === 'completed' ? 'bg-green-500/20' :
-                        schemaProgress.coverageDiscovery === 'processing' ? 'bg-cyan-500/20' :
-                        schemaProgress.coverageDiscovery === 'failed' ? 'bg-red-500/20' :
-                        'bg-gray-700'
-                      }`}>
-                        {schemaProgress.coverageDiscovery === 'completed' ? (
-                          <Check className="w-4 h-4 text-green-400" />
-                        ) : schemaProgress.coverageDiscovery === 'processing' ? (
-                          <Loader className="w-4 h-4 text-cyan-400 animate-spin" />
-                        ) : schemaProgress.coverageDiscovery === 'failed' ? (
-                          <X className="w-4 h-4 text-red-400" />
-                        ) : (
-                          <Sparkles className="w-4 h-4 text-gray-500" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-white">Positive Coverage Discovery</p>
-                        <p className="text-xs text-gray-400">Finding awards, achievements, recognition</p>
-                      </div>
-                    </div>
-
-                    {/* Stage 5: Schema Synthesis */}
+                    {/* Stage 4: Schema Synthesis */}
                     <div className="flex items-center gap-4 p-3 bg-gray-800/50 rounded-lg">
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                         schemaProgress.schemaSynthesis === 'completed' ? 'bg-green-500/20' :

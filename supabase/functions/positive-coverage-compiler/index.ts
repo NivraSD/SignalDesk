@@ -60,9 +60,27 @@ serve(async (req) => {
     const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
+    // STEP 0: Pre-filter malformed articles before Claude analysis
+    console.log('🔍 Step 0: Pre-filtering malformed articles...')
+    const validArticles = preFilterArticles(articles)
+    console.log(`   ✓ Pre-filtered: ${articles.length} → ${validArticles.length} valid articles`)
+
+    if (validArticles.length === 0) {
+      console.log('⚠️  No valid articles after pre-filtering')
+      return new Response(
+        JSON.stringify({
+          success: true,
+          coverage_items: [],
+          saved_count: 0,
+          message: 'No valid articles after pre-filtering'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     // STEP 1: Analyze articles with Claude
     console.log('🤖 Step 1: Analyzing articles with Claude...')
-    const analysisPrompt = buildAnalysisPrompt(organization_name, articles)
+    const analysisPrompt = buildAnalysisPrompt(organization_name, validArticles)
 
     const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -198,11 +216,27 @@ Review these articles and identify which ones represent genuine positive coverag
 **ARTICLES TO ANALYZE:**
 ${articlesList}
 
+**CRITICAL DATA QUALITY FILTERS - EXCLUDE:**
+1. **Malformed titles**: Articles with HTML tags, image markdown, social media buttons (FacebookXLinkedIn), or scraped UI elements
+2. **Paywall/Ad copy**: Titles like "Get 100% ad-free experience", "Subscribe now", etc.
+3. **Missing/invalid titles**: Articles without meaningful headlines or with generic placeholders
+4. **Unrelated content**: Articles that merely mention the company in passing but are about something else entirely
+5. **Negative coverage**: Articles about profit declines, failures, controversies (even if factual)
+6. **Generic mentions**: Articles where the company is just listed among many others without specific achievements
+
+**QUALITY STANDARDS - ONLY INCLUDE:**
+1. **Clear, readable headlines**: Must be properly formatted article titles
+2. **Genuine achievements**: Specific awards won, recognitions received, innovations launched
+3. **Measurable accomplishments**: Rankings, certifications, partnerships, expansions
+4. **Direct relevance**: Article must be primarily ABOUT ${organizationName}'s achievement
+5. **Positive sentiment**: Must represent actual positive coverage, not just neutral mentions
+
 **INSTRUCTIONS:**
-1. **Filter out false positives**: Exclude articles that merely mention the organization but aren't actually positive coverage
-2. **Identify genuine achievements**: Look for awards won, recognitions received, leadership positions, rankings, innovations, accomplishments
-3. **Generate summaries**: For each positive item, write a 1-2 sentence summary explaining the achievement/recognition
-4. **Classify coverage type**: awards, achievement, recognition, industry_leadership, innovation, ranking, partnership
+1. **Apply strict filtering**: When in doubt, EXCLUDE the article
+2. **Verify article quality**: Check that title, URL, and snippet are all properly formatted
+3. **Confirm genuine achievement**: Must be a real, specific accomplishment (not generic praise)
+4. **Generate factual summaries**: Write 1-2 sentence summaries based on actual achievement described
+5. **Classify coverage type**: awards, achievement, recognition, industry_leadership, innovation, ranking, partnership
 
 **OUTPUT FORMAT:**
 Return a JSON object with this exact structure:
@@ -223,10 +257,12 @@ Return a JSON object with this exact structure:
 }
 
 **IMPORTANT:**
-- Only include items that represent genuine positive coverage
-- Summaries should be factual and specific (not generic praise)
-- If an article doesn't represent positive coverage, exclude it
-- If none of the articles represent positive coverage, return empty array
+- **BE VERY STRICT**: Only include items that pass ALL quality checks above
+- **Exclude malformed data**: Any article with HTML/markdown artifacts, UI elements, or paywall text must be excluded
+- **Require genuine achievements**: Generic mentions or neutral news don't count
+- **Factual summaries only**: Base summaries on specific accomplishments mentioned in the article
+- **When in doubt, exclude it**: Better to have 0-2 high-quality items than 5 questionable ones
+- **Empty result is OK**: If none of the articles represent genuine positive coverage, return empty array
 
 Generate the analysis now:`
 }

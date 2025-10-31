@@ -15,6 +15,7 @@ interface GeoTargets {
   target_platforms: string[]
   positioning_goals: Record<string, string>
   negative_keywords: string[]
+  target_article_links: string[] // URLs of articles to feature in schema
   active: boolean
 }
 
@@ -43,6 +44,7 @@ export default function GeoTargetsTab({
     target_platforms: ['claude', 'gemini', 'chatgpt', 'perplexity'],
     positioning_goals: {},
     negative_keywords: [],
+    target_article_links: [],
     active: true
   })
 
@@ -54,7 +56,8 @@ export default function GeoTargetsTab({
     competitor: '',
     negative: '',
     positioning_key: '',
-    positioning_value: ''
+    positioning_value: '',
+    article_link: ''
   })
 
   useEffect(() => {
@@ -114,7 +117,7 @@ export default function GeoTargetsTab({
     }
   }
 
-  const addArrayItem = (field: keyof Pick<GeoTargets, 'service_lines' | 'geographic_focus' | 'industry_verticals' | 'priority_queries' | 'geo_competitors' | 'negative_keywords'>, value: string) => {
+  const addArrayItem = (field: keyof Pick<GeoTargets, 'service_lines' | 'geographic_focus' | 'industry_verticals' | 'priority_queries' | 'geo_competitors' | 'negative_keywords' | 'target_article_links'>, value: string) => {
     if (!value.trim()) return
 
     setGeoTargets(prev => ({
@@ -129,9 +132,10 @@ export default function GeoTargetsTab({
     if (field === 'priority_queries') setNewInputs(prev => ({ ...prev, query: '' }))
     if (field === 'geo_competitors') setNewInputs(prev => ({ ...prev, competitor: '' }))
     if (field === 'negative_keywords') setNewInputs(prev => ({ ...prev, negative: '' }))
+    if (field === 'target_article_links') setNewInputs(prev => ({ ...prev, article_link: '' }))
   }
 
-  const removeArrayItem = (field: keyof Pick<GeoTargets, 'service_lines' | 'geographic_focus' | 'industry_verticals' | 'priority_queries' | 'geo_competitors' | 'negative_keywords'>, index: number) => {
+  const removeArrayItem = (field: keyof Pick<GeoTargets, 'service_lines' | 'geographic_focus' | 'industry_verticals' | 'priority_queries' | 'geo_competitors' | 'negative_keywords' | 'target_article_links'>, index: number) => {
     setGeoTargets(prev => ({
       ...prev,
       [field]: prev[field].filter((_, i) => i !== index)
@@ -385,6 +389,53 @@ export default function GeoTargetsTab({
                   <X className="w-3 h-3" />
                 </button>
               </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Target Article Links */}
+        <div>
+          <label className="block text-sm font-medium text-gray-400 mb-2">
+            Target Article Links (Schema.org NewsArticles)
+          </label>
+          <p className="text-xs text-gray-500 mb-2">
+            Add URLs of articles, press releases, or news coverage you want featured in your Schema.org markup. You can also add these later in the workspace.
+          </p>
+          <div className="flex gap-2 mb-2">
+            <input
+              type="url"
+              value={newInputs.article_link}
+              onChange={(e) => setNewInputs({ ...newInputs, article_link: e.target.value })}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  addArrayItem('target_article_links', newInputs.article_link)
+                }
+              }}
+              placeholder="https://example.com/article-about-your-company"
+              className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+            />
+            <button
+              onClick={() => addArrayItem('target_article_links', newInputs.article_link)}
+              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="space-y-2">
+            {geoTargets.target_article_links.map((item, idx) => (
+              <div
+                key={idx}
+                className="p-2 px-3 bg-blue-500/10 text-blue-400 border border-blue-500/30 rounded-lg text-sm flex items-center justify-between gap-2"
+              >
+                <span className="truncate flex-1">{item}</span>
+                <button
+                  onClick={() => removeArrayItem('target_article_links', idx)}
+                  className="hover:text-blue-300 flex-shrink-0"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             ))}
           </div>
         </div>

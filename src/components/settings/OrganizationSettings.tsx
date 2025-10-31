@@ -176,15 +176,14 @@ export default function OrganizationSettings({
         return
       }
 
-      console.log('🎯 Generating comprehensive schema package...')
+      console.log('🎯 Generating comprehensive schema using orchestrator...')
 
       const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
       const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-      // STEP 1: Entity Extraction
-      console.log('🌐 Step 1: Website Entity Extraction')
-      let extractedEntities = null
-      const entityResponse = await fetch(`${SUPABASE_URL}/functions/v1/website-entity-scraper`, {
+      // Use schema-onboarding-orchestrator for complete pipeline
+      console.log('🚀 Running schema onboarding orchestrator...')
+      const orchestratorResponse = await fetch(`${SUPABASE_URL}/functions/v1/schema-onboarding-orchestrator`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
@@ -193,67 +192,18 @@ export default function OrganizationSettings({
         body: JSON.stringify({
           organization_id: organizationId,
           organization_name: orgData.name,
-          website_url: orgData.domain
+          website_url: orgData.domain,
+          industry: orgData.industry
         })
       })
 
-      if (entityResponse.ok) {
-        const entityData = await entityResponse.json()
-        console.log(`✓ Extracted ${entityData.summary?.total_entities || 0} entities`)
-        extractedEntities = entityData.entities // STORE ENTITIES
-      } else {
-        console.warn('Entity extraction failed:', await entityResponse.text())
+      if (!orchestratorResponse.ok) {
+        const errorText = await orchestratorResponse.text()
+        throw new Error(`Schema orchestrator failed: ${errorText}`)
       }
 
-      // STEP 2: Positive Coverage Scraping
-      console.log('🏆 Step 2: Positive Coverage Scraping')
-      let coverageArticles = null
-      const coverageResponse = await fetch(`${SUPABASE_URL}/functions/v1/positive-coverage-scraper`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          organization_id: organizationId,
-          organization_name: orgData.name,
-          recency_window: '90days'
-        })
-      })
-
-      if (coverageResponse.ok) {
-        const coverageData = await coverageResponse.json()
-        console.log(`✓ Found ${coverageData.summary?.final_articles || 0} articles`)
-        coverageArticles = coverageData.articles // STORE COVERAGE
-      } else {
-        console.warn('Coverage scraping failed:', await coverageResponse.text())
-      }
-
-      // STEP 3: Schema Graph Generation (with direct data passing)
-      console.log('📊 Step 3: Schema Graph Generation')
-      const schemaResponse = await fetch(`${SUPABASE_URL}/functions/v1/schema-graph-generator`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          organization_id: organizationId,
-          organization_name: orgData.name,
-          industry: orgData.industry,
-          url: orgData.domain,
-          entities: extractedEntities, // PASS ENTITIES DIRECTLY
-          coverage: coverageArticles    // PASS COVERAGE DIRECTLY
-        })
-      })
-
-      if (!schemaResponse.ok) {
-        const errorText = await schemaResponse.text()
-        throw new Error(`Schema generation failed: ${errorText}`)
-      }
-
-      const result = await schemaResponse.json()
-      console.log('✅ Schema package generated:', result)
+      const result = await orchestratorResponse.json()
+      console.log('✅ Schema orchestration complete:', result)
 
       setSuccess(`Schema package generated successfully!`)
 
