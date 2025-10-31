@@ -155,32 +155,56 @@ serve(async (req) => {
     } else {
       // Fallback to profile if no targets set (all default to medium priority)
       console.log(`   ⚠️ No intelligence_targets found, using profile data`)
-      ;(profile.competition?.direct_competitors || []).forEach((c: string) => {
-        discoveryTargets.competitors.add(c)
-        targetsByPriority.competitors.medium.push(c)
+
+      // Helper to extract name and context from items that could be strings or objects
+      const extractTarget = (item: any) => {
+        if (typeof item === 'string') {
+          return { name: item, monitoring_context: null, relevance_filter: null, industry_context: null }
+        }
+        return {
+          name: item.name,
+          monitoring_context: item.monitoring_context,
+          relevance_filter: item.relevance_filter,
+          industry_context: item.industry_context
+        }
+      }
+
+      ;(profile.competition?.direct_competitors || []).forEach((c: any) => {
+        const target = extractTarget(c)
+        discoveryTargets.competitors.add(target.name)
+        targetsByPriority.competitors.medium.push(target.name)
+        targetsWithContext.competitors.set(target.name, { ...target, priority: 'medium' })
       })
-      ;(profile.competition?.indirect_competitors || []).forEach((c: string) => {
-        discoveryTargets.competitors.add(c)
-        targetsByPriority.competitors.low.push(c)
+      ;(profile.competition?.indirect_competitors || []).forEach((c: any) => {
+        const target = extractTarget(c)
+        discoveryTargets.competitors.add(target.name)
+        targetsByPriority.competitors.low.push(target.name)
+        targetsWithContext.competitors.set(target.name, { ...target, priority: 'low' })
       })
-      ;(profile.stakeholders?.regulators || []).forEach((s: string) => {
-        discoveryTargets.stakeholders.add(s)
-        targetsByPriority.stakeholders.medium.push(s)
+      ;(profile.stakeholders?.regulators || []).forEach((s: any) => {
+        const target = extractTarget(s)
+        discoveryTargets.stakeholders.add(target.name)
+        targetsByPriority.stakeholders.medium.push(target.name)
+        targetsWithContext.stakeholders.set(target.name, { ...target, priority: 'medium' })
       })
-      ;(profile.stakeholders?.major_investors || []).forEach((s: string) => {
-        discoveryTargets.stakeholders.add(s)
-        targetsByPriority.stakeholders.medium.push(s)
+      ;(profile.stakeholders?.major_investors || []).forEach((s: any) => {
+        const target = extractTarget(s)
+        discoveryTargets.stakeholders.add(target.name)
+        targetsByPriority.stakeholders.medium.push(target.name)
+        targetsWithContext.stakeholders.set(target.name, { ...target, priority: 'medium' })
       })
-      ;(profile.trending?.hot_topics || []).forEach((t: string) => {
-        discoveryTargets.topics.add(t)
-        targetsByPriority.topics.medium.push(t)
+      ;(profile.trending?.hot_topics || []).forEach((t: any) => {
+        const target = extractTarget(t)
+        discoveryTargets.topics.add(target.name)
+        targetsByPriority.topics.medium.push(target.name)
+        targetsWithContext.topics.set(target.name, { ...target, priority: 'medium' })
       })
     }
 
     // STEP 2: Generate real-time monitoring queries
     console.log('\n🔍 Step 2: Generating real-time queries...')
 
-    const queries = generateRealtimeQueries(profile, orgName, recency_window, discoveryTargets, targetsByPriority)
+    const queries = generateRealtimeQueries(profile, orgName, recency_window, discoveryTargets, targetsByPriority, targetsWithContext)
     console.log(`   ✓ Generated ${queries.length} queries for real-time monitoring`)
 
     // STEP 3: Execute Firecrawl searches
@@ -425,6 +449,11 @@ function generateRealtimeQueries(
     competitors: { high: string[], medium: string[], low: string[] },
     stakeholders: { high: string[], medium: string[], low: string[] },
     topics: { high: string[], medium: string[], low: string[] }
+  },
+  targetsWithContext?: {
+    competitors: Map<string, any>,
+    stakeholders: Map<string, any>,
+    topics: Map<string, any>
   }
 ): string[] {
   const queries: string[] = []
@@ -436,35 +465,78 @@ function generateRealtimeQueries(
   if (recencyWindow === '24hours') {
     // 24-HOUR MODE: COMPREHENSIVE - Search ALL intelligence targets with context
 
-    // HIGH PRIORITY STAKEHOLDERS: Multiple contextualized queries
+    // HIGH PRIORITY STAKEHOLDERS: Multiple contextualized queries using relevance_filter
     targetsByPriority.stakeholders.high.forEach((stakeholder: string) => {
-      queries.push(`${stakeholder} ${orgName}`) // e.g., "Donald Trump Mitsui"
-      if (industry) {
-        queries.push(`${stakeholder} ${industry}`) // e.g., "Donald Trump trading"
+      const context = targetsWithContext?.stakeholders.get(stakeholder)
+
+      // Use industry_context for disambiguation if available
+      const disambiguated = context?.industry_context
+        ? `${stakeholder} ${context.industry_context}`
+        : stakeholder
+
+      // If relevance_filter exists, use include_patterns for smarter queries
+      if (context?.relevance_filter?.include_patterns?.length > 0) {
+        // Generate targeted queries based on what matters for this stakeholder
+        context.relevance_filter.include_patterns.slice(0, 2).forEach((pattern: string) => {
+          queries.push(`${stakeholder} ${pattern}`)
+        })
+      } else {
+        // Fallback to generic queries
+        queries.push(`${stakeholder} ${orgName}`)
+        if (industry) {
+          queries.push(`${stakeholder} ${industry}`)
+        }
       }
-      queries.push(`${stakeholder} news`) // General news
+
+      queries.push(`${disambiguated} news`)
     })
 
-    // MEDIUM PRIORITY STAKEHOLDERS: 1-2 queries
+    // MEDIUM PRIORITY STAKEHOLDERS: 1-2 queries with context
     targetsByPriority.stakeholders.medium.forEach((stakeholder: string) => {
-      queries.push(`${stakeholder} ${orgName}`) // Organization-linked
-      queries.push(`${stakeholder} news`) // General news
+      const context = targetsWithContext?.stakeholders.get(stakeholder)
+
+      const disambiguated = context?.industry_context
+        ? `${stakeholder} ${context.industry_context}`
+        : stakeholder
+
+      if (context?.relevance_filter?.include_patterns?.length > 0) {
+        // Use first include pattern for medium priority
+        queries.push(`${stakeholder} ${context.relevance_filter.include_patterns[0]}`)
+      } else {
+        queries.push(`${stakeholder} ${orgName}`)
+      }
+
+      queries.push(`${disambiguated} news`)
     })
 
     // LOW PRIORITY STAKEHOLDERS: Basic query only
     targetsByPriority.stakeholders.low.forEach((stakeholder: string) => {
-      queries.push(`${stakeholder} news`)
+      const context = targetsWithContext?.stakeholders.get(stakeholder)
+      const disambiguated = context?.industry_context
+        ? `${stakeholder} ${context.industry_context}`
+        : stakeholder
+      queries.push(`${disambiguated} news`)
     })
 
-    // HIGH PRIORITY COMPETITORS: Contextualized queries
+    // HIGH PRIORITY COMPETITORS: Contextualized queries with disambiguation
     targetsByPriority.competitors.high.forEach((comp: string) => {
-      queries.push(`${comp} ${orgName}`) // e.g., "Toyota Mitsui"
-      queries.push(`${comp} news`)
+      const context = targetsWithContext?.competitors.get(comp)
+      const disambiguated = context?.industry_context
+        ? `${comp} ${context.industry_context}`
+        : comp
+
+      queries.push(`${comp} ${orgName}`)
+      queries.push(`${disambiguated} news`)
     })
 
-    // MEDIUM + LOW PRIORITY COMPETITORS: Basic queries
+    // MEDIUM + LOW PRIORITY COMPETITORS: Basic queries with disambiguation
     ;[...targetsByPriority.competitors.medium, ...targetsByPriority.competitors.low].forEach((comp: string) => {
-      queries.push(`${comp} news`)
+      const context = targetsWithContext?.competitors.get(comp)
+      const disambiguated = context?.industry_context
+        ? `${comp} ${context.industry_context}`
+        : comp
+
+      queries.push(`${disambiguated} news`)
     })
 
     // ALL TOPICS (topics are usually intentional, keep all)

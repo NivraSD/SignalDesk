@@ -867,24 +867,36 @@ export default function OrganizationOnboarding({
                   </p>
 
                   <div className="grid grid-cols-2 gap-3 mb-4">
-                    {discovered.competitors.map((competitor) => (
-                      <button
-                        key={competitor}
-                        onClick={() => toggleCompetitor(competitor)}
-                        className={`px-4 py-3 rounded-lg border transition-all text-left ${
-                          selectedCompetitors.has(competitor)
-                            ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300'
-                            : 'bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-600'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">{competitor}</span>
-                          {selectedCompetitors.has(competitor) && (
-                            <Check className="w-4 h-4 text-cyan-400" />
-                          )}
-                        </div>
-                      </button>
-                    ))}
+                    {discovered.competitors.map((competitor) => {
+                      const name = typeof competitor === 'string' ? competitor : competitor.name
+                      const context = typeof competitor === 'object' ? competitor.monitoring_context : null
+
+                      return (
+                        <button
+                          key={name}
+                          onClick={() => toggleCompetitor(name)}
+                          className={`px-4 py-3 rounded-lg border transition-all text-left ${
+                            selectedCompetitors.has(name)
+                              ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300'
+                              : 'bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-600'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <span className="text-sm font-medium block mb-1">{name}</span>
+                              {context && (
+                                <span className="text-xs text-gray-400 block leading-relaxed">
+                                  {context}
+                                </span>
+                              )}
+                            </div>
+                            {selectedCompetitors.has(name) && (
+                              <Check className="w-4 h-4 text-cyan-400 ml-2 flex-shrink-0" />
+                            )}
+                          </div>
+                        </button>
+                      )
+                    })}
                   </div>
 
                   {/* Custom competitors */}

@@ -147,13 +147,21 @@ Guidelines:
 
     const responseText = message.content[0].type === 'text' ? message.content[0].text : '{}'
 
+    // Extract JSON from response (Claude sometimes adds explanatory text before/after JSON)
+    let jsonText = responseText
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/)
+    if (jsonMatch) {
+      jsonText = jsonMatch[0]
+    }
+
     // Parse the JSON response
     let entities
     try {
-      entities = JSON.parse(responseText)
+      entities = JSON.parse(jsonText)
     } catch (parseError) {
       console.error('Failed to parse Claude response:', parseError)
       console.error('Response was:', responseText)
+      console.error('Extracted JSON:', jsonText)
       throw new Error('Failed to parse entity extraction results')
     }
 
