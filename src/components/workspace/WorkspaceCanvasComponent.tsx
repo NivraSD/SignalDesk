@@ -289,11 +289,19 @@ Return ONLY valid JSON with no explanations or markdown.`;
         if (isSchema) {
           // For schemas: Try to merge AI recommendations
           try {
-            // Clean AI response - remove markdown code blocks if present
+            // Clean AI response - remove ALL markdown artifacts
             let cleanedResponse = aiResponse.trim();
-            if (cleanedResponse.startsWith('```')) {
-              cleanedResponse = cleanedResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+
+            // Remove markdown code blocks (multiple patterns)
+            cleanedResponse = cleanedResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+
+            // Remove any leading/trailing text before/after JSON
+            const jsonMatch = cleanedResponse.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              cleanedResponse = jsonMatch[0];
             }
+
+            cleanedResponse = cleanedResponse.trim();
 
             const existingSchema = JSON.parse(editorContent);
             const aiSuggestion = JSON.parse(cleanedResponse);
