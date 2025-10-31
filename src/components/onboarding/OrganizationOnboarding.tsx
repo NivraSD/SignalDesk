@@ -529,6 +529,10 @@ export default function OrganizationOnboarding({
         const orchestratorData = await orchestratorResponse.json()
         console.log('✅ Schema Onboarding Pipeline Complete:', orchestratorData.summary)
 
+        // Check if we actually got entity data
+        const entitiesExtracted = orchestratorData.summary?.entities_extracted || 0
+        const hasData = entitiesExtracted > 0
+
         // Mark all stages as completed
         setSchemaProgress({
           schemaDiscovery: 'completed',
@@ -538,21 +542,28 @@ export default function OrganizationOnboarding({
           entityEnrichment: 'completed',
           coverageDiscovery: 'completed',
           schemaSynthesis: 'completed',
-          message: 'Schema onboarding complete!'
+          message: hasData
+            ? `Schema generated with ${entitiesExtracted} entities!`
+            : 'Schema generated but no entities extracted - website may need manual review'
         })
 
-        // Wait a moment for user to see completion
-        setTimeout(() => {
-          onComplete({
-            id: createdOrganization.id,
-            name: createdOrganization.name,
-            industry: createdOrganization.industry,
-            config: {}
-          })
+        // Only auto-close if we have good data, otherwise let user review
+        if (hasData) {
+          setTimeout(() => {
+            onComplete({
+              id: createdOrganization.id,
+              name: createdOrganization.name,
+              industry: createdOrganization.industry,
+              config: {}
+            })
 
-          resetForm()
-          onClose()
-        }, 2000)
+            resetForm()
+            onClose()
+          }, 3000)
+        } else {
+          // Show warning but don't auto-close
+          console.warn('⚠️ Schema generated but no entities extracted')
+        }
       } else {
         const errorText = await orchestratorResponse.text()
         console.error('Schema onboarding failed:', errorText)
@@ -1625,7 +1636,7 @@ export default function OrganizationOnboarding({
                       </button>
                     )}
 
-                    {(schemaProgress.schemaSynthesis === 'failed' || !schemaGenerationStarted) && (
+                    {(schemaProgress.schemaSynthesis === 'failed' || !schemaGenerationStarted || (schemaProgress.schemaSynthesis === 'completed' && schemaProgress.message?.includes('no entities'))) && (
                       <button
                         onClick={() => {
                           if (createdOrganization) {
@@ -1642,7 +1653,7 @@ export default function OrganizationOnboarding({
                         disabled={!createdOrganization}
                         className="flex-1 px-6 py-3 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
                       >
-                        {schemaProgress.schemaSynthesis === 'failed' ? 'Continue Anyway' : 'Skip Schema Generation'}
+                        {schemaProgress.schemaSynthesis === 'failed' || schemaProgress.message?.includes('no entities') ? 'Continue Anyway' : 'Skip Schema Generation'}
                       </button>
                     )}
                   </div>
