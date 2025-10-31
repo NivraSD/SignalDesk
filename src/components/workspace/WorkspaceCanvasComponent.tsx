@@ -209,9 +209,59 @@ export default function WorkspaceCanvasComponent({
   const applyAIEdit = () => {
     if (aiResponse) {
       if (selectedText) {
+        // Replace selected text with AI response
         setEditorContent(editorContent.replace(selectedText, aiResponse));
       } else {
-        setEditorContent(aiResponse);
+        // No text selected - intelligently merge based on content type
+        const isSchema = currentContent?.content_type === 'schema' ||
+                        editorContent.trim().startsWith('{') ||
+                        editorContent.trim().startsWith('[');
+
+        if (isSchema) {
+          // For schemas: Try to merge AI recommendations
+          try {
+            const existingSchema = JSON.parse(editorContent);
+            const aiSuggestion = JSON.parse(aiResponse);
+
+            // Merge strategies based on what AI returned
+            let mergedSchema = { ...existingSchema };
+
+            // If AI returned a full schema with @graph, merge the graphs
+            if (aiSuggestion['@graph'] && existingSchema['@graph']) {
+              // Find new entities in AI suggestion
+              const existingIds = new Set(
+                existingSchema['@graph'].map((e: any) => e['@id']).filter(Boolean)
+              );
+
+              const newEntities = aiSuggestion['@graph'].filter(
+                (e: any) => !e['@id'] || !existingIds.has(e['@id'])
+              );
+
+              mergedSchema['@graph'] = [...existingSchema['@graph'], ...newEntities];
+
+              // Also merge top-level properties from AI suggestion
+              Object.keys(aiSuggestion).forEach(key => {
+                if (key !== '@graph' && key !== '@context') {
+                  mergedSchema[key] = aiSuggestion[key];
+                }
+              });
+            } else if (aiSuggestion['@graph']) {
+              // AI returned a new graph structure - append to existing
+              mergedSchema['@graph'] = [...(existingSchema['@graph'] || []), ...aiSuggestion['@graph']];
+            } else {
+              // AI returned individual properties/enhancements - merge them
+              mergedSchema = { ...existingSchema, ...aiSuggestion };
+            }
+
+            setEditorContent(JSON.stringify(mergedSchema, null, 2));
+          } catch (e) {
+            // If parsing fails, append AI response as comment/note
+            setEditorContent(editorContent + '\n\n/* AI Suggestion:\n' + aiResponse + '\n*/');
+          }
+        } else {
+          // For non-schema content: Append AI response
+          setEditorContent(editorContent + '\n\n' + aiResponse);
+        }
       }
       setAiResponse('');
       setSelectedText('');

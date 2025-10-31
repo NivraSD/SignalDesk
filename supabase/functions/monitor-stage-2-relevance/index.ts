@@ -343,20 +343,25 @@ serve(async (req) => {
       market_signal: 15
     };
 
+    // Helper to extract names from arrays that might contain objects or strings
+    const extractNames = (items: any[]) => items.map(item =>
+      typeof item === 'string' ? item : item?.name
+    ).filter(Boolean);
+
     const targetEntities = {
       organization: [
         organization_name,
         profile?.organization_name,
         profile?.organization
       ].filter(Boolean),
-      competitors: [
+      competitors: extractNames([
         ...(profile?.competition?.direct_competitors || []),
         ...(profile?.competition?.indirect_competitors || []),
         ...(profile?.competition?.emerging_threats || []),
         ...(profile?.competitors?.direct || []),
         ...(profile?.competitors?.indirect || [])
-      ].filter(Boolean),
-      stakeholders: [
+      ]),
+      stakeholders: extractNames([
         ...(profile?.stakeholders?.regulators || []),
         ...(profile?.stakeholders?.major_investors || []),
         ...(profile?.stakeholders?.major_customers || []),
@@ -364,7 +369,7 @@ serve(async (req) => {
         ...(profile?.stakeholders?.executives || []),
         ...(profile?.stakeholders?.critics || []),
         ...(profile?.stakeholders?.influencers || [])
-      ].filter(Boolean),
+      ]),
       keywords: [
         ...(profile?.monitoring_config?.keywords || []),
         ...(profile?.keywords || []),

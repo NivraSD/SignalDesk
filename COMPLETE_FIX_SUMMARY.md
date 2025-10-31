@@ -364,6 +364,8 @@ To verify the fix works:
 1. `supabase/functions/mcp-discovery/index.ts` - Discovery with strategic context
 2. `supabase/functions/niv-fireplexity-monitor-v2/index.ts` - Relevance scoring with filtering
 3. `supabase/functions/mcp-executive-synthesis/index.ts` - Synthesis with context separation
+4. `supabase/functions/monitor-stage-2-relevance/index.ts` - Backward compatibility fix
+5. `supabase/functions/monitoring-stage-2-enrichment/index.ts` - Backward compatibility fix
 
 ### Frontend (Code Updated ✅)
 4. `src/components/onboarding/OrganizationOnboarding.tsx` - Smart stakeholder selection

@@ -410,14 +410,20 @@ function extractAndOrganizeData(articles: any[], profile: any, organization_name
   // Use intelligence context if available for better extraction
   const intelligenceContext = profile?.intelligence_context;
 
+  // Helper to extract names and convert to lowercase
+  const extractNamesLower = (items: any[]) => items.map(item => {
+    const name = typeof item === 'string' ? item : item?.name;
+    return name?.toLowerCase();
+  }).filter(Boolean);
+
   const targets = {
-    competitors: [
+    competitors: extractNamesLower([
       ...(profile?.competition?.direct_competitors || []),
       ...(profile?.competition?.indirect_competitors || []),
       ...(profile?.competition?.emerging_threats || [])
-    ].map(c => c?.toLowerCase()).filter(Boolean),
+    ]),
 
-    stakeholders: [
+    stakeholders: extractNamesLower([
       ...(profile?.stakeholders?.regulators || []),
       ...(profile?.stakeholders?.major_investors || []),
       ...(profile?.stakeholders?.major_customers || []),
@@ -425,7 +431,7 @@ function extractAndOrganizeData(articles: any[], profile: any, organization_name
       ...(profile?.stakeholders?.executives || []),
       ...(profile?.stakeholders?.critics || []),
       ...(profile?.stakeholders?.influencers || [])
-    ].map(s => s?.toLowerCase()).filter(Boolean),
+    ]),
 
     keywords: [
       ...(profile?.monitoring_config?.keywords || []),
