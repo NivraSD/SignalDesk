@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, useDragControls } from 'framer-motion';
-import { Save, Folder, Sparkles, FileText, AlertCircle, CheckCircle, Loader2, Edit3, MessageSquare, Move, X, Maximize2, Minimize2 } from 'lucide-react';
+import { Save, Folder, Sparkles, FileText, AlertCircle, CheckCircle, Loader2, Edit3, MessageSquare, Move, X } from 'lucide-react';
 import { useMemoryVault } from '@/hooks/useMemoryVault';
 
 interface WorkspaceCanvasComponentProps {
   id: string;
   position: { x: number; y: number };
   onPositionChange?: (id: string, position: { x: number; y: number }) => void;
+  onClose?: () => void;
   initialContentId?: string;
 }
 
@@ -16,6 +17,7 @@ export default function WorkspaceCanvasComponent({
   id,
   position,
   onPositionChange,
+  onClose,
   initialContentId
 }: WorkspaceCanvasComponentProps) {
   const { content: memoryVaultContent, loading: memoryLoading, saveContent } = useMemoryVault();
@@ -33,7 +35,6 @@ export default function WorkspaceCanvasComponent({
   const [aiResponse, setAiResponse] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [selectedText, setSelectedText] = useState('');
-  const [isMinimized, setIsMinimized] = useState(false);
   const [localPosition, setLocalPosition] = useState(position);
 
   // Load initial content if provided
@@ -292,7 +293,7 @@ export default function WorkspaceCanvasComponent({
       className="absolute bg-gray-900/95 backdrop-blur-xl rounded-lg shadow-2xl border border-pink-500/30 flex flex-col overflow-hidden"
       style={{
         width: 900,
-        height: isMinimized ? 'auto' : 700,
+        height: 700,
         boxShadow: '0 0 40px rgba(236, 72, 153, 0.3)',
         zIndex: 10,
         left: 0,
@@ -328,22 +329,20 @@ export default function WorkspaceCanvasComponent({
             </div>
           </div>
           <div className="flex items-center gap-1" onPointerDown={(e) => e.stopPropagation()}>
-            <button
-              onClick={() => setIsMinimized(!isMinimized)}
-              className="p-1 hover:bg-white/20 rounded transition-colors"
-            >
-              {isMinimized ? (
-                <Maximize2 className="w-4 h-4 text-white" />
-              ) : (
-                <Minimize2 className="w-4 h-4 text-white" />
-              )}
-            </button>
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="p-1 hover:bg-white/20 rounded transition-colors"
+                title="Close workspace"
+              >
+                <X className="w-4 h-4 text-white" />
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {!isMinimized && (
-        <div className="flex flex-col flex-1 min-h-0">
+      <div className="flex flex-col flex-1 min-h-0">
           {/* Toolbar */}
           <div className="flex-shrink-0 bg-gray-800 border-b border-gray-700 px-3 py-2 flex items-center gap-2">
             <button
@@ -532,7 +531,6 @@ export default function WorkspaceCanvasComponent({
             )}
           </div>
         </div>
-      )}
     </motion.div>
   );
 }

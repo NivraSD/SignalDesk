@@ -549,6 +549,7 @@ export default function InfiniteCanvas({ children }: { children?: React.ReactNod
                       y: component.y + 50000
                     }}
                     onPositionChange={(id, pos) => handleComponentDrag(id, pos.x - 50000, pos.y - 50000)}
+                    onClose={() => handleComponentClose(component.id)}
                   />
                 ) : (
                   <CanvasComponent
