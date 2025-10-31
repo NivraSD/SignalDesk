@@ -76,11 +76,20 @@ serve(async (req) => {
         }
 
         const data = await response.json()
+        const markdown = data.data?.markdown || ''
+        const title = data.data?.metadata?.title || ''
+
+        // Log content length for debugging
+        if (markdown.length === 0) {
+          console.warn(`   ⚠️  Empty content from ${pageUrl} - page may not exist or be blocked`)
+        } else {
+          console.log(`   ✓ Got ${markdown.length} chars from ${pageUrl}`)
+        }
 
         return {
           url: pageUrl,
-          title: data.data?.metadata?.title || '',
-          markdown: data.data?.markdown || '',
+          title,
+          markdown,
           html: data.data?.html || '',
           metadata: data.data?.metadata || {},
           success: true
@@ -98,6 +107,13 @@ serve(async (req) => {
 
     // Calculate total text length
     const totalTextLength = successfulPages.reduce((sum, page) => sum + (page.markdown?.length || 0), 0)
+
+    if (totalTextLength < 1000) {
+      console.warn(`⚠️  WARNING: Only got ${totalTextLength} total characters - pages may not exist or have no content`)
+      console.warn(`   This will likely result in failed entity extraction`)
+    } else {
+      console.log(`📊 Total content: ${totalTextLength} characters`)
+    }
 
     return new Response(
       JSON.stringify({
