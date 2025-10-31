@@ -147,8 +147,8 @@ export default function WorkspaceCanvasComponent({
     }
   };
 
-  const handleAIAssist = async (mode: 'edit' | 'suggest') => {
-    if (!aiPrompt.trim() && mode === 'suggest') return;
+  const handleAIAssist = async () => {
+    if (!aiPrompt.trim()) return;
 
     setAiLoading(true);
     setAiResponse('');
@@ -164,34 +164,8 @@ export default function WorkspaceCanvasComponent({
       let systemPrompt = '';
       let userMessage = '';
 
-      if (mode === 'edit') {
-        if (isSchema) {
-          systemPrompt = `You are a Schema.org expert. You help edit Schema.org JSON-LD markup.
-
-CRITICAL RULES:
-1. ONLY return valid JSON - no explanations, no markdown, no text
-2. If adding something new (award, FAQ, etc), return ONLY the new entity/entities to add
-3. If modifying existing content, return the COMPLETE updated schema
-4. Always use proper Schema.org types (@type, @id)
-5. Follow Schema.org standards exactly
-
-For example:
-- Adding an award: Return just the Award object
-- Adding a FAQ: Return just the Question object
-- Updating description: Return the full schema with the updated field`;
-          userMessage = `User request: ${aiPrompt || 'Edit this content'}
-
-Current Schema:
-${contextText}
-
-Return ONLY valid JSON with no explanations.`;
-        } else {
-          systemPrompt = 'You are an expert PR and marketing content editor. Edit the content to improve clarity, impact, and professional tone. Return ONLY the edited content, no explanations.';
-          userMessage = `Edit this content:\n\n${contextText}`;
-        }
-      } else {
-        if (isSchema) {
-          systemPrompt = `You are a Schema.org expert. You help edit Schema.org JSON-LD markup.
+      if (isSchema) {
+        systemPrompt = `You are NIV, an expert Schema.org consultant. You help improve Schema.org JSON-LD markup for GEO (Generative Engine Optimization).
 
 CRITICAL RULES:
 1. ONLY return valid JSON - no explanations, no markdown, no text
@@ -223,16 +197,18 @@ You return: {
     "text": "We offer custom pricing based on..."
   }
 }`;
-          userMessage = `User request: ${aiPrompt}
+        userMessage = `User request: ${aiPrompt}
 
 Current Schema:
 ${contextText}
 
 Return ONLY valid JSON with no explanations or markdown.`;
-        } else {
-          systemPrompt = 'You are an expert PR and marketing content strategist. Provide specific, actionable recommendations to improve this content. Be concise and practical.';
-          userMessage = `${aiPrompt}\n\nContent:\n${contextText}`;
-        }
+      } else {
+        systemPrompt = 'You are NIV, an expert PR and communications content strategist. Help improve content to be more compelling, clear, and effective. Focus on what will resonate with the target audience.';
+        userMessage = `${aiPrompt}
+
+Current Content:
+${contextText}`;
       }
 
       const response = await fetch('/api/claude-direct', {
@@ -494,7 +470,7 @@ Return ONLY valid JSON with no explanations or markdown.`;
               }`}
             >
               <Sparkles className="w-4 h-4" />
-              AI Assistant
+              NIV Assistant
             </button>
 
             <div className="flex-1" />
@@ -578,8 +554,9 @@ Return ONLY valid JSON with no explanations or markdown.`;
                 <div className="p-3 border-b border-gray-700 bg-purple-900/30">
                   <h3 className="font-semibold text-purple-300 flex items-center gap-2 text-sm">
                     <Sparkles className="w-4 h-4" />
-                    AI Writing Assistant
+                    NIV Assistant
                   </h3>
+                  <p className="text-xs text-purple-400 mt-1">Your AI content strategist</p>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-3 space-y-3">
@@ -591,34 +568,30 @@ Return ONLY valid JSON with no explanations or markdown.`;
                   )}
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-300">Ask AI or describe your needs:</label>
+                    <label className="text-sm font-medium text-gray-300">Ask NIV:</label>
                     <textarea
                       value={aiPrompt}
                       onChange={(e) => setAiPrompt(e.target.value)}
-                      placeholder="e.g., 'Make this more compelling' or 'Add statistics'"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                          e.preventDefault();
+                          handleAIAssist();
+                        }
+                      }}
+                      placeholder="e.g., 'Add that we won PR News Platinum award in 2024' or 'Make the description more compelling'"
                       className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-sm resize-none h-24 text-gray-200 outline-none focus:border-purple-500"
                     />
+                    <p className="text-xs text-gray-500">Tip: Press Cmd/Ctrl+Enter to send</p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => handleAIAssist('edit')}
-                      disabled={aiLoading || !editorContent.trim()}
-                      className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                      Edit
-                    </button>
-
-                    <button
-                      onClick={() => handleAIAssist('suggest')}
-                      disabled={aiLoading || !aiPrompt.trim()}
-                      className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2"
-                    >
-                      <MessageSquare className="w-4 h-4" />
-                      Suggest
-                    </button>
-                  </div>
+                  <button
+                    onClick={handleAIAssist}
+                    disabled={aiLoading || !aiPrompt.trim()}
+                    className="w-full px-4 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium flex items-center justify-center gap-2"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    Ask NIV
+                  </button>
 
                   {aiLoading && (
                     <div className="flex items-center justify-center py-6">
