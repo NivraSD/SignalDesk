@@ -67,7 +67,7 @@ serve(async (req) => {
 
     // Use Claude to generate FAQs, awards, and enhanced descriptions
     const message = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022', // Use Sonnet for quality
+      model: 'claude-sonnet-4-20250514', // Use Sonnet 4 for quality
       max_tokens: 8192,
       messages: [{
         role: 'user',

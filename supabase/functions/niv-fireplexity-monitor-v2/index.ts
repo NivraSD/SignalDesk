@@ -104,6 +104,13 @@ serve(async (req) => {
       topics: { high: [] as string[], medium: [] as string[], low: [] as string[] }
     }
 
+    // NEW: Store full target objects with monitoring context for relevance filtering
+    const targetsWithContext = {
+      competitors: new Map<string, any>(),
+      stakeholders: new Map<string, any>(),
+      topics: new Map<string, any>()
+    }
+
     if (targetsData && targetsData.length > 0) {
       targetsData.forEach((target: any) => {
         const priority = target.priority || 'medium'
@@ -111,13 +118,34 @@ serve(async (req) => {
         if (target.type === 'competitor' && target.name) {
           discoveryTargets.competitors.add(target.name)
           targetsByPriority.competitors[priority].push(target.name)
+          targetsWithContext.competitors.set(target.name, {
+            name: target.name,
+            monitoring_context: target.monitoring_context,
+            relevance_filter: target.relevance_filter,
+            industry_context: target.industry_context,
+            priority: target.priority
+          })
         } else if ((target.type === 'stakeholder' || target.type === 'influencer') && target.name) {
           // Handle both 'stakeholder' and 'influencer' types (UI uses 'influencer')
           discoveryTargets.stakeholders.add(target.name)
           targetsByPriority.stakeholders[priority].push(target.name)
+          targetsWithContext.stakeholders.set(target.name, {
+            name: target.name,
+            monitoring_context: target.monitoring_context,
+            relevance_filter: target.relevance_filter,
+            industry_context: target.industry_context,
+            priority: target.priority
+          })
         } else if (target.type === 'topic' && target.name) {
           discoveryTargets.topics.add(target.name)
           targetsByPriority.topics[priority].push(target.name)
+          targetsWithContext.topics.set(target.name, {
+            name: target.name,
+            monitoring_context: target.monitoring_context,
+            relevance_filter: target.relevance_filter,
+            industry_context: target.industry_context,
+            priority: target.priority
+          })
         }
       })
       console.log(`   ✓ Loaded ${discoveryTargets.competitors.size} competitors, ${discoveryTargets.stakeholders.size} stakeholders, ${discoveryTargets.topics.size} topics from intelligence_targets`)
@@ -172,7 +200,7 @@ serve(async (req) => {
     // STEP 4: Filter and score by relevance
     console.log('\n🎯 Step 4: Scoring article relevance...')
 
-    const scoredArticles = scoreArticlesRelevance(articles, profile, orgName, discoveryTargets)
+    const scoredArticles = scoreArticlesRelevance(articles, profile, orgName, discoveryTargets, targetsWithContext)
     console.log(`   ✓ Scored ${scoredArticles.length} relevant articles`)
 
     // STEP 5: Deduplicate against previously processed articles
@@ -659,12 +687,14 @@ function extractDomain(url: string): string {
  * Score articles by relevance for real-time monitoring
  * Higher scores for: org mentions, competitor actions, crisis signals, breaking news
  * Adds discovery_coverage to track which targets each article covers
+ * NOW WITH: Strategic relevance filtering using monitoring_context and relevance_filter
  */
 function scoreArticlesRelevance(
   articles: any[],
   profile: any,
   orgName: string,
-  discoveryTargets: { competitors: Set<string>, stakeholders: Set<string>, topics: Set<string> }
+  discoveryTargets: { competitors: Set<string>, stakeholders: Set<string>, topics: Set<string> },
+  targetsWithContext: { competitors: Map<string, any>, stakeholders: Map<string, any>, topics: Map<string, any> }
 ): any[] {
   const competitors = Array.from(discoveryTargets.competitors)
   const stakeholders = Array.from(discoveryTargets.stakeholders)
@@ -722,9 +752,27 @@ function scoreArticlesRelevance(
       score += 20
     }
 
-    // Check each competitor
+    // Check each competitor (with entity disambiguation)
     competitors.forEach(comp => {
       if (comp && text.includes(comp.toLowerCase())) {
+        const compContext = targetsWithContext.competitors.get(comp)
+
+        // Entity disambiguation using industry_context
+        if (compContext?.industry_context) {
+          // Check if article has wrong context (e.g., "Ketchum Idaho" vs "Ketchum PR firm")
+          const contextLower = compContext.industry_context.toLowerCase()
+          if (contextLower.includes('pr') || contextLower.includes('communications')) {
+            // Look for PR/communications context in article
+            const hasPRContext = /\b(pr firm|public relations|communications agency|strategic communications)\b/i.test(text)
+            const hasCityContext = /\b(idaho|city council|municipal|town|mayor)\b/i.test(text)
+
+            if (hasCityContext && !hasPRContext) {
+              console.log(`   ⚠️  Entity disambiguation: "${comp}" in article is city, not PR firm - skipping`)
+              return // Skip this competitor
+            }
+          }
+        }
+
         coveredCompetitors.push(comp)
         if (title.includes(comp.toLowerCase())) {
           score += 40 // In title
@@ -734,9 +782,40 @@ function scoreArticlesRelevance(
       }
     })
 
-    // Check each stakeholder
+    // Check each stakeholder (with strategic relevance filtering)
     stakeholders.forEach(sh => {
       if (sh && text.includes(sh.toLowerCase())) {
+        const stakeholderContext = targetsWithContext.stakeholders.get(sh)
+
+        // Apply relevance_filter if present
+        if (stakeholderContext?.relevance_filter) {
+          const filter = stakeholderContext.relevance_filter
+          const includePatterns = filter.include_patterns || []
+          const excludePatterns = filter.exclude_patterns || []
+
+          // Check if article matches any exclude patterns (e.g., "broker-dealer", "AML violations")
+          const hasExcludeMatch = excludePatterns.some((pattern: string) =>
+            text.includes(pattern.toLowerCase())
+          )
+
+          if (hasExcludeMatch) {
+            console.log(`   ⚠️  Stakeholder "${sh}" excluded: article matches exclude pattern (${excludePatterns.join(', ')})`)
+            return // Skip this stakeholder mention
+          }
+
+          // Check if article matches any include patterns (e.g., "investor relations", "disclosure requirements")
+          const hasIncludeMatch = includePatterns.length === 0 || includePatterns.some((pattern: string) =>
+            text.includes(pattern.toLowerCase())
+          )
+
+          if (!hasIncludeMatch) {
+            console.log(`   ⚠️  Stakeholder "${sh}" excluded: article doesn't match include patterns (${includePatterns.join(', ')})`)
+            return // Skip this stakeholder mention
+          }
+
+          console.log(`   ✅ Stakeholder "${sh}" relevant: passed relevance filter`)
+        }
+
         coveredStakeholders.push(sh)
         score += 20
       }
