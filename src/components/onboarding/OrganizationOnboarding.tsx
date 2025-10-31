@@ -363,8 +363,6 @@ export default function OrganizationOnboarding({
 
   const handleGeoDiscovery = async () => {
     setGeoDiscoveryStarted(true)
-    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
     const orgId = createdOrganization?.id
     const orgNameToUse = createdOrganization?.name || orgName
@@ -377,29 +375,112 @@ export default function OrganizationOnboarding({
     try {
       console.log('🎯 Running GEO Discovery...')
 
-      const geoResponse = await fetch(`${SUPABASE_URL}/functions/v1/geo-intelligence-monitor`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
+      // STEP 1: Generate intelligent queries using geo-query-discovery
+      console.log('🔍 Generating queries...')
+      const { data: queryData, error: queryError } = await supabase.functions.invoke('geo-query-discovery', {
+        body: {
           organization_id: orgId,
           organization_name: orgNameToUse,
           industry: discovered?.industry || industry
-        })
+        }
       })
 
-      if (geoResponse.ok) {
-        const geoData = await geoResponse.json()
-        console.log('✅ GEO Discovery Complete:', geoData.summary)
-        setGeoResults(geoData)
-        setShowGeoResults(true)
-      } else {
-        const errorText = await geoResponse.text()
-        console.error('GEO Discovery failed:', errorText)
-        setGeoResults({ error: 'GEO Discovery failed' })
+      if (queryError || !queryData?.queries) {
+        throw new Error('Failed to generate queries')
       }
+
+      // Select 5 queries from each priority level for testing
+      const queries = [
+        ...(queryData.queries.critical || []).slice(0, 2),
+        ...(queryData.queries.high || []).slice(0, 2),
+        ...(queryData.queries.medium || []).slice(0, 1)
+      ]
+
+      console.log(`✅ Generated ${queries.length} queries for testing`)
+
+      // STEP 2: Test all 4 platforms in PARALLEL
+      console.log('🚀 Testing all platforms in parallel...')
+      const testBody = {
+        organization_name: orgNameToUse,
+        queries
+      }
+
+      const [claudeResult, geminiResult, perplexityResult, chatgptResult] = await Promise.all([
+        supabase.functions.invoke('geo-test-claude', { body: testBody }),
+        supabase.functions.invoke('geo-test-gemini', { body: testBody }),
+        supabase.functions.invoke('geo-test-perplexity', { body: testBody }),
+        supabase.functions.invoke('geo-test-chatgpt', { body: testBody })
+      ])
+
+      // Check results
+      const results = {
+        claude: claudeResult.data,
+        gemini: geminiResult.data,
+        perplexity: perplexityResult.data,
+        chatgpt: chatgptResult.data
+      }
+
+      console.log('✅ All platform tests complete:', {
+        claude: `${results.claude?.mentions || 0}/${results.claude?.queries_tested || 0}`,
+        gemini: `${results.gemini?.mentions || 0}/${results.gemini?.queries_tested || 0}`,
+        perplexity: `${results.perplexity?.mentions || 0}/${results.perplexity?.queries_tested || 0}`,
+        chatgpt: `${results.chatgpt?.mentions || 0}/${results.chatgpt?.queries_tested || 0}`
+      })
+
+      // STEP 3: Transform results for synthesis
+      const transformedResults = []
+      const queryMap = new Map(queries.map(q => [q.query, q]))
+
+      for (const [platformName, platformData] of Object.entries(results)) {
+        if (platformData?.signals && Array.isArray(platformData.signals)) {
+          for (const signal of platformData.signals) {
+            const originalQuery = queryMap.get(signal.data?.query)
+            transformedResults.push({
+              query: signal.data?.query || '',
+              intent: originalQuery?.intent || 'unknown',
+              priority: signal.priority || 'medium',
+              platform: platformName as 'claude' | 'gemini' | 'chatgpt' | 'perplexity',
+              response: '',
+              brand_mentioned: signal.data?.mentioned || false,
+              rank: signal.data?.position || undefined,
+              context_quality: signal.data?.context ? 'strong' : undefined,
+              competitors_mentioned: signal.data?.competitors_mentioned || []
+            })
+          }
+        }
+      }
+
+      console.log(`🎯 Synthesizing ${transformedResults.length} test results...`)
+      const { data: synthesisData, error: synthesisError } = await supabase.functions.invoke('geo-executive-synthesis', {
+        body: {
+          organization_id: orgId,
+          organization_name: orgNameToUse,
+          industry: discovered?.industry || industry,
+          geo_results: transformedResults
+        }
+      })
+
+      if (synthesisError) {
+        throw new Error('Failed to synthesize results')
+      }
+
+      // Format results for display
+      const geoData = {
+        success: true,
+        summary: {
+          total_queries: queries.length,
+          total_signals: transformedResults.length,
+          claude_mentions: results.claude?.mentions || 0,
+          gemini_mentions: results.gemini?.mentions || 0,
+          perplexity_mentions: results.perplexity?.mentions || 0,
+          chatgpt_mentions: results.chatgpt?.mentions || 0
+        },
+        synthesis: synthesisData?.synthesis
+      }
+
+      console.log('✅ GEO Discovery Complete:', geoData.summary)
+      setGeoResults(geoData)
+      setShowGeoResults(true)
     } catch (error) {
       console.error('GEO Discovery error:', error)
       setGeoResults({ error: 'GEO Discovery failed' })
