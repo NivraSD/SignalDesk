@@ -49,59 +49,55 @@ serve(async (req) => {
     const pagesToScrape = pages_to_scrape || inferKeyPages(website_url)
     console.log(`🔍 Scraping ${pagesToScrape.length} pages...`)
 
-    const scrapedPages: any[] = []
+    // Use Firecrawl batch scraping API for efficiency
+    console.log(`🔥 Using Firecrawl batch scrape for ${pagesToScrape.length} URLs`)
 
-    // Scrape each page in parallel
-    const scrapePromises = pagesToScrape.map(async (pageUrl) => {
-      try {
-        console.log(`   📄 Scraping: ${pageUrl}`)
-
-        const response = await fetch('https://api.firecrawl.dev/v2/scrape', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${firecrawlApiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            url: pageUrl,
-            formats: ['markdown', 'html'],
-            onlyMainContent: true
-          })
-        })
-
-        if (!response.ok) {
-          const errorText = await response.text()
-          console.error(`   ✗ Failed to scrape ${pageUrl}:`, errorText)
-          return null
-        }
-
-        const data = await response.json()
-        const markdown = data.data?.markdown || ''
-        const title = data.data?.metadata?.title || ''
-
-        // Log content length for debugging
-        if (markdown.length === 0) {
-          console.warn(`   ⚠️  Empty content from ${pageUrl} - page may not exist or be blocked`)
-        } else {
-          console.log(`   ✓ Got ${markdown.length} chars from ${pageUrl}`)
-        }
-
-        return {
-          url: pageUrl,
-          title,
-          markdown,
-          html: data.data?.html || '',
-          metadata: data.data?.metadata || {},
-          success: true
-        }
-      } catch (error) {
-        console.error(`   ✗ Error scraping ${pageUrl}:`, error)
-        return null
-      }
+    const batchResponse = await fetch('https://api.firecrawl.dev/v2/batch/scrape', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${firecrawlApiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        urls: pagesToScrape,
+        formats: ['markdown'],
+        onlyMainContent: true
+      })
     })
 
-    const results = await Promise.all(scrapePromises)
-    const successfulPages = results.filter(r => r !== null)
+    if (!batchResponse.ok) {
+      const errorText = await batchResponse.text()
+      throw new Error(`Firecrawl batch scrape failed: ${errorText}`)
+    }
+
+    const batchData = await batchResponse.json()
+    console.log(`✅ Batch scrape completed, processing results...`)
+
+    // Process batch results
+    const successfulPages = []
+    if (batchData.data && Array.isArray(batchData.data)) {
+      for (const result of batchData.data) {
+        if (result.markdown) {
+          const markdown = result.markdown || ''
+          const title = result.metadata?.title || ''
+
+          if (markdown.length === 0) {
+            console.warn(`   ⚠️  Empty content from ${result.url}`)
+          } else {
+            console.log(`   ✓ Got ${markdown.length} chars from ${result.url}`)
+          }
+
+          successfulPages.push({
+            url: result.url,
+            title,
+            markdown,
+            html: result.html || '',
+            metadata: result.metadata || {},
+            success: true
+          })
+        }
+      }
+    }
 
     console.log(`✅ Scraped ${successfulPages.length}/${pagesToScrape.length} pages successfully`)
 
