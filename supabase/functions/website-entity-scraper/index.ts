@@ -47,59 +47,55 @@ serve(async (req) => {
 
     let pagesToScrape: string[]
 
-    // If pages provided, use them; otherwise use intelligent search
+    // If pages provided, use them; otherwise use Firecrawl Map to discover pages
     if (pages_to_scrape && pages_to_scrape.length > 0) {
       pagesToScrape = pages_to_scrape
       console.log(`📄 Using ${pagesToScrape.length} provided URLs`)
     } else {
-      console.log(`🔍 Using Firecrawl search to discover relevant pages on ${website_url}`)
+      console.log(`🗺️  Using Firecrawl Map to discover pages on ${website_url}`)
 
-      // Use Firecrawl search to intelligently find pages
-      const domain = new URL(website_url).hostname
-      const searches = [
-        `site:${domain} about company`,
-        `site:${domain} products services`,
-        `site:${domain} team leadership`,
-        `site:${domain} locations offices`,
-        `site:${domain} contact`
-      ]
-
-      const discoveredUrls = new Set<string>([website_url]) // Always include homepage
-
-      for (const searchQuery of searches) {
-        try {
-          const searchResponse = await fetch('https://api.firecrawl.dev/v2/search', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${firecrawlApiKey}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              query: searchQuery,
-              limit: 3, // Top 3 results per search
-              scrapeOptions: {
-                formats: ['markdown']
-              }
-            })
+      try {
+        // Use Firecrawl's Map endpoint to discover all actual pages on the site
+        const mapResponse = await fetch('https://api.firecrawl.dev/v2/map', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${firecrawlApiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            url: website_url,
+            search: 'about OR products OR services OR team OR contact OR leadership OR company', // Filter for relevant pages
+            limit: 20, // Max pages to discover
+            includeSubdomains: false,
+            ignoreSitemap: false // Use sitemap if available
           })
+        })
 
-          if (searchResponse.ok) {
-            const searchData = await searchResponse.json()
-            if (searchData.success && searchData.data) {
-              for (const result of searchData.data) {
-                if (result.url && result.url.includes(domain)) {
-                  discoveredUrls.add(result.url)
-                }
-              }
-            }
-          }
-        } catch (error) {
-          console.warn(`   ⚠️  Search failed for "${searchQuery}":`, error)
+        if (!mapResponse.ok) {
+          const errorText = await mapResponse.text()
+          console.error(`❌ Map endpoint failed (${mapResponse.status}):`, errorText)
+          throw new Error(`Map failed: ${mapResponse.status}`)
         }
-      }
 
-      pagesToScrape = Array.from(discoveredUrls)
-      console.log(`✅ Discovered ${pagesToScrape.length} relevant pages via search`)
+        const mapData = await mapResponse.json()
+
+        if (mapData.success && mapData.links && Array.isArray(mapData.links)) {
+          pagesToScrape = mapData.links.map((link: any) => link.url)
+          console.log(`✅ Discovered ${pagesToScrape.length} pages via Firecrawl Map`)
+
+          // Log sample of discovered URLs
+          if (pagesToScrape.length > 0) {
+            console.log(`   Sample URLs: ${pagesToScrape.slice(0, 3).join(', ')}`)
+          }
+        } else {
+          console.warn(`⚠️  Map returned no links, falling back to homepage only`)
+          pagesToScrape = [website_url]
+        }
+      } catch (error) {
+        console.error(`❌ Map discovery failed:`, error)
+        console.log(`   Falling back to homepage only: ${website_url}`)
+        pagesToScrape = [website_url]
+      }
     }
 
     console.log(`📄 Scraping ${pagesToScrape.length} pages with Firecrawl v2...`)
@@ -239,54 +235,3 @@ serve(async (req) => {
   }
 })
 
-/**
- * Infer key pages to scrape based on common patterns
- * Handles any URL format and extracts proper base URL
- */
-function inferKeyPages(inputUrl: string): string[] {
-  try {
-    const url = new URL(inputUrl)
-
-    // Extract base URL (protocol + hostname + path up to the directory)
-    let baseUrl = `${url.protocol}//${url.hostname}`
-
-    // If there's a path, use it as the base (but remove any file like index.html)
-    if (url.pathname && url.pathname !== '/') {
-      // Remove trailing slash and any file extensions
-      let pathBase = url.pathname.replace(/\/[^\/]*\.(html|htm|php|asp|aspx|jsp)$/i, '')
-      pathBase = pathBase.replace(/\/$/, '')
-      baseUrl = `${baseUrl}${pathBase}`
-    }
-
-    console.log(`   🔧 Base URL extracted: ${baseUrl} (from input: ${inputUrl})`)
-
-    return [
-      inputUrl, // Original URL (homepage/main page)
-      `${baseUrl}/about`,
-      `${baseUrl}/about-us`,
-      `${baseUrl}/team`,
-      `${baseUrl}/leadership`,
-      `${baseUrl}/products`,
-      `${baseUrl}/services`,
-      `${baseUrl}/solutions`,
-      `${baseUrl}/locations`,
-      `${baseUrl}/contact`
-    ]
-  } catch (error) {
-    console.error(`   ⚠️  Failed to parse URL: ${inputUrl}, using as-is`)
-    // Fallback to simple string manipulation if URL parsing fails
-    const normalizedUrl = inputUrl.replace(/\/$/, '')
-    return [
-      normalizedUrl,
-      `${normalizedUrl}/about`,
-      `${normalizedUrl}/about-us`,
-      `${normalizedUrl}/team`,
-      `${normalizedUrl}/leadership`,
-      `${normalizedUrl}/products`,
-      `${normalizedUrl}/services`,
-      `${normalizedUrl}/solutions`,
-      `${normalizedUrl}/locations`,
-      `${normalizedUrl}/contact`
-    ]
-  }
-}
