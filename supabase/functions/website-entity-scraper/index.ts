@@ -65,8 +65,7 @@ serve(async (req) => {
           body: JSON.stringify({
             url: pageUrl,
             formats: ['markdown'],
-            onlyMainContent: true,
-            timeout: 30000
+            onlyMainContent: true  // v2 API uses this at root level, not in scrapeOptions
           })
         })
 
