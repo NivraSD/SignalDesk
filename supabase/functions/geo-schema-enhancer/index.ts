@@ -63,7 +63,7 @@ serve(async (req) => {
 
     const anthropic = new Anthropic({ apiKey: anthropicApiKey })
 
-    // Build context from coverage, entities, and discovery research
+    // Build context from coverage, entities, and any discovery research
     const context = buildContext(organization_name, industry, coverage_articles, entities, discovery_insights)
 
     console.log('🔍 Generating GEO enhancements with Claude...')
@@ -76,6 +76,12 @@ serve(async (req) => {
         role: 'user',
         content: `You are a GEO (Generative Engine Optimization) expert enhancing a schema.org graph for ${organization_name}.
 
+IMPORTANT: Use your knowledge about ${organization_name} to add impressive, factual context:
+- If you know the company's revenue, market cap, or scale → include it
+- If you know their industry ranking or position → mention it
+- If you know peer/competitor companies → reference them for context
+- If you know founding date, headquarters, global reach → add that context
+
 <context>
 ${context}
 </context>
@@ -86,26 +92,33 @@ ${JSON.stringify(base_schema, null, 2)}
 
 Your task is to enhance this schema for maximum AI discoverability by adding:
 
-1. **FAQPage Schema**: 5-7 compelling questions and answers that:
-   - Address common searches related to the organization's services
-   - Showcase achievements and differentiators
-   - Include relevant keywords naturally
-   - Are genuinely helpful (not just marketing fluff)
+1. **FAQPage Schema**: 5-7 GENUINELY USEFUL questions that people actually search for:
+   - Focus on CORE BUSINESS questions: "What does [company] do?", "How big is [company]?", "Who are [company]'s main competitors?"
+   - Include CONCRETE FACTS: revenue, employee count, market position, geographic reach
+   - Avoid generic questions like "What makes you unique?" or "Why choose us?"
+   - Example good questions:
+     * "What is Mitsui & Co.'s primary business?"
+     * "How large is Mitsui compared to other trading companies?"
+     * "What industries does Mitsui operate in?"
+     * "Where does Mitsui have offices globally?"
+   - Use research insights to add impressive context (revenue, rankings, scale)
 
-2. **Awards & Achievements**: If coverage mentions any awards, recognition, or achievements:
+2. **Enhanced Descriptions**: Improve existing descriptions to be:
+   - More compelling and specific with CONCRETE NUMBERS
+   - Include revenue, market cap, rankings, scale metrics from research
+   - Add peer company comparisons ("one of the largest alongside X, Y, Z")
+   - Mention historical significance if relevant
+   - Still 100% accurate (don't invent facts)
+
+3. **Keywords & Topics**: Add:
+   - Core business areas and industry terms
+   - Geographic markets and regions
+   - Service/product categories
+   - Competitive positioning terms
+
+4. **Awards & Achievements** (only if mentioned in context):
    - Add them as Award schema objects
    - Be specific about what was won and when
-
-3. **Enhanced Descriptions**: Improve existing descriptions to be:
-   - More compelling and specific
-   - Include concrete achievements/numbers when possible
-   - Optimized for common search queries
-   - Still accurate (don't invent facts)
-
-4. **Keywords & Topics**: Add:
-   - Industry-specific keywords
-   - Service/product categories
-   - Expertise areas
 
 Return a JSON object with this structure:
 

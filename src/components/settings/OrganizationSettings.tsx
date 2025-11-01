@@ -272,43 +272,9 @@ export default function OrganizationSettings({
       const schemaData = await schemaResponse.json()
       console.log('✅ Base schema generated')
 
-      // Step 5: Discovery research for contextual facts
-      console.log('🔍 Step 5: Researching company context and achievements...')
-      let discoveryInsights = null
-
-      try {
-        const discoveryResponse = await fetch(`${SUPABASE_URL}/functions/v1/mcp-discovery`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            method: 'tools/call',
-            params: {
-              name: 'intelligent_research',
-              arguments: {
-                query: `Research ${orgData.name} company overview: revenue, industry rankings, peer companies, scale, notable achievements, founding history`,
-                research_depth: 'comprehensive',
-                include_citations: true
-              }
-            }
-          })
-        })
-
-        if (discoveryResponse.ok) {
-          const discoveryData = await discoveryResponse.json()
-          discoveryInsights = discoveryData.content?.[0]?.text
-          console.log('✅ Discovery research complete')
-        } else {
-          console.warn('Discovery research failed (non-critical):', await discoveryResponse.text())
-        }
-      } catch (error) {
-        console.warn('Discovery research error (non-critical):', error)
-      }
-
-      // Step 6: Enhance schema with FAQs, awards, keywords
-      console.log('✨ Step 6: Enhancing schema with GEO optimizations...')
+      // Step 5: Enhance schema with FAQs, awards, keywords
+      // Claude will use its knowledge to add impressive context
+      console.log('✨ Step 5: Enhancing schema with GEO optimizations...')
       const enhancerResponse = await fetch(`${SUPABASE_URL}/functions/v1/geo-schema-enhancer`, {
         method: 'POST',
         headers: {
@@ -321,8 +287,7 @@ export default function OrganizationSettings({
           industry: orgData.industry,
           base_schema: schemaData.schema_graph,
           coverage_articles: [],
-          entities: enrichData.enriched_entities || {},
-          discovery_insights: discoveryInsights // Add research context
+          entities: enrichData.enriched_entities || {}
         })
       })
 
