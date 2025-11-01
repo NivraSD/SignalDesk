@@ -363,12 +363,11 @@ serve(async (req) => {
       ]),
       stakeholders: extractNames([
         ...(profile?.stakeholders?.regulators || []),
+        ...(profile?.stakeholders?.key_analysts || []),  // NEW field
+        ...(profile?.stakeholders?.activists || []),     // NEW field
         ...(profile?.stakeholders?.major_investors || []),
         ...(profile?.stakeholders?.major_customers || []),
-        ...(profile?.stakeholders?.partners || []),
-        ...(profile?.stakeholders?.executives || []),
-        ...(profile?.stakeholders?.critics || []),
-        ...(profile?.stakeholders?.influencers || [])
+        ...(profile?.stakeholders?.key_partners || [])   // Renamed from 'partners'
       ]),
       keywords: [
         ...(profile?.monitoring_config?.keywords || []),
