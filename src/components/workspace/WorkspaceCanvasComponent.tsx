@@ -224,7 +224,7 @@ ${contextText}`;
             }
           ],
           system: systemPrompt,
-          max_tokens: 2000,
+          max_tokens: isSchema ? 8000 : 2000, // Higher limit for Schema.org JSON to avoid truncation
           temperature: 0.7
         }),
       });
