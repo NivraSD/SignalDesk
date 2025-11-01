@@ -54,6 +54,8 @@ serve(async (req) => {
     // Scrape each page in parallel using v2 API
     const scrapePromises = pagesToScrape.map(async (pageUrl) => {
       try {
+        console.log(`   🔄 Scraping: ${pageUrl}`)
+
         const response = await fetch('https://api.firecrawl.dev/v2/scrape', {
           method: 'POST',
           headers: {
@@ -62,29 +64,61 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             url: pageUrl,
-            formats: ['markdown']
+            formats: ['markdown'],
+            onlyMainContent: true,
+            timeout: 30000
           })
         })
 
+        // Log the raw response status
+        console.log(`   📡 Response status for ${pageUrl}: ${response.status}`)
+
         if (!response.ok) {
-          console.warn(`   ⚠️  Failed to scrape ${pageUrl}: ${response.status}`)
+          const errorText = await response.text()
+          console.error(`   ❌ HTTP ${response.status} for ${pageUrl}:`, errorText)
           return null
         }
 
         const data = await response.json()
 
-        if (!data.success || !data.data) {
-          console.warn(`   ⚠️  No data returned from ${pageUrl}`)
+        // Log the full response structure for debugging
+        console.log(`   📦 Response structure:`, {
+          success: data.success,
+          hasData: !!data.data,
+          hasMarkdown: !!data.data?.markdown,
+          markdownLength: data.data?.markdown?.length || 0,
+          statusCode: data.data?.metadata?.statusCode,
+          error: data.data?.metadata?.error,
+          warning: data.warning
+        })
+
+        if (!data.success) {
+          console.error(`   ❌ Firecrawl returned success=false for ${pageUrl}:`, {
+            warning: data.warning,
+            error: data.data?.metadata?.error
+          })
+          return null
+        }
+
+        if (!data.data) {
+          console.warn(`   ⚠️  No data object in response from ${pageUrl}`)
           return null
         }
 
         const markdown = data.data.markdown || ''
         const title = data.data.metadata?.title || ''
+        const statusCode = data.data.metadata?.statusCode
+
+        // Log suspicious content lengths
+        if (markdown.length > 0 && markdown.length < 1000) {
+          console.warn(`   ⚠️  Suspiciously short content (${markdown.length} chars) from ${pageUrl}`)
+          console.warn(`   First 200 chars: ${markdown.substring(0, 200)}`)
+        }
 
         if (markdown.length === 0) {
-          console.warn(`   ⚠️  Empty content from ${pageUrl}`)
+          console.warn(`   ⚠️  Empty content from ${pageUrl} (HTTP ${statusCode})`)
         } else {
-          console.log(`   ✓ Got ${markdown.length} chars from ${pageUrl}`)
+          console.log(`   ✅ Got ${markdown.length} chars from ${pageUrl} (HTTP ${statusCode})`)
         }
 
         return {
@@ -96,7 +130,7 @@ serve(async (req) => {
           success: true
         }
       } catch (error) {
-        console.error(`   ✗ Error scraping ${pageUrl}:`, error)
+        console.error(`   ✗ Exception scraping ${pageUrl}:`, error)
         return null
       }
     })

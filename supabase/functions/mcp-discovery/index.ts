@@ -164,8 +164,16 @@ async function createOrganizationProfile(args: any) {
     // Get industry competitors from our registry (merged with user targets)
     const industryData = await gatherIndustryData(organization_name, industry_hint, website, userTargets);
 
-    // Get sources from master-source-registry
-    const sourcesData = await gatherSourcesData(industryData.industry);
+    // Build initial description from website for semantic source matching
+    const websiteInfo = website ? await fetchWebsiteInfo(website) : null;
+    const initialDescription = websiteInfo
+      ? `${websiteInfo.title || organization_name}. ${websiteInfo.description || ''}`.substring(0, 500)
+      : `${organization_name} operates in ${industryData.industry}`;
+
+    console.log(`📝 Using description for source matching: ${initialDescription.substring(0, 150)}...`);
+
+    // Get sources from master-source-registry with semantic matching
+    const sourcesData = await gatherSourcesData(industryData.industry, organization_name, initialDescription);
     
     // STEP 2: Use Claude to analyze gaps and create comprehensive profile
     console.log('🤖 Step 2: Using Claude to analyze gaps and enhance profile...');
@@ -197,7 +205,7 @@ async function createOrganizationProfile(args: any) {
     console.log(`✅ Profile creation complete for ${organization_name}`);
     console.log(`   - ${profile.competition?.direct_competitors?.length || 0} competitors identified`);
     console.log(`   - ${profile.monitoring_config?.search_queries?.competitor_queries?.length || 0} search queries generated`);
-    console.log(`   - ${profile.sources?.source_priorities?.total_sources || 0} priority sources configured`);
+    console.log(`   - ${profile.monitoring_config?.source_priorities?.total_sources || 0} priority sources configured`);
     console.log(`   - ${Object.keys(profile.monitoring_config?.competitor_priorities || {}).length} competitor priorities set`);
     
     return {
@@ -344,27 +352,34 @@ async function gatherIndustryData(organization_name: string, industry_hint?: str
 - "Telecommunications" = phone/internet carriers like AT&T, Verizon (infrastructure)
 - "Marketing agency" = marketing/advertising industry
 - "Consulting firm" = professional services/consulting
+- "General trading company" or "Sogo Shosha" = trading industry
 
-Answer with just the primary industry name from these options:
-- "public-relations" (for PR/communications firms, corporate communications)
-- "marketing" (for advertising/marketing agencies)
-- "telecommunications" (ONLY for phone/internet carriers)
-- "technology" (for software/IT companies)
-- "consulting" (for management/business consulting)
-- "finance" (for banking/investment)
-- "healthcare" (for medical/pharmaceutical)
-- "retail" (for consumer retail)
-- "automotive" (for car manufacturers)
+RESPOND WITH ONLY ONE OR TWO WORDS FROM THIS LIST (NO EXPLANATIONS):
+- public-relations
+- marketing
+- telecommunications
+- technology
+- consulting
+- finance
+- healthcare
+- retail
+- automotive
+- trading
+- manufacturing
+- energy
+- transportation
+- real-estate
+- media
 
-Your answer (one industry name only):`;
+RESPOND WITH ONLY THE INDUSTRY NAME:`;
 
     console.log('🔍 Industry detection prompt:', detectionPrompt.substring(0, 300));
 
-    // Use Claude to detect industry
+    // Use Claude Haiku for industry detection (follows instructions better, faster, cheaper)
     const detection = await callAnthropic([{
       role: 'user',
       content: detectionPrompt
-    }], 50, 'claude-sonnet-4-20250514');
+    }], 10, 'claude-3-5-haiku-20241022');
 
     industry = detection.content[0].type === 'text' ? detection.content[0].text.trim() : 'technology';
     console.log(`✅ Detected industry: ${industry}`);
@@ -406,7 +421,7 @@ Your answer (one industry name only):`;
 }
 
 // Gather sources from master-source-registry with FULL DETAILS
-async function gatherSourcesData(industry: string) {
+async function gatherSourcesData(industry: string, organizationName?: string, companyDescription?: string) {
   try {
     const response = await fetch(`${SUPABASE_URL}/functions/v1/master-source-registry`, {
       method: 'POST',
@@ -414,7 +429,11 @@ async function gatherSourcesData(industry: string) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
       },
-      body: JSON.stringify({ industry })
+      body: JSON.stringify({
+        industry,
+        organization_name: organizationName,
+        company_description: companyDescription
+      })
     });
     
     if (!response.ok) {
@@ -524,24 +543,30 @@ async function analyzeAndEnhanceProfile(
   industry_hint?: string
 ) {
   const analysisPrompt = `
-You are creating a PR/COMMUNICATIONS INTELLIGENCE monitoring profile for ${organization_name}.
+You are creating a strategic intelligence profile for ${organization_name}.
 
-🎯 CRITICAL: THIS IS A PR/STRATEGIC INTELLIGENCE SYSTEM
-This is NOT a generic news monitor. Every target must be justified by PR/strategic value:
-- How does monitoring this target impact ${organization_name}'s NARRATIVE?
-- How does it affect ${organization_name}'s REPUTATION?
-- How does it inform ${organization_name}'s STRATEGIC POSITIONING?
+🎯 YOUR MISSION: Identify what external factors could significantly impact THIS organization
+
+Your goal is to create a profile of:
+- Key competitors whose moves could affect ${organization_name}'s business, reputation, or strategic positioning
+- Stakeholders (regulators, investors, partners) whose actions could materially impact operations
+- Market dynamics and emerging threats that could change the competitive landscape
+- Strategic opportunities and risks on the horizon
+
+This is NOT about generic news monitoring. Every target you identify must answer:
+"Why does ${organization_name} specifically need to know about this?"
 
 CONTEXT:
 - Organization: ${organization_name}
 - Industry: ${industryData.industry} ${industryData.subCategory ? `(${industryData.subCategory})` : ''}
 - Known Competitors: ${industryData.competitors.slice(0, 10).join(', ')}
 
-⚠️ FOR REGULATORS/STAKEHOLDERS:
-- Only include if their activity DIRECTLY impacts ${organization_name}'s industry/reputation
-- Provide clear monitoring_context explaining WHY from a PR perspective
-- Include relevance_filter to prevent noise from unrelated enforcement/activity
-- Example: For a PR firm, "SEC" is only relevant for PR industry regulations, NOT general financial enforcement
+⚠️ CRITICAL RULES FOR STAKEHOLDERS:
+- Only include stakeholders whose activity DIRECTLY impacts ${organization_name}'s industry or operations
+- Provide clear monitoring_context explaining WHY this matters to THIS specific organization
+- Include relevance_filter to prevent noise from unrelated activity
+- Example: For a PR firm, monitor "SEC communications regulations" NOT "SEC general enforcement"
+- Example: For a trading company, monitor "commodity regulators" NOT "securities enforcement"
 
 ═══════════════════════════════════════════════════════════
 🔍 AVAILABLE INTELLIGENCE SOURCES (Your Monitoring Tools)
@@ -626,45 +651,44 @@ NOW, provide your COMPREHENSIVE profile in this JSON format:
   
   "competition": {
     "direct_competitors": [
-      {
-        "name": "Competitor company name",
-        "monitoring_context": "What specific competitive dynamics to track - client wins/losses, positioning changes, strategic moves that affect our narrative",
-        "industry_context": "${organization_name}'s industry - helps disambiguate (e.g., 'Ketchum PR firm' not 'Ketchum Idaho city')"
-      }
+      "Competitor 1 Name",
+      "Competitor 2 Name",
+      "Competitor 3 Name",
+      "List 10-15 major competitors - just company names as strings"
     ],
     "indirect_competitors": ["5-10 companies that could become competitors"],
     "emerging_threats": ["3-5 startups or new entrants to watch"],
-    "competitive_dynamics": "Key competitive factors in this market"
+    "competitive_dynamics": "2-3 sentences on key competitive factors in this market"
   },
-  
+
   "stakeholders": {
-    "regulators": [
-      {
-        "name": "SPECIFIC regulatory body name",
-        "monitoring_context": "WHY monitor this regulator from a PR/Communications perspective - how does their activity impact the org's narrative, reputation, or strategic positioning?",
-        "relevance_filter": {
-          "include_patterns": ["industry-specific regulations", "communications rules", "disclosure requirements"],
-          "exclude_patterns": ["general enforcement unrelated to org's industry"],
-          "strategic_angle": "Only relevant when it affects org's industry, not general regulatory activity"
-        },
-        "industry_context": "${organization_name}'s industry context for disambiguation"
+    "regulators": ["3-5 regulatory body names that directly govern this industry - e.g., 'CFTC', 'SEC', 'FERC'"],
+    "key_analysts": ["OPTIONAL: 2-3 specific analysts/journalists/thought leaders who significantly influence this org's industry - only include if there are prominent voices that matter. Format: 'Name - Affiliation'"],
+    "activists": ["OPTIONAL: 1-2 activist groups or prominent critics if relevant to this org"],
+    "major_customers": [],
+    "major_investors": [],
+    "key_partners": []
+  },
+
+  "monitoring_guidance": {
+    "competitors": {
+      "what_to_track": ["major deals and acquisitions", "strategic partnerships", "product launches", "market share shifts", "executive changes", "earnings and financial performance"],
+      "why": "Competitive intelligence reveals market dynamics, strategic threats, and opportunities for ${organization_name} to differentiate or respond",
+      "special_focus": {
+        "Top Competitor Name": "Optional: specific aspect to watch for this competitor if relevant"
       }
-    ],
-    "major_customers": ["Key customer segments or specific major customers"],
-    "major_investors": ["Institutional investors, VCs, or major shareholders"],
-    "partners": ["Key suppliers, distributors, or strategic partners"],
-    "critics": ["Activist groups, analysts, or vocal critics"],
-    "influencers": [
-      {
-        "name": "Analyst/journalist/thought leader name",
-        "monitoring_context": "WHY this person matters to the org's narrative and reputation",
-        "relevance_filter": {
-          "include_patterns": ["topics this person covers that relate to org"],
-          "exclude_patterns": ["their work on unrelated industries/topics"],
-          "strategic_angle": "How their voice impacts org's positioning"
-        }
+    },
+    "regulators": {
+      "what_to_track": ["new regulations and policy changes", "enforcement actions in our sector", "compliance requirement updates", "public consultations and proposed rules"],
+      "why": "Regulatory changes directly impact ${organization_name}'s operations, compliance costs, strategic options, and market access",
+      "special_focus": {
+        "Regulator Name": "Optional: specific regulatory area most relevant to ${organization_name}"
       }
-    ]
+    },
+    "analysts": {
+      "what_to_track": ["industry reports and forecasts", "public commentary on market trends", "coverage of key players and market dynamics"],
+      "why": "Analyst perspectives shape investor sentiment, client decisions, and market narrative around ${organization_name}'s industry"
+    }
   },
   
   "service_lines": [
@@ -734,47 +758,61 @@ ${industry_hint ? `\nIndustry context: ${industry_hint}` : ''}
 ${industryData.competitors.length > 0 ? `\nKnown competitors: ${industryData.competitors.join(', ')}` : ''}
 
 ═══════════════════════════════════════════════════════════
-📚 EXAMPLES OF GOOD VS BAD STAKEHOLDER MONITORING
+📚 EXAMPLES OF GOOD PROFILES
 ═══════════════════════════════════════════════════════════
 
-❌ BAD Example (PR firm monitoring SEC):
+✅ GOOD Example (PR Firm):
 {
-  "name": "SEC",
-  "monitoring_context": "Regulates financial disclosures",
-  "relevance_filter": null
-}
-PROBLEM: Will match ALL SEC news including irrelevant financial enforcement
-
-✅ GOOD Example (PR firm monitoring SEC):
-{
-  "name": "SEC",
-  "monitoring_context": "Monitor ONLY SEC communications/disclosure regulations affecting PR industry - e.g., new investor relations rules, earnings call regulations, disclosure requirements that impact how PR firms advise clients. NOT general enforcement actions.",
-  "relevance_filter": {
-    "include_patterns": ["investor relations", "disclosure requirements", "communications regulations", "earnings guidance", "social media disclosure"],
-    "exclude_patterns": ["broker-dealer", "AML violations", "trading violations", "general enforcement", "fines unrelated to communications"],
-    "strategic_angle": "Only relevant when SEC rules change how companies communicate publicly or how PR firms advise on investor relations"
+  "competition": {
+    "direct_competitors": ["Edelman", "Weber Shandwick", "FleishmanHillard", "Ketchum", "BCW", "Golin", "Porter Novelli", "Zeno Group", "5WPR", "ICR"]
   },
-  "industry_context": "Public Relations & Communications Services"
+  "stakeholders": {
+    "regulators": ["SEC", "FTC", "FCC"],
+    "key_analysts": ["Paul Holmes - The Holmes Report", "Richard Edelman - Edelman Trust Barometer"],
+    "activists": []
+  },
+  "monitoring_guidance": {
+    "regulators": {
+      "special_focus": {
+        "SEC": "Communications and disclosure regulations only - NOT general securities enforcement"
+      }
+    }
+  }
 }
 
-✅ GOOD Example (Competitor with disambiguation):
+✅ GOOD Example (Trading Company like Mitsui):
 {
-  "name": "Ketchum",
-  "monitoring_context": "Major global PR firm competitor - monitor for client wins/losses, executive hires, crisis work, strategic positioning changes",
-  "industry_context": "Public Relations & Communications - Ketchum PR firm, NOT Ketchum Idaho city"
+  "competition": {
+    "direct_competitors": ["Mitsubishi Corporation", "Sumitomo Corporation", "Itochu", "Marubeni", "Toyota Tsusho", "Sojitz", "Glencore", "Trafigura", "Vitol", "Noble Group", "Cargill", "Louis Dreyfus"]
+  },
+  "stakeholders": {
+    "regulators": ["CFTC", "FERC", "DOE", "USDA"],
+    "key_analysts": ["Ed Morse - Citigroup Energy", "Jeff Currie - Goldman Sachs Commodities"],
+    "activists": []
+  },
+  "monitoring_guidance": {
+    "regulators": {
+      "special_focus": {
+        "CFTC": "Commodity trading regulations, position limits, swap regulations - core to operations",
+        "FERC": "Energy infrastructure and pipeline regulations",
+        "DOE": "Energy policy and strategic reserves"
+      }
+    }
+  }
 }
 
 REMEMBER:
-- Keywords must match what these sources actually publish
-- Every stakeholder needs monitoring_context explaining WHY from a PR/strategic perspective
-- Use relevance_filter to prevent noise
-BE SPECIFIC with names. Real companies, real regulators, real people.
+- Return 10-15 competitors minimum (not 4)
+- Use simple string arrays for all targets
+- Put monitoring context in monitoring_guidance section
+- Only use special_focus for exceptions (like "SEC only for comms regs")
+- BE SPECIFIC with real names - real companies, real agencies, real people
 `;
 
   const message = await callAnthropic([{
     role: 'user',
     content: analysisPrompt
-  }], 4000, 'claude-sonnet-4-20250514');
+  }], 8000, 'claude-sonnet-4-20250514'); // Increased from 4000 - need space for full profile with 10-15 competitors + stakeholders
 
   const claudeResponse = message.content[0];
   if (claudeResponse.type !== 'text') {
@@ -782,6 +820,7 @@ BE SPECIFIC with names. Real companies, real regulators, real people.
   }
 
   console.log('Claude response:', claudeResponse.text.substring(0, 500));
+  console.log(`Full response length: ${claudeResponse.text.length} characters`);
 
   const jsonMatch = claudeResponse.text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
@@ -790,6 +829,8 @@ BE SPECIFIC with names. Real companies, real regulators, real people.
   }
 
   const enhancedData = JSON.parse(jsonMatch[0]);
+
+  console.log(`Parsed profile: ${enhancedData.competition?.direct_competitors?.length || 0} competitors, ${enhancedData.stakeholders?.regulators?.length || 0} regulators, ${enhancedData.stakeholders?.key_analysts?.length || 0} analysts, ${enhancedData.stakeholders?.activists?.length || 0} activists`);
   
   // Generate optimized search queries for each competitor
   const generateSearchQueries = (competitors: string[]) => {
@@ -882,11 +923,12 @@ BE SPECIFIC with names. Real companies, real regulators, real people.
     const extractNames = (items: any[]) => items.map(item => typeof item === 'string' ? item : item.name);
 
     const topCompetitors = extractNames((enhancedData.competition.direct_competitors || []).slice(0, 10));
-    const topRegulators = extractNames((enhancedData.stakeholders?.regulators || []).slice(0, 3));
+    const topRegulators = extractNames((enhancedData.stakeholders?.regulators || []).slice(0, 6)); // Allow up to 6 regulators
     const topTopics = []; // Removed topics - 0% effectiveness in monitoring
     const keyStakeholders = extractNames([
-      ...(enhancedData.stakeholders?.influencers || []).slice(0, 2)
-      // Removed investors - less relevant for most companies
+      ...(enhancedData.stakeholders?.key_analysts || []).slice(0, 3), // Up to 3 analysts
+      ...(enhancedData.stakeholders?.activists || []).slice(0, 2) // Up to 2 activists
+      // Removed investors/customers/partners - less relevant for monitoring
     ].filter(Boolean));
 
     return {
@@ -1080,32 +1122,25 @@ function expandKeywordsForSources(
 
 // Fill any remaining gaps with web search
 async function fillGapsWithWebSearch(profile: any, organization_name: string) {
-  // Only search if we have few competitors
-  if (profile.competition.direct_competitors.length < 5) {
-    console.log('   🔍 Searching web for additional competitors...');
-    
-    const webCompetitors = await searchWebForCompetitors(organization_name);
-    const yahooCompetitors = await fetchYahooFinanceCompetitors(organization_name);
-    
-    const allCompetitors = [...new Set([
-      ...profile.competition.direct_competitors,
-      ...webCompetitors,
-      ...yahooCompetitors
-    ])];
-    
-    profile.competition.direct_competitors = allCompetitors.slice(0, 10); // Limit to 10 for onboarding (staying under 15 target limit)
+  // DISABLED: Web scraping has been broken since Oct 2025 and returns garbage
+  // Claude already knows major competitors for Fortune 500 companies
+  // With proper industry context from master-source-registry, Claude generates accurate competitors
+  console.log('   ℹ️ Web scraping disabled - relying on Claude with industry context');
+
+  // Just ensure we don't have too many competitors for onboarding
+  if (profile.competition.direct_competitors.length > 10) {
+    profile.competition.direct_competitors = profile.competition.direct_competitors.slice(0, 10);
   }
 
-  // Limit stakeholders to 5 total (3 regulators + 2 influencers)
-  // Remove other stakeholder types that are less relevant
+  // Allow more stakeholders - we want all that Claude returns (up to ~10 for 20 total targets)
   if (profile.stakeholders) {
-    profile.stakeholders.regulators = (profile.stakeholders.regulators || []).slice(0, 3);
-    profile.stakeholders.influencers = (profile.stakeholders.influencers || []).slice(0, 2);
-    // Remove other types - less relevant for most companies
+    profile.stakeholders.regulators = (profile.stakeholders.regulators || []).slice(0, 6); // Up to 6 regulators
+    profile.stakeholders.key_analysts = (profile.stakeholders.key_analysts || []).slice(0, 3); // Up to 3 analysts
+    profile.stakeholders.activists = (profile.stakeholders.activists || []).slice(0, 2); // Up to 2 activists
+    // Keep investors, customers, partners at 0 for onboarding simplicity
     profile.stakeholders.major_investors = [];
     profile.stakeholders.major_customers = [];
-    profile.stakeholders.partners = [];
-    profile.stakeholders.critics = [];
+    profile.stakeholders.key_partners = [];
   }
 
   // Remove topics from trending - 0% monitoring effectiveness

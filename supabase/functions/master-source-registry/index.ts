@@ -855,11 +855,12 @@ serve(async (req) => {
   }
 
   try {
-    const { industry, organization_name } = await req.json()
-    
+    const { industry, organization_name, company_description } = await req.json()
+
     console.log(`📚 Master Source Registry: Fetching comprehensive sources`)
     console.log(`   Industry: ${industry || 'general'}`)
     console.log(`   Organization: ${organization_name || 'N/A'}`)
+    console.log(`   Description: ${company_description ? company_description.substring(0, 100) + '...' : 'N/A'}`)
     
     // Build response with tier1 sources always included
     const sources = {
@@ -878,81 +879,128 @@ serve(async (req) => {
     sources.market.push(...TIER1_SOURCES.market_sources)
     sources.forward.push(...TIER1_SOURCES.forward_sources)
     
-    // Add industry-specific sources if industry provided
-    if (industry) {
-      let industryLower = industry.toLowerCase().replace(/[^a-z_]/g, '_')
+    // SEMANTIC MULTI-INDUSTRY MATCHING
+    // Instead of forcing single industry, scan description for ALL relevant industries
+    const matchedIndustries = new Set<string>()
 
-      // Comprehensive industry mapping - converts ANY industry to supported categories
-      // Supported categories: technology, healthcare, financial_services, automotive, retail, energy, etc.
-      const industryMapping = mapIndustryToCategory(industryLower)
+    // If industry explicitly provided, include it
+    if (industry) {
+      const industryMapping = mapIndustryToCategory(industry.toLowerCase())
       if (industryMapping) {
-        console.log(`📌 Mapping industry "${industry}" → "${industryMapping}"`)
-        industryLower = industryMapping
-      } else {
-        console.log(`⚠️ No mapping found for "${industry}", checking exact match...`)
+        matchedIndustries.add(industryMapping)
+        console.log(`📌 Primary industry: "${industry}" → "${industryMapping}"`)
+      }
+    }
+
+    // Scan company description for additional industry keywords
+    if (company_description) {
+      const desc = company_description.toLowerCase()
+      const industryKeywords = {
+        'energy': ['energy', 'oil', 'gas', 'solar', 'wind', 'renewable', 'power', 'utility', 'electricity', 'petroleum', 'lng', 'crude'],
+        'technology': ['software', 'tech', 'digital', 'ai', 'cloud', 'saas', 'data', 'cyber', 'semiconductor'],
+        'healthcare': ['health', 'medical', 'pharma', 'biotech', 'hospital', 'drug', 'therapeutic', 'clinical'],
+        'financial_services': ['financial', 'banking', 'investment', 'trading', 'capital', 'fintech', 'payment', 'securities', 'brokerage'],
+        'retail': ['retail', 'consumer', 'ecommerce', 'shopping', 'brand', 'store', 'merchandise'],
+        'manufacturing': ['manufacturing', 'industrial', 'factory', 'production', 'machinery', 'equipment', 'chemical', 'materials'],
+        'automotive': ['automotive', 'vehicle', 'car', 'electric vehicle', 'mobility', 'automobile'],
+        'real_estate': ['real estate', 'property', 'construction', 'housing', 'building', 'infrastructure', 'development'],
+        'food_beverage': ['food', 'beverage', 'restaurant', 'agriculture', 'farming', 'agribusiness', 'grain', 'livestock'],
+        'transportation': ['transportation', 'logistics', 'shipping', 'freight', 'supply chain', 'maritime', 'port', 'warehouse'],
+        'telecommunications': ['telecom', 'wireless', 'internet provider', 'broadband', '5g', 'network'],
+        'pr_communications': ['public relations', 'communications', 'pr agency', 'strategic communications', 'corporate communications']
       }
 
-      const industrySources = INDUSTRY_SOURCES[industryLower]
+      for (const [industryKey, keywords] of Object.entries(industryKeywords)) {
+        if (keywords.some(keyword => desc.includes(keyword))) {
+          matchedIndustries.add(industryKey)
+        }
+      }
+
+      console.log(`🔍 Semantic match found ${matchedIndustries.size} relevant industries:`, Array.from(matchedIndustries))
+    }
+
+    // Aggregate sources from ALL matched industries
+    const aggregatedMetadata = {
+      search_queries: [],
+      track_urls: [],
+      agencies: [],
+      compliance_areas: [],
+      keyJournalists: [],
+      podcasts: []
+    }
+
+    for (const industryKey of matchedIndustries) {
+      const industrySources = INDUSTRY_SOURCES[industryKey]
 
       if (industrySources) {
-        // Add competitive sources
-        if (industrySources.competitive?.rss) {
-          sources.competitive.push(...industrySources.competitive.rss)
-        }
-        
-        // Add media sources
-        if (industrySources.media?.rss) {
-          sources.media.push(...industrySources.media.rss)
-        }
-        
-        // Add regulatory sources
-        if (industrySources.regulatory?.rss) {
-          sources.regulatory.push(...industrySources.regulatory.rss)
-        }
-        
-        // Add market sources
-        if (industrySources.market?.rss) {
-          sources.market.push(...industrySources.market.rss)
-        }
-        
-        // Add forward-looking sources
-        if (industrySources.forward?.rss) {
-          sources.forward.push(...industrySources.forward.rss)
-        }
-        
-        // Create metadata with ONLY web-fetchable source types
-        // Exclude social media, podcasts, and other non-traditional web sources
-        const metadata = {
-          // Track URLs are company/stakeholder websites we can monitor
-          track_urls: industrySources.competitive?.track_urls || [],
-          // Regulatory agencies have websites with updates
-          agencies: industrySources.regulatory?.agencies || [],
-          compliance_areas: industrySources.regulatory?.compliance_areas || [],
-          // Search queries can be used with news APIs (not social media)
-          search_queries: industrySources.competitive?.search_queries || [],
-          // EXCLUDED: podcasts, key_journalists (often social), conferences, trend_sources (often social)
-        }
-        
-        // Count total sources
-        const totalSources = Object.values(sources).reduce((sum, arr) => sum + arr.length, 0)
-        
-        console.log(`✅ Returning ${totalSources} RSS sources + web-fetchable metadata`)
-        console.log(`   Search queries: ${metadata.search_queries.length}`)
-        console.log(`   Track URLs: ${metadata.track_urls.length}`)
-        console.log(`   Agencies: ${metadata.agencies.length}`)
-        console.log(`   Compliance areas: ${metadata.compliance_areas.length}`)
-        
-        return new Response(JSON.stringify({
-          success: true,
-          industry: industry,
-          data: sources,
-          metadata: metadata,
-          total_sources: totalSources,
-          categories: Object.keys(sources)
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
+        console.log(`   ✓ Adding sources from: ${industryKey}`)
+
+          // Add competitive sources
+          if (industrySources.competitive?.rss) {
+            sources.competitive.push(...industrySources.competitive.rss)
+          }
+
+          // Add media sources
+          if (industrySources.media?.rss) {
+            sources.media.push(...industrySources.media.rss)
+          }
+
+          // Add regulatory sources
+          if (industrySources.regulatory?.rss) {
+            sources.regulatory.push(...industrySources.regulatory.rss)
+          }
+
+          // Add market sources
+          if (industrySources.market?.rss) {
+            sources.market.push(...industrySources.market.rss)
+          }
+
+          // Add forward-looking sources
+          if (industrySources.forward?.rss) {
+            sources.forward.push(...industrySources.forward.rss)
+          }
+
+          // Aggregate metadata from this industry
+          if (industrySources.competitive?.track_urls) {
+            aggregatedMetadata.track_urls.push(...industrySources.competitive.track_urls)
+          }
+          if (industrySources.competitive?.search_queries) {
+            aggregatedMetadata.search_queries.push(...industrySources.competitive.search_queries)
+          }
+          if (industrySources.regulatory?.agencies) {
+            aggregatedMetadata.agencies.push(...industrySources.regulatory.agencies)
+          }
+          if (industrySources.regulatory?.compliance_areas) {
+            aggregatedMetadata.compliance_areas.push(...industrySources.regulatory.compliance_areas)
+          }
+          if (industrySources.competitive?.key_journalists) {
+            aggregatedMetadata.keyJournalists.push(...industrySources.competitive.key_journalists)
+          }
+          if (industrySources.forward?.podcasts) {
+            aggregatedMetadata.podcasts.push(...industrySources.forward.podcasts)
+          }
       }
+    }
+
+    // If we found matching industries, return aggregated results
+    if (matchedIndustries.size > 0) {
+      const totalSources = Object.values(sources).reduce((sum, arr) => sum + arr.length, 0)
+
+      console.log(`✅ Returning ${totalSources} sources from ${matchedIndustries.size} industries`)
+      console.log(`   Search queries: ${aggregatedMetadata.search_queries.length}`)
+      console.log(`   Track URLs: ${aggregatedMetadata.track_urls.length}`)
+      console.log(`   Agencies: ${aggregatedMetadata.agencies.length}`)
+
+      return new Response(JSON.stringify({
+        success: true,
+        industries: Array.from(matchedIndustries),
+        data: sources,
+        metadata: aggregatedMetadata,
+        total_sources: totalSources,
+        categories: Object.keys(sources)
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
     }
     
     // Return base sources if no industry match
