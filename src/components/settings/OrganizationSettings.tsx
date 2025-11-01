@@ -300,6 +300,31 @@ export default function OrganizationSettings({
           awards: enhancerData.enhancements_applied?.awards_count || 0,
           keywords: enhancerData.enhancements_applied?.keywords_count || 0
         })
+
+        // IMPORTANT: Update the schema in database with enhanced version
+        if (enhancerData.enhanced_schema) {
+          console.log('💾 Saving enhanced schema to database...')
+
+          const updateResponse = await fetch(`${SUPABASE_URL}/rest/v1/content_library?organization_id=eq.${organizationId}&content_type=eq.schema&folder=eq.Schemas/Active/`, {
+            method: 'PATCH',
+            headers: {
+              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+              'Content-Type': 'application/json',
+              'apikey': SUPABASE_ANON_KEY,
+              'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify({
+              content: enhancerData.enhanced_schema,
+              updated_at: new Date().toISOString()
+            })
+          })
+
+          if (updateResponse.ok) {
+            console.log('✅ Enhanced schema saved to database')
+          } else {
+            console.error('Failed to save enhanced schema:', await updateResponse.text())
+          }
+        }
       }
 
       const result = schemaData
