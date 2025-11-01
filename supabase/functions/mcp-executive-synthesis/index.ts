@@ -204,7 +204,7 @@ async function synthesizeExecutiveIntelligence(args: any) {
         });
       } else {
         console.log('⚠️ No intelligence_targets found, falling back to profile');
-        // Fallback to old profile format if no targets in database
+        // Fallback to profile format if no targets in database
         discoveryTargets = {
           competitors: [
             ...(profile?.competition?.direct_competitors || []),
@@ -213,8 +213,10 @@ async function synthesizeExecutiveIntelligence(args: any) {
           ].filter(Boolean),
           stakeholders: [
             ...(profile?.stakeholders?.regulators || []),
+            ...(profile?.stakeholders?.key_analysts || []),  // NEW field
+            ...(profile?.stakeholders?.activists || []),     // NEW field
             ...(profile?.stakeholders?.major_investors || []),
-            ...(profile?.stakeholders?.executives || [])
+            ...(profile?.stakeholders?.major_customers || [])
           ].filter(Boolean),
           topics: [
             ...(profile?.trending?.hot_topics || []),
@@ -234,8 +236,10 @@ async function synthesizeExecutiveIntelligence(args: any) {
         ].filter(Boolean),
         stakeholders: [
           ...(profile?.stakeholders?.regulators || []),
+          ...(profile?.stakeholders?.key_analysts || []),  // NEW field
+          ...(profile?.stakeholders?.activists || []),     // NEW field
           ...(profile?.stakeholders?.major_investors || []),
-          ...(profile?.stakeholders?.executives || [])
+          ...(profile?.stakeholders?.major_customers || [])
         ].filter(Boolean),
         topics: [
           ...(profile?.trending?.hot_topics || []),
@@ -465,8 +469,8 @@ The events below are ALL from TODAY'S news monitoring - they are NOT hypothetica
 
 ORGANIZATION CONTEXT:
 - Organization: ${organization?.name}
-- Industry: ${organization?.industry || 'Unknown'}
-- What ${organization?.name} Does: ${organization?.description || 'Strategic communications and PR services'}
+- Industry: ${profile?.industry || organization?.industry || 'Unknown'}
+- What ${organization?.name} Does: ${profile?.description || organization?.description || 'See discovery profile for details'}
 
 ${organization?.name}'s DIRECT COMPETITORS (companies in the SAME industry):
 ${discoveryTargets.competitors.slice(0, 10).join(', ')}
