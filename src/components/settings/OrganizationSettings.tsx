@@ -247,8 +247,8 @@ export default function OrganizationSettings({
       const enrichData = await enrichResponse.json()
       console.log(`✅ Enriched ${enrichData.summary?.total_entities || 0} entities`)
 
-      // Step 4: Generate schema
-      console.log('📊 Step 4: Generating schema...')
+      // Step 4: Generate base schema
+      console.log('📊 Step 4: Generating base schema...')
       const schemaResponse = await fetch(`${SUPABASE_URL}/functions/v1/schema-graph-generator`, {
         method: 'POST',
         headers: {
@@ -269,8 +269,41 @@ export default function OrganizationSettings({
         throw new Error(`Schema generation failed: ${await schemaResponse.text()}`)
       }
 
-      const result = await schemaResponse.json()
-      console.log('✅ Schema generation complete:', result)
+      const schemaData = await schemaResponse.json()
+      console.log('✅ Base schema generated')
+
+      // Step 5: Enhance schema with FAQs, awards, keywords
+      console.log('✨ Step 5: Enhancing schema with GEO optimizations...')
+      const enhancerResponse = await fetch(`${SUPABASE_URL}/functions/v1/geo-schema-enhancer`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          organization_id: organizationId,
+          organization_name: orgData.name,
+          industry: orgData.industry,
+          base_schema: schemaData.schema_graph,
+          coverage_articles: [],
+          entities: enrichData.enriched_entities || {}
+        })
+      })
+
+      if (!enhancerResponse.ok) {
+        console.warn('Schema enhancement failed (non-critical):', await enhancerResponse.text())
+        // Continue without enhancement
+      } else {
+        const enhancerData = await enhancerResponse.json()
+        console.log('✅ Schema enhanced:', {
+          faqs: enhancerData.summary?.faq_questions_added || 0,
+          awards: enhancerData.enhancements_applied?.awards_count || 0,
+          keywords: enhancerData.enhancements_applied?.keywords_count || 0
+        })
+      }
+
+      const result = schemaData
+      console.log('✅ Complete schema generation finished')
 
       setSuccess(`Schema package generated successfully!`)
 
