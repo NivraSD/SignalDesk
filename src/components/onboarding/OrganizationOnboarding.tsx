@@ -278,45 +278,11 @@ export default function OrganizationOnboarding({
         console.warn('Failed to save targets:', targetsData.error)
       }
 
-      // 3. Save org profile to mcp_discovery table
+      // 3. Discovery profile stored in organization metadata
+      // mcp-discovery uses intelligent_research dynamically when needed
+      // No separate profile storage required
       if (fullProfile) {
-        console.log('💾 Saving organization profile to mcp_discovery...')
-        try {
-          // Merge user's customized selections into the profile
-          const customizedProfile = {
-            ...fullProfile,
-            organization_id: organization.id,
-            organization_name: organization.name,
-            competition: {
-              ...fullProfile.competition,
-              direct_competitors: allCompetitors
-            }
-            // Topics removed - not effective for monitoring
-          }
-
-          // Insert directly into mcp_discovery table
-          const { error: profileError } = await supabase
-            .from('mcp_discovery')
-            .upsert({
-              organization_id: organization.id,
-              organization_name: organization.name,
-              // Flatten the profile structure for database storage
-              ...customizedProfile,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            }, {
-              onConflict: 'organization_id'
-            })
-
-          if (profileError) {
-            console.error('Failed to save profile to mcp_discovery:', profileError)
-          } else {
-            console.log('✅ Profile saved to mcp_discovery table')
-          }
-        } catch (profileError) {
-          console.error('Error saving profile:', profileError)
-          // Non-fatal - continue with onboarding
-        }
+        console.log('✅ Discovery profile available for future research')
       }
 
       // 4. Save GEO targets (if configured)
