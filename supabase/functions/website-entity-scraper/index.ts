@@ -55,6 +55,12 @@ serve(async (req) => {
       console.log(`🗺️  Using Firecrawl Map to discover pages on ${website_url}`)
 
       try {
+        // Extract base domain from website_url for Map endpoint
+        const urlObj = new URL(website_url)
+        const baseUrl = `${urlObj.protocol}//${urlObj.hostname}`
+
+        console.log(`   🔧 Extracted base URL for Map: ${baseUrl}`)
+
         // Use Firecrawl's Map endpoint to discover all actual pages on the site
         const mapResponse = await fetch('https://api.firecrawl.dev/v2/map', {
           method: 'POST',
@@ -63,7 +69,7 @@ serve(async (req) => {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            url: website_url,
+            url: baseUrl, // Use base domain, not specific page
             search: 'about OR products OR services OR team OR contact OR leadership OR company', // Filter for relevant pages
             limit: 20, // Max pages to discover
             includeSubdomains: false,
