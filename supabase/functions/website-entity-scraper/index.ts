@@ -67,7 +67,7 @@ serve(async (req) => {
             search: 'about OR products OR services OR team OR contact OR leadership OR company', // Filter for relevant pages
             limit: 20, // Max pages to discover
             includeSubdomains: false,
-            ignoreSitemap: false // Use sitemap if available
+            sitemap: 'include' // Use sitemap if available (options: skip, include, only)
           })
         })
 
