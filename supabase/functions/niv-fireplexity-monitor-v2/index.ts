@@ -666,9 +666,9 @@ async function fetchRealtimeArticles(
 
     const batchPromises = batch.map(async (query) => {
       try {
-        // Add 20-second timeout to prevent long-running searches from blocking
+        // Add 45-second timeout per search (gives Firecrawl more time for complex queries)
         const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 20000) // 20 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), 45000) // 45 second timeout
 
         const searchResponse = await fetch(`${FIRECRAWL_BASE_URL}/search`, {
           method: 'POST',
@@ -712,7 +712,7 @@ async function fetchRealtimeArticles(
         }))
       } catch (err: any) {
         if (err.name === 'AbortError') {
-          console.log(`   ⏱️ Search timed out for "${query}" (20s limit)`)
+          console.log(`   ⏱️ Search timed out for "${query}" (45s limit)`)
         } else {
           console.log(`   ⚠️ Search failed for "${query}": ${err.message}`)
         }
