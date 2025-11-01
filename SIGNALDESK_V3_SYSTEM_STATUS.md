@@ -1,11 +1,12 @@
 # SignalDesk V3 - Comprehensive System Status
-*Last Updated: October 27, 2025 - GEO Intelligence Monitor + Memory Vault V2 + NIV Integration + Campaign Attribution*
+*Last Updated: October 31, 2025 - Schema.org Generation + GEO Intelligence Monitor + Memory Vault V2 + NIV Integration*
 
 ## Executive Summary
 
 SignalDesk V3 is a fully operational AI-powered strategic communications platform that transforms how organizations discover opportunities, generate strategies, and create content. The system leverages multiple AI providers (Claude, Google Vertex AI, Gamma) through a sophisticated orchestration layer to deliver end-to-end strategic communications capabilities.
 
 **Major October 2025 Updates:**
+- ✅ **Schema.org Generation Pipeline** - Intelligent website scraping with Firecrawl Map + AI entity extraction + GEO enhancements (Oct 31, 2025)
 - ✅ **Campaign Builder** - Complete 5-stage workflow (Research → Positioning → Approach → Blueprint → Execution)
 - ✅ **VECTOR Campaigns** - Advanced psychological influence campaigns with 4-phase × 4-pillar orchestration
 - ✅ **Blueprint V3 Generation** - 75-second modular pipeline producing 6-part strategic blueprints
@@ -20,6 +21,7 @@ SignalDesk V3 is a fully operational AI-powered strategic communications platfor
 - ✅ **GEO Intelligence Monitor** - AI visibility testing across Claude and Gemini with intelligent query generation (Oct 27, 2025)
 
 ### Core Capabilities Status
+- ✅ **Schema.org Generation** - Complete pipeline with Firecrawl Map discovery, AI entity extraction, and GEO enhancements (Oct 31, 2025)
 - ✅ **Campaign Builder** - Complete research → positioning → blueprint generation workflow
 - ✅ **VECTOR Campaigns** - Advanced multi-stakeholder psychological influence campaigns (NEW)
 - ✅ **Blueprint V3 Generation** - 75-second 6-part blueprint with 4-phase tactical orchestration
@@ -2812,6 +2814,75 @@ Campaign Intel    Content Gen    Strategic Planning
 ```
 
 ## Recent Updates (September-October 2025)
+
+### Schema.org Generation Pipeline (Oct 31, 2025):
+**PRODUCTION READY - Intelligent Website Scraping + AI Entity Extraction + GEO Enhancements**
+
+1. **Architecture**: Complete end-to-end Schema.org markup generation
+   - Firecrawl Map API for intelligent page discovery (no URL guessing)
+   - Claude-powered entity extraction from scraped content
+   - GEO-optimized schema enhancement (FAQs, keywords, awards)
+   - Direct UI pipeline calls (no orchestrator timeout issues)
+
+2. **Complete Pipeline Flow**:
+   ```
+   Organization (name, domain, industry)
+       ↓
+   website-entity-scraper - Firecrawl Map discovers real pages
+       ├── Extracts base domain from any URL format
+       ├── Uses Map endpoint with search filtering
+       ├── Filters out 404 pages during scraping
+       └── Returns 10-20 actual pages with markdown content
+       ↓
+   entity-extractor - Claude extracts structured entities
+       ├── Processes scraped markdown content
+       ├── Extracts: services, products, people, locations, subsidiaries
+       └── Returns structured JSON entities
+       ↓
+   entity-enricher - Validates and deduplicates entities
+       ├── Quality checks and validation
+       ├── Removes duplicates
+       └── Enriches with additional context
+       ↓
+   schema-graph-generator - Creates base Schema.org graph
+       ├── Builds @graph with typed entities
+       ├── Links relationships (employees, locations, subsidiaries)
+       └── Saves to content_library
+       ↓
+   geo-schema-enhancer - Adds GEO optimizations
+       ├── Claude generates 6-8 FAQPage questions
+       ├── Extracts 20+ relevant keywords (knowsAbout)
+       ├── Identifies awards and achievements
+       ├── Enhances entity descriptions
+       └── Updates database with enhanced schema
+   ```
+
+3. **Key Innovations**:
+   - **Firecrawl Map Discovery**: Uses `/v2/map` endpoint to discover actual pages (vs. guessing URLs)
+   - **Zero 404s**: Map only returns pages that exist, filtered by search relevance
+   - **Direct Pipeline**: UI calls functions directly, avoids orchestrator timeout
+   - **Enhanced Schema Saving**: Updates database with GEO-enhanced version automatically
+
+4. **Results Quality** (Mitsui & Co. Example):
+   - **Services**: 2 (Corporate Development, IT & Communication)
+   - **Locations**: 3 (New York, Singapore, Tokyo with full addresses)
+   - **Subsidiaries**: 3 (USA, Asia Pacific, Canada operations)
+   - **People**: 3 executives (with photos and titles)
+   - **FAQs**: 6 relevant questions about the company
+   - **Keywords**: 22 industry-specific terms
+
+5. **Edge Functions**:
+   - `website-entity-scraper` - Firecrawl Map integration
+   - `entity-extractor` - Claude entity extraction
+   - `entity-enricher` - Validation and deduplication
+   - `schema-graph-generator` - Schema.org graph creation
+   - `geo-schema-enhancer` - GEO optimization layer
+
+6. **Frontend Integration**:
+   - Organization Settings → "Regenerate Schema" button
+   - Direct function calls with progress logging
+   - Enhanced schema auto-saved to database
+   - Displayed in schema editor/viewer
 
 ### GEO Intelligence Monitor (Oct 27, 2025):
 **PRODUCTION READY - AI Visibility Testing**
