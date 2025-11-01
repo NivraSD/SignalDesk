@@ -176,14 +176,14 @@ export default function OrganizationSettings({
         return
       }
 
-      console.log('🎯 Generating comprehensive schema using orchestrator...')
+      console.log('🎯 Generating schema via direct pipeline calls...')
 
       const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
       const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-      // Use schema-onboarding-orchestrator for complete pipeline
-      console.log('🚀 Running schema onboarding orchestrator...')
-      const orchestratorResponse = await fetch(`${SUPABASE_URL}/functions/v1/schema-onboarding-orchestrator`, {
+      // Step 1: Scrape website
+      console.log('🌐 Step 1: Scraping website...')
+      const scrapeResponse = await fetch(`${SUPABASE_URL}/functions/v1/website-entity-scraper`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
@@ -192,18 +192,85 @@ export default function OrganizationSettings({
         body: JSON.stringify({
           organization_id: organizationId,
           organization_name: orgData.name,
-          website_url: orgData.domain,
-          industry: orgData.industry
+          website_url: orgData.domain
         })
       })
 
-      if (!orchestratorResponse.ok) {
-        const errorText = await orchestratorResponse.text()
-        throw new Error(`Schema orchestrator failed: ${errorText}`)
+      if (!scrapeResponse.ok) {
+        throw new Error(`Website scraping failed: ${await scrapeResponse.text()}`)
       }
 
-      const result = await orchestratorResponse.json()
-      console.log('✅ Schema orchestration complete:', result)
+      const scrapeData = await scrapeResponse.json()
+      console.log(`✅ Scraped ${scrapeData.summary?.total_pages || 0} pages`)
+
+      // Step 2: Extract entities
+      console.log('🔍 Step 2: Extracting entities...')
+      const extractResponse = await fetch(`${SUPABASE_URL}/functions/v1/entity-extractor`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          organization_id: organizationId,
+          organization_name: orgData.name,
+          scraped_pages: scrapeData.pages || []
+        })
+      })
+
+      if (!extractResponse.ok) {
+        throw new Error(`Entity extraction failed: ${await extractResponse.text()}`)
+      }
+
+      const extractData = await extractResponse.json()
+      console.log(`✅ Extracted ${extractData.summary?.total_entities || 0} entities`)
+
+      // Step 3: Enrich entities
+      console.log('✨ Step 3: Enriching entities...')
+      const enrichResponse = await fetch(`${SUPABASE_URL}/functions/v1/entity-enricher`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          organization_id: organizationId,
+          organization_name: orgData.name,
+          entities: extractData.entities || {}
+        })
+      })
+
+      if (!enrichResponse.ok) {
+        throw new Error(`Entity enrichment failed: ${await enrichResponse.text()}`)
+      }
+
+      const enrichData = await enrichResponse.json()
+      console.log(`✅ Enriched ${enrichData.summary?.total_entities || 0} entities`)
+
+      // Step 4: Generate schema
+      console.log('📊 Step 4: Generating schema...')
+      const schemaResponse = await fetch(`${SUPABASE_URL}/functions/v1/schema-graph-generator`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          organization_id: organizationId,
+          organization_name: orgData.name,
+          industry: orgData.industry,
+          url: orgData.domain,
+          entities: enrichData.enriched_entities || {},
+          coverage: []
+        })
+      })
+
+      if (!schemaResponse.ok) {
+        throw new Error(`Schema generation failed: ${await schemaResponse.text()}`)
+      }
+
+      const result = await schemaResponse.json()
+      console.log('✅ Schema generation complete:', result)
 
       setSuccess(`Schema package generated successfully!`)
 
