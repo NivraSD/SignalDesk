@@ -651,13 +651,24 @@ async function fetchRealtimeArticles(
 
   // Map recency window to Firecrawl tbs parameter
   const tbsMap: Record<string, string> = {
-    '1hour': 'qdr:h',
-    '6hours': 'qdr:h', // Firecrawl doesn't have 6hr, use 1hr for freshest
-    '24hours': 'qdr:d'
+    '1hour': 'qdr:h',   // Last 1 hour (production: hourly autonomous monitoring)
+    '6hours': 'qdr:d',  // Last day, filter to 6hr client-side (testing only)
+    '24hours': 'qdr:d'  // Last day (executive synthesis)
   }
   const tbs = tbsMap[recencyWindow] || 'qdr:h' // Default 1 hour for real-time
 
   console.log(`   Executing ${queries.length} real-time Firecrawl searches with time filter: ${tbs}`)
+
+  // Dynamic limit based on recency window (fewer results = faster searches)
+  const limitMap: Record<string, number> = {
+    '1hour': 3,   // Production: 3 results per query (fast, breaking news focus)
+    '6hours': 4,  // Testing: 4 results per query
+    '24hours': 5  // Executive synthesis: 5 results per query (comprehensive)
+  }
+  const searchLimit = limitMap[recencyWindow] || 3
+
+  console.log(`   Using dynamic limit: ${searchLimit} results per query (recency: ${recencyWindow})`)
+  console.log(`   Cache strategy: ${recencyWindow === '1hour' ? 'No cache (fresh data)' : '1hr cache (500% faster)'}`)
 
   // Execute searches in parallel (larger batch for speed - all at once)
   const batchSize = 15 // Increased from 5 to process all queries in one batch
@@ -679,11 +690,14 @@ async function fetchRealtimeArticles(
           body: JSON.stringify({
             query,
             sources: ['web', 'news'],
-            limit: 4, // 4 per query for real-time (4 * 10 queries = ~40 articles)
+            limit: searchLimit, // Dynamic based on recency window
             tbs, // CRITICAL: Time-based search filter for real-time freshness
+            timeout: 40000, // Tell Firecrawl to timeout at 40s (before our 45s client timeout)
+            ignoreInvalidURLs: true, // Exclude problematic URLs that cause failures
             scrapeOptions: {
               formats: ['markdown'],
-              onlyMainContent: true
+              onlyMainContent: true,
+              maxAge: recencyWindow === '1hour' ? 0 : 3600000 // No cache for 1hr, 1hr cache for others (500% speed boost)
             }
           }),
           signal: controller.signal
@@ -712,7 +726,7 @@ async function fetchRealtimeArticles(
         }))
       } catch (err: any) {
         if (err.name === 'AbortError') {
-          console.log(`   ⏱️ Search timed out for "${query}" (45s limit)`)
+          console.log(`   ⏱️ Search timed out for "${query}" (40s Firecrawl + 5s buffer)`)
         } else {
           console.log(`   ⚠️ Search failed for "${query}": ${err.message}`)
         }
