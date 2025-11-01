@@ -1132,15 +1132,15 @@ async function fillGapsWithWebSearch(profile: any, organization_name: string) {
     profile.competition.direct_competitors = profile.competition.direct_competitors.slice(0, 10);
   }
 
-  // Allow more stakeholders - we want all that Claude returns (up to ~10 for 20 total targets)
+  // Keep key stakeholder types for monitoring
   if (profile.stakeholders) {
     profile.stakeholders.regulators = (profile.stakeholders.regulators || []).slice(0, 6); // Up to 6 regulators
-    profile.stakeholders.key_analysts = (profile.stakeholders.key_analysts || []).slice(0, 3); // Up to 3 analysts
-    profile.stakeholders.activists = (profile.stakeholders.activists || []).slice(0, 2); // Up to 2 activists
-    // Keep investors, customers, partners at 0 for onboarding simplicity
-    profile.stakeholders.major_investors = [];
-    profile.stakeholders.major_customers = [];
-    profile.stakeholders.key_partners = [];
+    profile.stakeholders.key_analysts = (profile.stakeholders.key_analysts || []).slice(0, 4); // Up to 4 analysts
+    profile.stakeholders.activists = (profile.stakeholders.activists || []).slice(0, 3); // Up to 3 activists
+    // Keep small numbers of other stakeholder types
+    profile.stakeholders.major_investors = (profile.stakeholders.major_investors || []).slice(0, 2);
+    profile.stakeholders.major_customers = (profile.stakeholders.major_customers || []).slice(0, 2);
+    profile.stakeholders.key_partners = (profile.stakeholders.key_partners || []).slice(0, 2);
   }
 
   // Remove topics from trending - 0% monitoring effectiveness
