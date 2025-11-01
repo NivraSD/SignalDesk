@@ -51,6 +51,7 @@ export async function GET(request: NextRequest) {
           target_platforms: ['claude', 'gemini', 'chatgpt', 'perplexity'],
           positioning_goals: {},
           negative_keywords: [],
+          target_article_links: [],
           active: true
         }
       })
@@ -87,6 +88,7 @@ export async function POST(request: NextRequest) {
       target_platforms = ['claude', 'gemini', 'chatgpt', 'perplexity'],
       positioning_goals = {},
       negative_keywords = [],
+      target_article_links = [],
       active = true
     } = body
 
@@ -121,6 +123,7 @@ export async function POST(request: NextRequest) {
           target_platforms,
           positioning_goals,
           negative_keywords,
+          target_article_links,
           active,
           updated_at: new Date().toISOString()
         })
@@ -152,6 +155,7 @@ export async function POST(request: NextRequest) {
           target_platforms,
           positioning_goals,
           negative_keywords,
+          target_article_links,
           active
         })
         .select()

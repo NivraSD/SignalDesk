@@ -425,12 +425,11 @@ function extractAndOrganizeData(articles: any[], profile: any, organization_name
 
     stakeholders: extractNamesLower([
       ...(profile?.stakeholders?.regulators || []),
+      ...(profile?.stakeholders?.key_analysts || []),  // NEW: Analysts who cover this industry
+      ...(profile?.stakeholders?.activists || []),     // NEW: Critics, activist groups
       ...(profile?.stakeholders?.major_investors || []),
       ...(profile?.stakeholders?.major_customers || []),
-      ...(profile?.stakeholders?.partners || []),
-      ...(profile?.stakeholders?.executives || []),
-      ...(profile?.stakeholders?.critics || []),
-      ...(profile?.stakeholders?.influencers || [])
+      ...(profile?.stakeholders?.key_partners || [])   // Renamed from 'partners'
     ]),
 
     keywords: [

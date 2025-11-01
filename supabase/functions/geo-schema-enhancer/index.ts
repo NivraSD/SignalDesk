@@ -25,6 +25,7 @@ interface EnhancerRequest {
   base_schema: any // The basic schema from schema-graph-generator
   coverage_articles?: any[] // Positive coverage for context
   entities?: any // Entity data for context
+  discovery_insights?: string // Research from mcp-discovery
 }
 
 serve(async (req) => {
@@ -39,7 +40,8 @@ serve(async (req) => {
       industry,
       base_schema,
       coverage_articles = [],
-      entities = {}
+      entities = {},
+      discovery_insights = null
     }: EnhancerRequest = await req.json()
 
     if (!organization_id || !organization_name || !base_schema) {
@@ -50,7 +52,8 @@ serve(async (req) => {
       organization_name,
       industry,
       has_coverage: coverage_articles.length > 0,
-      has_entities: Object.keys(entities).length > 0
+      has_entities: Object.keys(entities).length > 0,
+      has_discovery: !!discovery_insights
     })
 
     const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY')
@@ -60,8 +63,8 @@ serve(async (req) => {
 
     const anthropic = new Anthropic({ apiKey: anthropicApiKey })
 
-    // Build context from coverage and entities
-    const context = buildContext(organization_name, industry, coverage_articles, entities)
+    // Build context from coverage, entities, and discovery research
+    const context = buildContext(organization_name, industry, coverage_articles, entities, discovery_insights)
 
     console.log('🔍 Generating GEO enhancements with Claude...')
 
@@ -213,13 +216,14 @@ Guidelines:
 })
 
 /**
- * Build context string from coverage and entities
+ * Build context string from coverage, entities, and discovery research
  */
 function buildContext(
   organizationName: string,
   industry: string | undefined,
   coverage: any[],
-  entities: any
+  entities: any,
+  discoveryInsights: string | null
 ): string {
   let context = `Organization: ${organizationName}\n`
 
@@ -228,6 +232,11 @@ function buildContext(
   }
 
   context += `\n`
+
+  // Add discovery research insights (revenue, rankings, peers, etc.)
+  if (discoveryInsights) {
+    context += `\n## Research Insights (Use these facts to enhance descriptions and add context):\n${discoveryInsights}\n\n`
+  }
 
   // Add entities summary
   if (entities.services && entities.services.length > 0) {

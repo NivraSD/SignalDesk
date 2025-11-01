@@ -1,132 +1,386 @@
-{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://www.mitsui.com/jp/en/index.html#organization","name":"Mitsui & Co.","url":"https://www.mitsui.com/jp/en/index.html","industry":"General Trading Company","hasOfferCatalog":{"@type":"OfferCatalog","itemListElement":[{"@id":"https://www.mitsui.com/jp/en/index.html#service-0"},{"@id":"https://www.mitsui.com/jp/en/index.html#service-1"}]},"location":[{"@id":"https://www.mitsui.com/jp/en/index.html#location-0"},{"@id":"https://www.mitsui.com/jp/en/index.html#location-1"},{"@id":"https://www.mitsui.com/jp/en/index.html#location-2"}],"subOrganization":[{"@id":"https://www.mitsui.com/jp/en/index.html#subsidiary-0"},{"@id":"https://www.mitsui.com/jp/en/index.html#subsidiary-1"},{"@id":"https://www.mitsui.com/jp/en/index.html#subsidiary-2"}],"employee":[{"@id":"https://www.mitsui.com/jp/en/index.html#person-0"},{"@id":"https://www.mitsui.com/jp/en/index.html#person-1"},{"@id":"https://www.mitsui.com/jp/en/index.html#person-2"}]},{"@type":"Service","@id":"https://www.mitsui.com/jp/en/index.html#service-0","name":"Corporate Development Business Services","description":"Financial business, real estate asset management, insurance, capital solutions, private equity, commodity derivatives, real estate development and leasing, property management, logistics, distribution processing","serviceType":"Asset Management, Real Estate, Logistics","provider":{"@id":"https://www.mitsui.com/jp/en/index.html#organization"}},{"@type":"Service","@id":"https://www.mitsui.com/jp/en/index.html#service-1","name":"IT & Communication Business Services","description":"IT services, cybersecurity, video commerce, digital media, CRM, BPO, digital marketing, healthcare DX, digital infrastructure","serviceType":"Technology and Digital Services","provider":{"@id":"https://www.mitsui.com/jp/en/index.html#organization"}},{"@type":"Place","@id":"https://www.mitsui.com/jp/en/index.html#location-0","name":"Mitsui & Co. (U.S.A.), Inc.","address":{"@type":"PostalAddress","streetAddress":"200 Park Avenue","addressLocality":"New York","addressRegion":"NY","postalCode":"10166","addressCountry":"United States"},"telephone":"(212)878-4000"},{"@type":"Place","@id":"https://www.mitsui.com/jp/en/index.html#location-1","name":"Mitsui & Co. (Asia Pacific) Pte. Ltd.","address":{"@type":"PostalAddress","streetAddress":"12 Marina View, #31-01 Asia Square Tower 2","addressLocality":"Singapore","postalCode":"018961","addressCountry":"Singapore"},"telephone":"(65)6321-3111"},{"@type":"Place","@id":"https://www.mitsui.com/jp/en/index.html#location-2","name":"Mitsui & Co. Tokyo Head Office","address":{"@type":"PostalAddress","addressLocality":"Tokyo","addressCountry":"Japan"}},{"@type":"Organization","@id":"https://www.mitsui.com/jp/en/index.html#subsidiary-0","name":"Mitsui & Co. (U.S.A.), Inc.","description":"US operations of Mitsui & Co., covering multiple business domains","parentOrganization":{"@id":"https://www.mitsui.com/jp/en/index.html#organization"}},{"@type":"Organization","@id":"https://www.mitsui.com/jp/en/index.html#subsidiary-1","name":"Mitsui & Co. (Asia Pacific) Pte. Ltd.","description":"Regional headquarters managing business activities across Asia Pacific","parentOrganization":{"@id":"https://www.mitsui.com/jp/en/index.html#organization"}},{"@type":"Organization","@id":"https://www.mitsui.com/jp/en/index.html#subsidiary-2","name":"Mitsui & Co. (Canada) Ltd.","description":"Canadian operations of Mitsui & Co., covering multiple business domains","parentOrganization":{"@id":"https://www.mitsui.com/jp/en/index.html#organization"}},{"@type":"Person","@id":"https://www.mitsui.com/jp/en/index.html#person-0","name":"Kenichi Hori","jobTitle":"President and Chief Executive Officer","description":"Overall leadership of the company","image":"https://www.mitsui.com/jp/en/company/outline/officer/basic_data/__icsFiles/artimage/2025/03/27/dje_2220/index_hori.jpg","worksFor":{"@id":"https://www.mitsui.com/jp/en/index.html#organization"}},{"@type":"Person","@id":"https://www.mitsui.com/jp/en/index.html#person-1","name":"Tatsuo Yasunaga","jobTitle":"Chair of the Board of Directors","description":"Board leadership and oversight","image":"https://www.mitsui.com/jp/en/company/outline/officer/basic_data/__icsFiles/artimage/2025/03/27/dje_2220/index_yasunaga.jpg","worksFor":{"@id":"https://www.mitsui.com/jp/en/index.html#organization"}},{"@type":"Person","@id":"https://www.mitsui.com/jp/en/index.html#person-2","name":"Toru Matsui","jobTitle":"President & Chief Executive Officer, Mitsui & Co. (U.S.A.), Inc.","description":"Leadership of US operations","image":"https://www.mitsui.com/us/en/company/message/__icsFiles/artimage/2025/07/01/due_11/Matsui-1.jpg","worksFor":{"@id":"https://www.mitsui.com/jp/en/index.html#organization"}}]}
-
 [
 {
 "event_message": "shutdown",
 "event_type": "Shutdown",
-"function_id": "53bb753c-4415-438f-a27c-6f3c05606791",
-"id": "4ade91f9-aadb-4add-b1a3-c7df363a8328",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "29e8dbb4-7e54-4a22-8326-48f819a29f3c",
 "level": "log",
-"timestamp": 1761960379738000
+"timestamp": 1761961126086000
 },
 {
 "event_message": "shutdown",
 "event_type": "Shutdown",
-"function_id": "53bb753c-4415-438f-a27c-6f3c05606791",
-"id": "bd41a012-83a2-47b1-be3a-87cdcf36fe7a",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "375b3fa3-3286-4aaa-8271-1a26073ce5aa",
 "level": "log",
-"timestamp": 1761960379552000
+"timestamp": 1761961125821000
 },
 {
-"event_message": "✨ Schema enhancement complete\n",
+"event_message": " - executive_summary: ✅ (immediate_actions, threats, trends)\n",
 "event_type": "Log",
-"function_id": "53bb753c-4415-438f-a27c-6f3c05606791",
-"id": "6c320e8e-330d-47da-b5dd-56dab49df17d",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "0b2934a3-66e9-4ce9-be5c-b9922ca90537",
 "level": "info",
-"timestamp": 1761960325995000
+"timestamp": 1761960949979000
 },
 {
-"event_message": "✅ Enhancements generated: { faq_questions: 6, awards: 0, keywords: 22, enhanced_descriptions: 2 }\n",
+"event_message": " - enriched_articles: ✅ ( 81 articles)\n",
 "event_type": "Log",
-"function_id": "53bb753c-4415-438f-a27c-6f3c05606791",
-"id": "cb066827-48b0-4ae8-baac-7d501b4ea689",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "7f2a1d18-8771-4265-a4b4-bb4304e23026",
 "level": "info",
-"timestamp": 1761960325995000
+"timestamp": 1761960949979000
 },
 {
-"event_message": "🔍 Generating GEO enhancements with Claude...\n",
+"event_message": " - organized_intelligence: ✅ (events, entities, quotes, metrics, clusters)\n",
 "event_type": "Log",
-"function_id": "53bb753c-4415-438f-a27c-6f3c05606791",
-"id": "d3c2389f-1220-4ffb-a67e-fd6d34285e02",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "df2d21a5-8fb3-4b17-a08f-64ee7b62a325",
 "level": "info",
-"timestamp": 1761960306959000
+"timestamp": 1761960949979000
 },
 {
-"event_message": "✨ GEO Schema Enhancer Starting: {\n organization_name: \"Mitsui & Co.\",\n industry: \"General Trading Company\",\n has_coverage: false,\n has_entities: true\n}\n",
+"event_message": "First 2 quotes: [\n {\n \"text\": \"his company will continue to buy Russian oil if the barrels are in compliance with sanctions\",\n \"source\": \"Anuj Jain, IOC head of finance\",\n \"context\": \"Indian Oil Corp's position on Russian oil purchases despite US sanctions\"\n },\n {\n \"text\": \"The key terms of the transaction have been earlier agreed by the parties. On its side, (Lukoil) accepted the offer, having undertaken not to negotiate with other potential buyers\",\n \"source\": \"Lukoil statement\",\n \"context\": \"Acceptance of Gunvor's offer for foreign assets\"\n }\n]\n",
 "event_type": "Log",
-"function_id": "53bb753c-4415-438f-a27c-6f3c05606791",
-"id": "01775d13-4f1f-4d05-90d2-ff31296e7c89",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "101e9c9d-a369-4377-8e9b-b6dd6ca28989",
 "level": "info",
-"timestamp": 1761960306958000
+"timestamp": 1761960949979000
+},
+{
+"event_message": "First 3 events: [\n {\n \"type\": \"partnership\",\n \"entity\": \"Mitsui & Co.\",\n \"description\": \"Mitsui expands Canada EV partnerships for sustainable mobility through investment in Kite Mobility\",\n \"category\": \"strategic\",\n \"date\": null\n },\n {\n \"type\": \"crisis\",\n \"entity\": \"JA Mitsui Leasing\",\n \"description\": \"JA Mitsui Leasing to book 18.9 billion yen loan loss reserve due to First Brands Group bankruptcy, cutting FY net income forecast from ¥35.8 billion to ¥20.5 billion\",\n \"category\": \"competitive\",\n \"date\": null\n },\n {\n \"type\": \"acquisition\",\n \"entity\": \"Gunvor\",\n \"description\": \"Gunvor accepted by Lukoil to acquire Lukoil International foreign assets including major oil fields and refineries\",\n \"category\": \"competitive\",\n \"date\": \"October 30\"\n }\n]\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "210edc1c-1b3a-4421-b274-8fad0e9dcbb5",
+"level": "info",
+"timestamp": 1761960949979000
+},
+{
+"event_message": " - knowledge_graph: ✅ (entities and relationships)\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "87427772-72f4-4d5d-9882-17e55df738a3",
+"level": "info",
+"timestamp": 1761960949979000
+},
+{
+"event_message": " - structured_data: ✅ (events_by_type, top_entities, key_quotes)\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "b66f6fce-9125-488e-b94f-720af7f46df6",
+"level": "info",
+"timestamp": 1761960949979000
+},
+{
+"event_message": " - statistics: ✅ (processing stats)\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "c780f660-5339-4640-9b3f-317b8d3a7b1a",
+"level": "info",
+"timestamp": 1761960949979000
+},
+{
+"event_message": "📦 COMPLETE ENRICHMENT PAYLOAD STRUCTURE:\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "55940539-4703-43c9-85a9-3a060c1cba30",
+"level": "info",
+"timestamp": 1761960949979000
+},
+{
+"event_message": " - extracted_data: ✅ (full extracted data)\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "022bfe49-ca7c-44c3-9418-b9471fa22d66",
+"level": "info",
+"timestamp": 1761960949979000
+},
+{
+"event_message": "First 5 entities: [\n \"Mitsui & Co.\",\n \"JA Mitsui Leasing\",\n \"Kite Mobility\",\n \"First Brands Group\",\n \"Mitsubishi Corporation\"\n]\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "1c6b0a5b-ae45-4485-aca4-b7b0a41c9ab9",
+"level": "info",
+"timestamp": 1761960949979000
+},
+{
+"event_message": "🔍 SAMPLE OF ACTUAL DATA BEING SENT:\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "d53fa913-6438-4082-862d-b49f18791aaa",
+"level": "info",
+"timestamp": 1761960949979000
+},
+{
+"event_message": "🎯 Sample events: [\n {\n type: \"partnership\",\n description: \"Mitsui expands Canada EV partnerships for sustainable mobility through investment in Kite Mobility...\",\n entities: undefined,\n impact: undefined\n },\n {\n type: \"crisis\",\n description: \"JA Mitsui Leasing to book 18.9 billion yen loan loss reserve due to First Brands Group bankruptcy, c...\",\n entities: undefined,\n impact: undefined\n },\n {\n type: \"acquisition\",\n description: \"Gunvor accepted by Lukoil to acquire Lukoil International foreign assets including major oil fields ...\",\n entities: undefined,\n impact: undefined\n }\n]\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "60bde17c-5ce4-4032-bb92-87d87821c906",
+"level": "info",
+"timestamp": 1761960949978000
+},
+{
+"event_message": "📰 Article summaries being sent: 81 summaries\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "9af12737-8906-4c40-86b5-54507a777d48",
+"level": "info",
+"timestamp": 1761960949978000
+},
+{
+"event_message": "👥 Entities being sent: 101 entities\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "84cf6a01-5597-4c10-821d-34cd12057a8d",
+"level": "info",
+"timestamp": 1761960949978000
+},
+{
+"event_message": "📈 Metrics being sent: 46 metrics\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "94404b75-c620-4b84-9951-583d18507fec",
+"level": "info",
+"timestamp": 1761960949978000
+},
+{
+"event_message": "💬 Quotes being sent: 12 quotes\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "6a640a48-6a7b-4400-889a-8ba7f65b692a",
+"level": "info",
+"timestamp": 1761960949978000
+},
+{
+"event_message": "✅ Extraction complete in 23905ms: {\n events: 56,\n entities: 101,\n quotes: 12,\n clusters: 13,\n claude_enhanced: true,\n gaps_filled: 0\n}\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "7f19bcda-6070-4ab5-a894-f863e7d7f7ac",
+"level": "info",
+"timestamp": 1761960949977000
+},
+{
+"event_message": "🚀🚀🚀 ENRICHMENT SENDING TO SYNTHESIS:\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "79c6d9ea-d2b7-4540-a892-c91db9ad469e",
+"level": "info",
+"timestamp": 1761960949977000
+},
+{
+"event_message": "📊 Events being sent: 56 events\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "1e69e0a7-d6a4-46fc-8c79-e778354dc0ec",
+"level": "info",
+"timestamp": 1761960949977000
+},
+{
+"event_message": "✅ Extraction complete: {\n articles_with_full_content: 15,\n articles_with_partial_content: 66,\n total_processed: 81,\n events_extracted: 50,\n entities_found: 89,\n quotes_extracted: 9,\n metrics_found: 46,\n quality_score: \"HIGH\",\n warnings: [],\n extraction_success_rate: \"100.0%\"\n}\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "7ae744d6-9e5b-4bfc-86d0-cfa52e69ce3e",
+"level": "info",
+"timestamp": 1761960949977000
+},
+{
+"event_message": "🎯 Intelligence targets: { competitors: 23, stakeholders: 6, keywords: 29 }\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "e412118e-a266-4bca-b165-cc0bc87bfacd",
+"level": "info",
+"timestamp": 1761960949874000
+},
+{
+"event_message": "🔍 DEBUG - Sample article structure: {\n has_full_content: undefined,\n full_content_exists: false,\n full_content_length: 0,\n content_length_field: undefined,\n keys: [\n \"title\",\n \"url\",\n \"content\",\n \"description\",\n \"published_at\",\n \"source\",\n \"relevance_score\",\n \"source_tier\",\n \"discovery_coverage\",\n \"pr_relevance_score\",\n \"pr_factors\",\n \"pr_extraction\",\n \"pr_category\"\n ]\n}\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "74a89597-1099-4ec1-a510-d930c4fe11ca",
+"level": "info",
+"timestamp": 1761960949873000
+},
+{
+"event_message": "📊 Article content breakdown: {\n total: 81,\n with_full_content: 15,\n with_partial_content: 66,\n with_any_content: 81,\n with_firecrawl: 15,\n has_full_content_true: 15,\n has_full_content_field: 15\n}\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "dcb0bdb7-e368-4f55-bda8-911058a974e0",
+"level": "info",
+"timestamp": 1761960949873000
+},
+{
+"event_message": " - Entities found: 12\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "2869ed54-aa1d-4aa5-b57f-5590998b3da7",
+"level": "info",
+"timestamp": 1761960949872000
+},
+{
+"event_message": "📊 Organizing data from 81 articles (Claude-enhanced: true)\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "c99fe1c1-f17e-4574-af84-5efaf5c7086d",
+"level": "info",
+"timestamp": 1761960949872000
+},
+{
+"event_message": " - Events extracted: 6\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "c688d594-d97b-4b65-bdec-d4bee6dad34c",
+"level": "info",
+"timestamp": 1761960949872000
+},
+{
+"event_message": " - Insights generated: 6\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "79884c38-25d2-49ea-bfea-c9ba843975d1",
+"level": "info",
+"timestamp": 1761960949872000
+},
+{
+"event_message": " - Quotes captured: 3\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "39e2e5b2-c0e5-4c19-892d-c97186d13131",
+"level": "info",
+"timestamp": 1761960949872000
+},
+{
+"event_message": "✅ Claude analysis complete:\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "26e88ce0-f18f-4c1d-9f1e-7c5cdd582a88",
+"level": "info",
+"timestamp": 1761960949872000
+},
+{
+"event_message": "🤖 Using Claude to deeply analyze 15 full-content articles...\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "519a12ec-73cc-4f3b-9517-04a695390234",
+"level": "info",
+"timestamp": 1761960926091000
+},
+{
+"event_message": "📄 Content analysis: { with_full_content: 15, without_full_content: 66, total: 81 }\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "e2a60484-1d19-494b-a2cc-57fc08f5f367",
+"level": "info",
+"timestamp": 1761960926090000
+},
+{
+"event_message": "🚀 Data Extraction Starting: {\n organization: \"Mitsui & Co.\",\n articles: 81,\n timestamp: \"2025-11-01T01:35:26.089Z\"\n}\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "1ea23f9e-b771-4951-a001-7e58399d7743",
+"level": "info",
+"timestamp": 1761960926090000
+},
+{
+"event_message": " - Last 3 days: 81 articles\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "a6f5ebc3-b052-4967-9d9a-5900e6d7abc6",
+"level": "info",
+"timestamp": 1761960926089000
+},
+{
+"event_message": " - Last 7 days: 81 articles\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "de32958c-76cd-4a80-85d8-738674f005ce",
+"level": "info",
+"timestamp": 1761960926089000
+},
+{
+"event_message": " - Older than 7 days: 0 articles\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "3834d09d-d2ae-401c-8703-be5633fc6e31",
+"level": "info",
+"timestamp": 1761960926089000
+},
+{
+"event_message": " - Last 24 hours: 81 articles\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "9332eabc-3152-41b0-8c5a-c2ecf953653b",
+"level": "info",
+"timestamp": 1761960926089000
+},
+{
+"event_message": " - Newest article: 2025-11-01T01:33:43.312Z - \"RTTNews: Realtime Business News, Economic News, Br...\"\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "58ebc7ff-30bd-4906-9aec-49cc98646f90",
+"level": "info",
+"timestamp": 1761960926088000
+},
+{
+"event_message": "📅 ARTICLE TIMEFRAME IN ENRICHMENT:\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "f3b55b1a-c9ab-4720-bdfd-ebe5200c4ed1",
+"level": "info",
+"timestamp": 1761960926088000
+},
+{
+"event_message": " - Oldest article: 2025-11-01T01:33:16.189Z - \"Mitsubishi Corporation (MTSUY) Stock Price, News, ...\"\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "ae035f4b-0a37-4b75-a007-ceea2fcb5a3b",
+"level": "info",
+"timestamp": 1761960926088000
+},
+{
+"event_message": "📊 Enrichment received 81 articles\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "ec9934b9-aa0b-44fd-a231-ea15f7eb399b",
+"level": "info",
+"timestamp": 1761960926088000
+},
+{
+"event_message": "📊 ARTICLE AGE DISTRIBUTION:\n",
+"event_type": "Log",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "cb45494d-e565-44b4-aae1-b066f54d3950",
+"level": "info",
+"timestamp": 1761960926088000
 },
 {
 "event_message": "Listening on http://localhost:9999/\n",
 "event_type": "Log",
-"function_id": "53bb753c-4415-438f-a27c-6f3c05606791",
-"id": "6bdd55a7-1e2a-46be-8ed5-6bcdd0963f99",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "785e4e8a-183e-4822-a0d9-e7cc7b9fd7a6",
 "level": "info",
-"timestamp": 1761960306954000
+"timestamp": 1761960926069000
 },
 {
-"event_message": "booted (time: 28ms)",
+"event_message": "booted (time: 24ms)",
 "event_type": "Boot",
-"function_id": "53bb753c-4415-438f-a27c-6f3c05606791",
-"id": "71025729-f096-4a86-8e53-25c2cba72845",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "634d2410-7b88-47fa-ad15-a3e8708cbc79",
 "level": "log",
-"timestamp": 1761960306952000
-},
-{
-"event_message": "✨ Schema enhancement complete\n",
-"event_type": "Log",
-"function_id": "53bb753c-4415-438f-a27c-6f3c05606791",
-"id": "a76fd45a-e931-400b-9904-c24298a8399a",
-"level": "info",
-"timestamp": 1761960200611000
-},
-{
-"event_message": "✅ Enhancements generated: { faq_questions: 6, awards: 0, keywords: 20, enhanced_descriptions: 2 }\n",
-"event_type": "Log",
-"function_id": "53bb753c-4415-438f-a27c-6f3c05606791",
-"id": "1da14f86-0cc8-4e60-b202-a5ffad89a06c",
-"level": "info",
-"timestamp": 1761960200611000
-},
-{
-"event_message": "🔍 Generating GEO enhancements with Claude...\n",
-"event_type": "Log",
-"function_id": "53bb753c-4415-438f-a27c-6f3c05606791",
-"id": "55f572de-4118-470c-ade0-607a7a990a30",
-"level": "info",
-"timestamp": 1761960179717000
-},
-{
-"event_message": "✨ GEO Schema Enhancer Starting: {\n organization_name: \"Mitsui & Co.\",\n industry: \"General Trading Company\",\n has_coverage: false,\n has_entities: true\n}\n",
-"event_type": "Log",
-"function_id": "53bb753c-4415-438f-a27c-6f3c05606791",
-"id": "da3d4eb5-4817-406e-9250-a956b3b63c14",
-"level": "info",
-"timestamp": 1761960179717000
+"timestamp": 1761960926068000
 },
 {
 "event_message": "Listening on http://localhost:9999/\n",
 "event_type": "Log",
-"function_id": "53bb753c-4415-438f-a27c-6f3c05606791",
-"id": "8d35e027-31c1-4a3e-87fd-8b099f7efa8e",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "2427d2c4-dccb-4d5b-8cf9-132abcd05d6a",
 "level": "info",
-"timestamp": 1761960179713000
+"timestamp": 1761960925798000
 },
 {
-"event_message": "booted (time: 28ms)",
+"event_message": "booted (time: 31ms)",
 "event_type": "Boot",
-"function_id": "53bb753c-4415-438f-a27c-6f3c05606791",
-"id": "01dc0a94-23f9-485f-ba95-3dd45fb1fcf2",
+"function_id": "05e4e596-82cf-47e5-86c3-e286e890fa76",
+"id": "db3bb023-92e9-4edd-ac45-502180b2b742",
 "level": "log",
-"timestamp": 1761960179711000
-},
-{
-"event_message": "Listening on http://localhost:9999/\n",
-"event_type": "Log",
-"function_id": "53bb753c-4415-438f-a27c-6f3c05606791",
-"id": "a7475303-9a36-4913-8ec6-fcfdcb9ba30d",
-"level": "info",
-"timestamp": 1761960179533000
-},
-{
-"event_message": "booted (time: 28ms)",
-"event_type": "Boot",
-"function_id": "53bb753c-4415-438f-a27c-6f3c05606791",
-"id": "04ec9ff0-94b8-41a7-95f9-a4330f0a4a4b",
-"level": "log",
-"timestamp": 1761960179531000
+"timestamp": 1761960925797000
 }
 ]
