@@ -49,15 +49,12 @@ serve(async (req) => {
     const pagesToScrape = pages_to_scrape || inferKeyPages(website_url)
     console.log(`🔍 Scraping ${pagesToScrape.length} pages...`)
 
-    // Scrape pages individually (batch API requires polling which adds complexity)
-    const scrapedPages: any[] = []
+    console.log(`📄 Scraping ${pagesToScrape.length} pages with Firecrawl v2...`)
 
-    console.log(`📄 Scraping ${pagesToScrape.length} pages with Firecrawl...`)
-
-    // Scrape each page in parallel
+    // Scrape each page in parallel using v2 API
     const scrapePromises = pagesToScrape.map(async (pageUrl) => {
       try {
-        const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
+        const response = await fetch('https://api.firecrawl.dev/v2/scrape', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${firecrawlApiKey}`,
@@ -65,20 +62,24 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             url: pageUrl,
-            pageOptions: {
-              onlyMainContent: true
-            }
+            formats: ['markdown']
           })
         })
 
         if (!response.ok) {
-          console.warn(`   ⚠️  Failed to scrape ${pageUrl}`)
+          console.warn(`   ⚠️  Failed to scrape ${pageUrl}: ${response.status}`)
           return null
         }
 
         const data = await response.json()
-        const markdown = data.data?.markdown || ''
-        const title = data.data?.metadata?.title || ''
+
+        if (!data.success || !data.data) {
+          console.warn(`   ⚠️  No data returned from ${pageUrl}`)
+          return null
+        }
+
+        const markdown = data.data.markdown || ''
+        const title = data.data.metadata?.title || ''
 
         if (markdown.length === 0) {
           console.warn(`   ⚠️  Empty content from ${pageUrl}`)
@@ -90,8 +91,8 @@ serve(async (req) => {
           url: pageUrl,
           title,
           markdown,
-          html: data.data?.html || '',
-          metadata: data.data?.metadata || {},
+          html: data.data.html || '',
+          metadata: data.data.metadata || {},
           success: true
         }
       } catch (error) {
