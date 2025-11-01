@@ -45,9 +45,62 @@ serve(async (req) => {
       throw new Error('FIRECRAWL_API_KEY not configured')
     }
 
-    // Determine which pages to scrape
-    const pagesToScrape = pages_to_scrape || inferKeyPages(website_url)
-    console.log(`🔍 Scraping ${pagesToScrape.length} pages...`)
+    let pagesToScrape: string[]
+
+    // If pages provided, use them; otherwise use intelligent search
+    if (pages_to_scrape && pages_to_scrape.length > 0) {
+      pagesToScrape = pages_to_scrape
+      console.log(`📄 Using ${pagesToScrape.length} provided URLs`)
+    } else {
+      console.log(`🔍 Using Firecrawl search to discover relevant pages on ${website_url}`)
+
+      // Use Firecrawl search to intelligently find pages
+      const domain = new URL(website_url).hostname
+      const searches = [
+        `site:${domain} about company`,
+        `site:${domain} products services`,
+        `site:${domain} team leadership`,
+        `site:${domain} locations offices`,
+        `site:${domain} contact`
+      ]
+
+      const discoveredUrls = new Set<string>([website_url]) // Always include homepage
+
+      for (const searchQuery of searches) {
+        try {
+          const searchResponse = await fetch('https://api.firecrawl.dev/v2/search', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${firecrawlApiKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              query: searchQuery,
+              limit: 3, // Top 3 results per search
+              scrapeOptions: {
+                formats: ['markdown']
+              }
+            })
+          })
+
+          if (searchResponse.ok) {
+            const searchData = await searchResponse.json()
+            if (searchData.success && searchData.data) {
+              for (const result of searchData.data) {
+                if (result.url && result.url.includes(domain)) {
+                  discoveredUrls.add(result.url)
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.warn(`   ⚠️  Search failed for "${searchQuery}":`, error)
+        }
+      }
+
+      pagesToScrape = Array.from(discoveredUrls)
+      console.log(`✅ Discovered ${pagesToScrape.length} relevant pages via search`)
+    }
 
     console.log(`📄 Scraping ${pagesToScrape.length} pages with Firecrawl v2...`)
 
@@ -107,6 +160,13 @@ serve(async (req) => {
         const markdown = data.data.markdown || ''
         const title = data.data.metadata?.title || ''
         const statusCode = data.data.metadata?.statusCode
+        const error = data.data.metadata?.error
+
+        // CRITICAL: Skip 404 pages - they're not real content
+        if (statusCode === 404 || error === 'Not Found') {
+          console.warn(`   ⚠️  Skipping 404 page: ${pageUrl}`)
+          return null
+        }
 
         // Log suspicious content lengths
         if (markdown.length > 0 && markdown.length < 1000) {
@@ -116,9 +176,10 @@ serve(async (req) => {
 
         if (markdown.length === 0) {
           console.warn(`   ⚠️  Empty content from ${pageUrl} (HTTP ${statusCode})`)
-        } else {
-          console.log(`   ✅ Got ${markdown.length} chars from ${pageUrl} (HTTP ${statusCode})`)
+          return null
         }
+
+        console.log(`   ✅ Got ${markdown.length} chars from ${pageUrl} (HTTP ${statusCode})`)
 
         return {
           url: pageUrl,
