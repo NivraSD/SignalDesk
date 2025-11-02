@@ -1092,10 +1092,13 @@ REMINDER: Current date is ${currentDate}. Ensure all data references and example
         const gammaData = await gammaResponse.json()
         console.log('✅ Gamma response:', gammaData)
 
+        // Return with generationId for frontend to poll, or immediate URL if already complete
         return new Response(JSON.stringify({
           success: true,
-          presentationUrl: gammaData.url || gammaData.webUrl,
-          message: 'Presentation generated successfully!',
+          generationId: gammaData.generationId,
+          presentationUrl: gammaData.gammaUrl || gammaData.presentationUrl || gammaData.url,
+          status: gammaData.status || 'pending',
+          message: gammaData.status === 'completed' ? 'Presentation generated successfully!' : 'Presentation is being generated...',
           conversationId
         }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 

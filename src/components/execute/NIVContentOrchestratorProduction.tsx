@@ -2378,20 +2378,42 @@ IMPORTANT:
 
                           const data = await response.json()
 
-                          if (data.success && data.presentationUrl) {
-                            setMessages(prev => [...prev, {
-                              role: 'assistant',
-                              content: `✅ Presentation generated successfully!\n\n[View in Gamma](${data.presentationUrl})`,
-                              timestamp: new Date(),
-                              contentItem: {
-                                type: 'presentation',
-                                content: data.presentationUrl,
-                                metadata: {
-                                  gammaUrl: data.presentationUrl,
-                                  outline: msg.metadata.presentationOutline
+                          if (data.success) {
+                            // Check if we got a URL immediately (rare) or need to poll
+                            const immediateUrl = data.presentationUrl || data.gammaUrl || data.url
+
+                            if (immediateUrl) {
+                              // Presentation ready immediately
+                              setMessages(prev => [...prev, {
+                                role: 'assistant',
+                                content: `✅ Presentation generated successfully!\n\n[View in Gamma](${immediateUrl})`,
+                                timestamp: new Date(),
+                                contentItem: {
+                                  type: 'presentation',
+                                  content: immediateUrl,
+                                  metadata: {
+                                    gammaUrl: immediateUrl,
+                                    outline: msg.metadata.presentationOutline
+                                  }
                                 }
-                              }
-                            }])
+                              }])
+                            } else if (data.generationId) {
+                              // Start polling for completion
+                              const pollingMessageId = `msg-${Date.now()}`
+                              setMessages(prev => [...prev, {
+                                id: pollingMessageId,
+                                role: 'assistant',
+                                content: `🎨 Your presentation is being created in Gamma... This usually takes 30-60 seconds.`,
+                                timestamp: new Date()
+                              }])
+
+                              // Poll for status
+                              pollPresentationStatus(
+                                data.generationId,
+                                pollingMessageId,
+                                msg.metadata.presentationOutline.topic
+                              )
+                            }
                           }
                         } catch (error) {
                           console.error('❌ Generation error:', error)
