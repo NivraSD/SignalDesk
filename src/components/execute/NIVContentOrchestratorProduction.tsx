@@ -2325,11 +2325,11 @@ IMPORTANT:
                       onClick={async () => {
                         try {
                           setIsGenerating(true)
-                          addMessage({
+                          setMessages(prev => [...prev, {
                             role: 'assistant',
                             content: '🎨 Generating your presentation in Gamma...',
                             timestamp: new Date()
-                          })
+                          }])
 
                           // Directly call the backend with the stored outline
                           const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/niv-content-intelligent-v2`, {
@@ -2358,7 +2358,7 @@ IMPORTANT:
                           const data = await response.json()
 
                           if (data.success && data.presentationUrl) {
-                            addMessage({
+                            setMessages(prev => [...prev, {
                               role: 'assistant',
                               content: `✅ Presentation generated successfully!\n\n[View in Gamma](${data.presentationUrl})`,
                               timestamp: new Date(),
@@ -2370,15 +2370,15 @@ IMPORTANT:
                                   outline: msg.metadata.presentationOutline
                                 }
                               }
-                            })
+                            }])
                           }
                         } catch (error) {
                           console.error('❌ Generation error:', error)
-                          addMessage({
+                          setMessages(prev => [...prev, {
                             role: 'assistant',
                             content: '❌ Failed to generate presentation. Please try again.',
                             timestamp: new Date()
-                          })
+                          }])
                         } finally {
                           setIsGenerating(false)
                         }
