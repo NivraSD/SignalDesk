@@ -648,7 +648,13 @@ NOW, provide your COMPREHENSIVE profile in this JSON format:
   "industry": "Primary industry classification",
   "sub_industry": "Specific sub-industry or niche",
   "description": "2-3 sentences about the organization and its market position",
-  
+
+  "strategic_context": {
+    "target_customers": "Who does this organization primarily serve? Examples: 'Enterprise B2B clients', 'Marketing teams at Fortune 500 companies', 'Consumer retail customers', 'Government agencies'",
+    "brand_personality": "What's the brand tone/personality? Examples: 'Data-driven and analytical', 'Creative and innovative', 'Professional and traditional', 'Disruptive and bold', 'Practical and results-focused'",
+    "strategic_priorities": ["2-3 current strategic focus areas based on recent company communications, product launches, or market positioning - e.g., 'AI-powered analytics', 'Global expansion', 'Sustainability initiatives'"]
+  },
+
   "competition": {
     "direct_competitors": [
       "Competitor 1 Name",
@@ -1165,7 +1171,12 @@ function structureFinalProfile(profileData: any, organization_name: string) {
     industry: profileData.industry,
     sub_industry: profileData.sub_industry,
     description: profileData.description,
-    service_lines: profileData.service_lines || [], // NEW: For GEO optimization
+    service_lines: profileData.service_lines || [],
+    strategic_context: profileData.strategic_context || {
+      target_customers: '',
+      brand_personality: '',
+      strategic_priorities: []
+    },
 
     // Topics removed - not effective for monitoring
     topics: [],

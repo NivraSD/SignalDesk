@@ -52,6 +52,12 @@ export default function OrganizationOnboarding({
   const [newTopic, setNewTopic] = useState('')
   const [newStakeholder, setNewStakeholder] = useState('')
 
+  // Strategic Context
+  const [targetCustomers, setTargetCustomers] = useState('')
+  const [brandPersonality, setBrandPersonality] = useState('')
+  const [strategicPriorities, setStrategicPriorities] = useState<string[]>([])
+  const [newPriority, setNewPriority] = useState('')
+
   // Step 5: GEO Targets
   const [serviceLines, setServiceLines] = useState<string[]>([])
   const [geographicFocus, setGeographicFocus] = useState<string[]>([])
@@ -131,6 +137,13 @@ export default function OrganizationOnboarding({
 
       setDiscovered(data.discovered)
       setFullProfile(data.full_profile)
+
+      // Populate strategic context from discovery
+      if (data.full_profile?.strategic_context) {
+        setTargetCustomers(data.full_profile.strategic_context.target_customers || '')
+        setBrandPersonality(data.full_profile.strategic_context.brand_personality || '')
+        setStrategicPriorities(data.full_profile.strategic_context.strategic_priorities || [])
+      }
 
       // Pre-select ONLY competitors (users should review stakeholders for relevance)
       setSelectedCompetitors(new Set(data.discovered.competitors.map(c =>
@@ -278,11 +291,33 @@ export default function OrganizationOnboarding({
         console.warn('Failed to save targets:', targetsData.error)
       }
 
-      // 3. Discovery profile stored in organization metadata
-      // mcp-discovery uses intelligent_research dynamically when needed
-      // No separate profile storage required
-      if (fullProfile) {
-        console.log('✅ Discovery profile available for future research')
+      // 3. Update strategic context in organization profile
+      if (fullProfile && (targetCustomers || brandPersonality || strategicPriorities.length > 0)) {
+        console.log('💾 Updating strategic context in profile...')
+        try {
+          const { error: profileError } = await supabase
+            .from('organization_profiles')
+            .update({
+              profile_data: {
+                ...fullProfile,
+                strategic_context: {
+                  target_customers: targetCustomers,
+                  brand_personality: brandPersonality,
+                  strategic_priorities: strategicPriorities
+                }
+              },
+              updated_at: new Date().toISOString()
+            })
+            .eq('organization_name', orgName)
+
+          if (profileError) {
+            console.warn('Failed to update strategic context:', profileError)
+          } else {
+            console.log('✅ Strategic context saved to profile')
+          }
+        } catch (error) {
+          console.warn('Error saving strategic context:', error)
+        }
       }
 
       // 4. Save GEO targets (if configured)
@@ -1005,6 +1040,101 @@ export default function OrganizationOnboarding({
                       <Plus className="w-4 h-4" />
                       Add
                     </button>
+                  </div>
+                </div>
+
+                {/* Strategic Context Section */}
+                <div className="mt-8 pt-8 border-t border-gray-700">
+                  <h3 className="text-lg font-semibold text-white mb-2">
+                    Strategic Context
+                  </h3>
+                  <p className="text-sm text-gray-400 mb-4">
+                    Review and refine how we understand your organization. This helps generate more relevant opportunities.
+                  </p>
+
+                  <div className="space-y-4">
+                    {/* Target Customers */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Target Customers
+                      </label>
+                      <input
+                        type="text"
+                        value={targetCustomers}
+                        onChange={(e) => setTargetCustomers(e.target.value)}
+                        placeholder="e.g., Marketing teams at Fortune 500 companies"
+                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Who does your organization primarily serve?</p>
+                    </div>
+
+                    {/* Brand Personality */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Brand Personality
+                      </label>
+                      <input
+                        type="text"
+                        value={brandPersonality}
+                        onChange={(e) => setBrandPersonality(e.target.value)}
+                        placeholder="e.g., Data-driven and practical"
+                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">What's your brand's tone and style?</p>
+                    </div>
+
+                    {/* Strategic Priorities */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Strategic Priorities
+                      </label>
+                      {strategicPriorities.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {strategicPriorities.map((priority, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center gap-2 px-3 py-1 bg-blue-500/20 border border-blue-500/30 rounded-full text-sm text-blue-300"
+                            >
+                              <span>{priority}</span>
+                              <button
+                                onClick={() => setStrategicPriorities(strategicPriorities.filter((_, i) => i !== index))}
+                                className="hover:text-blue-100"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={newPriority}
+                          onChange={(e) => setNewPriority(e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter' && newPriority.trim()) {
+                              setStrategicPriorities([...strategicPriorities, newPriority.trim()])
+                              setNewPriority('')
+                            }
+                          }}
+                          placeholder="e.g., AI-powered analytics"
+                          className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                        />
+                        <button
+                          onClick={() => {
+                            if (newPriority.trim()) {
+                              setStrategicPriorities([...strategicPriorities, newPriority.trim()])
+                              setNewPriority('')
+                            }
+                          }}
+                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">Current focus areas or strategic initiatives</p>
+                    </div>
                   </div>
                 </div>
 
