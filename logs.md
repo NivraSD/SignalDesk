@@ -3,800 +3,800 @@
 "event_message": "shutdown",
 "event_type": "Shutdown",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "650091fc-c0ab-4952-bd0c-646c38c4c345",
+"id": "db986d17-3b38-4586-95a1-919456298ca3",
 "level": "log",
-"timestamp": 1762056427391000
+"timestamp": 1762057617541000
 },
 {
 "event_message": "shutdown",
 "event_type": "Shutdown",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "26e4ea20-5f8b-42c5-aff5-215e39139e67",
+"id": "e626368c-b0c5-4e1f-806c-99fd961321d5",
 "level": "log",
-"timestamp": 1762056416246000
-},
-{
-"event_message": "shutdown",
-"event_type": "Shutdown",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "fb387a73-2763-4980-bf06-a8f7ea1c43a5",
-"level": "log",
-"timestamp": 1762056416246000
-},
-{
-"event_message": "shutdown",
-"event_type": "Shutdown",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "a64d34a6-b948-4fee-ac71-97087ad37315",
-"level": "log",
-"timestamp": 1762056347908000
-},
-{
-"event_message": "shutdown",
-"event_type": "Shutdown",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "e43f5b14-1de3-45c2-a2fb-d04c14f805c1",
-"level": "log",
-"timestamp": 1762056347704000
+"timestamp": 1762057606292000
 },
 {
 "event_message": "✅ NIV Response generated: { type: \"simple\", formatted: false }\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "51bed58b-56c0-4348-9cc6-b96a230bf88c",
+"id": "6ff98bbc-c235-4f9d-82a1-052d01ad80cb",
 "level": "info",
-"timestamp": 1762056257071000
+"timestamp": 1762057588245000
 },
 {
-"event_message": "🔢 Token count validation: System=7497, Message=1159, Total=8656\n",
+"event_message": "🔢 Token count validation: System=7497, Message=3007, Total=10504\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "5ea5a4d7-8fc2-4212-9825-f8f598e006a2",
+"id": "6e247799-ed8b-4836-ae5c-3f8bec8c8017",
 "level": "info",
-"timestamp": 1762056244779000
+"timestamp": 1762057561009000
 },
 {
-"event_message": "🎯 Framework generation decision: false\n",
+"event_message": "🎯 Framework generation decision: true\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "d6f98729-3567-4ada-94b0-658333418a5e",
+"id": "7508f29d-c008-42b4-9968-32494a3e3b99",
 "level": "info",
-"timestamp": 1762056244778000
-},
-{
-"event_message": "🤖 Claude says do research first, not framework\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "6e8c222c-92ff-403a-909b-e1aaf264c082",
-"level": "info",
-"timestamp": 1762056244778000
+"timestamp": 1762057561007000
 },
 {
 "event_message": "📊 Concept State - Stage: exploring, Confidence: 0%\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "cf977a64-3f67-4a0b-8c78-e049335c4ada",
+"id": "89a651f9-293d-4e6b-8101-0850d4a83f2f",
 "level": "info",
-"timestamp": 1762056244777000
+"timestamp": 1762057561007000
 },
 {
 "event_message": "📊 Research accumulated: 1 rounds\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "0be516ed-6f34-4110-bc4f-4183a2fcc9d3",
+"id": "62ab368a-9476-4081-b4fc-1450bb5f6ad8",
 "level": "info",
-"timestamp": 1762056244777000
+"timestamp": 1762057561007000
 },
 {
-"event_message": " Competitors: \n",
+"event_message": "🤖 Claude detected framework request\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "c5682aec-6d3c-4191-96ea-d268eb867208",
+"id": "a22c1ca2-cd6c-4814-af0e-06ae5714e0b0",
 "level": "info",
-"timestamp": 1762056244777000
-},
-{
-"event_message": " Keywords: 5a8eaca4-ee9a-448a-ab46-1e371c64592f\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "d3b76de3-63c0-4604-ad92-6eb71ca614d0",
-"level": "info",
-"timestamp": 1762056244777000
-},
-{
-"event_message": " Industry: I don't have access to a database or system that would allow me to look up company information based on that UUID identifier. I cannot determine the primary industry for company \"5a8eaca4-ee9a-448a-ab46\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "86340310-d676-4ff5-aa0e-c081ba35ce86",
-"level": "info",
-"timestamp": 1762056244777000
+"timestamp": 1762057561007000
 },
 {
 "event_message": "🎯 Loaded profile for 5a8eaca4-ee9a-448a-ab46-1e371c64592f: 0 competitors, 1 keywords\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "b0e254bc-5cda-4e55-9c56-44c786d40883",
+"id": "f660bc93-82bb-4bfd-8780-0428b1637ef6",
 "level": "info",
-"timestamp": 1762056244777000
-},
-{
-"event_message": "🎯 Using organization profile: 5a8eaca4-ee9a-448a-ab46-1e371c64592f\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "93d9609e-3e1d-4a7b-8717-4a499be630ee",
-"level": "info",
-"timestamp": 1762056244777000
-},
-{
-"event_message": "✅ Firecrawl returned 10 results\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "38ff23b4-c94c-488e-bc99-f0ec5b7b61fe",
-"level": "info",
-"timestamp": 1762056244705000
-},
-{
-"event_message": "📊 Research complete - preparing intelligence for response...\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "53f43f60-73d9-40e3-a008-c23bad69006e",
-"level": "info",
-"timestamp": 1762056244705000
-},
-{
-"event_message": "✅ Completed step step-1: tech company event production spending trends corp...\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "1c5563a9-9215-46a4-8c59-bf3cfdbbe032",
-"level": "info",
-"timestamp": 1762056244705000
-},
-{
-"event_message": "🔍 Orchestrated research complete: 10 articles, 2 findings\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "3f10727e-c8c3-40b6-b0d9-34ccab036973",
-"level": "info",
-"timestamp": 1762056244705000
-},
-{
-"event_message": "🔬 Orchestration calling FireSearch for: \"tech company event production spending trends corp...\"\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "2365f583-5059-4ac5-8b37-ef48441c32f4",
-"level": "info",
-"timestamp": 1762056237660000
-},
-{
-"event_message": "📋 Research plan created: 1 steps\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "aeefa631-3970-4f6a-b083-a170a4fd49a4",
-"level": "info",
-"timestamp": 1762056237660000
-},
-{
-"event_message": "🔬 Using FireSearch for initial-scan\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "8a65fddb-ec8c-4aed-bdac-ad278fc4047c",
-"level": "info",
-"timestamp": 1762056237660000
-},
-{
-"event_message": "🔍 Executing research step: initial-scan - tech company event production spending trends corporate experiential marketing 2025\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "af315eb5-d930-4ccf-9987-4a7cfb4e7e00",
-"level": "info",
-"timestamp": 1762056237660000
-},
-{
-"event_message": "🔍 Using research query: \"tech company event production spending trends corporate experiential marketing 2...\"\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "9ad93d6d-3b96-44c3-b2b7-bc6b8bab81e1",
-"level": "info",
-"timestamp": 1762056237606000
-},
-{
-"event_message": "🤖 Query requires multi-step orchestration...\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "881ec8d0-8ea9-499e-9183-346c65540359",
-"level": "info",
-"timestamp": 1762056237606000
-},
-{
-"event_message": "🧠 Claude understanding: {\n understanding: {\n what_user_wants: \"A strategic approach to position their company as the thought leader in event production specifically for tech companies - this is about market positioning and campaign strategy development\",\n entities: [\n \"tech companies\",\n \"event production companies\",\n \"corporate event agencies\"\n ],\n timeframe: \"latest\",\n topics: [\n \"tech company event spending\",\n \"event production market trends\",\n \"corporate experiential marketing\",\n \"tech event preferences\",\n \"competitive landscape in event production\",\n \"thought leadership positioning strategies\"\n ],\n requires_fresh_data: true,\n why_fresh_data: \"Need current market data on tech company event spending, recent trends in corporate events post-2024, competitive positioning of event production companies, and latest corporate experiential marketing strategies to build effective thought leadership positioning\"\n },\n approach: {\n strategy: \"fireplexity_targeted\",\n reasoning: \"This requires fresh intelligence on current tech company event spending patterns, competitive landscape analysis, and recent market trends to develop an effective thought leadership positioning strategy\",\n search_query: \"tech company event production spending trends corporate experiential marketing 2025\",\n search_domains: \"quality_first\",\n domain_reasoning: \"Market research and spending data will likely be in quality business publications, but may also need trade publication insights that aren't in tier-1 sources\",\n confidence: 0.9,\n generate_framework: false,\n framework_reasoning: \"User wants strategic guidance but hasn't seen the current market research yet - need to provide intelligence first before developing the framework\"\n },\n acknowledgment: \"I'll research the current landscape for tech company event production and experiential marketing to build you a thought leadership positioning strategy that differentiates you in this space.\"\n}\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "d75f6d54-830f-4016-af76-378a13189f65",
-"level": "info",
-"timestamp": 1762056237605000
-},
-{
-"event_message": "🎯 Strategy chosen: fireplexity_targeted (confidence: 0.9)\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "42726501-d65b-47ac-809f-6f8a6c319369",
-"level": "info",
-"timestamp": 1762056237605000
-},
-{
-"event_message": "✅ Found profile by organization_id: 5a8eaca4-ee9a-448a-ab46-1e371c64592f\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "380d34f0-51a3-45f3-914a-9edf8f658079",
-"level": "info",
-"timestamp": 1762056227510000
-},
-{
-"event_message": "🏢 Organization context: \"5a8eaca4-ee9a-448a-ab46-1e371c64592f\" (validated)\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "a8a8d931-d732-44a5-8064-e04287314e71",
-"level": "info",
-"timestamp": 1762056227510000
-},
-{
-"event_message": "✅ Loaded organization profile: 5a8eaca4-ee9a-448a-ab46-1e371c64592f\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "3525f4dd-7366-4d35-af5d-d3091a4886bc",
-"level": "info",
-"timestamp": 1762056227510000
-},
-{
-"event_message": "📝 Query type: general\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "0731cbe1-17f3-46af-942f-9e020b395694",
-"level": "info",
-"timestamp": 1762056227510000
-},
-{
-"event_message": "🎭 Active persona: NIV - Chief Intelligence Analyst for intelligence module\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "4ba9869a-da39-4afe-83c6-88ae421e8a6e",
-"level": "info",
-"timestamp": 1762056227510000
-},
-{
-"event_message": "🔍 Detected UUID format, searching by organization_id\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "15b35b71-e56d-4d1b-9d22-e620cf86d04b",
-"level": "info",
-"timestamp": 1762056227389000
-},
-{
-"event_message": "🔍 Searching for organization: \"5a8eaca4-ee9a-448a-ab46-1e371c64592f\" (type: string)\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "23531d8a-4f6a-4817-96d1-6c0eba5e1699",
-"level": "info",
-"timestamp": 1762056227389000
-},
-{
-"event_message": "🎯 NIV calling mcp-discovery for: 5a8eaca4-ee9a-448a-ab46-1e371c64592f\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "aeeae8ec-46a9-4b26-b00e-fd24917f550e",
-"level": "info",
-"timestamp": 1762056227386000
-},
-{
-"event_message": "🤖 NIV Processing: {\n message: \"a thought leadership campaign to position us as leader in event production for tech companies\",\n sessionId: \"niv-1762056125832\",\n stage: \"full\"\n}\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "5d850c64-88a7-4e04-8d78-1bfade9cbbe9",
-"level": "info",
-"timestamp": 1762056227385000
-},
-{
-"event_message": "Listening on http://localhost:9999/\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "33cf8d4e-72b9-48d3-b14f-62a9a9769cb0",
-"level": "info",
-"timestamp": 1762056227379000
-},
-{
-"event_message": "booted (time: 37ms)",
-"event_type": "Boot",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "2e969442-0e4b-4f94-b3ef-680eb5335ee5",
-"level": "log",
-"timestamp": 1762056227367000
-},
-{
-"event_message": "🧠 Claude understanding: {\n understanding: {\n what_user_wants: \"Strategic framework for thought leadership campaign to position their company as the leader in event production specifically for tech companies\",\n entities: [\n \"tech companies\",\n \"event production industry\",\n \"thought leadership\"\n ],\n timeframe: \"current/2025\",\n topics: [\n \"event production trends for tech companies\",\n \"corporate event spending\",\n \"tech company event preferences\",\n \"experiential marketing in tech\",\n \"event ROI measurement\",\n \"competitive landscape in tech event production\"\n ],\n requires_fresh_data: true,\n why_fresh_data: \"Need current market dynamics, recent tech company event spending patterns, latest trends in corporate events post-pandemic, and competitive positioning in the event production space for tech clients\"\n },\n approach: {\n strategy: \"fireplexity_targeted\",\n reasoning: \"User needs a strategic campaign framework, but first I need current intelligence on the tech event production landscape, spending patterns, competitor messaging, and market positioning opportunities to build an effective thought leadership strategy\",\n search_query: \"tech company event production spending trends corporate events 2025\",\n search_domains: \"quality_first\",\n domain_reasoning: \"Market research and industry trends will likely be in trade publications and business sources, but may also appear in marketing/event industry publications not in core master list\",\n confidence: 0.85,\n generate_framework: false,\n framework_reasoning: \"User wants a campaign strategy, but I need current market intelligence first to build an effective positioning framework. Framework generation should come after research phase.\"\n },\n acknowledgment: \"I'll research the current landscape for tech company event production to build you a strategic thought leadership campaign. Let me gather intelligence on market trends, spending patterns, and competitive positioning opportunities.\"\n}\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "221d36eb-16a8-4a1c-9a18-4a66bd2794e2",
-"level": "info",
-"timestamp": 1762056227099000
-},
-{
-"event_message": "🎯 Strategy chosen: fireplexity_targeted (confidence: 0.85)\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "591ca9c9-5c1f-46b7-ae1d-94b83583dc18",
-"level": "info",
-"timestamp": 1762056227099000
-},
-{
-"event_message": "✅ Found profile by organization_id: 5a8eaca4-ee9a-448a-ab46-1e371c64592f\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "ef11ae06-6e66-4814-9f26-62e08e5ceb99",
-"level": "info",
-"timestamp": 1762056216368000
-},
-{
-"event_message": "📝 Query type: general\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "0cfc5046-3733-40dd-ba53-dbe31cd14fa9",
-"level": "info",
-"timestamp": 1762056216368000
-},
-{
-"event_message": "🎭 Active persona: NIV - Chief Intelligence Analyst for intelligence module\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "8911fea8-e7f8-4dcb-ac88-bbf03ca8dfad",
-"level": "info",
-"timestamp": 1762056216368000
-},
-{
-"event_message": "✅ Loaded organization profile: 5a8eaca4-ee9a-448a-ab46-1e371c64592f\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "df069501-ba0f-47a7-9367-65154f83f357",
-"level": "info",
-"timestamp": 1762056216368000
-},
-{
-"event_message": "🏢 Organization context: \"5a8eaca4-ee9a-448a-ab46-1e371c64592f\" (validated)\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "9b933b45-df71-4960-b825-4c82e94f6e03",
-"level": "info",
-"timestamp": 1762056216368000
-},
-{
-"event_message": "🔍 Searching for organization: \"5a8eaca4-ee9a-448a-ab46-1e371c64592f\" (type: string)\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "f1854dbe-d0b8-4f97-8d8a-6aa93021eba7",
-"level": "info",
-"timestamp": 1762056216241000
-},
-{
-"event_message": "🔍 Detected UUID format, searching by organization_id\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "d271386c-84aa-4547-998f-a352eafa1363",
-"level": "info",
-"timestamp": 1762056216241000
-},
-{
-"event_message": "🎯 NIV calling mcp-discovery for: 5a8eaca4-ee9a-448a-ab46-1e371c64592f\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "b50afa57-035b-4941-b0e7-39f7743c8de6",
-"level": "info",
-"timestamp": 1762056216238000
-},
-{
-"event_message": "🤖 NIV Processing: {\n message: \"a thought leadership campaign to position us as leader in event production for tech companies\",\n sessionId: \"niv-1762056125832\",\n stage: \"acknowledge\"\n}\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "a4aaf716-094e-4f33-94aa-cb26bb2b0c08",
-"level": "info",
-"timestamp": 1762056216238000
-},
-{
-"event_message": "Listening on http://localhost:9999/\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "fd91c32a-0f08-4e25-ac64-08bca1c4d490",
-"level": "info",
-"timestamp": 1762056216232000
-},
-{
-"event_message": "booted (time: 35ms)",
-"event_type": "Boot",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "63a92497-b05a-4edc-a228-f7a12e7cd6dc",
-"level": "log",
-"timestamp": 1762056216228000
-},
-{
-"event_message": "📝 Detected content type: presentation, useGamma: true\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "3dc59b5b-e1e5-4fbc-9576-24df8b760f41",
-"level": "info",
-"timestamp": 1762056147904000
-},
-{
-"event_message": "🎯 Execution command detected: i need to create a strategy and presentation to position us as a thought leader in event production \n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "ac34328b-99d2-4485-bdf6-6d8e1277bd1a",
-"level": "info",
-"timestamp": 1762056147904000
-},
-{
-"event_message": "🤖 NIV Processing: {\n message: \"i need to create a strategy and presentation to position us as a thought leader in event production \",\n sessionId: \"niv-1762056125832\",\n stage: \"full\"\n}\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "70594c3d-a682-4812-abbb-728a7fe10c44",
-"level": "info",
-"timestamp": 1762056147903000
-},
-{
-"event_message": "Listening on http://localhost:9999/\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "8df33f5f-abce-488f-9d73-a55107fb4095",
-"level": "info",
-"timestamp": 1762056147898000
-},
-{
-"event_message": "booted (time: 35ms)",
-"event_type": "Boot",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "51abbd19-7950-4137-94d7-c90c31e5ec4a",
-"level": "log",
-"timestamp": 1762056147893000
-},
-{
-"event_message": "📝 Detected content type: presentation, useGamma: true\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "e6624b33-64c1-43d7-a713-2f2a96d5231a",
-"level": "info",
-"timestamp": 1762056147699000
-},
-{
-"event_message": "🎯 Execution command detected: i need to create a strategy and presentation to position us as a thought leader in event production \n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "01ebe184-3994-42b6-929c-7f2144cfb0a9",
-"level": "info",
-"timestamp": 1762056147698000
-},
-{
-"event_message": "🤖 NIV Processing: {\n message: \"i need to create a strategy and presentation to position us as a thought leader in event production \",\n sessionId: \"niv-1762056125832\",\n stage: \"acknowledge\"\n}\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "32e6bba6-776c-40b6-89bc-a05e173a3ca8",
-"level": "info",
-"timestamp": 1762056147698000
-},
-{
-"event_message": "Listening on http://localhost:9999/\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "3be04829-5125-4629-a4c1-bbb2e284ffec",
-"level": "info",
-"timestamp": 1762056147693000
-},
-{
-"event_message": "booted (time: 36ms)",
-"event_type": "Boot",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "406f514d-2d4e-401a-8309-383a95f8edcf",
-"level": "log",
-"timestamp": 1762056147688000
-},
-{
-"event_message": "shutdown",
-"event_type": "Shutdown",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "816aba19-01e1-40a1-aac2-edc1537d2a98",
-"level": "log",
-"timestamp": 1762056121487000
-},
-{
-"event_message": "shutdown",
-"event_type": "Shutdown",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "b40e4bc6-ee4c-4e9c-865a-7380044fd5a8",
-"level": "log",
-"timestamp": 1762056112788000
-},
-{
-"event_message": "✅ NIV Response generated: { type: \"simple\", formatted: false }\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "15114170-9c8c-4d6f-80a2-44766b76143d",
-"level": "info",
-"timestamp": 1762055946492000
-},
-{
-"event_message": "🔢 Token count validation: System=7497, Message=1463, Total=8960\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "85ba5d42-71df-48e1-b573-881f92267269",
-"level": "info",
-"timestamp": 1762055936461000
-},
-{
-"event_message": "📊 Concept State - Stage: exploring, Confidence: 0%\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "a46fc49b-a3bb-439f-8a1a-7c3eacdcca82",
-"level": "info",
-"timestamp": 1762055936460000
-},
-{
-"event_message": "📊 Research accumulated: 1 rounds\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "51ebeac5-260b-4dcd-af1b-6aa3d75ab2d4",
-"level": "info",
-"timestamp": 1762055936460000
-},
-{
-"event_message": "🤖 Claude says do research first, not framework\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "858480d1-984c-4e66-ba70-5c1b8b2c8e08",
-"level": "info",
-"timestamp": 1762055936460000
-},
-{
-"event_message": " Keywords: 5a8eaca4-ee9a-448a-ab46-1e371c64592f\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "768efbe5-1314-4d9b-9e5e-d2402e81b170",
-"level": "info",
-"timestamp": 1762055936460000
-},
-{
-"event_message": "🎯 Using organization profile: 5a8eaca4-ee9a-448a-ab46-1e371c64592f\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "1cffef8c-8e9b-4cc1-8331-8c06debdfb73",
-"level": "info",
-"timestamp": 1762055936460000
+"timestamp": 1762057561006000
 },
 {
 "event_message": " Industry: I don't have access to a database or system that would allow me to look up company information based on that UUID identifier. I cannot determine the primary industry for company \"5a8eaca4-ee9a-448a-ab46\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "cbd3ceba-e538-4a55-a78c-1881479bc0f5",
+"id": "757bf0a0-e3c7-4b99-801c-724d4e8ff334",
 "level": "info",
-"timestamp": 1762055936460000
-},
-{
-"event_message": "🎯 Framework generation decision: false\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "739e8345-f0ca-4985-9caa-57f5d2671683",
-"level": "info",
-"timestamp": 1762055936460000
+"timestamp": 1762057561006000
 },
 {
 "event_message": " Competitors: \n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "0070f94d-81ec-4e50-8d2c-40353ec90dba",
+"id": "ecb04756-741e-4876-83c4-2b0f050802ec",
 "level": "info",
-"timestamp": 1762055936460000
+"timestamp": 1762057561006000
 },
 {
-"event_message": "🎯 Loaded profile for 5a8eaca4-ee9a-448a-ab46-1e371c64592f: 0 competitors, 1 keywords\n",
+"event_message": " Keywords: 5a8eaca4-ee9a-448a-ab46-1e371c64592f\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "7e807cb7-9a40-4d3d-89a8-d9d5c94ada96",
+"id": "dad0549f-9cec-45ea-a4f5-ead968556198",
 "level": "info",
-"timestamp": 1762055936460000
+"timestamp": 1762057561006000
 },
 {
-"event_message": "🔍 Orchestrated research complete: 10 articles, 2 findings\n",
+"event_message": "🎯 Using organization profile: 5a8eaca4-ee9a-448a-ab46-1e371c64592f\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "3e97b6e6-e9b5-4f48-831a-0d2e158debe0",
+"id": "ebe6a3f9-27f6-421c-85c7-ac30ded5a4b1",
 "level": "info",
-"timestamp": 1762055936416000
-},
-{
-"event_message": "✅ Completed step step-1: whats my organization...\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "51ddf122-ba2e-4b9d-bf99-da240bbc4da2",
-"level": "info",
-"timestamp": 1762055936416000
+"timestamp": 1762057561006000
 },
 {
 "event_message": "📊 Research complete - preparing intelligence for response...\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "8cbdcef7-e8ae-49a6-b426-71c6e82d7a7e",
+"id": "75c687f2-ce92-4405-8d2c-cf0850ae052f",
 "level": "info",
-"timestamp": 1762055936416000
+"timestamp": 1762057560797000
+},
+{
+"event_message": "🔍 Orchestrated research complete: 10 articles, 2 findings\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "536aa6d5-4022-4fcf-82cd-016afbd2d47a",
+"level": "info",
+"timestamp": 1762057560797000
 },
 {
 "event_message": "✅ Firecrawl returned 10 results\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "27067fa6-cece-4cfe-be54-d12b709c5676",
+"id": "378ee618-99ad-4ee1-94de-c9ac23f46ba1",
 "level": "info",
-"timestamp": 1762055936415000
+"timestamp": 1762057560796000
 },
 {
-"event_message": "shutdown",
-"event_type": "Shutdown",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "67391af1-42bb-4691-9d8e-ec33cabc2e88",
-"level": "log",
-"timestamp": 1762055931626000
-},
-{
-"event_message": "🔬 Orchestration calling FireSearch for: \"whats my organization...\"\n",
+"event_message": "✅ Completed step step-1: content strategy. but i want this all in a present...\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "ed895a3c-0d9f-423d-9f26-14f320ecefe4",
+"id": "2edc685e-896b-4193-a19d-38b69b0b306d",
 "level": "info",
-"timestamp": 1762055928761000
+"timestamp": 1762057560796000
 },
 {
-"event_message": "🔍 Executing research step: initial-scan - whats my organization\n",
+"event_message": "🔬 Orchestration calling FireSearch for: \"content strategy. but i want this all in a present...\"\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "f80f4b1f-579a-455d-a97f-71abb565dd84",
+"id": "fa2761d6-d383-4b3a-abbb-7f10f59437d9",
 "level": "info",
-"timestamp": 1762055928761000
+"timestamp": 1762057499358000
 },
 {
 "event_message": "🔬 Using FireSearch for initial-scan\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "30cf9308-eabc-4815-a86b-c6fcb0e494f9",
+"id": "8c2951ad-0410-4d4b-859d-b563a5bb9b79",
 "level": "info",
-"timestamp": 1762055928761000
+"timestamp": 1762057499358000
+},
+{
+"event_message": "🔍 Executing research step: initial-scan - content strategy. but i want this all in a presentation\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "12c06946-b6c1-4ac1-bc16-8eb540efa8af",
+"level": "info",
+"timestamp": 1762057499358000
 },
 {
 "event_message": "📋 Research plan created: 1 steps\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "7107e180-c761-4a75-9ba8-e5d4316b090c",
+"id": "41d0724b-383e-4fdf-ab0c-17a14fd5fbca",
 "level": "info",
-"timestamp": 1762055928760000
-},
-{
-"event_message": "🧠 Claude understanding: {\n understanding: {\n what_user_wants: \"They want to know what their organization is - asking for basic identification/context about the company they're working with\",\n entities: [ \"5a8eaca4-ee9a-448a-ab46-1e371c64592f\" ],\n timeframe: \"current/existing\",\n topics: [ \"organization identity\", \"company profile\", \"business context\" ],\n requires_fresh_data: false,\n why_fresh_data: \"This is asking for existing organizational context, not current market developments\"\n },\n approach: {\n strategy: \"contextual_response\",\n reasoning: \"User is asking about their own organization's identity - this is context clarification, not a research request for current events or market intelligence\",\n search_query: \"\",\n search_domains: \"quality_first\",\n domain_reasoning: \"No search needed - this is organizational context clarification\",\n confidence: 0.95,\n generate_framework: false,\n framework_reasoning: \"This is a basic information request about organizational identity, not a strategic framework request\"\n },\n acknowledgment: \"You're asking about your organization's identity - let me clarify what I know about the company we're working with from our discovery profile.\"\n}\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "1e937e2e-2ded-4c53-a968-e203d11da2de",
-"level": "info",
-"timestamp": 1762055928715000
+"timestamp": 1762057499357000
 },
 {
 "event_message": "🎯 Strategy chosen: contextual_response (confidence: 0.95)\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "c7585e77-fe08-49d1-a9e7-6073c9993d36",
+"id": "b25959d3-e982-4f59-afae-eb312e4a3e62",
 "level": "info",
-"timestamp": 1762055928715000
+"timestamp": 1762057499304000
 },
 {
-"event_message": "🔍 Using research query: \"whats my organization...\"\n",
+"event_message": "🔍 Using research query: \"content strategy. but i want this all in a presentation...\"\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "f7d052f8-f6d0-4e59-b516-2805385ab8cd",
+"id": "77f67fa5-e343-4ce0-b415-185177d614f6",
 "level": "info",
-"timestamp": 1762055928715000
+"timestamp": 1762057499304000
+},
+{
+"event_message": "🧠 Claude understanding: {\n understanding: {\n what_user_wants: \"A presentation/deck containing the complete content strategy for positioning as 'ROI Translator' event producer targeting CFOs directly\",\n entities: [ \"CFOs\", \"tech companies\", \"event production\", \"ROI measurement\" ],\n timeframe: \"current/2025\",\n topics: [\n \"CFO content strategy\",\n \"thought leadership positioning\",\n \"ROI translator messaging\",\n \"presentation format\"\n ],\n requires_fresh_data: false,\n why_fresh_data: \"User wants to package our existing strategic discussion into presentation format - this is an execution/formatting request, not a research need\"\n },\n approach: {\n strategy: \"contextual_response\",\n reasoning: \"User wants me to synthesize our conversation into a presentation format. We already have the strategic intelligence and positioning - now they need it packaged as a deck for presentation purposes\",\n search_query: \"\",\n search_domains: \"\",\n domain_reasoning: \"\",\n confidence: 0.95,\n generate_framework: true,\n framework_reasoning: \"User is asking for 'this all in a presentation' which means they want our strategic discussion synthesized into a complete strategic framework document that can be presented - this is a strategic framework request\"\n },\n acknowledgment: \"Perfect - you want our 'ROI Translator' positioning strategy packaged as a presentation. I'll create a comprehensive strategic framework that covers your CFO-focused content strategy and can be formatted as a deck.\"\n}\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "d8152289-b3ae-4896-8d4c-c4f48f67c305",
+"level": "info",
+"timestamp": 1762057499304000
 },
 {
 "event_message": "🤖 Query requires multi-step orchestration...\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "4228cfe5-6f12-415f-a7f4-569f7980c897",
+"id": "fed9cdaf-b0f5-485a-bc45-db68f5115db2",
 "level": "info",
-"timestamp": 1762055928715000
+"timestamp": 1762057499304000
 },
 {
 "event_message": "shutdown",
 "event_type": "Shutdown",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "7cfac77e-b04d-4f42-852d-db4c2165be3d",
+"id": "e3ff7c46-637b-4f75-b54e-381c7ba26ade",
 "level": "log",
-"timestamp": 1762055921902000
-},
-{
-"event_message": "📝 Query type: articles\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "88a3a4fa-4c98-4dcd-91dc-b75142688525",
-"level": "info",
-"timestamp": 1762055921577000
-},
-{
-"event_message": "✅ Found profile by organization_id: 5a8eaca4-ee9a-448a-ab46-1e371c64592f\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "466d7657-ec88-4684-8572-4a4f7ee1897f",
-"level": "info",
-"timestamp": 1762055921576000
+"timestamp": 1762057491620000
 },
 {
 "event_message": "✅ Loaded organization profile: 5a8eaca4-ee9a-448a-ab46-1e371c64592f\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "e88d3e45-3f8b-46b5-ac4e-cf636b41efa2",
+"id": "f06a3759-5ad8-41d9-9ab8-9963c1db942b",
 "level": "info",
-"timestamp": 1762055921576000
+"timestamp": 1762057490046000
 },
 {
-"event_message": "🎭 Active persona: NIV - Chief Intelligence Analyst for intelligence module\n",
+"event_message": "✅ Found profile by organization_id: 5a8eaca4-ee9a-448a-ab46-1e371c64592f\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "be60b215-1b81-46d6-9180-61932c45909a",
+"id": "335cb301-bfb8-4ddb-99ca-018e1fd424c3",
 "level": "info",
-"timestamp": 1762055921576000
+"timestamp": 1762057490046000
 },
 {
 "event_message": "🏢 Organization context: \"5a8eaca4-ee9a-448a-ab46-1e371c64592f\" (validated)\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "8d79212a-d2c4-422c-8e2a-01f818bedc6f",
+"id": "9a24ee7e-07d5-4cd9-b9d2-a940948bf9fe",
 "level": "info",
-"timestamp": 1762055921576000
+"timestamp": 1762057490046000
 },
 {
-"event_message": "🔍 Searching for organization: \"5a8eaca4-ee9a-448a-ab46-1e371c64592f\" (type: string)\n",
+"event_message": "🎭 Active persona: NIV - Chief Intelligence Analyst for intelligence module\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "9747054b-d62e-478d-975e-76385f764f04",
+"id": "e4b13cbb-5bf5-4e4d-8169-de6d35833068",
 "level": "info",
-"timestamp": 1762055921487000
+"timestamp": 1762057490046000
+},
+{
+"event_message": "📝 Query type: general\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "f05e93e4-a41d-4c6b-b31b-d7e75b795c1c",
+"level": "info",
+"timestamp": 1762057490046000
 },
 {
 "event_message": "🔍 Detected UUID format, searching by organization_id\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "da107e3f-0810-419d-a56d-19d1e5d9d589",
+"id": "1af25046-47aa-47f7-b5f9-2aef8ef98dc6",
 "level": "info",
-"timestamp": 1762055921487000
+"timestamp": 1762057489927000
+},
+{
+"event_message": "🔍 Searching for organization: \"5a8eaca4-ee9a-448a-ab46-1e371c64592f\" (type: string)\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "891c12c0-3adf-4d4a-a774-feaec60b9c1a",
+"level": "info",
+"timestamp": 1762057489926000
 },
 {
 "event_message": "🎯 NIV calling mcp-discovery for: 5a8eaca4-ee9a-448a-ab46-1e371c64592f\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "a8c0919f-f7a1-43dc-8003-de5eedef5d7b",
+"id": "a0982e65-4ec9-49c8-8a6f-9fbd559cc17d",
 "level": "info",
-"timestamp": 1762055921484000
+"timestamp": 1762057489923000
 },
 {
-"event_message": "🤖 NIV Processing: {\n message: \"whats my organization\",\n sessionId: \"niv-1762055702799\",\n stage: \"full\"\n}\n",
+"event_message": "🤖 NIV Processing: {\n message: \"content strategy. but i want this all in a presentation\",\n sessionId: \"niv-1762057130555\",\n stage: \"full\"\n}\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "81fdccc8-9788-4ffb-adae-1ad15f05ed48",
+"id": "14f69455-2fbf-4fe7-ae03-ee80822af538",
 "level": "info",
-"timestamp": 1762055921484000
+"timestamp": 1762057489922000
 },
 {
 "event_message": "Listening on http://localhost:9999/\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "d069721b-b00f-4715-8098-86602e0051f8",
+"id": "1539afb4-396c-41f8-98b8-40aa2e36faa3",
 "level": "info",
-"timestamp": 1762055921478000
+"timestamp": 1762057489914000
 },
 {
-"event_message": "booted (time: 40ms)",
+"event_message": "booted (time: 48ms)",
 "event_type": "Boot",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "9b7fe4f9-f08f-4fb3-bd43-6d287fdc1072",
+"id": "94e31a3a-5262-4f3b-88f4-214b07ac1674",
 "level": "log",
-"timestamp": 1762055921473000
+"timestamp": 1762057489908000
+},
+{
+"event_message": "🧠 Claude understanding: {\n understanding: {\n what_user_wants: \"They want their thought leadership strategy for targeting CFOs as event ROI translator turned into a presentation format\",\n entities: [ \"CFOs\", \"tech companies\", \"event production\", \"ROI measurement\" ],\n timeframe: \"current/strategic\",\n topics: [\n \"CFO thought leadership content strategy\",\n \"event ROI positioning\",\n \"presentation format\"\n ],\n requires_fresh_data: false,\n why_fresh_data: \"This is a request to format existing strategic work into presentation format, not research new information\"\n },\n approach: {\n strategy: \"contextual_response\",\n reasoning: \"User wants to take the strategic direction we've already developed (CFO-focused thought leadership as ROI translator) and format it as a presentation. This is execution/formatting of existing strategy, not new research.\",\n search_query: \"\",\n search_domains: \"quality_first\",\n domain_reasoning: \"No search needed - formatting existing strategic work\",\n confidence: 0.95,\n generate_framework: true,\n framework_reasoning: \"User wants their complete thought leadership strategy converted to presentation format - this requires creating a structured strategic framework document that can be turned into slides\"\n },\n acknowledgment: \"Perfect. Let me structure your complete CFO-focused thought leadership strategy into a presentation format. I'll organize all the strategic elements we've developed - your ROI Translator positioning, CFO market intelligence, content approach, and execution plan - into a comprehensive deck structure.\"\n}\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "b8ac6819-3fde-4393-bfd5-0f82d3bbaa0f",
+"level": "info",
+"timestamp": 1762057489709000
+},
+{
+"event_message": "🎯 Strategy chosen: contextual_response (confidence: 0.95)\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "2dd5c730-c061-4fbc-bc47-5ac66ff640be",
+"level": "info",
+"timestamp": 1762057489709000
+},
+{
+"event_message": "shutdown",
+"event_type": "Shutdown",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "37a401fa-98b5-489d-95e1-42ddcaac282f",
+"level": "log",
+"timestamp": 1762057481018000
+},
+{
+"event_message": "📝 Query type: general\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "19b178c6-031a-4cc9-86e7-e37f0c137da8",
+"level": "info",
+"timestamp": 1762057480645000
+},
+{
+"event_message": "✅ Loaded organization profile: 5a8eaca4-ee9a-448a-ab46-1e371c64592f\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "a00a7d84-5b8d-4273-a626-9d2d3b33ab08",
+"level": "info",
+"timestamp": 1762057480645000
+},
+{
+"event_message": "🎭 Active persona: NIV - Chief Intelligence Analyst for intelligence module\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "3475ddf7-9a1d-4fa3-b0be-93f06d2a54ea",
+"level": "info",
+"timestamp": 1762057480645000
+},
+{
+"event_message": "🏢 Organization context: \"5a8eaca4-ee9a-448a-ab46-1e371c64592f\" (validated)\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "d99bd455-66e5-4b90-aea1-3148e7d9b5df",
+"level": "info",
+"timestamp": 1762057480645000
+},
+{
+"event_message": "✅ Found profile by organization_id: 5a8eaca4-ee9a-448a-ab46-1e371c64592f\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "9cf9be3f-5f10-4ba2-949d-23f26a191e8a",
+"level": "info",
+"timestamp": 1762057480644000
+},
+{
+"event_message": "🔍 Searching for organization: \"5a8eaca4-ee9a-448a-ab46-1e371c64592f\" (type: string)\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "2b46c8c9-9bc8-4a35-a8a3-b06038c93a63",
+"level": "info",
+"timestamp": 1762057480457000
+},
+{
+"event_message": "🔍 Detected UUID format, searching by organization_id\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "dbd11a17-4761-4720-8651-7ff5ef0cc6d4",
+"level": "info",
+"timestamp": 1762057480457000
+},
+{
+"event_message": "🎯 NIV calling mcp-discovery for: 5a8eaca4-ee9a-448a-ab46-1e371c64592f\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "76458b52-a97c-43f3-b6c1-aa5bfda39803",
+"level": "info",
+"timestamp": 1762057480455000
+},
+{
+"event_message": "🤖 NIV Processing: {\n message: \"content strategy. but i want this all in a presentation\",\n sessionId: \"niv-1762057130555\",\n stage: \"acknowledge\"\n}\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "a9d7579a-8923-45e6-b3a0-daefd7db689c",
+"level": "info",
+"timestamp": 1762057480454000
+},
+{
+"event_message": "Listening on http://localhost:9999/\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "d9e2bde7-1a97-475d-86ac-8fe842c723d6",
+"level": "info",
+"timestamp": 1762057480448000
+},
+{
+"event_message": "booted (time: 36ms)",
+"event_type": "Boot",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "95389481-fb30-47e0-b09b-f4975de35890",
+"level": "log",
+"timestamp": 1762057480443000
+},
+{
+"event_message": "✅ NIV Response generated: { type: \"simple\", formatted: false }\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "2c045089-f3ac-4472-8f14-87451616e3e5",
+"level": "info",
+"timestamp": 1762057448462000
+},
+{
+"event_message": "🔢 Token count validation: System=7497, Message=1958, Total=9455\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "dafcd634-8a44-4586-81f7-b2aed5317973",
+"level": "info",
+"timestamp": 1762057436372000
+},
+{
+"event_message": " Industry: I don't have access to a database or system that would allow me to look up company information based on that UUID identifier. I cannot determine the primary industry for company \"5a8eaca4-ee9a-448a-ab46\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "5cf5942c-59d6-4b08-ab9c-7f1e1626e04d",
+"level": "info",
+"timestamp": 1762057436371000
+},
+{
+"event_message": "🤖 Claude says do research first, not framework\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "a033b7df-fda2-4584-87ce-6d5f54b9a9ea",
+"level": "info",
+"timestamp": 1762057436371000
+},
+{
+"event_message": "📊 Concept State - Stage: exploring, Confidence: 0%\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "9a134e5a-ab82-47dc-afad-09cf4d9a53a9",
+"level": "info",
+"timestamp": 1762057436371000
+},
+{
+"event_message": "📊 Research accumulated: 1 rounds\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "074d011a-da78-49c3-96e3-da659c3ef2a4",
+"level": "info",
+"timestamp": 1762057436371000
+},
+{
+"event_message": "🎯 Framework generation decision: false\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "675345c6-e37c-4ff6-bd14-5f95290a011a",
+"level": "info",
+"timestamp": 1762057436371000
+},
+{
+"event_message": " Keywords: 5a8eaca4-ee9a-448a-ab46-1e371c64592f\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "e215de54-0262-4205-87f0-277e84b77173",
+"level": "info",
+"timestamp": 1762057436371000
+},
+{
+"event_message": " Competitors: \n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "64a2c669-9f21-496a-960f-403f72dd9eaa",
+"level": "info",
+"timestamp": 1762057436371000
+},
+{
+"event_message": "🎯 Using organization profile: 5a8eaca4-ee9a-448a-ab46-1e371c64592f\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "7fdefa58-9e0d-445d-92d6-786054b2d8d6",
+"level": "info",
+"timestamp": 1762057436371000
+},
+{
+"event_message": "🎯 Loaded profile for 5a8eaca4-ee9a-448a-ab46-1e371c64592f: 0 competitors, 1 keywords\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "c2fd9c96-fd5c-426f-8717-76efea45e810",
+"level": "info",
+"timestamp": 1762057436371000
+},
+{
+"event_message": "✅ Firecrawl returned 10 results\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "da3fb663-52c7-42fa-9615-ea4752c3c991",
+"level": "info",
+"timestamp": 1762057436298000
+},
+{
+"event_message": "✅ Completed step step-1: CFO priorities tech companies marketing budget ROI...\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "5ffa2da3-c7c6-402c-82f9-e0be7cf0dc7a",
+"level": "info",
+"timestamp": 1762057436298000
+},
+{
+"event_message": "📊 Research complete - preparing intelligence for response...\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "ffcbd2b7-3abc-4255-b756-b58839277884",
+"level": "info",
+"timestamp": 1762057436298000
+},
+{
+"event_message": "🔍 Orchestrated research complete: 10 articles, 2 findings\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "605e13d8-6b79-409d-bda9-7c456e7bf3da",
+"level": "info",
+"timestamp": 1762057436298000
+},
+{
+"event_message": "🔬 Using FireSearch for initial-scan\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "d0dea102-2847-4747-a05d-bb15002bd336",
+"level": "info",
+"timestamp": 1762057427519000
+},
+{
+"event_message": "🔍 Executing research step: initial-scan - CFO priorities tech companies marketing budget ROI measurement 2025\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "cecd4e49-0989-474e-84f7-c4bc71164ab1",
+"level": "info",
+"timestamp": 1762057427519000
+},
+{
+"event_message": "🔬 Orchestration calling FireSearch for: \"CFO priorities tech companies marketing budget ROI...\"\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "71897c1a-6bb8-4746-a694-e49bc2335e63",
+"level": "info",
+"timestamp": 1762057427519000
+},
+{
+"event_message": "📋 Research plan created: 1 steps\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "a299de01-8bd2-40e7-acf9-144a43a15bda",
+"level": "info",
+"timestamp": 1762057427518000
+},
+{
+"event_message": "🤖 Query requires multi-step orchestration...\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "221953b2-52cd-4214-9ffc-136192d45e9d",
+"level": "info",
+"timestamp": 1762057427470000
+},
+{
+"event_message": "🔍 Using research query: \"CFO priorities tech companies marketing budget ROI measurement 2025...\"\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "105240a3-86e7-4135-8dad-89df5b4588be",
+"level": "info",
+"timestamp": 1762057427470000
+},
+{
+"event_message": "🧠 Claude understanding: {\n understanding: {\n what_user_wants: \"User wants to target CFOs directly with their 'ROI Translator' thought leadership positioning in tech event production\",\n entities: [ \"CFOs\", \"finance leaders\", \"tech companies\", \"event production\" ],\n timeframe: \"latest\",\n topics: [\n \"CFO priorities 2025\",\n \"tech company budget allocation\",\n \"event marketing ROI measurement\",\n \"finance leader pain points\",\n \"marketing budget justification\"\n ],\n requires_fresh_data: true,\n why_fresh_data: \"Need current CFO priorities, budget allocation trends, and how finance leaders are evaluating marketing investments in 2025\"\n },\n approach: {\n strategy: \"fireplexity_targeted\",\n reasoning: \"Need fresh intelligence on current CFO priorities, tech company budget dynamics, and how finance leaders are approaching marketing ROI in 2025 to build effective thought leadership strategy\",\n search_query: \"CFO priorities tech companies marketing budget ROI measurement 2025\",\n search_domains: \"quality_first\",\n domain_reasoning: \"CFO insights typically come from business publications, research firms, and industry reports - quality sources first but may need to expand for specialized finance/marketing intersection data\",\n confidence: 0.9,\n generate_framework: false,\n framework_reasoning: \"User is confirming strategic direction - need research on CFO landscape first before building complete thought leadership framework\"\n },\n acknowledgment: \"Excellent strategic choice. Going directly to CFOs changes everything - let me research current CFO priorities and how finance leaders are evaluating marketing investments in tech companies right now.\"\n}\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "a2298ff3-ee3d-4f8e-b129-5f4d17c1423c",
+"level": "info",
+"timestamp": 1762057427469000
+},
+{
+"event_message": "🎯 Strategy chosen: fireplexity_targeted (confidence: 0.9)\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "26a1611f-6368-415e-abdf-eb33c78475c2",
+"level": "info",
+"timestamp": 1762057427469000
+},
+{
+"event_message": "📝 Query type: articles\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "b884c967-2769-4079-bb38-5fd5782e4a30",
+"level": "info",
+"timestamp": 1762057417682000
+},
+{
+"event_message": "🏢 Organization context: \"5a8eaca4-ee9a-448a-ab46-1e371c64592f\" (validated)\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "d7864210-4145-4046-b635-b8bc92601eaf",
+"level": "info",
+"timestamp": 1762057417681000
+},
+{
+"event_message": "🎭 Active persona: NIV - Chief Intelligence Analyst for intelligence module\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "c03137a7-d5a2-47c1-839a-2b69dddafec0",
+"level": "info",
+"timestamp": 1762057417681000
+},
+{
+"event_message": "✅ Loaded organization profile: 5a8eaca4-ee9a-448a-ab46-1e371c64592f\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "7c44dd35-1461-4c10-b2ef-2c84187fa7ac",
+"level": "info",
+"timestamp": 1762057417681000
+},
+{
+"event_message": "✅ Found profile by organization_id: 5a8eaca4-ee9a-448a-ab46-1e371c64592f\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "95aa5ac4-8d70-48f8-91ce-cdc7cfa7e4e5",
+"level": "info",
+"timestamp": 1762057417681000
+},
+{
+"event_message": "🔍 Searching for organization: \"5a8eaca4-ee9a-448a-ab46-1e371c64592f\" (type: string)\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "06840e8c-5957-4cf4-a3b1-3582b42b1f5f",
+"level": "info",
+"timestamp": 1762057417541000
+},
+{
+"event_message": "🔍 Detected UUID format, searching by organization_id\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "1dc4564f-8cb1-4038-9845-dcd0e2ac6794",
+"level": "info",
+"timestamp": 1762057417541000
+},
+{
+"event_message": "🎯 NIV calling mcp-discovery for: 5a8eaca4-ee9a-448a-ab46-1e371c64592f\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "b88f9495-663a-4bd4-8c10-2b3d73db4fe7",
+"level": "info",
+"timestamp": 1762057417538000
+},
+{
+"event_message": "🤖 NIV Processing: {\n message: \"directly to CFOs\",\n sessionId: \"niv-1762057130555\",\n stage: \"full\"\n}\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "bf70a198-bbaa-4cf6-9300-d7c60abfa428",
+"level": "info",
+"timestamp": 1762057417538000
+},
+{
+"event_message": "Listening on http://localhost:9999/\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "230b2a2e-763f-47cf-a55c-3e82f91bcc11",
+"level": "info",
+"timestamp": 1762057417531000
+},
+{
+"event_message": "booted (time: 36ms)",
+"event_type": "Boot",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "1f6fb984-247e-4a6e-9fbb-bc503f2e0e70",
+"level": "log",
+"timestamp": 1762057417526000
+},
+{
+"event_message": "🎯 Strategy chosen: fireplexity_targeted (confidence: 0.9)\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "0d1f2c57-c962-4735-8aeb-16083b4fbb43",
+"level": "info",
+"timestamp": 1762057417336000
+},
+{
+"event_message": "🧠 Claude understanding: {\n understanding: {\n what_user_wants: \"Strategic guidance for positioning as ROI Translator directly to CFOs rather than marketing leaders - needs CFO priorities, pain points, and communication preferences in tech companies\",\n entities: [ \"CFOs\", \"tech companies\", \"finance leaders\", \"boards\" ],\n timeframe: \"latest\",\n topics: [\n \"CFO priorities in tech 2025\",\n \"finance leader pain points\",\n \"budget approval processes\",\n \"ROI measurement requirements\",\n \"board reporting expectations\"\n ],\n requires_fresh_data: true,\n why_fresh_data: \"Need current CFO priorities and finance trends in tech sector for 2025 to build accurate targeting strategy\"\n },\n approach: {\n strategy: \"fireplexity_targeted\",\n reasoning: \"Need fresh intelligence on current CFO priorities, budget processes, and pain points in tech companies to strategically position the ROI Translator angle\",\n search_query: \"tech CFO priorities budget approval ROI measurement challenges 2025\",\n search_domains: \"quality_first\",\n domain_reasoning: \"CFO insights likely in business publications, finance trade journals, and executive research - quality sources first but may need broader search for specific pain points\",\n confidence: 0.9,\n generate_framework: false,\n framework_reasoning: \"User is clarifying target audience direction, not requesting a complete strategic framework yet - needs research first to build the positioning\"\n },\n acknowledgment: \"Excellent strategic choice. Going direct to CFOs changes everything - let me research current CFO priorities and pain points in tech to build your direct-to-finance positioning strategy.\"\n}\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "8771136e-1ed8-4dc4-8754-1819dba93308",
+"level": "info",
+"timestamp": 1762057417336000
+},
+{
+"event_message": "✅ Loaded organization profile: 5a8eaca4-ee9a-448a-ab46-1e371c64592f\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "ff69d453-ff68-48a5-8454-6beb45699df3",
+"level": "info",
+"timestamp": 1762057406444000
+},
+{
+"event_message": "🏢 Organization context: \"5a8eaca4-ee9a-448a-ab46-1e371c64592f\" (validated)\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "ba2f3d88-6811-46c9-8ef5-499e0bbed006",
+"level": "info",
+"timestamp": 1762057406444000
+},
+{
+"event_message": "🎭 Active persona: NIV - Chief Intelligence Analyst for intelligence module\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "f7df8a02-0926-4bab-b53f-a80de85e6e1b",
+"level": "info",
+"timestamp": 1762057406444000
+},
+{
+"event_message": "📝 Query type: articles\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "a7a5a360-7775-4775-a513-058084943aec",
+"level": "info",
+"timestamp": 1762057406444000
+},
+{
+"event_message": "✅ Found profile by organization_id: 5a8eaca4-ee9a-448a-ab46-1e371c64592f\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "3dae9f71-d0c8-4e10-8acd-cf4c9bbfe8b9",
+"level": "info",
+"timestamp": 1762057406444000
+},
+{
+"event_message": "🔍 Searching for organization: \"5a8eaca4-ee9a-448a-ab46-1e371c64592f\" (type: string)\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "02aa03ee-132b-42f1-b797-e7aa37f3a1b6",
+"level": "info",
+"timestamp": 1762057406291000
+},
+{
+"event_message": "🔍 Detected UUID format, searching by organization_id\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "f89f432c-a043-45ee-b9f3-7a5c0359ddd1",
+"level": "info",
+"timestamp": 1762057406291000
+},
+{
+"event_message": "🤖 NIV Processing: {\n message: \"directly to CFOs\",\n sessionId: \"niv-1762057130555\",\n stage: \"acknowledge\"\n}\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "af489f84-7d08-4729-aaf0-b6fe72dd0b81",
+"level": "info",
+"timestamp": 1762057406287000
+},
+{
+"event_message": "🎯 NIV calling mcp-discovery for: 5a8eaca4-ee9a-448a-ab46-1e371c64592f\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "687f6eb3-6231-45de-b069-001f6e2b5bf0",
+"level": "info",
+"timestamp": 1762057406287000
+},
+{
+"event_message": "Listening on http://localhost:9999/\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "f4c806b2-19fc-4f1b-b767-6569a946c032",
+"level": "info",
+"timestamp": 1762057406281000
+},
+{
+"event_message": "booted (time: 37ms)",
+"event_type": "Boot",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "3cffd824-2d5d-4421-8e21-aad3a650bcd9",
+"level": "log",
+"timestamp": 1762057406276000
+},
+{
+"event_message": "shutdown",
+"event_type": "Shutdown",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "074f4fbd-e0c2-4e4b-bbf5-2628cd218182",
+"level": "log",
+"timestamp": 1762057354772000
+},
+{
+"event_message": "shutdown",
+"event_type": "Shutdown",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "f3f1b49f-bacf-4b27-8c60-b8e5e360aee9",
+"level": "log",
+"timestamp": 1762057343851000
 }
 ]

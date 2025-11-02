@@ -2,6 +2,11 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 import { NIV_CONTENT_SYSTEM_PROMPT } from './system-prompt.ts'
+import {
+  decomposeQuery,
+  orchestrateResearch,
+  type ResearchPlan
+} from './self-orchestration.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -1508,41 +1513,89 @@ ${campaignContext.timeline || 'Not specified'}
     if (needsResearch) {
       console.log('🔍 Research needed...')
 
-      // Construct proper search query from understanding, not user's conversational message
-      // CRITICAL: Only use topics for research queries, NOT entities (which include org name)
-      // If we search for "Amplify tech events" we get wrong company data
-      // Instead search for "tech event production trends" to get market intelligence
-      const topics = understanding.understanding?.topics || []
+      // CRITICAL: Use Claude's search_query from understanding (includes year, temporal context, etc.)
+      // This is what NIV Advisor does - Claude builds the query, NOT code
+      let researchQuery = understanding.understanding?.search_query || ''
 
-      // Build search query from topics ONLY (no organization name)
-      let researchQuery = ''
-      if (topics.length > 0) {
-        researchQuery = topics.slice(0, 5).join(' ')  // Top 5 topics for comprehensive search
+      // Fallback: Build from topics if Claude didn't provide search_query
+      if (!researchQuery.trim()) {
+        const topics = understanding.understanding?.topics || []
+        if (topics.length > 0) {
+          researchQuery = topics.slice(0, 5).join(' ')
+        }
       }
 
-      // Fallback to message if we have no topics
+      // Last fallback to message if we have nothing
       if (!researchQuery.trim()) {
         researchQuery = message
       }
 
       console.log(`🔍 Research query: "${researchQuery.trim()}"`)
 
-      researchResults = await executeResearch(researchQuery.trim(), organizationId)
+      // Use orchestrated multi-step research (like NIV Advisor)
+      try {
+        // Decompose query into research steps
+        const researchPlan = await decomposeQuery(researchQuery.trim(), {organizationId}, ANTHROPIC_API_KEY)
+        console.log(`📋 Research plan created: ${researchPlan.steps.length} steps`)
 
-      // Check if research actually returned results
-      if (researchResults.articles?.length > 0) {
-        console.log(`✅ Research complete: ${researchResults.articles.length} articles`)
-        freshResearch = true  // Mark as fresh
-        // Update conversation state with research
+        // Define firesearch tool for orchestration
+        const firesearchTool = async (query: string) => {
+          console.log(`🔬 Orchestration calling Firecrawl for: "${query.substring(0, 50)}..."`)
+          return await executeSimpleFirecrawl(query, organizationId)
+        }
+
+        // Execute orchestrated research
+        const orchestrationResult = await orchestrateResearch(
+          researchPlan,
+          {organizationId},
+          { firesearch: firesearchTool },
+          ANTHROPIC_API_KEY,
+          orgProfile.organizationName
+        )
+
+        console.log(`🔍 Orchestrated research complete: ${orchestrationResult.allArticles.length} articles`)
+
+        // Format results like NIV Advisor
+        const keyFindings = orchestrationResult.allArticles.slice(0, 10).map(article => {
+          const title = (article.title || 'Article').replace(/\s+/g, ' ').trim()
+          const description = (article.description || '').replace(/\s+/g, ' ').trim().substring(0, 200)
+          return description
+            ? `**${title}** - ${description}${description.length >= 200 ? '...' : ''}`
+            : `**${title}**`
+        }).filter(f => f)
+
+        researchResults = {
+          articles: orchestrationResult.allArticles,
+          synthesis: orchestrationResult.synthesis || '',
+          keyFindings: keyFindings,
+          methodology: 'orchestrated_multi_step',
+          stepsCompleted: researchPlan.steps.length,
+          searchQueries: researchPlan.steps.map(s => s.query)
+        }
+
+        console.log(`✅ Research complete: ${researchResults.articles.length} articles, ${keyFindings.length} findings`)
+        freshResearch = true
         updateConversationState(conversationId, '', 'assistant', undefined, researchResults)
         conversationState.researchResults = researchResults
-        conversationState.stage = 'research_review'  // Move to research review stage
-      } else {
-        console.log('⚠️ Research returned no results or timed out - proceeding without research')
-        researchTimedOut = true
-        researchResults = null; // Treat as if no research was done
-        // DON'T change stage - just continue with the request
-        // User doesn't need to know research failed, NIV will just create based on general knowledge
+        conversationState.stage = 'research_review'
+
+      } catch (error) {
+        console.error('⚠️ Orchestrated research failed:', error)
+        // Fallback to simple research
+        console.log('🔄 Falling back to simple Firecrawl search...')
+        researchResults = await executeResearch(researchQuery.trim(), organizationId)
+
+        if (researchResults.articles?.length > 0) {
+          console.log(`✅ Fallback research complete: ${researchResults.articles.length} articles`)
+          freshResearch = true
+          updateConversationState(conversationId, '', 'assistant', undefined, researchResults)
+          conversationState.researchResults = researchResults
+          conversationState.stage = 'research_review'
+        } else {
+          console.log('⚠️ Research returned no results - proceeding without research')
+          researchTimedOut = true
+          researchResults = null
+        }
       }
     }
 
@@ -1569,13 +1622,19 @@ ${campaignContext.timeline || 'Not specified'}
 
     // Call Claude for natural conversation with tool support
     // Pass research, and add instruction about whether to present findings or create outline
+    // Use Sonnet for strategy phases: presenting research, early conversation, research_review stage
+    const isStrategyPhase = shouldPresentResearchFirst ||
+                           conversationState.stage === 'research_review' ||
+                           conversationHistory.length < 4  // Early conversation needs strategic thinking
+
     const claudeResponseData = await callClaude(
       conversationContext,
       freshResearch ? researchResults : conversationState.researchResults,  // Use fresh or stored research
       orgProfile,
       conversationState,
       conversationHistory,  // Pass full conversation history
-      shouldPresentResearchFirst  // Tell Claude to present findings first
+      shouldPresentResearchFirst,  // Tell Claude to present findings first
+      isStrategyPhase  // Use Sonnet for strategy/research phases
     )
 
     console.log('✅ Claude response generated')
@@ -3249,7 +3308,17 @@ async function getClaudeUnderstanding(
     }
   })
 
+  const currentYear = new Date().getFullYear()
+  const currentDate = new Date().toISOString().split('T')[0]
+
   const understandingPrompt = `You are NIV, a helpful content consultant who assists users with their requests.
+
+**CRITICAL - CURRENT DATE & YEAR AWARENESS:**
+- TODAY IS: ${currentDate}
+- CURRENT YEAR: ${currentYear}
+- **YOU MUST INCLUDE "${currentYear}" IN EVERY SEARCH QUERY FOR TOPICS** (prevents old 2024/2023 results)
+- Example: NOT "tech event production trends" → CORRECT: "tech event production trends ${currentYear}"
+- Example: NOT "AI healthcare market" → CORRECT: "AI healthcare market ${currentYear}"
 
 IMPORTANT: If the user asks for an image (e.g., "create an image of...", "I need a visual of...", "generate an image..."), you should acknowledge that you can help with that. Do NOT refuse or lecture about being a "strategic consultant". Just acknowledge you'll help create the image.
 
@@ -3300,15 +3369,25 @@ Analyze this request to understand what content they need and how to help them:
 4. What entities (companies, products, people) are mentioned?
 5. What topics or themes should I focus on?
 
+**CRITICAL - IF FRESH DATA IS NEEDED, BUILD RESEARCH QUERY:**
+- **ALWAYS include "${currentYear}" in topics**
+- For "recent/latest": Add "past 2 weeks" or "last month" for precision
+- DON'T focus only on "announcements" - tech news breaks via LEAKS, RUMORS, PREVIEWS, API changes
+- Example GOOD: "AI healthcare regulations past 30 days ${currentYear}"
+- Example GOOD: "tech event spending trends corporate ${currentYear}"
+- Example BAD: "AI healthcare" (no timeframe, no year)
+- Example BAD: "tech events" (too generic, no year)
+
 Respond with JSON only:
 {
   "understanding": {
     "what_user_wants": "brief description of what they're asking for",
     "content_type": "media-plan|presentation|social-post|press-release|image|other",
     "entities": ["companies", "people", "products mentioned"],
-    "topics": ["specific topics they care about"],
+    "topics": ["specific topics with ${currentYear} if research needed - be VERY specific"],
     "requires_fresh_data": true/false,
-    "why_fresh_data": "explanation if true"
+    "why_fresh_data": "explanation if true",
+    "search_query": "IF requires_fresh_data is true: complete search query with temporal context and ${currentYear}, OTHERWISE: empty string"
   },
   "approach": {
     "needs_strategy_help": true/false,
@@ -3490,7 +3569,8 @@ async function callClaude(
   orgProfile: any,
   conversationState: ConversationState,
   conversationHistory: any[] = [],
-  shouldPresentResearchFirst: boolean = false
+  shouldPresentResearchFirst: boolean = false,
+  useStrategyModel: boolean = false
 ): Promise<any> {
   // Build system prompt with organization context
   const enhancedSystemPrompt = NIV_CONTENT_SYSTEM_PROMPT + `
@@ -3620,7 +3700,13 @@ ${context}`
     content: currentUserMessage
   })
 
+  // Use Sonnet for strategy/research phases (like NIV Advisor), Haiku for simple generation
+  // Strategy phases: presenting research, discussing approaches, choosing angles
+  // Simple generation: creating single content pieces after decisions are made
+  const model = useStrategyModel ? 'claude-sonnet-4-20250514' : 'claude-haiku-4-5-20251001'
+
   console.log('📤 Sending to Claude:', {
+    model: model,
     messageCount: messages.length,
     lastMessage: messages[messages.length - 1].content.substring(0, 100)
   })
@@ -3633,7 +3719,7 @@ ${context}`
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
+      model,
       max_tokens: 4096,  // Increased from 2000 - tool calls need more space
       system: enhancedSystemPrompt,
       messages: messages,
@@ -3647,6 +3733,78 @@ ${context}`
 
   const data = await response.json()
   return data // Return full response object, not just text
+}
+
+// Helper: Simple Firecrawl call for orchestration (no retries, just one call)
+async function executeSimpleFirecrawl(query: string, organizationId: string) {
+  console.log(`🔥 Simple Firecrawl: "${query.substring(0, 80)}..."`)
+
+  try {
+    const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY') || 'fc-3048810124b640eb99293880a4ab25d0'
+    const FIRECRAWL_BASE_URL = 'https://api.firecrawl.dev/v2'
+
+    // Determine timeframe
+    let timeframe = 'week'
+    const queryLower = query.toLowerCase()
+    if (queryLower.match(/breaking|just|today|current|right now|this morning/i)) {
+      timeframe = 'current'
+    } else if (queryLower.match(/latest|recent|new/i)) {
+      timeframe = 'recent'
+    } else if (queryLower.match(/this month|past month|market share|revenue|analysis|landscape|positioning/i)) {
+      timeframe = 'month'
+    }
+
+    const tbsMap: Record<string, string> = {
+      'current': 'qdr:h',
+      'recent': 'qdr:d3',
+      'week': 'qdr:w',
+      'month': 'qdr:m',
+    }
+    const tbs = tbsMap[timeframe] || 'qdr:d3'
+
+    const response = await fetch(`${FIRECRAWL_BASE_URL}/search`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        query: query,
+        limit: 10,
+        tbs,
+        scrapeOptions: {
+          formats: ['markdown'],
+          onlyMainContent: true
+        }
+      })
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      if (data.success) {
+        const webResults = data.data?.web || []
+        const newsResults = data.data?.news || []
+        const allResults = [...webResults, ...newsResults]
+
+        return allResults.map(result => ({
+          title: result.title || 'Untitled',
+          description: result.description || '',
+          url: result.url,
+          content: result.markdown || result.description || '',
+          source: {
+            name: result.url ? extractSourceName(result.url) : 'Unknown',
+            domain: result.url ? extractDomain(result.url) : ''
+          },
+          publishedAt: result.publishedTime || new Date().toISOString(),
+          relevanceScore: result.score || 50
+        }))
+      }
+    }
+  } catch (error) {
+    console.error(`⚠️ Simple Firecrawl failed:`, error.message)
+  }
+
+  return []
 }
 
 // Helper: Execute research via Fireplexity (DIRECT - like niv-orchestrator-robust)
