@@ -963,6 +963,137 @@ serve(async (req) => {
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
+    // GENERATE PRESENTATION DIRECT - Button-triggered generation with stored outline
+    if (effectiveStage === 'generate_presentation_direct') {
+      console.log('🎨 Direct presentation generation triggered from button')
+      const presentationOutline = requestBody.presentationOutline
+
+      if (!presentationOutline) {
+        console.error('❌ No presentation outline provided')
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'No presentation outline provided'
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      // Update conversation state
+      conversationState.stage = 'generation'
+      conversationState.approvedStrategy = presentationOutline
+
+      const outline = presentationOutline
+      const currentDate = new Date().toISOString().split('T')[0]
+      const currentYear = new Date().getFullYear()
+
+      // Get research data if available
+      const researchData = conversationState.researchResults
+      let researchSection = ''
+
+      if (researchData && (researchData.keyFindings?.length > 0 || researchData.synthesis)) {
+        researchSection = `\n**CRITICAL: Use this research data in your presentation:**\n\n`
+        if (researchData.synthesis) {
+          researchSection += `**Overview:** ${researchData.synthesis}\n\n`
+        }
+        if (researchData.keyFindings && researchData.keyFindings.length > 0) {
+          researchSection += `**Key Facts & Data Points (incorporate these into slides):**\n`
+          researchData.keyFindings.forEach((finding: string, i: number) => {
+            researchSection += `${i + 1}. ${finding}\n`
+          })
+          researchSection += '\n'
+        }
+        researchSection += `**INSTRUCTION:** Integrate the above facts, statistics, and insights throughout the presentation. Use specific data points to support key messages. Make the presentation data-driven and credible.\n\n`
+      }
+
+      const gammaPrompt = `**CURRENT DATE: ${currentDate}**
+**CURRENT YEAR: ${currentYear}**
+
+IMPORTANT: This presentation is being created in ${currentYear}. Use current data and avoid referencing outdated information from before 2024.
+${researchSection}
+Create a ${outline.slide_count || 10}-slide presentation on "${outline.topic}" for ${outline.audience}.
+
+Purpose: ${outline.purpose}
+
+Key Messages:
+${outline.key_messages.map((m: string, i: number) => `${i + 1}. ${m}`).join('\n')}
+
+Slide Structure:
+${outline.sections.map((section: any, i: number) => `
+Slide ${i + 1}: ${section.title}
+Content: ${section.talking_points.join('; ')}
+Visual: ${section.visual_suggestion}
+`).join('\n')}
+
+Style: Professional, clean design with visuals supporting each key point. Use specific data and facts from the research provided above.
+
+REMINDER: Current date is ${currentDate}. Ensure all data references and examples are from 2024-${currentYear}. Incorporate the research findings listed above into relevant slides.`
+
+      console.log('📊 Built Gamma prompt for direct generation')
+
+      try {
+        const requestBody = {
+          title: outline.topic,
+          topic: outline.topic,
+          content: gammaPrompt,
+          format: 'presentation',
+          slideCount: outline.slide_count || 10,
+          options: {
+            audience: outline.audience,
+            tone: outline.purpose
+          },
+          capture: true,
+          organization_id: organizationId,
+          campaign_id: null
+        }
+
+        console.log('📤 Sending to Gamma:', {
+          title: requestBody.title,
+          slideCount: requestBody.slideCount
+        })
+
+        // Call Gamma presentation service
+        const gammaResponse = await fetch(
+          `${SUPABASE_URL}/functions/v1/gamma-presentation`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+            },
+            body: JSON.stringify(requestBody)
+          }
+        )
+
+        if (!gammaResponse.ok) {
+          const errorText = await gammaResponse.text()
+          console.error('❌ Gamma API error:', errorText)
+          throw new Error(`Gamma generation failed: ${gammaResponse.statusText}`)
+        }
+
+        const gammaData = await gammaResponse.json()
+        console.log('✅ Gamma response:', gammaData)
+
+        return new Response(JSON.stringify({
+          success: true,
+          presentationUrl: gammaData.url || gammaData.webUrl,
+          message: 'Presentation generated successfully!',
+          conversationId
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+      } catch (error) {
+        console.error('❌ Direct presentation generation failed:', error)
+        return new Response(JSON.stringify({
+          success: false,
+          error: error.message,
+          conversationId
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+    }
+
     // CAMPAIGN GENERATION STAGE - Use NIV's intelligence for strategic content
     // Note: effectiveStage can be auto-detected based on message markers or campaignContext
     if (effectiveStage === 'campaign_generation' && (requestBody.campaignContext || hasCampaignContext)) {

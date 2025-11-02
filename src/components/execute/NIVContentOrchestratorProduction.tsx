@@ -2322,18 +2322,81 @@ IMPORTANT:
                 {msg.metadata?.showPresentationActions && msg.metadata?.presentationOutline && (
                   <div className="flex gap-2 mt-4 pt-3 border-t border-gray-700">
                     <button
-                      onClick={() => {
-                        setInput('Looks great! Generate the presentation in Gamma')
-                        // Auto-submit
-                        setTimeout(() => {
-                          const submitBtn = document.querySelector('button[type="submit"]') as HTMLButtonElement
-                          submitBtn?.click()
-                        }, 100)
+                      onClick={async () => {
+                        try {
+                          setIsLoading(true)
+                          addMessage({
+                            role: 'assistant',
+                            content: '🎨 Generating your presentation in Gamma...',
+                            timestamp: new Date()
+                          })
+
+                          // Directly call the backend with the stored outline
+                          const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/niv-content-intelligent-v2`, {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`
+                            },
+                            body: JSON.stringify({
+                              stage: 'generate_presentation_direct',
+                              conversationId: conversationId,
+                              message: 'Generate presentation',
+                              presentationOutline: msg.metadata.presentationOutline,
+                              organizationContext: {
+                                organizationId: organization?.id,
+                                organizationName: organization?.name || 'Unknown',
+                                industry: organization?.industry || 'Technology'
+                              }
+                            })
+                          })
+
+                          if (!response.ok) {
+                            throw new Error('Failed to generate presentation')
+                          }
+
+                          const data = await response.json()
+
+                          if (data.success && data.presentationUrl) {
+                            addMessage({
+                              role: 'assistant',
+                              content: `✅ Presentation generated successfully!\n\n[View in Gamma](${data.presentationUrl})`,
+                              timestamp: new Date(),
+                              contentItem: {
+                                type: 'presentation',
+                                content: data.presentationUrl,
+                                metadata: {
+                                  gammaUrl: data.presentationUrl,
+                                  outline: msg.metadata.presentationOutline
+                                }
+                              }
+                            })
+                          }
+                        } catch (error) {
+                          console.error('❌ Generation error:', error)
+                          addMessage({
+                            role: 'assistant',
+                            content: '❌ Failed to generate presentation. Please try again.',
+                            timestamp: new Date()
+                          })
+                        } finally {
+                          setIsLoading(false)
+                        }
                       }}
-                      className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-sm rounded-md flex items-center gap-2 font-medium"
+                      disabled={isLoading}
+                      className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-sm rounded-md flex items-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <Presentation className="w-4 h-4" />
-                      Generate in Gamma
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Presentation className="w-4 h-4" />
+                          Generate in Gamma
+                        </>
+                      )}
                     </button>
                     <button
                       onClick={() => {
