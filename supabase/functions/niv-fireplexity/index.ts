@@ -218,7 +218,41 @@ async function performIntelligentSearch(
         scrapeOptions: {
           formats: ['markdown'],
           onlyMainContent: true, // Filter out navigation and ads
-          maxAge: maxAge // Dynamic maxAge based on time filter
+          maxAge: maxAge, // Dynamic maxAge based on time filter
+          // Extract structured intelligence instead of full markdown
+          extract: {
+            schema: {
+              title: {
+                type: 'string',
+                description: 'Article title'
+              },
+              key_points: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Main points and takeaways from the article (3-5 bullets)'
+              },
+              quotes: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Important quotes from executives, experts, or key sources'
+              },
+              metrics: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Key statistics, numbers, percentages, or data points mentioned'
+              },
+              companies_mentioned: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Companies or organizations mentioned'
+              },
+              date_published: {
+                type: 'string',
+                description: 'Publication date if available'
+              }
+            },
+            systemPrompt: 'Extract key intelligence from this article. Focus on factual information, data points, quotes, and strategic insights. Ignore navigation, ads, and boilerplate content.'
+          }
         }
       }
 
