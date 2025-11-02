@@ -3,320 +3,408 @@
 "event_message": "✅ NIV Response generated: { type: \"simple\", formatted: true }\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "3622ca38-2195-49f0-b2bb-c8d073dfd305",
+"id": "b5888aa5-659f-474d-bd27-00b8663dfa06",
 "level": "info",
-"timestamp": 1762114086119000
+"timestamp": 1762116560147000
 },
 {
-"event_message": "🔍 AFTER Contains \\n\\n? false\n",
+"event_message": "🔍 AFTER formatNivResponse (first 500 chars): **Current Intelligence Brief on CEO Visibility in EdTech**\n\nBased on my research, here's what's happening in the CEO visibility space right now: **Key Pattern: The \"Consistent Executive Content\" Movement**\n\nI'm seeing a clear shift where successful executives are treating visibility as a **career strategy, not a campaign**. Steven Piessens nailed it - too many CEOs post for 3 months then disappear for 6. The executives who are winning are the ones with disciplined, weekly content rhythms. **EdTe\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "640c5431-5e15-4428-84ec-fb181359fb7c",
+"id": "3737f29a-0923-464a-abd8-4cea65cf94c1",
 "level": "info",
-"timestamp": 1762114086118000
+"timestamp": 1762116560147000
+},
+{
+"event_message": "🔍 AFTER Contains \\n\\n? true\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "a7482a18-a8a5-4abb-b2c0-2f090bf99218",
+"level": "info",
+"timestamp": 1762116560147000
 },
 {
 "event_message": "🔍 BEFORE Contains \\n\\n? false\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "897965b9-fe10-4a0c-b5da-caac085eaf49",
+"id": "95cc04b0-6d1a-406d-8bc9-95cfe11ab133",
 "level": "info",
-"timestamp": 1762114086118000
+"timestamp": 1762116560146000
 },
 {
-"event_message": "🔍 AFTER formatNivResponse (first 500 chars): **Research Findings: Tech Event Production Landscape** Based on my intelligence gathering, I'm seeing an interesting gap in the market that could be significant for undefined's positioning. **Key Industry Developments:** • **Premium positioning trend** - Top tech companies are spending 40% more on experiential marketing in 2025, with events becoming the primary vehicle for thought leadership • **AI-focused events dominating** - Seattle AI Week drawing 3,500+ attendees across 50 events shows mass\n",
+"event_message": "🔍 BEFORE formatNivResponse (first 500 chars): **Current Intelligence Brief on CEO Visibility in EdTech** Based on my research, here's what's happening in the CEO visibility space right now: **Key Pattern: The \"Consistent Executive Content\" Movement** I'm seeing a clear shift where successful executives are treating visibility as a **career strategy, not a campaign**. Steven Piessens nailed it - too many CEOs post for 3 months then disappear for 6. The executives who are winning are the ones with disciplined, weekly content rhythms. **EdTech\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "82605423-4f01-4d5b-a7da-8e10fb048dbf",
+"id": "9a9e1616-9544-431e-a1c5-bff90d7ecc1b",
 "level": "info",
-"timestamp": 1762114086118000
+"timestamp": 1762116560146000
 },
 {
-"event_message": "🔍 BEFORE formatNivResponse (first 500 chars): **Research Findings: Tech Event Production Landscape** Based on my intelligence gathering, I'm seeing an interesting gap in the market that could be significant for undefined's positioning. **Key Industry Developments:** • **Premium positioning trend** - Top tech companies are spending 40% more on experiential marketing in 2025, with events becoming the primary vehicle for thought leadership • **AI-focused events dominating** - Seattle AI Week drawing 3,500+ attendees across 50 events shows mass\n",
+"event_message": "🔢 Token count validation: System=7676, Message=882, Total=8558\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "b9bc32ef-51ce-438a-924c-a52166477cef",
+"id": "1da08984-037f-456b-a029-ad8750543b38",
 "level": "info",
-"timestamp": 1762114086118000
-},
-{
-"event_message": "🔢 Token count validation: System=7676, Message=895, Total=8571\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "c990830a-3150-4ba2-a31d-9472a9b134b5",
-"level": "info",
-"timestamp": 1762114074284000
-},
-{
-"event_message": "🎯 Using organization profile: undefined\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "cd84ede9-54e7-4e2d-a5bd-3af82fbce680",
-"level": "info",
-"timestamp": 1762114074283000
-},
-{
-"event_message": "🎯 Framework generation decision: false\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "066a10e4-b27f-430e-b1a9-830a4bee207e",
-"level": "info",
-"timestamp": 1762114074283000
-},
-{
-"event_message": "🎯 Loaded profile for undefined: 0 competitors, 1 keywords\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "cebfe7f1-6646-43f5-a055-fa7b0a87e9b6",
-"level": "info",
-"timestamp": 1762114074283000
-},
-{
-"event_message": "🤖 Claude says do research first, not framework\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "247169c6-5631-43f3-897d-583b40e05391",
-"level": "info",
-"timestamp": 1762114074283000
-},
-{
-"event_message": " Industry: Education Technology\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "3554db0b-90fc-4889-8c74-1c31de457ab7",
-"level": "info",
-"timestamp": 1762114074283000
+"timestamp": 1762116547456000
 },
 {
 "event_message": "📊 Concept State - Stage: exploring, Confidence: 0%\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "3383ef63-95a2-4640-a94e-28e96de4cdc2",
+"id": "dcb09b46-4336-4931-8f7e-c6dd82a6da73",
 "level": "info",
-"timestamp": 1762114074283000
+"timestamp": 1762116547455000
 },
 {
-"event_message": "📊 Research accumulated: 1 rounds\n",
+"event_message": "🎯 Framework generation decision: false\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "c246dada-c0da-42da-acf4-95d6640da1f4",
+"id": "644002fb-2c6a-4cbb-9a5f-ff78038c6acb",
 "level": "info",
-"timestamp": 1762114074283000
-},
-{
-"event_message": " Keywords: Amplify\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "4c731295-abcb-41d8-b2d3-bc6bcefcfd13",
-"level": "info",
-"timestamp": 1762114074283000
+"timestamp": 1762116547455000
 },
 {
 "event_message": " Competitors: \n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "11d6b0d3-6a74-4bb1-a310-04a85ff5be8b",
+"id": "098421ad-2f45-467e-85c3-59a9b37d20f5",
 "level": "info",
-"timestamp": 1762114074283000
+"timestamp": 1762116547455000
 },
 {
-"event_message": "✅ Firecrawl returned 10 results\n",
+"event_message": " Industry: Education Technology\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "85dff979-3344-4168-b99a-0b6d56722a56",
+"id": "9d7c37b9-2627-4d4a-9e31-bcf299d87a02",
 "level": "info",
-"timestamp": 1762114074233000
+"timestamp": 1762116547455000
+},
+{
+"event_message": "🤖 Claude says do research first, not framework\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "0fee8b95-32bf-4bdf-82bd-1f3dbf8c48df",
+"level": "info",
+"timestamp": 1762116547455000
+},
+{
+"event_message": " Keywords: Amplify\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "0381cf0c-9e2f-4b52-bf01-00b6e618630f",
+"level": "info",
+"timestamp": 1762116547455000
+},
+{
+"event_message": "🎯 Loaded profile for undefined: 0 competitors, 1 keywords\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "61bff4a5-aed0-44a0-9901-a25b723fd859",
+"level": "info",
+"timestamp": 1762116547455000
+},
+{
+"event_message": "🎯 Using organization profile: undefined\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "c74bd479-afe5-4d6d-84e7-cfdbb04d40a6",
+"level": "info",
+"timestamp": 1762116547455000
+},
+{
+"event_message": "📊 Research accumulated: 1 rounds\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "3be93453-caa2-4921-b212-23d0115912b5",
+"level": "info",
+"timestamp": 1762116547455000
 },
 {
 "event_message": "📊 Research complete - preparing intelligence for response...\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "aba4dc20-5421-45a2-a12c-71f9d6887369",
+"id": "e1c5cbd6-3abc-4a6f-ba81-a7784dd89999",
 "level": "info",
-"timestamp": 1762114074233000
-},
-{
-"event_message": "✅ Completed step step-1: top event production agencies tech companies 2025 ...\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "3ace1829-b1c7-485a-8cc6-be59d382fa6b",
-"level": "info",
-"timestamp": 1762114074233000
+"timestamp": 1762116547399000
 },
 {
 "event_message": "🔍 Orchestrated research complete: 10 articles, 2 findings\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "25c35d4d-a98e-4558-8677-3fc4739d1118",
+"id": "94cad56e-7a85-48ce-a88a-cc5634948788",
 "level": "info",
-"timestamp": 1762114074233000
+"timestamp": 1762116547399000
 },
 {
-"event_message": "📋 Research plan created: 1 steps\n",
+"event_message": "✅ Firecrawl returned 10 results\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "d4b9ed10-1e1e-46d0-a7e2-f6c01a1a2a9f",
+"id": "38157f2e-641a-4b93-9f7d-cae7ecefbd57",
 "level": "info",
-"timestamp": 1762114065828000
+"timestamp": 1762116547398000
 },
 {
-"event_message": "🔍 Executing research step: initial-scan - top event production agencies tech companies 2025 experiential marketing Google Apple Microsoft corporate events\n",
+"event_message": "✅ Completed step step-1: CEO visibility strategies executive thought leader...\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "43460867-63f0-47bb-aa42-59a1ad775278",
+"id": "78b03702-8826-4a36-9b2a-3ebdc0e21452",
 "level": "info",
-"timestamp": 1762114065828000
+"timestamp": 1762116547398000
+},
+{
+"event_message": "🔍 Executing research step: initial-scan - CEO visibility strategies executive thought leadership 2025 media presence best practices\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "e1f71900-4a92-4649-9dc7-98fbb687121d",
+"level": "info",
+"timestamp": 1762116539658000
+},
+{
+"event_message": "🔬 Orchestration calling FireSearch for: \"CEO visibility strategies executive thought leader...\"\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "be532e7a-047d-41ef-92b7-292f49272263",
+"level": "info",
+"timestamp": 1762116539658000
 },
 {
 "event_message": "🔬 Using FireSearch for initial-scan\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "1a297df4-17d7-458d-bbb7-6e7353e161e5",
+"id": "608be17f-ef64-40fb-ac4f-ca76098e7e18",
 "level": "info",
-"timestamp": 1762114065828000
+"timestamp": 1762116539658000
 },
 {
-"event_message": "🔬 Orchestration calling FireSearch for: \"top event production agencies tech companies 2025 ...\"\n",
+"event_message": "📋 Research plan created: 1 steps\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "15eef370-baf2-469c-a825-c6413af3c8ad",
+"id": "9894b537-4056-45d1-a9e5-c5ac7084539b",
 "level": "info",
-"timestamp": 1762114065828000
+"timestamp": 1762116539658000
+},
+{
+"event_message": "🧠 Claude understanding: {\n understanding: {\n what_user_wants: \"Strategic advice on improving their CEO's visibility and public profile\",\n entities: [ \"CEO\", \"executive visibility\" ],\n timeframe: \"current best practices\",\n topics: [\n \"CEO visibility strategies\",\n \"executive thought leadership\",\n \"media presence\",\n \"public relations\"\n ],\n requires_fresh_data: true,\n why_fresh_data: \"Need current best practices, recent CEO visibility campaigns, and 2025 media landscape trends to provide relevant strategic advice\"\n },\n approach: {\n strategy: \"fireplexity_targeted\",\n reasoning: \"This requires understanding current CEO visibility trends, successful 2025 campaigns, and modern media landscape dynamics to provide actionable strategic advice\",\n search_query: \"CEO visibility strategies executive thought leadership 2025 media presence best practices\",\n search_domains: \"quality_first\",\n domain_reasoning: \"CEO visibility strategies are covered in business publications, PR industry sources, and marketing publications - quality sources will have the strategic frameworks but may need broader search for recent case studies\",\n confidence: 0.8,\n generate_framework: false,\n framework_reasoning: \"User is asking for strategic advice, not requesting a formal framework document. They want to understand options and approaches first.\"\n },\n acknowledgment: \"I'll research current CEO visibility strategies and successful approaches from 2025 to give you actionable options for elevating your CEO's profile.\"\n}\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "f1fa7248-48cf-4ef4-b09f-2d281005e473",
+"level": "info",
+"timestamp": 1762116539597000
 },
 {
 "event_message": "🤖 Query requires multi-step orchestration...\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "05b7bbc2-c359-48dc-8000-a01f910c7984",
+"id": "f5a0114b-2317-4fec-918e-032d1bea7d79",
 "level": "info",
-"timestamp": 1762114065467000
+"timestamp": 1762116539597000
 },
 {
-"event_message": "🧠 Claude understanding: {\n understanding: {\n what_user_wants: \"Intelligence on which event production/experiential marketing agencies are considered the leading choice for tech companies\",\n entities: [\n \"tech companies\",\n \"event production firms\",\n \"experiential marketing agencies\"\n ],\n timeframe: \"current/2025\",\n topics: [\n \"event production market\",\n \"tech industry preferred vendors\",\n \"experiential marketing agencies\",\n \"corporate event planning\"\n ],\n requires_fresh_data: true,\n why_fresh_data: \"Event production landscape changes rapidly with new agencies, recent wins/losses, and shifting tech company preferences. Need current market intelligence on who's winning major tech accounts in 2025.\"\n },\n approach: {\n strategy: \"fireplexity_targeted\",\n reasoning: \"This requires current market intelligence about which agencies are actively winning tech company business, recent campaign successes, and current industry reputation - not something I can answer from general knowledge\",\n search_query: \"top event production agencies tech companies 2025 experiential marketing Google Apple Microsoft corporate events\",\n search_domains: \"quality_first\",\n domain_reasoning: \"Industry news sources and trade publications will have the most current info on agency wins and tech company preferences, but may need to expand beyond master sources for specialized event industry coverage\",\n confidence: 0.9,\n generate_framework: false,\n framework_reasoning: \"User is asking for competitive intelligence research first, not requesting a strategic framework or campaign plan\"\n },\n acknowledgment: \"I'll research the current event production landscape to identify which agencies are dominating the tech company market right now. Let me find the latest intel on who's winning the big accounts and why.\"\n}\n",
+"event_message": "🎯 Strategy chosen: fireplexity_targeted (confidence: 0.8)\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "de8a6ea5-a479-4346-bf25-5469d6ff2dff",
+"id": "13e952e9-6446-4002-b6b9-1353e7d61477",
 "level": "info",
-"timestamp": 1762114065467000
+"timestamp": 1762116539597000
 },
 {
-"event_message": "🔍 Using research query: \"top event production agencies tech companies 2025 experiential marketing Google ...\"\n",
+"event_message": "🔍 Using research query: \"CEO visibility strategies executive thought leadership 2025 media presence best ...\"\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "8369c4a8-4231-427a-90dd-902cebf77741",
+"id": "4b206b85-a31c-4d7a-96be-ee9878006d72",
 "level": "info",
-"timestamp": 1762114065467000
+"timestamp": 1762116539597000
 },
 {
-"event_message": "🎯 Strategy chosen: fireplexity_targeted (confidence: 0.9)\n",
+"event_message": "📝 Query type: general\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "fecd16ac-0a70-4f7e-a0ef-304950b1ad99",
+"id": "3265aad5-ce9f-4e98-84db-276ba2652023",
 "level": "info",
-"timestamp": 1762114065467000
-},
-{
-"event_message": "📝 Query type: articles\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "7ca0178c-c7f7-4bc0-bece-32180e53a926",
-"level": "info",
-"timestamp": 1762114055223000
-},
-{
-"event_message": "✅ Loaded organization profile from database: Amplify\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "6bfd05ec-2c78-481b-a51e-7a2ffb19f448",
-"level": "info",
-"timestamp": 1762114055222000
+"timestamp": 1762116530386000
 },
 {
 "event_message": "🏢 Organization context: \"Amplify\" (validated)\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "60c58a4f-279a-4599-b815-a15736659c87",
+"id": "c6a238e0-bbf5-422f-b2f8-8ddf5478f87e",
 "level": "info",
-"timestamp": 1762114055222000
+"timestamp": 1762116530386000
 },
 {
 "event_message": "🎭 Active persona: NIV - Chief Intelligence Analyst for intelligence module\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "1e718ef9-85e9-4252-a99a-9610474091b9",
+"id": "5ac44ff6-7805-428e-9d54-8578e9fe9cb3",
 "level": "info",
-"timestamp": 1762114055222000
+"timestamp": 1762116530386000
+},
+{
+"event_message": "✅ Loaded organization profile from database: Amplify\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "df11ea91-8b7c-49a6-a057-eb69bc324e77",
+"level": "info",
+"timestamp": 1762116530386000
 },
 {
 "event_message": "✅ Found profile by organization_id: Amplify\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "b7bd6669-b3b9-4477-84b1-d3d3b4b34c3c",
+"id": "ca9f644f-b0c9-41c2-b44d-d2f0277a29dc",
 "level": "info",
-"timestamp": 1762114055222000
-},
-{
-"event_message": "🔍 Detected UUID format, searching by organization_id\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "2241cdf2-137f-4791-ac55-a113d9890a16",
-"level": "info",
-"timestamp": 1762114055119000
+"timestamp": 1762116530385000
 },
 {
 "event_message": "🔍 Searching for organization: \"485dfe92-b67e-47b4-9523-1b3a523d7d07\" (type: string)\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "851c74c6-391b-4a9d-8273-e38b02c08657",
+"id": "0f890ef1-23ee-4da1-994a-9167ee7e75f7",
 "level": "info",
-"timestamp": 1762114055119000
+"timestamp": 1762116530330000
+},
+{
+"event_message": "🔍 Detected UUID format, searching by organization_id\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "5cd2b408-7ddc-4042-a310-ca61f0a40aa7",
+"level": "info",
+"timestamp": 1762116530330000
 },
 {
 "event_message": "🎯 NIV calling mcp-discovery for: 485dfe92-b67e-47b4-9523-1b3a523d7d07\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "fd13c74b-f92d-4d92-9900-885ced10e96a",
+"id": "fce93f9c-decb-4493-8cd7-03d3d4d1a0ee",
 "level": "info",
-"timestamp": 1762114055116000
+"timestamp": 1762116530327000
 },
 {
-"event_message": "🤖 NIV Processing: {\n message: \"who seems like the go-to firm for event production for tech companies/\",\n sessionId: \"niv-1762114014148\",\n stage: \"full\"\n}\n",
+"event_message": "🤖 NIV Processing: {\n message: \"how can we improve visibility of CEO\",\n sessionId: \"niv-1762116481699\",\n stage: \"full\"\n}\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "84587053-73d0-4e99-b879-76ff4635978a",
+"id": "c8c21b78-5818-47ed-a1aa-9f9f0f6bd26f",
 "level": "info",
-"timestamp": 1762114055116000
+"timestamp": 1762116530326000
 },
 {
 "event_message": "Listening on http://localhost:9999/\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "7db4fff2-f5ef-46d7-9fb7-2e9b9708e24e",
+"id": "6bffa8c8-fef1-4063-a788-afba34bdf123",
 "level": "info",
-"timestamp": 1762114055110000
+"timestamp": 1762116530321000
 },
 {
-"event_message": "booted (time: 36ms)",
+"event_message": "booted (time: 35ms)",
 "event_type": "Boot",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "00ac88e0-b7cf-4960-861b-f4c71e6560fc",
+"id": "ab92c3c4-5c15-4f25-aef1-049a6cdf4263",
 "level": "log",
-"timestamp": 1762114055105000
+"timestamp": 1762116530316000
 },
 {
-"event_message": "🧠 Claude understanding: {\n understanding: {\n what_user_wants: \"Identify the leading/most prominent event production agencies that specialize in serving tech companies\",\n entities: [ \"tech companies\", \"event production firms\", \"agencies\" ],\n timeframe: \"current/latest\",\n topics: [\n \"event production\",\n \"tech industry events\",\n \"experiential marketing\",\n \"corporate events\",\n \"tech conferences\"\n ],\n requires_fresh_data: true,\n why_fresh_data: \"Event production landscape changes frequently with new agency wins, recent high-profile events, and shifting industry relationships. Need current market intelligence on who's handling major tech events in 2025.\"\n },\n approach: {\n strategy: \"fireplexity_targeted\",\n reasoning: \"This requires current market intelligence about which agencies are currently winning major tech accounts and executing high-profile events. Agency-client relationships shift frequently, and recent event successes/failures would influence recommendations.\",\n search_query: \"leading event production agencies tech companies 2025 experiential marketing tech events\",\n search_domains: \"quality_first\",\n domain_reasoning: \"Trade publications and industry news sources will have the best coverage of agency wins and recent tech events, but some insights might come from agency websites or case studies not in master sources\",\n confidence: 0.9,\n generate_framework: false,\n framework_reasoning: \"User is asking for market research/intelligence gathering, not requesting a strategic framework or campaign strategy\"\n },\n acknowledgment: \"I'll research the current landscape of event production agencies that are dominating the tech space right now. Let me find out who's winning the big accounts and executing standout events in 2025.\"\n}\n",
+"event_message": "🎯 Strategy chosen: fireplexity_targeted (confidence: 0.85)\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "b10b274e-c6a3-413d-91a9-69201c980f47",
+"id": "facd28af-867b-4f8c-baf2-328c80c843ed",
 "level": "info",
-"timestamp": 1762114054861000
+"timestamp": 1762116530106000
 },
 {
-"event_message": "🎯 Strategy chosen: fireplexity_targeted (confidence: 0.9)\n",
+"event_message": "🧠 Claude understanding: {\n understanding: {\n what_user_wants: \"Strategic advice on improving CEO visibility and executive presence\",\n entities: [ \"CEO\", \"executive leadership\" ],\n timeframe: \"current best practices\",\n topics: [\n \"executive visibility\",\n \"thought leadership\",\n \"CEO positioning\",\n \"executive communications\",\n \"personal branding\"\n ],\n requires_fresh_data: true,\n why_fresh_data: \"Need current trends in executive visibility strategies, recent successful CEO positioning campaigns, and 2025 best practices for executive thought leadership\"\n },\n approach: {\n strategy: \"fireplexity_targeted\",\n reasoning: \"CEO visibility strategies evolve rapidly with platform changes, new media formats, and shifting audience expectations. Need current examples and trending approaches from 2025.\",\n search_query: \"CEO visibility strategies executive thought leadership 2025 best practices\",\n search_domains: \"quality_first\",\n domain_reasoning: \"Quality business publications will have the most credible CEO visibility strategies, but may need to expand to marketing/PR sources for tactical approaches\",\n confidence: 0.85,\n generate_framework: false,\n framework_reasoning: \"User is asking for strategic advice, but needs research first to understand current landscape before developing specific framework\"\n },\n acknowledgment: \"Let me research the current landscape of CEO visibility strategies and what's working in 2025 to give you actionable recommendations.\"\n}\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "05d8f7cd-0df2-436f-aba1-f25294613d9b",
+"id": "7c3bf8b1-6626-4b5e-ab01-44fd99839c98",
 "level": "info",
-"timestamp": 1762114054861000
+"timestamp": 1762116530106000
+},
+{
+"event_message": "🎭 Active persona: NIV - Chief Intelligence Analyst for intelligence module\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "a58bbc98-2120-46b0-be37-032984a8998a",
+"level": "info",
+"timestamp": 1762116521889000
+},
+{
+"event_message": "📝 Query type: general\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "7358f38e-c42f-461b-abf0-d721ce9d0886",
+"level": "info",
+"timestamp": 1762116521889000
+},
+{
+"event_message": "✅ Loaded organization profile from database: Amplify\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "8807cf16-b875-4dce-bc67-b82a86def50f",
+"level": "info",
+"timestamp": 1762116521888000
+},
+{
+"event_message": "🏢 Organization context: \"Amplify\" (validated)\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "1bccf106-7167-47f5-8d1a-8f777ce78f59",
+"level": "info",
+"timestamp": 1762116521888000
+},
+{
+"event_message": "✅ Found profile by organization_id: Amplify\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "6ec673bf-bc06-4ba6-ab36-ebd7d8d40832",
+"level": "info",
+"timestamp": 1762116521888000
+},
+{
+"event_message": "🔍 Detected UUID format, searching by organization_id\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "d0bef401-8848-48bd-ad13-a6ca8e7e0ea7",
+"level": "info",
+"timestamp": 1762116521759000
+},
+{
+"event_message": "🔍 Searching for organization: \"485dfe92-b67e-47b4-9523-1b3a523d7d07\" (type: string)\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "eccb287d-629b-4a1b-988a-772b5fa48b5b",
+"level": "info",
+"timestamp": 1762116521759000
+},
+{
+"event_message": "🎯 NIV calling mcp-discovery for: 485dfe92-b67e-47b4-9523-1b3a523d7d07\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "c93c5982-943f-454b-bd8c-1d4a4fbcf430",
+"level": "info",
+"timestamp": 1762116521756000
+},
+{
+"event_message": "🤖 NIV Processing: {\n message: \"how can we improve visibility of CEO\",\n sessionId: \"niv-1762116481699\",\n stage: \"acknowledge\"\n}\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "a27616fe-fc8a-4ffa-9233-a76bb6752ec5",
+"level": "info",
+"timestamp": 1762116521755000
+},
+{
+"event_message": "Listening on http://localhost:9999/\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "ce38f43b-a394-4bef-ac5e-2cce6eaafc4f",
+"level": "info",
+"timestamp": 1762116521750000
+},
+{
+"event_message": "booted (time: 35ms)",
+"event_type": "Boot",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "3518ef36-610f-48d5-955c-f2eac5771c02",
+"level": "log",
+"timestamp": 1762116521745000
 }
 ]

@@ -91,6 +91,34 @@ serve(async (req) => {
       opportunities: analysis.opportunities.length
     })
 
+    // Fetch current schema from Memory Vault
+    let currentSchema: any = null
+    try {
+      const { data: schemaData } = await supabase
+        .from('content_library')
+        .select('content')
+        .eq('organization_id', organization_id)
+        .eq('content_type', 'schema')
+        .eq('folder', 'Schemas/Active/')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (schemaData) {
+        currentSchema = typeof schemaData.content === 'string'
+          ? JSON.parse(schemaData.content)
+          : schemaData.content
+        console.log('📋 Current schema loaded:', {
+          type: currentSchema['@type'],
+          fields: Object.keys(currentSchema).filter(k => !k.startsWith('@')).length
+        })
+      } else {
+        console.log('⚠️  No schema found in Memory Vault')
+      }
+    } catch (error) {
+      console.error('Error fetching schema:', error)
+    }
+
     // Use Claude to generate executive-level insights
     const anthropic = new Anthropic({
       apiKey: Deno.env.get('ANTHROPIC_API_KEY')
@@ -100,7 +128,8 @@ serve(async (req) => {
       organizationName: organization_name,
       industry,
       analysis,
-      geoTargets: geo_targets
+      geoTargets: geo_targets,
+      currentSchema
     })
 
     console.log('🤖 Calling Claude for executive synthesis...')
@@ -294,6 +323,7 @@ function buildSynthesisPrompt(context: {
   industry?: string
   analysis: any
   geoTargets?: any
+  currentSchema?: any
 }): string {
   const currentDate = new Date().toISOString().split('T')[0]
 
@@ -303,6 +333,13 @@ CURRENT DATE: ${currentDate}
 
 ORGANIZATION: ${context.organizationName}
 INDUSTRY: ${context.industry || 'Not specified'}
+
+${context.currentSchema ? `CURRENT SCHEMA IN MEMORY VAULT:
+Schema Type: ${context.currentSchema['@type'] || 'Not set'}
+Existing Fields: ${Object.keys(context.currentSchema).filter(k => !k.startsWith('@')).join(', ')}
+
+IMPORTANT: Only recommend fields that are MISSING from the current schema above. Do NOT recommend adding fields that already exist.
+` : 'CURRENT SCHEMA: Not available - recommend foundational schema setup'}
 
 GEO PERFORMANCE ANALYSIS:
 - Total Queries Tested: ${context.analysis.total_queries}
@@ -376,6 +413,19 @@ Focus on:
 2. **Specific schema recommendations** (exact changes to make)
 3. **Priority-based actions** (critical issues first)
 4. **Platform-specific guidance** (what works where)
+
+IMPORTANT FOR SCHEMA RECOMMENDATIONS:
+- Only recommend fields that are MISSING from the current schema
+- If the schema already has good coverage, focus on CONTENT recommendations instead (e.g., "Update description to emphasize X")
+- If no schema exists, recommend foundational setup
+- Make recommendations ACTIONABLE and SPECIFIC
+- For auto_executable: true only for simple field additions (not complex nested objects)
+
+ABOUT SCHEMA DEPLOYMENT:
+Note that the schema in Memory Vault may not be deployed to the organization's website yet. Your recommendations should:
+1. Prioritize fields that will have the biggest impact on AI visibility
+2. Include a note if deployment is needed
+3. Focus on what SHOULD be in the schema, regardless of current deployment status
 
 Generate the synthesis now:`
 }
