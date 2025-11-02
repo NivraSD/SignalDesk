@@ -1117,13 +1117,13 @@ function detectQueryType(message: string): string {
   return 'general'
 }
 
-// Simple content extraction - no special formatting needed
+// Simple content extraction - response is already formatted by formatNivResponse()
 function extractStructuredContent(response: string, type: string) {
-  // For simple article listings, just return the plain response
+  // Response has already been formatted by formatNivResponse() before this is called
   return {
     type: 'simple',
     content: response,
-    formatted: false
+    formatted: true  // Changed to true - response is already formatted
   }
 }
 
