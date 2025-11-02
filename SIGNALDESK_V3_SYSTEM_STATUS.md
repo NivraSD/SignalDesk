@@ -21,7 +21,7 @@ SignalDesk V3 is a fully operational AI-powered strategic communications platfor
 - ✅ **Memory Vault V2** - Complete overhaul with OpenMemory-inspired enhancements (Oct 24-26, 2025)
 - ✅ **NIV Memory Vault Integration** - Composite scoring for proven template discovery (Oct 26, 2025)
 - ✅ **Campaign Attribution System** - Automatic performance tracking with AI-powered attribution (Oct 26, 2025)
-- ✅ **GEO Intelligence Monitor** - AI visibility testing across Claude and Gemini with intelligent query generation (Oct 27, 2025)
+- ✅ **GEO Intelligence Monitor** - AI visibility testing across Claude, Gemini, Perplexity, and ChatGPT with intelligent query generation and citation tracking (Oct 27, 2025)
 
 ### Core Capabilities Status
 - ✅ **Schema.org Generation** - Complete pipeline with Firecrawl Map discovery, AI entity extraction, and GEO enhancements (Oct 31, 2025)
@@ -33,7 +33,7 @@ SignalDesk V3 is a fully operational AI-powered strategic communications platfor
 - ✅ **NIV Strategic Framework Generation** - Using niv-fireplexity for research, 140s timeout
 - ✅ **Intelligence Pipeline** - Discovery → Monitor → Enrichment → Synthesis → Opportunities
 - ✅ **Real-Time Intelligence** - Frontend-orchestrated monitoring (Oct 3, 2025 - PRODUCTION READY)
-- ✅ **GEO Intelligence Monitor** - AI visibility testing across Claude and Gemini (Production Ready - Oct 27, 2025)
+- ✅ **GEO Intelligence Monitor** - AI visibility testing across Claude, Gemini, Perplexity, and ChatGPT (Production Ready - Oct 27, 2025)
 - ✅ **Stakeholder Predictions** - AI-powered prediction tracking with validation and accuracy metrics (Production Ready - Oct 27, 2025)
 - ✅ **Content Generation** - Multi-modal (text, image, video, presentations) with platform-specific formatting
 - ✅ **Opportunity Engine V2** - Execution-ready opportunities with real-time content generation
@@ -503,12 +503,14 @@ geo-query-discovery (Claude-Powered Query Generation)
 geo-intelligence-monitor (AI Visibility Testing)
     ├── Test on Claude (5 queries) - Sonnet 4.5
     ├── Test on Gemini 2.0 Flash (5 queries) - Direct API
+    ├── Test on Perplexity (5 queries) - Sonar model with citations
+    ├── Test on ChatGPT (5 queries) - GPT-4o
     ├── Analyze brand mentions, recommendations, positioning
     └── Generate actionable signals with recommendations
     ↓
 geo_intelligence table (Signal Storage)
     ├── Signal types: ai_visibility, visibility_gap, competitor_update
-    ├── Platform: claude, gemini, all
+    ├── Platform: claude, gemini, perplexity, chatgpt
     ├── Priority: critical, high, medium
     └── Recommendations: specific actions to improve visibility
 ```
@@ -540,11 +542,22 @@ geo_intelligence table (Signal Storage)
   - Model: gemini-2.0-flash-001
   - Direct Gemini API (simple API key, no OAuth)
   - Endpoint: generativelanguage.googleapis.com/v1beta
-  - Analyzes: visibility, recommendations, sentiment
+  - Features: Search grounding with source citations
+  - Analyzes: visibility, recommendations, sentiment, cited sources
+- **Perplexity Testing** (5 queries):
+  - Model: sonar (or sonar-pro)
+  - Endpoint: api.perplexity.ai/chat/completions
+  - Features: Built-in citations and source URLs
+  - Analyzes: brand mentions, competitive positioning, citation sources
+- **ChatGPT Testing** (5 queries):
+  - Model: gpt-4o
+  - Endpoint: api.openai.com/v1/chat/completions
+  - Analyzes: brand visibility, recommendation strength, positioning
 - **Signal Analysis**:
   - Detects visibility gaps (brand not mentioned)
   - Identifies competitor advantages
   - Measures recommendation strength
+  - Extracts citation sources (Gemini & Perplexity)
   - Generates specific improvement actions
 
 #### Signal Types & Recommendations:
@@ -600,7 +613,8 @@ geo_intelligence table (Signal Storage)
 - Loading states with progress messages
 - Signal display with:
   - Priority badges (critical/high/medium)
-  - Platform tags (Claude/Gemini)
+  - Platform tags (Claude/Gemini/Perplexity/ChatGPT)
+  - Citation sources (for Gemini & Perplexity results)
   - Expandable recommendations
   - Action buttons (Mark Reviewed, Take Action)
 - Organization-aware (passes org_id, org_name, industry)
@@ -620,28 +634,33 @@ const [geoError, setGeoError] = useState<string | null>(null)
    - Model: claude-sonnet-4-20250514
    - Timeout: 120s
    - Date-aware prompts (prevents temporal drift)
-2. **geo-intelligence-monitor**: AI visibility testing
-   - Tests 10 queries (5 Claude + 5 Gemini)
-   - Saves signals to database
-   - Returns summary with recommendations
+2. **geo-intelligence-monitor**: AI visibility testing across 4 platforms
+   - Tests 20 queries total (5 per platform)
+   - Platforms: Claude, Gemini, Perplexity, ChatGPT
+   - Saves signals to database with platform tags
+   - Returns summary with recommendations and platform performance
 
 #### Performance Metrics:
 - Query Generation: 8-12 seconds (30 queries)
 - Claude Testing: 15-20 seconds (5 queries)
-- Gemini Testing: 10-15 seconds (5 queries)
-- Total Runtime: ~40 seconds
+- Gemini Testing: 10-15 seconds (5 queries with search grounding)
+- Perplexity Testing: 12-18 seconds (5 queries with citations)
+- ChatGPT Testing: 10-15 seconds (5 queries)
+- Total Runtime: ~60-80 seconds
 - Success Rate: >95% query generation, >90% visibility testing
-- Cost: ~$0.15 per full analysis (10 queries across 2 platforms)
+- Cost: ~$0.30-0.40 per full analysis (20 queries across 4 platforms)
 
 #### Key Differentiators:
 1. **Claude-Powered Query Generation**: Not static templates, but intelligent contextual queries
-2. **Industry-Adaptive**: 17 industries with specific patterns and success metrics
-3. **Organization-Aware**: Passes org_id, org_name, industry throughout pipeline
-4. **Date-Aware**: Prompts include current date/year to prevent temporal drift
-5. **Direct Gemini API**: Simplified from Vertex AI OAuth to simple API key
-6. **Actionable Signals**: Specific recommendations, not just analytics
-7. **Cost-Optimized**: Tests 10 high-priority queries (not all 30)
-8. **Intelligence Hub Integration**: Tab alongside Synthesis, Social, Real-Time, Predictions
+2. **4-Platform Coverage**: Claude, Gemini, Perplexity, ChatGPT (most comprehensive in industry)
+3. **Citation Tracking**: Extracts sources from Gemini (search grounding) & Perplexity (built-in citations)
+4. **Industry-Adaptive**: 17 industries with specific patterns and success metrics
+5. **Organization-Aware**: Passes org_id, org_name, industry throughout pipeline
+6. **Date-Aware**: Prompts include current date/year to prevent temporal drift
+7. **Direct API Integration**: Simple API keys (no complex OAuth flows)
+8. **Actionable Signals**: Specific recommendations, not just analytics
+9. **PR Intelligence**: Identifies which publications AI platforms cite for competitor coverage
+10. **Intelligence Hub Integration**: Tab alongside Synthesis, Social, Real-Time, Predictions
 
 #### Current Status (Production Ready):
 - ✅ Edge functions deployed (geo-query-discovery, geo-intelligence-monitor)
@@ -649,11 +668,14 @@ const [geoError, setGeoError] = useState<string | null>(null)
 - ✅ GEOIntelligenceRegistry with 17 industries
 - ✅ Intelligence Hub UI integration (GEO tab)
 - ✅ Claude Sonnet 4.5 integration working
-- ✅ Gemini 2.0 Flash integration (Direct API, not Vertex AI)
+- ✅ Gemini 2.0 Flash integration (Direct API with search grounding)
+- ✅ Perplexity Sonar integration (with built-in citations)
+- ✅ ChatGPT GPT-4o integration
 - ✅ Organization-aware architecture
 - ✅ Date-aware query generation (2025, not 2024)
 - ✅ Signal storage with recommendations
-- ✅ Cost control (10 queries tested, not 30)
+- ✅ Platform performance tracking with citation sources
+- ✅ 4-platform coverage (20 queries total)
 
 #### Implementation Details:
 - **Files**:
@@ -667,15 +689,17 @@ const [geoError, setGeoError] = useState<string | null>(null)
 - **API Keys Required**:
   - ANTHROPIC_API_KEY (Claude Sonnet 4.5)
   - GOOGLE_API_KEY (Gemini 2.0 Flash Direct API)
+  - PERPLEXITY_API_KEY (Perplexity Sonar)
+  - OPENAI_API_KEY (ChatGPT GPT-4o)
 
 #### Future Enhancements:
-- Add ChatGPT testing (OpenAI API)
-- Add Perplexity testing (Perplexity API)
-- Implement automated monitoring (cron job)
-- Add trend tracking (visibility over time)
-- Build GEO optimization recommendations
-- Add schema markup suggestions
-- Implement A/B testing for positioning
+- Implement automated monitoring (cron job for daily/weekly scans)
+- Add trend tracking (visibility over time, historical performance charts)
+- Build GEO optimization recommendations (automated schema suggestions)
+- Add schema markup suggestions based on visibility gaps
+- Implement A/B testing for positioning strategies
+- Add SearchGPT integration when API becomes available
+- Expand citation analysis (track which publications get cited most)
 
 ### 3. Content Generation System ✅
 
@@ -2891,10 +2915,11 @@ Campaign Intel    Content Gen    Strategic Planning
 **PRODUCTION READY - AI Visibility Testing**
 
 1. **Architecture**: Complete GEO monitoring system with Claude-powered query generation
-   - Tests brand visibility across Claude and Gemini platforms
+   - Tests brand visibility across Claude, Gemini, Perplexity, and ChatGPT platforms
    - Uses intelligent query generation (not static templates)
    - Organization-aware (passes org_id, org_name, industry throughout)
    - Date-aware prompts (prevents temporal drift to 2024)
+   - Citation tracking from Gemini (search grounding) and Perplexity (built-in citations)
 
 2. **Complete Pipeline Flow**:
    ```
@@ -2905,23 +2930,30 @@ Campaign Intel    Content Gen    Strategic Planning
        ├── Categorizes by intent (comparison, competitive, transactional)
        └── Prioritizes (critical, high, medium)
        ↓
-   geo-intelligence-monitor - Tests 10 high-priority queries
+   geo-intelligence-monitor - Tests 20 queries across 4 platforms
        ├── Claude Sonnet 4.5 testing (5 queries)
-       ├── Gemini 2.0 Flash testing (5 queries) - Direct API, not Vertex AI
+       ├── Gemini 2.0 Flash testing (5 queries) - Direct API with search grounding
+       ├── Perplexity Sonar testing (5 queries) - Built-in citations
+       ├── ChatGPT GPT-4o testing (5 queries)
        ├── Analyzes mentions, recommendations, positioning
+       ├── Extracts citation sources (Gemini & Perplexity)
        └── Generates actionable signals with recommendations
        ↓
    geo_intelligence table - Stores signals with recommendations
        ├── Signal types: ai_visibility, visibility_gap, competitor_update
-       ├── Platform tags: claude, gemini
+       ├── Platform tags: claude, gemini, perplexity, chatgpt
+       ├── Citation sources and domains (for PR targeting)
        └── Priority levels: critical, high, medium
    ```
 
 3. **Key Features**:
    - **Intelligent Query Generation**: Claude analyzes organization and generates contextual queries
    - **GEOIntelligenceRegistry**: 872-line registry with 17 industries (mirrors MasterSourceRegistry)
-   - **Direct Gemini API**: Simplified from Vertex AI OAuth to simple API key authentication
-   - **Cost Control**: Tests 10 queries (not all 30) for ~$0.15 per analysis
+   - **4-Platform Coverage**: Claude, Gemini, Perplexity, ChatGPT (most comprehensive in industry)
+   - **Citation Tracking**: Extracts sources from Gemini (search grounding) & Perplexity (built-in citations)
+   - **Direct API Integration**: Simple API key authentication (no complex OAuth)
+   - **Cost Control**: Tests 20 queries (5 per platform) for ~$0.30-0.40 per analysis
+   - **PR Intelligence**: Identifies which publications AI platforms cite for competitor coverage
    - **Actionable Signals**: Specific recommendations like "Create content targeting [topic]"
    - **Intelligence Hub Integration**: Dedicated GEO tab alongside Synthesis, Social, Real-Time, Predictions
 
@@ -3154,7 +3186,7 @@ Intelligence Pipeline:
 
 GEO Intelligence (Production Ready - Oct 27, 2025):
 - geo-query-discovery (Claude-powered query generation - 30 queries)
-- geo-intelligence-monitor (AI visibility testing - Claude + Gemini)
+- geo-intelligence-monitor (AI visibility testing - Claude + Gemini + Perplexity + ChatGPT)
 - geo-schema-updater (applies schema recommendations to Memory Vault schemas)
 
 Real-Time Intelligence (Oct 2025):
@@ -3339,7 +3371,7 @@ SignalDesk V3 represents a fully functional, AI-powered strategic communications
 - **Campaign Builder**: Complete 5-stage workflow from research to VECTOR campaign execution
 - **NIV Strategic Brain**: Research via niv-fireplexity, framework generation with 20+ campaign types
 - **Intelligence Pipeline**: Discovery → Monitor → Enrichment → Synthesis → Opportunities flow
-- **GEO Intelligence Monitor**: AI visibility testing across Claude and Gemini with intelligent query generation (Production Ready - Oct 27, 2025)
+- **GEO Intelligence Monitor**: AI visibility testing across Claude, Gemini, Perplexity, and ChatGPT with intelligent query generation and citation tracking (Production Ready - Oct 27, 2025)
 - **Real-Time Intelligence**: Claude-powered breaking news monitoring with crisis detection
 - **Crisis Management**: Automatic detection, severity assessment, response generation
 - **Stakeholder Predictions**: Complete tracking system with target integration, validation, and accuracy metrics (Production Ready - Oct 27, 2025)

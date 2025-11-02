@@ -3076,13 +3076,13 @@ function formatNivResponse(rawResponse: string, organizationName: string = 'your
   // First normalize line breaks to \n
   formatted = formatted.replace(/\r\n/g, '\n')
 
-  // Add blank lines BEFORE markdown headers (e.g., **Header:**)
-  // This works whether Claude puts text on same line or next line
-  formatted = formatted.replace(/([^\n])(\n)(\*\*[^*]+\*\*:)/g, '$1\n\n$3')
+  // Add blank lines BEFORE markdown headers (any **text**)
+  // Matches: "something\n**Header" -> "something\n\n**Header"
+  formatted = formatted.replace(/([^\n])(\n)(\*\*[^*]+\*\*)/g, '$1\n\n$3')
 
-  // Add blank line AFTER headers if there's text on the same line after colon
-  // e.g., "**Header:** Some text" becomes "**Header:**\n\nSome text"
-  formatted = formatted.replace(/(\*\*[^*]+\*\*:)\s+([^\n])/g, '$1\n\n$2')
+  // Add blank line AFTER headers if there's text on the same line
+  // Matches: "**Header** text" or "**Header:** text" -> "**Header**\n\ntext"
+  formatted = formatted.replace(/(\*\*[^*]+\*\*:?)\s+([^\n*])/g, '$1\n\n$2')
 
   // Collapse multiple consecutive newlines (3+) into double newlines
   formatted = formatted.replace(/\n{3,}/g, '\n\n')
