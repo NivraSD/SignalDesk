@@ -69,8 +69,12 @@ export async function POST(req: NextRequest) {
       topics: profile.trending?.hot_topics || [],
       stakeholders: {
         regulators: profile.stakeholders?.regulators || [],
+        key_analysts: profile.stakeholders?.key_analysts || [],
+        activists: profile.stakeholders?.activists || [],
         influencers: profile.stakeholders?.influencers || [],
-        major_customers: profile.stakeholders?.major_customers || []
+        major_customers: profile.stakeholders?.major_customers || [],
+        major_investors: profile.stakeholders?.major_investors || [],
+        key_partners: profile.stakeholders?.key_partners || []
       },
       industry: profile.industry,
       sub_industry: profile.sub_industry,
@@ -81,6 +85,8 @@ export async function POST(req: NextRequest) {
     console.log(`   - ${discoveredItems.competitors.length} competitors`)
     console.log(`   - ${discoveredItems.topics.length} topics`)
     console.log(`   - ${discoveredItems.stakeholders.regulators.length} regulators`)
+    console.log(`   - ${discoveredItems.stakeholders.key_analysts.length} analysts`)
+    console.log(`   - ${discoveredItems.stakeholders.activists.length} activists`)
 
     return NextResponse.json({
       success: true,
