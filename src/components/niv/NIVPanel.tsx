@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
-import { Brain, Send, Sparkles, Loader, AlertCircle, CheckCircle, TrendingUp, Target, FileText, Zap } from 'lucide-react'
+import { Brain, Send, Sparkles, Loader, AlertCircle, CheckCircle, TrendingUp, Target, FileText, Zap, Copy, Check } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAppStore } from '@/stores/useAppStore'
 
@@ -33,6 +33,7 @@ export default function NIVPanel({ embedded = false, onCampaignGenerated, onOppo
   const [isProcessing, setIsProcessing] = useState(false)
   const [currentTool, setCurrentTool] = useState<string | null>(null)
   const [conversationId] = useState(`niv-${Date.now()}`) // PERSISTENT conversation ID for entire session
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Initialize with welcome message
@@ -375,6 +376,17 @@ export default function NIVPanel({ embedded = false, onCampaignGenerated, onOppo
     }
   }
 
+  const handleCopyMessage = async (messageContent: string, messageId: string) => {
+    try {
+      await navigator.clipboard.writeText(messageContent)
+      setCopiedMessageId(messageId)
+      // Reset copied state after 2 seconds
+      setTimeout(() => setCopiedMessageId(null), 2000)
+    } catch (error) {
+      console.error('Failed to copy message:', error)
+    }
+  }
+
   const formatBlueprint = (blueprint: any): string => {
     if (!blueprint) return 'Blueprint data unavailable'
 
@@ -435,7 +447,7 @@ ${blueprint.strategy?.keyMessages?.map((msg: string, i: number) => `${i + 1}. ${
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[80%] rounded-lg ${
+              className={`max-w-[80%] rounded-lg group relative ${
                 message.role === 'user'
                   ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white'
                   : message.type === 'data'
@@ -448,6 +460,21 @@ ${blueprint.strategy?.keyMessages?.map((msg: string, i: number) => `${i + 1}. ${
                   {message.content}
                 </div>
               </div>
+
+              {/* Copy button - only show for NIV messages */}
+              {message.role === 'niv' && (
+                <button
+                  onClick={() => handleCopyMessage(message.content, message.id)}
+                  className="absolute top-2 right-2 p-1.5 bg-gray-700/80 hover:bg-gray-600 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                  title="Copy message"
+                >
+                  {copiedMessageId === message.id ? (
+                    <Check className="w-3.5 h-3.5 text-green-400" />
+                  ) : (
+                    <Copy className="w-3.5 h-3.5 text-gray-300" />
+                  )}
+                </button>
+              )}
 
               {message.actions && message.actions.length > 0 && (
                 <div className="px-3 pb-3 flex flex-wrap gap-2">

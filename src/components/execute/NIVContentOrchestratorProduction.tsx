@@ -21,7 +21,9 @@ import {
   Search,
   Zap,
   ExternalLink,
-  Download
+  Download,
+  Copy,
+  Check
 } from 'lucide-react'
 import type { NivStrategicFramework } from '@/types/niv-strategic-framework'
 import type { ContentItem } from '@/types/content'
@@ -305,6 +307,7 @@ export default function NIVContentOrchestratorProduction({
   const [input, setInput] = useState('')
   const [isThinking, setIsThinking] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null)
 
   // UI state for routing responses
   const [showNarrativeSelector, setShowNarrativeSelector] = useState(false)
@@ -1968,6 +1971,17 @@ IMPORTANT:
     }
   }
 
+  const handleCopyMessage = async (messageContent: string, messageId: string) => {
+    try {
+      await navigator.clipboard.writeText(messageContent)
+      setCopiedMessageId(messageId)
+      // Reset copied state after 2 seconds
+      setTimeout(() => setCopiedMessageId(null), 2000)
+    } catch (error) {
+      console.error('Failed to copy message:', error)
+    }
+  }
+
   return (
     <div className={`niv-content-orchestrator flex flex-col h-full ${className}`}>
       {/* Messages Area - FLEX GROW */}
@@ -1988,7 +2002,7 @@ IMPORTANT:
         {messages.map(msg => (
           <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-3xl ${msg.role === 'user' ? 'order-2' : 'order-1'}`}>
-              <div className={`rounded-lg p-4 ${
+              <div className={`rounded-lg p-4 group relative ${
                 msg.role === 'user'
                   ? 'bg-blue-500/10 border border-blue-500/30'
                   : msg.error
@@ -2003,6 +2017,21 @@ IMPORTANT:
                 )}
 
                 <div className="text-white whitespace-pre-wrap">{msg.content}</div>
+
+                {/* Copy button - only show for NIV messages */}
+                {msg.role === 'assistant' && (
+                  <button
+                    onClick={() => handleCopyMessage(msg.content, msg.id)}
+                    className="absolute top-2 right-2 p-1.5 bg-gray-700/80 hover:bg-gray-600 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Copy message"
+                  >
+                    {copiedMessageId === msg.id ? (
+                      <Check className="w-3.5 h-3.5 text-green-400" />
+                    ) : (
+                      <Copy className="w-3.5 h-3.5 text-gray-300" />
+                    )}
+                  </button>
+                )}
 
                 {/* Show generated image */}
                 {msg.metadata?.type === 'image' && msg.metadata?.imageUrl && (
