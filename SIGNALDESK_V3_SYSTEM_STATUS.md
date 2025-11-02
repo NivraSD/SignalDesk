@@ -5,6 +5,9 @@
 
 SignalDesk V3 is a fully operational AI-powered strategic communications platform that transforms how organizations discover opportunities, generate strategies, and create content. The system leverages multiple AI providers (Claude, Google Vertex AI, Gamma) through a sophisticated orchestration layer to deliver end-to-end strategic communications capabilities.
 
+**Major November 2025 Updates:**
+- ✅ **Strategic Context for Opportunity Alignment** - Organization profiles now include target_customers, brand_personality, strategic_priorities for better opportunity relevance (Nov 2, 2025)
+
 **Major October 2025 Updates:**
 - ✅ **Schema.org Generation Pipeline** - Intelligent website scraping with Firecrawl Map + AI entity extraction + GEO enhancements (Oct 31, 2025)
 - ✅ **Campaign Builder** - Complete 5-stage workflow (Research → Positioning → Approach → Blueprint → Execution)
