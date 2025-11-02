@@ -91,7 +91,7 @@ Return a structured plan with specific queries for each step.`
       },
       body: JSON.stringify({
         model: 'claude-3-sonnet-20241022',
-        max_tokens: 1000,
+        max_tokens: 2000,
         messages: [{
           role: 'user',
           content: `${DECOMPOSITION_PROMPT}
