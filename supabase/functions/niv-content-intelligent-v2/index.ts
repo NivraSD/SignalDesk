@@ -3720,11 +3720,34 @@ ${context}`
 
 // Helper: Execute research via Fireplexity (DIRECT - like niv-orchestrator-robust)
 async function executeResearch(query: string, organizationId: string) {
-  console.log('🔍 Executing research via Fireplexity...')
+  console.log('🔍 Executing research directly via Firecrawl (like NIV Advisor)...')
 
   // Retry configuration
   const maxRetries = 2
   const retryDelay = 2000 // 2 seconds
+
+  // Determine timeframe based on query intent (from NIV Advisor)
+  let timeframe = 'week' // default: past 7 days
+  const queryLower = query.toLowerCase()
+  if (queryLower.match(/breaking|just|today|current|right now|this morning/i)) {
+    timeframe = 'current' // past 24 hours
+  } else if (queryLower.match(/latest|recent|new/i)) {
+    timeframe = 'recent' // past 3 days
+  } else if (queryLower.match(/this week/i)) {
+    timeframe = 'week' // past 7 days
+  } else if (queryLower.match(/this month|past month|market share|revenue|analysis|landscape|positioning/i)) {
+    timeframe = 'month' // past 30 days
+  }
+
+  // Map timeframe to tbs parameter
+  const tbsMap: Record<string, string> = {
+    'current': 'qdr:h',    // Last hour
+    'recent': 'qdr:d3',    // Last 3 days
+    'week': 'qdr:w',       // Last week
+    'month': 'qdr:m',      // Last month
+  }
+  const tbs = tbsMap[timeframe] || 'qdr:d3'
+  console.log(`⏰ Timeframe detected: ${timeframe} (tbs=${tbs})`)
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -3733,30 +3756,26 @@ async function executeResearch(query: string, organizationId: string) {
         await new Promise(resolve => setTimeout(resolve, retryDelay * (attempt - 1)))
       }
 
-      // Create timeout promise (90 seconds to stay well under Supabase's 150s limit)
-      const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Research timeout after 90s')), 90000)
-      );
+      // Call Firecrawl DIRECTLY like NIV Advisor does
+      const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY') || 'fc-3048810124b640eb99293880a4ab25d0'
+      const FIRECRAWL_BASE_URL = 'https://api.firecrawl.dev/v2'
 
-      const fetchPromise = fetch(
-        `${SUPABASE_URL}/functions/v1/niv-fireplexity`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
-          },
-          body: JSON.stringify({
-            query: query,
-            organizationId: organizationId,
-            searchMode: 'focused', // Use focused mode for speed
-            useCache: true
-          })
-        }
-      );
-
-      // Race between fetch and timeout
-      const response = await Promise.race([fetchPromise, timeout]) as Response;
+      const response = await fetch(`${FIRECRAWL_BASE_URL}/search`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          query: query,
+          limit: 10,
+          tbs, // Time-based filter
+          scrapeOptions: {
+            formats: ['markdown'],
+            onlyMainContent: true
+          }
+        })
+      })
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => response.statusText)
@@ -3775,38 +3794,60 @@ async function executeResearch(query: string, organizationId: string) {
 
       // If we got here, research succeeded
       console.log(`✅ Research succeeded on attempt ${attempt}/${maxRetries}`)
-      console.log(`✅ Research complete: ${data.results?.length || 0} articles`)
 
-      // Build clean, readable keyFindings from top results
-      const keyFindings = data.results?.slice(0, 5).map((r: any) => {
-        // Clean title - remove extra whitespace, special chars
-        const title = (r.title || 'Article')
-          .replace(/\s+/g, ' ')
-          .replace(/[^\w\s\-\.,&]/g, '')
-          .trim()
+      if (data.success) {
+        const webResults = data.data?.web || []
+        const newsResults = data.data?.news || []
+        const allResults = [...webResults, ...newsResults]
 
-        // Clean and truncate description
-        const description = (r.description || '')
-          .replace(/\s+/g, ' ')
-          .trim()
-          .substring(0, 200)  // Max 200 chars
+        console.log(`✅ Firecrawl complete:`)
+        console.log(`   - Web results: ${webResults.length}`)
+        console.log(`   - News results: ${newsResults.length}`)
+        console.log(`   - Total: ${allResults.length}`)
 
-        return description
-          ? `**${title}** - ${description}${description.length >= 200 ? '...' : ''}`
-          : `**${title}**`
-      }).filter(f => f) || []
+        // Transform to article format (like NIV Advisor)
+        const articles = allResults.map(result => ({
+          title: result.title || 'Untitled',
+          description: result.description || '',
+          url: result.url,
+          content: result.markdown || result.description || '',
+          source: {
+            name: result.url ? extractSourceName(result.url) : 'Unknown',
+            domain: result.url ? extractDomain(result.url) : ''
+          },
+          publishedAt: result.publishedTime || new Date().toISOString(),
+          relevanceScore: result.score || 50
+        }))
 
-      console.log(`📊 Research data: keyFindings=${keyFindings.length}`)
-      if (keyFindings.length > 0) {
-        console.log(`📋 Key finding preview: ${keyFindings[0]?.substring(0, 100)}...`)
-      } else {
-        console.log(`⚠️ No results returned from research!`)
-      }
+        // Build clean, readable keyFindings
+        const keyFindings = articles.slice(0, 5).map(article => {
+          const title = (article.title || 'Article')
+            .replace(/\s+/g, ' ')
+            .replace(/[^\w\s\-\.,&]/g, '')
+            .trim()
 
-      return {
-        articles: data.results || [],
-        synthesis: data.summary || '',
-        keyFindings: keyFindings
+          const description = (article.description || '')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .substring(0, 200)
+
+          return description
+            ? `**${title}** - ${description}${description.length >= 200 ? '...' : ''}`
+            : `**${title}**`
+        }).filter(f => f)
+
+        console.log(`📊 Research data: ${articles.length} articles, ${keyFindings.length} key findings`)
+        if (keyFindings.length > 0) {
+          console.log(`📋 Key finding preview: ${keyFindings[0]?.substring(0, 100)}...`)
+        } else {
+          console.log(`⚠️ No results returned from research!`)
+        }
+
+        return {
+          articles: articles,
+          synthesis: '', // Let Claude synthesize from articles
+          keyFindings: keyFindings
+        }
       }
 
     } catch (error) {
@@ -3831,6 +3872,28 @@ async function executeResearch(query: string, organizationId: string) {
     articles: [],
     synthesis: '',
     keyFindings: []
+  }
+}
+
+// Helper: Extract source name from URL
+function extractSourceName(url: string): string {
+  try {
+    const urlObj = new URL(url)
+    const domain = urlObj.hostname.replace('www.', '')
+    const parts = domain.split('.')
+    return parts[0].charAt(0).toUpperCase() + parts[0].slice(1)
+  } catch {
+    return 'Unknown'
+  }
+}
+
+// Helper: Extract domain from URL
+function extractDomain(url: string): string {
+  try {
+    const urlObj = new URL(url)
+    return urlObj.hostname.replace('www.', '')
+  } catch {
+    return ''
   }
 }
 
