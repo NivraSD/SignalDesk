@@ -2340,7 +2340,7 @@ IMPORTANT:
                             },
                             body: JSON.stringify({
                               stage: 'generate_presentation_direct',
-                              conversationId: conversationId,
+                              conversationId: conceptState.conversationId,
                               message: 'Generate presentation',
                               presentationOutline: msg.metadata.presentationOutline,
                               organizationContext: {
