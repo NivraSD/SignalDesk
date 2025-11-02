@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { corsHeaders } from '../_shared/cors.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import Anthropic from 'https://esm.sh/@anthropic-ai/sdk@0.27.3'
 import {
   decomposeQuery,
   detectInformationGaps,
@@ -11,6 +12,7 @@ import {
 } from './self-orchestration.ts'
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') || Deno.env.get('CLAUDE_API_KEY')
+const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY })
 
 // Campaign Concept Building State
 // Track the evolving campaign concept across conversations
@@ -522,6 +524,38 @@ My consultation style:
 • **I offer strategic options**: "We could approach this three ways..."
 • **I ask clarifying questions**: "What matters most - speed to market or narrative differentiation?"
 • **I build progressively**: Each response adds to our emerging concept
+
+**RESPONSE FORMATTING:**
+
+Structure your responses for readability using markdown:
+
+✅ **DO:**
+- Use **bold headers** for sections (e.g., **Research Findings**, **Strategic Approach**)
+- Break content into short paragraphs (2-3 sentences max)
+- Use bullet points for lists (•, -, or numbered)
+- Add blank lines between sections
+- Use `**Key Insight:**` to highlight important findings
+
+Example good format:
+```
+**Research Findings:**
+
+I found 3 key developments in the event production space:
+
+• **Premium positioning trend** - Top tech companies spending 40% more on experiential marketing in 2025
+• **ROI measurement shift** - Events now tracked via brand lift metrics, not just attendance
+• **Differentiation crisis** - 67% of event agencies using similar "experience-first" messaging
+
+**Strategic Approach:**
+
+Given these findings, here's how we position you...
+```
+
+❌ **DON'T:**
+- Write wall-of-text paragraphs
+- Skip section headers
+- Bury insights in dense prose
+- Use all caps for emphasis
 
 **CRITICAL - AVOID TECH INDUSTRY CLICHÉS:**
 
@@ -1694,10 +1728,27 @@ Industry:`
     // If still not found, create a new entry with AI-detected industry
     console.log(`📝 Creating new discovery profile for: ${organizationInput}`)
 
+    // First, try to get the actual organization name from the organizations table
+    let organizationName = organizationInput
+    if (isUuid) {
+      const { data: orgData, error: orgError } = await supabase
+        .from('organizations')
+        .select('name')
+        .eq('id', organizationInput)
+        .single()
+
+      if (!orgError && orgData) {
+        organizationName = orgData.name
+        console.log(`✅ Found organization name from organizations table: ${organizationName}`)
+      } else {
+        console.log(`⚠️ Organization not found in organizations table, using UUID as name`)
+      }
+    }
+
     // Use Claude to intelligently detect the industry
     let detectedIndustry = 'Technology' // Default fallback
     try {
-      const industryPrompt = `What is the primary industry for the company "${organizationInput}"?
+      const industryPrompt = `What is the primary industry for the company "${organizationName}"?
 
 Respond with ONLY the industry name (1-3 words max). Examples:
 - "Technology"
@@ -1708,7 +1759,7 @@ Respond with ONLY the industry name (1-3 words max). Examples:
 - "Energy"
 - "Retail"
 
-Company: ${organizationInput}
+Company: ${organizationName}
 Industry:`
 
       const industryResponse = await anthropic.messages.create({
@@ -1727,13 +1778,13 @@ Industry:`
     try {
       const newProfileData = {
         organization_id: organizationInput,
-        organization_name: organizationInput,
+        organization_name: organizationName,
         industry: detectedIndustry,
         competition: {
           direct_competitors: [],
           indirect_competitors: []
         },
-        keywords: [organizationInput],
+        keywords: [organizationName],
         created_at: new Date().toISOString()
       }
 
