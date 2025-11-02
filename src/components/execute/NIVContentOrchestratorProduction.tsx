@@ -1880,7 +1880,7 @@ IMPORTANT:
   // Poll presentation status
   const pollPresentationStatus = async (generationId: string, messageId: string, topic: string) => {
     let attempts = 0
-    const maxAttempts = 40 // 40 attempts * 3 seconds = 2 minutes max
+    const maxAttempts = 60 // 60 attempts * 3 seconds = 3 minutes max (Gamma can take 60-90 seconds)
 
     const pollInterval = setInterval(async () => {
       attempts++
