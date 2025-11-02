@@ -1557,17 +1557,19 @@ ${campaignContext.timeline || 'Not specified'}
         conversationState.researchResults = researchResults
         conversationState.stage = 'research_review'  // Move to research review stage
       } else {
-        console.log('⚠️ Research returned no results or timed out')
+        console.log('⚠️ Research returned no results or timed out - proceeding without research')
         researchTimedOut = true
         researchResults = null; // Treat as if no research was done
-        conversationState.stage = 'research_review'  // Still go to research review to explain timeout
+        // DON'T change stage - just continue with the request
+        // User doesn't need to know research failed, NIV will just create based on general knowledge
       }
     }
 
-    // If we just completed fresh research OR research timed out for a presentation, present findings FIRST
+    // If we just completed fresh research for a presentation, present findings FIRST
     // Don't create outline yet - let user review research and confirm approach
+    // NOTE: We only present research if it succeeded - if it failed/timed out, we skip this step
     const isPresentationRequest = understanding.understanding?.content_type === 'presentation'
-    const shouldPresentResearchFirst = (freshResearch || researchTimedOut) && isPresentationRequest &&
+    const shouldPresentResearchFirst = freshResearch && isPresentationRequest &&
                                        conversationState.stage === 'research_review'
 
     // Check if user is confirming after research review
@@ -3342,7 +3344,21 @@ Analyze this request to understand what content they need and how to help them:
 
 1. What is the user really asking for?
 2. Is this a media plan, presentation, social post, press release, or something else?
-3. Do I need fresh market intelligence? (Answer NO if: research was already completed above, OR you already presented strategic options, OR user is selecting from options you gave)
+3. Do I need fresh market intelligence?
+
+   **Answer NO if ANY of these are true:**
+   - Research was already completed (mentioned above)
+   - You already presented strategic options in this conversation
+   - User is selecting from options you gave
+   - User already provided all the context/details (e.g., they described their concept, strategy, or approach)
+   - This is creative/conceptual work based on user's own ideas (pitches, proposals, internal concepts)
+   - Request is for templates, frameworks, or best practices (not current market data)
+
+   **Answer YES only if:**
+   - User needs current market data, statistics, or trends they don't already have
+   - Request explicitly asks for market analysis, competitive intelligence, or recent news
+   - User is asking "what's happening in [market/industry]" or similar research questions
+
 4. What entities (companies, products, people) are mentioned?
 5. What topics or themes should I focus on?
 
@@ -3608,22 +3624,9 @@ async function callClaude(
 
     // Different instructions based on whether we should present findings first
     if (shouldPresentResearchFirst) {
-      // Check if research timed out
-      if (!research || !research.articles || research.articles.length === 0) {
-        currentUserMessage = `**RESEARCH STATUS:**
-Research timed out (exceeded 60 second limit). This happens when gathering comprehensive market data takes longer than expected.
-
-**YOUR OPTIONS:**
-1. Create the presentation based on general industry knowledge and best practices
-2. I can try a more focused research query if you have specific data points you need
-
-**RECOMMENDATION:**
-For a data-driven executive presentation, I suggest creating an outline based on strategic frameworks and industry trends. We can validate specific data points later or you can provide any specific metrics you want included.
-
-Would you like me to proceed with creating the presentation outline using strategic best practices, or would you prefer to provide specific data points you want included?
-
-${context}`
-      } else {
+      // NOTE: shouldPresentResearchFirst is only true when research actually succeeded
+      // If research failed/timed out, we skip presenting research and just continue
+      if (research && research.articles && research.articles.length > 0) {
         currentUserMessage = `**RESEARCH COMPLETED**
 
 ${researchContext.join('\n')}
