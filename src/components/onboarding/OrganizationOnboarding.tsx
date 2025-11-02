@@ -10,9 +10,13 @@ interface DiscoveredItems {
   competitors: string[]
   topics: string[]
   stakeholders: {
-    regulators: string[]
-    influencers: string[]
-    major_customers: string[]
+    key_analysts?: string[]
+    activists?: string[]
+    regulators?: string[]
+    influencers?: string[]
+    major_customers?: string[]
+    major_investors?: string[]
+    key_partners?: string[]
   }
   industry: string
   sub_industry: string
@@ -234,26 +238,27 @@ export default function OrganizationOnboarding({
             }
           }
         } else {
-          // Check regulators, influencers, etc.
-          const regulator = fullProfile?.stakeholders?.regulators?.find(
-            (r: any) => (typeof r === 'string' ? r : r.name) === name
-          )
-          if (regulator && typeof regulator === 'object') {
-            return {
-              monitoring_context: regulator.monitoring_context,
-              industry_context: regulator.industry_context,
-              relevance_filter: regulator.relevance_filter
-            }
-          }
+          // Check all stakeholder types
+          const stakeholderTypes = [
+            'key_analysts',
+            'activists',
+            'regulators',
+            'influencers',
+            'major_customers',
+            'major_investors',
+            'key_partners'
+          ]
 
-          const influencer = fullProfile?.stakeholders?.influencers?.find(
-            (i: any) => (typeof i === 'string' ? i : i.name) === name
-          )
-          if (influencer && typeof influencer === 'object') {
-            return {
-              monitoring_context: influencer.monitoring_context,
-              industry_context: influencer.industry_context,
-              relevance_filter: influencer.relevance_filter
+          for (const type of stakeholderTypes) {
+            const stakeholder = fullProfile?.stakeholders?.[type]?.find(
+              (s: any) => (typeof s === 'string' ? s : s.name) === name
+            )
+            if (stakeholder && typeof stakeholder === 'object') {
+              return {
+                monitoring_context: stakeholder.monitoring_context,
+                industry_context: stakeholder.industry_context,
+                relevance_filter: stakeholder.relevance_filter
+              }
             }
           }
         }
@@ -989,9 +994,13 @@ export default function OrganizationOnboarding({
                   {/* Combine all stakeholder types from discovery */}
                   <div className="grid grid-cols-1 gap-3 mb-4">
                     {[
+                      ...(discovered.stakeholders?.key_analysts || []),
+                      ...(discovered.stakeholders?.activists || []),
                       ...(discovered.stakeholders?.regulators || []),
                       ...(discovered.stakeholders?.influencers || []),
-                      ...(discovered.stakeholders?.major_customers || [])
+                      ...(discovered.stakeholders?.major_customers || []),
+                      ...(discovered.stakeholders?.major_investors || []),
+                      ...(discovered.stakeholders?.key_partners || [])
                     ].map((stakeholder) => {
                       const name = typeof stakeholder === 'string' ? stakeholder : stakeholder.name
                       const context = typeof stakeholder === 'object' ? stakeholder.monitoring_context : null
