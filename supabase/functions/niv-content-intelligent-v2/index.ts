@@ -1050,6 +1050,11 @@ REMINDER: Current date is ${currentDate}. Ensure all data references and example
       console.log('📊 Built Gamma prompt for direct generation')
 
       try {
+        // Create folder path for Memory Vault capture
+        const timestamp = new Date().toISOString().split('T')[0]
+        const cleanTitle = outline.topic.replace(/[^a-zA-Z0-9\s-]/g, '').substring(0, 50)
+        const folderPath = `NIV Content/${cleanTitle} - ${timestamp}`
+
         const requestBody = {
           title: outline.topic,
           topic: outline.topic,
@@ -1062,8 +1067,11 @@ REMINDER: Current date is ${currentDate}. Ensure all data references and example
           },
           capture: true,
           organization_id: organizationId,
-          campaign_id: null
+          campaign_id: null,
+          campaign_folder: folderPath  // Save to Memory Vault under NIV Content folder
         }
+
+        console.log(`📁 Gamma will save to Memory Vault: ${folderPath}`)
 
         console.log('📤 Sending to Gamma:', {
           title: requestBody.title,

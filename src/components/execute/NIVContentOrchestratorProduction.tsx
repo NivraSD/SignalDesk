@@ -19,7 +19,9 @@ import {
   Video,
   Presentation,
   Search,
-  Zap
+  Zap,
+  ExternalLink,
+  Download
 } from 'lucide-react'
 import type { NivStrategicFramework } from '@/types/niv-strategic-framework'
 import type { ContentItem } from '@/types/content'
@@ -1907,9 +1909,10 @@ IMPORTANT:
               msg.id === messageId
                 ? {
                     ...msg,
-                    content: `✅ Your presentation "${topic}" is ready!\n\n[View in Gamma](${data.gammaUrl})`,
+                    content: `✅ Your presentation "${topic}" is ready!`,
                     metadata: {
                       ...msg.metadata,
+                      type: 'presentation',  // CRITICAL - triggers presentation UI rendering
                       status: 'completed',
                       url: data.gammaUrl,
                       gamma_url: data.gammaUrl,  // For Memory Vault display
@@ -2156,14 +2159,30 @@ IMPORTANT:
                       <Presentation className="w-5 h-5 text-purple-400" />
                       <span className="text-purple-400 font-medium">Presentation Created</span>
                     </div>
+
+                    {/* Prominent Gamma link button - matches Opportunity Engine */}
                     <a
                       href={msg.metadata.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-400 hover:text-blue-300 underline inline-flex items-center gap-1"
+                      className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-colors mb-3"
                     >
-                      View Presentation →
+                      <ExternalLink className="w-4 h-4" />
+                      View Gamma Presentation
                     </a>
+
+                    {/* Export PPTX button if available */}
+                    {msg.metadata?.pptx_url && (
+                      <a
+                        href={msg.metadata.pptx_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        <Download className="w-4 h-4" />
+                        Download PowerPoint
+                      </a>
+                    )}
                     <div className="flex gap-2 mt-3 pt-3 border-t border-purple-500/30">
                       <button
                         onClick={async () => {
@@ -2386,8 +2405,15 @@ IMPORTANT:
                               // Presentation ready immediately
                               setMessages(prev => [...prev, {
                                 role: 'assistant',
-                                content: `✅ Presentation generated successfully!\n\n[View in Gamma](${immediateUrl})`,
+                                content: `✅ Presentation generated successfully!`,
                                 timestamp: new Date(),
+                                metadata: {
+                                  type: 'presentation',  // CRITICAL - triggers presentation UI rendering
+                                  url: immediateUrl,
+                                  gamma_url: immediateUrl,
+                                  pptx_url: data.exportUrls?.pptx || null,
+                                  outline: msg.metadata.presentationOutline
+                                },
                                 contentItem: {
                                   type: 'presentation',
                                   content: immediateUrl,
