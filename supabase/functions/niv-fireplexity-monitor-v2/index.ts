@@ -458,9 +458,15 @@ function generateRealtimeQueries(
 ): string[] {
   const queries: string[] = []
   const industry = profile.industry || ''
+  const description = profile.description || ''
 
-  // Query 1: Organization news (always included)
-  queries.push(`${orgName} news`)
+  // Query 1: Organization news with industry disambiguation (CRITICAL for ambiguous names like "Amplify")
+  // Use industry context to prevent mixing up companies with same names (e.g., Amplify marketing vs Amplify Energy)
+  if (industry) {
+    queries.push(`${orgName} ${industry} news`) // e.g., "Amplify Integrated Marketing news"
+  } else {
+    queries.push(`${orgName} news`)
+  }
 
   if (recencyWindow === '24hours') {
     // 24-HOUR MODE: COMPREHENSIVE - Search ALL intelligence targets with context
@@ -545,13 +551,23 @@ function generateRealtimeQueries(
       queries.push(`${topic}`)
     })
 
-    // Crisis detection
-    queries.push(`${orgName} investigation OR lawsuit OR scandal`)
-    queries.push(`${orgName} recall OR breach OR security`)
+    // Crisis detection with industry disambiguation
+    if (industry) {
+      queries.push(`${orgName} ${industry} investigation OR lawsuit OR scandal`)
+      queries.push(`${orgName} ${industry} recall OR breach OR security`)
+    } else {
+      queries.push(`${orgName} investigation OR lawsuit OR scandal`)
+      queries.push(`${orgName} recall OR breach OR security`)
+    }
 
-    // Opportunity detection
-    queries.push(`${orgName} partnership OR acquisition OR merger`)
-    queries.push(`${orgName} funding OR investment OR expansion`)
+    // Opportunity detection with industry disambiguation
+    if (industry) {
+      queries.push(`${orgName} ${industry} partnership OR acquisition OR merger`)
+      queries.push(`${orgName} ${industry} funding OR investment OR expansion`)
+    } else {
+      queries.push(`${orgName} partnership OR acquisition OR merger`)
+      queries.push(`${orgName} funding OR investment OR expansion`)
+    }
 
     // Industry news
     if (industry) {
@@ -592,13 +608,23 @@ function generateRealtimeQueries(
       queries.push(`${topic}`)
     })
 
-    // Crisis detection
-    queries.push(`${orgName} investigation OR lawsuit OR scandal`)
-    queries.push(`${orgName} recall OR breach`)
+    // Crisis detection with industry disambiguation
+    if (industry) {
+      queries.push(`${orgName} ${industry} investigation OR lawsuit OR scandal`)
+      queries.push(`${orgName} ${industry} recall OR breach`)
+    } else {
+      queries.push(`${orgName} investigation OR lawsuit OR scandal`)
+      queries.push(`${orgName} recall OR breach`)
+    }
 
-    // Opportunity detection
-    queries.push(`${orgName} partnership OR acquisition`)
-    queries.push(`${orgName} funding OR investment`)
+    // Opportunity detection with industry disambiguation
+    if (industry) {
+      queries.push(`${orgName} ${industry} partnership OR acquisition`)
+      queries.push(`${orgName} ${industry} funding OR investment`)
+    } else {
+      queries.push(`${orgName} partnership OR acquisition`)
+      queries.push(`${orgName} funding OR investment`)
+    }
 
     // Industry breaking news
     if (industry) {
@@ -619,9 +645,14 @@ function generateRealtimeQueries(
       queries.push(`${comp} breaking`)
     })
 
-    // Most critical crisis detection
-    queries.push(`${orgName} investigation OR lawsuit`)
-    queries.push(`${orgName} recall OR breach`)
+    // Most critical crisis detection with industry disambiguation
+    if (industry) {
+      queries.push(`${orgName} ${industry} investigation OR lawsuit`)
+      queries.push(`${orgName} ${industry} recall OR breach`)
+    } else {
+      queries.push(`${orgName} investigation OR lawsuit`)
+      queries.push(`${orgName} recall OR breach`)
+    }
 
     // Breaking industry news
     if (industry) {
@@ -796,6 +827,7 @@ function scoreArticlesRelevance(
     // Filter out wrong context (e.g., KKR cricket team vs KKR & Co Inc private equity)
     const wrongContextKeywords = {
       'kkr': ['cricket', 'ipl', 'indian premier league', 'kolkata knight riders', 'head coach', 'batsman', 'bowler', 'wicket', 'match', 'tournament', 'team', 'player', 'squad'],
+      'amplify': ['energy', 'oil', 'gas', 'petroleum', 'drilling', 'barrel', 'crude', 'offshore', 'natural gas', 'reserves', 'production', 'wells', 'exploration', 'divestiture', 'etf', 'dividend income', 'natural resources']
       // Add more organizations with name conflicts as needed
     }
 
