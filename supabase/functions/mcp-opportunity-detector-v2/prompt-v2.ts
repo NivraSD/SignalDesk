@@ -12,11 +12,20 @@ export function buildOpportunityDetectionPromptV2(params: {
 }): string {
   const { organizationName, events, topics, quotes, entities, discoveryTargets, organizationProfile } = params
 
+  // Extract strategic context
+  const strategicContext = organizationProfile.strategic_context || {}
+  const targetCustomers = strategicContext.target_customers || ''
+  const brandPersonality = strategicContext.brand_personality || ''
+  const strategicPriorities = strategicContext.strategic_priorities || []
+
   return `MONITORING DATE: ${new Date().toISOString().split('T')[0]}
 
 ORGANIZATION: ${organizationName}
 INDUSTRY: ${organizationProfile.industry}
 KEY COMPETITORS: ${discoveryTargets.competitors.slice(0, 10).join(', ')}
+${targetCustomers ? `\nTARGET CUSTOMERS: ${targetCustomers}` : ''}
+${brandPersonality ? `BRAND PERSONALITY: ${brandPersonality}` : ''}
+${strategicPriorities.length > 0 ? `STRATEGIC PRIORITIES: ${strategicPriorities.join(', ')}` : ''}
 
 INTELLIGENCE DATA FROM TODAY'S MONITORING:
 
@@ -43,6 +52,12 @@ ${entities.slice(0, 15).map(e =>
 ====================================================================
 YOUR TASK: AGGRESSIVELY HUNT FOR ALL PR OPPORTUNITIES
 ====================================================================
+
+CRITICAL: ALIGN OPPORTUNITIES WITH STRATEGIC CONTEXT
+${targetCustomers ? `- Target opportunities that resonate with "${targetCustomers}"` : ''}
+${brandPersonality ? `- Maintain tone/style consistent with "${brandPersonality}"` : ''}
+${strategicPriorities.length > 0 ? `- Prioritize opportunities related to: ${strategicPriorities.join(', ')}` : ''}
+${targetCustomers || brandPersonality || strategicPriorities.length > 0 ? '\nFor example, if the brand is "data-driven and practical," avoid overly aspirational or emotional angles.\nIf targeting "marketing teams," focus on metrics, ROI, and measurement rather than technical infrastructure.' : ''}
 
 CREATIVE THINKING EXERCISES (apply to EVERY event):
 
