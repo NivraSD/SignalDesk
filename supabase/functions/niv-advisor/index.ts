@@ -3076,9 +3076,13 @@ function formatNivResponse(rawResponse: string, organizationName: string = 'your
   // First normalize line breaks to \n
   formatted = formatted.replace(/\r\n/g, '\n')
 
-  // Ensure blank lines after markdown headers (e.g., **Header:**)
-  // This makes responses more readable even if Claude forgets
-  formatted = formatted.replace(/(\*\*[^*]+\*\*:?)\n(?!\n)/g, '$1\n\n')
+  // Add blank lines BEFORE markdown headers (e.g., **Header:**)
+  // This works whether Claude puts text on same line or next line
+  formatted = formatted.replace(/([^\n])(\n)(\*\*[^*]+\*\*:)/g, '$1\n\n$3')
+
+  // Add blank line AFTER headers if there's text on the same line after colon
+  // e.g., "**Header:** Some text" becomes "**Header:**\n\nSome text"
+  formatted = formatted.replace(/(\*\*[^*]+\*\*:)\s+([^\n])/g, '$1\n\n$2')
 
   // Collapse multiple consecutive newlines (3+) into double newlines
   formatted = formatted.replace(/\n{3,}/g, '\n\n')
@@ -4946,9 +4950,17 @@ Remember to maintain natural conversation flow while bringing this perspective t
     // Clean up any tool use tags or XML-like content from Claude's response
     responseText = cleanClaudeResponse(responseText)
 
+    // DEBUG: Log BEFORE formatting
+    console.log('🔍 BEFORE formatNivResponse (first 500 chars):', responseText.substring(0, 500))
+    console.log('🔍 BEFORE Contains \\n\\n?', responseText.includes('\n\n'))
+
     // Format the response with organization context
     const orgName = toolResults.discoveryData?.organizationName || context.organizationId || 'your organization'
     responseText = formatNivResponse(responseText, orgName)
+
+    // DEBUG: Log AFTER formatting
+    console.log('🔍 AFTER formatNivResponse (first 500 chars):', responseText.substring(0, 500))
+    console.log('🔍 AFTER Contains \\n\\n?', responseText.includes('\n\n'))
 
     // Extract structured content
     const structuredContent = extractStructuredContent(responseText, queryType)
@@ -4957,10 +4969,6 @@ Remember to maintain natural conversation flow while bringing this perspective t
       type: structuredContent.type,
       formatted: structuredContent.formatted
     })
-
-    // DEBUG: Log first 500 chars of actual response to verify formatting
-    console.log('📝 Response preview (first 500 chars):', responseText.substring(0, 500))
-    console.log('🔍 Contains \\n\\n?', responseText.includes('\n\n'))
 
     // Framework decision was already made above before the API call
 
