@@ -1,8 +1,9 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Activity, Target, FileText, AlertCircle, TrendingUp, Users, Clock } from 'lucide-react'
+import { Activity, Target, FileText, AlertCircle, TrendingUp, Users, Clock, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
+import { useAppStore } from '@/stores/useAppStore'
 
 interface ActivityItem {
   id: string
@@ -19,8 +20,10 @@ interface LiveActivityFeedProps {
 }
 
 export default function LiveActivityFeed({ organizationId, onNavigate }: LiveActivityFeedProps) {
+  const { organization } = useAppStore()
   const [activities, setActivities] = useState<ActivityItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [opportunitiesCollapsed, setOpportunitiesCollapsed] = useState(false)
 
   useEffect(() => {
     loadActivities()
@@ -135,6 +138,10 @@ export default function LiveActivityFeed({ organizationId, onNavigate }: LiveAct
     )
   }
 
+  // Separate opportunities from other activities
+  const opportunities = activities.filter(a => a.type === 'opportunity')
+  const otherActivities = activities.filter(a => a.type !== 'opportunity')
+
   return (
     <div className="bg-gray-800/30 h-full flex flex-col">
       <div className="p-4 border-b border-gray-700">
@@ -142,65 +149,132 @@ export default function LiveActivityFeed({ organizationId, onNavigate }: LiveAct
           <Activity className="w-5 h-5 text-purple-400" />
           Daily Intelligence Brief
         </h2>
-        <p className="text-xs text-gray-400 mt-1">Real-time platform activity</p>
+        {organization && (
+          <div className="mt-2 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-white">{organization.name}</p>
+              <p className="text-xs text-gray-400">{organization.industry || 'Technology'}</p>
+            </div>
+            <button
+              onClick={() => onNavigate?.('intelligence')}
+              className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1 transition-colors"
+            >
+              View Report
+              <ExternalLink className="w-3 h-3" />
+            </button>
+          </div>
+        )}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {activities.length === 0 ? (
           <div className="text-center py-8">
             <Activity className="w-12 h-12 text-gray-600 mx-auto mb-2" />
             <p className="text-sm text-gray-400">No recent activity</p>
           </div>
         ) : (
-          activities.map((activity) => (
-            <div
-              key={activity.id}
-              className="bg-gray-900/50 border border-gray-700 rounded-lg p-3 hover:border-purple-500/30 transition-colors cursor-pointer"
-              onClick={() => {
-                if (activity.type === 'opportunity') {
-                  onNavigate?.('opportunities', { selectedId: activity.id })
-                } else if (activity.type === 'campaign') {
-                  onNavigate?.('campaigns', { selectedId: activity.id })
-                }
-              }}
-            >
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 mt-0.5">
-                  {getActivityIcon(activity.type)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <span className="text-sm font-medium text-white truncate">
-                      {activity.title}
+          <>
+            {/* Opportunities Section - Collapsible */}
+            {opportunities.length > 0 && (
+              <div>
+                <button
+                  onClick={() => setOpportunitiesCollapsed(!opportunitiesCollapsed)}
+                  className="w-full flex items-center justify-between mb-2 px-2 py-1 hover:bg-gray-800/50 rounded transition-colors group"
+                >
+                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide flex items-center gap-2">
+                    <Target className="w-4 h-4 text-purple-400" />
+                    Opportunities
+                    <span className="px-1.5 py-0.5 bg-purple-500/20 text-purple-300 rounded text-xs font-medium">
+                      {opportunities.length}
                     </span>
-                    <span className="text-xs text-gray-500 whitespace-nowrap flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {formatTimeAgo(activity.timestamp)}
-                    </span>
+                  </h3>
+                  {opportunitiesCollapsed ? <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-white" /> : <ChevronUp className="w-4 h-4 text-gray-400 group-hover:text-white" />}
+                </button>
+
+                {!opportunitiesCollapsed && (
+                  <div className="space-y-2">
+                    {opportunities.map((activity) => (
+                      <div
+                        key={activity.id}
+                        className="bg-gray-900/50 border border-gray-700 rounded-lg p-3 hover:border-purple-500/30 transition-colors cursor-pointer"
+                        onClick={() => onNavigate?.('opportunities', { selectedId: activity.id })}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0 mt-0.5">
+                            {getActivityIcon(activity.type)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <span className="text-sm font-medium text-white truncate">
+                                {activity.description || activity.title}
+                              </span>
+                              <span className="text-xs text-gray-500 whitespace-nowrap flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {formatTimeAgo(activity.timestamp)}
+                              </span>
+                            </div>
+                            {activity.metadata && activity.metadata.score && (
+                              <span className="text-xs px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded inline-block">
+                                Score: {activity.metadata.score}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  {activity.description && (
-                    <p className="text-xs text-gray-400 truncate mb-1">
-                      {activity.description}
-                    </p>
-                  )}
-                  {activity.metadata && (
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {activity.metadata.score && (
-                        <span className="text-xs px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded">
-                          Score: {activity.metadata.score}
-                        </span>
-                      )}
-                      {activity.metadata.phase && (
-                        <span className="text-xs px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded">
-                          {activity.metadata.phase}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
-            </div>
-          ))
+            )}
+
+            {/* Other Activities */}
+            {otherActivities.length > 0 && (
+              <div className="space-y-2">
+                {otherActivities.map((activity) => (
+                  <div
+                    key={activity.id}
+                    className="bg-gray-900/50 border border-gray-700 rounded-lg p-3 hover:border-purple-500/30 transition-colors cursor-pointer"
+                    onClick={() => {
+                      if (activity.type === 'campaign') {
+                        onNavigate?.('campaigns', { selectedId: activity.id })
+                      }
+                    }}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 mt-0.5">
+                        {getActivityIcon(activity.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <span className="text-sm font-medium text-white truncate">
+                            {activity.title}
+                          </span>
+                          <span className="text-xs text-gray-500 whitespace-nowrap flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {formatTimeAgo(activity.timestamp)}
+                          </span>
+                        </div>
+                        {activity.description && (
+                          <p className="text-xs text-gray-400 truncate mb-1">
+                            {activity.description}
+                          </p>
+                        )}
+                        {activity.metadata && (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {activity.metadata.phase && (
+                              <span className="text-xs px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded">
+                                {activity.metadata.phase}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
 

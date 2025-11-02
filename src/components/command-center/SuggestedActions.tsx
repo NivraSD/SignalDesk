@@ -217,6 +217,11 @@ export default function SuggestedActions({ organizationId, onNavigate }: Suggest
         <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wide flex items-center gap-2">
           <Zap className="w-4 h-4 text-yellow-400" />
           Suggested Actions
+          {actions.length > 0 && (
+            <span className="px-1.5 py-0.5 bg-yellow-500/20 text-yellow-300 rounded text-xs font-medium">
+              {actions.length}
+            </span>
+          )}
         </h3>
         <button className="text-gray-400 hover:text-white transition-colors">
           {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}

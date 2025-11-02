@@ -520,9 +520,6 @@ ${blueprint.strategy?.keyMessages?.map((msg: string, i: number) => `${i + 1}. ${
             )}
           </button>
         </form>
-        <p className="text-xs text-gray-500 mt-2">
-          Powered by V4 orchestrator - CASCADE, MIRROR, CHORUS, TROJAN, NETWORK patterns supported
-        </p>
       </div>
     </div>
   )
