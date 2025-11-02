@@ -4223,7 +4223,10 @@ serve(async (req) => {
 
     // Intelligent query analysis and resource selection
     // Extract organization from context - matches niv-orchestrator-robust exactly
-    let organizationId = context.organizationId || context.organization || context.organizationName
+    // organizationId already declared from request body, just reassign if needed
+    if (!organizationId) {
+      organizationId = context.organizationId || context.organization || context.organizationName
+    }
 
     // Handle edge cases with organization input
     if (typeof organizationId !== 'string') {
