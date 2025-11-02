@@ -1469,21 +1469,41 @@ ${campaignContext.timeline || 'Not specified'}
     // Update conversation state with understanding
     updateConversationState(conversationId, message, 'user', understanding)
 
-    // Build conversation context
-    const conversationContext = buildConversationContext(
+    // Check if user is referencing conversation history ("based on what we discussed")
+    let conversationSynthesis: ConversationSynthesis | null = null
+    if (requiresConversationSynthesis(message)) {
+      console.log('🧠 Detected conversation reference - synthesizing history...')
+      conversationSynthesis = await synthesizeConversationContext(
+        conversationHistory,
+        message,
+        ANTHROPIC_API_KEY
+      )
+      console.log('✅ Conversation synthesis complete:', {
+        themes: conversationSynthesis.themes.length,
+        decisions: conversationSynthesis.keyDecisions.length,
+        concepts: conversationSynthesis.concepts.length
+      })
+    }
+
+    // Build conversation context (with synthesis if available)
+    const conversationContext = await buildConversationContext(
       message,
       conversationHistory,
-      orgProfile
+      orgProfile,
+      conversationSynthesis
     )
 
     // Detect if we need research based on understanding
-    // Skip research for simple media list requests
+    // Skip research if we have conversation synthesis (user wants content based on discussion)
     const isSimpleMediaList = message.toLowerCase().includes('media list') &&
                               !message.toLowerCase().includes('media plan');
 
     // Trust the understanding - if Claude says it needs fresh data, do research
+    // BUT: Skip research if we synthesized conversation (user wants content from discussion)
     // Access the nested understanding object
-    let needsResearch = !isSimpleMediaList && understanding.understanding?.requires_fresh_data;
+    let needsResearch = !isSimpleMediaList &&
+                       !conversationSynthesis &&
+                       understanding.understanding?.requires_fresh_data;
 
     // TOPIC-CHANGE DETECTION: If topic has significantly changed from previous research, force new research
     if (!needsResearch && conversationState.researchResults) {
@@ -3539,15 +3559,47 @@ async function getQuickAcknowledgment(message: string, orgProfile: any): Promise
 }
 
 // Helper: Build conversation context for Claude
-function buildConversationContext(
+async function buildConversationContext(
   message: string,
   history: any[],
-  orgProfile: any
-): string {
+  orgProfile: any,
+  conversationSynthesis?: ConversationSynthesis | null
+): Promise<string> {
   let context = `**ORGANIZATION:** ${orgProfile.organizationName}\n`
   context += `**INDUSTRY:** ${orgProfile.industry}\n\n`
 
-  if (history.length > 0) {
+  // If we have conversation synthesis (user referenced "what we discussed"), use it
+  if (conversationSynthesis) {
+    context += `**CONVERSATION SYNTHESIS:**\n`
+    context += `Summary: ${conversationSynthesis.summary}\n\n`
+
+    if (conversationSynthesis.keyDecisions.length > 0) {
+      context += `**Key Decisions Made:**\n`
+      conversationSynthesis.keyDecisions.forEach((decision, i) => {
+        context += `${i + 1}. ${decision}\n`
+      })
+      context += `\n`
+    }
+
+    if (conversationSynthesis.concepts.length > 0) {
+      context += `**Core Concepts Developed:**\n`
+      conversationSynthesis.concepts.forEach((concept, i) => {
+        context += `${i + 1}. ${concept}\n`
+      })
+      context += `\n`
+    }
+
+    if (conversationSynthesis.themes.length > 0) {
+      context += `**Themes:**\n`
+      conversationSynthesis.themes.forEach(theme => {
+        context += `- ${theme.theme}: ${theme.description}\n`
+      })
+      context += `\n`
+    }
+
+    context += `**CRITICAL:** The user wants content based on this conversation. Use the synthesis above, not web research.\n\n`
+  } else if (history.length > 0) {
+    // Standard conversation history (last 5 messages)
     context += `**CONVERSATION HISTORY:**\n`
     history.slice(-5).forEach(msg => {
       context += `${msg.role === 'user' ? 'User' : 'NIV'}: ${msg.content}\n`
