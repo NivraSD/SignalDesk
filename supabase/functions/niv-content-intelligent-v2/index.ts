@@ -3350,14 +3350,21 @@ Analyze this request to understand what content they need and how to help them:
    - Research was already completed (mentioned above)
    - You already presented strategic options in this conversation
    - User is selecting from options you gave
-   - User already provided all the context/details (e.g., they described their concept, strategy, or approach)
-   - This is creative/conceptual work based on user's own ideas (pitches, proposals, internal concepts)
    - Request is for templates, frameworks, or best practices (not current market data)
+   - Simple creative requests with no need for external validation (e.g., "write a social post about our new product")
 
-   **Answer YES only if:**
+   **Answer YES if:**
+   - Creating pitches/proposals that would benefit from target company's recent news, campaigns, or positioning
    - User needs current market data, statistics, or trends they don't already have
    - Request explicitly asks for market analysis, competitive intelligence, or recent news
    - User is asking "what's happening in [market/industry]" or similar research questions
+   - Presentations/decks that need data-driven insights or current industry trends
+
+   **Examples:**
+   - "Create a pitch to Rocket Mortgage for a Super Bowl activation" → YES (recent Rocket Mortgage campaigns help)
+   - "Create a presentation on AI trends in healthcare" → YES (needs current trend data)
+   - "Write a social post about our product launch" → NO (user knows their product)
+   - "Create talking points for our press release" → NO (user already has the news)
 
 4. What entities (companies, products, people) are mentioned?
 5. What topics or themes should I focus on?
@@ -3696,7 +3703,7 @@ ${context}`
     },
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 2000,
+      max_tokens: 4096,  // Increased from 2000 - tool calls need more space
       system: enhancedSystemPrompt,
       messages: messages,
       tools: CONTENT_GENERATION_TOOLS
@@ -3715,80 +3722,115 @@ ${context}`
 async function executeResearch(query: string, organizationId: string) {
   console.log('🔍 Executing research via Fireplexity...')
 
-  try {
-    // Create timeout promise (90 seconds to stay well under Supabase's 150s limit)
-    const timeout = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Research timeout after 90s')), 90000)
-    );
+  // Retry configuration
+  const maxRetries = 2
+  const retryDelay = 2000 // 2 seconds
 
-    const fetchPromise = fetch(
-      `${SUPABASE_URL}/functions/v1/niv-fireplexity`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
-        },
-        body: JSON.stringify({
-          query: query,
-          organizationId: organizationId,
-          searchMode: 'focused', // Use focused mode for speed
-          useCache: true
-        })
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      if (attempt > 1) {
+        console.log(`🔄 Retry attempt ${attempt}/${maxRetries}`)
+        await new Promise(resolve => setTimeout(resolve, retryDelay * (attempt - 1)))
       }
-    );
 
-    // Race between fetch and timeout
-    const response = await Promise.race([fetchPromise, timeout]) as Response;
+      // Create timeout promise (90 seconds to stay well under Supabase's 150s limit)
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Research timeout after 90s')), 90000)
+      );
 
-    if (!response.ok) {
-      console.error('Research failed:', response.statusText)
-      throw new Error('Research failed')
+      const fetchPromise = fetch(
+        `${SUPABASE_URL}/functions/v1/niv-fireplexity`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+          },
+          body: JSON.stringify({
+            query: query,
+            organizationId: organizationId,
+            searchMode: 'focused', // Use focused mode for speed
+            useCache: true
+          })
+        }
+      );
+
+      // Race between fetch and timeout
+      const response = await Promise.race([fetchPromise, timeout]) as Response;
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => response.statusText)
+        console.error(`Research failed (attempt ${attempt}/${maxRetries}):`, response.status, errorText.substring(0, 200))
+
+        // If 502/503 (server error), retry. If 4xx (client error), don't retry
+        if (response.status >= 500 && attempt < maxRetries) {
+          console.log(`🔄 Server error ${response.status}, will retry...`)
+          continue
+        }
+
+        throw new Error(`Research failed: ${response.status}`)
+      }
+
+      const data = await response.json()
+
+      // If we got here, research succeeded
+      console.log(`✅ Research succeeded on attempt ${attempt}/${maxRetries}`)
+      console.log(`✅ Research complete: ${data.results?.length || 0} articles`)
+
+      // Build clean, readable keyFindings from top results
+      const keyFindings = data.results?.slice(0, 5).map((r: any) => {
+        // Clean title - remove extra whitespace, special chars
+        const title = (r.title || 'Article')
+          .replace(/\s+/g, ' ')
+          .replace(/[^\w\s\-\.,&]/g, '')
+          .trim()
+
+        // Clean and truncate description
+        const description = (r.description || '')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .substring(0, 200)  // Max 200 chars
+
+        return description
+          ? `**${title}** - ${description}${description.length >= 200 ? '...' : ''}`
+          : `**${title}**`
+      }).filter(f => f) || []
+
+      console.log(`📊 Research data: keyFindings=${keyFindings.length}`)
+      if (keyFindings.length > 0) {
+        console.log(`📋 Key finding preview: ${keyFindings[0]?.substring(0, 100)}...`)
+      } else {
+        console.log(`⚠️ No results returned from research!`)
+      }
+
+      return {
+        articles: data.results || [],
+        synthesis: data.summary || '',
+        keyFindings: keyFindings
+      }
+
+    } catch (error) {
+      console.error(`⚠️ Research attempt ${attempt}/${maxRetries} failed:`, error.message)
+
+      // If this was the last attempt, return empty results
+      if (attempt === maxRetries) {
+        console.error('⚠️ All research attempts failed - continuing without research')
+        return {
+          articles: [],
+          synthesis: '',
+          keyFindings: []
+        }
+      }
+
+      // Otherwise, continue to next retry
     }
+  }
 
-    const data = await response.json()
-
-    console.log(`✅ Research complete: ${data.results?.length || 0} articles`)
-
-    // Build clean, readable keyFindings from top results
-    const keyFindings = data.results?.slice(0, 5).map((r: any) => {
-      // Clean title - remove extra whitespace, special chars
-      const title = (r.title || 'Article')
-        .replace(/\s+/g, ' ')
-        .replace(/[^\w\s\-\.,&]/g, '')
-        .trim()
-
-      // Clean and truncate description
-      const description = (r.description || '')
-        .replace(/\s+/g, ' ')
-        .trim()
-        .substring(0, 200)  // Max 200 chars
-
-      return description
-        ? `**${title}** - ${description}${description.length >= 200 ? '...' : ''}`
-        : `**${title}**`
-    }).filter(f => f) || []
-
-    console.log(`📊 Research data: keyFindings=${keyFindings.length}`)
-    if (keyFindings.length > 0) {
-      console.log(`📋 Key finding preview: ${keyFindings[0]?.substring(0, 100)}...`)
-    } else {
-      console.log(`⚠️ No results returned from research!`)
-    }
-
-    return {
-      articles: data.results || [],
-      synthesis: data.summary || '',
-      keyFindings: keyFindings
-    }
-  } catch (error) {
-    console.error('⚠️ Research failed or timed out:', error.message);
-    // Return empty results so NIV can continue without research
-    return {
-      articles: [],
-      synthesis: '',
-      keyFindings: []
-    }
+  // Should never reach here, but just in case
+  return {
+    articles: [],
+    synthesis: '',
+    keyFindings: []
   }
 }
 
