@@ -1,410 +1,410 @@
 [
 {
+"event_message": "🔍 AFTER Contains \\n\\n? false\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "3384c9cb-4f86-469e-8b6f-2c875e90580a",
+"level": "info",
+"timestamp": 1762118134410000
+},
+{
+"event_message": "🔍 AFTER formatNivResponse (first 500 chars): **Intelligence Analysis - Super Bowl LX 2026 Opportunity** Let me start with the research landscape for Rocket Mortgage's Super Bowl positioning. **Current Market Intelligence:** I'm seeing strong momentum around **home as sanctuary** messaging in 2025 - especially relevant given the post-pandemic shift toward home-centric lifestyles. The \"comfort at home\" angle you mentioned aligns perfectly with broader cultural trends. **Rocket Mortgage's Super Bowl History:** They've been a Super Bowl regula\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "bd32da01-a14e-4fec-8c7e-7b8148287de8",
+"level": "info",
+"timestamp": 1762118134410000
+},
+{
 "event_message": "✅ NIV Response generated: { type: \"simple\", formatted: true }\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "b5888aa5-659f-474d-bd27-00b8663dfa06",
+"id": "1d0e08e1-7c36-49a5-8628-3cfb43afff8b",
 "level": "info",
-"timestamp": 1762116560147000
-},
-{
-"event_message": "🔍 AFTER formatNivResponse (first 500 chars): **Current Intelligence Brief on CEO Visibility in EdTech**\n\nBased on my research, here's what's happening in the CEO visibility space right now: **Key Pattern: The \"Consistent Executive Content\" Movement**\n\nI'm seeing a clear shift where successful executives are treating visibility as a **career strategy, not a campaign**. Steven Piessens nailed it - too many CEOs post for 3 months then disappear for 6. The executives who are winning are the ones with disciplined, weekly content rhythms. **EdTe\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "3737f29a-0923-464a-abd8-4cea65cf94c1",
-"level": "info",
-"timestamp": 1762116560147000
-},
-{
-"event_message": "🔍 AFTER Contains \\n\\n? true\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "a7482a18-a8a5-4abb-b2c0-2f090bf99218",
-"level": "info",
-"timestamp": 1762116560147000
+"timestamp": 1762118134410000
 },
 {
 "event_message": "🔍 BEFORE Contains \\n\\n? false\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "95cc04b0-6d1a-406d-8bc9-95cfe11ab133",
+"id": "e023b060-0849-4997-9a98-edd5379cc63f",
 "level": "info",
-"timestamp": 1762116560146000
+"timestamp": 1762118134409000
 },
 {
-"event_message": "🔍 BEFORE formatNivResponse (first 500 chars): **Current Intelligence Brief on CEO Visibility in EdTech** Based on my research, here's what's happening in the CEO visibility space right now: **Key Pattern: The \"Consistent Executive Content\" Movement** I'm seeing a clear shift where successful executives are treating visibility as a **career strategy, not a campaign**. Steven Piessens nailed it - too many CEOs post for 3 months then disappear for 6. The executives who are winning are the ones with disciplined, weekly content rhythms. **EdTech\n",
+"event_message": "🔍 BEFORE formatNivResponse (first 500 chars): **Intelligence Analysis - Super Bowl LX 2026 Opportunity** Let me start with the research landscape for Rocket Mortgage's Super Bowl positioning. **Current Market Intelligence:** I'm seeing strong momentum around **home as sanctuary** messaging in 2025 - especially relevant given the post-pandemic shift toward home-centric lifestyles. The \"comfort at home\" angle you mentioned aligns perfectly with broader cultural trends. **Rocket Mortgage's Super Bowl History:** They've been a Super Bowl regula\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "9a9e1616-9544-431e-a1c5-bff90d7ecc1b",
+"id": "afbb8309-54d5-462e-8f97-862535895d37",
 "level": "info",
-"timestamp": 1762116560146000
+"timestamp": 1762118134409000
 },
 {
-"event_message": "🔢 Token count validation: System=7676, Message=882, Total=8558\n",
+"event_message": "🔢 Token count validation: System=7676, Message=953, Total=8629\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "1da08984-037f-456b-a029-ad8750543b38",
+"id": "ce19b003-b606-42b0-bd8b-88c7133bdbec",
 "level": "info",
-"timestamp": 1762116547456000
-},
-{
-"event_message": "📊 Concept State - Stage: exploring, Confidence: 0%\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "dcb09b46-4336-4931-8f7e-c6dd82a6da73",
-"level": "info",
-"timestamp": 1762116547455000
-},
-{
-"event_message": "🎯 Framework generation decision: false\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "644002fb-2c6a-4cbb-9a5f-ff78038c6acb",
-"level": "info",
-"timestamp": 1762116547455000
-},
-{
-"event_message": " Competitors: \n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "098421ad-2f45-467e-85c3-59a9b37d20f5",
-"level": "info",
-"timestamp": 1762116547455000
-},
-{
-"event_message": " Industry: Education Technology\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "9d7c37b9-2627-4d4a-9e31-bcf299d87a02",
-"level": "info",
-"timestamp": 1762116547455000
+"timestamp": 1762118120003000
 },
 {
 "event_message": "🤖 Claude says do research first, not framework\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "0fee8b95-32bf-4bdf-82bd-1f3dbf8c48df",
+"id": "fc4fc9a0-7b8a-44d9-b57c-5af78322d58c",
 "level": "info",
-"timestamp": 1762116547455000
+"timestamp": 1762118120002000
 },
 {
-"event_message": " Keywords: Amplify\n",
+"event_message": "🎯 Framework generation decision: false\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "0381cf0c-9e2f-4b52-bf01-00b6e618630f",
+"id": "8ab31582-20ed-45fd-8aff-02d26ce33990",
 "level": "info",
-"timestamp": 1762116547455000
+"timestamp": 1762118120002000
 },
 {
 "event_message": "🎯 Loaded profile for undefined: 0 competitors, 1 keywords\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "61bff4a5-aed0-44a0-9901-a25b723fd859",
+"id": "0c5cdf3c-47f3-475c-af06-03c3c1387c80",
 "level": "info",
-"timestamp": 1762116547455000
+"timestamp": 1762118120001000
 },
 {
-"event_message": "🎯 Using organization profile: undefined\n",
+"event_message": "📊 Concept State - Stage: exploring, Confidence: 0%\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "c74bd479-afe5-4d6d-84e7-cfdbb04d40a6",
+"id": "2e241dcb-9c10-4c73-aceb-ee0f2f140120",
 "level": "info",
-"timestamp": 1762116547455000
+"timestamp": 1762118120001000
+},
+{
+"event_message": " Competitors: \n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "bb842f0d-19da-494e-8ebd-e5510744a212",
+"level": "info",
+"timestamp": 1762118120001000
+},
+{
+"event_message": " Keywords: Amplify\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "07cc39f3-461e-40ef-accb-29d776703d8d",
+"level": "info",
+"timestamp": 1762118120001000
 },
 {
 "event_message": "📊 Research accumulated: 1 rounds\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "3be93453-caa2-4921-b212-23d0115912b5",
+"id": "010499cf-beae-4217-aaa8-83d323dbd65f",
 "level": "info",
-"timestamp": 1762116547455000
+"timestamp": 1762118120001000
 },
 {
-"event_message": "📊 Research complete - preparing intelligence for response...\n",
+"event_message": " Industry: Education Technology\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "e1c5cbd6-3abc-4a6f-ba81-a7784dd89999",
+"id": "83b00b42-f830-4177-a7a3-fe493227e9b6",
 "level": "info",
-"timestamp": 1762116547399000
+"timestamp": 1762118120001000
+},
+{
+"event_message": "🎯 Using organization profile: undefined\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "8b1ff052-1ce4-4908-8b59-714703bc7db1",
+"level": "info",
+"timestamp": 1762118120001000
 },
 {
 "event_message": "🔍 Orchestrated research complete: 10 articles, 2 findings\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "94cad56e-7a85-48ce-a88a-cc5634948788",
+"id": "057105cc-eab7-4bbc-9270-48d7da089d3c",
 "level": "info",
-"timestamp": 1762116547399000
+"timestamp": 1762118119890000
+},
+{
+"event_message": "📊 Research complete - preparing intelligence for response...\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "7ef276a1-0b86-4bb5-87e5-69553fca5875",
+"level": "info",
+"timestamp": 1762118119890000
+},
+{
+"event_message": "✅ Completed step step-1: Super Bowl marketing activations 2025 mortgage fin...\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "c2f54418-0f57-4acb-8cb4-d0bbe29727d6",
+"level": "info",
+"timestamp": 1762118119890000
 },
 {
 "event_message": "✅ Firecrawl returned 10 results\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "38157f2e-641a-4b93-9f7d-cae7ecefbd57",
+"id": "24dce4ac-7e1c-4c71-a6c8-64a8eaa0f52d",
 "level": "info",
-"timestamp": 1762116547398000
-},
-{
-"event_message": "✅ Completed step step-1: CEO visibility strategies executive thought leader...\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "78b03702-8826-4a36-9b2a-3ebdc0e21452",
-"level": "info",
-"timestamp": 1762116547398000
-},
-{
-"event_message": "🔍 Executing research step: initial-scan - CEO visibility strategies executive thought leadership 2025 media presence best practices\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "e1f71900-4a92-4649-9dc7-98fbb687121d",
-"level": "info",
-"timestamp": 1762116539658000
-},
-{
-"event_message": "🔬 Orchestration calling FireSearch for: \"CEO visibility strategies executive thought leader...\"\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "be532e7a-047d-41ef-92b7-292f49272263",
-"level": "info",
-"timestamp": 1762116539658000
+"timestamp": 1762118119889000
 },
 {
 "event_message": "🔬 Using FireSearch for initial-scan\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "608be17f-ef64-40fb-ac4f-ca76098e7e18",
+"id": "6d0e6125-8f1f-4d63-b1a7-2145eeb38291",
 "level": "info",
-"timestamp": 1762116539658000
+"timestamp": 1762118058729000
+},
+{
+"event_message": "🔬 Orchestration calling FireSearch for: \"Super Bowl marketing activations 2025 mortgage fin...\"\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "6b21a7ae-c533-4ea0-bde9-1bf12b7486fb",
+"level": "info",
+"timestamp": 1762118058729000
 },
 {
 "event_message": "📋 Research plan created: 1 steps\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "9894b537-4056-45d1-a9e5-c5ac7084539b",
+"id": "eaff46e4-6e85-4b1e-b388-59a473cae428",
 "level": "info",
-"timestamp": 1762116539658000
+"timestamp": 1762118058729000
 },
 {
-"event_message": "🧠 Claude understanding: {\n understanding: {\n what_user_wants: \"Strategic advice on improving their CEO's visibility and public profile\",\n entities: [ \"CEO\", \"executive visibility\" ],\n timeframe: \"current best practices\",\n topics: [\n \"CEO visibility strategies\",\n \"executive thought leadership\",\n \"media presence\",\n \"public relations\"\n ],\n requires_fresh_data: true,\n why_fresh_data: \"Need current best practices, recent CEO visibility campaigns, and 2025 media landscape trends to provide relevant strategic advice\"\n },\n approach: {\n strategy: \"fireplexity_targeted\",\n reasoning: \"This requires understanding current CEO visibility trends, successful 2025 campaigns, and modern media landscape dynamics to provide actionable strategic advice\",\n search_query: \"CEO visibility strategies executive thought leadership 2025 media presence best practices\",\n search_domains: \"quality_first\",\n domain_reasoning: \"CEO visibility strategies are covered in business publications, PR industry sources, and marketing publications - quality sources will have the strategic frameworks but may need broader search for recent case studies\",\n confidence: 0.8,\n generate_framework: false,\n framework_reasoning: \"User is asking for strategic advice, not requesting a formal framework document. They want to understand options and approaches first.\"\n },\n acknowledgment: \"I'll research current CEO visibility strategies and successful approaches from 2025 to give you actionable options for elevating your CEO's profile.\"\n}\n",
+"event_message": "🔍 Executing research step: initial-scan - Super Bowl marketing activations 2025 mortgage fintech home buying experiential campaigns\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "f1fa7248-48cf-4ef4-b09f-2d281005e473",
+"id": "6ce06756-1680-4e4e-8d0c-4a0b11925e83",
 "level": "info",
-"timestamp": 1762116539597000
+"timestamp": 1762118058729000
 },
 {
-"event_message": "🤖 Query requires multi-step orchestration...\n",
+"event_message": "🔍 Using research query: \"Super Bowl marketing activations 2025 mortgage fintech home buying experiential ...\"\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "f5a0114b-2317-4fec-918e-032d1bea7d79",
+"id": "c4b5bf5c-f936-4a33-9d21-333908ef7682",
 "level": "info",
-"timestamp": 1762116539597000
-},
-{
-"event_message": "🎯 Strategy chosen: fireplexity_targeted (confidence: 0.8)\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "13e952e9-6446-4002-b6b9-1353e7d61477",
-"level": "info",
-"timestamp": 1762116539597000
-},
-{
-"event_message": "🔍 Using research query: \"CEO visibility strategies executive thought leadership 2025 media presence best ...\"\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "4b206b85-a31c-4d7a-96be-ee9878006d72",
-"level": "info",
-"timestamp": 1762116539597000
-},
-{
-"event_message": "📝 Query type: general\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "3265aad5-ce9f-4e98-84db-276ba2652023",
-"level": "info",
-"timestamp": 1762116530386000
-},
-{
-"event_message": "🏢 Organization context: \"Amplify\" (validated)\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "c6a238e0-bbf5-422f-b2f8-8ddf5478f87e",
-"level": "info",
-"timestamp": 1762116530386000
-},
-{
-"event_message": "🎭 Active persona: NIV - Chief Intelligence Analyst for intelligence module\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "5ac44ff6-7805-428e-9d54-8578e9fe9cb3",
-"level": "info",
-"timestamp": 1762116530386000
-},
-{
-"event_message": "✅ Loaded organization profile from database: Amplify\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "df11ea91-8b7c-49a6-a057-eb69bc324e77",
-"level": "info",
-"timestamp": 1762116530386000
-},
-{
-"event_message": "✅ Found profile by organization_id: Amplify\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "ca9f644f-b0c9-41c2-b44d-d2f0277a29dc",
-"level": "info",
-"timestamp": 1762116530385000
-},
-{
-"event_message": "🔍 Searching for organization: \"485dfe92-b67e-47b4-9523-1b3a523d7d07\" (type: string)\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "0f890ef1-23ee-4da1-994a-9167ee7e75f7",
-"level": "info",
-"timestamp": 1762116530330000
-},
-{
-"event_message": "🔍 Detected UUID format, searching by organization_id\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "5cd2b408-7ddc-4042-a310-ca61f0a40aa7",
-"level": "info",
-"timestamp": 1762116530330000
-},
-{
-"event_message": "🎯 NIV calling mcp-discovery for: 485dfe92-b67e-47b4-9523-1b3a523d7d07\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "fce93f9c-decb-4493-8cd7-03d3d4d1a0ee",
-"level": "info",
-"timestamp": 1762116530327000
-},
-{
-"event_message": "🤖 NIV Processing: {\n message: \"how can we improve visibility of CEO\",\n sessionId: \"niv-1762116481699\",\n stage: \"full\"\n}\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "c8c21b78-5818-47ed-a1aa-9f9f0f6bd26f",
-"level": "info",
-"timestamp": 1762116530326000
-},
-{
-"event_message": "Listening on http://localhost:9999/\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "6bffa8c8-fef1-4063-a788-afba34bdf123",
-"level": "info",
-"timestamp": 1762116530321000
-},
-{
-"event_message": "booted (time: 35ms)",
-"event_type": "Boot",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "ab92c3c4-5c15-4f25-aef1-049a6cdf4263",
-"level": "log",
-"timestamp": 1762116530316000
+"timestamp": 1762118058669000
 },
 {
 "event_message": "🎯 Strategy chosen: fireplexity_targeted (confidence: 0.85)\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "facd28af-867b-4f8c-baf2-328c80c843ed",
+"id": "360f2ff4-d75f-4822-a7c2-22d95b47b002",
 "level": "info",
-"timestamp": 1762116530106000
+"timestamp": 1762118058669000
 },
 {
-"event_message": "🧠 Claude understanding: {\n understanding: {\n what_user_wants: \"Strategic advice on improving CEO visibility and executive presence\",\n entities: [ \"CEO\", \"executive leadership\" ],\n timeframe: \"current best practices\",\n topics: [\n \"executive visibility\",\n \"thought leadership\",\n \"CEO positioning\",\n \"executive communications\",\n \"personal branding\"\n ],\n requires_fresh_data: true,\n why_fresh_data: \"Need current trends in executive visibility strategies, recent successful CEO positioning campaigns, and 2025 best practices for executive thought leadership\"\n },\n approach: {\n strategy: \"fireplexity_targeted\",\n reasoning: \"CEO visibility strategies evolve rapidly with platform changes, new media formats, and shifting audience expectations. Need current examples and trending approaches from 2025.\",\n search_query: \"CEO visibility strategies executive thought leadership 2025 best practices\",\n search_domains: \"quality_first\",\n domain_reasoning: \"Quality business publications will have the most credible CEO visibility strategies, but may need to expand to marketing/PR sources for tactical approaches\",\n confidence: 0.85,\n generate_framework: false,\n framework_reasoning: \"User is asking for strategic advice, but needs research first to understand current landscape before developing specific framework\"\n },\n acknowledgment: \"Let me research the current landscape of CEO visibility strategies and what's working in 2025 to give you actionable recommendations.\"\n}\n",
+"event_message": "🤖 Query requires multi-step orchestration...\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "7c3bf8b1-6626-4b5e-ab01-44fd99839c98",
+"id": "77d27969-fb24-4219-971b-c2f51b86c084",
 "level": "info",
-"timestamp": 1762116530106000
+"timestamp": 1762118058669000
 },
 {
-"event_message": "🎭 Active persona: NIV - Chief Intelligence Analyst for intelligence module\n",
+"event_message": "🧠 Claude understanding: {\n understanding: {\n what_user_wants: \"Creative theme and tactical ideas for a Rocket Mortgage Super Bowl activation pitch, focused on comfort concept to address home buying stress\",\n entities: [ \"Rocket Mortgage\", \"Super Bowl\", \"first-time home buyers\" ],\n timeframe: \"upcoming Super Bowl 2026\",\n topics: [\n \"Super Bowl marketing activations 2025\",\n \"mortgage industry marketing trends\",\n \"home buying comfort messaging\",\n \"at-home viewing experiences\",\n \"experiential marketing\"\n ],\n requires_fresh_data: true,\n why_fresh_data: \"Need current Super Bowl marketing trends, recent mortgage industry campaigns, and 2025 experiential marketing innovations to develop competitive and relevant activation concepts\"\n },\n approach: {\n strategy: \"fireplexity_targeted\",\n reasoning: \"This pitch needs fresh intelligence on current Super Bowl marketing trends, recent mortgage/fintech activations, and 2025 experiential marketing innovations to develop compelling, differentiated concepts\",\n search_query: \"Super Bowl marketing activations 2025 mortgage fintech home buying experiential campaigns\",\n search_domains: \"quality_first\",\n domain_reasoning: \"Marketing campaign intelligence appears in trade publications, agency case studies, and industry reports - quality sources first, but may need broader search for innovative activation examples\",\n confidence: 0.85,\n generate_framework: false,\n framework_reasoning: \"User wants creative ideas and tactical concepts first - they need research and brainstorming before any strategic framework\"\n },\n acknowledgment: \"I'll research current Super Bowl activation trends and mortgage industry marketing to develop compelling theme and tactical concepts around comfort for your Rocket Mortgage pitch.\"\n}\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "a58bbc98-2120-46b0-be37-032984a8998a",
+"id": "d1f28a8d-d1dc-4ae4-b30e-92c15ef1034e",
 "level": "info",
-"timestamp": 1762116521889000
-},
-{
-"event_message": "📝 Query type: general\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "7358f38e-c42f-461b-abf0-d721ce9d0886",
-"level": "info",
-"timestamp": 1762116521889000
+"timestamp": 1762118058669000
 },
 {
 "event_message": "✅ Loaded organization profile from database: Amplify\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "8807cf16-b875-4dce-bc67-b82a86def50f",
+"id": "45f4e4bd-3443-4e08-9720-aa05aa768161",
 "level": "info",
-"timestamp": 1762116521888000
+"timestamp": 1762118048452000
+},
+{
+"event_message": "📝 Query type: articles\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "120bcf16-3e52-47d4-b04e-cd12567a09ab",
+"level": "info",
+"timestamp": 1762118048452000
 },
 {
 "event_message": "🏢 Organization context: \"Amplify\" (validated)\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "1bccf106-7167-47f5-8d1a-8f777ce78f59",
+"id": "0aea1f22-b9eb-4b32-9073-e9a9118c5871",
 "level": "info",
-"timestamp": 1762116521888000
+"timestamp": 1762118048452000
+},
+{
+"event_message": "🎭 Active persona: NIV - Chief Intelligence Analyst for intelligence module\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "9cadbaf5-1bbd-4fc2-994a-59d1ed75ef3c",
+"level": "info",
+"timestamp": 1762118048452000
 },
 {
 "event_message": "✅ Found profile by organization_id: Amplify\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "6ec673bf-bc06-4ba6-ab36-ebd7d8d40832",
+"id": "51c77eff-65f3-4197-8758-41466bb56086",
 "level": "info",
-"timestamp": 1762116521888000
-},
-{
-"event_message": "🔍 Detected UUID format, searching by organization_id\n",
-"event_type": "Log",
-"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "d0bef401-8848-48bd-ad13-a6ca8e7e0ea7",
-"level": "info",
-"timestamp": 1762116521759000
+"timestamp": 1762118048451000
 },
 {
 "event_message": "🔍 Searching for organization: \"485dfe92-b67e-47b4-9523-1b3a523d7d07\" (type: string)\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "eccb287d-629b-4a1b-988a-772b5fa48b5b",
+"id": "4dfc2278-ea8c-407a-9b15-5f243ac616c6",
 "level": "info",
-"timestamp": 1762116521759000
+"timestamp": 1762118048363000
+},
+{
+"event_message": "🔍 Detected UUID format, searching by organization_id\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "d1c01ca3-fa96-42c0-aa1b-23f132ee1803",
+"level": "info",
+"timestamp": 1762118048363000
 },
 {
 "event_message": "🎯 NIV calling mcp-discovery for: 485dfe92-b67e-47b4-9523-1b3a523d7d07\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "c93c5982-943f-454b-bd8c-1d4a4fbcf430",
+"id": "2455b696-45b7-4453-a02a-0078eae16354",
 "level": "info",
-"timestamp": 1762116521756000
+"timestamp": 1762118048360000
 },
 {
-"event_message": "🤖 NIV Processing: {\n message: \"how can we improve visibility of CEO\",\n sessionId: \"niv-1762116481699\",\n stage: \"acknowledge\"\n}\n",
+"event_message": "🤖 NIV Processing: {\n message: \"we are pitching rocket mortgage to assist them in producing an activation during the upcoming superb\",\n sessionId: \"niv-1762117928295\",\n stage: \"full\"\n}\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "a27616fe-fc8a-4ffa-9233-a76bb6752ec5",
+"id": "47c5c458-8d90-4298-bc40-1a55b2d7bb1e",
 "level": "info",
-"timestamp": 1762116521755000
+"timestamp": 1762118048359000
 },
 {
 "event_message": "Listening on http://localhost:9999/\n",
 "event_type": "Log",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "ce38f43b-a394-4bef-ac5e-2cce6eaafc4f",
+"id": "0407852a-4b2d-4fe8-957e-cf00190062a7",
 "level": "info",
-"timestamp": 1762116521750000
+"timestamp": 1762118048353000
 },
 {
-"event_message": "booted (time: 35ms)",
+"event_message": "booted (time: 37ms)",
 "event_type": "Boot",
 "function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
-"id": "3518ef36-610f-48d5-955c-f2eac5771c02",
+"id": "3d095559-87a3-463b-b8e8-ffcb90fba4a1",
 "level": "log",
-"timestamp": 1762116521745000
+"timestamp": 1762118048348000
+},
+{
+"event_message": "🎯 Strategy chosen: fireplexity_targeted (confidence: 0.85)\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "9cad1bb5-b421-4293-b5fc-9d59d2b15892",
+"level": "info",
+"timestamp": 1762118048171000
+},
+{
+"event_message": "🧠 Claude understanding: {\n understanding: {\n what_user_wants: \"Theme and tactical concepts for a Rocket Mortgage Super Bowl activation pitch, focusing on comfort theme to address home buying stress\",\n entities: [ \"Rocket Mortgage\", \"Super Bowl\" ],\n timeframe: \"upcoming Super Bowl 2026\",\n topics: [\n \"Super Bowl marketing activations 2025\",\n \"home buying marketing trends\",\n \"mortgage company advertising\",\n \"comfort-themed campaigns\",\n \"at-home viewing experiences\"\n ],\n requires_fresh_data: true,\n why_fresh_data: \"Need current Super Bowl 2025/2026 marketing trends, recent mortgage industry campaigns, and latest activation strategies to create competitive pitch concepts\"\n },\n approach: {\n strategy: \"fireplexity_targeted\",\n reasoning: \"Need fresh intelligence on current Super Bowl marketing trends, recent mortgage/fintech activations, and 2025 comfort-themed campaigns to develop differentiated pitch concepts\",\n search_query: \"Super Bowl marketing activations mortgage fintech comfort theme home buying campaigns 2025\",\n search_domains: \"quality_first\",\n domain_reasoning: \"Marketing campaign insights appear in both major publications (AdAge, Marketing Land) and industry blogs, so quality_first allows comprehensive coverage while maintaining credibility\",\n confidence: 0.85,\n generate_framework: false,\n framework_reasoning: \"User needs research and creative concepts first - not asking for strategic framework document but tactical campaign ideas for their pitch\"\n },\n acknowledgment: \"I love the comfort angle for Rocket Mortgage - you're right that home buying stress paired with the comfort of watching the Super Bowl at home creates a natural narrative connection. Let me research current Super Bowl activation trends and comfort-themed campaigns to give you some differentiated concepts for your pitch.\"\n}\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "fb547639-99f8-4731-a0d8-d3130f98538e",
+"level": "info",
+"timestamp": 1762118048171000
+},
+{
+"event_message": "📝 Query type: articles\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "54c62979-8aa6-4d62-945f-a161c339695a",
+"level": "info",
+"timestamp": 1762118035982000
+},
+{
+"event_message": "🏢 Organization context: \"Amplify\" (validated)\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "2e229b7e-132b-4b5d-a355-ddcbe9ff4346",
+"level": "info",
+"timestamp": 1762118035981000
+},
+{
+"event_message": "🎭 Active persona: NIV - Chief Intelligence Analyst for intelligence module\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "85c404b7-84fd-4224-8245-e2c5fe027fb7",
+"level": "info",
+"timestamp": 1762118035981000
+},
+{
+"event_message": "✅ Loaded organization profile from database: Amplify\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "9599ebf6-a1b7-44b3-be60-004d03ac7d90",
+"level": "info",
+"timestamp": 1762118035981000
+},
+{
+"event_message": "✅ Found profile by organization_id: Amplify\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "c3adb0c0-84a7-4419-996c-276c95ab4cd8",
+"level": "info",
+"timestamp": 1762118035981000
+},
+{
+"event_message": "🔍 Searching for organization: \"485dfe92-b67e-47b4-9523-1b3a523d7d07\" (type: string)\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "9f0ef880-310d-4a85-9425-d99bb87c4b2a",
+"level": "info",
+"timestamp": 1762118035888000
+},
+{
+"event_message": "🔍 Detected UUID format, searching by organization_id\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "54561da2-1772-4445-96a7-fae2d60ec665",
+"level": "info",
+"timestamp": 1762118035888000
+},
+{
+"event_message": "🎯 NIV calling mcp-discovery for: 485dfe92-b67e-47b4-9523-1b3a523d7d07\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "e5d5a266-1d93-48d6-9219-df0956e29f3c",
+"level": "info",
+"timestamp": 1762118035884000
+},
+{
+"event_message": "🤖 NIV Processing: {\n message: \"we are pitching rocket mortgage to assist them in producing an activation during the upcoming superb\",\n sessionId: \"niv-1762117928295\",\n stage: \"acknowledge\"\n}\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "2ee446d1-a87d-458a-95b1-fa372ccb9e62",
+"level": "info",
+"timestamp": 1762118035883000
+},
+{
+"event_message": "Listening on http://localhost:9999/\n",
+"event_type": "Log",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "d6cfda7d-5fa1-47dd-8567-5d36067edf89",
+"level": "info",
+"timestamp": 1762118035876000
+},
+{
+"event_message": "booted (time: 48ms)",
+"event_type": "Boot",
+"function_id": "6c7ff1c6-43f1-4090-a66c-d3d39537bf79",
+"id": "e2f8e0ae-3850-487d-b108-e4d415f63efa",
+"level": "log",
+"timestamp": 1762118035870000
 }
 ]

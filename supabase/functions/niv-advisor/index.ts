@@ -3077,17 +3077,18 @@ function formatNivResponse(rawResponse: string, organizationName: string = 'your
   formatted = formatted.replace(/\r\n/g, '\n')
 
   // Add blank lines around markdown headers
-  // Headers are defined as **text** that appear at the start of a line or after a newline
-  // and typically have a colon or are followed by text on next line
+  // Headers are defined as **text** that:
+  // 1. Start with a capital letter (distinguishes from inline bold)
+  // 2. Are followed by a space and lowercase text OR a colon
 
-  // Step 1: Add blank line BEFORE headers (at start of line)
+  // Step 1: Add blank line BEFORE headers (that start with capital letter)
   // Matches: "text\n**Header" -> "text\n\n**Header"
   formatted = formatted.replace(/([^\n])(\n)(\*\*[A-Z][^*]+\*\*)/g, '$1\n\n$3')
 
-  // Step 2: Add blank line AFTER headers that are on their own line followed by text
-  // Matches lines that start with **Header**: or **Header** followed by lowercase text
-  // This ensures we don't break inline bold like "career **strategy**"
-  formatted = formatted.replace(/^(\*\*[^*]+\*\*:?)\s*$\n([a-zA-Z])/gm, '$1\n\n$2')
+  // Step 2: Add blank line AFTER headers followed by space and text
+  // Matches: "**Header** text" or "**Header:** text" -> "**Header**\n\ntext"
+  // Only matches when followed by lowercase letter (not another bold header)
+  formatted = formatted.replace(/(\*\*[A-Z][^*]+\*\*:?)\s+([a-z])/g, '$1\n\n$2')
 
   // Collapse multiple consecutive newlines (3+) into double newlines
   formatted = formatted.replace(/\n{3,}/g, '\n\n')
