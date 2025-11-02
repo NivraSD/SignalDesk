@@ -533,7 +533,7 @@ Structure your responses for readability using markdown:
 - Use **bold headers** for sections (e.g., **Research Findings**, **Strategic Approach**)
 - Break content into short paragraphs (2-3 sentences max)
 - Use bullet points for lists (•, -, or numbered)
-- Add blank lines between sections
+- **CRITICAL**: Add DOUBLE line breaks (blank lines) between ALL sections and paragraphs
 - Use **Key Insight:** to highlight important findings
 
 Example good format:
@@ -3056,6 +3056,11 @@ function formatNivResponse(rawResponse: string, organizationName: string = 'your
   // Clean up excessive whitespace but PRESERVE paragraph breaks (double newlines)
   // First normalize line breaks to \n
   formatted = formatted.replace(/\r\n/g, '\n')
+
+  // Ensure blank lines after markdown headers (e.g., **Header:**)
+  // This makes responses more readable even if Claude forgets
+  formatted = formatted.replace(/(\*\*[^*]+\*\*:?)\n(?!\n)/g, '$1\n\n')
+
   // Collapse multiple consecutive newlines (3+) into double newlines
   formatted = formatted.replace(/\n{3,}/g, '\n\n')
   // Collapse multiple spaces/tabs into single space
