@@ -1402,13 +1402,27 @@ export default function NIVContentOrchestratorProduction({
 
     } catch (error) {
       console.error('❌ Routing error:', error)
-      setMessages(prev => [...prev, {
-        id: `msg-${Date.now()}`,
-        role: 'assistant',
-        content: `I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`,
-        timestamp: new Date(),
-        error: true
-      }])
+
+      // Handle AbortError specifically (request was cancelled)
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('⚠️ Request was aborted (likely due to timeout or component unmount)')
+        setMessages(prev => [...prev, {
+          id: `msg-${Date.now()}`,
+          role: 'assistant',
+          content: `Request timed out or was cancelled. Please try again.`,
+          timestamp: new Date(),
+          showActions: false,
+          error: true
+        }])
+      } else {
+        setMessages(prev => [...prev, {
+          id: `msg-${Date.now()}`,
+          role: 'assistant',
+          content: `I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`,
+          timestamp: new Date(),
+          error: true
+        }])
+      }
     } finally {
       setIsThinking(false)
     }
@@ -2327,9 +2341,13 @@ IMPORTANT:
                           setIsGenerating(true)
                           setMessages(prev => [...prev, {
                             role: 'assistant',
-                            content: '🎨 Generating your presentation in Gamma...',
+                            content: '🎨 Generating your presentation in Gamma... This may take 30-60 seconds.',
                             timestamp: new Date()
                           }])
+
+                          // Create AbortController with 2-minute timeout for Gamma generation
+                          const controller = new AbortController()
+                          const timeoutId = setTimeout(() => controller.abort(), 120000) // 2 minutes
 
                           // Directly call the backend with the stored outline
                           const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/niv-content-intelligent-v2`, {
@@ -2348,8 +2366,11 @@ IMPORTANT:
                                 organizationName: organization?.name || 'Unknown',
                                 industry: organization?.industry || 'Technology'
                               }
-                            })
+                            }),
+                            signal: controller.signal
                           })
+
+                          clearTimeout(timeoutId)
 
                           if (!response.ok) {
                             throw new Error('Failed to generate presentation')
