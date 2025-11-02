@@ -10,7 +10,7 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { organization_name, industry_hint, website } = body
+    const { organization_name, industry_hint, website, about_page } = body
 
     if (!organization_name) {
       return NextResponse.json(
@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
             organization_name,
             industry_hint,
             website,
+            about_page,
             save_to_persistence: false // Don't save yet, let user customize first
           }
         })

@@ -37,6 +37,7 @@ export default function OrganizationOnboarding({
   // Step 1: Basic Info
   const [orgName, setOrgName] = useState('')
   const [website, setWebsite] = useState('')
+  const [aboutPage, setAboutPage] = useState('')
   const [industry, setIndustry] = useState('')
 
   // Step 2-4: Discovery Results & Customization
@@ -108,8 +109,8 @@ export default function OrganizationOnboarding({
   }
 
   const handleBasicInfoSubmit = async () => {
-    if (!orgName || !website) {
-      setError('Organization name and website are required')
+    if (!orgName || !website || !aboutPage) {
+      setError('Organization name, website, and about/capabilities page are required')
       return
     }
 
@@ -125,7 +126,8 @@ export default function OrganizationOnboarding({
         body: JSON.stringify({
           organization_name: orgName,
           industry_hint: industry,
-          website
+          website,
+          about_page: aboutPage
         })
       })
 
@@ -813,6 +815,26 @@ export default function OrganizationOnboarding({
                       placeholder="https://example.com"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    About / Capabilities Page URL *
+                  </label>
+                  <div className="relative">
+                    <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                    <input
+                      type="url"
+                      value={aboutPage}
+                      onChange={(e) => setAboutPage(e.target.value)}
+                      className="w-full pl-11 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+                      placeholder="https://example.com/about"
+                      required
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Link to your About, Capabilities, or Services page for better strategic context discovery
+                  </p>
                 </div>
 
                 <div>
@@ -1904,7 +1926,7 @@ export default function OrganizationOnboarding({
                     setStep(step + 1)
                   }
                 }}
-                disabled={loading || (step === 1 && (!orgName || !website))}
+                disabled={loading || (step === 1 && (!orgName || !website || !aboutPage))}
                 className="px-6 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg transition-colors flex items-center gap-2"
               >
                 {loading ? (

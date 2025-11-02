@@ -116,6 +116,10 @@ const TOOLS = [
           type: "string",
           description: "Organization website URL for context and disambiguation"
         },
+        about_page: {
+          type: "string",
+          description: "URL to the organization's About, Capabilities, or Services page for strategic context inference"
+        },
         save_to_persistence: {
           type: "boolean",
           description: "Whether to save the profile to persistence (default: true)",
@@ -143,10 +147,11 @@ const TOOLS = [
 
 // Enhanced profile creation with intelligent gap filling
 async function createOrganizationProfile(args: any) {
-  const { organization_name, industry_hint, website, save_to_persistence = true } = args;
+  const { organization_name, industry_hint, website, about_page, save_to_persistence = true } = args;
 
   console.log(`🔍 Creating SMART organization profile for: ${organization_name}`);
   console.log(`   Industry hint: ${industry_hint || 'Auto-detect'}`);
+  console.log(`   About page: ${about_page || 'Not provided'}`);
   console.log(`   Website: ${website || 'Not provided'}`);
 
   // Debug: Check if API key is available
@@ -162,10 +167,11 @@ async function createOrganizationProfile(args: any) {
     console.log('📚 Step 1: Gathering available data from registries...');
 
     // Get industry competitors from our registry (merged with user targets)
-    const industryData = await gatherIndustryData(organization_name, industry_hint, website, userTargets);
+    const industryData = await gatherIndustryData(organization_name, industry_hint, website, about_page, userTargets);
 
     // Build initial description from website for semantic source matching
-    const websiteInfo = website ? await fetchWebsiteInfo(website) : null;
+    // Prioritize about_page for richer strategic context, fallback to website homepage
+    const websiteInfo = (about_page || website) ? await fetchWebsiteInfo(about_page || website) : null;
     const initialDescription = websiteInfo
       ? `${websiteInfo.title || organization_name}. ${websiteInfo.description || ''}`.substring(0, 500)
       : `${organization_name} operates in ${industryData.industry}`;
@@ -326,19 +332,21 @@ async function fetchUserDefinedTargets(organization_name: string) {
 }
 
 // Gather industry data from our registries
-async function gatherIndustryData(organization_name: string, industry_hint?: string, website?: string, userTargets?: any) {
+async function gatherIndustryData(organization_name: string, industry_hint?: string, website?: string, about_page?: string, userTargets?: any) {
   // First, try to detect the industry if not provided
   let industry = industry_hint;
   
   if (!industry) {
     // Fetch website info to help with detection
-    const websiteInfo = website ? await fetchWebsiteInfo(website) : null;
+    // Prioritize about_page for richer context
+    const urlToFetch = about_page || website;
+    const websiteInfo = urlToFetch ? await fetchWebsiteInfo(urlToFetch) : null;
 
     // Build context for Claude
     let detectionPrompt = `What industry is ${organization_name} in?`;
 
     if (websiteInfo) {
-      detectionPrompt += `\n\nContext from their website (${website}):`;
+      detectionPrompt += `\n\nContext from their website (${urlToFetch}):`;
       if (websiteInfo.title) detectionPrompt += `\n- Page title: ${websiteInfo.title}`;
       if (websiteInfo.description) detectionPrompt += `\n- Description: ${websiteInfo.description}`;
       if (websiteInfo.h1) detectionPrompt += `\n- Main heading: ${websiteInfo.h1}`;
