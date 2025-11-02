@@ -44,7 +44,6 @@ export default function CommandCenterV2({ onNavigateToTab }: CommandCenterV2Prop
             />
           </div>
         </div>
-      </div>
     </div>
   )
 }
