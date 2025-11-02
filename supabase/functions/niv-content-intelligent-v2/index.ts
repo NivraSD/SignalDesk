@@ -1509,19 +1509,18 @@ ${campaignContext.timeline || 'Not specified'}
       console.log('🔍 Research needed...')
 
       // Construct proper search query from understanding, not user's conversational message
-      const entities = understanding.understanding?.entities || []
+      // CRITICAL: Only use topics for research queries, NOT entities (which include org name)
+      // If we search for "Amplify tech events" we get wrong company data
+      // Instead search for "tech event production trends" to get market intelligence
       const topics = understanding.understanding?.topics || []
 
-      // Build search query from entities + topics
+      // Build search query from topics ONLY (no organization name)
       let researchQuery = ''
-      if (entities.length > 0) {
-        researchQuery = entities.join(' ')
-      }
       if (topics.length > 0) {
-        researchQuery += ' ' + topics.slice(0, 3).join(' ')  // Top 3 topics
+        researchQuery = topics.slice(0, 5).join(' ')  // Top 5 topics for comprehensive search
       }
 
-      // Fallback to message if we have no entities/topics
+      // Fallback to message if we have no topics
       if (!researchQuery.trim()) {
         researchQuery = message
       }
