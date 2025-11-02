@@ -22,6 +22,7 @@ export function buildOpportunityDetectionPromptV2(params: {
 
 ORGANIZATION: ${organizationName}
 INDUSTRY: ${organizationProfile.industry}
+WHAT ${organizationName} DOES: ${organizationProfile.description || 'No description available'}
 KEY COMPETITORS: ${discoveryTargets.competitors.slice(0, 10).join(', ')}
 ${targetCustomers ? `\nTARGET CUSTOMERS: ${targetCustomers}` : ''}
 ${brandPersonality ? `BRAND PERSONALITY: ${brandPersonality}` : ''}
@@ -53,8 +54,13 @@ ${entities.slice(0, 15).map(e =>
 YOUR TASK: AGGRESSIVELY HUNT FOR ALL PR OPPORTUNITIES
 ====================================================================
 
-CRITICAL: ALIGN OPPORTUNITIES WITH STRATEGIC CONTEXT
-${targetCustomers ? `- Target opportunities that resonate with "${targetCustomers}"` : ''}
+CRITICAL: ALIGN OPPORTUNITIES WITH WHAT ${organizationName} ACTUALLY DOES
+- ${organizationName} is: ${organizationProfile.description || 'See description above'}
+- DO NOT suggest building products/platforms unless that's what ${organizationName} does
+- Focus on PR/positioning opportunities that leverage existing capabilities
+- For service companies: suggest thought leadership, case studies, positioning, not product launches
+- For product companies: product announcements are fair game
+${targetCustomers ? `\n- Target opportunities that resonate with "${targetCustomers}"` : ''}
 ${brandPersonality ? `- Maintain tone/style consistent with "${brandPersonality}"` : ''}
 ${strategicPriorities.length > 0 ? `- Prioritize opportunities related to: ${strategicPriorities.join(', ')}` : ''}
 ${targetCustomers || brandPersonality || strategicPriorities.length > 0 ? '\nFor example, if the brand is "data-driven and practical," avoid overly aspirational or emotional angles.\nIf targeting "marketing teams," focus on metrics, ROI, and measurement rather than technical infrastructure.' : ''}
