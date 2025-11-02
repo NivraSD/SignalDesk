@@ -621,7 +621,12 @@ CRITICAL INSTRUCTIONS:
    - Note the search queries that work for each category
    - Understand priority levels (critical = check first)
 
-2. OPTIMIZE FOR SOURCE VOCABULARY
+2. USE CURRENT COMPANY NAMES
+   - Always use the CURRENT legal/brand name for companies
+   - If a company has rebranded, use the NEW name (e.g., "BrandTech Group" not "You & Mr Jones")
+   - This ensures our monitoring searches find current news coverage
+
+3. OPTIMIZE FOR SOURCE VOCABULARY
    Examples based on actual sources:
 
    ✅ For TechCrunch (covers: startup funding, product launches):
@@ -639,12 +644,12 @@ CRITICAL INSTRUCTIONS:
    ❌ BAD (generic, won't match):
       Keywords: "company news", "business update", "market information"
 
-3. CREATE SOURCE-SPECIFIC MONITORING
+4. CREATE SOURCE-SPECIFIC MONITORING
    - Critical sources get more keyword variations
    - Match the language each publication uses
    - Consider what makes headlines in each outlet
 
-4. USE CATEGORY SEARCH PATTERNS
+5. USE CATEGORY SEARCH PATTERNS
    The "Typical coverage" examples show what language these sources use.
    Mirror that language in your keywords.
 
@@ -668,7 +673,7 @@ NOW, provide your COMPREHENSIVE profile in this JSON format:
       "Competitor 1 Name",
       "Competitor 2 Name",
       "Competitor 3 Name",
-      "List 10-15 major competitors - just company names as strings"
+      "List 10-15 major competitors - IMPORTANT: Use CURRENT company names (if a company has rebranded, use the new name, e.g., 'BrandTech Group' not 'You & Mr Jones')"
     ],
     "indirect_competitors": ["5-10 companies that could become competitors"],
     "emerging_threats": ["3-5 startups or new entrants to watch"],
