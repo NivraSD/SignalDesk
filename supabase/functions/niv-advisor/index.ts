@@ -4262,7 +4262,7 @@ serve(async (req) => {
           indirect_competitors: []
         }
       }
-      console.log(`✅ Using organization context from frontend: ${organizationName}`)
+      console.log(`✅ Using organization context from frontend: ${orgProfile.organization_name}`)
     } else {
       // Fallback to database lookup if no context provided
       try {
@@ -4273,7 +4273,7 @@ serve(async (req) => {
       }
     }
 
-    console.log(`🏢 Organization context: "${organizationName}" (validated)`)
+    console.log(`🏢 Organization context: "${orgProfile?.organization_name || organizationName}" (validated)`)
 
     // Get module-specific persona
     const persona = getModulePersona(context.activeModule)
