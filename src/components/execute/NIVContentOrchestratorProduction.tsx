@@ -2324,7 +2324,7 @@ IMPORTANT:
                     <button
                       onClick={async () => {
                         try {
-                          setIsLoading(true)
+                          setIsGenerating(true)
                           addMessage({
                             role: 'assistant',
                             content: '🎨 Generating your presentation in Gamma...',
@@ -2380,13 +2380,13 @@ IMPORTANT:
                             timestamp: new Date()
                           })
                         } finally {
-                          setIsLoading(false)
+                          setIsGenerating(false)
                         }
                       }}
-                      disabled={isLoading}
+                      disabled={isGenerating}
                       className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-sm rounded-md flex items-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isLoading ? (
+                      {isGenerating ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
                           Generating...
