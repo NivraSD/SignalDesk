@@ -3903,11 +3903,16 @@ serve(async (req) => {
       conversationId = 'default-conversation',
       context = {},
       stage = 'full',
-      conversationHistory = []
+      conversationHistory = [],
+      organizationId = body.organizationId,
+      organizationContext = body.organizationContext
     } = body
 
     // Use whichever is provided
     const userMessage = message || query
+
+    // Use organization name from context if provided (avoids stale cache)
+    const organizationName = organizationContext?.name || organizationId
 
     console.log('🤖 NIV Processing:', {
       message: userMessage ? userMessage.substring(0, 100) : 'No message',
@@ -4242,16 +4247,30 @@ serve(async (req) => {
     }
 
     // Load organization profile FIRST to get the name
+    // Use organization name from frontend context (avoids stale cache issues)
     let orgProfile = null
-    let organizationName = organizationId
 
-    try {
-      orgProfile = await getMcpDiscovery(organizationId)
-      organizationName = orgProfile?.organization_name || organizationId
-      console.log(`✅ Loaded organization profile: ${organizationName}`)
-    } catch (error) {
-      console.error('⚠️ Failed to load organization profile:', error)
-      organizationName = organizationId
+    if (organizationContext) {
+      // Prefer frontend context over database lookup
+      orgProfile = {
+        organization_id: organizationId,
+        organization_name: organizationContext.name || organizationId,
+        industry: organizationContext.industry || 'Technology',
+        keywords: [organizationContext.name || organizationId],
+        competition: {
+          direct_competitors: organizationContext.competitors || [],
+          indirect_competitors: []
+        }
+      }
+      console.log(`✅ Using organization context from frontend: ${organizationName}`)
+    } else {
+      // Fallback to database lookup if no context provided
+      try {
+        orgProfile = await getMcpDiscovery(organizationId)
+        console.log(`✅ Loaded organization profile from database: ${orgProfile?.organization_name || organizationId}`)
+      } catch (error) {
+        console.error('⚠️ Failed to load organization profile:', error)
+      }
     }
 
     console.log(`🏢 Organization context: "${organizationName}" (validated)`)
