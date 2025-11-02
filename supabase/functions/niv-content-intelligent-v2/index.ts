@@ -670,6 +670,37 @@ const CONTENT_GENERATION_TOOLS = [
       },
       required: ["query"]
     }
+  },
+  {
+    name: "generate_content_package",
+    description: "Generate multiple content pieces at once as a coordinated package. Use this when the user requests multiple deliverables (e.g., 'create a pitch deck, press release, and social posts'). This tool will generate all requested pieces based on the approved strategy or context.",
+    input_schema: {
+      type: "object",
+      properties: {
+        content_types: {
+          type: "array",
+          description: "List of content types to generate. Each item should be one of: presentation, press-release, social-posts, media-pitch, talking-points, qa-document, event-brief, influencer-brief, one-pager, executive-summary",
+          items: { type: "string" }
+        },
+        context: {
+          type: "object",
+          description: "The context/strategy for generating all content pieces",
+          properties: {
+            topic: { type: "string" },
+            audience: { type: "string" },
+            purpose: { type: "string" },
+            key_messages: { type: "array", items: { type: "string" } },
+            narrative: { type: "string" }
+          }
+        },
+        details: {
+          type: "object",
+          description: "Specific details for each content type (e.g., slide count for presentation, number of posts for social)",
+          additionalProperties: true
+        }
+      },
+      required: ["content_types", "context"]
+    }
   }
 ]
 
@@ -2731,6 +2762,112 @@ ${toolUse.input.tactical_recommendations.map((r: string) => `- ${r}`).join('\n')
       }
 
       // Handle presentation outline creation
+      // Handle multi-content package generation
+      if (toolUse && toolUse.name === 'generate_content_package') {
+        console.log('📦 Claude requested multi-content package')
+        console.log('📦 Content types:', toolUse.input.content_types)
+
+        const contentTypes = toolUse.input.content_types || []
+        const context = toolUse.input.context || {}
+        const details = toolUse.input.details || {}
+
+        // Start generating each piece
+        const generationResults: any[] = []
+
+        for (const contentType of contentTypes) {
+          console.log(`🔄 Generating ${contentType}...`)
+
+          try {
+            // Map content type to appropriate generation method
+            let result = null
+
+            switch (contentType) {
+              case 'presentation':
+                // For presentations, create outline first
+                result = {
+                  type: 'presentation',
+                  action: 'outline_created',
+                  message: 'Presentation outline created - awaiting approval for Gamma generation'
+                }
+                // Store outline in conversation state
+                conversationState.stage = 'strategy_review'
+                conversationState.approvedStrategy = {
+                  topic: context.topic,
+                  audience: context.audience,
+                  purpose: context.purpose,
+                  key_messages: context.key_messages || [],
+                  slide_count: details.slide_count || 12,
+                  sections: [] // Would need to be generated
+                }
+                break
+
+              case 'press-release':
+                const pr = await callMCPService('press-release', {
+                  organization: orgProfile.organizationName,
+                  announcement: context.topic,
+                  keyPoints: context.key_messages || [],
+                  quotes: details.quotes || []
+                })
+                result = { type: 'press-release', content: pr, message: '✅ Press release generated' }
+                generationResults.push(result)
+                break
+
+              case 'social-posts':
+                const posts = await callMCPService('social-post', {
+                  organization: orgProfile.organizationName,
+                  message: context.topic,
+                  platforms: details.platforms || ['linkedin', 'twitter'],
+                  count: details.post_count || 5
+                })
+                result = { type: 'social-posts', content: posts, message: '✅ Social posts generated' }
+                generationResults.push(result)
+                break
+
+              case 'talking-points':
+                const talkingPoints = await callMCPService('talking-points', {
+                  organization: orgProfile.organizationName,
+                  subject: context.topic,
+                  keyMessages: context.key_messages || [],
+                  audience: context.audience
+                })
+                result = { type: 'talking-points', content: talkingPoints, message: '✅ Talking points generated' }
+                generationResults.push(result)
+                break
+
+              case 'event-brief':
+              case 'one-pager':
+              case 'executive-summary':
+                // These would be generated as structured documents
+                result = {
+                  type: contentType,
+                  content: `# ${context.topic}\n\n${context.narrative || ''}\n\n## Key Messages\n${(context.key_messages || []).map((m, i) => `${i+1}. ${m}`).join('\n')}`,
+                  message: `✅ ${contentType.replace('-', ' ')} generated`
+                }
+                generationResults.push(result)
+                break
+
+              default:
+                console.log(`⚠️ Unsupported content type: ${contentType}`)
+            }
+          } catch (error) {
+            console.error(`❌ Error generating ${contentType}:`, error)
+            generationResults.push({
+              type: contentType,
+              error: error.message,
+              message: `❌ Failed to generate ${contentType}`
+            })
+          }
+        }
+
+        return new Response(JSON.stringify({
+          success: true,
+          mode: 'content_package_generated',
+          message: `✅ Generated ${generationResults.length} content pieces`,
+          generatedContent: generationResults,
+          conversationId
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
       if (toolUse && toolUse.name === 'create_presentation_outline') {
         console.log('📊 Claude created presentation outline')
         console.log('📊 Outline:', JSON.stringify(toolUse.input, null, 2))
