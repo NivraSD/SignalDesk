@@ -3904,9 +3904,11 @@ serve(async (req) => {
       context = {},
       stage = 'full',
       conversationHistory = [],
-      organizationId = body.organizationId,
       organizationContext = body.organizationContext
     } = body
+
+    // Extract organizationId separately as let (needs to be reassigned later)
+    let organizationId = body.organizationId
 
     // Use whichever is provided
     const userMessage = message || query
