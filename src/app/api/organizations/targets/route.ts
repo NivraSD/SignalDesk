@@ -97,11 +97,12 @@ export async function POST(req: NextRequest) {
       organization_id,
       name: target.name,
       type: target.type,
-      category: target.category || (target.type === 'stakeholder' ? target.stakeholderType : undefined),
       priority: target.priority || 'medium',
       active: target.active !== false,
       keywords: target.keywords || [],
-      metadata: target.metadata || {}
+      monitoring_context: target.monitoring_context || null,
+      industry_context: target.industry_context || null,
+      relevance_filter: target.relevance_filter || null
     }))
 
     const { data: inserted, error } = await supabase
