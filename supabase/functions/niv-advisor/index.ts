@@ -3084,8 +3084,8 @@ function formatNivResponse(rawResponse: string, organizationName: string = 'your
   formatted = formatted.replace(/\n{3,}/g, '\n\n')
   // Collapse multiple spaces/tabs into single space
   formatted = formatted.replace(/[ \t]+/g, ' ')
-  // Remove spaces at start/end of lines
-  formatted = formatted.split('\n').map(line => line.trim()).join('\n')
+  // Remove spaces at start/end of lines BUT preserve empty lines (for paragraph breaks)
+  formatted = formatted.split('\n').map(line => line.length === 0 ? '' : line.trim()).join('\n')
   // Final trim
   formatted = formatted.trim()
 
@@ -4957,6 +4957,10 @@ Remember to maintain natural conversation flow while bringing this perspective t
       type: structuredContent.type,
       formatted: structuredContent.formatted
     })
+
+    // DEBUG: Log first 500 chars of actual response to verify formatting
+    console.log('📝 Response preview (first 500 chars):', responseText.substring(0, 500))
+    console.log('🔍 Contains \\n\\n?', responseText.includes('\n\n'))
 
     // Framework decision was already made above before the API call
 
