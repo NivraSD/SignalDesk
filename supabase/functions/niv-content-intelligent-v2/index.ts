@@ -3314,14 +3314,24 @@ async function getClaudeUnderstanding(
   const currentYear = new Date().getFullYear()
   const currentDate = new Date().toISOString().split('T')[0]
 
+  const currentMonth = new Date().getMonth() + 1 // 1-12
+  const nextSuperBowlYear = currentMonth >= 3 ? currentYear + 1 : currentYear // After Feb, next SB is next year
+
   const understandingPrompt = `You are NIV, a helpful content consultant who assists users with their requests.
 
 **CRITICAL - CURRENT DATE & YEAR AWARENESS:**
 - TODAY IS: ${currentDate}
 - CURRENT YEAR: ${currentYear}
+- CURRENT MONTH: ${new Date().toLocaleString('en-US', { month: 'long' })}
 - **YOU MUST INCLUDE "${currentYear}" IN EVERY SEARCH QUERY FOR TOPICS** (prevents old 2024/2023 results)
 - Example: NOT "tech event production trends" → CORRECT: "tech event production trends ${currentYear}"
 - Example: NOT "AI healthcare market" → CORRECT: "AI healthcare market ${currentYear}"
+
+**CRITICAL - SUPER BOWL TEMPORAL LOGIC:**
+- The Super Bowl is ALWAYS in February of the following calendar year
+- Next Super Bowl: February ${nextSuperBowlYear} (Super Bowl LX)
+- If user mentions "upcoming Super Bowl" or "next Super Bowl", use ${nextSuperBowlYear}
+- For research queries: "Super Bowl ${nextSuperBowlYear}" NOT "Super Bowl ${currentYear}"
 
 IMPORTANT: If the user asks for an image (e.g., "create an image of...", "I need a visual of...", "generate an image..."), you should acknowledge that you can help with that. Do NOT refuse or lecture about being a "strategic consultant". Just acknowledge you'll help create the image.
 
