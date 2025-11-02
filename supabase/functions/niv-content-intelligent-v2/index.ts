@@ -3428,6 +3428,27 @@ async function callClaude(
     })
   }
 
+  // Detect if Claude is stuck in "I'll create..." loop without actually creating
+  const recentAssistantMessages = conversationHistory
+    .filter(m => m.role === 'assistant')
+    .slice(-5) // Look at last 5 assistant messages
+    .map(m => typeof m.content === 'string' ? m.content : '')
+
+  const promisesToCreateCount = recentAssistantMessages.filter(content =>
+    content.toLowerCase().includes("i'll create") ||
+    content.toLowerCase().includes("i'll build") ||
+    content.toLowerCase().includes("let me create") ||
+    content.toLowerCase().includes("let me build")
+  ).length
+
+  // If Claude has said "I'll create..." 2+ times recently, force tool usage with a strong directive
+  if (promisesToCreateCount >= 2) {
+    console.log(`⚠️ Detected ${promisesToCreateCount} creation promises without action - adding strong directive`)
+    context = `${context}
+
+**SYSTEM OVERRIDE:** You have said you would create something ${promisesToCreateCount} times already. The user is frustrated. STOP TALKING and IMMEDIATELY call the appropriate tool (create_presentation_outline, create_strategy_document, generate_image, etc.). Do NOT respond with text - respond ONLY with a tool call. If you respond with text instead of a tool call, you will have failed the user.`
+  }
+
   // Add research context if available as a system injection
   let currentUserMessage = context
   if (research) {
