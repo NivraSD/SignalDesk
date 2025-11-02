@@ -172,12 +172,13 @@ When a user asks for a presentation/deck:
    - DO NOT skip the outline step - Gamma needs structured input
 
 **CRITICAL - USER SIGNALS:**
-- User picks a strategy option (e.g., "option 2", "#2", "mass market approach") → Call create_strategy_document tool
-- User requests presentation/deck → Ask clarifying questions, then call create_presentation_outline
+- User requests PRESENTATION and picks a strategic angle → Call create_presentation_outline (NOT create_strategy_document)
+- User requests MEDIA PLAN and picks a strategy → Call create_strategy_document tool
 - User says "looks good", "approved", "let's proceed" AFTER seeing strategy doc → Call generate_media_plan tool
 - User says "looks good", "approved", "generate it" AFTER seeing presentation outline → Call generate_presentation tool
 - User provides feedback on strategy/outline → Adjust and present updated document
-- DO NOT skip the strategy/outline document - user needs to see and approve the plan first
+- DO NOT skip the outline step for presentations - user needs to see the structure before Gamma generation
+- DO NOT create strategy documents for presentation requests - presentations go directly to outline → Gamma
 - DO NOT ask endless refinement questions - present the document and let them react
 
 **SIMPLE CONTENT REQUESTS (Generate Directly):**
