@@ -573,8 +573,27 @@ CONTEXT:
 - Only include stakeholders whose activity DIRECTLY impacts ${organization_name}'s industry or operations
 - Provide clear monitoring_context explaining WHY this matters to THIS specific organization
 - Include relevance_filter to prevent noise from unrelated activity
-- Example: For a PR firm, monitor "SEC communications regulations" NOT "SEC general enforcement"
-- Example: For a trading company, monitor "commodity regulators" NOT "securities enforcement"
+
+🚨 INDUSTRY-SPECIFIC STAKEHOLDER GUIDANCE:
+
+HEAVILY REGULATED INDUSTRIES (prioritize regulators):
+- Finance, banking, trading → SEC, CFTC, FINRA, Fed, OCC
+- Energy, utilities → FERC, EPA, DOE, state utility commissions
+- Healthcare, pharma → FDA, CMS, HHS
+- Telecom → FCC
+- Transportation → FAA, DOT, NHTSA
+
+LIGHTLY REGULATED INDUSTRIES (skip regulators, focus on influencers):
+- Creative agencies, marketing, advertising → Industry thought leaders, CMOs, marketing publications
+- PR firms → PR industry analysts, journalist relations experts, comms leaders
+- Professional services, consulting → Industry analysts, research firms
+- Technology (non-regulated) → Tech journalists, VCs, industry analysts
+- E-commerce, retail → Retail analysts, consumer trend experts
+
+For LIGHTLY REGULATED industries:
+- Leave "regulators" as EMPTY ARRAY []
+- Focus on "key_analysts" (thought leaders, journalists, industry voices)
+- Include influential voices that shape industry trends and perception
 
 ═══════════════════════════════════════════════════════════
 🔍 AVAILABLE INTELLIGENCE SOURCES (Your Monitoring Tools)
@@ -681,8 +700,8 @@ NOW, provide your COMPREHENSIVE profile in this JSON format:
   },
 
   "stakeholders": {
-    "regulators": ["3-5 regulatory body names that directly govern this industry - e.g., 'CFTC', 'SEC', 'FERC'"],
-    "key_analysts": ["OPTIONAL: 2-3 specific analysts/journalists/thought leaders who significantly influence this org's industry - only include if there are prominent voices that matter. Format: 'Name - Affiliation'"],
+    "regulators": ["ONLY for heavily regulated industries (finance, healthcare, energy, etc.). For creative/marketing/PR/tech firms, use EMPTY ARRAY []"],
+    "key_analysts": ["IMPORTANT: 2-4 thought leaders, industry journalists, or influential voices. Examples: 'Scott Galloway - Marketing Professor', 'Ann Handley - Chief Content Officer', 'Gary Vaynerchuk - VaynerMedia'. These should be people whose opinions shape industry trends"],
     "activists": ["OPTIONAL: 1-2 activist groups or prominent critics if relevant to this org"],
     "major_customers": [],
     "major_investors": [],
@@ -780,21 +799,38 @@ ${industryData.competitors.length > 0 ? `\nKnown competitors: ${industryData.com
 📚 EXAMPLES OF GOOD PROFILES
 ═══════════════════════════════════════════════════════════
 
+✅ GOOD Example (Creative Agency):
+{
+  "competition": {
+    "direct_competitors": ["Wieden+Kennedy", "Droga5", "72andSunny", "TBWA", "Mother", "R/GA", "Anomaly", "Deutsch", "BrandTech Group", "Sid Lee"]
+  },
+  "stakeholders": {
+    "regulators": [],
+    "key_analysts": ["Scott Galloway - NYU Marketing Professor", "Ann Handley - Chief Content Officer MarketingProfs", "Mark Ritson - Marketing Week columnist", "Bob Hoffman - The Ad Contrarian"],
+    "activists": []
+  },
+  "monitoring_guidance": {
+    "analysts": {
+      "what_to_track": ["industry trend commentary", "agency critiques and praise", "thought leadership on marketing evolution", "predictions about advertising future"],
+      "why": "These voices shape client perceptions of agencies and influence hiring decisions"
+    }
+  }
+}
+
 ✅ GOOD Example (PR Firm):
 {
   "competition": {
     "direct_competitors": ["Edelman", "Weber Shandwick", "FleishmanHillard", "Ketchum", "BCW", "Golin", "Porter Novelli", "Zeno Group", "5WPR", "ICR"]
   },
   "stakeholders": {
-    "regulators": ["SEC", "FTC", "FCC"],
-    "key_analysts": ["Paul Holmes - The Holmes Report", "Richard Edelman - Edelman Trust Barometer"],
+    "regulators": [],
+    "key_analysts": ["Paul Holmes - The Holmes Report", "Richard Edelman - Edelman Trust Barometer", "Steve Barrett - PRWeek"],
     "activists": []
   },
   "monitoring_guidance": {
-    "regulators": {
-      "special_focus": {
-        "SEC": "Communications and disclosure regulations only - NOT general securities enforcement"
-      }
+    "analysts": {
+      "what_to_track": ["PR industry rankings", "trust research", "agency reviews", "industry trend analysis"],
+      "why": "These voices influence client perceptions and agency selection decisions"
     }
   }
 }
@@ -824,6 +860,8 @@ REMEMBER:
 - Return 10-15 competitors minimum (not 4)
 - Use simple string arrays for all targets
 - Put monitoring context in monitoring_guidance section
+- **For lightly regulated industries (marketing, PR, creative, tech services): regulators = []**
+- **For lightly regulated industries: FOCUS on key_analysts (thought leaders, journalists, industry voices)**
 - Only use special_focus for exceptions (like "SEC only for comms regs")
 - BE SPECIFIC with real names - real companies, real agencies, real people
 `;
