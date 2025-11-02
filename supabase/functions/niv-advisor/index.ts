@@ -534,10 +534,10 @@ Structure your responses for readability using markdown:
 - Break content into short paragraphs (2-3 sentences max)
 - Use bullet points for lists (•, -, or numbered)
 - Add blank lines between sections
-- Use `**Key Insight:**` to highlight important findings
+- Use **Key Insight:** to highlight important findings
 
 Example good format:
-```
+
 **Research Findings:**
 
 I found 3 key developments in the event production space:
@@ -549,7 +549,6 @@ I found 3 key developments in the event production space:
 **Strategic Approach:**
 
 Given these findings, here's how we position you...
-```
 
 ❌ **DON'T:**
 - Write wall-of-text paragraphs
@@ -3054,8 +3053,17 @@ function formatNivResponse(rawResponse: string, organizationName: string = 'your
   formatted = formatted.replace(/\byour organization\b/gi, organizationName)
   formatted = formatted.replace(/\bthe organization\b/gi, organizationName)
 
-  // Clean up whitespace
-  formatted = formatted.replace(/\s+/g, ' ').trim()
+  // Clean up excessive whitespace but PRESERVE paragraph breaks (double newlines)
+  // First normalize line breaks to \n
+  formatted = formatted.replace(/\r\n/g, '\n')
+  // Collapse multiple consecutive newlines (3+) into double newlines
+  formatted = formatted.replace(/\n{3,}/g, '\n\n')
+  // Collapse multiple spaces/tabs into single space
+  formatted = formatted.replace(/[ \t]+/g, ' ')
+  // Remove spaces at start/end of lines
+  formatted = formatted.split('\n').map(line => line.trim()).join('\n')
+  // Final trim
+  formatted = formatted.trim()
 
   return formatted
 }

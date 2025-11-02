@@ -133,24 +133,6 @@ const CONTENT_GENERATION_TOOLS = [
     }
   },
   {
-    name: "do_additional_research",
-    description: "Request targeted additional research when you identify specific data gaps or need specific facts/statistics for a presentation. Use this BEFORE generating the final presentation if you notice the current research lacks: specific statistics, recent data, competitor information, market trends, or other critical facts needed to make the presentation credible and data-driven.",
-    input_schema: {
-      type: "object",
-      properties: {
-        research_query: {
-          type: "string",
-          description: "Specific focused question or topic to research (e.g., 'Sora 2 pricing and release timeline', 'Gen Z social media usage statistics 2024', 'OpenAI market share vs competitors')"
-        },
-        why_needed: {
-          type: "string",
-          description: "Brief explanation of what data gap this research will fill (e.g., 'Need specific pricing data for competitive slide', 'Missing recent usage statistics')"
-        }
-      },
-      required: ["research_query", "why_needed"]
-    }
-  },
-  {
     name: "generate_presentation",
     description: "Generate a presentation using Gamma based on an APPROVED outline. ONLY use this after the user has reviewed and approved the presentation outline created by create_presentation_outline. Do NOT use this if they haven't seen/approved the outline yet.",
     input_schema: {
@@ -2711,56 +2693,6 @@ ${toolUse.input.tactical_recommendations.map((r: string) => `- ${r}`).join('\n')
           strategyDocument: toolUse.input,
           conversationId
         }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-      }
-
-      // Handle additional research request
-      if (toolUse && toolUse.name === 'do_additional_research') {
-        console.log('🔍 Claude requested additional research:', toolUse.input.research_query)
-        console.log('📊 Reason:', toolUse.input.why_needed)
-
-        // Execute the additional research
-        const additionalResearch = await executeResearch(toolUse.input.research_query, organizationId)
-
-        // Merge with existing research if available
-        if (additionalResearch && additionalResearch.keyFindings?.length > 0) {
-          console.log(`✅ Additional research complete: ${additionalResearch.keyFindings.length} findings`)
-
-          // Merge with existing research
-          if (conversationState.researchResults) {
-            // Combine key findings
-            const existingFindings = conversationState.researchResults.keyFindings || []
-            const newFindings = additionalResearch.keyFindings || []
-            conversationState.researchResults.keyFindings = [...existingFindings, ...newFindings]
-
-            // Update synthesis
-            if (additionalResearch.synthesis) {
-              conversationState.researchResults.synthesis = conversationState.researchResults.synthesis
-                ? `${conversationState.researchResults.synthesis}\n\nAdditional insights: ${additionalResearch.synthesis}`
-                : additionalResearch.synthesis
-            }
-          } else {
-            conversationState.researchResults = additionalResearch
-          }
-
-          // Return findings to Claude
-          const findingsSummary = additionalResearch.keyFindings.slice(0, 5).map((f: string, i: number) => `${i + 1}. ${f}`).join('\n')
-
-          return new Response(JSON.stringify({
-            success: true,
-            mode: 'research_findings',
-            message: `**Additional Research Complete**\n\n${additionalResearch.synthesis || ''}\n\n**Key Findings:**\n${findingsSummary}\n\nYou can now use these findings to enhance the presentation.`,
-            researchData: conversationState.researchResults,
-            conversationId
-          }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        } else {
-          console.log('⚠️ Additional research returned no results')
-          return new Response(JSON.stringify({
-            success: true,
-            mode: 'research_findings',
-            message: `I attempted additional research on "${toolUse.input.research_query}" but didn't find substantial new data. We can proceed with the existing research or you can provide specific data points you'd like included.`,
-            conversationId
-          }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        }
       }
 
       // Handle presentation outline creation
