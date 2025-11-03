@@ -807,8 +807,19 @@ serve(async (req) => {
 
   try {
     const url = new URL(req.url);
-    const action = url.searchParams.get('action');
     const method = req.method;
+
+    // For POST requests, action can be in body OR query params
+    let action = url.searchParams.get('action');
+    let body: any = null;
+
+    if (method === 'POST' || method === 'PUT') {
+      body = await req.json();
+      // Prefer action from body if present
+      if (body.action) {
+        action = body.action;
+      }
+    }
 
     let result: ApiResponse;
 
@@ -866,9 +877,20 @@ serve(async (req) => {
           throw new Error('Invalid action. Use: get, recent, recentStrategies, patterns, search, searchStrategies, withExecutions, export');
       }
     } else if (method === 'POST') {
-      const body = await req.json();
+      // Body already parsed above
 
       switch (action) {
+        case 'search':
+          // Support search via POST for function invocations
+          if (!body.query) throw new Error('Search query required');
+          result = await searchContent(
+            body.organizationId || '',
+            body.query,
+            body.contentType,
+            body.limit || 50
+          );
+          break;
+
         case 'save':
           // Accept either 'content' or 'strategy' for backward compatibility
           const contentData = body.content || body.strategy;
@@ -914,10 +936,10 @@ serve(async (req) => {
           break;
 
         default:
-          throw new Error('Invalid action for POST. Use: save, saveStrategy, trackSuccess');
+          throw new Error('Invalid action for POST. Use: search, save, saveStrategy, trackSuccess');
       }
     } else if (method === 'PUT') {
-      const body = await req.json();
+      // Body already parsed above
       const strategyId = url.searchParams.get('id');
 
       switch (action) {

@@ -865,6 +865,9 @@ serve(async (req) => {
     const organizationId = organizationContext?.organizationId || 'OpenAI'
     const organizationName = organizationContext?.organizationName || organizationId
 
+    // Initialize Supabase client for function invocations (Memory Vault, etc.)
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+
     // 🎯 AUTO-DETECTION: Detect when request should use campaign_generation mode
     let effectiveStage = stage
     const messageUpper = (message || '').toUpperCase()
@@ -918,11 +921,6 @@ serve(async (req) => {
 
         // Save to folder if specified
         if (saveFolder && content) {
-          const supabase = createClient(
-            Deno.env.get('SUPABASE_URL')!,
-            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-          )
-
           await supabase.from('content_library').insert({
             id: crypto.randomUUID(),
             organization_id: organizationId,
@@ -1870,6 +1868,13 @@ ${campaignContext.timeline || 'Not specified'}
         console.log('   Type:', toolUse.input.content_type)
 
         try {
+          console.log('🔍 Calling niv-memory-vault function with:', {
+            action: 'search',
+            query: toolUse.input.query,
+            organizationId: organizationId,
+            contentType: toolUse.input.content_type
+          })
+
           const searchResponse = await supabase.functions.invoke('niv-memory-vault', {
             body: {
               action: 'search',
@@ -1880,8 +1885,14 @@ ${campaignContext.timeline || 'Not specified'}
             }
           })
 
+          console.log('📦 Memory Vault response:', {
+            error: searchResponse.error,
+            data: searchResponse.data,
+            status: searchResponse.status
+          })
+
           if (searchResponse.error) {
-            console.error('Memory Vault search error:', searchResponse.error)
+            console.error('❌ Memory Vault search error:', JSON.stringify(searchResponse.error, null, 2))
             throw searchResponse.error
           }
 

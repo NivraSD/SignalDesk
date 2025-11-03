@@ -404,30 +404,10 @@ Output ONLY the JSON blueprint matching the structure above.`
       weeks_planned: Object.keys(blueprintJson.executionRoadmap || {}).length
     })
 
-    // Save to database if session_id provided
+    // Database save is handled by the frontend after receiving the blueprint
+    // This keeps the edge function focused on blueprint generation only
     if (session_id && organization_id) {
-      const supabase = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-      )
-
-      const { error: updateError } = await supabase
-        .from('campaign_builder_sessions')
-        .update({
-          blueprint: blueprintJson,
-          selected_objective: objective,
-          selected_content_types: selectedContentTypes,
-          current_stage: 'blueprint',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', session_id)
-
-      if (updateError) {
-        console.error('Failed to save blueprint:', updateError)
-        // Don't throw - we still have the blueprint
-      } else {
-        console.log('💾 Blueprint saved to database')
-      }
+      console.log('📋 Blueprint generated for session:', session_id)
     }
 
     return new Response(JSON.stringify({

@@ -705,6 +705,17 @@ export function CampaignBuilderWizard() {
           }
         ])
 
+        // Save blueprint to database
+        try {
+          await CampaignBuilderService.updateSession(session.sessionId, {
+            blueprint: blueprintResult.blueprint
+          })
+          console.log('✅ GEO-VECTOR blueprint saved to database')
+        } catch (err) {
+          console.error('❌ Failed to save GEO-VECTOR blueprint to database:', err)
+          // Continue anyway - we have it in state
+        }
+
         setIsLoading(false)
         return
       }
