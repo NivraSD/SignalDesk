@@ -425,9 +425,9 @@ export default function IntelligenceModule() {
     try {
       console.log('🌍 Starting GEO Intelligence Monitor for', organization.name)
 
-      // STEP 1: Generate intelligent queries using geo-query-discovery
-      console.log('🔍 Generating queries...')
-      const { data: queryData, error: queryError } = await supabase.functions.invoke('geo-query-discovery', {
+      // Call the parallelized geo-intelligence-monitor function
+      // This runs all 4 platforms in parallel with 10 queries each (~35-45s vs ~60-75s)
+      const { data: monitorData, error: monitorError } = await supabase.functions.invoke('geo-intelligence-monitor', {
         body: {
           organization_id: organization.id,
           organization_name: organization.name,
@@ -435,99 +435,20 @@ export default function IntelligenceModule() {
         }
       })
 
-      if (queryError || !queryData?.queries) {
-        throw new Error('Failed to generate queries')
+      if (monitorError || !monitorData?.success) {
+        throw new Error(monitorData?.error || 'GEO intelligence monitor failed')
       }
 
-      // Select 5 queries from each priority level for testing
-      const queries = [
-        ...(queryData.queries.critical || []).slice(0, 2),
-        ...(queryData.queries.high || []).slice(0, 2),
-        ...(queryData.queries.medium || []).slice(0, 1)
-      ]
-
-      console.log(`✅ Generated ${queries.length} queries for testing`)
-
-      // STEP 2: Test all 4 platforms in PARALLEL ⚡
-      console.log('🚀 Testing all platforms in parallel...')
-      const testBody = {
-        organization_name: organization.name,
-        queries
-      }
-
-      const [claudeResult, geminiResult, perplexityResult, chatgptResult] = await Promise.all([
-        supabase.functions.invoke('geo-test-claude', { body: testBody }),
-        supabase.functions.invoke('geo-test-gemini', { body: testBody }),
-        supabase.functions.invoke('geo-test-perplexity', { body: testBody }),
-        supabase.functions.invoke('geo-test-chatgpt', { body: testBody })
-      ])
-
-      // Check results
-      const results = {
-        claude: claudeResult.data,
-        gemini: geminiResult.data,
-        perplexity: perplexityResult.data,
-        chatgpt: chatgptResult.data
-      }
-
-      console.log('✅ All platform tests complete:', {
-        claude: `${results.claude?.mentions || 0}/${results.claude?.queries_tested || 0}`,
-        gemini: `${results.gemini?.mentions || 0}/${results.gemini?.queries_tested || 0}`,
-        perplexity: `${results.perplexity?.mentions || 0}/${results.perplexity?.queries_tested || 0}`,
-        chatgpt: `${results.chatgpt?.mentions || 0}/${results.chatgpt?.queries_tested || 0}`
+      console.log('✅ GEO monitor complete:', {
+        total_signals: monitorData.summary?.total_signals || 0,
+        queries_tested: monitorData.summary?.queries_tested || 0,
+        platforms: '4 in parallel'
       })
 
-      // STEP 3: Transform results into format expected by geo-executive-synthesis
-      // The test functions return signals arrays, but synthesis expects a flat array of test results
-      const transformedResults = []
-
-      // Create a map of queries for easy lookup
-      const queryMap = new Map(queries.map(q => [q.query, q]))
-
-      // Extract and transform signals from each platform
-      for (const [platformName, platformData] of Object.entries(results)) {
-        if (platformData?.signals && Array.isArray(platformData.signals)) {
-          for (const signal of platformData.signals) {
-            // Match signal back to original query to get intent
-            const originalQuery = queryMap.get(signal.data?.query)
-
-            transformedResults.push({
-              query: signal.data?.query || '',
-              intent: originalQuery?.intent || 'unknown',
-              priority: signal.priority || 'medium',
-              platform: platformName as 'claude' | 'gemini' | 'chatgpt' | 'perplexity',
-              response: '', // Not stored in signals, but not used by synthesis
-              brand_mentioned: signal.data?.mentioned || false,
-              rank: signal.data?.position || undefined,
-              context_quality: signal.data?.context ? 'strong' : undefined,
-              competitors_mentioned: signal.data?.competitors_mentioned || []
-            })
-          }
-        }
-      }
-
-      console.log(`🎯 Synthesizing ${transformedResults.length} test results...`)
-      const { data: synthesisData, error: synthesisError } = await supabase.functions.invoke('geo-executive-synthesis', {
-        body: {
-          organization_id: organization.id,
-          organization_name: organization.name,
-          industry: organization.industry,
-          geo_results: transformedResults  // Now passing properly formatted array
-        }
-      })
-
-      if (synthesisError) {
-        throw new Error('Failed to synthesize results')
-      }
-
-      setGeoResults(synthesisData)
+      setGeoResults(monitorData)
 
       // Load GEO signals from database
       await loadGeoSignals()
-
-      console.log('✅ GEO monitor complete')
-      console.log(`   - ${queries.length} queries tested`)
-      console.log(`   - 4 platforms tested in parallel`)
     } catch (error) {
       console.error('GEO monitor error:', error)
       setGeoError(error instanceof Error ? error.message : 'GEO monitor failed')

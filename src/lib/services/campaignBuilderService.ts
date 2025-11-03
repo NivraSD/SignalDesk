@@ -73,16 +73,6 @@ export class CampaignBuilderService {
       onProgress?.('intelligence-gathering', 'running')
 
       const researchCalls = await Promise.allSettled([
-        // Stakeholder Intelligence
-        supabase.functions.invoke('niv-fireplexity', {
-          body: {
-            query: `${organizationName} stakeholders customers target audience`,
-            timeWindow: '7d',
-            maxResults: 10,
-            organization: organizationName
-          }
-        }),
-
         // Narrative Environment
         supabase.functions.invoke('niv-fireplexity', {
           body: {
@@ -113,16 +103,18 @@ export class CampaignBuilderService {
       ])
 
       // Collect results
+      // NOTE: Stakeholder intelligence is now inferred by synthesis from org profile + campaign goal
+      // No need for web research - stakeholders are strategic personas, not news topics
       const gatheredData: any = {
         discovery: discoveryResponse.data,
-        stakeholder: null,
+        stakeholder: null, // Will be inferred during synthesis
         narrative: null,
         channel: null,
         historical: null
       }
 
       researchCalls.forEach((result, idx) => {
-        const types = ['stakeholder', 'narrative', 'channel', 'historical']
+        const types = ['narrative', 'channel', 'historical']
         if (result.status === 'fulfilled' && result.value.data) {
           gatheredData[types[idx]] = result.value.data
         } else if (result.status === 'rejected') {

@@ -590,8 +590,8 @@ async function searchContent(organizationId: string, query: string, contentType?
       oppQuery = oppQuery.eq('organization_id', organizationId);
     }
 
-    // Search in opportunity title, description, summary
-    oppQuery = oppQuery.or(`title.ilike.%${query}%,description.ilike.%${query}%,summary.ilike.%${query}%`);
+    // Search in opportunity title and description (if they exist)
+    oppQuery = oppQuery.or(`title.ilike.%${query}%,description.ilike.%${query}%`);
 
     const { data: oppData, error: oppError } = await oppQuery
       .order('created_at', { ascending: false })
@@ -604,7 +604,7 @@ async function searchContent(organizationId: string, query: string, contentType?
       const formattedOpps = oppData.map(opp => ({
         ...opp,
         content_type: 'opportunity',
-        content: opp.description || opp.summary || '',
+        content: opp.description || '',
         // Preserve original opportunity fields
         opportunity_data: opp
       }));

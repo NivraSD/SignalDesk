@@ -124,15 +124,15 @@ Be concise but preserve all important specific details (names, numbers, outlets,
     };
 
     // Summarize each section in parallel
-    const [stakeholderSummary, narrativeSummary, channelSummary, historicalSummary] = await Promise.all([
-      summarizeResearchSection('Stakeholder', stakeholderResearch, 'stakeholder profiles, psychology, decision journeys, and influence pathways'),
+    // NOTE: Stakeholder research is skipped - stakeholders are inferred during synthesis
+    const [narrativeSummary, channelSummary, historicalSummary] = await Promise.all([
       summarizeResearchSection('Narrative', narrativeResearch, 'dominant narratives, narrative vacuums, and messaging opportunities'),
       summarizeResearchSection('Channel', channelResearch, 'journalists (names, outlets, beats, tiers), publications, and media landscape'),
       summarizeResearchSection('Historical', historicalResearch, 'patterns, trends, successful tactics, and timing insights')
     ]);
 
     console.log('✅ Pre-summarization complete');
-    console.log(`📏 Summary sizes - Stakeholder: ${stakeholderSummary.length}, Narrative: ${narrativeSummary.length}, Channel: ${channelSummary.length}, Historical: ${historicalSummary.length}`);
+    console.log(`📏 Summary sizes - Narrative: ${narrativeSummary.length}, Channel: ${channelSummary.length}, Historical: ${historicalSummary.length}`);
 
     // ==================== BUILD FINAL SYNTHESIS PROMPT ====================
 
@@ -291,14 +291,19 @@ The CampaignIntelligenceBrief MUST have this EXACT structure:
 
 IMPORTANT SYNTHESIS GUIDELINES:
 1. Merge insights from all 4 research stages into the proper structure
-2. Extract 3-5 key stakeholder profiles (use stakeholderResearch)
+2. **STAKEHOLDER INFERENCE**: Since stakeholder web research is not provided, INFER 3-5 key stakeholder profiles based on:
+   - Organization profile (industry, description, existing relationships)
+   - Campaign goal (who needs to be influenced to achieve this?)
+   - Industry norms (typical B2B/B2C audiences for this sector)
+   - Use your knowledge of the organization and industry to build realistic persona profiles
 3. Identify dominant narratives and vacuums (use narrativeResearch)
-4. Map channels to stakeholders (use channelResearch + stakeholderResearch)
+4. Map channels to stakeholders (use channelResearch + inferred stakeholders)
 5. **CRITICALLY IMPORTANT**: Extract ALL journalist names, outlets, beats, and tiers from channelResearch.journalists[] array and put them in channelIntelligence.journalists[]
 6. Infer publications list from the journalist outlets (both tier1 AND tier2 - include trade/industry publications)
 7. Extract actionable patterns (use historicalResearch)
 8. Create 5-10 key insights that synthesize findings across all categories
 9. Rate synthesis quality honestly (completeness, confidence, gaps)
+   - NOTE: Stakeholder profiles being inferred (not researched) is NORMAL and does not constitute a data gap
 
 Return ONLY the JSON object. No markdown, no explanation, just pure JSON.`;
 
@@ -311,8 +316,13 @@ ${refinementRequest ? `Refinement: ${refinementRequest}` : ''}
 ===== ORGANIZATION PROFILE =====
 ${JSON.stringify(compiledResearch?.discovery?.profile, null, 2)}
 
-===== STAKEHOLDER RESEARCH SUMMARY =====
-${stakeholderSummary}
+===== STAKEHOLDER PROFILES (INFER FROM ORG PROFILE + CAMPAIGN GOAL) =====
+Infer 3-5 key stakeholder profiles based on:
+- Who needs to be influenced to achieve the campaign goal
+- Typical audiences for this organization and industry
+- Decision-makers, influencers, and end-users relevant to this campaign
+
+NOTE: Stakeholder research data is intentionally not provided - infer from context.
 
 ===== NARRATIVE RESEARCH SUMMARY =====
 ${narrativeSummary}
