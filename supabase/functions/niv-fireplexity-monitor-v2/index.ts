@@ -221,10 +221,38 @@ serve(async (req) => {
 
     console.log(`   ✓ Found ${articles.length} articles`)
 
+    // STEP 3.5: CRITICAL DATE FILTERING - Remove old articles that Firecrawl cache returned
+    console.log('\n🕒 Step 3.5: Filtering articles by recency...')
+
+    const recencyLimits: Record<string, number> = {
+      '1hour': 1,
+      '6hours': 6,
+      '24hours': 48 // Allow up to 48 hours for executive synthesis (not just 24)
+    }
+    const maxHoursOld = recencyLimits[recency_window] || 6
+    const cutoffTime = new Date(Date.now() - maxHoursOld * 60 * 60 * 1000)
+
+    const filteredArticles = articles.filter(article => {
+      const publishedDate = new Date(article.publishDate || article.published_at || 0)
+      const isRecent = publishedDate >= cutoffTime
+
+      if (!isRecent) {
+        const hoursAgo = Math.floor((Date.now() - publishedDate.getTime()) / (1000 * 60 * 60))
+        console.log(`   🚫 Filtered out OLD article (${hoursAgo}h ago, limit ${maxHoursOld}h): "${article.title?.substring(0, 60)}..."`)
+      }
+
+      return isRecent
+    })
+
+    console.log(`   ✓ Date filtering: ${articles.length} articles → ${filteredArticles.length} recent articles (last ${maxHoursOld} hours)`)
+    if (filteredArticles.length < articles.length) {
+      console.log(`   🗑️ Removed ${articles.length - filteredArticles.length} old articles from Firecrawl cache`)
+    }
+
     // STEP 4: Filter and score by relevance
     console.log('\n🎯 Step 4: Scoring article relevance...')
 
-    const scoredArticles = scoreArticlesRelevance(articles, profile, orgName, discoveryTargets, targetsWithContext)
+    const scoredArticles = scoreArticlesRelevance(filteredArticles, profile, orgName, discoveryTargets, targetsWithContext)
     console.log(`   ✓ Scored ${scoredArticles.length} relevant articles`)
 
     // STEP 5: Deduplicate against previously processed articles
