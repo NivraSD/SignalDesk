@@ -1911,10 +1911,11 @@ ${campaignContext.timeline || 'Not specified'}
             mode: 'memory_vault_results',
             message: results.length > 0
               ? `Found ${results.length} template${results.length > 1 ? 's' : ''} from Memory Vault`
-              : 'No templates found in Memory Vault for this query',
+              : 'No existing templates found - proceed with fresh content creation',
             results: formattedResults,
             query: toolUse.input.query,
-            conversationId
+            conversationId,
+            proceed_without_templates: results.length === 0  // Signal to Claude: this is NOT a blocker
           }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
         } catch (error) {
