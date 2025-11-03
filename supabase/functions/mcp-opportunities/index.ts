@@ -469,7 +469,9 @@ async function storeOpportunities(opportunities: EnhancedOpportunity[]): Promise
     
     // Prepare opportunities for insertion
     const opportunitiesToInsert = opportunities.map(opp => ({
+      id: opp.id, // Primary key - must match the UUID used by the UI
       opportunity_id: opp.id,
+      organization_id: opp.organization_id || organization_id, // Ensure organization_id is set
       organization_name: opp.organization,
       title: opp.title,
       description: opp.description,
@@ -494,7 +496,7 @@ async function storeOpportunities(opportunities: EnhancedOpportunity[]): Promise
     const { data, error } = await supabase
       .from('opportunities')
       .upsert(opportunitiesToInsert, {
-        onConflict: 'opportunity_id',
+        onConflict: 'id', // Use primary key for upsert
         ignoreDuplicates: false
       })
     

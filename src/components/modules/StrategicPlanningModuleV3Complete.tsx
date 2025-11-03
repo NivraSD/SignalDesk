@@ -13,6 +13,7 @@ import { ContentViewerModal } from '@/components/execution/ContentViewerModal'
 import { buildGenerationContext } from '@/lib/memoryVaultIntegration'
 import { BlueprintV3Presentation } from '@/components/campaign-builder/BlueprintV3Presentation'
 import { PRBriefPresentation } from '@/components/campaign-builder/PRBriefPresentation'
+import { GeoVectorBlueprintPresentation } from '@/components/campaign-builder/GeoVectorBlueprintPresentation'
 import { useAppStore } from '@/stores/useAppStore'
 
 interface BlueprintData {
@@ -1234,13 +1235,136 @@ export default function StrategicPlanningModuleV3Complete({
         <div className="flex-1 overflow-y-auto p-6">
           {viewMode === 'execution' && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-white mb-6">Campaign Execution</h2>
-              <p className="text-gray-400 mb-6">
-                Content organized by influence lever priority. Execute Priority 1 levers first for maximum impact.
-              </p>
+              {/* Detect campaign type for execution view */}
+              {(blueprint as any).threeTierTacticalPlan ? (
+                // GEO-VECTOR Campaign - organize by tier (Automated vs User-Assisted)
+                <>
+                  <h2 className="text-2xl font-bold text-white mb-6">GEO-VECTOR Execution</h2>
+                  <p className="text-gray-400 mb-6">
+                    AI Platform Visibility Campaign. Automated actions can be batch-executed with one click. User-assisted actions require your involvement.
+                  </p>
 
-              {/* Group by Priority, then Stakeholder */}
-              {[1, 2, 3, 4].map(priority => {
+                  {/* Group by Tier: Automated, then User-Assisted */}
+                  {['automated', 'user_assisted'].map(tier => {
+                    const tierItems = contentItems.filter(item => item.details?.tier === tier)
+                    if (tierItems.length === 0) return null
+
+                    const tierLabel = tier === 'automated' ? 'Automated Content' : 'User-Assisted Content'
+                    const tierColor = tier === 'automated' ? 'emerald' : 'blue'
+                    const tierIcon = tier === 'automated' ? '🤖' : '👤'
+                    const tierDescription = tier === 'automated'
+                      ? 'SignalDesk generates and can auto-publish these content types'
+                      : 'SignalDesk provides content drafts, you execute and publish'
+
+                    const pendingItems = tierItems.filter(i => i.status === 'pending' && i.type !== 'user_action')
+
+                    return (
+                      <div key={tier} className={`bg-gray-800 border border-${tierColor}-500/30 rounded-lg overflow-hidden`}>
+                        {/* Tier Header */}
+                        <div className="p-6">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                              <span className="text-3xl">{tierIcon}</span>
+                              <div>
+                                <h3 className={`text-xl font-bold text-${tierColor}-300`}>
+                                  {tierLabel}
+                                </h3>
+                                <p className="text-sm text-gray-400 mt-1">
+                                  {tierDescription}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              {pendingItems.length > 0 && tier === 'automated' && (
+                                <button
+                                  onClick={() => handleBatchGenerate(pendingItems)}
+                                  className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 transition-colors font-medium flex items-center gap-2"
+                                >
+                                  <span>⚡</span>
+                                  Auto-Execute All ({pendingItems.length})
+                                </button>
+                              )}
+                              <span className="text-sm text-gray-400">
+                                {tierItems.filter(i => i.status === 'generated' || i.status === 'published').length} / {tierItems.length} generated
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Items within this tier */}
+                          <div className="space-y-2">
+                            {tierItems.map(item => {
+                              const typeInfo = getContentTypeLabel(item.type)
+                              const isGenerating = generating.has(item.id)
+
+                              return (
+                                <div
+                                  key={item.id}
+                                  className={`p-3 bg-${tierColor}-900/10 border border-${tierColor}-500/20 rounded`}
+                                >
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <span className="text-lg">{typeInfo.icon}</span>
+                                        <span className={`text-xs font-medium text-${tierColor}-300`}>
+                                          {item.topic}
+                                        </span>
+                                        {getStatusIcon(isGenerating ? 'generating' : item.status)}
+                                      </div>
+                                      {item.target && (
+                                        <p className="text-xs text-gray-400">{item.target}</p>
+                                      )}
+                                      {item.details?.success_metric && (
+                                        <p className="text-xs text-gray-500 mt-1">
+                                          Success: {item.details.success_metric}
+                                        </p>
+                                      )}
+                                      {item.status === 'failed' && item.generationError && (
+                                        <p className="text-xs text-red-400 mt-1">Error: {item.generationError}</p>
+                                      )}
+                                    </div>
+                                    <div className="flex gap-2">
+                                      {item.type !== 'user_action' && item.status === 'pending' && (
+                                        <button
+                                          onClick={() => handleGenerate(item)}
+                                          disabled={isGenerating}
+                                          className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                                            isGenerating
+                                              ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                                              : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                                          }`}
+                                        >
+                                          {isGenerating ? 'Generating...' : 'Generate'}
+                                        </button>
+                                      )}
+                                      {(item.status === 'generated' || item.status === 'published') && (
+                                        <button
+                                          onClick={() => setViewingItem(item)}
+                                          className="px-3 py-1 rounded text-xs font-medium bg-blue-600 text-white hover:bg-blue-700"
+                                        >
+                                          View
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </>
+              ) : (
+                // PR/VECTOR Campaign - organize by priority
+                <>
+                  <h2 className="text-2xl font-bold text-white mb-6">Campaign Execution</h2>
+                  <p className="text-gray-400 mb-6">
+                    Content organized by influence lever priority. Execute Priority 1 levers first for maximum impact.
+                  </p>
+
+                  {/* Group by Priority, then Stakeholder */}
+                  {[1, 2, 3, 4].map(priority => {
                 const stakeholderGroups = itemsByPriorityAndStakeholder[priority]
                 if (!stakeholderGroups || Object.keys(stakeholderGroups).length === 0) return null
 
@@ -1388,6 +1512,8 @@ export default function StrategicPlanningModuleV3Complete({
                   </div>
                 )
               })}
+                </>
+              )}
             </div>
           )}
 
@@ -1398,6 +1524,15 @@ export default function StrategicPlanningModuleV3Complete({
                 // PR Campaign
                 <PRBriefPresentation
                   brief={blueprint}
+                  onRefine={() => {}}
+                  onExport={() => {}}
+                  onExecute={() => {}}
+                  isRefining={false}
+                />
+              ) : (blueprint as any).threeTierTacticalPlan ? (
+                // GEO-VECTOR Campaign
+                <GeoVectorBlueprintPresentation
+                  blueprint={blueprint as any}
                   onRefine={() => {}}
                   onExport={() => {}}
                   onExecute={() => {}}
