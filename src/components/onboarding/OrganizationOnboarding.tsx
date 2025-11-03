@@ -96,6 +96,8 @@ export default function OrganizationOnboarding({
   })
   const [schemaGenerationStarted, setSchemaGenerationStarted] = useState(false)
   const [createdOrganization, setCreatedOrganization] = useState<any>(null)
+  const [existingSchemaData, setExistingSchemaData] = useState<any>(null)
+  const [generatedSchemaData, setGeneratedSchemaData] = useState<any>(null)
 
   const totalSteps = 7  // Added GEO discovery step
   const MAX_TOTAL_TARGETS = 20  // Hard limit: 15 from discovery + up to 5 custom
@@ -565,6 +567,27 @@ export default function OrganizationOnboarding({
     try {
       console.log('🚀 Starting Schema Onboarding Pipeline...')
 
+      // Simulated progress updates (estimated timings)
+      const progressSteps = [
+        { stage: 'schemaDiscovery', delay: 2000, message: 'Checking for existing schema...' },
+        { stage: 'websiteScraping', delay: 5000, message: 'Scraping website content...' },
+        { stage: 'entityExtraction', delay: 8000, message: 'Extracting entities with AI...' },
+        { stage: 'entityEnrichment', delay: 10000, message: 'Enriching and validating entities...' },
+        { stage: 'schemaSynthesis', delay: 12000, message: 'Synthesizing schema.org graph...' },
+        { stage: 'schemaEnhancement', delay: 15000, message: 'Adding FAQs, awards, and optimizations...' }
+      ]
+
+      // Start progress animation
+      progressSteps.forEach(({ stage, delay, message }) => {
+        setTimeout(() => {
+          setSchemaProgress(prev => ({
+            ...prev,
+            [stage]: 'processing',
+            message
+          }))
+        }, delay)
+      })
+
       // Call the orchestrator
       const orchestratorResponse = await fetch(`${SUPABASE_URL}/functions/v1/schema-onboarding-orchestrator`, {
         method: 'POST',
@@ -584,6 +607,26 @@ export default function OrganizationOnboarding({
       if (orchestratorResponse.ok) {
         const orchestratorData = await orchestratorResponse.json()
         console.log('✅ Schema Onboarding Pipeline Complete:', orchestratorData.summary)
+
+        // Store existing schema info
+        if (orchestratorData.results?.stages?.schema_discovery) {
+          setExistingSchemaData(orchestratorData.results.stages.schema_discovery)
+        }
+
+        // Fetch the generated schema to show the user
+        const { data: generatedSchema } = await supabase
+          .from('content_library')
+          .select('*')
+          .eq('organization_id', orgId)
+          .eq('content_type', 'schema')
+          .eq('folder', 'Schemas/Active/')
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .single()
+
+        if (generatedSchema) {
+          setGeneratedSchemaData(generatedSchema)
+        }
 
         // Check if we actually got entity data
         const entitiesExtracted = orchestratorData.summary?.entities_extracted || 0
@@ -1803,6 +1846,60 @@ export default function OrganizationOnboarding({
                   {schemaProgress.message && (
                     <div className="mt-4 p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg">
                       <p className="text-sm text-cyan-300">{schemaProgress.message}</p>
+                    </div>
+                  )}
+
+                  {/* Show existing schema detection results */}
+                  {existingSchemaData && schemaProgress.schemaDiscovery === 'completed' && (
+                    <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Sparkles className="w-4 h-4 text-blue-400" />
+                        <p className="text-sm font-medium text-blue-300">
+                          {existingSchemaData.has_existing_schema
+                            ? '✓ Existing Schema Detected'
+                            : '○ No Existing Schema Found'}
+                        </p>
+                      </div>
+                      <p className="text-xs text-blue-400/70">
+                        {existingSchemaData.has_existing_schema
+                          ? `Your website already has a schema (version ${existingSchemaData.schema_version}). We'll enhance it with GEO optimizations.`
+                          : 'Creating a brand new GEO-optimized schema.org markup from scratch.'}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Show generated schema preview */}
+                  {generatedSchemaData && schemaProgress.schemaSynthesis === 'completed' && (
+                    <div className="mt-4 space-y-3">
+                      <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Check className="w-4 h-4 text-green-400" />
+                          <p className="text-sm font-medium text-green-300">
+                            ✓ Schema Generated Successfully
+                          </p>
+                        </div>
+                        <p className="text-xs text-green-400/70 mb-3">
+                          Your GEO-optimized schema.org markup is ready for deployment
+                        </p>
+
+                        {/* Schema preview */}
+                        <div className="bg-gray-900/50 rounded-lg p-3 border border-gray-700">
+                          <p className="text-xs text-gray-400 mb-2 font-mono">Schema Preview:</p>
+                          <div className="max-h-40 overflow-y-auto">
+                            <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap">
+                              {JSON.stringify(
+                                JSON.parse(generatedSchemaData.content || '{}'),
+                                null,
+                                2
+                              ).substring(0, 500)}...
+                            </pre>
+                          </div>
+                        </div>
+
+                        <p className="text-xs text-gray-500 mt-2">
+                          Full schema saved to Content Library → Schemas/Active/
+                        </p>
+                      </div>
                     </div>
                   )}
 

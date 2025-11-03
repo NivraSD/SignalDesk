@@ -7,6 +7,7 @@ import { ResearchPresentation } from './ResearchPresentation'
 import { BlueprintPresentation } from './BlueprintPresentation'
 import { BlueprintV3Presentation } from './BlueprintV3Presentation'
 import { PRBriefPresentation } from './PRBriefPresentation'
+import { GeoVectorBlueprintPresentation } from './GeoVectorBlueprintPresentation'
 import { ExecutionManager } from './ExecutionManager'
 import { useAppStore } from '@/stores/useAppStore'
 import { CampaignBuilderService } from '@/lib/services/campaignBuilderService'
@@ -1372,6 +1373,19 @@ export function CampaignBuilderWizard() {
 
       case 'blueprint':
         if (session.blueprint) {
+          // Use GeoVectorBlueprintPresentation for GEO-VECTOR campaigns
+          if (session.selectedApproach === 'GEO_VECTOR_CAMPAIGN') {
+            return (
+              <GeoVectorBlueprintPresentation
+                blueprint={session.blueprint}
+                onRefine={handleBlueprintRefine}
+                onExport={handleBlueprintExport}
+                onExecute={handleExecutionStart}
+                isRefining={isLoading}
+              />
+            )
+          }
+
           // Use BlueprintV3Presentation for VECTOR campaigns
           if (session.selectedApproach === 'VECTOR_CAMPAIGN') {
             return (
@@ -1418,7 +1432,9 @@ export function CampaignBuilderWizard() {
                   📋 Generating Campaign Blueprint
                 </h2>
                 <p className="text-gray-400 text-center mb-8">
-                  Creating your {session.selectedApproach === 'PR_CAMPAIGN' ? 'PR Campaign' : 'VECTOR Campaign'} blueprint across multiple stages...
+                  Creating your {session.selectedApproach === 'PR_CAMPAIGN' ? 'PR Campaign' :
+                                session.selectedApproach === 'GEO_VECTOR_CAMPAIGN' ? 'GEO-VECTOR' :
+                                'VECTOR Campaign'} blueprint across multiple stages...
                 </p>
 
                 {/* Blueprint Generation Progress */}
@@ -1523,7 +1539,9 @@ export function CampaignBuilderWizard() {
                   🚀 Generating Campaign Content
                 </h2>
                 <p className="text-gray-400 text-center mb-8">
-                  Creating all content pieces from your {session?.selectedApproach === 'PR_CAMPAIGN' ? 'PR' : 'VECTOR'} blueprint...
+                  Creating all content pieces from your {session?.selectedApproach === 'PR_CAMPAIGN' ? 'PR' :
+                                                               session?.selectedApproach === 'GEO_VECTOR_CAMPAIGN' ? 'GEO-VECTOR' :
+                                                               'VECTOR'} blueprint...
                 </p>
 
                 {/* Progress Bar */}
