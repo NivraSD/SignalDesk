@@ -186,6 +186,10 @@ export default function MemoryVaultModule() {
   const [currentFolder, setCurrentFolder] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // Upload dialog state (for Content Library uploads)
+  const [showUploadDialog, setShowUploadDialog] = useState(false)
+  const [uploadTargetFolder, setUploadTargetFolder] = useState<string>('Proposals')
+
   // Analytics State
   const [analytics, setAnalytics] = useState<AnalyticsData>({
     totalContent: 0,
@@ -722,29 +726,40 @@ export default function MemoryVaultModule() {
     }
   }
 
-  // Handle file upload for brand assets
-  const handleAssetUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle file upload - context aware (Brand Assets or Content Library)
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file || !organization?.id) return
 
+    // If on Brand Assets tab, upload to brand_assets table
+    if (activeTab === 'assets') {
+      await handleBrandAssetUpload(file)
+    } else if (activeTab === 'library') {
+      // If on Content Library tab, show folder selection dialog
+      setShowUploadDialog(true)
+    }
+  }
+
+  // Upload to brand_assets table
+  const handleBrandAssetUpload = async (file: File) => {
     setUploadingAsset(true)
     try {
       const formData = new FormData()
       formData.append('file', file)
-      formData.append('organizationId', organization.id) // camelCase to match API
+      formData.append('organizationId', organization!.id)
 
       let assetType = 'document'
       if (file.type.includes('pdf')) assetType = 'guidelines-brand'
       else if (file.name.match(/\.(docx|pptx)$/)) assetType = 'template-' + (file.name.includes('ppt') ? 'presentation' : 'document')
       else if (file.type.startsWith('image/')) assetType = 'logo'
 
-      formData.append('assetType', assetType) // camelCase to match API
+      formData.append('assetType', assetType)
       formData.append('name', file.name)
       if (currentFolder) {
         formData.append('folder', currentFolder)
       }
 
-      console.log('📤 Uploading:', file.name, assetType, currentFolder ? `to folder: ${currentFolder}` : '')
+      console.log('📤 Uploading to brand assets:', file.name, assetType)
 
       const response = await fetch('/api/brand-assets/upload', {
         method: 'POST',
@@ -760,7 +775,46 @@ export default function MemoryVaultModule() {
       console.log('✅ Upload success:', result)
 
       await fetchBrandAssets()
-      setActiveTab('assets')
+    } catch (error) {
+      console.error('Upload error:', error)
+      alert(`Failed to upload: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setUploadingAsset(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  // Upload to content_library table
+  const handleContentLibraryUpload = async () => {
+    const file = fileInputRef.current?.files?.[0]
+    if (!file || !organization?.id) return
+
+    setUploadingAsset(true)
+    setShowUploadDialog(false)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('organizationId', organization.id)
+      formData.append('folder', uploadTargetFolder)
+      formData.append('title', file.name)
+
+      console.log('📤 Uploading to content library:', file.name, 'folder:', uploadTargetFolder)
+
+      const response = await fetch('/api/content-library/upload', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Upload failed')
+      }
+
+      const result = await response.json()
+      console.log('✅ Upload success:', result)
+
+      await fetchContent()
     } catch (error) {
       console.error('Upload error:', error)
       alert(`Failed to upload: ${error instanceof Error ? error.message : 'Unknown error'}`)
@@ -1098,7 +1152,7 @@ export default function MemoryVaultModule() {
               <input
                 ref={fileInputRef}
                 type="file"
-                onChange={handleAssetUpload}
+                onChange={handleFileUpload}
                 className="hidden"
                 accept=".pdf,.doc,.docx,.ppt,.pptx,.png,.jpg,.jpeg,.svg"
               />
@@ -1133,6 +1187,46 @@ export default function MemoryVaultModule() {
                         className="px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 rounded-lg transition-colors disabled:opacity-50"
                       >
                         Create Folder
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Upload to Content Library Dialog */}
+              {showUploadDialog && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                  <div className="bg-gray-900 rounded-lg p-6 w-96 border border-gray-800">
+                    <h3 className="text-lg font-semibold text-white mb-4">Upload to Content Library</h3>
+                    <p className="text-sm text-gray-400 mb-4">
+                      Select which folder to upload to:
+                    </p>
+                    <select
+                      value={uploadTargetFolder}
+                      onChange={(e) => setUploadTargetFolder(e.target.value)}
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-orange-500 mb-4"
+                    >
+                      {FOLDER_TEMPLATES.map(template => (
+                        <option key={template.name} value={template.name}>
+                          {template.icon} {template.name}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        onClick={() => {
+                          setShowUploadDialog(false)
+                          if (fileInputRef.current) fileInputRef.current.value = ''
+                        }}
+                        className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleContentLibraryUpload}
+                        className="px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 rounded-lg transition-colors"
+                      >
+                        Upload
                       </button>
                     </div>
                   </div>
@@ -1740,6 +1834,20 @@ function ContentLibraryTab({
                   </div>
                 </div>
                 <div className="flex gap-2">
+                  {/* File Preview/Download Button */}
+                  {selectedContent.file_url && (
+                    <a
+                      href={selectedContent.file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-3 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg transition-colors border border-cyan-500/20"
+                      title="View/Download File"
+                    >
+                      <Eye className="w-4 h-4" />
+                      <span className="text-sm font-medium">View File</span>
+                    </a>
+                  )}
+
                   {/* Gamma Presentation Buttons */}
                   {(selectedContent.content_type === 'presentation' || selectedContent.content_type === 'presentation_outline') && selectedContent.metadata?.gamma_url && (
                     <a
@@ -1962,6 +2070,46 @@ function ContentLibraryTab({
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* File Metadata */}
+            {selectedContent.file_url && selectedContent.metadata && (
+              <div className="mb-6 p-4 bg-cyan-500/5 border border-cyan-500/20 rounded-lg">
+                <h3 className="font-semibold text-cyan-400 mb-3 flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  File Information
+                </h3>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  {selectedContent.metadata.fileName && (
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">File Name</div>
+                      <div className="text-gray-300">{selectedContent.metadata.fileName}</div>
+                    </div>
+                  )}
+                  {selectedContent.metadata.fileSize && (
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">File Size</div>
+                      <div className="text-gray-300">
+                        {(selectedContent.metadata.fileSize / 1024 / 1024).toFixed(2)} MB
+                      </div>
+                    </div>
+                  )}
+                  {selectedContent.metadata.mimeType && (
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Type</div>
+                      <div className="text-gray-300">{selectedContent.metadata.mimeType}</div>
+                    </div>
+                  )}
+                  {selectedContent.metadata.uploadedAt && (
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Uploaded</div>
+                      <div className="text-gray-300">
+                        {new Date(selectedContent.metadata.uploadedAt).toLocaleString()}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
