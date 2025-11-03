@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { corsHeaders } from '../_shared/cors.ts'
 
-const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY') || 'AIzaSyBwiqy6i_fB_-u82B0tmJiBLGkg_Zu3lvc'
+const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY')
 
 // Google Vertex AI endpoints
 const IMAGEN_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/imagen-3:generateImage'

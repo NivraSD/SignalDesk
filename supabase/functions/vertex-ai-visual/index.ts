@@ -10,8 +10,8 @@ const GOOGLE_CLOUD_REGION = 'us-central1'
 const GOOGLE_SERVICE_ACCOUNT = Deno.env.get('GOOGLE_SERVICE_ACCOUNT')
 const GOOGLE_APPLICATION_CREDENTIALS = Deno.env.get('GOOGLE_APPLICATION_CREDENTIALS') // This might be service account JSON
 const GOOGLE_ACCESS_TOKEN = Deno.env.get('GOOGLE_ACCESS_TOKEN')
-const VERTEX_AI_KEY = Deno.env.get('VERTEX_AI_KEY') || 'AQ.Ab8RN6JIq3SAITun6WEaIrODV66j88eNmzXlXVz2tnD1zDWsoA'
-const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY') || 'AIzaSyBwiqy6i_fB_-u82B0tmJiBLGkg_Zu3lvc'
+const VERTEX_AI_KEY = Deno.env.get('VERTEX_AI_KEY')
+const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY')
 
 // OAuth2 Configuration
 const OAUTH_CLIENT_ID = '828236259059-bdelovhuc12rgtavs7c5j9o7ftjgtof1.apps.googleusercontent.com'

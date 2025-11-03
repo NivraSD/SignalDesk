@@ -546,7 +546,7 @@ async function testGeminiVisibility(
   const signals: any[] = []
 
   // Use Direct Gemini API (simpler than Vertex AI)
-  const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY') || 'AIzaSyBwiqy6i_fB_-u82B0tmJiBLGkg_Zu3lvc'
+  const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY')
 
   if (!GOOGLE_API_KEY) {
     console.log('⚠️  Google API key not found, skipping Gemini tests')
