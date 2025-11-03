@@ -459,6 +459,33 @@ async function synthesizeExecutiveIntelligence(args: any) {
     );
     const otherEntities = allEntities.filter(e => !competitorEntities.includes(e));
 
+    // Helper function to format dates for display
+    const formatEventDate = (dateStr: string | undefined) => {
+      if (!dateStr) return 'Unknown date';
+
+      // Handle relative dates from enrichment
+      if (dateStr.includes('ago')) return dateStr; // Already formatted: "5 months ago"
+      if (dateStr.toLowerCase().includes('today')) return 'Today';
+      if (dateStr.toLowerCase().includes('yesterday')) return 'Yesterday';
+
+      // Try to parse as date
+      try {
+        const eventDate = new Date(dateStr);
+        const today = new Date();
+        const diffMs = today.getTime() - eventDate.getTime();
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+        if (diffDays === 0) return 'Today';
+        if (diffDays === 1) return 'Yesterday';
+        if (diffDays < 7) return `${diffDays} days ago`;
+        if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+        if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+        return `${Math.floor(diffDays / 365)} years ago`;
+      } catch (e) {
+        return dateStr; // Return as-is if can't parse
+      }
+    };
+
     prompt = `YOU ARE RECEIVING ENRICHED INTELLIGENCE DATA
 This is the complete output from our monitoring and enrichment pipeline.
 The events below are ALL from TODAY'S news monitoring - they are NOT hypothetical.
@@ -484,7 +511,7 @@ MONITORING TARGETS (entities we're tracking - may be outside our industry):
 - When analyzing "stakeholder dynamics", that's about the monitoring targets
 - DO NOT confuse stakeholder/regulatory news with competitive moves unless it directly impacts ${organization?.industry}
 
-MONITORING DATE: ${new Date().toISOString().split('T')[0]}
+**TODAY'S DATE:** ${new Date().toISOString().split('T')[0]}
 
 PRE-ANALYZED ARTICLES (${context.totalArticlesAnalyzed} articles processed by our AI):
 ${articleSummaries.map((article, i) => `
@@ -494,10 +521,16 @@ ${i+1}. ${article.headline}
    Entities: ${article.entities_mentioned.join(', ') || 'None identified'}
 `).join('') || 'No enriched articles available'}
 
-PRE-EXTRACTED EVENTS (These ${topEvents.length} events are what our AI found in today's news):
+PRE-EXTRACTED EVENTS (These ${topEvents.length} events are what our AI found - **SORTED BY RECENCY**):
 ${topEvents.map((e, i) =>
-  `${i+1}. [${e.type?.toUpperCase()}] ${e.entity}: ${e.description}`
+  `${i+1}. [${e.type?.toUpperCase()}] ${e.entity}: ${e.description} (${formatEventDate(e.date)})`
 ).join('\n')}
+
+⚠️ **CRITICAL RECENCY RULES:**
+- PRIORITIZE events from last 7 days (Today, Yesterday, X days ago) in your executive_summary
+- DE-EMPHASIZE events older than 2 weeks (X weeks ago, X months ago) unless they have ongoing strategic impact
+- If an event is >1 month old (X months ago), ONLY include in executive_summary if it represents a major strategic shift
+- The executive_summary should FOCUS on what's happening NOW, not historical context
 
 THE ABOVE EVENTS ARE YOUR ONLY SOURCE OF TRUTH - They represent real news from today's monitoring.
 
@@ -640,28 +673,42 @@ This is NOT raw data. You are receiving the OUTPUT of our intelligence pipeline:
 4. This enriched data is YOUR ONLY SOURCE - it contains everything we found today
 
 THE ENRICHED DATA STRUCTURE:
-- EVENTS: Pre-extracted, categorized developments from today's articles (crisis, product, partnership, etc.)
+- EVENTS: Pre-extracted, categorized developments with DATES (crisis, product, partnership, etc.)
 - ENTITIES: Companies, people, and organizations mentioned
 - QUOTES: Key statements from executives, analysts, and media
 - METRICS: Financial figures, percentages, and data points
 - ARTICLE SUMMARIES: Pre-analyzed articles with categories and relevance scores
 
+**CRITICAL: RECENCY PRIORITIZATION**
+Each event has a date stamp. Your executive_summary MUST prioritize by recency:
+1. **HIGHEST PRIORITY**: Events from today, yesterday, or within last 7 days
+2. **MEDIUM PRIORITY**: Events from 1-2 weeks ago (include only if strategically significant)
+3. **LOW PRIORITY**: Events older than 2 weeks (only mention if major ongoing strategic impact)
+4. **EXCLUDE**: Events older than 1 month should NOT appear in executive_summary unless they represent major strategic shifts still affecting today
+
+**Example of GOOD recency handling:**
+"Today's monitoring reveals [recent events]. This builds on [quick context from older events if relevant]."
+
+**Example of BAD recency handling:**
+"Warren Buffett's investment 5 months ago dominates the analysis..." [OLD NEWS - should be de-emphasized]
+
 YOUR TASK:
 You are the FINAL SYNTHESIS stage. Your job is to:
-1. Synthesize the pre-analyzed events into a coherent PR strategy
-2. Connect the dots between different events to find patterns
-3. Identify which events matter most for ${organization?.name}'s PR strategy
-4. Generate actionable PR recommendations based on THIS SPECIFIC DATA
+1. Synthesize the pre-analyzed events into a coherent PR strategy PRIORITIZING RECENT EVENTS
+2. Connect the dots between different events to find patterns, weighing recent events more heavily
+3. Identify which RECENT events matter most for ${organization?.name}'s PR strategy
+4. Generate actionable PR recommendations based on THIS SPECIFIC DATA and its RECENCY
 
 CRITICAL RULES:
 - The events list IS your news - don't look for articles elsewhere
-- Every event represents something that happened in today's news
-- If an event says "Google announced X" - that's from a real article today
-- You MUST base your entire analysis on these events
+- Every event has a date - USE IT to prioritize recent developments
+- If an event says "Google announced X (Today)" - that goes in executive_summary
+- If an event says "Investment closed (5 months ago)" - that should NOT dominate executive_summary
+- You MUST base your entire analysis on these events AND their dates
 - Do NOT add outside knowledge - if it's not in the events, it didn't happen today
-- Reference specific events to show your analysis is grounded in today's monitoring
+- Reference specific RECENT events to show your analysis is grounded in today's monitoring
 
-Remember: You're not gathering intelligence - you're SYNTHESIZING already-gathered, already-enriched intelligence.`,
+Remember: You're not gathering intelligence - you're SYNTHESIZING already-gathered, already-enriched intelligence WITH RECENCY AWARENESS.`,
         messages: [
           {
             role: 'user',

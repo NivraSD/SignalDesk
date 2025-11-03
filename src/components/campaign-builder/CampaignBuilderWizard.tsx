@@ -20,7 +20,7 @@ interface SessionState {
   researchData?: any
   positioningOptions?: any[]
   selectedPositioning?: any
-  selectedApproach?: 'PR_CAMPAIGN' | 'VECTOR_CAMPAIGN'
+  selectedApproach?: 'PR_CAMPAIGN' | 'VECTOR_CAMPAIGN' | 'GEO_VECTOR_CAMPAIGN'
   blueprint?: any
 }
 
@@ -443,8 +443,8 @@ export function CampaignBuilderWizard() {
     setIsLoading(false)
   }
 
-  // Handle approach selection (PR vs VECTOR)
-  const handleApproachSelect = async (approach: 'PR' | 'VECTOR') => {
+  // Handle approach selection (PR vs VECTOR vs GEO-VECTOR)
+  const handleApproachSelect = async (approach: 'PR' | 'VECTOR' | 'GEO_VECTOR') => {
     console.log(`⚡ Approach selected: ${approach}`)
 
     if (!session || !session.researchData || !session.selectedPositioning) {
@@ -452,7 +452,9 @@ export function CampaignBuilderWizard() {
       return
     }
 
-    const selectedApproach = approach === 'PR' ? 'PR_CAMPAIGN' : 'VECTOR_CAMPAIGN'
+    const selectedApproach = approach === 'PR' ? 'PR_CAMPAIGN' :
+                             approach === 'VECTOR' ? 'VECTOR_CAMPAIGN' :
+                             'GEO_VECTOR_CAMPAIGN'
 
     // Save approach selection to database
     try {
@@ -492,7 +494,7 @@ export function CampaignBuilderWizard() {
   }
 
   // Handle blueprint generation - call backend orchestrator
-  const handleBlueprintGenerate = async (approachType?: 'PR_CAMPAIGN' | 'VECTOR_CAMPAIGN') => {
+  const handleBlueprintGenerate = async (approachType?: 'PR_CAMPAIGN' | 'VECTOR_CAMPAIGN' | 'GEO_VECTOR_CAMPAIGN') => {
     if (!session || !organization) return
 
     const approach = approachType || session.selectedApproach
@@ -610,6 +612,95 @@ export function CampaignBuilderWizard() {
             content: 'PR campaign brief generated successfully!',
             stage: 'blueprint',
             data: result.brief
+          }
+        ])
+
+        setIsLoading(false)
+        return
+      }
+
+      // GEO-VECTOR campaigns use single-step generation
+      if (approach === 'GEO_VECTOR_CAMPAIGN') {
+        console.log('🤖 Generating GEO-VECTOR campaign blueprint...')
+
+        // GEO-VECTOR needs objective selection first - for now, default to drive_sales
+        // TODO: Add objective selection UI step
+        const objective = 'drive_sales'
+        const industry = organization.industry || 'Technology'
+
+        // Step 1: Select content types
+        const contentResponse = await fetch('/api/geo/select-content', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            objective,
+            industry,
+            constraints: { time_per_week: 2, budget: 'medium', technical_capability: 'medium' },
+            current_presence: {}
+          })
+        })
+
+        if (!contentResponse.ok) {
+          throw new Error('Failed to select content types')
+        }
+
+        const contentSelection = await contentResponse.json()
+        console.log('✅ Content types selected:', contentSelection)
+
+        // Step 2: Generate blueprint
+        const blueprintResponse = await fetch('/api/geo/generate-blueprint', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            campaignGoal: session.campaignGoal,
+            objective,
+            selectedContentTypes: {
+              automated: contentSelection.automated,
+              user_assisted: contentSelection.user_assisted
+            },
+            constraints: { time_per_week: 2, technical_capability: 'medium' },
+            organizationName: organization.name,
+            industry,
+            session_id: session.sessionId,
+            organization_id: organization.id
+          })
+        })
+
+        if (!blueprintResponse.ok) {
+          throw new Error('Failed to generate GEO-VECTOR blueprint')
+        }
+
+        const blueprintResult = await blueprintResponse.json()
+        console.log('✅ GEO-VECTOR blueprint generated:', blueprintResult)
+
+        // Clear progress simulation timeouts
+        progressSimulation.timeouts.forEach(clearTimeout)
+
+        // Mark all stages as complete
+        setBlueprintProgress({
+          currentStage: 'complete',
+          stages: {
+            base: 'completed',
+            orchestration: 'completed',
+            execution: 'completed',
+            merging: 'completed'
+          }
+        })
+
+        console.log('✅ GEO-VECTOR blueprint generated in', Date.now() - startTime, 'ms')
+
+        setSession(prev => ({
+          ...prev!,
+          blueprint: blueprintResult.blueprint
+        }))
+
+        setConversationHistory(prev => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: 'GEO-VECTOR campaign blueprint generated successfully!',
+            stage: 'blueprint',
+            data: blueprintResult.blueprint
           }
         ])
 
@@ -1225,19 +1316,19 @@ export function CampaignBuilderWizard() {
 
       case 'approach':
         return (
-          <div className="max-w-3xl mx-auto space-y-6">
-            <h2 className="text-2xl font-bold text-white text-center">Choose Your Approach</h2>
+          <div className="max-w-5xl mx-auto space-y-6">
+            <h2 className="text-2xl font-bold text-white text-center">Choose Your Campaign Type</h2>
             <p className="text-gray-400 text-center">
-              Select between a traditional PR campaign or an advanced VECTOR campaign.
+              Select between traditional PR, advanced VECTOR orchestration, or AI-optimized GEO-VECTOR campaigns.
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <button
                 onClick={() => handleApproachSelect('PR')}
                 disabled={isLoading}
                 className="p-6 bg-zinc-900 border border-zinc-800 rounded-lg hover:border-blue-500 transition-all text-left disabled:opacity-50"
               >
-                <h3 className="text-xl font-bold text-white mb-2">PR Campaign</h3>
-                <p className="text-sm text-gray-400 mb-4">Traditional approach</p>
+                <h3 className="text-xl font-bold text-white mb-2">📰 PR Campaign</h3>
+                <p className="text-sm text-gray-400 mb-4">Traditional media approach</p>
                 <ul className="text-sm text-gray-300 space-y-1">
                   <li>• Press releases</li>
                   <li>• Media outreach</li>
@@ -1251,13 +1342,28 @@ export function CampaignBuilderWizard() {
                 disabled={isLoading}
                 className="p-6 bg-zinc-900 border border-zinc-800 rounded-lg hover:border-purple-500 transition-all text-left disabled:opacity-50"
               >
-                <h3 className="text-xl font-bold text-white mb-2">VECTOR Campaign</h3>
-                <p className="text-sm text-gray-400 mb-4">Advanced orchestration</p>
+                <h3 className="text-xl font-bold text-white mb-2">🎯 VECTOR Campaign</h3>
+                <p className="text-sm text-gray-400 mb-4">Human influence orchestration</p>
                 <ul className="text-sm text-gray-300 space-y-1">
                   <li>• Multi-stakeholder mapping</li>
                   <li>• Psychological profiling</li>
                   <li>• Sequential strategy</li>
                   <li>• Coordinated execution</li>
+                </ul>
+              </button>
+
+              <button
+                onClick={() => handleApproachSelect('GEO_VECTOR')}
+                disabled={isLoading}
+                className="p-6 bg-zinc-900 border border-zinc-800 rounded-lg hover:border-emerald-500 transition-all text-left disabled:opacity-50"
+              >
+                <h3 className="text-xl font-bold text-white mb-2">🤖 GEO-VECTOR</h3>
+                <p className="text-sm text-gray-400 mb-4">AI platform optimization</p>
+                <ul className="text-sm text-gray-300 space-y-1">
+                  <li>• ChatGPT, Claude, Perplexity</li>
+                  <li>• Schema optimization (75%)</li>
+                  <li>• Industry-adaptive content</li>
+                  <li>• 8-12 week execution</li>
                 </ul>
               </button>
             </div>

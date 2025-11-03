@@ -1,0 +1,451 @@
+{
+  "type": "geo_vector",
+  "strategicFoundation": {
+    "primaryObjective": "drive_sales",
+    "targetQueries": [
+      "best project management software for startups",
+      "startup project management tools comparison",
+      "affordable project management SaaS",
+      "TaskFlow vs competitors",
+      "project management software for small teams",
+      "startup productivity tools",
+      "project management tool reviews",
+      "TaskFlow features and pricing",
+      "best PM software 2024",
+      "startup workflow management solutions"
+    ],
+    "aiPlatformPriorities": {
+      "chatgpt": {
+        "importance": "critical",
+        "rationale": "Primary platform for software recommendations and comparisons",
+        "optimization_focus": "Product schemas, case studies, and comparison content"
+      },
+      "claude": {
+        "importance": "high",
+        "rationale": "Strong for detailed technical analysis and thoughtful product evaluation",
+        "optimization_focus": "Documentation, technical case studies, and in-depth feature analysis"
+      },
+      "perplexity": {
+        "importance": "high",
+        "rationale": "Excellent for research-driven queries and data-backed comparisons",
+        "optimization_focus": "Press releases, competitive data, and cited case studies"
+      },
+      "gemini": {
+        "importance": "medium",
+        "rationale": "Good for broad software category queries and definitions",
+        "optimization_focus": "FAQ schemas and structured product information"
+      }
+    },
+    "successMetrics": [
+      "AI platform citations increase by 300% within 12 weeks",
+      "Organic signups from AI-driven traffic increase by 150%",
+      "Brand mentions in AI responses for target queries reach 40%"
+    ]
+  },
+  "geoSourceAnalysis": {
+    "sourceImportance": {
+      "schemas": {
+        "priority": "critical",
+        "missing_schemas": [
+          "Product",
+          "FAQ",
+          "Organization",
+          "SoftwareApplication"
+        ],
+        "opportunity_score": 90,
+        "reasoning": "Essential for AI platforms to understand TaskFlow as a legitimate SaaS product with structured data"
+      },
+      "comparison_sites": {
+        "priority": "critical",
+        "current_presence": "basic",
+        "opportunity_score": 85,
+        "reasoning": "G2/Capterra profiles are heavily cited by AI for software recommendations and comparisons"
+      },
+      "documentation": {
+        "priority": "high",
+        "current_presence": "none",
+        "opportunity_score": 75,
+        "reasoning": "Technical documentation builds authority and helps AI platforms understand product capabilities"
+      },
+      "case_studies": {
+        "priority": "high",
+        "current_presence": "basic",
+        "opportunity_score": 80,
+        "reasoning": "Startup success stories are frequently cited when AI recommends tools for similar use cases"
+      },
+      "press_coverage": {
+        "priority": "medium",
+        "current_presence": "none",
+        "opportunity_score": 65,
+        "reasoning": "Press releases and coverage build credibility signals that AI platforms value"
+      }
+    }
+  },
+  "threeTierTacticalPlan": {
+    "automated": [
+      {
+        "content_type": "schema-optimization",
+        "priority": 1,
+        "timeline": "Week 1",
+        "what_signaldesk_does": "Generate complete JSON-LD schemas for Product, FAQ, Organization, and SoftwareApplication with TaskFlow-specific data including pricing, features, and customer testimonials",
+        "user_action": "Deploy single script tag to TaskFlow website <head> section using provided hosted endpoint",
+        "deliverables": {
+          "hosted_endpoint": "Complete schema JSON-LD file hosted on SignalDesk CDN",
+          "deployment_script": "One-line HTML script tag for website integration",
+          "schema_types": [
+            "Product",
+            "FAQ",
+            "Organization",
+            "SoftwareApplication"
+          ],
+          "validation_report": "Schema markup validator results"
+        },
+        "citation_rate": 75,
+        "time_to_impact": "2-4 weeks",
+        "execution_method": "one_click",
+        "success_metric": "AI platforms begin citing TaskFlow product information within 4 weeks"
+      },
+      {
+        "content_type": "faq-schema",
+        "priority": 2,
+        "timeline": "Week 2",
+        "what_signaldesk_does": "Generate FAQ schema with 15-20 common startup project management questions and TaskFlow-focused answers",
+        "user_action": "Review FAQ content for accuracy and add to existing schema deployment",
+        "deliverables": {
+          "faq_schema": "JSON-LD FAQ schema with startup-focused questions",
+          "question_topics": [
+            "pricing",
+            "team size limits",
+            "integrations",
+            "startup-specific features"
+          ],
+          "answer_optimization": "Answers optimized for AI citation patterns"
+        },
+        "citation_rate": 60,
+        "time_to_impact": "2-3 weeks",
+        "execution_method": "generate_and_review",
+        "success_metric": "FAQ answers appear in AI responses to startup PM tool queries"
+      },
+      {
+        "content_type": "case-study",
+        "priority": 3,
+        "timeline": "Week 3-5",
+        "what_signaldesk_does": "Generate 3 detailed startup success stories (1500 words each) showing TaskFlow implementation results with metrics and quotes",
+        "user_action": "Review case studies for accuracy, add real customer quotes if available, publish to blog and create dedicated landing pages",
+        "deliverables": {
+          "case_study_1": "Early-stage startup scaling from 5 to 25 team members",
+          "case_study_2": "Tech startup improving development velocity by 40%",
+          "case_study_3": "Remote startup achieving better team coordination",
+          "metrics_included": "Time savings, productivity gains, team satisfaction scores",
+          "seo_optimization": "Optimized for 'startup project management success' queries"
+        },
+        "citation_rate": 55,
+        "time_to_impact": "3-6 weeks",
+        "execution_method": "generate_and_review",
+        "success_metric": "Case studies cited in AI responses about startup PM tool success stories"
+      },
+      {
+        "content_type": "blog-post",
+        "priority": 4,
+        "timeline": "Week 4-12",
+        "what_signaldesk_does": "Generate 2 blog posts per week (18 total) targeting startup project management topics, TaskFlow features, and industry insights",
+        "user_action": "Review posts weekly, customize with company voice, publish to TaskFlow blog, share on social media",
+        "deliverables": {
+          "weekly_posts": "2 posts per week, 800-1200 words each",
+          "topic_categories": [
+            "startup productivity",
+            "team management",
+            "project management best practices",
+            "TaskFlow tutorials"
+          ],
+          "seo_keywords": "Optimized for startup and project management long-tail keywords",
+          "content_calendar": "12-week publishing schedule with topics"
+        },
+        "citation_rate": 40,
+        "time_to_impact": "4-8 weeks",
+        "execution_method": "scheduled",
+        "success_metric": "Blog content cited in AI responses, organic traffic increase of 200%"
+      },
+      {
+        "content_type": "value-proposition",
+        "priority": 5,
+        "timeline": "Week 6",
+        "what_signaldesk_does": "Generate compelling value proposition copy for different startup segments with ROI calculations and feature-benefit mapping",
+        "user_action": "Review and implement across website pages, sales materials, and comparison pages",
+        "deliverables": {
+          "homepage_copy": "Primary value proposition for startup audience",
+          "segment_messaging": "Tailored messaging for different startup types",
+          "roi_calculator": "Template showing TaskFlow ROI for startups",
+          "feature_benefits": "Startup-focused feature descriptions"
+        },
+        "citation_rate": 40,
+        "time_to_impact": "2-4 weeks",
+        "execution_method": "generate_and_review",
+        "success_metric": "Value propositions appear in AI summaries of TaskFlow benefits"
+      },
+      {
+        "content_type": "press-release",
+        "priority": 6,
+        "timeline": "Week 7-10",
+        "what_signaldesk_does": "Generate 4 press releases about TaskFlow milestones, feature launches, startup partnerships, and industry recognition",
+        "user_action": "Customize with real company data, distribute through PR channels and publish on company newsroom",
+        "deliverables": {
+          "milestone_pr": "Company growth or funding announcement",
+          "feature_pr": "New feature launch targeting startups",
+          "partnership_pr": "Strategic partnership with startup ecosystem player",
+          "recognition_pr": "Industry award or recognition announcement",
+          "distribution_list": "Relevant startup and SaaS media outlets"
+        },
+        "citation_rate": 50,
+        "time_to_impact": "4-8 weeks",
+        "execution_method": "generate_and_review",
+        "success_metric": "Press releases cited by AI when discussing TaskFlow news or credibility"
+      },
+      {
+        "content_type": "infographic",
+        "priority": 7,
+        "timeline": "Week 8-11",
+        "what_signaldesk_does": "Generate 4 infographic concepts with data visualizations about startup project management trends, TaskFlow benefits, and productivity statistics",
+        "user_action": "Create visual designs using provided concepts and data, publish on blog and social media with proper alt text",
+        "deliverables": {
+          "concept_1": "Startup project management statistics and trends",
+          "concept_2": "TaskFlow vs traditional tools comparison",
+          "concept_3": "Startup productivity improvement framework",
+          "concept_4": "Remote startup team management best practices",
+          "data_sources": "Credible statistics and research citations",
+          "alt_text": "SEO-optimized image descriptions"
+        },
+        "citation_rate": 50,
+        "time_to_impact": "3-6 weeks",
+        "execution_method": "generate_and_review",
+        "success_metric": "Infographic data cited in AI responses about startup productivity"
+      },
+      {
+        "content_type": "competitive-positioning",
+        "priority": 8,
+        "timeline": "Week 9-12",
+        "what_signaldesk_does": "Generate detailed competitive analysis content comparing TaskFlow to major competitors with feature matrices and positioning statements",
+        "user_action": "Review competitive data for accuracy, create comparison pages on website, update sales materials",
+        "deliverables": {
+          "competitor_analysis": "Detailed comparison with top 5 competitors",
+          "feature_matrix": "Side-by-side feature comparison tables",
+          "positioning_statements": "Clear differentiation messaging",
+          "battle_cards": "Sales team competitive talking points",
+          "comparison_pages": "Website content for 'TaskFlow vs X' pages"
+        },
+        "citation_rate": 45,
+        "time_to_impact": "4-6 weeks",
+        "execution_method": "generate_and_review",
+        "success_metric": "TaskFlow mentioned in AI competitive comparisons and recommendations"
+      }
+    ],
+    "userAssisted": [
+      {
+        "content_type": "comparison-copy",
+        "priority": 1,
+        "timeline": "Week 2-12",
+        "what_signaldesk_does": [
+          "Generate optimized G2 and Capterra profile descriptions highlighting startup benefits",
+          "Create feature lists with startup-focused language",
+          "Develop customer review request templates and follow-up sequences"
+        ],
+        "user_action": [
+          "Update G2 and Capterra profiles with provided copy",
+          "Upload new screenshots and feature highlights",
+          "Send review requests to existing startup customers using templates",
+          "Respond to reviews and questions on both platforms"
+        ],
+        "deliverables": {
+          "g2_profile_copy": "Complete profile description and feature list",
+          "capterra_profile_copy": "Optimized profile content for Capterra",
+          "review_templates": "Email templates for requesting customer reviews",
+          "response_templates": "Templates for responding to reviews and questions",
+          "screenshot_guidelines": "Recommendations for profile images and demos"
+        },
+        "citation_rate": 65,
+        "time_to_impact": "2-4 weeks",
+        "time_estimate": "2 hours setup + 1 hour/week maintenance",
+        "success_metric": "G2/Capterra profiles cited in 60% of AI software recommendation responses"
+      },
+      {
+        "content_type": "doc-outline",
+        "priority": 2,
+        "timeline": "Week 4-12",
+        "what_signaldesk_does": [
+          "Generate comprehensive documentation structure with 12-15 page outlines",
+          "Create startup-specific use cases and implementation guides",
+          "Develop FAQ sections and troubleshooting guides",
+          "Generate API documentation templates and integration examples"
+        ],
+        "user_action": [
+          "Fill in technical implementation details and code examples",
+          "Add screenshots and step-by-step tutorials",
+          "Publish documentation to dedicated help center or knowledge base",
+          "Regularly update with new features and customer feedback"
+        ],
+        "deliverables": {
+          "getting_started": "Startup onboarding guide outline",
+          "feature_guides": "Detailed guides for key TaskFlow features",
+          "integration_docs": "API and third-party integration documentation",
+          "use_case_library": "Startup-specific implementation examples",
+          "faq_database": "Comprehensive FAQ with startup focus",
+          "troubleshooting": "Common issues and solutions guide"
+        },
+        "citation_rate": 70,
+        "time_to_impact": "2-4 weeks",
+        "time_estimate": "4 hours setup + 2 hours/week updates",
+        "success_metric": "Documentation cited in 70% of AI responses about TaskFlow implementation"
+      }
+    ]
+  },
+  "executionRoadmap": {
+    "week1": {
+      "automated": [
+        "Deploy schema optimization - Product, FAQ, Organization schemas"
+      ],
+      "user_assisted": []
+    },
+    "week2": {
+      "automated": [
+        "Deploy FAQ schema markup",
+        "Generate press release concepts"
+      ],
+      "user_assisted": [
+        "Update G2/Capterra profiles with optimized copy",
+        "Set up review request campaigns"
+      ]
+    },
+    "week3": {
+      "automated": [
+        "Publish first case study - Early-stage startup scaling",
+        "Publish 2 blog posts"
+      ],
+      "user_assisted": []
+    },
+    "week4": {
+      "automated": [
+        "Publish second case study - Tech startup velocity",
+        "Publish 2 blog posts"
+      ],
+      "user_assisted": [
+        "Begin documentation outline implementation",
+        "Send first batch of review requests"
+      ]
+    },
+    "week5": {
+      "automated": [
+        "Publish third case study - Remote startup coordination",
+        "Publish 2 blog posts"
+      ],
+      "user_assisted": [
+        "Continue documentation development",
+        "Monitor and respond to G2/Capterra activity"
+      ]
+    },
+    "week6": {
+      "automated": [
+        "Deploy value proposition updates across website",
+        "Publish 2 blog posts"
+      ],
+      "user_assisted": [
+        "Publish first documentation sections",
+        "Follow up on review requests"
+      ]
+    },
+    "week7": {
+      "automated": [
+        "Publish first press release - milestone announcement",
+        "Publish 2 blog posts"
+      ],
+      "user_assisted": [
+        "Expand documentation with technical details",
+        "Update profiles based on new reviews"
+      ]
+    },
+    "week8": {
+      "automated": [
+        "Create first infographic - startup PM statistics",
+        "Publish 2 blog posts"
+      ],
+      "user_assisted": [
+        "Add API documentation and examples",
+        "Engage with comparison site communities"
+      ]
+    },
+    "week9": {
+      "automated": [
+        "Publish second press release - feature launch",
+        "Begin competitive positioning content",
+        "Publish 2 blog posts"
+      ],
+      "user_assisted": [
+        "Launch comprehensive help center",
+        "Optimize profiles based on performance data"
+      ]
+    },
+    "week10": {
+      "automated": [
+        "Create second infographic - TaskFlow vs traditional tools",
+        "Publish third press release",
+        "Publish 2 blog posts"
+      ],
+      "user_assisted": [
+        "Add advanced use cases to documentation",
+        "Conduct quarterly profile optimization"
+      ]
+    },
+    "week11": {
+      "automated": [
+        "Create third infographic - productivity framework",
+        "Update competitive analysis",
+        "Publish 2 blog posts"
+      ],
+      "user_assisted": [
+        "Publish integration guides and tutorials",
+        "Launch second review request campaign"
+      ]
+    },
+    "week12": {
+      "automated": [
+        "Publish fourth press release",
+        "Create final infographic",
+        "Complete competitive positioning",
+        "Publish 2 blog posts"
+      ],
+      "user_assisted": [
+        "Finalize all documentation sections",
+        "Optimize all profiles for maximum AI visibility"
+      ]
+    }
+  },
+  "resourceRequirements": {
+    "automated_content": {
+      "count": 8,
+      "effort": "Minimal (SignalDesk auto-generates)",
+      "user_time": "2-3 hours/week for review and publishing"
+    },
+    "user_assisted_content": {
+      "count": 2,
+      "effort": "Moderate",
+      "breakdown": [
+        {
+          "type": "comparison-copy",
+          "time": "2 hours setup + 1 hour/week maintenance"
+        },
+        {
+          "type": "doc-outline",
+          "time": "4 hours setup + 2 hours/week updates"
+        }
+      ]
+    },
+    "total_timeline": "12 weeks",
+    "expected_impact": "300% increase in AI platform citations, 150% increase in organic signups from AI-driven traffic",
+    "budget_required": "$0 (all organic)",
+    "tools_needed": [
+      "G2 Business account",
+      "Capterra Business account",
+      "Help center/documentation platform",
+      "Basic image editing tool for infographics"
+    ]
+  }
+}
