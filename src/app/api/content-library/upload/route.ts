@@ -3,7 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { nanoid } from 'nanoid'
+import { randomUUID } from 'crypto'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co'
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     const { data: contentItem, error: dbError } = await supabase
       .from('content_library')
       .insert({
-        id: nanoid(),
+        id: randomUUID(),
         organization_id: organizationId,
         title: title || file.name,
         content_type: contentType,
@@ -98,6 +98,13 @@ export async function POST(request: NextRequest) {
 
     if (dbError) {
       console.error('❌ Database error:', dbError)
+      console.error('❌ Error details:', JSON.stringify(dbError, null, 2))
+      console.error('❌ Insert data was:', {
+        id: randomUUID(),
+        organization_id: organizationId,
+        folder,
+        contentType
+      })
 
       // Cleanup: delete uploaded file
       await supabase.storage
@@ -106,7 +113,8 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: false,
-        error: `Database error: ${dbError.message}`
+        error: `Database error: ${dbError.message}`,
+        details: dbError
       }, { status: 500 })
     }
 
