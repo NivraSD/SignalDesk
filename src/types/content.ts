@@ -11,6 +11,12 @@ export type ContentType =
   | 'thought-leadership'
   | 'presentation'
   | 'email'
+  // Business Development
+  | 'proposal'
+  | 'market-research'
+  | 'competitive-analysis'
+  | 'partnership-brief'
+  | 'strategic-recommendation'
 
 export type ContentStatus = 'pending' | 'in-progress' | 'review' | 'approved' | 'completed' | 'published'
 export type ContentPriority = 'urgent' | 'high' | 'medium' | 'low'
@@ -219,6 +225,46 @@ export const CONTENT_TYPE_CONFIG: Record<ContentType, {
     defaultTone: 'personal',
     typicalLength: '200-400 words',
     guidelines: 'Clear subject, personalization, single call-to-action, mobile-friendly'
+  },
+  'proposal': {
+    label: 'Business Proposal',
+    icon: '📋',
+    description: 'Business development proposal with intelligent reference retrieval',
+    defaultTone: 'professional',
+    typicalLength: '2000-5000 words',
+    guidelines: 'Executive summary, technical approach, team credentials, pricing, case studies. Use past proposals as reference when available.'
+  },
+  'market-research': {
+    label: 'Market Research',
+    icon: '📊',
+    description: 'Market analysis and opportunity assessment',
+    defaultTone: 'analytical',
+    typicalLength: '1500-3000 words',
+    guidelines: 'Market size, trends, competitive landscape, opportunities, data-driven recommendations'
+  },
+  'competitive-analysis': {
+    label: 'Competitive Analysis',
+    icon: '🎯',
+    description: 'Detailed competitor analysis and positioning',
+    defaultTone: 'analytical',
+    typicalLength: '1000-2000 words',
+    guidelines: 'Competitor profiles, SWOT analysis, positioning map, strategic recommendations'
+  },
+  'partnership-brief': {
+    label: 'Partnership Brief',
+    icon: '🤝',
+    description: 'Partnership opportunity and framework',
+    defaultTone: 'collaborative',
+    typicalLength: '1000-1500 words',
+    guidelines: 'Partnership rationale, mutual benefits, structure, terms, next steps'
+  },
+  'strategic-recommendation': {
+    label: 'Strategic Recommendation',
+    icon: '💡',
+    description: 'Strategic guidance and tactical recommendations',
+    defaultTone: 'strategic',
+    typicalLength: '1500-2500 words',
+    guidelines: 'Situation analysis, strategic options, recommended approach, implementation plan'
   }
 }
 
@@ -259,4 +305,202 @@ export const AUDIENCE_PROFILES = {
     languageStyle: 'formal',
     technicalDepth: 'advanced'
   }
+}
+
+// ========================================
+// BUSINESS DEVELOPMENT TYPES
+// ========================================
+
+export type ProposalType =
+  | 'new_business'
+  | 'renewal'
+  | 'rfp_response'
+  | 'unsolicited_pitch'
+  | 'partnership'
+  | 'other'
+
+export type ProposalOutcome =
+  | 'won'
+  | 'lost'
+  | 'pending'
+  | 'no_decision'
+  | 'unknown'
+
+export type DealValueRange =
+  | 'under_50k'
+  | '50k_100k'
+  | '100k_250k'
+  | '250k_500k'
+  | '500k_1m'
+  | '1m_5m'
+  | '5m_plus'
+  | 'unknown'
+
+export interface ProposalMetadata {
+  // Identification
+  clientName?: string
+  industry: string
+  sector?: string
+
+  // Proposal details
+  proposalType: ProposalType
+  servicesOffered: string[]
+  dealValueRange?: DealValueRange
+
+  // Content structure
+  proposalSections?: {
+    executiveSummary?: string
+    technicalApproach?: string
+    teamCredentials?: string
+    caseStudies?: string
+    pricing?: string
+    timeline?: string
+    references?: string
+    [key: string]: string | undefined
+  }
+  keyDifferentiators?: string[]
+
+  // Outcome tracking
+  outcome?: ProposalOutcome
+  outcomeDate?: Date
+  outcomeNotes?: string
+  winProbability?: number // 0-100
+
+  // Competitive intelligence
+  competitiveLandscape?: {
+    competitors?: string[]
+    whyWeWon?: string
+    whyWeLost?: string
+  }
+  clientRequirements?: Record<string, any>
+  decisionCriteria?: Record<string, any>
+  pricingStrategy?: string
+
+  // Dates
+  proposalDate?: Date
+  submissionDeadline?: Date
+  decisionDate?: Date
+
+  // Team
+  teamMembers?: string[]
+
+  // References to other proposals
+  referencedProposals?: string[] // IDs of proposals used as reference
+
+  // File info
+  filePath?: string
+  fileType?: string
+  fileSizeBytes?: number
+}
+
+export interface ProposalSearchCriteria {
+  industry?: string
+  sector?: string
+  servicesOffered?: string[]
+  outcomePreference?: 'won_only' | 'successful_and_pending' | 'all'
+  recencyWeight?: number // 0-1, higher = prefer recent
+  minWinRate?: number // Minimum win rate for similar proposals
+  limit?: number
+}
+
+export interface ProposalSuggestion {
+  proposalId: string
+  title: string
+  clientName: string
+  industry: string
+  sector?: string
+  outcome: ProposalOutcome
+  proposalDate: Date
+  matchScore: number // 0-100
+  matchReasons: string[] // ["Same industry", "Similar services", "Recent (2024)", "Won"]
+  relevantSections: string[] // Which sections are most useful
+  winRate?: number // Success rate for similar proposals
+  keyDifferentiators?: string[]
+}
+
+export interface ProposalCreationRequest {
+  // User's new proposal requirements
+  clientName?: string
+  industry: string
+  sector?: string
+  servicesOffered: string[]
+  proposalType: ProposalType
+  dealValueRange?: DealValueRange
+
+  // User preferences for references
+  useReferences: boolean // Auto-query Memory Vault?
+  specificReferences?: string[] // User-specified proposal IDs
+  sectionReferences?: {
+    [section: string]: string[] // e.g., { "technicalApproach": ["proposal-123", "proposal-456"] }
+  }
+
+  // Additional context
+  clientRequirements?: string
+  competitiveContext?: string
+  budgetConstraints?: string
+  timeline?: string
+  keyDifferentiators?: string[]
+
+  // Generation options
+  includeExecutiveSummary?: boolean
+  includeTechnicalApproach?: boolean
+  includeTeamCredentials?: boolean
+  includeCaseStudies?: boolean
+  includePricing?: boolean
+  includeTimeline?: boolean
+}
+
+export interface ProposalFileUpload {
+  file: File
+
+  // Auto-extracted metadata (with confidence scores)
+  extracted?: {
+    clientName?: { value: string; confidence: number }
+    industry?: { value: string; confidence: number }
+    sector?: { value: string; confidence: number }
+    servicesOffered?: { value: string[]; confidence: number }
+    proposalSections?: { value: Record<string, string>; confidence: number }
+    keyDifferentiators?: { value: string[]; confidence: number }
+  }
+
+  // User-provided metadata
+  metadata: ProposalMetadata
+}
+
+export interface ProposalAnalytics {
+  organizationId: string
+
+  overallStats: {
+    totalProposals: number
+    winRate: number
+    avgDealValue?: string
+    avgDecisionTime?: number // days
+  }
+
+  byIndustry: Array<{
+    industry: string
+    proposals: number
+    winRate: number
+    avgDealSize?: string
+  }>
+
+  byProposalType: Array<{
+    type: ProposalType
+    winRate: number
+    proposals: number
+  }>
+
+  topDifferentiators: Array<{
+    differentiator: string
+    timesUsed: number
+    winRate: number
+  }>
+
+  trends: {
+    winRateTrend: 'improving' | 'declining' | 'stable'
+    recentWins: ProposalSuggestion[]
+    recentLosses: ProposalSuggestion[]
+  }
+
+  insights: string[] // AI-generated insights
 }
