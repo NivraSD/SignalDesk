@@ -75,7 +75,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { organization_id, targets, append = false } = body
+    const { organization_id, targets, append = true } = body // FIXED: Default to true to prevent data loss
 
     if (!organization_id || !targets) {
       return NextResponse.json(
@@ -84,8 +84,10 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Only delete existing targets if not in append mode (for onboarding)
-    if (!append) {
+    // Only delete existing targets if explicitly requested (append = false)
+    // CRITICAL: This should only be used during initial onboarding or intentional replacement
+    if (append === false) {
+      console.warn(`⚠️  DELETING all targets for organization ${organization_id} - append explicitly set to false`)
       await supabase
         .from('intelligence_targets')
         .delete()
