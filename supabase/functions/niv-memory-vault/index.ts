@@ -546,30 +546,117 @@ function generateRetrievalReason(params: any): string {
 // Search all content types with composite scoring
 async function searchContent(organizationId: string, query: string, contentType?: string, limit: number = 50): Promise<ApiResponse> {
   try {
-    let dbQuery = supabase
+    console.log('🔍 Memory Vault Search Parameters:', {
+      organizationId,
+      query,
+      contentType,
+      limit
+    });
+
+    let allResults: any[] = [];
+
+    // Search content_library table
+    let contentQuery = supabase
       .from('content_library')
       .select('*');
 
     if (organizationId && organizationId !== '') {
-      dbQuery = dbQuery.eq('organization_id', organizationId);
+      contentQuery = contentQuery.eq('organization_id', organizationId);
     }
 
     if (contentType && contentType !== 'all') {
-      dbQuery = dbQuery.eq('content_type', contentType);
+      contentQuery = contentQuery.eq('content_type', contentType);
     }
 
     // Search in title and content
-    dbQuery = dbQuery.or(`title.ilike.%${query}%,content.ilike.%${query}%,tags.cs.{${query}}`);
+    contentQuery = contentQuery.or(`title.ilike.%${query}%,content.ilike.%${query}%,tags.cs.{${query}}`);
 
-    const { data, error } = await dbQuery
+    const { data: contentData, error: contentError } = await contentQuery
       .order('created_at', { ascending: false })
-      .limit(limit * 2); // Fetch more to score and filter
+      .limit(limit);
 
-    if (error) throw error;
+    if (contentError) {
+      console.error('Error searching content_library:', contentError);
+    } else if (contentData) {
+      allResults.push(...contentData);
+    }
 
-    if (!data || data.length === 0) {
+    // ALSO search opportunities table
+    let oppQuery = supabase
+      .from('opportunities')
+      .select('*');
+
+    if (organizationId && organizationId !== '') {
+      oppQuery = oppQuery.eq('organization_id', organizationId);
+    }
+
+    // Search in opportunity title, description, summary
+    oppQuery = oppQuery.or(`title.ilike.%${query}%,description.ilike.%${query}%,summary.ilike.%${query}%`);
+
+    const { data: oppData, error: oppError } = await oppQuery
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (oppError) {
+      console.error('Error searching opportunities:', oppError);
+    } else if (oppData) {
+      // Format opportunities to match content_library structure
+      const formattedOpps = oppData.map(opp => ({
+        ...opp,
+        content_type: 'opportunity',
+        content: opp.description || opp.summary || '',
+        // Preserve original opportunity fields
+        opportunity_data: opp
+      }));
+      allResults.push(...formattedOpps);
+    }
+
+    console.log('📊 Database query results:', {
+      content_library: contentData?.length || 0,
+      opportunities: oppData?.length || 0,
+      total: allResults.length
+    });
+
+    if (allResults.length === 0) {
+      // Try broader search without filters to see what exists
+      const { data: allContent } = await supabase
+        .from('content_library')
+        .select('id, title, content_type, created_at')
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      const { data: allOpps } = await supabase
+        .from('opportunities')
+        .select('id, title, created_at')
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      console.log('📋 Recent content in Memory Vault for this org:', {
+        content_library: {
+          count: allContent?.length || 0,
+          items: allContent?.map(item => ({
+            id: item.id,
+            title: item.title,
+            type: item.content_type,
+            created: item.created_at
+          }))
+        },
+        opportunities: {
+          count: allOpps?.length || 0,
+          items: allOpps?.map(item => ({
+            id: item.id,
+            title: item.title,
+            created: item.created_at
+          }))
+        }
+      });
+
       return { success: true, data: [] };
     }
+
+    const data = allResults;
 
     // Apply composite scoring
     const queryKeywords = query.toLowerCase().split(/\s+/).filter(k => k.length > 2);

@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
           target_platforms,
           positioning_goals,
           negative_keywords,
-          target_article_links,
+          // target_article_links,  // Temporarily removed due to schema cache issue
           active
         })
         .select()

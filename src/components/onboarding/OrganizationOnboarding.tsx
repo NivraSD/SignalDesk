@@ -431,114 +431,44 @@ export default function OrganizationOnboarding({
     }
 
     try {
-      console.log('🎯 Running GEO Discovery...')
+      console.log('🎯 Running GEO Discovery with parallelized intelligence monitor...')
 
-      // STEP 1: Generate intelligent queries using geo-query-discovery
-      console.log('🔍 Generating queries...')
-      const { data: queryData, error: queryError} = await supabase.functions.invoke('geo-query-discovery', {
+      // Use the parallelized geo-intelligence-monitor function
+      // This runs all 4 platforms in parallel with 10 queries each
+      const { data: monitorData, error: monitorError } = await supabase.functions.invoke('geo-intelligence-monitor', {
         body: {
           organization_id: orgId,
           organization_name: orgNameToUse,
           industry: discovered?.industry || industry,
           competitors: Array.from(selectedCompetitors).concat(customCompetitors),
-          mcp_profile: fullProfile  // Pass MCP discovery data for better query generation
+          mode: 'onboarding' // Special mode for onboarding (uses subset of queries)
         }
       })
 
-      if (queryError || !queryData?.queries) {
-        throw new Error('Failed to generate queries')
+      if (monitorError || !monitorData?.success) {
+        throw new Error(monitorData?.error || 'GEO intelligence monitor failed')
       }
 
-      // Select 5 queries from each priority level for testing
-      const queries = [
-        ...(queryData.queries.critical || []).slice(0, 2),
-        ...(queryData.queries.high || []).slice(0, 2),
-        ...(queryData.queries.medium || []).slice(0, 1)
-      ]
-
-      console.log(`✅ Generated ${queries.length} queries for testing`)
-
-      // STEP 2: Test all 4 platforms in PARALLEL
-      console.log('🚀 Testing all platforms in parallel...')
-      const testBody = {
-        organization_name: orgNameToUse,
-        queries
-      }
-
-      const [claudeResult, geminiResult, perplexityResult, chatgptResult] = await Promise.all([
-        supabase.functions.invoke('geo-test-claude', { body: testBody }),
-        supabase.functions.invoke('geo-test-gemini', { body: testBody }),
-        supabase.functions.invoke('geo-test-perplexity', { body: testBody }),
-        supabase.functions.invoke('geo-test-chatgpt', { body: testBody })
-      ])
-
-      // Check results
-      const results = {
-        claude: claudeResult.data,
-        gemini: geminiResult.data,
-        perplexity: perplexityResult.data,
-        chatgpt: chatgptResult.data
-      }
-
-      console.log('✅ All platform tests complete:', {
-        claude: `${results.claude?.mentions || 0}/${results.claude?.queries_tested || 0}`,
-        gemini: `${results.gemini?.mentions || 0}/${results.gemini?.queries_tested || 0}`,
-        perplexity: `${results.perplexity?.mentions || 0}/${results.perplexity?.queries_tested || 0}`,
-        chatgpt: `${results.chatgpt?.mentions || 0}/${results.chatgpt?.queries_tested || 0}`
+      console.log('✅ GEO Discovery Complete:', {
+        total_signals: monitorData.summary?.total_signals || 0,
+        queries_tested: monitorData.summary?.queries_tested || 0,
+        platforms_tested: 4
       })
-
-      // STEP 3: Transform results for synthesis
-      const transformedResults = []
-      const queryMap = new Map(queries.map(q => [q.query, q]))
-
-      for (const [platformName, platformData] of Object.entries(results)) {
-        if (platformData?.signals && Array.isArray(platformData.signals)) {
-          for (const signal of platformData.signals) {
-            const originalQuery = queryMap.get(signal.data?.query)
-            transformedResults.push({
-              query: signal.data?.query || '',
-              intent: originalQuery?.intent || 'unknown',
-              priority: signal.priority || 'medium',
-              platform: platformName as 'claude' | 'gemini' | 'chatgpt' | 'perplexity',
-              response: '',
-              brand_mentioned: signal.data?.mentioned || false,
-              rank: signal.data?.position || undefined,
-              context_quality: signal.data?.context ? 'strong' : undefined,
-              competitors_mentioned: signal.data?.competitors_mentioned || []
-            })
-          }
-        }
-      }
-
-      console.log(`🎯 Synthesizing ${transformedResults.length} test results...`)
-      const { data: synthesisData, error: synthesisError } = await supabase.functions.invoke('geo-executive-synthesis', {
-        body: {
-          organization_id: orgId,
-          organization_name: orgNameToUse,
-          industry: discovered?.industry || industry,
-          geo_results: transformedResults
-        }
-      })
-
-      if (synthesisError) {
-        throw new Error('Failed to synthesize results')
-      }
 
       // Format results for display
       const geoData = {
         success: true,
         summary: {
-          total_queries: queries.length,
-          total_signals: transformedResults.length,
-          claude_mentions: results.claude?.mentions || 0,
-          gemini_mentions: results.gemini?.mentions || 0,
-          perplexity_mentions: results.perplexity?.mentions || 0,
-          chatgpt_mentions: results.chatgpt?.mentions || 0
+          total_queries: monitorData.summary?.queries_tested || 0,
+          total_signals: monitorData.summary?.total_signals || 0,
+          claude_mentions: monitorData.summary?.platform_performance?.claude?.filter((s: any) => s.type === 'ai_visibility').length || 0,
+          gemini_mentions: monitorData.summary?.platform_performance?.gemini?.filter((s: any) => s.type === 'ai_visibility').length || 0,
+          perplexity_mentions: monitorData.summary?.platform_performance?.perplexity?.filter((s: any) => s.type === 'ai_visibility').length || 0,
+          chatgpt_mentions: monitorData.summary?.platform_performance?.chatgpt?.filter((s: any) => s.type === 'ai_visibility').length || 0
         },
-        synthesis: synthesisData?.synthesis
+        synthesis: monitorData.synthesis
       }
 
-      console.log('✅ GEO Discovery Complete:', geoData.summary)
       setGeoResults(geoData)
       setShowGeoResults(true)
     } catch (error) {

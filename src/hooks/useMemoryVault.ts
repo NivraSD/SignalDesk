@@ -78,6 +78,9 @@ export function useMemoryVault() {
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Save failed with status:', response.status);
+        console.error('❌ Error response:', errorText);
         throw new Error(`Failed to save content: ${response.statusText}`);
       }
 
