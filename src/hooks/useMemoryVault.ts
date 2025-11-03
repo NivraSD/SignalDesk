@@ -65,14 +65,15 @@ export function useMemoryVault() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          type: newContent.content_type,
-          data: {
+          content: {
+            type: newContent.content_type,
             title: newContent.title,
             content: newContent.content,
-            tags: newContent.tags || [],
-            folder: newContent.folder || '',
-            metadata: newContent.metadata || {}
-          }
+            organization_id: null // Will be set by API if not provided
+          },
+          metadata: newContent.metadata || {},
+          folder: newContent.folder || '',
+          tags: newContent.tags || []
         })
       });
 

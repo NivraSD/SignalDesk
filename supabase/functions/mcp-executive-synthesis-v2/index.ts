@@ -32,7 +32,8 @@ function prepareIntelligenceContext(enrichedData: any) {
             type: eventType,
             title: event.title,
             description: event.description || '',
-            companies: event.companies || []
+            companies: event.companies || [],
+            publishedAt: event.publishedAt || event.date || event.published_at || null
           });
         }
       });
@@ -57,21 +58,38 @@ function prepareIntelligenceContext(enrichedData: any) {
  * Generate synthesis prompt for new format
  */
 function createSynthesisPrompt(organization: any, context: any) {
+  const today = new Date();
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return 'Unknown date';
+    const date = new Date(dateStr);
+    const daysAgo = Math.floor((today.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    if (daysAgo === 0) return 'Today';
+    if (daysAgo === 1) return 'Yesterday';
+    if (daysAgo < 7) return `${daysAgo} days ago`;
+    if (daysAgo < 30) return `${Math.floor(daysAgo / 7)} weeks ago`;
+    return `${Math.floor(daysAgo / 30)} months ago`;
+  };
+
   return `Generate executive intelligence report for ${organization?.name || 'the organization'}.
+
+**TODAY'S DATE:** ${today.toISOString().split('T')[0]}
 
 STRICT ANALYSIS RULES:
 - ONLY analyze information explicitly present in the provided data
-- Every insight MUST reference specific events or data points 
+- Every insight MUST reference specific events or data points
 - DO NOT invent or speculate - only use provided facts
 - Focus on actionable intelligence for strategic decision-making
+- **CRITICAL: Prioritize recent events (within last 7 days) over older news**
+- **De-emphasize events older than 2 weeks unless they have ongoing strategic impact**
+- **If an event is >1 month old, only include if it represents a major strategic shift**
 
 ORGANIZATION: ${organization?.name || 'Unknown'}
 INDUSTRY: ${organization?.industry || 'Unknown'}
 
 DATA SOURCES:
-Events (${context.competitorEvents.length}):
-${context.competitorEvents.slice(0, 10).map((e, i) => 
-  `${i+1}. [${e.type}] ${e.title}`).join('\n')}
+Events (${context.competitorEvents.length}) - sorted by recency:
+${context.competitorEvents.slice(0, 10).map((e, i) =>
+  `${i+1}. [${e.type}] ${e.title} (${formatDate(e.publishedAt)})`).join('\n')}
 
 Key Companies: ${context.entities.companies.slice(0, 8).join(', ')}
 Key Executives: ${context.entities.executives.slice(0, 6).join(', ')}

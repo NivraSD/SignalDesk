@@ -267,17 +267,55 @@ ${contextText}`;
           try {
             // Clean AI response - remove ALL markdown artifacts
             let cleanedResponse = aiResponse.trim();
+            console.log('🔍 Original AI response:', aiResponse.substring(0, 300));
 
             // Remove markdown code blocks (multiple patterns)
-            cleanedResponse = cleanedResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+            cleanedResponse = cleanedResponse.replace(/```json\n?/gi, '').replace(/```\n?/g, '');
+            console.log('🔍 After markdown removal:', cleanedResponse.substring(0, 300));
 
-            // Remove any leading/trailing text before/after JSON
-            const jsonMatch = cleanedResponse.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-              cleanedResponse = jsonMatch[0];
-            }
+            // Extract valid JSON by finding balanced braces
+            const extractJSON = (text: string): string => {
+              const firstBrace = text.indexOf('{');
+              if (firstBrace === -1) return text;
 
-            cleanedResponse = cleanedResponse.trim();
+              let braceCount = 0;
+              let inString = false;
+              let escapeNext = false;
+
+              for (let i = firstBrace; i < text.length; i++) {
+                const char = text[i];
+
+                if (escapeNext) {
+                  escapeNext = false;
+                  continue;
+                }
+
+                if (char === '\\') {
+                  escapeNext = true;
+                  continue;
+                }
+
+                if (char === '"') {
+                  inString = !inString;
+                  continue;
+                }
+
+                if (!inString) {
+                  if (char === '{') braceCount++;
+                  if (char === '}') braceCount--;
+
+                  if (braceCount === 0) {
+                    return text.substring(firstBrace, i + 1);
+                  }
+                }
+              }
+
+              return text.substring(firstBrace);
+            };
+
+            cleanedResponse = extractJSON(cleanedResponse).trim();
+            console.log('🔍 After JSON extraction:', cleanedResponse.substring(0, 300));
+            console.log('🔍 Attempting to parse as JSON...');
 
             const existingSchema = JSON.parse(editorContent);
             const aiSuggestion = JSON.parse(cleanedResponse);
@@ -357,9 +395,16 @@ ${contextText}`;
               mergedSchema = { ...existingSchema, ...aiSuggestion };
             }
 
-            setEditorContent(JSON.stringify(mergedSchema, null, 2));
+            const mergedJSON = JSON.stringify(mergedSchema, null, 2);
+            console.log('✅ Schema merge successful, setting editor content');
+            setEditorContent(mergedJSON);
           } catch (e) {
             console.error('Schema merge error:', e);
+            console.error('Error details:', {
+              message: e instanceof Error ? e.message : 'Unknown error',
+              cleanedResponse: cleanedResponse?.substring(0, 200),
+              aiResponsePreview: aiResponse?.substring(0, 200)
+            });
             // If parsing fails, append AI response as comment
             setEditorContent(editorContent + '\n\n/* AI Suggestion (failed to parse):\n' + aiResponse + '\n*/');
           }
