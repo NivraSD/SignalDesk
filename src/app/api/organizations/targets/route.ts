@@ -101,10 +101,9 @@ export async function POST(req: NextRequest) {
       type: target.type,
       priority: target.priority || 'medium',
       active: target.active !== false,
-      keywords: target.keywords || [],
-      monitoring_context: target.monitoring_context || null,
-      industry_context: target.industry_context || null,
-      relevance_filter: target.relevance_filter || null
+      keywords: target.keywords || []
+      // NOTE: Removed industry_context, monitoring_context, relevance_filter temporarily
+      // due to PostgREST schema cache issue - will re-add after cache refreshes
     }))
 
     const { data: inserted, error } = await supabase

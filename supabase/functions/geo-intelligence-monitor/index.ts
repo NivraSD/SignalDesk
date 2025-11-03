@@ -148,28 +148,20 @@ serve(async (req) => {
       chatgpt: []
     }
 
-    // TEST 1: Claude AI Visibility
-    console.log('🤖 Testing Claude visibility...')
-    const claudeResults = await testClaudeVisibility(queries, organization_name)
-    signals.push(...claudeResults)
+    // RUN ALL PLATFORM TESTS IN PARALLEL (4x faster: ~35-45s vs ~60-75s)
+    console.log('🚀 Testing all platforms in parallel (10 queries each)...')
+    const [claudeResults, geminiResults, perplexityResults, chatgptResults] = await Promise.all([
+      testClaudeVisibility(queries, organization_name),
+      testGeminiVisibility(queries, organization_name),
+      testPerplexityVisibility(queries, organization_name),
+      testChatGPTVisibility(queries, organization_name)
+    ])
+
+    // Aggregate results
+    signals.push(...claudeResults, ...geminiResults, ...perplexityResults, ...chatgptResults)
     platformPerformance.claude = claudeResults.filter(r => r.type === 'ai_visibility' || r.type === 'visibility_gap')
-
-    // TEST 2: Gemini AI Visibility
-    console.log('🌟 Testing Gemini visibility...')
-    const geminiResults = await testGeminiVisibility(queries, organization_name)
-    signals.push(...geminiResults)
     platformPerformance.gemini = geminiResults.filter(r => r.type === 'ai_visibility' || r.type === 'visibility_gap')
-
-    // TEST 3: Perplexity AI Visibility (Sonar model with sources)
-    console.log('🔮 Testing Perplexity visibility...')
-    const perplexityResults = await testPerplexityVisibility(queries, organization_name)
-    signals.push(...perplexityResults)
     platformPerformance.perplexity = perplexityResults.filter(r => r.type === 'ai_visibility' || r.type === 'visibility_gap')
-
-    // TEST 4: ChatGPT AI Visibility (GPT-4o)
-    console.log('💬 Testing ChatGPT visibility...')
-    const chatgptResults = await testChatGPTVisibility(queries, organization_name)
-    signals.push(...chatgptResults)
     platformPerformance.chatgpt = chatgptResults.filter(r => r.type === 'ai_visibility' || r.type === 'visibility_gap')
 
     // TEST 5: Competitor Schema Extraction (via Firecrawl)
@@ -475,7 +467,7 @@ async function testClaudeVisibility(
   const signals: any[] = []
 
   // Test first 5 queries to avoid excessive API costs
-  for (const q of queries.slice(0, 5)) {
+  for (const q of queries.slice(0, 10)) {
     try {
       const message = await anthropic.messages.create({
         model: 'claude-sonnet-4-20250514',
@@ -556,7 +548,7 @@ async function testGeminiVisibility(
   console.log('🌟 Using Direct Gemini API (simple API key authentication)')
 
   // Test first 5 queries
-  for (const q of queries.slice(0, 5)) {
+  for (const q of queries.slice(0, 10)) {
     try {
       // Call Direct Gemini API (no OAuth needed!)
       // Use gemini-2.0-flash-001 (Gemini 2.0 Flash model)
@@ -667,7 +659,7 @@ async function testPerplexityVisibility(queries: any[], organizationName: string
   }
 
   // Test subset of queries (Perplexity is more expensive)
-  const testQueries = queries.slice(0, 5)
+  const testQueries = queries.slice(0, 10)
 
   for (const q of testQueries) {
     try {
