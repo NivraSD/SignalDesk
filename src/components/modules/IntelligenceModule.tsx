@@ -603,18 +603,48 @@ export default function IntelligenceModule() {
         platforms: '4 platforms (parallel)'
       })
 
-      // Construct final results object
+      // Calculate platform-specific mention counts from signals
+      const claudeMentions = allSignals.filter(s =>
+        s.platform === 'claude' && s.type === 'ai_visibility'
+      ).length
+      const geminiMentions = allSignals.filter(s =>
+        s.platform === 'gemini' && s.type === 'ai_visibility'
+      ).length
+      const perplexityMentions = allSignals.filter(s =>
+        s.platform === 'perplexity' && s.type === 'ai_visibility'
+      ).length
+      const chatgptMentions = allSignals.filter(s =>
+        s.platform === 'chatgpt' && s.type === 'ai_visibility'
+      ).length
+      const criticalSignals = allSignals.filter(s =>
+        s.priority === 'critical'
+      ).length
+
+      // Construct final results object with UI-compatible summary
       const monitorData = {
         success: true,
         summary: {
+          total_queries: queries.length,
           total_signals: allSignals.length,
-          queries_tested: queries.length,
+          claude_mentions: claudeMentions,
+          gemini_mentions: geminiMentions,
+          perplexity_mentions: perplexityMentions,
+          chatgpt_mentions: chatgptMentions,
+          critical_signals: criticalSignals,
           platforms_tested: 4
         },
         queries: queries,
         signals: allSignals,
         synthesis: synthesisData?.synthesis || null
       }
+
+      console.log('📊 Platform breakdown:', {
+        claude: claudeMentions,
+        gemini: geminiMentions,
+        perplexity: perplexityMentions,
+        chatgpt: chatgptMentions,
+        critical: criticalSignals
+      })
 
       setGeoResults(monitorData)
 
