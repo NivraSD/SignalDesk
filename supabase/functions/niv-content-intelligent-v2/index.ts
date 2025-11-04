@@ -17,6 +17,48 @@ import {
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!
+const VOYAGE_API_KEY = Deno.env.get('VOYAGE_API_KEY')
+
+/**
+ * Generate embedding using Voyage AI voyage-3-large
+ * Returns null on error (non-blocking - content saved even if embedding fails)
+ */
+async function generateEmbedding(text: string): Promise<number[] | null> {
+  if (!VOYAGE_API_KEY) {
+    console.warn('⚠️ VOYAGE_API_KEY not set, skipping embedding generation')
+    return null
+  }
+
+  try {
+    const maxChars = 8000
+    const truncatedText = text.length > maxChars ? text.substring(0, maxChars) : text
+
+    const response = await fetch('https://api.voyageai.com/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${VOYAGE_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'voyage-3-large',
+        input: truncatedText,
+        input_type: 'document'
+      })
+    })
+
+    if (!response.ok) {
+      console.error('❌ Voyage API error:', await response.text())
+      return null
+    }
+
+    const data = await response.json()
+    console.log(`✅ Generated embedding (${data.data[0].embedding.length}D)`)
+    return data.data[0].embedding
+  } catch (error) {
+    console.error('❌ Error generating embedding:', error)
+    return null
+  }
+}
 
 // Tool definitions for Claude
 const CONTENT_GENERATION_TOOLS = [
@@ -921,11 +963,16 @@ serve(async (req) => {
 
         // Save to folder if specified
         if (saveFolder && content) {
+          // Generate embedding for semantic search
+          const title = `${preloadedStrategy.subject} - ${requestedContentType}`
+          const textForEmbedding = `${title}\n\n${content}`.substring(0, 8000)
+          const embedding = await generateEmbedding(textForEmbedding)
+
           await supabase.from('content_library').insert({
             id: crypto.randomUUID(),
             organization_id: organizationId,
             content_type: requestedContentType,
-            title: `${preloadedStrategy.subject} - ${requestedContentType}`,
+            title,
             content: content,
             folder: saveFolder,
             metadata: {
@@ -933,7 +980,10 @@ serve(async (req) => {
               fromFramework: true,
               strategy: preloadedStrategy.subject
             },
-            status: 'approved'
+            status: 'approved',
+            embedding,
+            embedding_model: 'voyage-3-large',
+            embedding_updated_at: embedding ? new Date().toISOString() : null
           })
 
           console.log(`💾 Auto-generated ${requestedContentType} saved to ${saveFolder}`)
@@ -2189,11 +2239,16 @@ ${campaignContext.timeline || 'Not specified'}
             generated_at: new Date().toISOString()
           }
 
+          // Generate embedding for semantic search
+          const mediaListTitle = `Media List - ${focusArea} (${tier})`
+          const mediaListText = `${mediaListTitle}\n\n${mediaListContent}`.substring(0, 8000)
+          const mediaListEmbedding = await generateEmbedding(mediaListText)
+
           await supabase.from('content_library').insert({
             id: crypto.randomUUID(),
             organization_id: organizationId,
             content_type: 'media-list',
-            title: `Media List - ${focusArea} (${tier})`,
+            title: mediaListTitle,
             content: mediaListContent,
             folder: mediaListFolder,
             metadata: {
@@ -2202,7 +2257,10 @@ ${campaignContext.timeline || 'Not specified'}
               journalist_count: allJournalists.length,
               source: content.source,
               generated_by: 'niv-content'
-            }
+            },
+            embedding: mediaListEmbedding,
+            embedding_model: 'voyage-3-large',
+            embedding_updated_at: mediaListEmbedding ? new Date().toISOString() : null
           })
 
           console.log(`✅ Auto-saved media list to ${mediaListFolder}`)
@@ -3104,6 +3162,11 @@ ${section.talking_points.map((point: string) => `- ${point}`).join('\n')}
           // Save outline + markdown to Memory Vault (non-blocking)
           try {
             console.log('💾 Saving presentation outline to Memory Vault')
+
+            // Generate embedding for semantic search
+            const presentationText = `${outline.topic}\n\n${markdownContent}`.substring(0, 8000)
+            const presentationEmbedding = await generateEmbedding(presentationText)
+
             await supabase.from('content_library').insert({
               id: crypto.randomUUID(),
               organization_id: organizationId,
@@ -3119,7 +3182,10 @@ ${section.talking_points.map((point: string) => `- ${point}`).join('\n')}
                 created_date: new Date().toISOString(),
                 status: 'generating'
               },
-              folder: `presentations/${outline.topic.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
+              folder: `presentations/${outline.topic.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+              embedding: presentationEmbedding,
+              embedding_model: 'voyage-3-large',
+              embedding_updated_at: presentationEmbedding ? new Date().toISOString() : null
             })
             console.log('✅ Saved presentation outline to Memory Vault')
           } catch (saveError) {
@@ -3258,34 +3324,49 @@ ${section.talking_points.map((point: string) => `- ${point}`).join('\n')}
 
         try {
           // Save strategy document first
+          const strategyTitle = `${strategy.subject} - Strategy`
+          const strategyContent = `# Media Strategy: ${strategy.subject}\n\n## Core Narrative\n${strategy.narrative}\n\n## Target Audiences\n${strategy.target_audiences?.join(', ')}\n\n## Key Messages\n${strategy.key_messages?.map((m: string, i: number) => `${i + 1}. ${m}`).join('\n')}`
+          const strategyText = `${strategyTitle}\n\n${strategyContent}`.substring(0, 8000)
+          const strategyEmbedding = await generateEmbedding(strategyText)
+
           await supabase.from('content_library').insert({
             id: crypto.randomUUID(),
             organization_id: organizationId,
             content_type: 'strategy-document',
-            title: `${strategy.subject} - Strategy`,
-            content: `# Media Strategy: ${strategy.subject}\n\n## Core Narrative\n${strategy.narrative}\n\n## Target Audiences\n${strategy.target_audiences?.join(', ')}\n\n## Key Messages\n${strategy.key_messages?.map((m: string, i: number) => `${i + 1}. ${m}`).join('\n')}`,
+            title: strategyTitle,
+            content: strategyContent,
             folder: mediaPlanFolder,
             metadata: {
               subject: strategy.subject,
               strategyChosen: conversationState.strategyChosen,
               mediaPlan: true
-            }
+            },
+            embedding: strategyEmbedding,
+            embedding_model: 'voyage-3-large',
+            embedding_updated_at: strategyEmbedding ? new Date().toISOString() : null
           })
 
           // Save each content piece
           for (const piece of generatedContent) {
+            const pieceTitle = `${strategy.subject} - ${piece.type.replace('-', ' ').toUpperCase()}`
+            const pieceText = `${pieceTitle}\n\n${piece.content}`.substring(0, 8000)
+            const pieceEmbedding = await generateEmbedding(pieceText)
+
             await supabase.from('content_library').insert({
               id: crypto.randomUUID(),
               organization_id: organizationId,
               content_type: piece.type,
-              title: `${strategy.subject} - ${piece.type.replace('-', ' ').toUpperCase()}`,
+              title: pieceTitle,
               content: piece.content,
               folder: mediaPlanFolder,
               metadata: {
                 subject: strategy.subject,
                 mediaPlan: true,
                 folder
-              }
+              },
+              embedding: pieceEmbedding,
+              embedding_model: 'voyage-3-large',
+              embedding_updated_at: pieceEmbedding ? new Date().toISOString() : null
             })
           }
 
