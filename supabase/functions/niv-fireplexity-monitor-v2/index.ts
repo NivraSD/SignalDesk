@@ -113,7 +113,9 @@ serve(async (req) => {
 
     if (targetsData && targetsData.length > 0) {
       targetsData.forEach((target: any) => {
-        const priority = target.priority || 'medium'
+        const priority = (target.priority && ['high', 'medium', 'low'].includes(target.priority))
+          ? target.priority
+          : 'medium'
 
         if (target.type === 'competitor' && target.name) {
           discoveryTargets.competitors.add(target.name)

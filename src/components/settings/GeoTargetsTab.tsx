@@ -79,7 +79,20 @@ export default function GeoTargetsTab({
       }
 
       if (data.geo_targets) {
-        setGeoTargets(data.geo_targets)
+        // Ensure all array fields are initialized to prevent .map() errors
+        setGeoTargets({
+          ...data.geo_targets,
+          service_lines: data.geo_targets.service_lines || [],
+          geographic_focus: data.geo_targets.geographic_focus || [],
+          industry_verticals: data.geo_targets.industry_verticals || [],
+          priority_queries: data.geo_targets.priority_queries || [],
+          geo_competitors: data.geo_targets.geo_competitors || [],
+          query_types: data.geo_targets.query_types || ['comparison', 'competitive', 'transactional'],
+          target_platforms: data.geo_targets.target_platforms || ['claude', 'gemini', 'chatgpt', 'perplexity'],
+          positioning_goals: data.geo_targets.positioning_goals || {},
+          negative_keywords: data.geo_targets.negative_keywords || [],
+          target_article_links: data.geo_targets.target_article_links || []
+        })
       }
     } catch (err: any) {
       console.error('Failed to load GEO targets:', err)

@@ -466,12 +466,29 @@ async function storeOpportunities(opportunities: EnhancedOpportunity[]): Promise
     // Create Supabase client for direct database access
     const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.39.7')
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-    
+
+    // Generate embeddings for all opportunities in parallel
+    console.log(`🔍 Generating embeddings for ${opportunities.length} opportunities...`)
+    const embeddingPromises = opportunities.map(async (opp) => {
+      const textForEmbedding = `${opp.title}\n\n${opp.description.substring(0, 8000)}`
+      const { data, error } = await supabase.functions.invoke('generate-embeddings', {
+        body: { text: textForEmbedding }
+      })
+      if (error || !data || !data.embedding) {
+        console.error(`❌ Embedding generation failed for opportunity "${opp.title}"`)
+        return null
+      }
+      return data.embedding
+    })
+
+    const embeddings = await Promise.all(embeddingPromises)
+    console.log(`✅ Generated ${embeddings.filter(e => e).length}/${opportunities.length} embeddings`)
+
     // Prepare opportunities for insertion
-    const opportunitiesToInsert = opportunities.map(opp => ({
+    const opportunitiesToInsert = opportunities.map((opp, index) => ({
       id: opp.id, // Primary key - must match the UUID used by the UI
       opportunity_id: opp.id,
-      organization_id: opp.organization_id || organization_id, // Ensure organization_id is set
+      organization_id: organization?.id || organization?.organization_id, // Use organization.id from request
       organization_name: opp.organization,
       title: opp.title,
       description: opp.description,
@@ -489,7 +506,10 @@ async function storeOpportunities(opportunities: EnhancedOpportunity[]): Promise
       expected_impact: opp.expected_impact || {},
       confidence_factors: opp.confidence_factors || [],
       risks: opp.risks || [],
-      raw_data: opp // Store the complete opportunity object
+      raw_data: opp, // Store the complete opportunity object
+      embedding: embeddings[index],
+      embedding_model: 'text-embedding-3-small',
+      embedding_updated_at: new Date().toISOString()
     }))
     
     // Insert opportunities into the database

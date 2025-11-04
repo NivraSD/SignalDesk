@@ -6,6 +6,34 @@ const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
+/**
+ * Generate embedding for text using the generate-embeddings function
+ */
+async function generateEmbedding(text: string): Promise<number[] | null> {
+  try {
+    console.log(`🔍 Generating embedding for ${text.length} characters...`);
+
+    const { data, error } = await supabase.functions.invoke('generate-embeddings', {
+      body: { text }
+    });
+
+    if (error) {
+      console.error('❌ Embedding generation error:', error);
+      return null;
+    }
+
+    if (data && data.embedding) {
+      console.log(`✅ Embedding generated: ${data.embedding.length} dimensions`);
+      return data.embedding;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('❌ Embedding generation failed:', error);
+    return null;
+  }
+}
+
 // Memory Vault API
 // Handles storage and retrieval of ALL generated content:
 // - NIV strategies
@@ -140,6 +168,11 @@ async function saveContent(content: ContentItem): Promise<ApiResponse> {
       }
     }
 
+    // Generate embedding for semantic search
+    const contentText = typeof content.content === 'string' ? content.content : JSON.stringify(content.content);
+    const textForEmbedding = `${content.title}\n\n${contentText.substring(0, 8000)}`;
+    const embedding = await generateEmbedding(textForEmbedding);
+
     // Save to content_library table (universal storage)
     const { data, error } = await supabase
       .from('content_library')
@@ -147,11 +180,14 @@ async function saveContent(content: ContentItem): Promise<ApiResponse> {
         organization_id: organizationId,
         content_type: content.content_type,
         title: content.title,
-        content: typeof content.content === 'string' ? content.content : JSON.stringify(content.content),
+        content: contentText,
         metadata: content.metadata || {},
         tags: content.tags || [],
         status: content.status || 'saved',
-        created_by: content.created_by || 'memory-vault'
+        created_by: content.created_by || 'memory-vault',
+        embedding: embedding,
+        embedding_model: 'text-embedding-3-small',
+        embedding_updated_at: new Date().toISOString()
       })
       .select()
       .single();
@@ -555,66 +591,120 @@ async function searchContent(organizationId: string, query: string, contentType?
 
     let allResults: any[] = [];
 
-    // Search content_library table
-    let contentQuery = supabase
-      .from('content_library')
-      .select('*');
+    // Generate embedding for semantic search
+    const queryEmbedding = await generateEmbedding(query);
 
-    if (organizationId && organizationId !== '') {
-      contentQuery = contentQuery.eq('organization_id', organizationId);
+    if (queryEmbedding) {
+      console.log('✅ Using semantic search with embedding');
+
+      // Use semantic search for opportunities
+      if (contentType === 'opportunity' || contentType === 'all' || !contentType) {
+        const { data: semanticOpps, error: semanticOppError } = await supabase.rpc('match_opportunities', {
+          query_embedding: queryEmbedding,
+          match_threshold: 0.5, // Lower threshold for better recall
+          match_count: limit,
+          org_id: organizationId || null
+        });
+
+        if (!semanticOppError && semanticOpps) {
+          console.log(`📊 Semantic search found ${semanticOpps.length} opportunities`);
+          const formattedOpps = semanticOpps.map((opp: any) => ({
+            ...opp,
+            content_type: 'opportunity',
+            content: opp.description || '',
+            semantic_similarity: opp.similarity,
+            opportunity_data: opp
+          }));
+          allResults.push(...formattedOpps);
+        }
+      }
+
+      // Use semantic search for content_library
+      if (contentType !== 'opportunity') {
+        const { data: semanticContent, error: semanticContentError } = await supabase.rpc('match_content', {
+          query_embedding: queryEmbedding,
+          match_threshold: 0.5, // Lower threshold for better recall
+          match_count: limit,
+          org_id: organizationId || null
+        });
+
+        if (!semanticContentError && semanticContent) {
+          console.log(`📊 Semantic search found ${semanticContent.length} content items`);
+          const contentWithSimilarity = semanticContent.map((item: any) => ({
+            ...item,
+            semantic_similarity: item.similarity
+          }));
+          allResults.push(...contentWithSimilarity);
+        }
+      }
     }
 
-    if (contentType && contentType !== 'all') {
-      contentQuery = contentQuery.eq('content_type', contentType);
+    // Fallback to keyword search if semantic search failed or returned no results
+    if (allResults.length === 0) {
+      console.log('⚠️ Semantic search returned no results, falling back to keyword search');
+
+      // Search content_library table (skip if specifically searching for opportunities)
+      if (contentType !== 'opportunity') {
+        let contentQuery = supabase
+          .from('content_library')
+          .select('*');
+
+        if (organizationId && organizationId !== '') {
+          contentQuery = contentQuery.eq('organization_id', organizationId);
+        }
+
+        if (contentType && contentType !== 'all' && contentType !== 'opportunity') {
+          contentQuery = contentQuery.eq('content_type', contentType);
+        }
+
+        // Search in title and content
+        contentQuery = contentQuery.or(`title.ilike.%${query}%,content.ilike.%${query}%,tags.cs.{${query}}`);
+
+        const { data: contentData, error: contentError } = await contentQuery
+          .order('created_at', { ascending: false })
+          .limit(limit);
+
+        if (contentError) {
+          console.error('Error searching content_library:', contentError);
+        } else if (contentData) {
+          allResults.push(...contentData);
+        }
+      }
+
+      // ALSO search opportunities table
+      let oppQuery = supabase
+        .from('opportunities')
+        .select('*');
+
+      if (organizationId && organizationId !== '') {
+        oppQuery = oppQuery.eq('organization_id', organizationId);
+      }
+
+      // Search in opportunity title and description
+      oppQuery = oppQuery.or(`title.ilike.%${query}%,description.ilike.%${query}%`);
+
+      const { data: oppData, error: oppError } = await oppQuery
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (oppError) {
+        console.error('Error searching opportunities:', oppError);
+      } else if (oppData) {
+        // Format opportunities to match content_library structure
+        const formattedOpps = oppData.map(opp => ({
+          ...opp,
+          content_type: 'opportunity',
+          content: opp.description || '',
+          // Preserve original opportunity fields
+          opportunity_data: opp
+        }));
+        allResults.push(...formattedOpps);
+      }
     }
 
-    // Search in title and content
-    contentQuery = contentQuery.or(`title.ilike.%${query}%,content.ilike.%${query}%,tags.cs.{${query}}`);
-
-    const { data: contentData, error: contentError } = await contentQuery
-      .order('created_at', { ascending: false })
-      .limit(limit);
-
-    if (contentError) {
-      console.error('Error searching content_library:', contentError);
-    } else if (contentData) {
-      allResults.push(...contentData);
-    }
-
-    // ALSO search opportunities table
-    let oppQuery = supabase
-      .from('opportunities')
-      .select('*');
-
-    if (organizationId && organizationId !== '') {
-      oppQuery = oppQuery.eq('organization_id', organizationId);
-    }
-
-    // Search in opportunity title and description (if they exist)
-    oppQuery = oppQuery.or(`title.ilike.%${query}%,description.ilike.%${query}%`);
-
-    const { data: oppData, error: oppError } = await oppQuery
-      .order('created_at', { ascending: false })
-      .limit(limit);
-
-    if (oppError) {
-      console.error('Error searching opportunities:', oppError);
-    } else if (oppData) {
-      // Format opportunities to match content_library structure
-      const formattedOpps = oppData.map(opp => ({
-        ...opp,
-        content_type: 'opportunity',
-        content: opp.description || '',
-        // Preserve original opportunity fields
-        opportunity_data: opp
-      }));
-      allResults.push(...formattedOpps);
-    }
-
-    console.log('📊 Database query results:', {
-      content_library: contentData?.length || 0,
-      opportunities: oppData?.length || 0,
-      total: allResults.length
+    console.log('📊 Search results:', {
+      total: allResults.length,
+      hasSemanticScores: allResults.some(r => r.semantic_similarity !== undefined)
     });
 
     if (allResults.length === 0) {

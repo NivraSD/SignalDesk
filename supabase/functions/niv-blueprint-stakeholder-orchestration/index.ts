@@ -10,6 +10,13 @@ interface StakeholderOrchestrationRequest {
   part2_psychologicalInfluence: any
   sessionId?: string
   orgId?: string
+  geoIntelligence?: {  // OPTIONAL: GEO-VECTOR augmentation
+    targetQueries: any[]
+    citationSources: any[]
+    schemaOpportunities: any[]
+    contentRecommendations: any[]
+    queryOwnershipMap: any
+  }
 }
 
 // Multi-channel tactic: WHO → WHAT → WHERE
@@ -95,13 +102,14 @@ serve(async (req) => {
   }
 
   try {
-    const { part1_strategicFoundation, part2_psychologicalInfluence, sessionId, orgId } = await req.json() as StakeholderOrchestrationRequest
+    const { part1_strategicFoundation, part2_psychologicalInfluence, sessionId, orgId, geoIntelligence } = await req.json() as StakeholderOrchestrationRequest
 
     console.log('🎯 Generating stakeholder orchestration...')
     console.log('   Session:', sessionId)
     console.log('   Org:', orgId)
     console.log('   Part1 keys:', Object.keys(part1_strategicFoundation || {}))
     console.log('   Part2 keys:', Object.keys(part2_psychologicalInfluence || {}))
+    console.log('   GEO Intelligence:', geoIntelligence ? '✅ Present (GEO-VECTOR campaign)' : '❌ Not present (pure VECTOR campaign)')
 
     if (!part1_strategicFoundation || !part2_psychologicalInfluence) {
       throw new Error('Missing required parts: need part1_strategicFoundation and part2_psychologicalInfluence')
@@ -111,8 +119,8 @@ serve(async (req) => {
       throw new Error('ANTHROPIC_API_KEY not configured')
     }
 
-    // Build comprehensive prompt for Claude
-    const prompt = buildOrchestrationPrompt(part1_strategicFoundation, part2_psychologicalInfluence)
+    // Build comprehensive prompt for Claude (with optional GEO intelligence)
+    const prompt = buildOrchestrationPrompt(part1_strategicFoundation, part2_psychologicalInfluence, geoIntelligence)
 
     console.log('📡 Calling Claude for orchestration generation...')
 
@@ -291,13 +299,41 @@ serve(async (req) => {
   }
 })
 
-function buildOrchestrationPrompt(part1: any, part2: any): string {
+function buildOrchestrationPrompt(part1: any, part2: any, geoIntelligence?: any): string {
   const currentDate = new Date().toISOString().split('T')[0]
 
   // Extract key info - adapt to actual Part 1 and Part 2 structure
   // Part 1 = goalFramework, Part 2 = stakeholderMapping with groups[]
   const stakeholders = part2.groups || part1.targetStakeholders || []
   const influenceStrategies = part2.influenceStrategies || part2.groups || []
+
+  // Build GEO intelligence section if present
+  const geoSection = geoIntelligence ? `
+
+### GEO Intelligence (AI Query Ownership - AUGMENTATION):
+This is a GEO-VECTOR campaign. For each tactical action, you MUST add AI query ownership metadata showing how this tactic helps own target AI queries.
+
+**Target Queries We Want to Own:**
+${JSON.stringify(geoIntelligence.targetQueries?.slice(0, 15) || [], null, 2)}
+
+**Citation Sources (which publications AI platforms trust):**
+${JSON.stringify(geoIntelligence.citationSources?.slice(0, 10) || [], null, 2)}
+
+**Schema Opportunities (Priority 1 tactics):**
+${JSON.stringify(geoIntelligence.schemaOpportunities || [], null, 2)}
+
+**Content Type Recommendations (mapped to tactics):**
+${JSON.stringify(geoIntelligence.contentRecommendations || [], null, 2)}
+
+**IMPORTANT**:
+1. Add schema opportunities as PRIORITY 1 TACTICS in the first stakeholder's influence levers
+2. For EVERY tactical action (media pitch, social post, thought leadership), add "aiQueryImpact" field with:
+   - targetQueries: Which queries this helps you own
+   - citationProbability: "high" | "medium" | "low"
+   - timeline: When AI platforms will start citing this
+   - platforms: Which AI platforms (ChatGPT, Claude, Perplexity, Gemini)
+   - rationale: Why this tactic helps own those queries
+` : ''
 
   return `You are an expert campaign strategist. Your task is to create a stakeholder orchestration plan using a multi-channel, WHO → WHAT → WHERE approach.
 
@@ -310,7 +346,7 @@ ${JSON.stringify(stakeholders, null, 2)}
 
 ### Influence Strategies (from Part 2):
 Each stakeholder has ~4 psychological influence levers (fear mitigation, aspiration activation, decision triggers, etc.)
-${JSON.stringify(influenceStrategies, null, 2)}
+${JSON.stringify(influenceStrategies, null, 2)}${geoSection}
 
 ## YOUR TASK
 
@@ -407,7 +443,14 @@ Return ONLY valid JSON with this EXACT structure:
                 "outlet": "TechCrunch",
                 "beat": "AI and developer tools",
                 "what": "How Fortune 500 companies are de-risking AI coding adoption",
-                "when": "Week 1"
+                "when": "Week 1",
+                "aiQueryImpact": {
+                  "targetQueries": ["best AI coding tools for enterprise", "enterprise AI coding adoption"],
+                  "citationProbability": "high",
+                  "timeline": "2-4 weeks",
+                  "platforms": ["ChatGPT", "Perplexity"],
+                  "rationale": "TechCrunch cited in 80% of enterprise software queries on ChatGPT"
+                }
               },
               {
                 "who": "Ron Miller",
@@ -491,11 +534,17 @@ Return ONLY valid JSON with this EXACT structure:
    - Signaldesk AUTO-EXECUTES: media pitches, social posts, thought leadership, blog posts, case studies
    - User MUST EXECUTE: webinars, events, videos, product changes, partnerships
 
-5. **Use Real Journalist Names**: Pull from the channelIntelligence.journalists[] data in Part 2. Use actual names, outlets, and beats.
+5. **AI Query Impact (GEO-VECTOR campaigns only)**:
+   - If GEO Intelligence is provided above, add "aiQueryImpact" field to EVERY tactical action
+   - Map each tactic to target queries it will help you own
+   - Show citation probability based on publication/content type
+   - If no GEO Intelligence provided, OMIT the aiQueryImpact field entirely (pure VECTOR campaign)
 
-6. **Specific, Not Generic**: "How [Company] reduced code review time by 40% with AI coding" NOT "AI coding best practices"
+6. **Use Real Journalist Names**: Pull from the channelIntelligence.journalists[] data in Part 2. Use actual names, outlets, and beats.
 
-7. **Logical Timing**: Week 1 = foundation content, Week 2-3 = amplification, Week 4+ = advanced tactics
+7. **Specific, Not Generic**: "How [Company] reduced code review time by 40% with AI coding" NOT "AI coding best practices"
+
+8. **Logical Timing**: Week 1 = foundation content, Week 2-3 = amplification, Week 4+ = advanced tactics
 
 ## CRITICAL REMINDERS
 

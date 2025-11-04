@@ -826,13 +826,37 @@ serve(async (req) => {
       console.error('Error clearing old opportunities:', deleteError);
     }
 
-    // Save V2 opportunities with full execution plans
-    const savedOpportunityIds: string[] = []
+    // Generate embeddings for all opportunities in parallel
+    const allOpportunities = [...opportunitiesV2, ...opportunities];
+    if (allOpportunities.length > 0) {
+      console.log(`🔍 Generating embeddings for ${allOpportunities.length} opportunities...`);
+      const embeddingPromises = allOpportunities.map(async (opp) => {
+        const textForEmbedding = `${opp.title}\n\n${opp.description.substring(0, 8000)}`;
+        const { data, error } = await supabase.functions.invoke('generate-embeddings', {
+          body: { text: textForEmbedding }
+        });
+        if (error || !data || !data.embedding) {
+          console.error(`❌ Embedding generation failed for opportunity "${opp.title}"`);
+          return null;
+        }
+        return data.embedding;
+      });
 
-    if (opportunitiesV2.length > 0) {
-      console.log(`📦 Storing ${opportunitiesV2.length} V2 opportunities with execution plans...`);
+      const embeddings = await Promise.all(embeddingPromises);
+      console.log(`✅ Generated ${embeddings.filter(e => e).length}/${allOpportunities.length} embeddings`);
 
-      for (const opp of opportunitiesV2) {
+      // Store embeddings in separate arrays for V2 and V1
+      const v2Embeddings = embeddings.slice(0, opportunitiesV2.length);
+      const v1Embeddings = embeddings.slice(opportunitiesV2.length);
+
+      // Save V2 opportunities with full execution plans
+      const savedOpportunityIds: string[] = []
+
+      if (opportunitiesV2.length > 0) {
+        console.log(`📦 Storing ${opportunitiesV2.length} V2 opportunities with execution plans...`);
+
+        for (let i = 0; i < opportunitiesV2.length; i++) {
+          const opp = opportunitiesV2[i];
         const insertData = {
           organization_id,
           title: opp.title,
@@ -863,7 +887,12 @@ serve(async (req) => {
           },
 
           status: 'active',
-          expires_at: calculateExpiryDate(opp.strategic_context?.time_window || '3 days')
+          expires_at: calculateExpiryDate(opp.strategic_context?.time_window || '3 days'),
+
+          // Semantic search fields
+          embedding: v2Embeddings[i],
+          embedding_model: 'text-embedding-3-small',
+          embedding_updated_at: new Date().toISOString()
         };
 
         const { data: savedOpp, error } = await supabase
@@ -890,7 +919,8 @@ serve(async (req) => {
     if (opportunities.length > 0) {
       console.log(`📦 Storing ${opportunities.length} V1 opportunities (legacy format)...`);
 
-      for (const opportunity of opportunities) {
+      for (let i = 0; i < opportunities.length; i++) {
+        const opportunity = opportunities[i];
         const insertData = {
           organization_id,
           title: opportunity.title,
@@ -911,7 +941,12 @@ serve(async (req) => {
             organization_name
           },
           status: 'active',
-          expires_at: calculateExpiryDate(opportunity.time_window)
+          expires_at: calculateExpiryDate(opportunity.time_window),
+
+          // Semantic search fields
+          embedding: v1Embeddings[i],
+          embedding_model: 'text-embedding-3-small',
+          embedding_updated_at: new Date().toISOString()
         };
 
         const { error } = await supabase
@@ -925,6 +960,7 @@ serve(async (req) => {
 
       console.log(`✅ Stored ${opportunities.length} V1 opportunities`);
     }
+    } // End of embedding generation block
 
     return new Response(
       JSON.stringify({

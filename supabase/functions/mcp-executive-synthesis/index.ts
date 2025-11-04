@@ -1005,7 +1005,43 @@ Remember: You're not gathering intelligence - you're SYNTHESIZING already-gather
       };
       console.log('📝 Using simple synthesis format');
     }
-    
+
+    // Save synthesis to database for persistence
+    if (organization_id && organization?.name) {
+      try {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+        console.log('💾 Saving synthesis to database...', {
+          organization_id,
+          organization_name: organization.name
+        });
+
+        const { data: insertData, error: insertError } = await supabase
+          .from('executive_synthesis')
+          .insert({
+            organization_id: organization_id,
+            organization_name: organization.name,
+            synthesis_data: result,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error('❌ Failed to save synthesis to database:', insertError);
+          // Don't throw - we still want to return the synthesis even if save fails
+        } else {
+          console.log('✅ Synthesis saved to database with ID:', insertData?.id);
+        }
+      } catch (dbError) {
+        console.error('❌ Database save error:', dbError);
+        // Don't throw - we still want to return the synthesis even if save fails
+      }
+    } else {
+      console.log('⚠️ Skipping database save - missing organization_id or organization.name');
+    }
+
     return result;
     
   } catch (error) {

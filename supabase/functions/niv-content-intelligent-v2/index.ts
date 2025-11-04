@@ -1896,7 +1896,7 @@ ${campaignContext.timeline || 'Not specified'}
             throw searchResponse.error
           }
 
-          const results = searchResponse.data?.results || []
+          const results = searchResponse.data?.data || []
           console.log(`✅ Found ${results.length} results from Memory Vault`)
 
           // Format results for Claude with composite scores and explanations

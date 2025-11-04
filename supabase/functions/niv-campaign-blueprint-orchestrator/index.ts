@@ -14,6 +14,13 @@ interface OrchestratorRequest {
     name: string
     industry: string
   }
+  geoIntelligence?: {  // OPTIONAL: GEO-VECTOR augmentation for AI query ownership
+    targetQueries: any[]
+    citationSources: any[]
+    schemaOpportunities: any[]
+    contentRecommendations: any[]
+    queryOwnershipMap: any
+  }
 }
 
 serve(async (req) => {
@@ -117,7 +124,8 @@ serve(async (req) => {
     callFunction('niv-blueprint-stakeholder-orchestration', {
       part1_strategicFoundation: blueprintBase.part1_goalFramework,
       part2_psychologicalInfluence: blueprintBase.part2_stakeholderMapping,
-      sessionId: payload.sessionId
+      sessionId: payload.sessionId,
+      geoIntelligence: payload.geoIntelligence  // Pass GEO intelligence if present
     }).catch(err => {
       console.log('⚠️ Orchestration started in background (HTTP response will timeout)')
     })

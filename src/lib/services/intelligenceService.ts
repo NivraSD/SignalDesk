@@ -521,14 +521,14 @@ export class IntelligenceService {
       .eq('organization_id', organizationId)
       .order('created_at', { ascending: false })
       .limit(1)
-      .single()
 
     if (error) {
       console.error('Failed to get synthesis:', error)
       return null
     }
 
-    return data
+    // Return the first item if it exists, otherwise null
+    return data && data.length > 0 ? data[0] : null
   }
 
   /**
