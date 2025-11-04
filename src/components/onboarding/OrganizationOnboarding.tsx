@@ -453,10 +453,28 @@ export default function OrganizationOnboarding({
         throw new Error(queryData?.error || 'Failed to generate GEO queries')
       }
 
-      const queries = queryData.queries || []
+      // Extract queries from categorized response
+      const categorizedQueries = queryData.queries
+      let queries: any[] = []
+
+      // Flatten categorized structure into single array
+      if (categorizedQueries) {
+        if (Array.isArray(categorizedQueries)) {
+          // Already a flat array
+          queries = categorizedQueries
+        } else if (typeof categorizedQueries === 'object') {
+          // Categorized object - flatten by priority
+          queries = [
+            ...(categorizedQueries.critical || []),
+            ...(categorizedQueries.high || []),
+            ...(categorizedQueries.medium || [])
+          ]
+        }
+      }
 
       if (!Array.isArray(queries) || queries.length === 0) {
-        throw new Error('No queries generated')
+        console.error('Categorized queries:', categorizedQueries)
+        throw new Error('No queries generated or invalid format')
       }
 
       console.log(`✅ Generated ${queries.length} queries`)
