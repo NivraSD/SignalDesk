@@ -1965,34 +1965,94 @@ ${campaignContext.timeline || 'Not specified'}
           const results = searchResponse.data?.data || []
           console.log(`✅ Found ${results.length} results from Memory Vault`)
 
-          // Format results for Claude with composite scores and explanations
-          const formattedResults = results.map((r: any, idx: number) => ({
-            rank: idx + 1,
-            title: r.title,
-            type: r.content_type,
-            content_preview: r.content?.substring(0, 500) + '...',
-            score: r.composite_score?.toFixed(2),
-            why_recommended: r.retrieval_reason,
-            metrics: {
-              relevance: `${(r.similarity_score * 100).toFixed(0)}%`,
-              success_rate: r.execution_score ? `${(r.execution_score * 100).toFixed(0)}%` : 'Not tracked',
-              times_used: r.access_count || 0,
-              last_used: r.last_accessed_at
-            },
-            executed: r.executed,
-            full_content: r.content
-          }))
+          // Create compact playbook-style summary for Claude (not full content)
+          const playbookSummary = results.length > 0 ? `
+Found ${results.length} relevant item(s) in Memory Vault:
 
+${results.slice(0, 5).map((r: any, idx: number) => `
+${idx + 1}. **${r.title}** (${r.content_type})
+   - Relevance: ${((r.similarity || r.semantic_similarity || 0) * 100).toFixed(0)}%
+   - ${r.description || r.content?.substring(0, 200) + '...'}
+   ${r.opportunity_data ? `\n   - Opportunity Score: ${r.opportunity_data.score}/100` : ''}
+`).join('\n')}
+
+${results.length > 5 ? `\n(${results.length - 5} more items available)` : ''}
+          `.trim() : 'No existing content found in Memory Vault.'
+
+          // Add tool result to conversation history and continue the agentic loop
+          console.log('🔄 Passing Memory Vault results back to Claude to continue conversation')
+
+          // Update conversation state with tool result
+          updateConversationState(conversationId, playbookSummary, 'assistant')
+
+          // Build messages array for continued conversation
+          const continuedMessages = [
+            ...conversationHistory.map((msg: any) => ({
+              role: msg.role,
+              content: msg.content
+            })),
+            // Add the assistant's tool_use message
+            {
+              role: 'assistant',
+              content: claudeResponseData.content  // This includes the tool_use block
+            },
+            // Add the tool_result
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'tool_result',
+                  tool_use_id: toolUse.id,
+                  content: playbookSummary
+                }
+              ]
+            }
+          ]
+
+          console.log('📤 Calling Claude again with tool results to continue conversation')
+
+          // Call Claude again with the tool result
+          const continuedResponse = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'anthropic-version': '2023-06-01',
+              'x-api-key': ANTHROPIC_API_KEY
+            },
+            body: JSON.stringify({
+              model: 'claude-sonnet-4-20250514',
+              max_tokens: 4096,
+              messages: continuedMessages,
+              system: conversationContext  // Keep same system context
+            })
+          })
+
+          const continuedData = await continuedResponse.json()
+          console.log('✅ Claude continued response received')
+
+          // Extract text response from Claude
+          const finalResponse = continuedData.content.find((block: any) => block.type === 'text')
+
+          if (finalResponse) {
+            updateConversationState(conversationId, finalResponse.text, 'assistant')
+
+            return new Response(JSON.stringify({
+              success: true,
+              mode: 'conversation',
+              message: finalResponse.text,
+              conversationId,
+              memory_vault_used: true,
+              items_found: results.length
+            }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+          }
+
+          // Fallback if no text in response
           return new Response(JSON.stringify({
             success: true,
             mode: 'memory_vault_results',
-            message: results.length > 0
-              ? `Found ${results.length} template${results.length > 1 ? 's' : ''} from Memory Vault`
-              : 'No existing templates found - proceed with fresh content creation',
-            results: formattedResults,
-            query: toolUse.input.query,
+            message: playbookSummary,
             conversationId,
-            proceed_without_templates: results.length === 0  // Signal to Claude: this is NOT a blocker
+            items_found: results.length
           }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
         } catch (error) {
