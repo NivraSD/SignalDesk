@@ -425,9 +425,9 @@ export default function IntelligenceModule() {
     try {
       console.log('🌍 Starting GEO Intelligence Monitor for', organization.name)
 
-      // Call the parallelized geo-intelligence-monitor function
-      // This runs all 4 platforms in parallel with 10 queries each (~35-45s vs ~60-75s)
-      const { data: monitorData, error: monitorError } = await supabase.functions.invoke('geo-intelligence-monitor', {
+      // STEP 1: Generate strategic GEO queries
+      console.log('📋 Step 1/3: Generating GEO queries...')
+      const { data: queryData, error: queryError } = await supabase.functions.invoke('geo-query-discovery', {
         body: {
           organization_id: organization.id,
           organization_name: organization.name,
@@ -435,15 +435,95 @@ export default function IntelligenceModule() {
         }
       })
 
-      if (monitorError || !monitorData?.success) {
-        throw new Error(monitorData?.error || 'GEO intelligence monitor failed')
+      if (queryError || !queryData?.success) {
+        throw new Error(queryData?.error || 'Failed to generate GEO queries')
+      }
+
+      const queries = queryData.queries || []
+      console.log(`✅ Generated ${queries.length} queries`)
+
+      // STEP 2: Test all 4 platforms IN PARALLEL (4x faster)
+      console.log('🚀 Step 2/3: Testing all 4 platforms in parallel...')
+      const [claudeResults, geminiResults, perplexityResults, chatgptResults] = await Promise.all([
+        supabase.functions.invoke('geo-test-claude', {
+          body: {
+            organization_id: organization.id,
+            organization_name: organization.name,
+            queries: queries.slice(0, 10)
+          }
+        }),
+        supabase.functions.invoke('geo-test-gemini', {
+          body: {
+            organization_id: organization.id,
+            organization_name: organization.name,
+            queries: queries.slice(0, 10)
+          }
+        }),
+        supabase.functions.invoke('geo-test-perplexity', {
+          body: {
+            organization_id: organization.id,
+            organization_name: organization.name,
+            queries: queries.slice(0, 10)
+          }
+        }),
+        supabase.functions.invoke('geo-test-chatgpt', {
+          body: {
+            organization_id: organization.id,
+            organization_name: organization.name,
+            queries: queries.slice(0, 10)
+          }
+        })
+      ])
+
+      // Check for errors in platform tests
+      if (claudeResults.error) console.warn('Claude test error:', claudeResults.error)
+      if (geminiResults.error) console.warn('Gemini test error:', geminiResults.error)
+      if (perplexityResults.error) console.warn('Perplexity test error:', perplexityResults.error)
+      if (chatgptResults.error) console.warn('ChatGPT test error:', chatgptResults.error)
+
+      // Combine all platform results
+      const allSignals = [
+        ...(claudeResults.data?.signals || []),
+        ...(geminiResults.data?.signals || []),
+        ...(perplexityResults.data?.signals || []),
+        ...(chatgptResults.data?.signals || [])
+      ]
+
+      console.log(`✅ Collected ${allSignals.length} signals from 4 platforms`)
+
+      // STEP 3: Generate executive synthesis
+      console.log('📊 Step 3/3: Generating executive synthesis...')
+      const { data: synthesisData, error: synthesisError } = await supabase.functions.invoke('geo-executive-synthesis', {
+        body: {
+          organization_id: organization.id,
+          organization_name: organization.name,
+          signals: allSignals,
+          queries: queries
+        }
+      })
+
+      if (synthesisError) {
+        console.warn('Synthesis error (non-blocking):', synthesisError)
       }
 
       console.log('✅ GEO monitor complete:', {
-        total_signals: monitorData.summary?.total_signals || 0,
-        queries_tested: monitorData.summary?.queries_tested || 0,
-        platforms: '4 in parallel'
+        total_signals: allSignals.length,
+        queries_tested: queries.length,
+        platforms: '4 platforms (parallel)'
       })
+
+      // Construct final results object
+      const monitorData = {
+        success: true,
+        summary: {
+          total_signals: allSignals.length,
+          queries_tested: queries.length,
+          platforms_tested: 4
+        },
+        queries: queries,
+        signals: allSignals,
+        synthesis: synthesisData?.synthesis || null
+      }
 
       setGeoResults(monitorData)
 
@@ -653,8 +733,8 @@ export default function IntelligenceModule() {
       IntelligenceService.getLatestSynthesis(organization.id).then(synthesis => {
         if (synthesis) {
           console.log('✅ Loaded previous synthesis:', synthesis)
-          // The synthesis table stores the full synthesis object in the 'data' column
-          setExecutiveSynthesis(synthesis.data || synthesis)
+          // The synthesis table stores the full synthesis object in the 'synthesis_data' column
+          setExecutiveSynthesis(synthesis.synthesis_data || synthesis)
         } else {
           console.log('No previous synthesis found')
           setExecutiveSynthesis(null)

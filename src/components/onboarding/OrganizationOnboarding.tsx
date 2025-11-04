@@ -431,42 +431,113 @@ export default function OrganizationOnboarding({
     }
 
     try {
-      console.log('🎯 Running GEO Discovery with parallelized intelligence monitor...')
+      console.log('🎯 Running GEO Discovery with frontend orchestration...')
 
-      // Use the parallelized geo-intelligence-monitor function
-      // This runs all 4 platforms in parallel with 10 queries each
-      const { data: monitorData, error: monitorError } = await supabase.functions.invoke('geo-intelligence-monitor', {
+      // STEP 1: Generate strategic GEO queries
+      console.log('📋 Step 1/3: Generating GEO queries...')
+      const { data: queryData, error: queryError } = await supabase.functions.invoke('geo-query-discovery', {
         body: {
           organization_id: orgId,
           organization_name: orgNameToUse,
-          industry: discovered?.industry || industry,
-          competitors: Array.from(selectedCompetitors).concat(customCompetitors),
-          mode: 'onboarding' // Special mode for onboarding (uses subset of queries)
+          industry: discovered?.industry || industry
         }
       })
 
-      if (monitorError || !monitorData?.success) {
-        throw new Error(monitorData?.error || 'GEO intelligence monitor failed')
+      if (queryError || !queryData?.success) {
+        throw new Error(queryData?.error || 'Failed to generate GEO queries')
+      }
+
+      const queries = queryData.queries || []
+      console.log(`✅ Generated ${queries.length} queries`)
+
+      // STEP 2: Test all 4 platforms IN PARALLEL (use subset for onboarding)
+      console.log('🚀 Step 2/3: Testing all 4 platforms in parallel (5 queries each)...')
+      const [claudeResults, geminiResults, perplexityResults, chatgptResults] = await Promise.all([
+        supabase.functions.invoke('geo-test-claude', {
+          body: {
+            organization_id: orgId,
+            organization_name: orgNameToUse,
+            queries: queries.slice(0, 5)
+          }
+        }),
+        supabase.functions.invoke('geo-test-gemini', {
+          body: {
+            organization_id: orgId,
+            organization_name: orgNameToUse,
+            queries: queries.slice(0, 5)
+          }
+        }),
+        supabase.functions.invoke('geo-test-perplexity', {
+          body: {
+            organization_id: orgId,
+            organization_name: orgNameToUse,
+            queries: queries.slice(0, 5)
+          }
+        }),
+        supabase.functions.invoke('geo-test-chatgpt', {
+          body: {
+            organization_id: orgId,
+            organization_name: orgNameToUse,
+            queries: queries.slice(0, 5)
+          }
+        })
+      ])
+
+      // Check for errors but don't block on them
+      if (claudeResults.error) console.warn('Claude test error (non-blocking):', claudeResults.error)
+      if (geminiResults.error) console.warn('Gemini test error (non-blocking):', geminiResults.error)
+      if (perplexityResults.error) console.warn('Perplexity test error (non-blocking):', perplexityResults.error)
+      if (chatgptResults.error) console.warn('ChatGPT test error (non-blocking):', chatgptResults.error)
+
+      // Combine all platform results
+      const allSignals = [
+        ...(claudeResults.data?.signals || []),
+        ...(geminiResults.data?.signals || []),
+        ...(perplexityResults.data?.signals || []),
+        ...(chatgptResults.data?.signals || [])
+      ]
+
+      console.log(`✅ Collected ${allSignals.length} signals from 4 platforms`)
+
+      // STEP 3: Generate executive synthesis
+      console.log('📊 Step 3/3: Generating executive synthesis...')
+      const { data: synthesisData, error: synthesisError } = await supabase.functions.invoke('geo-executive-synthesis', {
+        body: {
+          organization_id: orgId,
+          organization_name: orgNameToUse,
+          signals: allSignals,
+          queries: queries
+        }
+      })
+
+      if (synthesisError) {
+        console.warn('Synthesis error (non-blocking):', synthesisError)
       }
 
       console.log('✅ GEO Discovery Complete:', {
-        total_signals: monitorData.summary?.total_signals || 0,
-        queries_tested: monitorData.summary?.queries_tested || 0,
+        total_signals: allSignals.length,
+        queries_tested: queries.length,
         platforms_tested: 4
       })
+
+      // Count mentions by platform
+      const claudeSignals = claudeResults.data?.signals || []
+      const geminiSignals = geminiResults.data?.signals || []
+      const perplexitySignals = perplexityResults.data?.signals || []
+      const chatgptSignals = chatgptResults.data?.signals || []
 
       // Format results for display
       const geoData = {
         success: true,
         summary: {
-          total_queries: monitorData.summary?.queries_tested || 0,
-          total_signals: monitorData.summary?.total_signals || 0,
-          claude_mentions: monitorData.summary?.platform_performance?.claude?.filter((s: any) => s.type === 'ai_visibility').length || 0,
-          gemini_mentions: monitorData.summary?.platform_performance?.gemini?.filter((s: any) => s.type === 'ai_visibility').length || 0,
-          perplexity_mentions: monitorData.summary?.platform_performance?.perplexity?.filter((s: any) => s.type === 'ai_visibility').length || 0,
-          chatgpt_mentions: monitorData.summary?.platform_performance?.chatgpt?.filter((s: any) => s.type === 'ai_visibility').length || 0
+          total_queries: queries.length,
+          total_signals: allSignals.length,
+          claude_mentions: claudeSignals.filter((s: any) => s.type === 'ai_visibility').length,
+          gemini_mentions: geminiSignals.filter((s: any) => s.type === 'ai_visibility').length,
+          perplexity_mentions: perplexitySignals.filter((s: any) => s.type === 'ai_visibility').length,
+          chatgpt_mentions: chatgptSignals.filter((s: any) => s.type === 'ai_visibility').length
         },
-        synthesis: monitorData.synthesis
+        synthesis: synthesisData?.synthesis || null
       }
 
       setGeoResults(geoData)
