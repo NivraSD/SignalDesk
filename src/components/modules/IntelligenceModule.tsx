@@ -471,10 +471,14 @@ export default function IntelligenceModule() {
 
       console.log(`✅ Generated ${queries.length} queries`)
 
-      // STEP 2: Test all 4 platforms IN PARALLEL
-      // Use smaller batches (5 queries) to avoid 60s timeout
-      console.log('🚀 Step 2/3: Testing all 4 platforms in parallel (5 queries each to avoid timeout)...')
-      const [claudeResults, geminiResults, perplexityResults, chatgptResults] = await Promise.all([
+      // STEP 2: Test all 4 platforms with MULTI-BATCH approach
+      // Call each platform twice with 5 queries each = 10 queries per platform
+      // Batch 1: queries 0-4, Batch 2: queries 5-9
+      console.log('🚀 Step 2/3: Testing all 4 platforms in 2 batches (10 queries total per platform)...')
+
+      // Batch 1: First 5 queries on all platforms
+      console.log('   Batch 1/2: Testing queries 1-5 on all platforms...')
+      const [claudeBatch1, geminiBatch1, perplexityBatch1, chatgptBatch1] = await Promise.all([
         supabase.functions.invoke('geo-test-claude', {
           body: {
             organization_id: organization.id,
@@ -505,21 +509,66 @@ export default function IntelligenceModule() {
         })
       ])
 
-      // Check for errors in platform tests
-      if (claudeResults.error) console.warn('Claude test error:', claudeResults.error)
-      if (geminiResults.error) console.warn('Gemini test error:', geminiResults.error)
-      if (perplexityResults.error) console.warn('Perplexity test error:', perplexityResults.error)
-      if (chatgptResults.error) console.warn('ChatGPT test error:', chatgptResults.error)
+      console.log('   ✓ Batch 1/2 complete')
 
-      // Combine all platform results
+      // Batch 2: Next 5 queries on all platforms
+      console.log('   Batch 2/2: Testing queries 6-10 on all platforms...')
+      const [claudeBatch2, geminiBatch2, perplexityBatch2, chatgptBatch2] = await Promise.all([
+        supabase.functions.invoke('geo-test-claude', {
+          body: {
+            organization_id: organization.id,
+            organization_name: organization.name,
+            queries: queries.slice(5, 10)
+          }
+        }),
+        supabase.functions.invoke('geo-test-gemini', {
+          body: {
+            organization_id: organization.id,
+            organization_name: organization.name,
+            queries: queries.slice(5, 10)
+          }
+        }),
+        supabase.functions.invoke('geo-test-perplexity', {
+          body: {
+            organization_id: organization.id,
+            organization_name: organization.name,
+            queries: queries.slice(5, 10)
+          }
+        }),
+        supabase.functions.invoke('geo-test-chatgpt', {
+          body: {
+            organization_id: organization.id,
+            organization_name: organization.name,
+            queries: queries.slice(5, 10)
+          }
+        })
+      ])
+
+      console.log('   ✓ Batch 2/2 complete')
+
+      // Check for errors in platform tests
+      if (claudeBatch1.error) console.warn('Claude batch 1 error:', claudeBatch1.error)
+      if (claudeBatch2.error) console.warn('Claude batch 2 error:', claudeBatch2.error)
+      if (geminiBatch1.error) console.warn('Gemini batch 1 error:', geminiBatch1.error)
+      if (geminiBatch2.error) console.warn('Gemini batch 2 error:', geminiBatch2.error)
+      if (perplexityBatch1.error) console.warn('Perplexity batch 1 error:', perplexityBatch1.error)
+      if (perplexityBatch2.error) console.warn('Perplexity batch 2 error:', perplexityBatch2.error)
+      if (chatgptBatch1.error) console.warn('ChatGPT batch 1 error:', chatgptBatch1.error)
+      if (chatgptBatch2.error) console.warn('ChatGPT batch 2 error:', chatgptBatch2.error)
+
+      // Combine all platform results from both batches
       const allSignals = [
-        ...(claudeResults.data?.signals || []),
-        ...(geminiResults.data?.signals || []),
-        ...(perplexityResults.data?.signals || []),
-        ...(chatgptResults.data?.signals || [])
+        ...(claudeBatch1.data?.signals || []),
+        ...(claudeBatch2.data?.signals || []),
+        ...(geminiBatch1.data?.signals || []),
+        ...(geminiBatch2.data?.signals || []),
+        ...(perplexityBatch1.data?.signals || []),
+        ...(perplexityBatch2.data?.signals || []),
+        ...(chatgptBatch1.data?.signals || []),
+        ...(chatgptBatch2.data?.signals || [])
       ]
 
-      console.log(`✅ Collected ${allSignals.length} signals from 4 platforms`)
+      console.log(`✅ Collected ${allSignals.length} signals from 4 platforms (2 batches each)`)
 
       // Transform signals to format expected by synthesis function
       const transformedResults = allSignals.map(signal => ({
