@@ -471,35 +471,36 @@ export default function IntelligenceModule() {
 
       console.log(`✅ Generated ${queries.length} queries`)
 
-      // STEP 2: Test all 4 platforms IN PARALLEL (4x faster)
-      console.log('🚀 Step 2/3: Testing all 4 platforms in parallel...')
+      // STEP 2: Test all 4 platforms IN PARALLEL
+      // Use smaller batches (5 queries) to avoid 60s timeout
+      console.log('🚀 Step 2/3: Testing all 4 platforms in parallel (5 queries each to avoid timeout)...')
       const [claudeResults, geminiResults, perplexityResults, chatgptResults] = await Promise.all([
         supabase.functions.invoke('geo-test-claude', {
           body: {
             organization_id: organization.id,
             organization_name: organization.name,
-            queries: queries.slice(0, 10)
+            queries: queries.slice(0, 5)
           }
         }),
         supabase.functions.invoke('geo-test-gemini', {
           body: {
             organization_id: organization.id,
             organization_name: organization.name,
-            queries: queries.slice(0, 10)
+            queries: queries.slice(0, 5)
           }
         }),
         supabase.functions.invoke('geo-test-perplexity', {
           body: {
             organization_id: organization.id,
             organization_name: organization.name,
-            queries: queries.slice(0, 10)
+            queries: queries.slice(0, 5)
           }
         }),
         supabase.functions.invoke('geo-test-chatgpt', {
           body: {
             organization_id: organization.id,
             organization_name: organization.name,
-            queries: queries.slice(0, 10)
+            queries: queries.slice(0, 5)
           }
         })
       ])
