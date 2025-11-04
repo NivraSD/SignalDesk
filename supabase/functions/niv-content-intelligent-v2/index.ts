@@ -1410,13 +1410,18 @@ ${campaignContext.timeline || 'Not specified'}
 - **Media Engagement**: ${allGeneratedContent.filter(c => c.channel === 'media' && c.content).length} pieces
 `
 
+        // Generate embedding for phase strategy
+        const strategyTitle = `Phase ${phaseNumber}: ${phase} - Strategy`
+        const strategyTextForEmbedding = `${strategyTitle}\n\n${strategyContent}`.substring(0, 8000)
+        const strategyEmbedding = await generateEmbedding(strategyTextForEmbedding)
+
         const { error: strategyError } = await supabase
           .from('content_library')
           .insert({
             id: crypto.randomUUID(),
             organization_id: organizationId,
             content_type: 'phase_strategy',
-            title: `Phase ${phaseNumber}: ${phase} - Strategy`,
+            title: strategyTitle,
             content: strategyContent,
             folder: phaseFolder,
             metadata: {
@@ -1435,7 +1440,10 @@ ${campaignContext.timeline || 'Not specified'}
               }
             },
             tags: ['phase_strategy', phase, campaignContext.campaignType || 'VECTOR_CAMPAIGN'],
-            status: 'saved'
+            status: 'saved',
+            embedding: strategyEmbedding,
+            embedding_model: 'voyage-3-large',
+            embedding_updated_at: strategyEmbedding ? new Date().toISOString() : null
           })
 
         if (strategyError) {
@@ -1453,6 +1461,11 @@ ${campaignContext.timeline || 'Not specified'}
 
           // Normalize content type before saving
           const normalizedContentType = normalizeContentTypeForMCP(contentPiece.type)
+          const contentTitle = `${phase} - ${normalizedContentType} - ${contentPiece.stakeholder || contentPiece.journalists?.[0] || 'general'}`
+
+          // Generate embedding for content piece
+          const contentTextForEmbedding = `${contentTitle}\n\n${contentPiece.content}`.substring(0, 8000)
+          const contentEmbedding = await generateEmbedding(contentTextForEmbedding)
 
           const { error: contentError } = await supabase
             .from('content_library')
@@ -1460,7 +1473,7 @@ ${campaignContext.timeline || 'Not specified'}
               id: crypto.randomUUID(),
               organization_id: organizationId,
               content_type: normalizedContentType,  // Use normalized type
-              title: `${phase} - ${normalizedContentType} - ${contentPiece.stakeholder || contentPiece.journalists?.[0] || 'general'}`,
+              title: contentTitle,
               content: contentPiece.content,
               folder: phaseFolder,
               metadata: {
@@ -1474,7 +1487,10 @@ ${campaignContext.timeline || 'Not specified'}
                 original_type: contentPiece.type  // Keep original for reference
               },
               tags: [normalizedContentType, phase, contentPiece.stakeholder || 'media', contentPiece.channel],
-              status: 'saved'
+              status: 'saved',
+              embedding: contentEmbedding,
+              embedding_model: 'voyage-3-large',
+              embedding_updated_at: contentEmbedding ? new Date().toISOString() : null
             })
 
           if (contentError) {

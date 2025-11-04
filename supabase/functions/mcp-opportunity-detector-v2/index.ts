@@ -891,7 +891,7 @@ serve(async (req) => {
 
           // Semantic search fields
           embedding: v2Embeddings[i],
-          embedding_model: 'text-embedding-3-small',
+          embedding_model: 'voyage-3-large',
           embedding_updated_at: new Date().toISOString()
         };
 
@@ -945,7 +945,7 @@ serve(async (req) => {
 
           // Semantic search fields
           embedding: v1Embeddings[i],
-          embedding_model: 'text-embedding-3-small',
+          embedding_model: 'voyage-3-large',
           embedding_updated_at: new Date().toISOString()
         };
 
