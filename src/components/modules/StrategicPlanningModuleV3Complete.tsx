@@ -1318,6 +1318,35 @@ export default function StrategicPlanningModuleV3Complete({
                                           Success: {item.details.success_metric}
                                         </p>
                                       )}
+
+                                      {/* AI Query Impact (GEO-VECTOR campaigns) */}
+                                      {item.details?.aiQueryImpact && (
+                                        <div className="mt-2 pt-2 border-t border-gray-700">
+                                          <div className="flex items-center gap-2 mb-1">
+                                            <span className="text-xs font-semibold text-purple-400">🤖 AI Query Ownership</span>
+                                            <span className={`text-xs px-2 py-0.5 rounded ${
+                                              item.details.aiQueryImpact.citationProbability === 'high'
+                                                ? 'bg-emerald-500/20 text-emerald-400'
+                                                : item.details.aiQueryImpact.citationProbability === 'medium'
+                                                ? 'bg-amber-500/20 text-amber-400'
+                                                : 'bg-gray-500/20 text-gray-400'
+                                            }`}>
+                                              {item.details.aiQueryImpact.citationProbability} probability
+                                            </span>
+                                          </div>
+                                          <div className="flex flex-wrap gap-1 mb-1">
+                                            {item.details.aiQueryImpact.targetQueries?.slice(0, 3).map((query: string, idx: number) => (
+                                              <span key={idx} className="text-xs px-2 py-0.5 bg-purple-900/30 text-purple-300 rounded border border-purple-500/30">
+                                                "{query}"
+                                              </span>
+                                            ))}
+                                          </div>
+                                          <p className="text-xs text-gray-500">
+                                            {item.details.aiQueryImpact.platforms?.join(', ')} • {item.details.aiQueryImpact.timeline}
+                                          </p>
+                                        </div>
+                                      )}
+
                                       {item.status === 'failed' && item.generationError && (
                                         <p className="text-xs text-red-400 mt-1">Error: {item.generationError}</p>
                                       )}
@@ -1457,6 +1486,35 @@ export default function StrategicPlanningModuleV3Complete({
                                             {item.target && (
                                               <p className="text-xs text-gray-400">{item.target}</p>
                                             )}
+
+                                            {/* AI Query Impact (GEO-VECTOR campaigns) */}
+                                            {item.details?.aiQueryImpact && (
+                                              <div className="mt-2 pt-2 border-t border-gray-700">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                  <span className="text-xs font-semibold text-purple-400">🤖 AI Query Ownership</span>
+                                                  <span className={`text-xs px-2 py-0.5 rounded ${
+                                                    item.details.aiQueryImpact.citationProbability === 'high'
+                                                      ? 'bg-emerald-500/20 text-emerald-400'
+                                                      : item.details.aiQueryImpact.citationProbability === 'medium'
+                                                      ? 'bg-amber-500/20 text-amber-400'
+                                                      : 'bg-gray-500/20 text-gray-400'
+                                                  }`}>
+                                                    {item.details.aiQueryImpact.citationProbability} probability
+                                                  </span>
+                                                </div>
+                                                <div className="flex flex-wrap gap-1 mb-1">
+                                                  {item.details.aiQueryImpact.targetQueries?.slice(0, 3).map((query: string, idx: number) => (
+                                                    <span key={idx} className="text-xs px-2 py-0.5 bg-purple-900/30 text-purple-300 rounded border border-purple-500/30">
+                                                      "{query}"
+                                                    </span>
+                                                  ))}
+                                                </div>
+                                                <p className="text-xs text-gray-500">
+                                                  {item.details.aiQueryImpact.platforms?.join(', ')} • {item.details.aiQueryImpact.timeline}
+                                                </p>
+                                              </div>
+                                            )}
+
                                             {item.status === 'failed' && item.generationError && (
                                               <p className="text-xs text-red-400 mt-1">Error: {item.generationError}</p>
                                             )}
