@@ -435,11 +435,22 @@ export default function IntelligenceModule() {
         }
       })
 
-      if (queryError || !queryData?.success) {
+      if (queryError) {
+        console.error('Query generation error:', queryError)
+        throw new Error(`Failed to generate GEO queries: ${queryError.message}`)
+      }
+
+      if (!queryData?.success) {
+        console.error('Query generation failed:', queryData)
         throw new Error(queryData?.error || 'Failed to generate GEO queries')
       }
 
       const queries = queryData.queries || []
+
+      if (!Array.isArray(queries) || queries.length === 0) {
+        throw new Error('No queries generated')
+      }
+
       console.log(`✅ Generated ${queries.length} queries`)
 
       // STEP 2: Test all 4 platforms IN PARALLEL (4x faster)
