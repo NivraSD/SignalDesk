@@ -54,7 +54,33 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')!
+    const voyageKey = Deno.env.get('VOYAGE_API_KEY')
     const supabase = createClient(supabaseUrl, supabaseKey)
+
+    // Helper: Generate embedding using Voyage AI
+    async function generateEmbedding(text: string): Promise<number[] | null> {
+      if (!voyageKey) return null
+      try {
+        const response = await fetch('https://api.voyageai.com/v1/embeddings', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${voyageKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'voyage-3-large',
+            input: text.substring(0, 8000),
+            input_type: 'document'
+          })
+        })
+        if (!response.ok) return null
+        const data = await response.json()
+        return data.data[0].embedding
+      } catch (error) {
+        console.error('❌ Embedding error:', error)
+        return null
+      }
+    }
 
     const compiledEntities: any = {
       products: [],
@@ -131,6 +157,9 @@ serve(async (req) => {
     // Save products
     for (const product of compiledEntities.products) {
       try {
+        const text = `${product.name}\n\n${product.description}`.substring(0, 8000)
+        const embedding = await generateEmbedding(text)
+
         await supabase.from('content_library').insert({
           organization_id,
           content_type: 'product',
@@ -145,7 +174,10 @@ serve(async (req) => {
             url: product.url,
             compiled_by: 'website-entity-compiler',
             schema_ready: true
-          }
+          },
+          embedding,
+          embedding_model: 'voyage-3-large',
+          embedding_updated_at: embedding ? new Date().toISOString() : null
         })
         savedCount++
       } catch (error) {
@@ -156,6 +188,9 @@ serve(async (req) => {
     // Save services
     for (const service of compiledEntities.services) {
       try {
+        const text = `${service.name}\n\n${service.description}`.substring(0, 8000)
+        const embedding = await generateEmbedding(text)
+
         await supabase.from('content_library').insert({
           organization_id,
           content_type: 'service',
@@ -169,7 +204,10 @@ serve(async (req) => {
             url: service.url,
             compiled_by: 'website-entity-compiler',
             schema_ready: true
-          }
+          },
+          embedding,
+          embedding_model: 'voyage-3-large',
+          embedding_updated_at: embedding ? new Date().toISOString() : null
         })
         savedCount++
       } catch (error) {
@@ -180,11 +218,15 @@ serve(async (req) => {
     // Save locations
     for (const location of compiledEntities.locations) {
       try {
+        const locationContent = `${location.address}, ${location.city}, ${location.state} ${location.postal_code}`
+        const text = `${location.name}\n\n${locationContent}`.substring(0, 8000)
+        const embedding = await generateEmbedding(text)
+
         await supabase.from('content_library').insert({
           organization_id,
           content_type: 'location',
           title: location.name,
-          content: `${location.address}, ${location.city}, ${location.state} ${location.postal_code}`,
+          content: locationContent,
           folder: 'Locations/',
           status: 'published',
           metadata: {
@@ -198,7 +240,10 @@ serve(async (req) => {
             email: location.email,
             compiled_by: 'website-entity-compiler',
             schema_ready: true
-          }
+          },
+          embedding,
+          embedding_model: 'voyage-3-large',
+          embedding_updated_at: embedding ? new Date().toISOString() : null
         })
         savedCount++
       } catch (error) {
@@ -209,6 +254,9 @@ serve(async (req) => {
     // Save subsidiaries
     for (const subsidiary of compiledEntities.subsidiaries) {
       try {
+        const text = `${subsidiary.name}\n\n${subsidiary.description}`.substring(0, 8000)
+        const embedding = await generateEmbedding(text)
+
         await supabase.from('content_library').insert({
           organization_id,
           content_type: 'subsidiary',
@@ -222,7 +270,10 @@ serve(async (req) => {
             url: subsidiary.url,
             compiled_by: 'website-entity-compiler',
             schema_ready: true
-          }
+          },
+          embedding,
+          embedding_model: 'voyage-3-large',
+          embedding_updated_at: embedding ? new Date().toISOString() : null
         })
         savedCount++
       } catch (error) {
@@ -233,6 +284,9 @@ serve(async (req) => {
     // Save team members
     for (const member of compiledEntities.team) {
       try {
+        const text = `${member.name}\n\n${member.title}\n\n${member.bio}`.substring(0, 8000)
+        const embedding = await generateEmbedding(text)
+
         await supabase.from('content_library').insert({
           organization_id,
           content_type: 'person',
@@ -247,7 +301,10 @@ serve(async (req) => {
             linkedin_url: member.linkedin_url,
             compiled_by: 'website-entity-compiler',
             schema_ready: true
-          }
+          },
+          embedding,
+          embedding_model: 'voyage-3-large',
+          embedding_updated_at: embedding ? new Date().toISOString() : null
         })
         savedCount++
       } catch (error) {

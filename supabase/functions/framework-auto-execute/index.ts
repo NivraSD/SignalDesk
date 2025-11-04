@@ -3,6 +3,32 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+const VOYAGE_API_KEY = Deno.env.get('VOYAGE_API_KEY')
+
+// Helper: Generate embedding using Voyage AI
+async function generateEmbedding(text: string): Promise<number[] | null> {
+  if (!VOYAGE_API_KEY) return null
+  try {
+    const response = await fetch('https://api.voyageai.com/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${VOYAGE_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'voyage-3-large',
+        input: text.substring(0, 8000),
+        input_type: 'document'
+      })
+    })
+    if (!response.ok) return null
+    const data = await response.json()
+    return data.data[0].embedding
+  } catch (error) {
+    console.error('❌ Embedding error:', error)
+    return null
+  }
+}
 
 serve(async (req) => {
   const corsHeaders = {
@@ -80,11 +106,16 @@ serve(async (req) => {
     // Save framework first to the folder
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
+    const frameworkTitle = `${framework.strategy?.objective} - Framework`
+    const frameworkContent = JSON.stringify(framework, null, 2)
+    const text = `${frameworkTitle}\n\n${frameworkContent}`.substring(0, 8000)
+    const embedding = await generateEmbedding(text)
+
     await supabase.from('content_library').insert({
       organization_id: organizationId,
       content_type: 'strategic-framework',
-      title: `${framework.strategy?.objective} - Framework`,
-      content: JSON.stringify(framework, null, 2),
+      title: frameworkTitle,
+      content: frameworkContent,
       folder: frameworkFolder,
       metadata: {
         frameworkId: framework.id,
@@ -93,7 +124,10 @@ serve(async (req) => {
         hasStrategicRecommendations: framework.executionPlan?.strategicRecommendations?.campaigns?.length > 0
       },
       status: 'approved',
-      tags: ['strategic-framework', framework.orchestration?.workflow_type || 'general']
+      tags: ['strategic-framework', framework.orchestration?.workflow_type || 'general'],
+      embedding,
+      embedding_model: 'voyage-3-large',
+      embedding_updated_at: embedding ? new Date().toISOString() : null
     })
 
     console.log(`💾 Framework saved to ${frameworkFolder}`)

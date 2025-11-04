@@ -6,6 +6,33 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const VOYAGE_API_KEY = Deno.env.get('VOYAGE_API_KEY')
+
+// Helper: Generate embedding using Voyage AI
+async function generateEmbedding(text: string): Promise<number[] | null> {
+  if (!VOYAGE_API_KEY) return null
+  try {
+    const response = await fetch('https://api.voyageai.com/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${VOYAGE_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'voyage-3-large',
+        input: text.substring(0, 8000),
+        input_type: 'document'
+      })
+    })
+    if (!response.ok) return null
+    const data = await response.json()
+    return data.data[0].embedding
+  } catch (error) {
+    console.error('❌ Embedding error:', error)
+    return null
+  }
+}
+
 interface SaveBlueprintRequest {
   blueprintId: string
   blueprint: any
@@ -278,21 +305,28 @@ async function saveCampaignLearnings(supabase: any, orgId: string, blueprint: an
 
   if (campaignType === 'VECTOR_CAMPAIGN' && blueprint.part2_stakeholderMapping?.groups) {
     // Extract stakeholder insights
-    blueprint.part2_stakeholderMapping.groups.forEach((group: any) => {
+    for (const group of blueprint.part2_stakeholderMapping.groups) {
+      const title = `Stakeholder Insight: ${group.name}`
+      const contentData = JSON.stringify({
+        insight: `${group.name} values ${group.psychologicalProfile?.values?.join(', ')} and is influenced by ${group.informationDiet?.trustedVoices?.join(', ')}`,
+        evidence: [
+          `Current perception: ${group.currentPerception}`,
+          `Target perception: ${group.targetPerception}`,
+          `Decision triggers: ${group.decisionTriggers?.join(', ')}`
+        ],
+        stakeholder_type: group.name,
+        psychological_profile: group.psychologicalProfile
+      })
+
+      // Generate embedding
+      const text = `${title}\n\n${contentData}`.substring(0, 8000)
+      const embedding = await generateEmbedding(text)
+
       learnings.push({
         organization_id: orgId,
         content_type: 'campaign_learning',
-        title: `Stakeholder Insight: ${group.name}`,
-        content: JSON.stringify({
-          insight: `${group.name} values ${group.psychologicalProfile?.values?.join(', ')} and is influenced by ${group.informationDiet?.trustedVoices?.join(', ')}`,
-          evidence: [
-            `Current perception: ${group.currentPerception}`,
-            `Target perception: ${group.targetPerception}`,
-            `Decision triggers: ${group.decisionTriggers?.join(', ')}`
-          ],
-          stakeholder_type: group.name,
-          psychological_profile: group.psychologicalProfile
-        }),
+        title,
+        content: contentData,
         metadata: {
           stakeholder_type: group.name,
           values: group.psychologicalProfile?.values,
@@ -300,9 +334,12 @@ async function saveCampaignLearnings(supabase: any, orgId: string, blueprint: an
         },
         tags: ['learning', 'stakeholder_insight', group.name.toLowerCase().replace(/\s+/g, '_')],
         status: 'saved',
-        created_by: 'pattern-learning'
+        created_by: 'pattern-learning',
+        embedding,
+        embedding_model: 'voyage-3-large',
+        embedding_updated_at: embedding ? new Date().toISOString() : null
       })
-    })
+    }
   }
 
   if (learnings.length > 0) {
