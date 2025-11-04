@@ -491,14 +491,26 @@ export default function IntelligenceModule() {
 
       console.log(`✅ Collected ${allSignals.length} signals from 4 platforms`)
 
+      // Transform signals to format expected by synthesis function
+      const transformedResults = allSignals.map(signal => ({
+        query: signal.data?.query || '',
+        intent: signal.data?.intent || 'informational',
+        priority: signal.priority || 'medium',
+        platform: signal.platform,
+        response: signal.data?.context || signal.data?.response || '',
+        brand_mentioned: signal.data?.mentioned || false,
+        rank: signal.data?.position || undefined,
+        context_quality: signal.data?.context_quality || 'medium',
+        competitors_mentioned: signal.data?.competitors_mentioned || []
+      }))
+
       // STEP 3: Generate executive synthesis
       console.log('📊 Step 3/3: Generating executive synthesis...')
       const { data: synthesisData, error: synthesisError } = await supabase.functions.invoke('geo-executive-synthesis', {
         body: {
           organization_id: organization.id,
           organization_name: organization.name,
-          signals: allSignals,
-          queries: queries
+          geo_results: transformedResults
         }
       })
 
