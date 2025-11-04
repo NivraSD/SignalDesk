@@ -1,11 +1,14 @@
 # SignalDesk V3 - Comprehensive System Status
-*Last Updated: October 31, 2025 - Schema.org Generation + GEO Intelligence Monitor + Memory Vault V2 + NIV Integration*
+*Last Updated: November 4, 2025 - Memory Vault Playbook Intelligence System + Voyage AI Semantic Search*
 
 ## Executive Summary
 
 SignalDesk V3 is a fully operational AI-powered strategic communications platform that transforms how organizations discover opportunities, generate strategies, and create content. The system leverages multiple AI providers (Claude, Google Vertex AI, Gamma) through a sophisticated orchestration layer to deliver end-to-end strategic communications capabilities.
 
 **Major November 2025 Updates:**
+- ✅ **Memory Vault Playbook Intelligence System** - Pre-synthesized content creation guides with 90% token reduction (Nov 4, 2025)
+- ✅ **Voyage AI Semantic Search** - 1024-dimensional embeddings with voyage-3-large across all 21 content insertion points (Nov 4, 2025)
+- ✅ **NIV Content Agentic Loop Fix** - Memory Vault search now continues conversation automatically (Nov 4, 2025)
 - ✅ **Strategic Context for Opportunity Alignment** - Organization profiles now include target_customers, brand_personality, strategic_priorities for better opportunity relevance (Nov 2, 2025)
 
 **Major October 2025 Updates:**
@@ -1428,15 +1431,17 @@ This shifts organizations from **reactive crisis management** to **proactive str
 
 ### 6. Memory Vault V2 - Intelligent Content Management System ✅
 
-**Status: Production Ready with OpenMemory-Inspired Enhancements (Oct 24-26, 2025)**
+**Status: Production Ready with Playbook Intelligence System (Nov 4, 2025)**
 
-Memory Vault V2 is SignalDesk's centralized content intelligence and persistence layer, combining brand-specific knowledge management with sophisticated AI-powered organization and retrieval. It serves as the bridge between strategic frameworks and content execution while maintaining institutional memory.
+Memory Vault V2 is SignalDesk's centralized content intelligence and persistence layer, combining brand-specific knowledge management with sophisticated AI-powered organization and retrieval. Now enhanced with the **Playbook Intelligence System**, Memory Vault pre-digests successful content patterns into compact, reusable guides that dramatically improve content generation efficiency and quality.
 
 #### System Overview
 
 Memory Vault V2 represents a complete architectural overhaul from a simple storage system to an intelligent content management platform inspired by cognitive memory systems (OpenMemory) but purpose-built for PR/marketing workflows.
 
 **What Makes It Sophisticated:**
+- **Playbook Intelligence System**: Pre-synthesized content creation guides (NEW - Nov 4, 2025)
+- **Voyage AI Embeddings**: 1024-dimensional semantic search with voyage-3-large (NEW - Nov 4, 2025)
 - **AI-Powered Intelligence Extraction**: Automatic theme, entity, topic, and sentiment analysis
 - **Time-Aware Salience Scoring**: Content naturally decays or stays relevant based on usage
 - **Composite Retrieval Ranking**: Multi-factor scoring (similarity + salience + recency + execution success)
@@ -1579,6 +1584,206 @@ Every search result includes transparent reasoning:
 - **0.60**: Moderate similarity
 - **0.50**: Weak match
 
+##### **D. Playbook Intelligence System (NEW - Nov 4, 2025)**
+
+The Playbook System transforms Memory Vault from a search tool into an intelligent knowledge layer that pre-digests successful patterns into compact, reusable guides.
+
+**The Problem It Solves:**
+- NIV Content was analyzing 5,000+ tokens of raw content in real-time
+- Every request required expensive Claude analysis of past content
+- No way to capture and reuse "what works" across content types
+- Content generation was slow and inconsistent
+
+**The Playbook Solution:**
+Pre-synthesized guides organized by `content_type` + `topic` that contain:
+- **Proven hooks** with success rates
+- **Brand voice** and style guidelines
+- **Proven structure** (sections, format, flow)
+- **Success patterns** (what works)
+- **Failure patterns** (what to avoid)
+- **Optimal length** and format specs
+- **Top performer references** (not full content)
+
+**Token Efficiency:**
+- Before: ~5,000 tokens (raw content analysis)
+- After: ~300-500 tokens (compact playbook)
+- **90% reduction** in context usage per request
+
+**How It Works:**
+
+```typescript
+// 1. NIV Content searches Memory Vault
+search_memory_vault({ query: "energy infrastructure", content_type: "media-pitch" })
+
+// 2. System infers topic from query
+topic = inferTopic("energy infrastructure") // → "energy"
+
+// 3. Fetch or create playbook
+playbook = getOrCreatePlaybook({
+  organizationId: "...",
+  contentType: "media-pitch",
+  topic: "energy"
+})
+
+// 4. Return compact guidance instead of raw content
+return formatPlaybookForClaude(playbook)
+```
+
+**Playbook Generation:**
+- **Minimum data**: Requires 3+ pieces of content for that type + topic
+- **Claude synthesis**: Analyzes patterns using Sonnet 4
+- **Caching**: 7-day freshness, auto-regenerates when stale
+- **Async**: Generation doesn't block content creation
+- **Fallback**: Uses ad-hoc summary if playbook doesn't exist yet
+
+**Example Playbook Output:**
+```
+📚 Content Playbook: media-pitch about energy
+
+Proven Hooks:
+1. Lead with specific regulatory/policy data (85% success)
+   Example: "DOE invokes authority over $2B grid modernization..."
+2. Connect to current energy crisis/transition (78% success)
+
+Brand Voice: Authoritative but accessible
+Style: Active voice, short paragraphs, data-driven
+Avoid: Jargon, hype, generic sustainability claims
+
+Proven Structure: Problem → Data → Solution → CTA
+Sections:
+  - Hook: Policy/regulatory development (1-2 sentences)
+  - Context: Industry impact with data (2-3 paragraphs)
+  - Client angle: How we're involved (1 paragraph)
+  - CTA: Next steps for journalist (1 sentence)
+
+Success Patterns:
+  ✓ Include data in first paragraph
+  ✓ Reference specific DOE/FERC actions
+  ✓ Tie to infrastructure bill provisions
+
+Avoid These:
+  ✗ Generic sustainability claims
+  ✗ Too much technical jargon
+  ✗ Burying the news angle
+
+Optimal Length: 750 words (range: 500-1000)
+
+Top Performers:
+1. "DOE Grid Modernization Pitch" - 92% success
+2. "FERC Transmission Policy Update" - 87% success
+
+---
+*Based on 12 pieces of content (avg 85% success)*
+```
+
+**Database Schema:**
+
+```sql
+CREATE TABLE playbooks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID NOT NULL,
+
+  -- Identification
+  content_type TEXT NOT NULL,  -- "media-pitch", "thought-leadership"
+  topic TEXT NOT NULL,         -- "energy", "aviation", "general"
+
+  -- The playbook (JSONB)
+  playbook JSONB NOT NULL,  -- guidance, proven_hooks, brand_voice, etc.
+
+  -- Metadata
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  version INTEGER DEFAULT 1,
+
+  UNIQUE(organization_id, content_type, topic)
+);
+```
+
+**Playbook JSONB Structure:**
+```json
+{
+  "guidance": {
+    "proven_hooks": [
+      {"hook": "...", "success_rate": 0.85, "example": "..."}
+    ],
+    "brand_voice": {
+      "tone": "Authoritative but accessible",
+      "style_points": ["Active voice", "Short paragraphs"],
+      "avoid": ["Jargon", "Hype"]
+    },
+    "proven_structure": {
+      "format": "Problem → Solution → CTA",
+      "sections": [
+        {"name": "Hook", "purpose": "...", "length": "1-2 sentences"}
+      ]
+    },
+    "success_patterns": ["Include data in first paragraph", ...],
+    "failure_patterns": ["Avoid generic claims", ...],
+    "typical_length": {"words": {"min": 500, "max": 1000, "optimal": 750}}
+  },
+  "based_on": {
+    "content_count": 12,
+    "date_range": {"from": "...", "to": "..."},
+    "avg_execution_score": 0.85
+  },
+  "top_performers": [
+    {"id": "...", "title": "...", "execution_score": 0.92}
+  ]
+}
+```
+
+**Integration with NIV Content:**
+- Replaced ad-hoc Memory Vault summaries with playbook retrieval
+- NIV Content automatically gets best practices for each content type
+- No changes needed to NIV workflow - transparent upgrade
+- Falls back gracefully if no playbook exists
+
+**Edge Function:**
+- `generate-playbook` - Synthesizes playbooks from content patterns
+  - Gathers 3-20 relevant content pieces
+  - Uses Claude to extract patterns
+  - Caches for 7 days
+  - Returns INSUFFICIENT_DATA if < 3 pieces available
+
+##### **E. Voyage AI Semantic Search (NEW - Nov 4, 2025)**
+
+**Vector Embeddings:**
+- **Model**: `voyage-3-large` (1024 dimensions)
+- **Coverage**: 100% of content creation (all 21 insertion points)
+- **Quality**: State-of-the-art semantic understanding
+
+**Implementation:**
+```typescript
+// Generate embedding for all content
+const embedding = await generateEmbedding(title + "\n\n" + content)
+
+// Save with metadata
+await supabase.from('content_library').insert({
+  // ... content fields
+  embedding: embedding,
+  embedding_model: 'voyage-3-large',
+  embedding_updated_at: new Date().toISOString()
+})
+```
+
+**Embedding Coverage (21/21 insertion points):**
+1. ✅ NIV Advisor - strategy saves
+2. ✅ NIV Content Intelligent V2 - campaign generation (phase strategy)
+3. ✅ NIV Content Intelligent V2 - campaign generation (content pieces)
+4. ✅ NIV Content Intelligent V2 - auto-execute mode
+5. ✅ NIV Content Intelligent V2 - conversation mode
+6. ✅ NIV Campaign Memory - campaign saves
+7. ✅ MCP Opportunity Detector V2 - opportunity saves
+8. ✅ MCP Executive Synthesis - executive saves
+9. ✅ Framework Auto-Execute - content creation
+10. ✅ Website Entity Compiler - entity compilation
+... (all 21 covered)
+
+**Search Performance:**
+- Semantic similarity using pgvector cosine distance
+- Combined with composite scoring (similarity + salience + recency + execution)
+- Sub-100ms search with ivfflat indexes
+
 #### Database Schema
 
 **Core Tables:**
@@ -1613,6 +1818,12 @@ content_library (
   -- Execution tracking (Oct 25)
   executed boolean DEFAULT false,
   feedback text,
+  execution_score decimal(3,2),       -- 0.0-1.0 success rate
+
+  -- Semantic search (NEW - Nov 4)
+  embedding vector(1024),             -- voyage-3-large embeddings
+  embedding_model varchar(100),       -- 'voyage-3-large'
+  embedding_updated_at timestamptz,
 
   -- Organization
   folder varchar(500),
@@ -1697,6 +1908,19 @@ performance_metrics (
   created_at timestamptz
 )
 
+-- Playbook intelligence (NEW - Nov 4)
+playbooks (
+  id uuid,
+  organization_id uuid,
+  content_type text,                -- "media-pitch", "thought-leadership"
+  topic text,                       -- "energy", "aviation", "general"
+  playbook jsonb,                   -- Pre-synthesized guidance
+  created_at timestamptz DEFAULT NOW(),
+  updated_at timestamptz DEFAULT NOW(),
+  version integer DEFAULT 1,
+  UNIQUE(organization_id, content_type, topic)
+)
+
 -- Legacy NIV strategies (backward compatibility)
 niv_strategies (
   -- Full NIV framework structure preserved
@@ -1709,11 +1933,18 @@ niv_strategies (
 -- Fast brand context lookup (< 5ms)
 idx_brand_assets_fast_lookup ON brand_assets(organization_id, asset_type, status)
 
--- Salience-based retrieval (NEW)
+-- Salience-based retrieval (NEW - Oct 26)
 idx_content_library_salience ON content_library(salience_score DESC, created_at DESC)
 
 -- Intelligence processing
 idx_content_intelligence_status ON content_library(intelligence_status)
+
+-- Vector search (NEW - Nov 4)
+idx_content_library_embedding ON content_library USING ivfflat(embedding vector_cosine_ops)
+
+-- Playbook lookups (NEW - Nov 4)
+idx_playbooks_org_type_topic ON playbooks(organization_id, content_type, topic)
+idx_playbooks_updated_at ON playbooks(updated_at)
 
 -- Array/JSONB fields
 idx_content_themes_gin ON content_library USING gin(themes)
@@ -1756,6 +1987,15 @@ idx_content_topics_gin ON content_library USING gin(topics)
   - Legacy NIV strategy support
   - Pattern matching for successful content
   - Export functionality
+
+**Playbook Intelligence (NEW - Nov 4):**
+- `generate-playbook` - Pattern synthesis for content types
+  - Analyzes 3-20 pieces of successful content
+  - Uses Claude Sonnet 4 to extract patterns
+  - Returns proven hooks, voice, structure, success/failure patterns
+  - Caches for 7 days with automatic staleness detection
+  - Requires minimum 3 pieces of content
+  - INSUFFICIENT_DATA error if < 3 available
 
 #### Frontend Components
 

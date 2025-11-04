@@ -60,6 +60,236 @@ async function generateEmbedding(text: string): Promise<number[] | null> {
   }
 }
 
+/**
+ * Infer topic from query by looking for keywords
+ */
+function inferTopic(query: string): string {
+  const keywords = ['energy', 'aviation', 'technology', 'finance', 'healthcare', 'infrastructure']
+  const lower = query.toLowerCase()
+
+  for (const keyword of keywords) {
+    if (lower.includes(keyword)) return keyword
+  }
+
+  return 'general'
+}
+
+/**
+ * Get or create playbook for a given content type and topic
+ */
+async function getOrCreatePlaybook(params: {
+  organizationId: string
+  contentType: string
+  topic: string
+  fallbackResults?: any[]
+}): Promise<{ type: 'playbook' | 'adhoc', content: string }> {
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+
+  // Try to get cached playbook
+  const { data: cached, error: playbookError } = await supabase
+    .from('playbooks')
+    .select('*')
+    .eq('organization_id', params.organizationId)
+    .eq('content_type', params.contentType)
+    .eq('topic', params.topic)
+    .single()
+
+  if (playbookError && playbookError.code !== 'PGRST116') {
+    console.error('❌ Error fetching playbook:', playbookError)
+  }
+
+  if (cached) {
+    const age = Date.now() - new Date(cached.updated_at).getTime()
+    const daysOld = age / (1000 * 60 * 60 * 24)
+
+    // If playbook is less than 7 days old, use it
+    if (daysOld < 7) {
+      console.log(`📚 Using cached playbook (${daysOld.toFixed(1)} days old)`)
+      return {
+        type: 'playbook',
+        content: formatPlaybookForClaude(cached.playbook, params.contentType, params.topic)
+      }
+    }
+
+    console.log(`⏰ Playbook is stale (${daysOld.toFixed(1)} days old), will use but trigger regeneration`)
+
+    // Trigger async regeneration (don't wait)
+    triggerPlaybookRegeneration(params.organizationId, params.contentType, params.topic)
+
+    return {
+      type: 'playbook',
+      content: formatPlaybookForClaude(cached.playbook, params.contentType, params.topic)
+    }
+  }
+
+  // Check if we have enough data to generate playbook
+  const { count } = await supabase
+    .from('content_library')
+    .select('id', { count: 'exact', head: true })
+    .eq('organization_id', params.organizationId)
+    .eq('content_type', params.contentType)
+    .ilike('folder', `%${params.topic}%`)
+
+  if (count && count >= 3) {
+    console.log(`📝 Have ${count} items, triggering playbook generation`)
+    // Trigger async generation (don't wait)
+    triggerPlaybookRegeneration(params.organizationId, params.contentType, params.topic)
+  } else {
+    console.log(`⚠️ Only ${count || 0} items, not enough to generate playbook (need 3+)`)
+  }
+
+  // Fallback to ad-hoc summary if we have results
+  if (params.fallbackResults && params.fallbackResults.length > 0) {
+    return {
+      type: 'adhoc',
+      content: formatAdHocSummary(params.fallbackResults)
+    }
+  }
+
+  return {
+    type: 'adhoc',
+    content: 'No existing content found in Memory Vault.'
+  }
+}
+
+/**
+ * Format playbook for Claude's consumption
+ */
+function formatPlaybookForClaude(playbook: any, contentType: string, topic: string): string {
+  const guidance = playbook.guidance || {}
+
+  let formatted = `📚 **Content Playbook: ${contentType} about ${topic}**\n\n`
+
+  // Proven hooks
+  if (guidance.proven_hooks && guidance.proven_hooks.length > 0) {
+    formatted += `**Proven Hooks:**\n`
+    guidance.proven_hooks.forEach((hook: any, idx: number) => {
+      formatted += `${idx + 1}. ${hook.hook}`
+      if (hook.success_rate) {
+        formatted += ` (${(hook.success_rate * 100).toFixed(0)}% success)`
+      }
+      if (hook.example) {
+        formatted += `\n   Example: "${hook.example}"`
+      }
+      formatted += `\n`
+    })
+    formatted += `\n`
+  }
+
+  // Brand voice
+  if (guidance.brand_voice) {
+    formatted += `**Brand Voice:** ${guidance.brand_voice.tone || 'Professional'}\n`
+    if (guidance.brand_voice.style_points && guidance.brand_voice.style_points.length > 0) {
+      formatted += `Style: ${guidance.brand_voice.style_points.join(', ')}\n`
+    }
+    if (guidance.brand_voice.avoid && guidance.brand_voice.avoid.length > 0) {
+      formatted += `Avoid: ${guidance.brand_voice.avoid.join(', ')}\n`
+    }
+    formatted += `\n`
+  }
+
+  // Structure
+  if (guidance.proven_structure) {
+    formatted += `**Proven Structure:** ${guidance.proven_structure.format || 'Standard'}\n`
+    if (guidance.proven_structure.sections && guidance.proven_structure.sections.length > 0) {
+      formatted += `Sections:\n`
+      guidance.proven_structure.sections.forEach((section: any) => {
+        formatted += `  - ${section.name}: ${section.purpose || ''} (${section.length || 'varies'})\n`
+      })
+    }
+    formatted += `\n`
+  }
+
+  // Success patterns
+  if (guidance.success_patterns && guidance.success_patterns.length > 0) {
+    formatted += `**Success Patterns:**\n`
+    guidance.success_patterns.forEach((pattern: string) => {
+      formatted += `  ✓ ${pattern}\n`
+    })
+    formatted += `\n`
+  }
+
+  // Failure patterns
+  if (guidance.failure_patterns && guidance.failure_patterns.length > 0) {
+    formatted += `**Avoid These:**\n`
+    guidance.failure_patterns.forEach((pattern: string) => {
+      formatted += `  ✗ ${pattern}\n`
+    })
+    formatted += `\n`
+  }
+
+  // Length guidance
+  if (guidance.typical_length && guidance.typical_length.words) {
+    formatted += `**Optimal Length:** ${guidance.typical_length.words.optimal || 'varies'} words `
+    formatted += `(range: ${guidance.typical_length.words.min || 'N/A'}-${guidance.typical_length.words.max || 'N/A'})\n\n`
+  }
+
+  // Top performers (just references)
+  if (playbook.top_performers && playbook.top_performers.length > 0) {
+    formatted += `**Top Performers (reference examples):**\n`
+    playbook.top_performers.forEach((perf: any, idx: number) => {
+      formatted += `${idx + 1}. "${perf.title}" - ${(perf.execution_score * 100).toFixed(0)}% success\n`
+    })
+    formatted += `\n`
+  }
+
+  // Metadata
+  if (playbook.based_on) {
+    formatted += `---\n`
+    formatted += `*Based on ${playbook.based_on.content_count} pieces of content*`
+    if (playbook.based_on.avg_execution_score) {
+      formatted += ` (avg ${(playbook.based_on.avg_execution_score * 100).toFixed(0)}% success)`
+    }
+  }
+
+  return formatted
+}
+
+/**
+ * Format ad-hoc summary when no playbook exists
+ */
+function formatAdHocSummary(results: any[]): string {
+  return `Found ${results.length} relevant item(s) in Memory Vault:\n\n${results.slice(0, 5).map((r: any, idx: number) => `
+${idx + 1}. **${r.title}** (${r.content_type})
+   - Relevance: ${((r.similarity || r.semantic_similarity || 0) * 100).toFixed(0)}%
+   - ${r.description || r.content?.substring(0, 200) + '...'}
+   ${r.opportunity_data ? `\n   - Opportunity Score: ${r.opportunity_data.score}/100` : ''}
+`).join('\n')}${results.length > 5 ? `\n\n(${results.length - 5} more items available)` : ''}`
+}
+
+/**
+ * Trigger async playbook regeneration (fire-and-forget)
+ */
+async function triggerPlaybookRegeneration(
+  organizationId: string,
+  contentType: string,
+  topic: string
+): Promise<void> {
+  try {
+    console.log(`🔄 Triggering async playbook regeneration for ${contentType}/${topic}`)
+
+    // Call generate-playbook function (don't await)
+    fetch(`${SUPABASE_URL}/functions/v1/generate-playbook`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+      },
+      body: JSON.stringify({
+        organizationId,
+        contentType,
+        topic,
+        force: false
+      })
+    }).catch(err => {
+      console.error('⚠️ Playbook regeneration failed (non-blocking):', err)
+    })
+  } catch (error) {
+    console.error('⚠️ Error triggering playbook regeneration:', error)
+  }
+}
+
 // Tool definitions for Claude
 const CONTENT_GENERATION_TOOLS = [
   {
@@ -1965,19 +2195,26 @@ ${campaignContext.timeline || 'Not specified'}
           const results = searchResponse.data?.data || []
           console.log(`✅ Found ${results.length} results from Memory Vault`)
 
-          // Create compact playbook-style summary for Claude (not full content)
-          const playbookSummary = results.length > 0 ? `
-Found ${results.length} relevant item(s) in Memory Vault:
+          // Get or create playbook for this content type + topic
+          const topic = inferTopic(toolUse.input.query)
+          const contentTypeForPlaybook = toolUse.input.content_type || 'general'
 
-${results.slice(0, 5).map((r: any, idx: number) => `
-${idx + 1}. **${r.title}** (${r.content_type})
-   - Relevance: ${((r.similarity || r.semantic_similarity || 0) * 100).toFixed(0)}%
-   - ${r.description || r.content?.substring(0, 200) + '...'}
-   ${r.opportunity_data ? `\n   - Opportunity Score: ${r.opportunity_data.score}/100` : ''}
-`).join('\n')}
+          console.log(`📚 Fetching playbook for ${contentTypeForPlaybook}/${topic}`)
 
-${results.length > 5 ? `\n(${results.length - 5} more items available)` : ''}
-          `.trim() : 'No existing content found in Memory Vault.'
+          const playbookResult = await getOrCreatePlaybook({
+            organizationId: organizationId,
+            contentType: contentTypeForPlaybook,
+            topic: topic,
+            fallbackResults: results
+          })
+
+          const playbookSummary = playbookResult.content
+
+          if (playbookResult.type === 'playbook') {
+            console.log(`✅ Using playbook-based guidance`)
+          } else {
+            console.log(`⚠️ No playbook available, using ad-hoc summary`)
+          }
 
           // Add tool result to conversation history and continue the agentic loop
           console.log('🔄 Passing Memory Vault results back to Claude to continue conversation')

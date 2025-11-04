@@ -12,7 +12,144 @@ import {
 } from './self-orchestration.ts'
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') || Deno.env.get('CLAUDE_API_KEY')
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
+const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY })
+
+/**
+ * Infer topic from query by looking for keywords
+ */
+function inferTopic(query: string): string {
+  const keywords = ['energy', 'aviation', 'technology', 'finance', 'healthcare', 'infrastructure']
+  const lower = query.toLowerCase()
+
+  for (const keyword of keywords) {
+    if (lower.includes(keyword)) return keyword
+  }
+
+  return 'general'
+}
+
+/**
+ * Get Memory Vault playbook or fallback to search results
+ */
+async function getMemoryVaultGuidance(params: {
+  organizationId: string
+  query: string
+  contentType?: string
+}): Promise<{ guidance: string, source: 'playbook' | 'search' | 'none' }> {
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+  const topic = inferTopic(params.query)
+  const contentType = params.contentType || 'general'
+
+  try {
+    // Try to get playbook
+    const { data: playbook } = await supabase
+      .from('playbooks')
+      .select('*')
+      .eq('organization_id', params.organizationId)
+      .eq('content_type', contentType)
+      .eq('topic', topic)
+      .single()
+
+    if (playbook) {
+      const age = Date.now() - new Date(playbook.updated_at).getTime()
+      const daysOld = age / (1000 * 60 * 60 * 24)
+
+      if (daysOld < 7) {
+        console.log(`📚 Using Memory Vault playbook for ${contentType}/${topic} (${daysOld.toFixed(1)} days old)`)
+        return {
+          guidance: formatPlaybookForAdvisor(playbook.playbook, contentType, topic),
+          source: 'playbook'
+        }
+      }
+    }
+
+    // Fallback to search
+    console.log(`🔍 Searching Memory Vault for: ${params.query}`)
+    const searchResponse = await supabase.functions.invoke('niv-memory-vault', {
+      body: {
+        action: 'search',
+        query: params.query,
+        organizationId: params.organizationId,
+        limit: 5
+      }
+    })
+
+    const results = searchResponse.data?.data || []
+    if (results.length > 0) {
+      console.log(`✅ Found ${results.length} items in Memory Vault`)
+      return {
+        guidance: formatMemoryVaultResults(results),
+        source: 'search'
+      }
+    }
+
+    return { guidance: '', source: 'none' }
+
+  } catch (error) {
+    console.error('⚠️ Memory Vault error (non-blocking):', error)
+    return { guidance: '', source: 'none' }
+  }
+}
+
+/**
+ * Format playbook for NIV Advisor
+ */
+function formatPlaybookForAdvisor(playbook: any, contentType: string, topic: string): string {
+  const guidance = playbook.guidance || {}
+
+  let formatted = `📚 **Past Success Patterns for ${contentType} about ${topic}:**\n\n`
+
+  if (guidance.proven_hooks && guidance.proven_hooks.length > 0) {
+    formatted += `**What Works:**\n`
+    guidance.proven_hooks.slice(0, 3).forEach((hook: any) => {
+      formatted += `• ${hook.hook}`
+      if (hook.success_rate) {
+        formatted += ` (${(hook.success_rate * 100).toFixed(0)}% success)`
+      }
+      formatted += `\n`
+    })
+    formatted += `\n`
+  }
+
+  if (guidance.success_patterns && guidance.success_patterns.length > 0) {
+    formatted += `**Success Patterns:** ${guidance.success_patterns.slice(0, 3).join('; ')}\n\n`
+  }
+
+  if (guidance.failure_patterns && guidance.failure_patterns.length > 0) {
+    formatted += `**Avoid:** ${guidance.failure_patterns.slice(0, 2).join('; ')}\n\n`
+  }
+
+  if (playbook.based_on) {
+    formatted += `*Based on ${playbook.based_on.content_count} successful pieces*`
+  }
+
+  return formatted
+}
+
+/**
+ * Format Memory Vault search results
+ */
+function formatMemoryVaultResults(results: any[]): string {
+  let formatted = `📚 **Relevant Past Content:**\n\n`
+
+  results.slice(0, 5).forEach((item: any, idx: number) => {
+    formatted += `${idx + 1}. **${item.title}**`
+    if (item.execution_score) {
+      formatted += ` (${(item.execution_score * 100).toFixed(0)}% success)`
+    }
+    formatted += `\n`
+    if (item.description || item.content) {
+      const preview = (item.description || item.content).substring(0, 150)
+      formatted += `   ${preview}...\n`
+    }
+    formatted += `\n`
+  })
+
+  return formatted
+}
 
 // Campaign Concept Building State
 // Track the evolving campaign concept across conversations
@@ -2686,6 +2823,13 @@ Save strategic recommendations for when explicitly requested.\n`
     message += `IMPORTANT: Always refer to the client as "${toolResults.discoveryData.organizationName}" not "we" or "your organization"\n`
   }
 
+  // Add Memory Vault guidance if available
+  if (toolResults.memoryVault) {
+    message += `\n\n**MEMORY VAULT - PAST SUCCESS PATTERNS:**\n`
+    message += toolResults.memoryVault.guidance + '\n'
+    message += `\n*Use these proven patterns to inform your strategic recommendations.*\n`
+  }
+
   // Add intelligence pipeline data if available (preferred)
   if (toolResults.intelligencePipeline) {
     const pipeline = toolResults.intelligencePipeline
@@ -4801,6 +4945,28 @@ Respond with JSON only:
         industry: 'Technology'
       }
       console.log(`🎯 Using default profile for ${organizationName}`)
+    }
+
+    // Query Memory Vault for relevant past content and playbooks
+    console.log(`📚 Checking Memory Vault for relevant guidance...`)
+    try {
+      const memoryVaultGuidance = await getMemoryVaultGuidance({
+        organizationId: organizationId,
+        query: searchQuery || userMessage,
+        contentType: 'general'
+      })
+
+      if (memoryVaultGuidance.source !== 'none') {
+        toolResults.memoryVault = {
+          guidance: memoryVaultGuidance.guidance,
+          source: memoryVaultGuidance.source
+        }
+        console.log(`✅ Memory Vault guidance added (source: ${memoryVaultGuidance.source})`)
+      } else {
+        console.log(`📭 No relevant Memory Vault content found`)
+      }
+    } catch (memoryError) {
+      console.error('⚠️ Memory Vault error (non-blocking):', memoryError)
     }
 
     // Enrich context with tool results

@@ -11,6 +11,7 @@ import { GeoVectorBlueprintPresentation } from './GeoVectorBlueprintPresentation
 import { ExecutionManager } from './ExecutionManager'
 import { useAppStore } from '@/stores/useAppStore'
 import { CampaignBuilderService } from '@/lib/services/campaignBuilderService'
+import { supabase } from '@/lib/supabase/client'
 
 type CampaignStage = 'intent' | 'research' | 'positioning' | 'approach' | 'blueprint' | 'execution'
 
