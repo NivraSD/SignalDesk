@@ -620,59 +620,171 @@ export function CampaignBuilderWizard() {
         return
       }
 
-      // GEO-VECTOR campaigns use single-step generation
+      // GEO-VECTOR campaigns: VECTOR campaign augmented with AI query ownership
       if (approach === 'GEO_VECTOR_CAMPAIGN') {
-        console.log('🤖 Generating GEO-VECTOR campaign blueprint...')
+        console.log('🎯 Generating GEO-VECTOR campaign (VECTOR + AI query ownership)...')
 
-        // GEO-VECTOR needs objective selection first - for now, default to drive_sales
-        // TODO: Add objective selection UI step
-        const objective = 'drive_sales'
-        const industry = organization.industry || 'Technology'
+        // STEP 1: Run standard research pipeline (same as VECTOR)
+        console.log('📊 Step 1: Running research pipeline...')
+        setConversationHistory(prev => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: 'Starting research pipeline to gather intelligence on your organization, stakeholders, and competitive landscape...',
+            stage: 'research'
+          }
+        ])
 
-        // Step 1: Select content types
-        const contentResponse = await fetch('/api/geo/select-content', {
+        const researchData = await CampaignBuilderService.startResearchPipeline(
+          session.sessionId,
+          session.campaignGoal,
+          organization.id,
+          organization.name,
+          organization.industry || 'Technology',
+          (stage, status, data) => {
+            console.log(`📊 Research stage: ${stage} - ${status}`)
+            if (status === 'completed' && data) {
+              setSession(prev => ({
+                ...prev!,
+                researchData: data
+              }))
+            }
+          }
+        )
+
+        console.log('✅ Research pipeline completed')
+
+        // STEP 2: Generate GEO intelligence (AI query ownership layer)
+        console.log('🎯 Step 2: Generating GEO intelligence...')
+        setConversationHistory(prev => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: 'Analyzing AI platform behavior and identifying target queries to own...',
+            stage: 'geo_intelligence'
+          }
+        ])
+
+        const geoResponse = await fetch('/api/geo/intelligence', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            objective,
-            industry,
-            constraints: { time_per_week: 2, budget: 'medium', technical_capability: 'medium' },
-            current_presence: {}
+            organization_id: organization.id,
+            organization_name: organization.name,
+            industry: organization.industry || 'Technology',
+            campaign_goal: session.campaignGoal,
+            stakeholders: researchData?.intelligenceBrief?.stakeholders || []
           })
         })
 
-        if (!contentResponse.ok) {
-          throw new Error('Failed to select content types')
+        if (!geoResponse.ok) {
+          throw new Error('Failed to generate GEO intelligence')
         }
 
-        const contentSelection = await contentResponse.json()
-        console.log('✅ Content types selected:', contentSelection)
+        const { geoIntelligence } = await geoResponse.json()
+        console.log('✅ GEO intelligence generated:', {
+          targetQueries: geoIntelligence.targetQueries?.length || 0,
+          citationSources: geoIntelligence.citationSources?.length || 0
+        })
 
-        // Step 2: Generate blueprint
-        const blueprintResponse = await fetch('/api/geo/generate-blueprint', {
+        // STEP 3: Generate VECTOR blueprint with GEO augmentation
+        console.log('📋 Step 3: Generating VECTOR blueprint with GEO augmentation...')
+        setConversationHistory(prev => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: 'Creating campaign blueprint with tactical actions and AI query ownership mapping...',
+            stage: 'blueprint'
+          }
+        ])
+
+        // Use VECTOR orchestrator with GEO intelligence
+        const response = await fetch('/api/generate-blueprint', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            sessionId: session.sessionId,
+            blueprintType: 'VECTOR_CAMPAIGN',  // Use VECTOR orchestrator!
+            researchData: researchData,
+            selectedPositioning: session.selectedPositioning,
             campaignGoal: session.campaignGoal,
-            objective,
-            selectedContentTypes: {
-              automated: contentSelection.automated,
-              user_assisted: contentSelection.user_assisted
+            organizationContext: {
+              name: organization.name,
+              industry: organization.industry || 'Technology'
             },
-            constraints: { time_per_week: 2, technical_capability: 'medium' },
-            organizationName: organization.name,
-            industry,
-            session_id: session.sessionId,
-            organization_id: organization.id
+            geoIntelligence: geoIntelligence  // AUGMENTATION!
           })
         })
 
-        if (!blueprintResponse.ok) {
+        if (!response.ok) {
           throw new Error('Failed to generate GEO-VECTOR blueprint')
         }
 
-        const blueprintResult = await blueprintResponse.json()
-        console.log('✅ GEO-VECTOR blueprint generated:', blueprintResult)
+        const partialResult = await response.json()
+        console.log('✅ Blueprint base generated:', partialResult)
+
+        // STEP 4: Poll for stakeholder orchestration completion (same as VECTOR)
+        console.log('📊 Step 4: Waiting for stakeholder orchestration to complete...')
+
+        let orchestrationComplete = false
+        let attempts = 0
+        const maxAttempts = 120 // 120 * 2s = 4 minutes
+
+        while (!orchestrationComplete && attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 2000))
+
+          const data = await CampaignBuilderService.getSession(session.sessionId)
+
+          console.log(`📊 Polling attempt ${attempts + 1}/${maxAttempts}:`, {
+            hasData: !!data,
+            hasPart3: !!data?.part3_stakeholderorchestration,
+            hasPlans: !!data?.part3_stakeholderorchestration?.stakeholderOrchestrationPlans
+          })
+
+          if (data?.part3_stakeholderorchestration?.stakeholderOrchestrationPlans) {
+            orchestrationComplete = true
+            console.log('✅ Stakeholder orchestration complete with GEO augmentation!')
+          }
+
+          attempts++
+        }
+
+        if (!orchestrationComplete) {
+          throw new Error('Stakeholder orchestration timed out after 4 minutes')
+        }
+
+        // STEP 5: Finalize blueprint
+        console.log('⚙️ Step 5: Finalizing GEO-VECTOR blueprint...')
+
+        const finalizeResponse = await fetch('/api/finalize-blueprint', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: session.sessionId,
+            blueprintBase: partialResult.blueprintBase,
+            organizationContext: {
+              name: organization.name,
+              industry: organization.industry || 'Technology'
+            }
+          })
+        })
+
+        if (!finalizeResponse.ok) {
+          throw new Error('Blueprint finalization failed')
+        }
+
+        const result = await finalizeResponse.json()
+        console.log('✅ GEO-VECTOR blueprint completed:', result)
+
+        // Save blueprint to database
+        try {
+          await CampaignBuilderService.updateSession(session.sessionId, {
+            blueprint: result
+          })
+          console.log('✅ GEO-VECTOR blueprint saved to database')
+        } catch (err) {
+          console.error('❌ Failed to save blueprint to database:', err)
+        }
 
         // Clear progress simulation timeouts
         progressSimulation.timeouts.forEach(clearTimeout)
@@ -688,33 +800,22 @@ export function CampaignBuilderWizard() {
           }
         })
 
-        console.log('✅ GEO-VECTOR blueprint generated in', Date.now() - startTime, 'ms')
+        console.log('✅ GEO-VECTOR blueprint completed in', Date.now() - startTime, 'ms')
 
         setSession(prev => ({
           ...prev!,
-          blueprint: blueprintResult.blueprint
+          blueprint: result
         }))
 
         setConversationHistory(prev => [
           ...prev,
           {
             role: 'assistant',
-            content: 'GEO-VECTOR campaign blueprint generated successfully!',
+            content: 'GEO-VECTOR campaign blueprint generated! Your tactics now include AI query ownership guidance showing which queries each action will help you own.',
             stage: 'blueprint',
-            data: blueprintResult.blueprint
+            data: result
           }
         ])
-
-        // Save blueprint to database
-        try {
-          await CampaignBuilderService.updateSession(session.sessionId, {
-            blueprint: blueprintResult.blueprint
-          })
-          console.log('✅ GEO-VECTOR blueprint saved to database')
-        } catch (err) {
-          console.error('❌ Failed to save GEO-VECTOR blueprint to database:', err)
-          // Continue anyway - we have it in state
-        }
 
         setIsLoading(false)
         return
