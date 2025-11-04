@@ -1,57 +1,86 @@
-const https = require('https');
+// Check opportunities table
+import { createClient } from '@supabase/supabase-js'
 
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpza2F4anR5dWFxYXp5ZG91aWZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTEyOTYzNywiZXhwIjoyMDcwNzA1NjM3fQ.WO35k7riuKT2QXj_YvbtRwzLwi3Pev30-X9Yziej2pM";
+const supabaseUrl = process.env.SUPABASE_URL || 'https://zskaxjtyuaqazydouifp.supabase.co'
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-// Get recent opportunities
-const options = {
-  hostname: 'zskaxjtyuaqazydouifp.supabase.co',
-  path: '/rest/v1/opportunities?order=created_at.desc&limit=10',
-  method: 'GET',
-  headers: {
-    'apikey': SUPABASE_KEY,
-    'Authorization': `Bearer ${SUPABASE_KEY}`,
-    'Content-Type': 'application/json'
+if (!supabaseKey) {
+  console.error('❌ SUPABASE_SERVICE_ROLE_KEY not set')
+  process.exit(1)
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey)
+
+async function checkOpportunities() {
+  console.log('🔍 Checking opportunities table...\n')
+
+  // Total count
+  const { count: totalCount } = await supabase
+    .from('opportunities')
+    .select('*', { count: 'exact', head: true })
+
+  console.log(`📊 Total opportunities: ${totalCount}`)
+
+  // Check for aviation
+  const { data: aviation } = await supabase
+    .from('opportunities')
+    .select('id, title, organization_id, status, created_at')
+    .ilike('title', '%aviation%')
+    .order('created_at', { ascending: false })
+
+  console.log(`\n✈️ Aviation opportunities: ${aviation?.length || 0}`)
+  if (aviation && aviation.length > 0) {
+    aviation.forEach(opp => {
+      console.log(`  - ${opp.title}`)
+      console.log(`    ID: ${opp.id}`)
+      console.log(`    Org: ${opp.organization_id}`)
+      console.log(`    Status: ${opp.status}`)
+      console.log(`    Created: ${opp.created_at}`)
+    })
   }
-};
 
-const req = https.request(options, (res) => {
-  let data = '';
-  res.on('data', (chunk) => data += chunk);
-  res.on('end', () => {
-    try {
-      const opportunities = JSON.parse(data);
-      console.log(`\n=== FOUND ${opportunities.length} OPPORTUNITIES ===\n`);
-      
-      // Group by organization
-      const byOrg = {};
-      opportunities.forEach(opp => {
-        const org = opp.organization_name || 'Unknown';
-        if (!byOrg[org]) byOrg[org] = [];
-        byOrg[org].push(opp);
-      });
-      
-      Object.entries(byOrg).forEach(([org, opps]) => {
-        console.log(`\n${org}: ${opps.length} opportunities`);
-        opps.slice(0, 3).forEach(opp => {
-          console.log(`  - ${opp.title || 'No title'}`);
-          console.log(`    Created: ${opp.created_at}`);
-          console.log(`    Pipeline: ${opp.pipeline_run_id || 'No pipeline ID'}`);
-        });
-      });
-      
-      // Check for duplicates or old data
-      const titles = opportunities.map(o => o.title);
-      const uniqueTitles = [...new Set(titles)];
-      if (titles.length !== uniqueTitles.length) {
-        console.log(`\n⚠️  DUPLICATES FOUND: ${titles.length - uniqueTitles.length} duplicate opportunities`);
-      }
-      
-    } catch (e) {
-      console.error('Error:', e.message);
-      console.log('Response:', data.substring(0, 500));
-    }
-  });
-});
+  // Check most recent
+  const { data: recent } = await supabase
+    .from('opportunities')
+    .select('id, title, organization_id, status, created_at')
+    .order('created_at', { ascending: false })
+    .limit(10)
 
-req.on('error', console.error);
-req.end();
+  console.log(`\n📋 Most recent opportunities: ${recent?.length || 0}`)
+  if (recent) {
+    recent.forEach((opp, i) => {
+      console.log(`${i + 1}. ${opp.title.substring(0, 60)}...`)
+      console.log(`   Status: ${opp.status} | Org: ${opp.organization_id.substring(0, 8)}... | Created: ${opp.created_at}`)
+    })
+  }
+
+  // Check with specific org ID from UI
+  const { data: orgOpps } = await supabase
+    .from('opportunities')
+    .select('id, title, organization_id, status, created_at')
+    .eq('organization_id', '7a2835cb-11ee-4512-acc3-b6caf8eb03ff')
+    .order('created_at', { ascending: false })
+
+  console.log(`\n🏢 Opportunities for org 7a2835cb: ${orgOpps?.length || 0}`)
+  if (orgOpps) {
+    orgOpps.forEach((opp, i) => {
+      console.log(`${i + 1}. [${opp.status}] ${opp.title.substring(0, 60)}...`)
+    })
+  }
+
+  // Check active/executed filter (what UI uses)
+  const { data: activeOpps } = await supabase
+    .from('opportunities')
+    .select('id, title, status')
+    .eq('organization_id', '7a2835cb-11ee-4512-acc3-b6caf8eb03ff')
+    .in('status', ['active', 'executed'])
+
+  console.log(`\n🎯 Active/Executed opps for org 7a2835cb: ${activeOpps?.length || 0}`)
+  if (activeOpps) {
+    activeOpps.forEach((opp, i) => {
+      console.log(`${i + 1}. [${opp.status}] ${opp.title}`)
+    })
+  }
+}
+
+checkOpportunities()

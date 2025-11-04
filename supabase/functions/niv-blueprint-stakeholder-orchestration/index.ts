@@ -319,16 +319,34 @@ ${JSON.stringify(geoIntelligence.targetQueries?.slice(0, 15) || [], null, 2)}
 **Citation Sources (which publications AI platforms trust):**
 ${JSON.stringify(geoIntelligence.citationSources?.slice(0, 10) || [], null, 2)}
 
-**Schema Opportunities (Priority 1 tactics):**
-${JSON.stringify(geoIntelligence.schemaOpportunities || [], null, 2)}
+**Gap Analysis:**
+${geoIntelligence.synthesis?.gapAnalysis || 'Analysis pending'}
 
-**Content Type Recommendations (mapped to tactics):**
-${JSON.stringify(geoIntelligence.contentRecommendations || [], null, 2)}
+**Owned vs Unowned Queries:**
+- Currently Own: ${geoIntelligence.ownedQueries?.length || 0} queries
+- Don't Own (OPPORTUNITY): ${geoIntelligence.unownedQueries?.length || 0} queries
 
-**IMPORTANT**:
-1. Add schema opportunities as PRIORITY 1 TACTICS in the first stakeholder's influence levers
+**SYNTHESIZED SCHEMA OPPORTUNITIES (MUST ADD AS additionalTactics):**
+${JSON.stringify(geoIntelligence.synthesis?.schemaOpportunities || [], null, 2)}
+
+**SYNTHESIZED CONTENT RECOMMENDATIONS:**
+${JSON.stringify(geoIntelligence.synthesis?.contentRecommendations || [], null, 2)}
+
+**Priority Actions:**
+${geoIntelligence.synthesis?.priorityActions?.map((a: string, i: number) => `${i + 1}. ${a}`).join('\n') || 'None'}
+
+**CRITICAL INSTRUCTIONS FOR GEO-VECTOR:**
+1. For EACH schema opportunity from synthesis, create an additionalTactic with:
+   - type: "geo_schema_update"
+   - who: "Technical team"
+   - what: The schema opportunity title
+   - where: "Website schema markup"
+   - when: "Week 1" (schema is Priority 1)
+   - schemaData: The full schema opportunity object
+   - estimatedEffort: "1 hour"
+
 2. For EVERY tactical action (media pitch, social post, thought leadership), add "aiQueryImpact" field with:
-   - targetQueries: Which queries this helps you own
+   - targetQueries: Which UNOWNED queries this helps you own
    - citationProbability: "high" | "medium" | "low"
    - timeline: When AI platforms will start citing this
    - platforms: Which AI platforms (ChatGPT, Claude, Perplexity, Gemini)

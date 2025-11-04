@@ -655,36 +655,186 @@ export function CampaignBuilderWizard() {
         console.log('✅ Research pipeline completed')
 
         // STEP 2: Generate GEO intelligence (AI query ownership layer)
-        console.log('🎯 Step 2: Generating GEO intelligence...')
+        console.log('🎯 Step 2: Generating GEO intelligence using frontend calls...')
         setConversationHistory(prev => [
           ...prev,
           {
             role: 'assistant',
-            content: 'Analyzing AI platform behavior and identifying target queries to own...',
+            content: 'Step 1/3: Discovering target queries for AI ownership...',
             stage: 'geo_intelligence'
           }
         ])
 
-        const geoResponse = await fetch('/api/geo/intelligence', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+        // Step 2.1: Discover campaign-specific queries
+        console.log('🔍 Step 2.1/3: Discovering campaign-specific queries...')
+        const queryDiscoveryResponse = await supabase.functions.invoke('geo-query-discovery', {
+          body: {
             organization_id: organization.id,
             organization_name: organization.name,
             industry: organization.industry || 'Technology',
-            campaign_goal: session.campaignGoal,
-            stakeholders: researchData?.intelligenceBrief?.stakeholders || []
-          })
+            campaign_goal: session.campaignGoal,  // CAMPAIGN-SPECIFIC
+            positioning: session.selectedPositioning,  // CAMPAIGN-SPECIFIC
+            stakeholders: researchData?.intelligenceBrief?.stakeholders || []  // CAMPAIGN-SPECIFIC
+          }
         })
 
-        if (!geoResponse.ok) {
-          throw new Error('Failed to generate GEO intelligence')
+        if (queryDiscoveryResponse.error) {
+          throw new Error('Failed to discover queries: ' + queryDiscoveryResponse.error.message)
         }
 
-        const { geoIntelligence } = await geoResponse.json()
-        console.log('✅ GEO intelligence generated:', {
-          targetQueries: geoIntelligence.targetQueries?.length || 0,
-          citationSources: geoIntelligence.citationSources?.length || 0
+        const { queries } = queryDiscoveryResponse.data
+        console.log('✅ Discovered', queries?.length || 0, 'target queries')
+
+        if (!queries || queries.length === 0) {
+          throw new Error('No queries discovered')
+        }
+
+        // Step 2.2: Test queries against all 4 AI platforms in parallel
+        console.log('🤖 Step 2.2/3: Testing queries against AI platforms...')
+        setConversationHistory(prev => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: 'Step 2/3: Testing queries against ChatGPT, Claude, Perplexity, and Gemini...',
+            stage: 'geo_intelligence'
+          }
+        ])
+
+        // Use first 5 queries (like IntelligenceModule does)
+        const testQueries = queries.slice(0, 5)
+
+        const [claudeResults, geminiResults, perplexityResults, chatgptResults] = await Promise.all([
+          supabase.functions.invoke('geo-test-claude', {
+            body: {
+              organization_id: organization.id,
+              organization_name: organization.name,
+              queries: testQueries
+            }
+          }),
+          supabase.functions.invoke('geo-test-gemini', {
+            body: {
+              organization_id: organization.id,
+              organization_name: organization.name,
+              queries: testQueries
+            }
+          }),
+          supabase.functions.invoke('geo-test-perplexity', {
+            body: {
+              organization_id: organization.id,
+              organization_name: organization.name,
+              queries: testQueries
+            }
+          }),
+          supabase.functions.invoke('geo-test-chatgpt', {
+            body: {
+              organization_id: organization.id,
+              organization_name: organization.name,
+              queries: testQueries
+            }
+          })
+        ])
+
+        console.log('✅ Platform testing complete:', {
+          claude: claudeResults.data?.results?.length || 0,
+          gemini: geminiResults.data?.results?.length || 0,
+          perplexity: perplexityResults.data?.results?.length || 0,
+          chatgpt: chatgptResults.data?.results?.length || 0
+        })
+
+        // Step 2.3: Synthesize results into actionable recommendations
+        console.log('📊 Step 2.3/3: Synthesizing GEO findings...')
+        setConversationHistory(prev => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: 'Step 3/3: Analyzing citation patterns and generating actionable recommendations...',
+            stage: 'geo_intelligence'
+          }
+        ])
+
+        // Combine all platform results
+        const allResults = [
+          ...(claudeResults.data?.results || []),
+          ...(geminiResults.data?.results || []),
+          ...(perplexityResults.data?.results || []),
+          ...(chatgptResults.data?.results || [])
+        ]
+
+        // Extract citation sources
+        const citationSources = allResults
+          .flatMap(r => r.citations || [])
+          .filter(c => c.url && c.title)
+
+        // Build query ownership map
+        const queryOwnershipMap: any = {}
+        const ownedQueries: string[] = []
+        const unownedQueries: string[] = []
+
+        testQueries.forEach(query => {
+          const queryResults = allResults.filter(r => r.query === query)
+          const isMentioned = queryResults.some(r => r.is_mentioned)
+          const platforms = queryResults
+            .filter(r => r.is_mentioned)
+            .map(r => r.platform)
+
+          queryOwnershipMap[query] = {
+            isMentioned,
+            platforms,
+            citationProbability: isMentioned ? 'medium' : 'low',
+            rationale: isMentioned
+              ? `Currently mentioned on ${platforms.join(', ')}`
+              : 'Not yet mentioned - opportunity for ownership'
+          }
+
+          if (isMentioned) {
+            ownedQueries.push(query)
+          } else {
+            unownedQueries.push(query)
+          }
+        })
+
+        // Call GEO synthesis to generate actionable recommendations
+        console.log('🧠 Calling GEO synthesis for actionable recommendations...')
+        const synthesisResponse = await supabase.functions.invoke('geo-synthesis', {
+          body: {
+            organization_id: organization.id,
+            organization_name: organization.name,
+            campaign_goal: session.campaignGoal,
+            positioning: session.selectedPositioning,
+            queries: testQueries,
+            results: allResults,
+            citationSources,
+            ownedQueries,
+            unownedQueries
+          }
+        })
+
+        if (synthesisResponse.error) {
+          console.warn('⚠️ GEO synthesis failed, using basic intelligence:', synthesisResponse.error)
+        }
+
+        const synthesis = synthesisResponse.data?.synthesis || {}
+
+        const geoIntelligence = {
+          targetQueries: testQueries,
+          citationSources,
+          queryOwnershipMap,
+          ownedQueries,
+          unownedQueries,
+          synthesis: {
+            gapAnalysis: synthesis.gapAnalysis || `${unownedQueries.length} of ${testQueries.length} queries need ownership`,
+            schemaOpportunities: synthesis.schemaOpportunities || [],
+            contentRecommendations: synthesis.contentRecommendations || [],
+            priorityActions: synthesis.priorityActions || []
+          }
+        }
+
+        console.log('✅ GEO intelligence synthesized:', {
+          targetQueries: testQueries.length,
+          ownedQueries: ownedQueries.length,
+          unownedQueries: unownedQueries.length,
+          schemaOpportunities: geoIntelligence.synthesis.schemaOpportunities.length,
+          contentRecommendations: geoIntelligence.synthesis.contentRecommendations.length
         })
 
         // STEP 3: Generate VECTOR blueprint with GEO augmentation

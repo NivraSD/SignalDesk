@@ -60,7 +60,7 @@ interface InfluenceLever {
 
 interface ContentItem {
   id: string
-  type: 'media_pitch' | 'social_post' | 'thought_leadership' | 'user_action' | 'press_release'
+  type: 'media_pitch' | 'social_post' | 'thought_leadership' | 'user_action' | 'press_release' | 'geo_schema_update'
   stakeholder: string
   stakeholderPriority: number
   leverName: string
@@ -68,7 +68,7 @@ interface ContentItem {
   topic: string
   target?: string
   details: any
-  status: 'pending' | 'generating' | 'generated' | 'published' | 'failed'
+  status: 'pending' | 'generating' | 'generated' | 'published' | 'failed' | 'executing'
   generatedContent?: string
   generationError?: string
   generatedAt?: Date
@@ -453,7 +453,7 @@ export default function StrategicPlanningModuleV3Complete({
         campaign?.additionalTactics?.forEach((tactic, index) => {
           items.push({
             id: crypto.randomUUID(),
-            type: 'user_action',
+            type: tactic.type === 'geo_schema_update' ? 'geo_schema_update' : 'user_action',
             stakeholder: stakeholderName,
             stakeholderPriority,
             leverName: lever.leverName,
@@ -985,6 +985,71 @@ export default function StrategicPlanningModuleV3Complete({
     setViewingItem(null)
   }
 
+  const handleExecuteSchema = async (item: ContentItem) => {
+    if (item.type !== 'geo_schema_update') return
+    if (!organization) return
+
+    console.log('⚡ Executing GEO schema update:', item.topic)
+
+    // Mark as executing
+    setContentItems(prev => prev.map(i =>
+      i.id === item.id ? { ...i, status: 'executing' as const } : i
+    ))
+
+    try {
+      // Call geo-schema-updater with the schema opportunity data
+      const { data, error } = await supabase.functions.invoke('geo-schema-updater', {
+        body: {
+          organization_id: organization.id,
+          recommendation: item.details.schemaData || {
+            title: item.topic,
+            description: item.details.what,
+            schemaType: item.details.schemaData?.schemaType || 'Organization',
+            implementation: item.details.schemaData?.implementation || '{}',
+            query: item.details.schemaData?.query || '',
+            expectedImpact: item.details.schemaData?.expectedImpact || 'Improved AI visibility',
+            priority: item.details.schemaData?.priority || 1,
+            autoExecutable: true
+          }
+        }
+      })
+
+      if (error) {
+        throw error
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to execute schema update')
+      }
+
+      console.log('✅ Schema update executed successfully:', data)
+
+      // Mark as generated (schema executed)
+      setContentItems(prev => prev.map(i =>
+        i.id === item.id
+          ? {
+              ...i,
+              status: 'generated' as const,
+              generatedContent: `Schema updated successfully: ${data.message || 'Schema markup added'}`,
+              generatedAt: new Date(),
+              executed: true,
+              executedAt: new Date()
+            }
+          : i
+      ))
+
+    } catch (error: any) {
+      console.error('❌ Schema execution failed:', error)
+
+      // Mark as failed
+      setContentItems(prev => prev.map(i =>
+        i.id === item.id
+          ? { ...i, status: 'failed' as const, generationError: error.message || 'Schema execution failed' }
+          : i
+      ))
+    }
+  }
+
   const togglePriority = (priority: number) => {
     const newExpanded = new Set(expandedPriorities)
     if (newExpanded.has(priority)) {
@@ -1060,6 +1125,7 @@ export default function StrategicPlanningModuleV3Complete({
       social_post: { label: 'Social Post', icon: '📱', color: 'blue' },
       thought_leadership: { label: 'Thought Leadership', icon: '✍️', color: 'purple' },
       press_release: { label: 'Press Release', icon: '📄', color: 'cyan' },
+      geo_schema_update: { label: 'GEO Schema Update', icon: '🤖', color: 'purple' },
       user_action: { label: 'User Action Required', icon: '👤', color: 'amber' }
     }
     return types[type]
@@ -1352,7 +1418,21 @@ export default function StrategicPlanningModuleV3Complete({
                                       )}
                                     </div>
                                     <div className="flex gap-2">
-                                      {item.type !== 'user_action' && item.status === 'pending' && (
+                                      {item.type === 'geo_schema_update' && item.status === 'pending' && (
+                                        <button
+                                          onClick={() => handleExecuteSchema(item)}
+                                          className="px-3 py-1 rounded text-xs font-medium bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1"
+                                        >
+                                          <span>⚡</span>
+                                          Execute Schema
+                                        </button>
+                                      )}
+                                      {item.type === 'geo_schema_update' && item.status === 'executing' && (
+                                        <div className="px-3 py-1 rounded text-xs font-medium bg-purple-900/30 text-purple-400">
+                                          Executing...
+                                        </div>
+                                      )}
+                                      {item.type !== 'user_action' && item.type !== 'geo_schema_update' && item.status === 'pending' && (
                                         <button
                                           onClick={() => handleGenerate(item)}
                                           disabled={isGenerating}

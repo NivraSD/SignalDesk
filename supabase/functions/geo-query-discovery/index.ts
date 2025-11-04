@@ -29,7 +29,10 @@ serve(async (req) => {
       industry,
       competitors = [],
       recent_news = [],
-      mcp_profile = null  // NEW: Accept MCP discovery data from onboarding
+      mcp_profile = null,  // NEW: Accept MCP discovery data from onboarding
+      campaign_goal = null,  // NEW: Campaign-specific context
+      positioning = null,     // NEW: Selected positioning strategy
+      stakeholders = []       // NEW: Target stakeholders from research
     } = await req.json()
 
     if (!organization_id || !organization_name) {
@@ -102,7 +105,10 @@ serve(async (req) => {
       industryPatterns,
       geoTargets,
       serviceLines,  // NEW: Pass service lines from MCP
-      mcpProfile: mcp_profile  // NEW: Pass full MCP profile
+      mcpProfile: mcp_profile,  // NEW: Pass full MCP profile
+      campaignGoal: campaign_goal,  // NEW: Campaign-specific
+      positioning,  // NEW: Campaign-specific
+      stakeholders  // NEW: Campaign-specific
     })
 
     console.log('🤖 Calling Claude for query generation...')
@@ -315,6 +321,9 @@ function buildQueryDiscoveryPrompt(context: {
   geoTargets?: any
   serviceLines?: string[]  // NEW
   mcpProfile?: any  // NEW
+  campaignGoal?: string | null  // NEW: Campaign-specific
+  positioning?: any | null  // NEW: Campaign-specific
+  stakeholders?: any[]  // NEW: Campaign-specific
 }): string {
   const currentDate = new Date().toISOString().split('T')[0] // YYYY-MM-DD format
   const currentYear = new Date().getFullYear()
@@ -366,9 +375,30 @@ ${context.mcpProfile.key_differentiators.map((d: string) => `- ${d}`).join('\n')
 `
   }
 
-  // Build GEO targets section if available (lower priority than MCP)
+  // Build campaign-specific context if provided (HIGHEST PRIORITY)
+  let campaignContextSection = ''
+  if (context.campaignGoal || context.positioning) {
+    campaignContextSection = `
+🎯 CAMPAIGN-SPECIFIC CONTEXT (PRIMARY FOCUS):
+This query discovery is for a SPECIFIC CAMPAIGN, not general GEO monitoring:
+
+**Campaign Goal**: ${context.campaignGoal || 'N/A'}
+${context.positioning ? `**Selected Positioning**: ${context.positioning.name || context.positioning.theme}
+${context.positioning.description ? `**Positioning Description**: ${context.positioning.description}` : ''}
+${context.positioning.target_psychographics ? `**Target Psychology**: ${JSON.stringify(context.positioning.target_psychographics)}` : ''}` : ''}
+${context.stakeholders && context.stakeholders.length > 0 ? `**Target Stakeholders**: ${context.stakeholders.map((s: any) => s.name || s.title || s).slice(0, 5).join(', ')}` : ''}
+
+**CRITICAL**: Generate queries that are DIRECTLY RELATED to this campaign goal and positioning.
+- Queries should reflect what someone interested in "${context.campaignGoal}" would search for
+- Align with the positioning strategy: "${context.positioning?.name || context.positioning?.theme}"
+- Focus on queries where the campaign tactics will help gain AI visibility
+- These are NOT generic organizational queries - they must serve THIS SPECIFIC CAMPAIGN
+`
+  }
+
+  // Build GEO targets section if available (lower priority than campaign context)
   let geoTargetsSection = ''
-  if (context.geoTargets && !mcpContextSection) {
+  if (context.geoTargets && !mcpContextSection && !campaignContextSection) {
     geoTargetsSection = `
 🎯 ORGANIZATION-SPECIFIC GEO TARGETS:
 This organization has configured specific GEO optimization goals:
@@ -401,14 +431,15 @@ ORGANIZATION CONTEXT:
 - Description: ${context.description || 'N/A'}
 - Competitors: ${context.competitors.slice(0, 5).join(', ') || 'N/A'}
 - Recent News: ${context.recentNews.slice(0, 3).join(', ') || 'N/A'}
+${campaignContextSection}
 ${industryPrioritiesSection}
 ${mcpContextSection}
 ${geoTargetsSection}
-${!context.geoTargets && !mcpContextSection ? `INDUSTRY QUERY PATTERNS (FALLBACK):
+${!context.geoTargets && !mcpContextSection && !campaignContextSection ? `INDUSTRY QUERY PATTERNS (FALLBACK):
 ${context.industryPatterns.map(p => `- ${p}`).join('\n')}` : ''}
 
 TASK:
-Generate 25-30 diverse test queries that real customers would use when researching solutions in this industry.
+${campaignContextSection ? `Generate 25-30 queries SPECIFICALLY RELATED to the campaign goal and positioning above. These queries should represent what people would search for when they're interested in the campaign's focus area.` : `Generate 25-30 diverse test queries that real customers would use when researching solutions in this industry.`}
 
 **CRITICAL RULES FOR QUERY GENERATION**:
 
