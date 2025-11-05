@@ -434,13 +434,14 @@ export default function StrategicPlanningModuleV3Complete({
 
       // Add Schema Opportunities as executable tactics
       geoIntelligence.synthesis.schemaOpportunities?.forEach((schema: any) => {
+        const schemaPriority = schema.priority || 1
         items.push({
           id: crypto.randomUUID(),
           type: 'geo_schema_update',
           stakeholder: 'AI Platforms',
-          stakeholderPriority: 1, // Schemas are high priority for AI visibility
+          stakeholderPriority: schemaPriority, // Use schema priority for proper folder organization
           leverName: 'GEO: AI Query Ownership',
-          leverPriority: schema.priority || 1,
+          leverPriority: schemaPriority,
           topic: schema.title || `${schema.schemaType} Schema`,
           target: schema.query || 'Target AI queries',
           details: {
@@ -468,13 +469,14 @@ export default function StrategicPlanningModuleV3Complete({
         else if (content.tacticalMapping?.toLowerCase().includes('media')) tacticalType = 'media_pitch'
         else if (content.tacticalMapping?.toLowerCase().includes('social')) tacticalType = 'social_post'
 
+        const contentPriority = content.priority || 2
         items.push({
           id: crypto.randomUUID(),
           type: tacticalType,
           stakeholder: 'AI Platforms',
-          stakeholderPriority: 1,
+          stakeholderPriority: contentPriority, // Use content priority for proper folder organization
           leverName: 'GEO: AI Query Ownership',
-          leverPriority: content.priority || 2,
+          leverPriority: contentPriority,
           topic: content.title || content.description,
           target: content.targetQueries?.join(', ') || 'AI visibility',
           details: {
